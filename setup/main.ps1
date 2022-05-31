@@ -49,25 +49,25 @@ $BGA2=Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name BGA2 -AsPlainText
 Check-ProcedureDocument -StorageAccountName $StorageAccountName -ContainerName $ContainerName `
     -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID `
     -DocumentName "BreakGlassAccountProcedure.txt" -ControlName $CtrName1 -ItemName "Break Glass account Procedure" `
-    -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey
+    -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 
 "Get-BreakGlassAccounts"
 Get-BreakGlassAccounts -token $GraphAccessToken  -ControlName $CtrName1 -ItemName "Break Glass account Creation" `
     -FirstBreakGlassUPN $BGA1 -SecondBreakGlassUPN $BGA2 `
-    -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey                
+    -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime                
 "Get-ADLicenseType"
 Get-ADLicenseType -Token $GraphAccessToken -ControlName $CtrName1 -ItemName "AD License Type" `
-    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey 
+    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 "Get-UserAuthenticationMethod"
 Get-UserAuthenticationMethod -token $GraphAccessToken -ControlName $CtrName1 -ItemName "MFA Enforcement" `
     -FirstBreakGlassEmail   $BGA1 `
     -SecondBreakGlassEmail  $BGA2 `
-    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey 
+    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 "Get-BreakGlassAccountLicense"
 Get-BreakGlassAccountLicense -token $GraphAccessToken -ControlName $CtrName1 -ItemName "Microsoft 365 E5 Assignment" `
     -FirstBreakGlassUPN  $BGA1 `
     -SecondBreakGlassUPN  $BGA2 `
-    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey 
+    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 "Check-ProcedureDocument 2"
 Check-ProcedureDocument -StorageAccountName $StorageAccountName -ContainerName $ContainerName `
     -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID `
@@ -77,7 +77,7 @@ Check-ProcedureDocument -StorageAccountName $StorageAccountName -ContainerName $
 Get-BreakGlassOwnerinformation  -token $GraphAccessToken -ControlName $CtrName1 -ItemName "Break Glass Account Owners Contact information" `
     -FirstBreakGlassUPNOwner $BGA1 `
     -SecondBreakGlassUPNOwner $BGA2 `
-    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey 
+    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 #endregion Guardrail module 1
 "Check-Policy"
 Check-Policy -Token    $GraphAccessToken   -AADPrivRolesPolicyName "ABCPrivateRole" -AzureMFAPolicyName "ABCPrivateRole" 
@@ -112,18 +112,18 @@ Get-VnetComplianceInformation -ControlName $CtrName9 -WorkSpaceID $WorkSpaceID -
 #Guradrail modul 10
 "Check-CBSSensors"
 Check-CBSSensors -SubscriptionName $CBSSubscriptionName  -TenantID $TenantID -ControlName $CtrName10 `
-                 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -LogType $LogType
+                 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -ReportTime $ReportTime -LogType $LogType
 #Guardrail Module 11
 "Check-LoggingAndMonitoring"
 Check-LoggingAndMonitoring -SecurityLAWResourceId $SecurityLAWResourceId `
 -HealthLAWResourceId $HealthLAWResourceId `
 -LogType $LogType `
--WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey `
+-WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey  `
 -ControlName $CtrName11 `
 -ReportTime $ReportTime 
 #Guardrail module 12 
 "Check-PrivateMarketPlaceCreation"
-Check-PrivateMarketPlaceCreation -ControlName $Ctrname12  -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -LogType $LogType
+Check-PrivateMarketPlaceCreation -ControlName $Ctrname12  -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -ReportTime $ReportTime -LogType $LogType
 #Confirm-CloudConsoleAccess -token $token.access_token -PolicyName 
 # SIG # Begin signature block
 # MIInvQYJKoZIhvcNAQcCoIInrjCCJ6oCAQExDzANBglghkgBZQMEAgEFADB5Bgor

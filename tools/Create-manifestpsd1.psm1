@@ -20,7 +20,7 @@ function Generate-Manifest {
     else {
         $PSM1Files = Get-ChildItem -Path $($DirectoryPath + "\*")-include *.psm1 -File -Recurse
     }
-
+    $overriteAll=$false
     Write-Output "Found $($PSM1Files.count)"
     $currentFolder=(pwd).Path
     foreach ($file in $PSM1Files) {
@@ -46,15 +46,21 @@ function Generate-Manifest {
         {
             $targetFileName="$($ModulesFolder)\$($file.BaseName).zip"
             "Creating $targetFileName file."
-            if (get-item $targetFileName)
+            if (get-item $targetFileName -ErrorAction SilentlyContinue -and !$overriteAll)
             {
-                Write-Output "File $targetFileName already exists. Overwrite?"
-                if ((Read-Host).ToUpper() -eq 'Y')
+                Write-Output "File $targetFileName already exists. Overwrite? (Y/N/A)"
+                $answer=(Read-Host).ToUpper()
+                if ($answer -eq 'Y')
                 {
                     Compress-Archive -Path ".\$($file.BaseName).*" -DestinationPath $targetFileName -Force
                 }
                 else {
-                    "Skipping..."
+                    if ($answer -eq 'A') {
+                        $overriteAll = $true
+                    }
+                    else {
+                        "Skipping..."
+                    }
                 }
             }
             else {
@@ -64,15 +70,21 @@ function Generate-Manifest {
         else {
             $targetFileName="$($ModulesFolder)/$($file.BaseName).zip"
             "Creating $targetFileName file."
-            if (get-item $targetFileName -ErrorAction SilentlyContinue)
+            if ((get-item $targetFileName -ErrorAction SilentlyContinue) -and !$overriteAll)
             {
-                Write-Output "File $targetFileName already exists. Overwrite?"
-                if ((Read-Host).ToUpper() -eq 'Y')
+                Write-Output "File $targetFileName already exists. Overwrite? (Y/N/A)"
+                $answer=(Read-Host).ToUpper()
+                if ($answer -eq 'Y')
                 {
-                    Compress-Archive -Path "./$($file.BaseName).*" -DestinationPath $targetFileName -Force
+                    Compress-Archive -Path ".\$($file.BaseName).*" -DestinationPath $targetFileName -Force
                 }
                 else {
-                    "Skipping..."
+                    if ($answer -eq 'A') {
+                        $overriteAll = $true
+                    }
+                    else {
+                        "Skipping..."
+                    }
                 }
             }
             else {
