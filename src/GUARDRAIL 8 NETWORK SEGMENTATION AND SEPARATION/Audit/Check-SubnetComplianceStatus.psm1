@@ -1,9 +1,6 @@
 
 function Get-SubnetComplianceInformation {
     param (
-        [Parameter(Mandatory=$false)]
-        [string]
-        $token,
         [Parameter(Mandatory=$true)]
         [string]
         $ControlName,
@@ -17,18 +14,21 @@ function Get-SubnetComplianceInformation {
         [string]
         $LogType="GuardrailsCompliance",
         [Parameter(Mandatory=$false)]
-        [string]
+        [array]
         $ExcludedSubnets,
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $CBSSubscriptionName
     )
     #module for Tags handling
     #import-module '..\..\GUARDRAIL COMMON\Get-Tags.psm1'
     [PSCustomObject] $SubnetList = New-Object System.Collections.ArrayList
-    $reservedSubnetNames=@("GatewaySubnet","AzureFirewallSubnet","AzureBastionSubnet")
+    $reservedSubnetNames=@("GatewaySubnet","AzureFirewallSubnet","AzureBastionSubnet","AzureFirewallManagementSubnet","RouteServerSubnet")
     $allexcluded=$ExcludedSubnets+$reservedSubnetNames
-    $subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled'}
+    $subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
     if ($ExcludedSubnets -ne $null)
     {
         $ExcludedSubnetsList=$ExcludedSubnets.Split(",")

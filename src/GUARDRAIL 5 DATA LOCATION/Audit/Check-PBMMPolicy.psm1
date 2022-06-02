@@ -22,13 +22,15 @@ function new-customObject {
         Comments = $Comments
         ItemName = $ItemName
         ControlName = $CtrlName
+        ReportTime = $ReportTime
     }
     return $tempObject
 }
 function update-object 
 {
     param (
-        [Object] $object, [string] $comments, [string] $ControlName, [string] $ItemName, [bool] $ComplianceStatus
+        [Object] $object, [string] $comments, [string] $ControlName, [string] $ItemName, [bool] $ComplianceStatus,
+        [string] $ReportTime
     )
 
     $object | Add-Member -MemberType NoteProperty -Name Comments -Value $comments
@@ -40,11 +42,16 @@ function update-object
 }
 function Test-ExemptionExists {
     param (
-        [object] $object, [string] $ControlName, [string] $ItemName, [string] $ScopeId, [array] $requiredPolicyExemptionIds
+        [object] $object,
+        [string] $ControlName,
+        [string] $ItemName,
+        [string] $ScopeId,
+        [array]  $requiredPolicyExemptionIds,
+        [string] $ReportTime
     )
     $newObject=new-customObject -Type $object.Type -Name $object.Name -DisplayName $object.DisplayName `
-    -Id $object.Id -ComplianceStatus $true -Comments "" -ItemName $ItemName `
-    -CtrlName $ControlName
+    -Id $object.Id -ComplianceStatus $true -Comments "" -ItemName $ItemName  `
+    -CtrlName $ControlName -ReportTime $ReportTime
     $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds
     if ($null -ne $exemptionsIds)
     {
@@ -65,9 +72,22 @@ function Test-ExemptionExists {
 
 function Verify-PBMMPolicy {
     param (
-            [string] $ControlName, [string] $CtrName6, [string] $CtrName7,
-            [string]$ItemName,[string]$ItemName6, [string]$ItemName7, [string] $PolicyID, `
-            [string] $WorkSpaceID, [string] $workspaceKey, [string] $LogType
+            [string] $ControlName,
+            [string] $CtrName6,
+            [string] $CtrName7,
+            [string]$ItemName,
+            [string]$ItemName6, 
+            [string]$ItemName7, 
+            [string] $PolicyID, `
+            [string] $WorkSpaceID,
+            [string] $workspaceKey,
+            [string] $LogType,
+            [Parameter(Mandatory=$true)]
+            [string]
+            $ReportTime,
+            [Parameter(Mandatory=$true)]
+            [string]
+            $CBSSubscriptionName
     )
     [System.Object] $RootMG = $null
     [string] $PolicyID = $policyID
@@ -76,7 +96,7 @@ function Verify-PBMMPolicy {
     [PSCustomObject] $SubscriptionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $CompliantList = New-Object System.Collections.ArrayList
     [PSCustomObject] $NonCompliantList = New-Object System.Collections.ArrayList
-    [string] $Comment1 = "The Policy or Initiative is not assigned on the "
+    [string] $Comment1 = "The Policy or Initiative is not assigned to the "
     [string] $Comment2 = " is excluded from the scope of the assignment"
     [string] $Comment3 = "Compliant"
     [string] $Comment4 = "The Policy or Initiative is not assigned on the Root Management Groups"
@@ -98,7 +118,7 @@ function Verify-PBMMPolicy {
         foreach ($Children in $items.Children ) {
             foreach ($c in $Children) {
                 Write-Output "Children: $($c.DisplayName)"
-                if ($c.Type -eq "/subscriptions" -and (-not $SubscriptionList.Contains($c))) {
+                if ($c.Type -eq "/subscriptions" -and (-not $SubscriptionList.Contains($c)) -and $c.DisplayName -ne $CBSSubscriptionName) {
                     [string]$type = "subscription"
                     $SubscriptionList.Add($c)
                     $AssignedPolicyList = Get-AzPolicyAssignment -scope $c.Id -PolicyDefinitionId $PolicyID
@@ -108,21 +128,21 @@ function Verify-PBMMPolicy {
                         -ComplianceStatus $false `
                         -Comments "$Comment1$type" `
                         -ItemName $ItemName `
-                        -CtrlName $ControlName
+                        -CtrlName $ControlName -ReportTime $ReportTime
                         $NonCompliantList.add($c)
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName -ComplianceStatus $false `
                             -Comments $Comment6 `
                             -ItemName $ItemName6 `
-                            -CtrlName $CtrName6
+                            -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName `
                             -ComplianceStatus $false `
                             -Comments $Comment6 `
                             -ItemName $ItemName7 `
-                            -CtrlName $CtrName7
+                            -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
@@ -131,21 +151,21 @@ function Verify-PBMMPolicy {
                         -ComplianceStatus $false `
                         -Comments "$Comment1$type" `
                         -ItemName $ItemName `
-                        -CtrlName $ControlName
+                        -CtrlName $ControlName -ReportTime $ReportTime
                         $NonCompliantList.add($c)  
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName -ComplianceStatus $false `
                             -Comments $Comment6 `
                             -ItemName $ItemName6 `
-                            -CtrlName $CtrName6
+                            -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName `
                             -ComplianceStatus $false `
                             -Comments $Comment6 `
                             -ItemName $ItemName7 `
-                            -CtrlName $CtrName7
+                            -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     else {
@@ -155,11 +175,12 @@ function Verify-PBMMPolicy {
                         -CtrlName $ControlName `
                         -Comments $Comment3 `
                         -ItemName $ItemName `
-                        -Test $ControlName
+                        -Test $ControlName -ReportTime $ReportTime
                         $CompliantList.add($c) # it has PBMM, fine, but has anything been exempted and is related to GR6 or GR7?
                         #At this point the PBMM Initiative has been found and is applied at that scope.
                         #The funcion tests and updates the object with the proper status and control name.
-                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies
+                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies -ReportTime $ReportTime
                         if ($c2.ComplianceStatus)
                         {
                             $CompliantList.add($c2)
@@ -167,7 +188,8 @@ function Verify-PBMMPolicy {
                         else {
                             $NonCompliantList.add($c2) 
                         }
-                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies
+                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies -ReportTime $ReportTime
                         if ($c3.ComplianceStatus)
                         {
                             $CompliantList.add($c3)
@@ -183,7 +205,11 @@ function Verify-PBMMPolicy {
                     $AssignedPolicyList = Get-AzPolicyAssignment -scope $C.Id -PolicyDefinitionId $PolicyID
                     If ($null -eq $AssignedPolicyList) {
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name -DisplayName $c.DisplayName `
-                        -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -Comments "$Comment1$type"
+                        -CtrlName $ControlName `
+                        -ComplianceStatus $false `
+                        -ItemName $ItemName `
+                        -Comments "$Comment1$type" `
+                        -ReportTime $ReportTime
                         $NonCompliantList.add($c)
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
@@ -191,19 +217,23 @@ function Verify-PBMMPolicy {
                         -ComplianceStatus $false `
                         -Comments $Comment6 `
                         -ItemName $ItemName6 `
-                        -CtrlName $CtrName6
+                        -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName `
                         -ComplianceStatus $false `
                         -Comments $Comment6 `
                         -ItemName $ItemName7 `
-                        -CtrlName $CtrName7
+                        -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name -DisplayName $c.DisplayName `
-                        -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -Comments "$type$Comment2"
+                        -CtrlName $ControlName `
+                        -ComplianceStatus $false `
+                        -ItemName $ItemName `
+                        -Comments "$type$Comment2" `
+                        -ReportTime $ReportTime
                         $NonCompliantList.add($c)
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
@@ -211,23 +241,28 @@ function Verify-PBMMPolicy {
                         -ComplianceStatus $false `
                         -Comments $Comment6 `
                         -ItemName $ItemName6 `
-                        -CtrlName $CtrName6
+                        -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName -ComplianceStatus $false `
                         -Comments $Comment6 `
                         -ItemName $ItemName7 `
-                        -CtrlName $CtrName7
+                        -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     else {       
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name -DisplayName $c.DisplayName `
-                        -CtrlName $ControlName -ComplianceStatus $true -ItemName $ItemName -Comments $Comment3
+                        -CtrlName $ControlName `
+                        -ComplianceStatus $true `
+                        -ItemName $ItemName `
+                        -Comments $Comment3 `
+                        -ReportTime $ReportTime
                         $CompliantList.add($c)
                         # it has PBMM, fine, but has anything been exempted and is related to GR6 or GR7?
                         #At this point the PBMM Initiative has been found and is applied at that scope.
                         #The funcion tests and updates the object with the proper status and control name.
-                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies
+                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies -ReportTime $ReportTime
                         if ($c2.ComplianceStatus)
                         {
                             $CompliantList.add($c2)
@@ -235,7 +270,8 @@ function Verify-PBMMPolicy {
                         else {
                             $NonCompliantList.add($c2) 
                         }
-                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies
+                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies -ReportTime $ReportTime
                         if ($c3.ComplianceStatus)
                         {
                             $CompliantList.add($c3)
@@ -252,38 +288,39 @@ function Verify-PBMMPolicy {
     If ($null -eq $AssignedPolicyList) {
         Write-Output "RootMG: $($RootMG.DisplayName)"
         $RootMG2=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -comments $Comment4 -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName
+        -comments $Comment4 -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -ReportTime $ReportTime
         $NonCompliantList.add($RootMG2)
         # the lines below create an entry for modules 6 and 7
         $GR6Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
         -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName6 `
-        -CtrlName $CtrName6
+        -CtrlName $CtrName6 -ReportTime $ReportTime
         $NonCompliantList.add($GR6Object)
         $GR7Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
         -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName7 `
-        -CtrlName $CtrName7
+        -CtrlName $CtrName7 -ReportTime $ReportTime
         $NonCompliantList.add($GR7Object)
     }
     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
         $RootMG2=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -comments $Comment5 -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName
+        -comments $Comment5 -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -ReportTime $ReportTime
         $NonCompliantList.add($RootMG2)
         # the lines below create an entry for modules 6 and 7
         $GR6Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
         -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName6 `
-        -CtrlName $CtrName6
+        -CtrlName $CtrName6 -ReportTime $ReportTime
         $NonCompliantList.add($GR6Object)
         $GR7Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
         -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName7 `
-        -CtrlName $CtrName7
+        -CtrlName $CtrName7 -ReportTime $ReportTime
         $NonCompliantList.add($GR7Object)
     }
     else {       
         $RootMG1=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -comments $Comment3 -CtrlName $ControlName -ComplianceStatus $true -ItemName $ItemName
+        -comments $Comment3 -CtrlName $ControlName -ComplianceStatus $true -ItemName $ItemName -ReportTime $ReportTime
         $CompliantList.add($RootMG1) 
         # add detection of exemptions
-        $RootMG2=Test-ExemptionExists -object $RootMG -ControlName $CtrName6 -ItemName $ItemName6 -ScopeId $RootMG -requiredPolicyExemptionIds $gr6RequiredPolicies
+        $RootMG2=Test-ExemptionExists -object $RootMG -ControlName $CtrName6 -ItemName $ItemName6 `
+        -ScopeId $RootMG -requiredPolicyExemptionIds $gr6RequiredPolicies -ReportTime $ReportTime
         if ($RootMG2.ComplianceStatus)
         {
             $CompliantList.add($RootMG2)
@@ -291,7 +328,8 @@ function Verify-PBMMPolicy {
         else {
             $NonCompliantList.add($RootMG2) 
         }
-        $RootMG3=Test-ExemptionExists -object $RootMG -ControlName $CtrName7 -ItemName $ItemName6 -ScopeId $RootMG.Id -requiredPolicyExemptionIds $gr7RequiredPolicies
+        $RootMG3=Test-ExemptionExists -object $RootMG -ControlName $CtrName7 -ItemName $ItemName6 `
+        -ScopeId $RootMG.Id -requiredPolicyExemptionIds $gr7RequiredPolicies -ReportTime $ReportTime
         if ($RootMG3.ComplianceStatus)
         {
             $CompliantList.add($RootMG3)

@@ -1,10 +1,18 @@
 function Verify-AllowedLocationPolicy {
     param (
-        [string] $ControlName, [string]$ItemName, [string] $PolicyID, `
-            [string] $WorkSpaceID, [string] $workspaceKey, [string] $LogType, [switch] $Debug,
-            [Parameter(Mandatory=$true)]
-            [string]
-            $ReportTime
+        [string] $ControlName,
+        [string]$ItemName,
+        [string] $PolicyID, 
+        [string] $WorkSpaceID,
+        [string] $workspaceKey,
+        [string] $LogType,
+        [switch] $Debug,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $CBSSubscriptionName
     )
 
     #$PolicyID = "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c"
@@ -34,7 +42,7 @@ function Verify-AllowedLocationPolicy {
     foreach ($items in $MGItems) {
         foreach ($Children in $items.Children ) {
             foreach ($c in $Children) {
-                if ($c.Type -eq "/subscriptions" -and (-not $SubscriptionList.Contains($c))) {
+                if ($c.Type -eq "/subscriptions" -and (-not $SubscriptionList.Contains($c) -and $c.DisplayName -ne $CBSSubscriptionName)) {
                     [string]$type = "subscription"
                     $SubscriptionList.Add($c)
                     $AssignedPolicyList = Get-AzPolicyAssignment -scope $c.Id -PolicyDefinitionId $PolicyID
