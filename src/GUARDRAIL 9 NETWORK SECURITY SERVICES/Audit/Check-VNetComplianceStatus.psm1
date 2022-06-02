@@ -20,11 +20,14 @@ function Get-VNetComplianceInformation {
         $ExcludedVNets,
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $CBSSubscriptionName
     )
 [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
 
-$subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled'}
+$subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName} 
 
 if ($ExcludedVNets -ne $null)
 {

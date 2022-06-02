@@ -658,7 +658,7 @@ resource module14 'modules' ={
     properties: {
       contentLink: {
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.2.7.2.nupkg'
-        version: '0.3.0'
+        version: '2.7.2'
       }
     }
   }

@@ -48,7 +48,10 @@ function Check-LoggingAndMonitoring {
         $LogType="GuardrailsCompliance",
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $CBSSubscriptionName
     )
     $ItemName1="SecurityMonitoring"
     $ItemName2="HealthMonitoring"
@@ -245,7 +248,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
     $IsCompliant=$true
     $MitigationCommands=""
     $Comments=""
-    $sublist=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled'}
+    $sublist=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName} 
     # This will look for specific Defender for Cloud, on a per subscription basis.
     foreach ($sub in $sublist)
     {
