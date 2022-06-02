@@ -72,7 +72,7 @@ Get-BreakGlassAccountLicense -token $GraphAccessToken -ControlName $CtrName1 -It
 Check-ProcedureDocument -StorageAccountName $StorageAccountName -ContainerName $ContainerName `
     -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID `
     -DocumentName "ConfirmBreakGlassAccountResponsibleIsNotTechnical.txt" -ControlName $CtrName1 -ItemName "Responsibility of break glass accounts must be with someone not-technical, director level or above" `
-    -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey
+    -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey  -ReportTime $ReportTime 
 "Get-BreakGlassOwnerinformation"
 Get-BreakGlassOwnerinformation  -token $GraphAccessToken -ControlName $CtrName1 -ItemName "Break Glass Account Owners Contact information" `
     -FirstBreakGlassUPNOwner $BGA1 `
@@ -81,13 +81,13 @@ Get-BreakGlassOwnerinformation  -token $GraphAccessToken -ControlName $CtrName1 
 #endregion Guardrail module 1
 "Check-ADDeletedUsers"
 Check-ADDeletedUsers -Token $GraphAccessToken -ControlName $CtrName2 -ItemName "Remove deprecated accounts" `
-    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 "Check-ExternalUsers"    
 Check-ExternalUsers -Token $GraphAccessToken -ControlName $CtrName2 -ItemName "Remove External accounts" `
-    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 "Check-MonitorAccountCreation"
 Check-MonitorAccountCreation -Token $GraphAccessToken -DepartmentNumner $DepartmentNumber -ControlName $CtrName4 -ItemName "Monitor Account Creation" `
-    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+    -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime 
 "Verify-PBMMPolicy"
 #Verify-PBMMPolicy -ControlName $CtrName5  -ItemName "PBMMPolicy Compliance" -PolicyID $PBMMPolicyID -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $workspaceKey$CtrName6 = "GUARDRAIL 6: PROTECTION OF DATA-AT-REST"
 $ItemName6="PROTECTION OF DATA-AT-REST"

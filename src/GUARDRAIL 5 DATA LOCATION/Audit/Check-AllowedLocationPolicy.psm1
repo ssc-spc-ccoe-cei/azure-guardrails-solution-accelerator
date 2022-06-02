@@ -1,7 +1,7 @@
 function Verify-AllowedLocationPolicy {
     param (
         [string] $ControlName,
-        [string]$ItemName,
+        [string] $ItemName,
         [string] $PolicyID, 
         [string] $WorkSpaceID,
         [string] $workspaceKey,
