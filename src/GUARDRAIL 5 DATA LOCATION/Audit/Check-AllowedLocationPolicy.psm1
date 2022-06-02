@@ -1,12 +1,12 @@
 function Verify-AllowedLocationPolicy {
     param (
+        [switch] $DebugData,
         [string] $ControlName,
         [string] $ItemName,
         [string] $PolicyID, 
         [string] $WorkSpaceID,
         [string] $workspaceKey,
         [string] $LogType,
-        [switch] $Debug,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
@@ -149,7 +149,7 @@ function Verify-AllowedLocationPolicy {
     }
     if ($CompliantList.Count -gt 0) {
         $JsonObject = $CompliantList | convertTo-Json
-        if ($Debug) {
+        if ($DebugData) {
             "Sending Compliant data."
             "Id: $WorkSpaceID"
             "Key: $workspaceKey"
@@ -163,7 +163,7 @@ function Verify-AllowedLocationPolicy {
     }
     if ($NonCompliantList.Count -gt 0) {
         $JsonObject = $NonCompliantList | convertTo-Json  
-        if ($Debug) {
+        if ($DebugData) {
             "Sending Non-Compliant data."
             "Id: $WorkSpaceID"
             "Key: $workspaceKey"
