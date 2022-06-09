@@ -542,15 +542,6 @@ resource module5 'modules' ={
       }
     }
   }
-resource module6 'modules' ={
-    name: 'Check-GuardRailsConditionalAccessPolicie'
-    properties: {
-      contentLink: {
-        uri: '${CustomModulesBaseURL}/Check-GuardRailsConditionalAccessPolicie.zip'
-        version: '1.0.0'
-      }
-    }
-  }
 resource module7 'modules' ={
     name: 'Check-MonitorAccount'
     properties: {

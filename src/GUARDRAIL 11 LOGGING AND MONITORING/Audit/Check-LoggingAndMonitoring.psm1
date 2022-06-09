@@ -57,6 +57,8 @@ function Check-LoggingAndMonitoring {
     $ItemName2="HealthMonitoring"
     $ItemName3="DefenderMonitoring"
     #Code
+
+    #Add test for proper right format of the LAW parameters
     $Subscription=$SecurityLAWResourceId.Split("/")[2]
     $LAWRG=$SecurityLAWResourceId.Split("/")[4]
     $LAWName=$SecurityLAWResourceId.Split("/")[8]

@@ -2,7 +2,9 @@
 
 ## Configuration
 
-Navigate to Cloud Shell (from the Azure Portal) and authenticate as a user that has Azure and Azure AD Permissions (To assign permissions to the Automation Account Managed Identity)
+Navigate to Cloud Shell (from the Azure Portal) and authenticate as a user that has Azure and Azure AD Permissions (To assign permissions to the Automation Account Managed Identity).
+
+Please make sure to select **PowerShell** as shell type.
 
 <p align="center">
 <img src="./media/AzurePortalCloudShell.png" />
@@ -31,9 +33,9 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.|
 |AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default|
 |DepartmentNumber||
-|CBSSubscriptionName|Subscription Id containing the CBS solution|
-|SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security|
-|HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health|
+|CBSSubscriptionName|Subscription Id containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**|
+|SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)|
+|HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)|
 
 Save the file and exit VSCode.
 
@@ -58,8 +60,9 @@ If the deployment is being done using the Azure Cloud Shell, the currentuserUPN 
 In a B2B scenario, please use the full user name, typically something like `user_inviteddomain#EXT@invitingDomain.com`
 
 The solution will deploy new resources.
+Run
 ```
-Run `.\setup.ps1 -configFilePath .\config-sample.json -userId <currentuserUPN>`
+`.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN>`
 ```
 Alternatively, these parameters can be used to leverage existing KeyVault and Log Analytics resources:
 
