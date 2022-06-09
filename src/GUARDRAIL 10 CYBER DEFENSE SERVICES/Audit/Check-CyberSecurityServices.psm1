@@ -59,6 +59,7 @@ function Check-CBSSensors {
         $MitigationCommands = "N/A."
     }
     $object | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime
+    
     $object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands
     $JsonObject = convertTo-Json -inputObject $Object     
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `

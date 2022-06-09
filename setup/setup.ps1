@@ -51,6 +51,11 @@ $bga2=$config.SecondBreakGlassAccountUPN #Break glass account 2
 $PBMMPolicyID=$config.PBMMPolicyID
 $AllowedLocationPolicyId=$config.AllowedLocationPolicyId
 $DepartmentNumber=$config.DepartmentNumber
+if ($config.SecurityLAWResourceId.split("/").Count -ne 9 -or $config.HealthLAWResourceId.Split("/").Count -ne 9)
+{
+    Write-Output "Error in SecurityLAWResourceId or HealthLAWResourceId ID. Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
+    Break
+}
 
 #Other Variables
 $mainRunbookName="main"
