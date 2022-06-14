@@ -1,5 +1,11 @@
 # Guardrails - Setup
 
+## Requirements
+
+- Azure Subscription
+- Global admin permissions
+- Configure user (the one used to setup ) to have "Access Management for Azure Resource" permissions. (https://docs.microsoft.com/en-us/azure/role-based-access-control/elevate-access-global-admin). The permission can be removed after the setup.
+
 ## Configuration
 
 Navigate to Cloud Shell (from the Azure Portal) and authenticate as a user that has Azure and Azure AD Permissions (To assign permissions to the Automation Account Managed Identity).
