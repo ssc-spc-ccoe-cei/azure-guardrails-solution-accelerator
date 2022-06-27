@@ -79,3 +79,14 @@ These variables can be used in the module calls without the needs of creating cu
 - $ResourceGroupName : name of the resource group for guardrails.
 - $StorageAccountName : Name of the Storage Account.
 - $ReportTime: the unified report time for all modules in each execution.
+
+
+## Testing
+
+From your fork (which will be public due to visibility inheritance) you can clone to the Cloud Shell storage normally. After that, you may edit the guardrails.bicep file and adjust the **CustomModulesBaseURL** parameter and point to the base URL of you repo. Make sure to test downloading a module to confirm the raw URL. Alternatively, add an entry to the parameters_template.json file, as per below:
+
+`"CustomModulesBaseURL": {
+      "value": "<your github base url"
+    }`
+
+
