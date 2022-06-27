@@ -6,7 +6,7 @@
 - Global admin permissions
 - Configure user (the one used to setup ) to have "Access Management for Azure Resource" permissions. (https://docs.microsoft.com/en-us/azure/role-based-access-control/elevate-access-global-admin). The permission can be removed after the setup.
 
-## Configuration
+## Downloading
 
 Navigate to Cloud Shell (from the Azure Portal) and authenticate as a user that has Azure and Azure AD Permissions (To assign permissions to the Automation Account Managed Identity).
 
@@ -16,14 +16,37 @@ Please make sure to select **PowerShell** as shell type.
 <img src="./media/AzurePortalCloudShell.png" />
 </p>
 
+### Use Released Code (Recommended)
+
+- Navigate to the repository main page and look for the Releases. Select the desired release and download the appropriate asset:
+For example:
+
+`wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/v1.0.1.zip`
+
+Then unzip the files and change directories (Example. Folder names will vary depending the release):
+
+`Expand-Archive ./v1.0.1.zip`
+
+`cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/`
+
+### Use current repo code
+
+You may use the current repo code. Be aware that the code in the repo may be in the process of being updated. Some modules may not be signed. If there is a requirement for fully signed and release code, use the previous option.
+
 ```
 git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git`
 
 cd to `.\Guardrailssolutionaccelerator`
 ```
 
+## Configuration
 
-Edit config.json with `code .\config.json' and adjust parameters as required.
+Edit config.json with:
+
+`code .\config.json'` 
+
+Adjust parameters as required.
+
 All named resources will have the first 6 characters of the tenant Id appended to their names.
 
 |Parameter|Description|
@@ -59,20 +82,40 @@ Get-AzPolicySetDefinition | Select-Object Name -ExpandProperty Properties | sele
 
 Get-AzPolicyDefinition | Select-Object Name -ExpandProperty Properties | select Name,DisplayName | Out-GridView`
 ```
+
+## Adding Tags to the Resource Group
+
+In many organizations, Tags may be required in order for Resource Groups to be created. The Guardrails setup uses a file called `tags.json` to create tags for the Resource Group (only).
+
+The only default tag is:
+    
+    {
+
+        "Name":"Solution",
+
+        "Value": "Guardrails Accelerator"
+
+    }
+
+Add tags as required per your policies in a json array format.
+
 ## Deployment
 
 If the deployment is being done using the Azure Cloud Shell, the currentuserUPN parameter below refers to the user logged in. This is required when using the cloud shell.
 
-In a B2B scenario, please use the full user name, typically something like `user_inviteddomain#EXT@invitingDomain.com`
+In a B2B scenario, please use the full user name, typically something as below:
+
+`user_inviteddomain#EXT@invitingDomain.com`
 
 The solution will deploy new resources.
-Run
+
+Run:
 ```
 `.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN>`
 ```
 Alternatively, these parameters can be used to leverage existing KeyVault and Log Analytics resources:
 
-`$existingKeyVaultName` : the name of an existing Keyvault. If provided, the RG below must be specified and the content of config.json will be ignored.
+`$existingKeyVaultName` : the name of an existing Keyvault. If provided, **the RG below must be specified and the content of config.json will be ignored.**
 
 `$existingKeyVaultRG` : the resource group containing the Keyvault above.
 
@@ -80,4 +123,4 @@ Alternatively, these parameters can be used to leverage existing KeyVault and Lo
 
 `$existingWorkSpaceRG`: the resource group containing the Log Analytics Workspace above.
 
-`$skipDeployment`: the setup script will run everything but the Azure Resources deployment (for debug/testing only)
+`$skipDeployment`: the setup script will run everything but the Azure Resources deployment (for debug/testing only).

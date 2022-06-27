@@ -172,9 +172,13 @@ $parameterTemplate | out-file .\parameters.json -Force
 #endregion
 
 #region bicep deployment
+
 Write-Verbose "Creating $resourceGroup in $region location."
+$tags=get-content ./tags.json | convertfrom-json
+$tagstable=@{}
+$tags.psobject.properties | Foreach { $tagstable[$_.Name] = $_.Value }
 try {
-    New-AzResourceGroup -Name $resourceGroup -Location $region
+    New-AzResourceGroup -Name $resourceGroup -Location $region -Tags $tags
 }
 catch { Write-error "Error creating resource group. "}
 Write-Output "Deploying solution through bicep."

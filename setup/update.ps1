@@ -9,7 +9,7 @@ param (
 $newversion='1.2'
 $newWorkbookVersion='1.2'
 $newReleaseDate='2022-05-06'
-$baseContentUri='https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/Final/psmodules'
+$baseContentUri='https://github.com/Azure/GuardrailsSolutionAccelerator/raw/main/psmodules'
 $tempFolder='/tmp/modules'
 if (!(get-childitem $tempFolder)) {
     mkdir $tempFolder
