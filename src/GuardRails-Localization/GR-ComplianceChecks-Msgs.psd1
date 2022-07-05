@@ -60,6 +60,7 @@ checkUserExists = Please Check if the user exists.
 pbmmCompliance = PBMMPolicy Compliance
 policyNotAssigned = The Policy or Initiative is not assigned to the {0}
 excludedFromScope = {0} is excluded from the scope of the assignment
+grexemptionFound = Exemption for {0} {1} found.
 isCompliant = Compliant
 policyNotAssignedRootMG = The Policy or Initiative is not assigned on the Root Management Groups
 rootMGExcluded =This Root Management Groups is excluded from the scope of the assignment

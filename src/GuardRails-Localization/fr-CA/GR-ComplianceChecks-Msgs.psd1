@@ -64,6 +64,7 @@ isCompliant = Conforme
 policyNotAssignedRootMG = La politique ou l'initiative n'est pas affectée aux groupes de gestion racine
 rootMGExcluded = Ce groupe de gestion racine est exclu de la portée de l'affectation
 pbmmNotApplied = L'initiative PBMM n'est pas appliquée.
+grexemptionFound = excemption pour {0} {1} trouvée
 subscription  = abonnement
 managementGroup = Groupes de gestion
 notAllowedLocation =  L'emplacement est en dehors des emplacements autorisés. 
