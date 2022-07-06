@@ -165,7 +165,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 1",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -185,7 +185,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 2",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -205,7 +205,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 3",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -225,7 +225,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 4",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -245,7 +245,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 5",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -273,7 +273,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 6",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "exportToExcelOptions": "all",
         "queryType": 0,
@@ -302,7 +302,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 7",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -330,7 +330,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 8",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -358,7 +358,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 9",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -378,7 +378,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 10",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -398,7 +398,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 11",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -418,7 +418,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR12",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -484,7 +484,7 @@ var wbConfig1 ='''
               "query": "GuardrailsCompliance_CL\n| summarize by ControlName_s\n| count \n| extend Title=\"Total of Controls\"",
               "size": 4,
               "timeContext": {
-                "durationMs": 3600000
+                "durationMs": 86400000
               },
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
