@@ -48,7 +48,7 @@ function Check-CBSSensors {
     else {
         $IsCompliant = $false
         $Object | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.cbsSubDoesntExist
-        $MitigationCommands = "$($msgTable.cbssMitigation) $($SubscriptionName)"
+        $MitigationCommands = "$($msgTable.cbssMitigation)" -f $SubscriptionName
     }
     $object | Add-Member -MemberType NoteProperty -TypeName DateTime -Name ReportTime -Value $ReportTime
     $object | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $IsCompliant

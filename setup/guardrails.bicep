@@ -48,7 +48,7 @@ var wbConfig1 ='''
             "type": 2,
             "isRequired": true,
             "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s",
-            "value": "05-07-2022 04:27:10",
+            "value": "05-07-2022 07:25:21",
             "typeSettings": {
               "additionalResourceOptions": []
             },
@@ -179,7 +179,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 1",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -199,7 +199,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 2",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -219,7 +219,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 3",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -239,7 +239,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 4",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -259,7 +259,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 5",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -287,7 +287,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 6",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "exportToExcelOptions": "all",
         "queryType": 0,
@@ -316,7 +316,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 7",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -344,7 +344,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 8",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -372,7 +372,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 9",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -392,7 +392,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 10",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -412,7 +412,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR 11",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -432,7 +432,7 @@ var wbConfig1 ='''
         "size": 0,
         "title": "GR12",
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -498,7 +498,7 @@ var wbConfig1 ='''
               "query": "GuardrailsCompliance_CL\n| summarize by ControlName_s\n| count \n| extend Title=\"Total of Controls\"",
               "size": 4,
               "timeContext": {
-                "durationMs": 3600000
+                "durationMs": 86400000
               },
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -731,18 +731,6 @@ resource module14 'modules' ={
       contentLink: {
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.marketplace.0.3.0.nupkg'
         version: '0.3.0'
-      }
-    }
-    dependsOn: [
-      module18
-    ]
-  }
-  resource module18 'modules' ={
-    name: 'Az.Accounts'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.2.7.2.nupkg'
-        version: '2.7.2'
       }
     }
   }
