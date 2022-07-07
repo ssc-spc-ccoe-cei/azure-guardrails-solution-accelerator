@@ -29,6 +29,7 @@ function new-customObject {
 function Check-StatusPBMM {
     param (
         [System.Object] $objList,
+        [Parameter(Mandatory=$true)]
         [string] $objType, #subscription or management Group
         [string] $PolicyID,
         [string] $ControlName,
