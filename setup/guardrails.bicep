@@ -480,7 +480,7 @@ var wbConfig1 ='''
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "GuardrailsCompliance_CL \n| extend Status=iif(tostring(ComplianceStatus_b)==\"True\", 'Compliant ', 'Not Compliant'), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+              "query": "GuardrailsCompliance_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend Status=iif(tostring(ComplianceStatus_b)==\"True\", 'Compliant ', 'Not Compliant'), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
               "size": 4,
               "timeContext": {
                 "durationMs": 86400000

@@ -1,4 +1,3 @@
-
 function new-customObject {
     param (
         [string] $Type,
