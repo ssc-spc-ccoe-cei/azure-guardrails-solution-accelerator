@@ -594,10 +594,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = {
     }
   }
   resource module1 'modules' ={
-    name: 'Check-BreackGlassAccountOwnersInformation'
+    name: 'Check-BreakGlassAccountOwnersInformation'
     properties: {
       contentLink: {
-        uri: '${CustomModulesBaseURL}/Check-BreackGlassAccountOwnersInformation.zip'
+        uri: '${CustomModulesBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
         version: '1.0.0'
       }
     }
@@ -711,10 +711,10 @@ resource module12 'modules' ={
     }
   }
 resource module13 'modules' ={
-    name: 'Get-Tags'
+    name: 'GR-Utilities'
     properties: {
       contentLink: {
-        uri: '${CustomModulesBaseURL}/Get-Tags.zip'
+        uri: '${CustomModulesBaseURL}/GR-Utilities.zip'
         version: '1.1.2'
       }
     }
