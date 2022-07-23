@@ -41,7 +41,8 @@ catch {
     throw "Failed to retrieve workspace key with secret name '$GuardrailWorkspaceIDKeyName' from KeyVault '$KeyVaultName'. Error message: $_"
 }
 
-Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
+    -additionalValues @{reportTime=$ReportTime; locale=$locale}
 
 # Gets a token for the current sessions (Automation account's MI that can be used by the modules.)
 [String] $GraphAccessToken = (Get-AzAccessToken -ResourceTypeName MSGraph).Token
@@ -89,7 +90,13 @@ foreach ($module in $modules)
         $NewScriptBlock.Invoke()
     }
     catch {
-        Add-LogEntry 'Error' "Failed invoke the module execution script for module '$($module.moduleName)' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-        Write-Error "Failed invoke the module execution script for module '$($module.moduleName)' with error: $_"
+        $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '$workspaceKey','***')))
+        
+        Add-LogEntry 'Error' "Failed invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
+            with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+        Write-Error "Failed invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
     }
 }
+
+Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
+    -additionalValues @{reportTime=$ReportTime; locale=$locale}
