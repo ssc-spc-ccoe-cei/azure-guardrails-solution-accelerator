@@ -21,7 +21,9 @@ function Generate-Manifest {
         $PSM1Files = Get-ChildItem -Path $($DirectoryPath + "\")-include *.psm1 -File -Recurse
     }
     $overriteAll=$false
-    Write-Output "Found $($PSM1Files.count)"
+
+    Write-Output "Found '$($PSM1Files.count)' PSm1 Files"
+
     $currentFolder=(pwd).Path
     foreach ($file in $PSM1Files) {
         #change to folder containing the file
