@@ -8,7 +8,6 @@ function Check-CBSSensors {
     )
 
     $IsCompliant = $true 
-    $SubsFound=""
     $Object = New-Object PSObject
 
     $Object | Add-Member -MemberType NoteProperty -Name ControlName  -Value $ControlName
@@ -19,10 +18,10 @@ function Check-CBSSensors {
     $CBSResourceNames+="cbs-" + $FirstTokenInTenantID + "-CanadaCentral"
     $CBSResourceNames+="cbs-" + $FirstTokenInTenantID + "-CanadaEast"
     $CBSResourceNames+="cbs-vault-" + $FirstTokenInTenantID
-    $CBSResourceNames+=$FirstTokenInTenantID
+    $CBSResourceNames+="cbs"+$FirstTokenInTenantID
     Write-Output $CBSResourceNames
     $sub=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -eq $SubscriptionName}
-    if ($null -ne $subs)
+    if ($null -ne $sub)
     {
         Set-AzContext -Subscription $sub
 
