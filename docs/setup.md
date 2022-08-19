@@ -25,7 +25,7 @@ wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/v1
 ```
 Then unzip the files and change directories (Example. Folder names will vary depending the release):
 ```
-Expand-Archive ./v1.0.1.zip`
+Expand-Archive ./v1.0.1.zip
 ```
 ```
 cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/setup/
