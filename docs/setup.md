@@ -20,31 +20,33 @@ Please make sure to select **PowerShell** as shell type.
 
 - Navigate to the repository main page and look for the Releases. Select the desired release and download the appropriate asset:
 For example:
-
-`wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/v1.0.1.zip`
-
+```
+wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/v1.0.1.zip
+```
 Then unzip the files and change directories (Example. Folder names will vary depending the release):
-
-`Expand-Archive ./v1.0.1.zip`
-
-`cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/`
-
+```
+Expand-Archive ./v1.0.1.zip`
+```
+```
+cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/setup/
+```
 ### Use current repo code
 
 You may use the current repo code. Be aware that the code in the repo may be in the process of being updated. Some modules may not be signed. If there is a requirement for fully signed and release code, use the previous option.
 
 ```
-git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git`
-
-cd to `.\Guardrailssolutionaccelerator`
+git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git
+```
+```
+cd ./GuardrailsSolutionAccelerator/setup/
 ```
 
 ## Configuration
 
 Edit config.json with:
-
-`code .\config.json'` 
-
+```
+code .\config.json
+```
 Adjust parameters as required.
 
 All named resources will have the first 6 characters of the tenant Id appended to their names.
@@ -106,13 +108,13 @@ If the deployment is being done using the Azure Cloud Shell, the currentuserUPN 
 
 In a B2B scenario, please use the full user name, typically something as below:
 
-`user_inviteddomain#EXT@invitingDomain.com`
+user_inviteddomain#EXT@invitingDomain.com
 
 The solution will deploy new resources.
 
 Run:
 ```
-`.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN>`
+.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN>
 ```
 Alternatively, these parameters can be used to leverage existing KeyVault and Log Analytics resources:
 
