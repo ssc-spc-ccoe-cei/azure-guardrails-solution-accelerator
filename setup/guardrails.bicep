@@ -12,14 +12,15 @@ param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
 param DepartmentNumber string
 param deployKV bool = true
 param deployLAW bool = true
-param CBSSubscriptionName string 
+param CBSSubscriptionId string 
 param SecurityLAWResourceId string
 param HealthLAWResourceId string
 param CustomModulesBaseURL string = 'https://github.com/Azure/GuardrailsSolutionAccelerator/raw/main/psmodules'
 param DeployTelemetry bool = true
 param Locale string = 'EN'
-param version string
+param releaseVersion string
 param releaseDate string 
+param TenantDomainUPN string
 var containername = 'guardrailsstorage'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name
@@ -44,11 +45,11 @@ var wbConfig1 ='''
             "id": "618c9321-a3de-4287-b4cf-860a4adf42d4",
             "version": "KqlParameterItem/1.0",
             "name": "RunTime",
-            "label": "Report Time (UTC)",
+            "label": "Report Time",
             "type": 2,
             "isRequired": true,
-            "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s\n| order by todatetime(ReportTime_s) desc",
-            "value": "2022-07-06 06:33:16",
+            "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
+            "value": "2022-08-22 22:52:22",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -167,6 +168,14 @@ var wbConfig1 ='''
             "linkLabel": "GUARDRAIL 12",
             "subTarget": "gr12",
             "style": "link"
+          },
+          {
+            "id": "8c5914bd-a497-473f-b767-f646b642fe5e",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Information",
+            "subTarget": "information",
+            "style": "link"
           }
         ]
       },
@@ -211,26 +220,6 @@ var wbConfig1 ='''
         "value": "gr2"
       },
       "name": "Gr1 - Copy"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "GR2ExternalUsers_CL\r\n| where ReportTime_s == \"{RunTime}\"\r\n| project UserName=DisplayName_s, Email=Mail_s, Roles=RoleDefinitionName_s, Subscription=Subscription_s, Comment=Comments_s",
-        "size": 0,
-        "title": "Guest Accounts",
-        "timeContext": {
-          "durationMs": 86400000
-        },
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
-      },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr2"
-      },
-      "name": "query - 16"
     },
     {
       "type": 3,
@@ -449,26 +438,21 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\n| where ControlName_s has \"GUARDRAIL 12:\"  and ReportTime_s == \"{RunTime}\"\n| project SubnetName=SubnetName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\n| sort by Status asc",
-        "size": 0,
-        "title": "GR12",
+        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 12:\" and ReportTime_s == '{RunTime}'\r\n| project Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
+        "size": 4,
+        "title": "GR 12",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "gridSettings": {
-          "hierarchySettings": {
-            "treeType": 1
-          }
-        }
+        "resourceType": "microsoft.operationalinsights/workspaces"
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
         "comparison": "isEqualTo",
         "value": "gr12"
       },
-      "name": "query - 2 - Copy"
+      "name": "GR11"
     },
     {
       "type": 12,
@@ -480,7 +464,7 @@ var wbConfig1 ='''
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "GuardrailsCompliance_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend Status=iif(tostring(ComplianceStatus_b)==\"True\", 'Compliant ', 'Not Compliant'), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+              "query": "GuardrailsCompliance_CL \n| extend Status=iif(tostring(ComplianceStatus_b)==\"True\", 'Compliant ', 'Not Compliant'), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
               "size": 4,
               "timeContext": {
                 "durationMs": 86400000
@@ -546,7 +530,31 @@ var wbConfig1 ='''
           }
         ]
       },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
       "name": "group - 17"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR_VersionInfo_CL\n| where ReportTime_s == \"{RunTime}\"\n|project [\"Current Version\"]= CurrentVersion_s, [\"Version Available\"]=AvailableVersion_s, [\"Update Required\"]=iff(UpdateNeeded_b==true,\"Yes\",\"No\")",
+        "size": 4,
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "information"
     }
   ],
   "fallbackResourceIds": [
@@ -567,7 +575,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = {
   name: automationAccountName
   location: location
   tags: {
-    version: version
+    releaseVersion:releaseVersion
     releasedate: releaseDate
   }
   identity: {
@@ -854,11 +862,11 @@ resource variable1 'variables' = {
   }
   }
   resource variable11 'variables' = {
-    name: 'CBSSubscriptionName'
+    name: 'CBSSubscriptionId'
     'properties': {
       'isEncrypted': true
-      'value': '"${CBSSubscriptionName}"'
-  }
+      'value': '"${CBSSubscriptionId}"'
+    }
   }
   resource variable12 'variables' = {
     name: 'SecurityLAWResourceId'
@@ -874,6 +882,13 @@ resource variable1 'variables' = {
       'value': '"${HealthLAWResourceId}"'
     }
   }
+  resource variable14 'variables' = {
+    name: 'TenantDomainUPN'
+    'properties': {
+      'isEncrypted': true
+      'value': '"${TenantDomainUPN}"'
+    }
+  }
   resource variable15 'variables' = {
     name: 'GuardRailsLocale'
     'properties': {
@@ -887,7 +902,7 @@ resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = if (deplo
   name: kvName
   location: location
   tags: {
-    version: version
+    releaseVersion:releaseVersion
     releasedate: releaseDate
   }
   properties: {
@@ -912,7 +927,7 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
   name: logAnalyticsWorkspaceName
   location: location
   tags: {
-    version: version
+    releaseVersion:releaseVersion
     releasedate: releaseDate
   }
   properties: {
@@ -929,7 +944,7 @@ name: guid('guardrails')
 properties:{
   displayName: 'Guardrails'
   serializedData: wbConfig
-  version: '1.0'
+  version: releaseVersion
   category: 'workbook'
   sourceId: guardrailsLogAnalytics.id
 }

@@ -1,6 +1,19 @@
 [                                                  
+  {
+    "ModuleName": "Check-UpdateAvailable",
+    "Control":"Guardrails",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Script": "Check-UpdateAvailable -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime"
+  },
+  {
+    "ModuleName": "Add-TenantInfo",
+    "Control":"Guardrails",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Script": "Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -TenantId $tenantID"
+  },
   {     
-    
     "ModuleName": "Check-ProcedureDocument",
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
@@ -135,12 +148,12 @@
      "Control":"Guardrails5",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Verify-PBMMPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.pbmmCompliance -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName",
+     "Script": "Verify-PBMMPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.pbmmCompliance -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionId",
      "variables":
      [
        {
-         "Name":"cbssubscriptionName",
-         "Value":"CBSSubscriptionName"
+         "Name":"cbssubscriptionId",
+         "Value":"CBSSubscriptionId"
        },
        {
         "Name":"pbmmpolicyID",
@@ -153,12 +166,12 @@
     "Control":"Guardrails6",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Script": "Verify-ProtectionDataAtRest -ControlName $msgTable.CtrName6 -ItemName $msgTable.dataAtRest -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName",
+    "Script": "Verify-ProtectionDataAtRest -ControlName $msgTable.CtrName6 -ItemName $msgTable.dataAtRest -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionId",
     "variables":
     [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name":"cbssubscriptionId",
+        "Value":"CBSSubscriptionId"
       },
       {
        "Name":"pbmmpolicyID",
@@ -171,12 +184,12 @@
   "Control":"Guardrails7",
   "ModuleType": "Builtin",
   "Status": "Enabled",
-  "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName",
+  "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionId",
   "variables":
   [
     {
-      "Name":"cbssubscriptionName",
-      "Value":"CBSSubscriptionName"
+      "Name":"cbssubscriptionId",
+      "Value":"CBSSubscriptionId"
     },
     {
      "Name":"pbmmpolicyID",
@@ -189,12 +202,12 @@
      "Control":"Guardrails5",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -workspaceKey $workspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName",
+     "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -workspaceKey $workspaceKey -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionId",
      "variables":
      [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name":"cbssubscriptionId",
+        "Value":"CBSSubscriptionId"
       },
       {
         "Name":"AllowedLocationPolicyId",
@@ -207,12 +220,12 @@
      "Control":"Guardrails8",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.CBSSubscriptionName",
+     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionId",
      "variables":
      [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name":"cbssubscriptionId",
+        "Value":"CBSSubscriptionId"
       }
      ]
   },
@@ -221,12 +234,12 @@
      "Control":"Guardrails9",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.CBSSubscriptionName",
+     "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionId",
      "variables":
      [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name":"cbssubscriptionId",
+        "Value":"CBSSubscriptionId"
       }
      ]
   },
@@ -235,12 +248,12 @@
      "Control":"Guardrails10",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Check-CBSSensors -SubscriptionName $vars.CBSSubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -LogType $LogType -ItemName $vars.CBSSubscriptionName",
+     "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionId -TenantID $TenantID -ControlName $msgTable.CtrName10 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -LogType $LogType -ItemName $vars.cbssubscriptionId",
      "variables":
      [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name":"cbssubscriptionId",
+        "Value":"CBSSubscriptionId"
       }
      ]
   },
@@ -249,7 +262,7 @@
      "Control":"Guardrails11",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Check-LoggingAndMonitoring -SecurityLAWResourceId $vars.SecurityLAWResourceId -HealthLAWResourceId $vars.HealthLAWResourceId -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.CBSSubscriptionName",
+     "Script": "Check-LoggingAndMonitoring -SecurityLAWResourceId $vars.SecurityLAWResourceId -HealthLAWResourceId $vars.HealthLAWResourceId -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionId",
      "variables":
      [
        {
@@ -261,8 +274,8 @@
         "Value":"HealthLAWResourceId"
       },       
       {
-        "Name":"CBSSubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name":"cbssubscriptionId",
+        "Value":"CBSSubscriptionId"
       }
      ]
   },
