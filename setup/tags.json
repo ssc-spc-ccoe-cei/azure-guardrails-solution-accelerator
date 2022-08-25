@@ -1,6 +1,7 @@
 [     
     {
-        "Name":"Solution",
-        "Value": "Guardrails Accelerator"
+        "Solution":"Guardrails Accelerator",
+        "ReleaseVersion": "1.0.4",
+        "ReleaseDate": "2022/09/01"
     }
 ]

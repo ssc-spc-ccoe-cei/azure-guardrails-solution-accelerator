@@ -35,8 +35,8 @@
     "deployLAW": {
       "value": %deployLAW%
     },
-    "CBSSubscriptionName": {
-      "value": "%CBSSubscriptionName%"
+    "CBSSubscriptionId": {
+      "value": "%CBSSubscriptionId%"
     },
     "SecurityLAWResourceId": {
       "value": "%SecurityLAWResourceId%"
@@ -44,7 +44,7 @@
     "HealthLAWResourceId": {
       "value": "%HealthLAWResourceId%"
     },
-    "version": {
+    "releaseVersion": {
       "value": "%version%"
     },
     "releasedate": {
@@ -52,6 +52,9 @@
     },
     "Locale": {
       "value": "%Locale%"
+    },
+    "TenantDomainUPN": {
+      "value": "%tenantDomainUPN%"
     }
   }
 }

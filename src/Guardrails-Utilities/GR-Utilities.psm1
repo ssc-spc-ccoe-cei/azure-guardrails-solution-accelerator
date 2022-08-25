@@ -33,7 +33,41 @@ function get-tagstring ($object) {
     }
     return $tagstring.Trim(";")
 }
-
+function get-rgtagstring ($object) {
+    if ($object.Tags.Count -eq 0) {
+        $tagstring = "None"
+    }
+    else {
+        $tagstring = ""
+        $tKeys = $object.tags | Select-Object -ExpandProperty keys
+        $tValues = $object.Tags | Select-Object -ExpandProperty values
+        $index = 0
+        if ($object.Tags.Count -eq 1) {
+            $tagstring = "$tKeys=$tValues"
+        }
+        else {
+            foreach ($tkey in $tkeys) {
+                $tagstring += "$tkey=$($tValues[$index]);"
+                $index++
+            }
+        }
+    }
+    return $tagstring.Trim(";")
+}
+function get-rgtagValue {
+    param (
+        [string] $tagKey,
+        [System.Object] $object
+    )
+    $tagString = get-rgtagstring($object)
+    $tagslist = $tagString.split(";")
+    foreach ($tag in $tagslist) {
+        if ($tag.split("=")[0] -eq $tagKey) {
+            return $tag.split("=")[1]
+        }
+    }
+    return ""
+}
 function copy-toBlob {
     param (
         [Parameter(Mandatory = $true)]
@@ -183,7 +217,89 @@ Function Add-LogEntry {
         -TimeStampField Get-Date 
 
 }
+Function Add-TenantInfo {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $WorkSpaceID,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $workspaceKey,
+        [Parameter(Mandatory=$false)]
+        [string]
+        $LogType="GR_TenantInfo",
+        [Parameter(Mandatory=$true)]
+        [string]
+        $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $TenantId
+        )
+    $tenantInfo=Get-AutomationVariable("tenantDomainUPN")
+    $object = [PSCustomObject]@{ 
+        TenantDomain = $tenantInfo
+        DepartmentTenantID = $TenantId
+        ReportTime = $ReportTime
+    }
+    Write-Output $tenantInfo
+    $JSON= ConvertTo-Json -inputObject $object
 
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+    -sharedkey $workspaceKey `
+    -body $JSON `
+    -logType $LogType `
+    -TimeStampField Get-Date 
+}
+
+function Check-UpdateAvailable {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $WorkSpaceID,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $workspaceKey,
+        [Parameter(Mandatory=$false)]
+        [string]
+        $LogType="GR_VersionInfo",
+        [Parameter(Mandatory=$true)]
+        [string]
+        $ReportTime,
+        [Parameter(Mandatory=$false)]
+        [string]
+        $ResourceGroupName
+    )
+    #fetches current public version (from repo...maybe should download the zip...)
+    $ReleaseVersion=((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Fehsecorp/GuardrailsSolutionAccelerator/updateSolution/setup/tags.json).content | ConvertFrom-Json).ReleaseVersion
+    if ([string]::IsNullOrEmpty($ResourceGroupName)) {
+        $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
+    }
+    $rg=Get-AzResourceGroup -Name $ResourceGroupName 
+    $currentVersion=get-rgtagValue -tagkey releaseversion -object $rg
+    Write-Output "RG Tag: $currentVersion"
+    Write-Output "Avail. Release: $ReleaseVersion"
+    
+    if ($currentVersion -ne $ReleaseVersion)
+    {
+        $updateNeeded=$true
+    }
+    else {
+        $updateNeeded=$false
+    }
+    $object = [PSCustomObject]@{ 
+        CurrentVersion = $currentVersion
+        AvailableVersion = $ReleaseVersion
+        UpdateNeeded= $updateNeeded
+        ReportTime = $ReportTime
+    }
+    $JSON= ConvertTo-Json -inputObject $object
+
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+    -sharedkey $workspaceKey `
+    -body $JSON `
+    -logType $LogType `
+    -TimeStampField Get-Date 
+}
 # endregion
    
 # SIG # Begin signature block
