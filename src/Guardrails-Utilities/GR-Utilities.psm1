@@ -270,7 +270,7 @@ function Check-UpdateAvailable {
         $ResourceGroupName
     )
     #fetches current public version (from repo...maybe should download the zip...)
-    $ReleaseVersion=((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Fehsecorp/GuardrailsSolutionAccelerator/updateSolution/setup/tags.json).content | ConvertFrom-Json).ReleaseVersion
+    $ReleaseVersion=((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/main/setup/tags.json).content | ConvertFrom-Json).ReleaseVersion
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
         $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
     }
