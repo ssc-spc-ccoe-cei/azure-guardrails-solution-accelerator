@@ -22,7 +22,7 @@
     [bool] $IsCompliant= $false
     
     # Only get the Guests accounts
-    $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'"
+    $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'" 
 
     if ($null -eq $guestUsers) {
         # There are no Guest users in the tenant
@@ -31,31 +31,47 @@
         $MitigationCommands = "N/A"
     }
     else {
-        # For each guest users, make sure they don't have any role assignment in the Azure Subscriptions
+        Write-Output "Found $($guestUsers.Count) Guest Users in the tenant"
+
         $subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled'}
-        
+        Write-Output "Found $($subs.Count) subscriptions"
+
         foreach ($sub in $subs) {
             $scope="/subscriptions/$($sub.Id)"
-            foreach($user in $guestUsers){
-                $userRoleAssignments = Get-AzRoleAssignment -Scope $scope -ObjectId $user.Id
+            Write-Output "Looking in subscription $($sub.Name)"
 
-                if (!$null -eq $userRoleAssignments) {
-                    $Customuser = [PSCustomObject] @{
-                        DisplayName = $user.DisplayName
-                        RoleDefinitionName = $userRoleAssignments.RoleDefinitionName
-                        Subscription = $sub.Name
-                        Mail = $user.mail
-                        Type = $user.userType
-                        CreatedDate = $user.createdDateTime
-                        Enabled = $user.accountEnabled
-                        Comments = $msgTable.guestMustbeRemoved
-                        ItemName= $ItemName 
-                        ReportTime = $ReportTime
+            # Get the role assignments for this subscription
+            $subRoleAssignments = Get-AzRoleAssignment -Scope $scope
+
+            if (!$null -eq $subRoleAssignments) {
+                Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"
+
+                # Find each guest users having a role assignment
+                $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}  
+
+                if (!$null -eq $matchedUser) {
+                    Write-Output "Found $($matchedUser.Count) Guest users with role assignment"
+
+                    foreach ($user in $matchedUser) {
+                        # What should we do if the same user may has multiple role assignments ?
+
+                        $Customuser = [PSCustomObject] @{
+                            DisplayName = $user.DisplayName
+                            Subscription = $sub.Name
+                            Mail = $user.mail
+                            Type = $user.userType
+                            CreatedDate = $user.createdDateTime
+                            Enabled = $user.accountEnabled
+                            Comments = $msgTable.guestMustbeRemoved
+                            ItemName= $ItemName 
+                            ReportTime = $ReportTime
+                        }
+                        $guestUsersArray.add($Customuser)
                     }
-                    $guestUsersArray.add($Customuser)
                 }
             }
         }
+
         if ($guestUsersArray.Count -eq 0) {
             # Guest accounts don't have any permissions on the Azure subscriptions, it's fine
             $IsCompliant= $true
@@ -64,13 +80,12 @@
 
             $Customuser = [PSCustomObject] @{
                 DisplayName = "N/A"
-                RoleDefinitionName = "N/A"
                 Subscription = "N/A"
                 Mail = "N/A"
                 Type = "N/A"
                 CreatedDate = "N/A"
                 Enabled = "N/A"
-                Comments = "N/A"
+                Comments = $comment
                 ItemName= $ItemName 
                 ReportTime = $ReportTime
             }
