@@ -8,6 +8,10 @@ param (
     [Parameter(Mandatory = $false)]
     [string]
     $existingKeyVaultName,
+    # Configure lighthouse delegation - requires lighthousePrincipalDisplayName, lighthousePrincipalDisplayName, and lighthouseServiceProviderTenantID in config.json
+    [Parameter(Mandatory = $false)]
+    [switch]
+    $configureLighthouseAccessDelegation,
     [Parameter(Mandatory = $false)]
     [string]
     $existingKeyVaultRG,
@@ -59,6 +63,33 @@ if (!$update)
     $PBMMPolicyID = $config.PBMMPolicyID
     $AllowedLocationPolicyId = $config.AllowedLocationPolicyId
     $DepartmentNumber = $config.DepartmentNumber
+
+    #lighthouse config variables
+    $lighthouseServiceProviderTenantID = $config.lighthouseServiceProviderTenantID
+    $lighthousePrincipalDisplayName = $config.lighthousePrincipalDisplayName
+    $lighthousePrincipalId = $config.lighthousePrincipalId
+    $lighthouseTargetManagementGroupID = $config.lighthouseTargetManagementGroupID
+    If ($configureLighthouseAccessDelegation.isPresent) {
+        # verify input from config.json
+        if ([string]::IsNullOrEmpty($lighthouseServiceProviderTenantID) -or !($lighthouseServiceProviderTenantID -as [guid])) {
+            Write-Error "Lighthouse delegation cannot be configured when config.json parameter 'lighthouseServiceProviderTenantID' has a value of '$lighthouseServiceProviderTenantID'"
+            break
+        }
+        if ([string]::IsNullOrEmpty($lighthousePrincipalDisplayName)) {
+            Write-Error "Lighthouse delegation cannot be configured when config.json parameter 'lighthousePrincipalDisplayName' has a value of '$lighthousePrincipalDisplayName'"
+            break
+        }
+        if ([string]::IsNullOrEmpty($lighthousePrincipalId) -or !($lighthousePrincipalId -as [guid])) {
+            Write-Error "Lighthouse delegation cannot be configured when config.json parameter 'lighthousePrincipalId' has a value of '$lighthousePrincipalId'"
+            break
+        }
+        if ([string]::IsNullOrEmpty($lighthouseTargetManagementGroupID)) {
+            Write-Error "Lighthouse delegation cannot be configured when config.json parameter 'lighthouseTargetManagementGroupID' has a value of '$lighthouseTargetManagementGroupID'"
+            break
+        }
+    }
+
+    #config item validation
     if ($config.SecurityLAWResourceId.split("/").Count -ne 9 -or $config.HealthLAWResourceId.Split("/").Count -ne 9) {
         Write-Output "Error in SecurityLAWResourceId or HealthLAWResourceId ID. Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
         Break
@@ -137,13 +168,13 @@ if (!$update)
     $begin = get-date
     Write-Verbose "Adding current user as a Keyvault administrator (for setup)."
     if ($userId -eq "") {
-        $currentUserId = (get-azaduser -UserPrincipalName (Get-AzAccessToken).UserId).Id 
+        $currentUserId = (get-azaduser -SignedIn).Id 
     }
     else {
         $currentUserId = (get-azaduser -UserPrincipalName $userId).Id
     }
     if ($null -eq $currentUserId) {
-        Write-Error "Error: no current user could be found in current Tenant. Context: $((Get-AzAccessToken).UserId). Override specified: $userId."
+        Write-Error "Error: no current user could be found in current Tenant. Context: $((Get-AzAdUser -SignedIn).UserPrincipalName). Override specified: $userId."
         break;
     }
     $tenantDomainUPN=$userId.Split("@")[1]
@@ -208,6 +239,126 @@ if (!$update)
         Write-error "Error deploying solution to Azure. $_"
     }
     #endregion
+
+    #region lighthouse configuration
+    If ($configureLighthouseAccessDelegation.isPresent) {
+        #build lighthouse parameter object for resource group delegation
+        $bicepParams = @{
+            'rgName' = $resourcegroup
+            'managedByTenantId' = $lighthouseServiceProviderTenantID
+            'managedByName' = 'SSC CSPM - Read Guardrail Status'
+            'managedByDescription' = 'SSC CSPM - Read Guardrail Status'
+            'authorizations' = @(
+                @{
+                    'principalIdDisplayName' = $lighthousePrincipalDisplayName
+                    'principalId' = $lighthousePrincipalId
+                    'roleDefinitionId' = 'acdd72a7-3385-48ef-bd42-f606fba81ae7' # Reader
+                }
+                @{
+                    "principalId" = $lighthousePrincipalId
+                     "roleDefinitionId" = "43d0d8ad-25c7-4714-9337-8ba259a9fe05"
+                     "principalIdDisplayName" = $lighthousePrincipalDisplayName
+                }
+                @{
+                    'principalIdDisplayName' = $lighthousePrincipalDisplayName
+                    'principalId' = $lighthousePrincipalId
+                    'roleDefinitionId' = '91c1777a-f3dc-4fae-b103-61d183457e46' # Managed Services Registration assignment Delete Role
+                }
+            )
+        }
+
+        #deploy Guardrails resource group permission delegation
+        try {
+            $null = New-AzDeployment -Location $region `
+                -TemplateFile ./lighthouse/lighthouse_rg.bicep `
+                -TemplateParameterObject $bicepParams `
+                -ErrorAction Stop
+        }
+        catch {
+            Write-Error "Failed to deploy lighthouse delegation template with error: $_"
+            break
+        }
+
+        #build parameter object for subscription Defender for Cloud access delegation
+        $bicepParams = @{
+            'managedByTenantId' = $lighthouseServiceProviderTenantID
+            'location' = $region
+            'managedByName' = 'SSC CSPM - Defender for Cloud Access'
+            'managedByDescription' = 'SSC CSPM - Defender for Cloud Access'
+            'managedByAuthorizations' = @(
+                @{
+                    'principalIdDisplayName' = $lighthousePrincipalDisplayName
+                    'principalId' = $lighthousePrincipalId
+                    'roleDefinitionId' = '91c1777a-f3dc-4fae-b103-61d183457e46' # Managed Services Registration assignment Delete Role
+                }
+                @{
+                    'principalIdDisplayName' = $lighthousePrincipalDisplayName
+                    'principalId' = $lighthousePrincipalId
+                    'roleDefinitionId' = '39bc4728-0917-49c7-9d2c-d95423bc2eb4' # Security Reader
+                }
+            )
+        }
+
+        #deploy Guardrails Defender for Cloud permission delegation - this delegation adds a role assignment to every subscription under the target management group
+        if ($lighthouseTargetManagementGroupID -eq (Get-AzContext).Tenant.Id) {
+            Write-Verbose "lighthouseTargetManagementGroupID is the tenant root managment group, which requires explicit owner permissions for the exeucting user; verifying..."
+
+            $existingAssignment = Get-AzRoleAssignment -Scope '/' -RoleDefinitionName Owner -UserPrincipalName (get-azaduser -SignedIn).UserPrincipalName | Where-Object {$_.Scope -eq '/'}
+            If (!$existingAssignment) {
+                Write-Error "In order to deploy resources at the Tenant Root Management Group '$lighthouseTargetManagementGroupID', the exeucting user must be explicitly granted Owner 
+                rights at the root level. To create this role assignment, run 'New-AzRoleAssignment -Scope '/' -RoleDefinitionName Owner -UserPrincipalName $((get-azaduser -SignedIn).UserPrincipalName)' 
+                then execute this script again. This role assignment only needs to exist during the Lighthouse resource deployments and can (and should) be removed after this script completes."
+                Exit
+            }
+        }
+
+        try {
+            $policyDeployment = New-AzManagementGroupDeployment -ManagementGroupId $lighthouseTargetManagementGroupID `
+                -Location $region `
+                -TemplateFile ./lighthouse/lighthouseDfCPolicy.bicep `
+                -TemplateParameterObject $bicepParams `
+                -Confirm:$false `
+                -ErrorAction Stop
+        }
+        catch {
+            If ($_.Exception.message -like "*Status Message: Principal * does not exist in the directory *. Check that you have the correct principal ID.*") {
+                Write-Warning "Deployment role assignment failed due to AAD replication delay, attempting to proceed with role assignment anyway..."
+            }
+            Else {
+                Write-Error "Failed to deploy Lighthouse Defender for Cloud delegation by Azure Policy template with error: $_"
+                break
+            }
+        }
+
+        # wait 30 seconds to ensure AAD has time to propagate MSI identity before assigning a role
+        Start-Sleep -Seconds 30
+
+        # deploy an 'Owner' role assignment for the MSI associated with the Policy Assignment created in the previous step
+        # Owner rights are required so that the MSI can then assign the requested 'Security Reader' role on each subscription under the target management group
+        try {
+            $null = New-AzManagementGroupDeployment -ManagementGroupId $lighthouseTargetManagementGroupID `
+                -Location $region `
+                -TemplateFile ./lighthouse/lighthouseDfCPolicyRoleAssignment.bicep `
+                -TemplateParameterObject @{policyAssignmentMSIPrincipalID = $policyDeployment.Outputs.policyAssignmentMSIRoleAssignmentID.value} `
+                -Confirm:$false `
+                -ErrorAction Stop
+        }
+        catch {
+            Write-Error "Failed to deploy template granting the Defender for Cloud delegation policy rights to configure role assignments with error: $_"
+            break   
+        } 
+
+        ### TO DO ### The remediation task created by the Bicep template should be all that is required, but does not seem to execute
+        try{
+            $ErrorActionPreference = 'Stop'
+            $null = Start-AzPolicyRemediation -Name Redemdiation -ManagementGroupName $lighthouseTargetManagementGroupID -PolicyAssignmentId $policyDeployment.Outputs.policyAssignmentId.value
+        }
+        catch {
+            Write-Error "Failed to create Remediation Task for policy assignment '$($policyDeployment.Outputs.policyAssignmentId.value)' with the following error: $_"
+        }
+    }
+    #endregion
+
     #Add current user as a Keyvault administrator (for setup)
     try { $kv = Get-AzKeyVault -ResourceGroupName $keyVaultRG -VaultName $keyVaultName } catch { "Error fetching KV object. $_"; break }
     try { New-AzRoleAssignment -ObjectId $currentUserId -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId }catch { "Error assigning permissions to KV. $_"; break }
