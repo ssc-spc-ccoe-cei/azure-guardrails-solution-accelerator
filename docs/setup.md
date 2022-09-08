@@ -68,6 +68,10 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)|
 |HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)|
 |Locale|Language of the messages in the solution. At the moment, supported languages are english or french and default is english (en-CA or fr-CA)|
+|lighthouseServiceProviderTenantID| If using Lighthouse cross-tenant delegated access to Guardrails data, specify the Azure AD tenant ID (GUID) of the managing tenant|
+|lighthousePrincipalDisplayName| If using Lighthouse cross-tenant delegated access to Guardrails data, specify the display name of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group|
+|lighthousePrincipalId|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the object ID (GUID) of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group|
+|lighthouseTargetManagementGroupID|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the name of the Management Group under which all subscriptions will grant Defender for Cloud access to the managing tenant|
 
 Save the file and exit VSCode.
 
@@ -127,3 +131,13 @@ Alternatively, these parameters can be used to leverage existing KeyVault and Lo
 `$existingWorkSpaceRG`: the resource group containing the Log Analytics Workspace above.
 
 `$skipDeployment`: the setup script will run everything but the Azure Resources deployment (for debug/testing only).
+
+### Lighthouse Configuration
+If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-configureLighthouseAccessDelegation` switch parameter when calling setup.ps1. In order for Azure Policy to automatically delegate access to Defender for Cloud data for every subscription under the specified Management Group, the Policy Assignment Managed Service Identity is granted 'Owner' rights at the Management Group scope.
+
+For this feature to deploy, the following values must also existing the config.json file:
+
+- lighthouseServiceProviderTenantID
+- lighthousePrincipalDisplayName
+- lighthousePrincipalId
+- lighthouseTargetManagementGroupID

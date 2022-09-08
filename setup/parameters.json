@@ -1,24 +1,60 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-      "storageAccountName": {
-        "value": "guardrailtest3"
-      },
-      "location": {
-        "value": "CanadaCentral"
-      },
-      "kvName": {
-        "value": "guardrailstest-kv3"
-      },
-      "automationAccountName": {
-        "value": "guardrailstest3-AC"
-      },
-      "logAnalyticsWorkspaceName": {
-        "value": "guardrailstest3-LAW"
-      },
-      "subscriptionId": {
-        "value": "b1e924f9-d16f-4260-a3c8-ff1ee462956b"
-      }
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "guardrailsixjz"
+    },
+    "location": {
+      "value": "CanadaCentral"
+    },
+    "kvName": {
+      "value": "guardrails-5c060f8e"
+    },
+    "automationAccountName": {
+      "value": "guardrails-5c060f8e"
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": "guardrails-5c060f8e"
+    },
+    "subscriptionId": {
+      "value": "43a95052-9fb9-4bee-a46f-78e734521277"
+    },
+    "PBMMPolicyID": {
+      "value": "4c4a5f27-de81-430b-b4e5-9cbd50595a87"
+    },    
+    "AllowedLocationPolicyId": {
+      "value": "e56962a6-4747-49cd-b67b-bf8b01975c4c"
+    },
+    "DepartmentNumber": {
+      "value": ""
+    },
+    "deployKV": {
+      "value": true
+    },
+    "deployLAW": {
+      "value": true
+    },
+    "CBSSubscriptionId": {
+      "value": ""
+    },
+    "SecurityLAWResourceId": {
+      "value": "/subscriptions/c3803411-d6c0-474d-9200-4c197625f56d/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01"
+    },
+    "HealthLAWResourceId": {
+      "value": "/subscriptions/c3803411-d6c0-474d-9200-4c197625f56d/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01"
+    },
+    "releaseVersion": {
+      "value": "1.0.4"
+    },
+    "releasedate": {
+      "value": "2022/09/01"
+    },
+    "Locale": {
+      "value": "en-CA"
+    },
+    "TenantDomainUPN": {
+      "value": "mbcooutlook.onmicrosoft.com"
     }
+  }
 }

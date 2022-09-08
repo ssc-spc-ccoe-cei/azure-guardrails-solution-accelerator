@@ -18,6 +18,8 @@ Implementing the required GC Cloud Guardrails can take a considerable amount of 
 
 4. The data summary and details can be visualized using the provided Guardrails workbook.
 
+5. For multi-tenant scenarios, where the data collected by the Guardrails solution will be reported on by an entity from another Azure AD tenant, Azure Lighthouse can be used to delegate access to the managing tenant. 
+
 <p align="center">
 <img src="./docs/media/SolutionDiagram.png " />
 </p>
