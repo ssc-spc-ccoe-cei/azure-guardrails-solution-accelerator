@@ -22,6 +22,7 @@ param releaseVersion string
 param releaseDate string 
 param TenantDomainUPN string
 var containername = 'guardrailsstorage'
+var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name
 var wbConfig1 ='''
@@ -35,37 +36,6 @@ var wbConfig1 ='''
         "style": "info"
       },
       "name": "Details Title"
-    },
-    {
-      "type": 9,
-      "content": {
-        "version": "KqlParameterItem/1.0",
-        "parameters": [
-          {
-            "id": "618c9321-a3de-4287-b4cf-860a4adf42d4",
-            "version": "KqlParameterItem/1.0",
-            "name": "RunTime",
-            "label": "Report Time",
-            "type": 2,
-            "isRequired": true,
-            "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
-            "value": "2022-08-22 22:52:22",
-            "typeSettings": {
-              "additionalResourceOptions": [],
-              "showDefault": false
-            },
-            "timeContext": {
-              "durationMs": 86400000
-            },
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
-          }
-        ],
-        "style": "pills",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
-      },
-      "name": "parameters - 1"
     },
     {
       "type": 11,
@@ -182,17 +152,72 @@ var wbConfig1 ='''
       "name": "links - 1"
     },
     {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "618c9321-a3de-4287-b4cf-860a4adf42d4",
+            "version": "KqlParameterItem/1.0",
+            "name": "RunTime",
+            "label": "Report Time",
+            "type": 2,
+            "isRequired": true,
+            "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
+            "value": "2022-09-14 14:58:15",
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
+      "name": "parameters - 1"
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 1\" and ReportTime_s == \"{RunTime}\"\r\n|project ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ ')",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 1",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -205,14 +230,33 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 2\" and ReportTime_s == \"{RunTime}\"\r\n|project ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ ')",
-        "size": 0,
+        "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\")",
+        "size": 1,
         "title": "GR 2",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -222,17 +266,95 @@ var wbConfig1 ='''
       "name": "Gr1 - Copy"
     },
     {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9ff4b484-e871-4df0-8cbe-8ae6570c5984",
+            "version": "KqlParameterItem/1.0",
+            "name": "su",
+            "label": "Show Guest Accounts",
+            "type": 10,
+            "isRequired": true,
+            "value": "yes",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Yes\" },\n    { \"value\":\"no\", \"label\":\"No\", \"selected\":true }\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "parameters - 18"
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 3\"\r\n|project ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ ')",
+        "query": "GR2ExternalUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, Mail_s, Subscription_s",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "su",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - 17"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 3\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 3",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -245,14 +367,33 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 4\" and ReportTime_s == \"{RunTime}\"\r\n|project ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ ')",
+        "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 4",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -265,7 +406,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 5:\"  and ReportTime_s == \"{RunTime}\"\r\n| project ItemName_s,DisplayName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
+        "query": "gr_data(\"GUARDRAIL 5\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 5",
         "timeContext": {
@@ -274,6 +415,15 @@ var wbConfig1 ='''
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -293,7 +443,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 6:\"  and ReportTime_s == \"{RunTime}\"\r\n| project ItemName_s,DisplayName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
+        "query": "gr_data(\"GUARDRAIL 6\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 6",
         "timeContext": {
@@ -303,6 +453,15 @@ var wbConfig1 ='''
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -322,7 +481,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 7:\" and ReportTime_s == \"{RunTime}\"\r\n| project ItemName_s,DisplayName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
+        "query": "gr_data(\"GUARDRAIL 7\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 7",
         "timeContext": {
@@ -331,6 +490,15 @@ var wbConfig1 ='''
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -350,7 +518,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 8:\"  and ReportTime_s == \"{RunTime}\"\r\n| project SubnetName=SubnetName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar( GRITSGControls_CL | summarize max(TimeGenerated));\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\"\r\n| where TimeGenerated > ago (24h)\r\n|join kind=inner (itsgcodes) on itsgcode_s\r\n| project SubnetName=SubnetName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s)\r\n| sort by Status asc",
         "size": 0,
         "title": "GR 8",
         "timeContext": {
@@ -359,6 +527,15 @@ var wbConfig1 ='''
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -378,14 +555,33 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 9:\"  and ReportTime_s == \"{RunTime}\"\r\n| project ['VNet Name']=VNETName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar( GRITSGControls_CL | summarize max(TimeGenerated));\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 9:\"  and ReportTime_s == \"{RunTime}\"\r\n| where TimeGenerated > ago (24h)\r\n|join kind=inner (itsgcodes) on itsgcode_s\r\n| project ['VNet Name']=VNETName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s)\r\n",
         "size": 0,
         "title": "GR 9",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -398,14 +594,33 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 10:\"  and ReportTime_s == \"{RunTime}\"\r\n| project ItemName_s,DisplayName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
-        "size": 0,
+        "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\")",
+        "size": 4,
         "title": "GR 10",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -418,14 +633,33 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 11:\"  and ReportTime_s == \"{RunTime}\"\r\n| project ItemName_s,DisplayName_s, Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
-        "size": 0,
+        "query": "gr_data(\"GUARDRAIL 11\",\"{RunTime}\")",
+        "size": 1,
         "title": "GR 11",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -438,14 +672,33 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\r\n| where ControlName_s has \"GUARDRAIL 12:\" and ReportTime_s == '{RunTime}'\r\n| project Status=iif(tostring(ComplianceStatus_b)==\"True\", '✔️ ', '❌ '), Comments=Comments_s\r\n| sort by Status asc",
+        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\")",
         "size": 4,
         "title": "GR 12",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
@@ -464,7 +717,7 @@ var wbConfig1 ='''
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "GuardrailsCompliance_CL \n| extend Status=iif(tostring(ComplianceStatus_b)==\"True\", 'Compliant ', 'Not Compliant'), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+              "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}'\n| extend Status=iif(tostring(ComplianceStatus_b)==\"True\", 'Compliant Items', 'Non-compliant Items'), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
               "size": 4,
               "timeContext": {
                 "durationMs": 86400000
@@ -500,7 +753,7 @@ var wbConfig1 ='''
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "GuardrailsCompliance_CL\n| summarize by ControlName_s\n| count \n| extend Title=\"Total of Controls\"",
+              "query": "GuardrailsCompliance_CL\n| where ReportTime_s == '{RunTime}'\n| summarize by ControlName_s\n| count \n| extend Title=\"Total # of Controls\"",
               "size": 4,
               "timeContext": {
                 "durationMs": 86400000
@@ -541,10 +794,10 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR_VersionInfo_CL\n| where ReportTime_s == \"{RunTime}\"\n|project [\"Current Version\"]= CurrentVersion_s, [\"Version Available\"]=AvailableVersion_s, [\"Update Required\"]=iff(UpdateNeeded_b==true,\"Yes\",\"No\")",
+        "query": "let dt = GR_VersionInfo_CL | summarize max(ReportTime_s);\nGR_VersionInfo_CL\n| where ReportTime_s == toscalar (dt)\n|project [\"Current Version\"]= CurrentVersion_s, [\"Version Available\"]=AvailableVersion_s, [\"Update Required\"]=iff(UpdateNeeded_b==true,\"Yes\",\"No\"),[\"Check date\"]=toscalar (dt)",
         "size": 4,
         "timeContext": {
-          "durationMs": 3600000
+          "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -607,6 +860,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = {
       contentLink: {
         uri: '${CustomModulesBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
         version: '1.0.0'
+
       }
     }
   }
@@ -829,7 +1083,7 @@ resource variable1 'variables' = {
   resource variable6 'variables' = {
     'name': 'StorageAccountName'
     'properties': {
-        'isEncrypted': true
+        'isEncrypted': false
         'value': '"${guardrailsStorage.name}"'
     }
   }
@@ -936,7 +1190,30 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
     }
   }
 }
-
+resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+  name: 'gr_data'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_data'
+    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar( GRITSGControls_CL | summarize max(TimeGenerated));\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)=="True", \'✔️ \', \'❌ \'),["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)'
+    functionAlias: 'gr_data'
+    functionParameters: 'ctrlprefix:string, ReportTime:string'
+    version: 2
+  }
+}
+resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+  name: 'gr_geturl'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_geturl'
+    query: 'let baseurl="https://github.com/Azure/GuardrailsSolutionAccelerator/docs/";\nlet Link=strcat(baseurl,control,"-", replace_string(replace_string(itsgcode,"(","-"),")",""),".md");\nLink\n'
+    functionAlias: 'gr_geturl'
+    functionParameters: 'control:string, itsgcode:string'
+    version: 2
+  }
+}
 resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if (deployLAW) {
 location: location
 kind: 'shared'

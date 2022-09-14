@@ -1,12 +1,11 @@
 # Guardrails - Update
 
-Script: /setup/update.ps1
+Script: uses the same syntax of the setup, but adding the `-update` switch. For example:
 
-Parameters: config file:
+`.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN> -update'
 
-  resourcegroup: Name of resource group used currently for the solution
-  region: region
-  logAnalyticsworkspaceName: name of the log analytics workspace name
-  autoMationAccountName: name of the automation account
-
-For now, it is assumed both the automation account and the log analytics workspace are contained the referred resource group.
+The setup.ps1, when called with the `-update` switch, will:
+- Reuse the same parameters from the config.json file
+- redeploy the guardrails.bicep template
+- Re-import both runbooks (main and backend).
+- Upload the modules.json file to the storage account.

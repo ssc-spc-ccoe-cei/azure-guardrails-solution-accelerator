@@ -7,6 +7,7 @@ function Verify-AllowedLocationPolicy {
         [string] $WorkSpaceID,
         [string] $workspaceKey,
         [string] $LogType,
+        [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
@@ -65,6 +66,7 @@ function Verify-AllowedLocationPolicy {
                         $c | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $false
                         $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
                         $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
                         $NonCompliantList.add($c)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))   ) {
@@ -72,6 +74,7 @@ function Verify-AllowedLocationPolicy {
                         $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
                         $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
                         $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
                         if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
                             $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation)
                         }
@@ -86,6 +89,7 @@ function Verify-AllowedLocationPolicy {
                         $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true
                         $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
                         $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
                         $CompliantList.add($c) 
                     }
                 }
@@ -107,12 +111,14 @@ function Verify-AllowedLocationPolicy {
                         $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
                         $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
                         $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
                         $NonCompliantList.add($c)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
                         $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
                         $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
                         $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
                         $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
                         if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
                             $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation)
@@ -128,6 +134,7 @@ function Verify-AllowedLocationPolicy {
                         $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true
                         $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
                         $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
                         $CompliantList.add($c) 
                     }
                 }
@@ -149,12 +156,14 @@ function Verify-AllowedLocationPolicy {
         $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
         $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
         $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
         $NonCompliantList.add($RootMG)
     }
     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
         $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
         $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
         $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
         $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
         if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
             $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.rootMGExcluded + $msgTable.notAllowedLocation)
@@ -169,6 +178,7 @@ function Verify-AllowedLocationPolicy {
         $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true
         $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force
         $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName -Force
+        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
         $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
         $CompliantList.add($RootMG) 
     }
