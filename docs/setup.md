@@ -64,7 +64,7 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.|
 |AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default|
 |DepartmentNumber||
-|CBSSubscriptionID|Subscription Id containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**|
+|CBSSubscriptionName|Subscription Id containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**|
 |SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)|
 |HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)|
 |Locale|Language of the messages in the solution. At the moment, supported languages are english or french and default is english (en-CA or fr-CA)|

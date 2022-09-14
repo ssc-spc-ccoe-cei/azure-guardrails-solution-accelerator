@@ -30,9 +30,17 @@ param (
     $alternatePSModulesURL,
     [Parameter(Mandatory = $false)]
     [switch]
-    $update
+    $update,
+    [string] $subscriptionId
 )
 #region Configuration and initialization
+#Other Variables
+$mainRunbookName = "main"
+$RunbookPath = '.\'
+$mainRunbookDescription = "Guardrails Main Runbook"
+$backendRunbookName = "backend"
+$backendRunbookDescription = "Guardrails Backend Runbook"
+
 # test
 if (!$update)
 {
@@ -112,36 +120,43 @@ if (!$update)
         Write-Output $userId + " doesn't have Access Management for Azure Resource permissions,please refer to the requirements section in the setup document"
         Break                                                
     }
-    #Other Variables
-    $mainRunbookName = "main"
-    $mainRunbookPath = '.\'
-    $mainRunbookDescription = "Guardrails Main Runbook"
-
     #Tests if logged in:
     $subs = Get-AzSubscription -ErrorAction SilentlyContinue
     if (-not($subs)) {
         Connect-AzAccount
+    }
+    if ([string]::IsNullOrEmpty($subscriptionId)){
         $subs = Get-AzSubscription -ErrorAction SilentlyContinue
-    }
-    if ($subs.count -gt 1) {
-        Write-output "More than one subscription detected. Current subscription $((get-azcontext).Name)"
-        Write-output "Please select subscription for deployment or Enter to keep current one:"
-        $i = 1
-        $subs | ForEach-Object { Write-output "$i - $($_.Name) - $($_.SubscriptionId)"; $i++ }
-        [int]$selection = Read-Host "Select Subscription number: (1 - $($i-1))"
-    }
-    else { $selection = 0 }
-    if ($selection -ne 0) {
-        if ($selection -gt 0 -and $selection -le ($i - 1)) { 
-            Select-AzSubscription -SubscriptionObject $subs[$selection - 1]
+        if ($subs.count -gt 1) {
+            Write-output "More than one subscription detected. Current subscription $((get-azcontext).Name)"
+            Write-output "Please select subscription for deployment or Enter to keep current one:"
+            $i = 1
+            $subs | ForEach-Object { Write-output "$i - $($_.Name) - $($_.SubscriptionId)"; $i++ }
+            [int]$selection = Read-Host "Select Subscription number: (1 - $($i-1))"
+        }
+        else { $selection = 0 }
+        if ($selection -ne 0) {
+            if ($selection -gt 0 -and $selection -le ($i - 1)) { 
+                Select-AzSubscription -SubscriptionObject $subs[$selection - 1]
+            }
+            else {
+                Write-output "Invalid selection. ($selection)"
+                break
+            }
         }
         else {
-            Write-output "Invalid selection. ($selection)"
-            break
+            Write-host "Keeping current subscription."
         }
     }
     else {
-        Write-host "Keeping current subscription."
+        Write-Output "Selecting $subcriptionId subscription:"
+        try {
+            Select-AzSubscription -Subscription $subscriptionId
+        }
+        catch {
+            Write-error "Error selecting provided subscription."
+            break
+        }
     }
     #region Let's deal with existing stuff...
     # Keyvault first
@@ -390,21 +405,35 @@ if (!$update)
     #endregion
 
     #region Import main runbook
-    Write-Verbose "Importing Runbook." #only one for now, as a template.
+    Write-Verbose "Importing Runbook." #main runbook, runs the modules.
     try {
-        Import-AzAutomationRunbook -Name $mainRunbookName -Path "$mainRunbookpath\main.ps1" -Description $mainRunbookDescription -Type PowerShell -Published `
+        Import-AzAutomationRunbook -Name $mainRunbookName -Path "$Runbookpath\main.ps1" -Description $mainRunbookDescription -Type PowerShell -Published `
             -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -Tags @{version = $tags.ReleaseVersion }
         #Create schedule
-        New-AzAutomationSchedule -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -Name "GR-Hourly" -StartTime (get-date).AddHours(1) -HourInterval 1
+        New-AzAutomationSchedule -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -Name "GR-Every6hours" -StartTime (get-date).AddHours(1) -HourInterval 6
         #Register
-        Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -ScheduleName "GR-Hourly"
+        Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -ScheduleName "GR-Every6hours"
     }
     catch {
         "Error importing Runbook. $_"
         break
     }
     #endregion
-
+    #region Import main runbook
+    Write-Verbose "Importing Backend Runbook." #backend runbooks. gets information about tenant, version and itsgcontrols.
+    try {
+        Import-AzAutomationRunbook -Name $backendRunbookName -Path "$Runbookpath\backend.ps1" -Description "Backend Runbook" -Type PowerShell -Published `
+            -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -Tags @{version = $tags.ReleaseVersion }
+        #Create schedule for backend runbook
+        New-AzAutomationSchedule -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -Name "GR-Daily" -StartTime (get-date).AddHours(1) -HourInterval 24
+        #Register
+        Register-AzAutomationScheduledRunbook -Name $backendRunbookName -ResourceGroupName $resourcegroup -AutomationAccountName $autoMationAccountName -ScheduleName "GR-Daily"
+    }
+    catch {
+        "Error importing Runbook. $_"
+        break
+    }
+    #endregion
     #region Other secrects
     #Breakglass accounts and UPNs
     try {
@@ -460,6 +489,12 @@ if (!$update)
     Start-Sleep -Seconds 60
     try {
         Start-AzAutomationRunbook -Name "main" -AutomationAccountName $autoMationAccountName -ResourceGroupName $resourcegroup
+    }
+    catch { 
+        "Error starting runbook. $_"
+    }
+    try {
+        Start-AzAutomationRunbook -Name "backend" -AutomationAccountName $autoMationAccountName -ResourceGroupName $resourcegroup
     }
     catch { 
         "Error starting runbook. $_"
@@ -533,10 +568,6 @@ else {
         Write-Output "Error in SecurityLAWResourceId or HealthLAWResourceId ID. Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
         Break
     }
-    #Other Variables
-    $mainRunbookName = "main"
-    $mainRunbookPath = '.\'
-    $mainRunbookDescription = "Guardrails Main Runbook"
 
     #region Let's deal with existing stuff...
     #Storage verification
@@ -610,6 +641,10 @@ else {
         throw "Error fetching resource group. $_"
         break 
     }
+    #removing any saved search in the gr_functions category since an incremental deployment fails...
+    $grfunctions=(Get-AzOperationalInsightsSavedSearch -ResourceGroupName $resourcegroup -WorkspaceName $logAnalyticsworkspaceName).Value | where {$_.Properties.Category -eq 'gr_functions'}
+    $grfunctions | foreach { Remove-AzOperationalInsightsSavedSearch -ResourceGroupName $resourcegroup -WorkspaceName $logAnalyticsworkspaceName -SavedSearchId $_.Name}
+
     Write-Output "(Re)Deploying solution through bicep."
     try { 
         New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
@@ -620,9 +655,11 @@ else {
     }
     #endregion
     #region Import updated main runbook
-    Write-Output "Importing updated Runbook."
-    Import-AzAutomationRunbook -Name 'main' -Path ./main.ps1 -AutomationAccountName $autoMationAccountName -ResourceGroupName $resourcegroup `
-     -Force -Type PowerShell -Description "Main Guardrails module V.$newversion" -Tags @{version=$tags.ReleaseVersion; releaseDate=$tags.ReleaseDate} -Published 
+    Write-Output "Importing updated Runbooks."
+    Import-AzAutomationRunbook -Name $mainRunbookName -Path ./main.ps1 -AutomationAccountName $autoMationAccountName -ResourceGroupName $resourcegroup `
+     -Force -Type PowerShell -Description "$mainRunbookDescription V.$newversion" -Tags @{version=$tags.ReleaseVersion; releaseDate=$tags.ReleaseDate} -Published 
+    Import-AzAutomationRunbook -Name $backendRunbookName -Path ./backend.ps1 -AutomationAccountName $autoMationAccountName -ResourceGroupName $resourcegroup `
+     -Force -Type PowerShell -Description "$backendRunbookDescription V.$newversion" -Tags @{version=$tags.ReleaseVersion; releaseDate=$tags.ReleaseDate} -Published 
     
     #uploads new modules.json
     import-module "../src/Guardrails-Utilities/GR-Utilities.psm1"
