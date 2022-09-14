@@ -133,6 +133,7 @@ Alternatively, these parameters can be used to leverage existing KeyVault and Lo
 `$skipDeployment`: the setup script will run everything but the Azure Resources deployment (for debug/testing only).
 
 ### Lighthouse Configuration
+
 If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-configureLighthouseAccessDelegation` switch parameter when calling setup.ps1. In order for Azure Policy to automatically delegate access to Defender for Cloud data for every subscription under the specified Management Group, the Policy Assignment Managed Service Identity is granted 'Owner' rights at the Management Group scope.
 
 For this feature to deploy, the following values must also existing the config.json file:
@@ -141,3 +142,7 @@ For this feature to deploy, the following values must also existing the config.j
 - lighthousePrincipalDisplayName
 - lighthousePrincipalId
 - lighthouseTargetManagementGroupID
+
+#### Troubleshooting Lighthouse Configuration
+
+The Defender for Cloud automated Lighthouse delegation deployment to each subscription may take up to 24 hours to apply. If, after 24 hours, all subscriptions are not showing as properly delegated, ensure that the the Microsoft.ManagedServices and Microsoft.PolicyInsights Resource Providers are registered in each target subscription. Check that a Remediation Task exists at the target management group (on the customer side), and review it for deployment failures.
