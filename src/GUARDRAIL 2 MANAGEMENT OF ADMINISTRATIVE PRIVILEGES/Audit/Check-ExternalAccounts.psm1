@@ -1,4 +1,3 @@
-
     # PART 2 - Checking for GUEST accounts  
     # Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
     # This querly looks for accounts marked as GUEST
@@ -22,7 +21,11 @@
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
     [bool] $IsCompliant= $false
     
+    $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
+    $stopWatch.Start()
+
     # Only get the Guests accounts
+    Write-Output "Getting guest users in the tenant"
     $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'" 
 
     if ($null -eq $guestUsers) {
@@ -39,27 +42,41 @@
 
         foreach ($sub in $subs) {
             $scope="/subscriptions/$($sub.Id)"
-            foreach($user in $guestUsers){
-                $userRoleAssignments = Get-AzRoleAssignment -Scope $scope -ObjectId $user.Id
+            Write-Output "Looking in subscription $($sub.Name)"
 
-                if (!$null -eq $userRoleAssignments) {
-                    $Customuser = [PSCustomObject] @{
-                        DisplayName = $user.DisplayName
-                        RoleDefinitionName = $userRoleAssignments.RoleDefinitionName
-                        Subscription = $sub.Name
-                        Mail = $user.mail
-                        Type = $user.userType
-                        CreatedDate = $user.createdDateTime
-                        Enabled = $user.accountEnabled
-                        Comments = $msgTable.guestMustbeRemoved
-                        ItemName= $ItemName
-                        ReportTime = $ReportTime
-                        itsgcode = $itsgcode
+            # Get the role assignments for this subscription
+            $subRoleAssignments = Get-AzRoleAssignment -Scope $scope
+
+            if (!$null -eq $subRoleAssignments) {
+                Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"
+
+                # Find each guest users having a role assignment
+                $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}  
+
+                if (!$null -eq $matchedUser) {
+                    Write-Output "Found $($matchedUser.Count) Guest users with role assignment"
+
+                    foreach ($user in $matchedUser) {
+                        # What should we do if the same user may has multiple role assignments ?
+
+                        $Customuser = [PSCustomObject] @{
+                            DisplayName = $user.DisplayName
+                            Subscription = $sub.Name
+                            Mail = $user.mail
+                            Type = $user.userType
+                            CreatedDate = $user.createdDateTime
+                            Enabled = $user.accountEnabled
+                            Comments = $msgTable.guestMustbeRemoved
+                            ItemName= $ItemName 
+                            ReportTime = $ReportTime
+                            itsgcode = $itsgcode                            
+                        }
+                        $guestUsersArray.add($Customuser)
                     }
-                    $guestUsersArray.add($Customuser)
                 }
             }
         }
+
         if ($guestUsersArray.Count -eq 0) {
             # Guest accounts don't have any permissions on the Azure subscriptions, it's fine
             $IsCompliant= $true
@@ -76,7 +93,7 @@
                 Comments = $comment
                 ItemName= $ItemName 
                 ReportTime = $ReportTime
-                itsgcode = $itsgcode
+                itsgcode = $itsgcode                
             }
             $guestUsersArray.add($Customuser)    
         }
@@ -100,7 +117,7 @@
         ControlName = $ControlName
         Comments= $comment
         ItemName= $ItemName
-        itsgcode = $itsgcode
+        itsgcode = $itsgcode        
         ReportTime = $ReportTime
         MitigationCommands = $MitigationCommands
     }
@@ -110,4 +127,7 @@
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey -body $logAnalyticsEntry `
                                 -logType $LogType -TimeStampField Get-Date                 
 
+    
+    $stopWatch.Stop()
+    Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "
 }

@@ -12,7 +12,7 @@ param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
 param DepartmentNumber string
 param deployKV bool = true
 param deployLAW bool = true
-param CBSSubscriptionId string 
+param CBSSubscriptionName string 
 param SecurityLAWResourceId string
 param HealthLAWResourceId string
 param CustomModulesBaseURL string = 'https://github.com/Azure/GuardrailsSolutionAccelerator/raw/main/psmodules'
@@ -1116,10 +1116,10 @@ resource variable1 'variables' = {
   }
   }
   resource variable11 'variables' = {
-    name: 'CBSSubscriptionId'
+    name: 'CBSSubscriptionName'
     'properties': {
       'isEncrypted': true
-      'value': '"${CBSSubscriptionId}"'
+      'value': '"${CBSSubscriptionName}"'
     }
   }
   resource variable12 'variables' = {

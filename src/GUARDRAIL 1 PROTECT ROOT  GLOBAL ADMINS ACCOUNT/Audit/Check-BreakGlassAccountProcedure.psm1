@@ -55,16 +55,16 @@ function Check-ProcedureDocument {
     }
 
     # check for procedure doc in blob storage account
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccountContext -Blob $DocumentName -ErrorAction SilentlyContinue
+    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName -ErrorAction SilentlyContinue
 
     If ($blobs) {
         # a blob wit the name $DocumentName was located in the specified storage account
         $IsCompliant = $True
-        $Comments = $msgTable.procedureFileFound -f $DocumentName, $Containername, $StorageAccountName 
+        $Comments = $msgTable.procedureFileFound -f $DocumentName
     }
     else {
         # no blob with the name $DocumentName was found in the specified storage account
-        $Comments = $msgTable.procedureFileNotFound -f $ItemName, $DocumentName
+        $Comments = $msgTable.procedureFileNotFound -f $ItemName, $DocumentName, $ContainerName, $StorageAccountName
     }
 
     $PsObject = [PSCustomObject]@{
