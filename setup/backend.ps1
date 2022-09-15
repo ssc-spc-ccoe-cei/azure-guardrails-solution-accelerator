@@ -27,7 +27,8 @@ catch {
 }
 
 # Updates ITSG Controls
-$itsgURL="https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/setup/itsg33-ann4a-eng.csv"
+$itsgURL="https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/main/setup/itsg33-ann4a-eng.csv"
+
 get-itsgdata -URL $itsgURL -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey
 
 # Checks for Updates available

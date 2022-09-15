@@ -35,8 +35,8 @@
     "deployLAW": {
       "value": %deployLAW%
     },
-    "CBSSubscriptionId": {
-      "value": "%CBSSubscriptionId%"
+    "CBSSubscriptionName": {
+      "value": "%CBSSubscriptionName%"
     },
     "SecurityLAWResourceId": {
       "value": "%SecurityLAWResourceId%"
