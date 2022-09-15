@@ -1,0 +1,149 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+pr:
+  branches:
+    include: 
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- powershell: |
+    git fetch
+
+    $filesChangedInLastPR = @()
+    git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH origin/$env:SYSTEM_PULLREQUEST_SOURCEBRANCH | ForEach-Object {
+            $filesChangedInLastPR += (Join-Path $pwd -childPath $_)
+          }
+    Write-Host "'$($filesChangedInLastPR.count)' files changed in last commit: `n $filesChangedInLastPR"
+
+    $fileListString = $filesChangedInLastPR -join ';'
+    Write-Output ("##vso[task.setvariable variable=filesChangedInLastPR;isOutput=true]$fileListString")
+    Write-Output ("##vso[task.setvariable variable=filesChanged;isOutput=true]$($filesChangedInLastPR.count -gt 0)")
+
+  displayName: 'Get files changed in PR'
+  name: 'GetFilesChangedInPR'
+
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
+    FolderPath: './'
+    Pattern: '*ps*'
+    signConfigType: 'inlineSignParams'
+    inlineOperation: |
+        [{
+            "KeyCode" : "CP-230012",
+            "OperationCode" : "SigntoolSign",
+            "Parameters" : {
+                "OpusName" : "Microsoft",
+                "OpusInfo" : "http://www.microsoft.com",
+                "FileDigest" : "/fd \"SHA256\"",
+                "PageHash" : "/NPH",
+                "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            },
+            "ToolName" : "sign",
+            "ToolVersion" : "1.0"
+        },
+        {
+            "KeyCode" : "CP-230012",
+            "OperationCode" : "SigntoolVerify",
+            "Parameters" : {},
+            "ToolName" : "sign",
+            "ToolVersion" : "1.0"
+        }]
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
+  enabled: true
+
+- powershell: |
+    Write-Host "Executing powershell script in '$pwd'"
+    gci env: | FT -AutoSize
+    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
+    
+    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
+    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
+
+    $moduleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files changed in last commit"
+
+    try {
+      $moduleManifestFilesObjs = @()
+
+      ForEach ($file in $moduleManifestFiles) {
+        $moduleManifestFilesObjs += Get-Item -Path $file -ErrorAction Stop
+      }
+    }
+    catch {
+      Write-Error "Failed to find file path '$file' with Get-Item -Path '$file'; Error: $_"
+    }
+
+    $zipsChanged = $false
+    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+        
+        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+          Write-Host "Module '$($moduleManifest.BaseName)' was changed, zipping module files..."
+
+          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Update
+
+          $zipsChanged = $true
+        }
+        Else {
+            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+        }
+    }
+
+    # output whether modules were changed
+        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($moduleManifestFilesObjs.count -gt 0)")
+  displayName: 'Zip signed modules'
+  name: 'ZipFiles'
+  enabled: false
+
+- powershell: |
+    Write-Host "Executing powershell script in '$pwd'"
+    gci env: | FT -AutoSize
+    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
+    
+    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
+    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
+
+    $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files "
+
+    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+        
+        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+          Write-Host "Module '$($moduleManifest.BaseName)' found, zipping module files..."
+
+          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Update
+
+        }
+        Else {
+            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+        }
+    }
+
+    # output whether modules were changed
+        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
+  displayName: 'Zip signed modules'
+  name: 'ZipAllFiles'
+  enabled: true
+
+- powershell: |
+    $dest = "{0}/{1}.zip" -f $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY,(get-date -f 'yyyy-MM-dd-HH-mm-ss')
+    Compress-Archive -Path ./* -DestinationPath $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY/$(get-date -f 'yyyy-MM-dd-HH-mm-ss').zip
+  name: 'zipartifact'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
