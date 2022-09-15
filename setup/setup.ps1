@@ -108,6 +108,15 @@ if (!$update)
                 Exit
             }
         }
+
+        # check if a lighthouse defender for cloud policy MSI role assignment already exists - assignment name always 2cb8e1b1-fcf1-439e-bab7-b1b8b008c294
+        $assignmentId = "/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleAssignments/{1}" -f $lighthouseTargetManagementGroupID,'2cb8e1b1-fcf1-439e-bab7-b1b8b008c294'
+        If (Get-AzRoleAssignment -ObjectId $assignmentId -ErrorAction SilentlyContinue) {
+            Write-Error "A role assignment exists with the name '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294' at the Management group '$lighthouseTargetManagementGroupID'. This was likely
+            created by a previous Guardrails deployment and must be removed. Navigate to the Managment Group in the Portal and delete the Owner role assignment listed as 'Identity Not Found'
+            or use 'Remove-AzRoleAssignment -objectId $assignmentId'"
+            Exit
+        }
     }
 
     #config item validation
