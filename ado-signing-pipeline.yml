@@ -12,21 +12,6 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-- powershell: |
-    git fetch
-
-    $filesChangedInLastPR = @()
-    git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH origin/$env:SYSTEM_PULLREQUEST_SOURCEBRANCH | ForEach-Object {
-            $filesChangedInLastPR += (Join-Path $pwd -childPath $_)
-          }
-    Write-Host "'$($filesChangedInLastPR.count)' files changed in last commit: `n $filesChangedInLastPR"
-
-    $fileListString = $filesChangedInLastPR -join ';'
-    Write-Output ("##vso[task.setvariable variable=filesChangedInLastPR;isOutput=true]$fileListString")
-    Write-Output ("##vso[task.setvariable variable=filesChanged;isOutput=true]$($filesChangedInLastPR.count -gt 0)")
-
-  displayName: 'Get files changed in PR'
-  name: 'GetFilesChangedInPR'
 
 - task: EsrpCodeSigning@1
   inputs:
@@ -110,8 +95,6 @@ steps:
     gci env: | FT -AutoSize
     #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
     
-    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
-    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
 
     $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
     Write-Host "'$($moduleManifestFiles.count)' module manifest files "
