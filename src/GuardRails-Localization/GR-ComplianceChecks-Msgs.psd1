@@ -25,8 +25,6 @@ bgProcedure = Break Glass account Procedure
 bgCreation = Break Glass account Creation
 bgAccountResponsibility = Responsibility of break glass accounts must be with someone not-technical, director level or above
 bgAccountOwnerContact = Break Glass Account Owners Contact information
-procedureFileFound = File {0} found in Container.
-procedureFileNotFound = Coudnt find document for {0}, please create and upload a file with the name {1} in Container {2} on {3} Storage account to confirm you have completed the Item in the control.
 bgAccountsCompliance = {0} Compliance status = {1}, {2} Compliance status = {3}
 bgAuthenticationMeth =  Authentication Methods 
 bgLicenseNotAssigned = NOT ASSIGNED
@@ -86,6 +84,7 @@ routeNVAMitigation = Update the route to point to a virtual appliance
 noUDR = No User defined Route configured.
 noUDRMitigation = Please apply a custom route to this subnet, pointing to a virtual appliance.
 subnetExcluded = Subnet Excluded (manually or reserved name).
+networkDiagram = Confirm existence of network architecture diagram 
 
 # GuardRail # 9
 vnetDDosConfig = VNet DDos configuration
@@ -136,6 +135,10 @@ mktPlaceCreation = MarketPlaceCreation
 mktPlaceCreated = The Private Marketplace has been created.
 mktPlaceNotCreated = The Private Marketplace has not been created.
 enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
+
+# GR-Common
+procedureFileFound = File {0} found in Container.
+procedureFileNotFound = Coudnt find document for {0}, please create and upload a file with the name {1} in Container {2} on {3} Storage account to confirm you have completed the Item in the control.
 
 '@
 # SIG # Begin signature block

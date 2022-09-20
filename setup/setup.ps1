@@ -409,7 +409,7 @@ if (!$update)
     catch { "Error adding WS secret to KV. $_"; break }
     #endregion
     #region Copy modules definition to recently created Storage account
-    import-module "../src/Guardrails-Utilities/GR-Utilities.psm1"
+    import-module "../src/Guardrails-Common/GR-Common.psm1"
     copy-toBlob -FilePath ./modules.json -storageaccountName $storageaccountName -resourcegroup $resourceGroup -force -containerName "configuration"
     #endregion
 
@@ -671,7 +671,7 @@ else {
      -Force -Type PowerShell -Description "$backendRunbookDescription V.$newversion" -Tags @{version=$tags.ReleaseVersion; releaseDate=$tags.ReleaseDate} -Published 
     
     #uploads new modules.json
-    import-module "../src/Guardrails-Utilities/GR-Utilities.psm1"
+    import-module "../src/Guardrails-Common/GR-Common.psm1"
     Write-Output "Updating modules.json file."
     copy-toBlob -FilePath ./modules.json -resourcegroup $resourceGroup -storageaccountName $storageaccountname -containerName "configuration" -force
      #expand all modules to temp folder

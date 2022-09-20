@@ -873,15 +873,6 @@ resource module2 'modules' ={
       }
     }
   }
-resource module3 'modules' ={
-    name: 'Check-BreakGlassAccountProcedure'
-    properties: {
-      contentLink: {
-        uri: '${CustomModulesBaseURL}/Check-BreakGlassAccountProcedure.zip'
-        version: '1.0.0'
-      }
-    }
-  }
 resource module4 'modules' ={
     name: 'Check-DeprecatedAccounts'
     properties: {
@@ -973,10 +964,10 @@ resource module12 'modules' ={
     }
   }
 resource module13 'modules' ={
-    name: 'GR-Utilities'
+    name: 'GR-Common'
     properties: {
       contentLink: {
-        uri: '${CustomModulesBaseURL}/GR-Utilities.zip'
+        uri: '${CustomModulesBaseURL}/GR-Common.zip'
         version: '1.1.2'
       }
     }

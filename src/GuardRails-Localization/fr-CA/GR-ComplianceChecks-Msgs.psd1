@@ -21,12 +21,10 @@ mfaEnforcement = Application MFA
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 m365Assignment = Affectation Microsoft 365 E5
-bgProcedure = Procédure de compte Break Glass
-bgCreation = Création de compte Break Glass
+bgProcedure = Procédure de compte Brise Glass
+bgCreation = Création de compte Brise Glass
 bgAccountResponsibility = La responsabilité des comptes bris de glace doit incomber à une personne non technique, de niveau directeur ou supérieur
-bgAccountOwnerContact = Coordonnées des titulaires de compte Break Glass
-procedureFileFound = Fichier {0} trouvé.
-procedureFileNotFound = Impossible de trouver le document pour {0}, veuillez créer et télécharger un fichier avec le nom {1} dans le conteneur {2} du compte de stockage {3} pour confirmer que vous avez terminé l'élément dans le contrôle.
+bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glass
 bgAccountsCompliance = {0} Statut de conformité = {1}, {2} Statut de conformité = {3}
 bgAuthenticationMeth =  Méthodes d'authentification 
 bgLicenseNotAssigned = NON ASSIGNÉ
@@ -86,6 +84,7 @@ routeNVAMitigation = Mettre à jour la route pour pointer vers une appliance vir
 noUDR = Aucune route définie par l'utilisateur configurée.
 noUDRMitigation = Veuillez appliquer une route personnalisée à ce sous-réseau, pointant vers une appliance virtuelle.
 subnetExcluded = Sous-réseau exclu (nom manuel ou réservé).
+networkDiagram = Existence d'un diagramme d'architecture réseau 
 
 # GuardRail # 9
 vnetDDosConfig = Configuration DDos VNet
@@ -136,6 +135,10 @@ mktPlaceCreation = Création Place de marché
 mktPlaceCreated = Le marché privé a été créé.
 mktPlaceNotCreated = Le marché privé n'a pas été créé.
 enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
+
+# GR-Common
+procedureFileFound = Fichier {0} trouvé.
+procedureFileNotFound = Impossible de trouver le document pour {0}, veuillez créer et télécharger un fichier avec le nom {1} dans le conteneur {2} du compte de stockage {3} pour confirmer que vous avez terminé l'élément dans le contrôle.
 
 '@
 # SIG # Begin signature block
