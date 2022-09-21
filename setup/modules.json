@@ -1,10 +1,10 @@
 [                                                  
   {     
-    "ModuleName": "Check-ProcedureDocument-1",
+    "ModuleName": "Check-DocumentExistsInStorage",
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Script": "Check-ProcedureDocument -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables":
     [
       {
@@ -29,11 +29,11 @@
     ]
   }, 
   {     
-    "ModuleName": "Check-ProcedureDocument-2",
+    "ModuleName": "Check-DocumentExistsInStorage",
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Script": "Check-ProcedureDocument -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
     "variables":
     [
       {
@@ -355,6 +355,35 @@
       }
      ]
   },
+  {     
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control":"Guardrails8",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
+    "variables":
+    [
+      {
+        "Name":"storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name":"containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables":
+    [
+      {
+        "Name":"DocumentName",
+        "Value": "ConfirmNetworkDiagramExists.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(9)"
+      }      
+    ]
+  }, 
   {
      "ModuleName": "Get-VnetComplianceInformation",
      "Control":"Guardrails9",
