@@ -71,7 +71,7 @@ This module will detect the PBMM and look for specific policies not to be exempt
 - "TransparentDataEncryptionOnSqlDatabasesShouldBeEnabled"
 - "DiskEncryptionShouldBeAppliedOnVirtualMachines"
 
-## Module 7GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT
+## GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT
     
 This module will detect the PBMM and look for specific policies not to be exempted. The compliance will fail right away if the PBMM policy is not applied. If applied, the following policies will be checked for exemptions:
 
@@ -82,13 +82,13 @@ This module will detect the PBMM and look for specific policies not to be exempt
 - "SecureTransferToStorageAccountsShouldBeEnabled"
    
 
-## Guardrails Module 8 - Separation and Segmentation
+## Guardrails 8 - Separation and Segmentation
 
 This module will retrieve the list of subnets in all available VNets (all VNets visible to the managed identity, according to the permissions assigned (Typically, all since permissions are assigned at the Root Management Group level))
 
 For each subnet the following items will be evaluated:
 
-### Regarding Segmentation
+### Segmentation
 
 
 - Existence of an NSG attached to the subnet.
@@ -96,7 +96,7 @@ For each subnet the following items will be evaluated:
 
 If any of the above rules is not true, the subnet will be considered non compliant
 
-### Regarding Separation
+### Separation
 
 - Existence of an UDR (Route table) assigned to the subnet
 - The UDR must have a default route set to a Virtual Appliance
@@ -123,7 +123,7 @@ This module will detect the items below:
 | Item | Description |
 | ----------- | ----------- |
 | SECURITY ||
-| Create a RG for security monitoring | Implied since the Log Analytics workspace needs to be informed as a parameter |
+|Create a RG for security monitoring | Implied since the Log Analytics workspace needs to be informed as a parameter |
 |Create LAW, Retention needs to be 2 years.|Checks the retention of the provided LAW|
 |Workspace summary, add the log types:  activity log analytics. Ensure to add all subscriptions except sandbox|Checks for a data source set to Activity Logs |
 |Workspace summary, add, anti-malware assessment|Checks for the presence of the anti-malware solution|
