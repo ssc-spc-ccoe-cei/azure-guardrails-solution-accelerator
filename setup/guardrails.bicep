@@ -164,7 +164,7 @@ var wbConfig1 ='''
             "type": 2,
             "isRequired": true,
             "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
-            "value": "2022-09-14 14:58:15",
+            "value": "2022-09-20 20:02:16",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -406,7 +406,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 5\",\"{RunTime}\")",
+        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 5",
         "timeContext": {
@@ -443,7 +443,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 6\",\"{RunTime}\")",
+        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 6",
         "timeContext": {
@@ -481,7 +481,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 7\",\"{RunTime}\")",
+        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 7",
         "timeContext": {
@@ -1202,6 +1202,18 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     query: 'let baseurl="https://github.com/Azure/GuardrailsSolutionAccelerator/docs/";\nlet Link=strcat(baseurl,control,"-", replace_string(replace_string(itsgcode,"(","-"),")",""),".md");\nLink\n'
     functionAlias: 'gr_geturl'
     functionParameters: 'control:string, itsgcode:string'
+    version: 2
+  }
+}
+resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+  name: 'gr_data567'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_data567'
+    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar( GRITSGControls_CL | summarize max(TimeGenerated));\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)=="True", \'✔️ \', \'❌ \'),["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)'
+    functionAlias: 'gr_data567'
+    functionParameters: 'ctrlprefix:string, ReportTime:string'
     version: 2
   }
 }
