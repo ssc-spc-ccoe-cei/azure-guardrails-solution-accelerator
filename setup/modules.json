@@ -206,6 +206,21 @@
      ]
   },
   {
+    "ModuleName": "Check-CloudConsoleAccess",
+    "Control":"Guardrails3",
+   "ModuleType": "Builtin",
+   "Status": "Enabled",
+    "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables":
+    [
+     
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+ },
+  {
      "ModuleName": "Check-MonitorAccountCreation",
      "Control":"Guardrails4",
      "ModuleType": "Builtin",

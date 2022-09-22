@@ -1035,110 +1035,119 @@ resource module14 'modules' ={
       }
     }
   }
-resource variable1 'variables' = {
+  resource module24 'modules' ={
+    name: 'Check-CloudConsoleAccess'
+    properties: {
+      contentLink: {
+        uri: '${CustomModulesBaseURL}/Check-CloudConsoleAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource variable1 'variables' = {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
         value: '"${guardrailsKV.name}"'
     }
   }
-  
+    
   resource variable2 'variables' = {
-    'name': 'WorkSpaceID'
-    'properties': {
-        'isEncrypted': true
-        'value': '"${guardrailsLogAnalytics.properties.customerId}"'
+    name: 'WorkSpaceID'
+    properties: {
+        isEncrypted: true
+        value: '"${guardrailsLogAnalytics.properties.customerId}"'
     }
   }
   resource variable3 'variables' = {
-    'name': 'LogType'
-    'properties': {
-        'isEncrypted': true
-        'value': '"GuardrailsCompliance"'
+    name: 'LogType'
+    properties: {
+        isEncrypted: true
+        value: '"GuardrailsCompliance"'
     }
   }
   resource variable4 'variables' = {
-    'name': 'PBMMPolicyID'
-    'properties': {
-        'isEncrypted': true
-        'value': '"/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}"'
+    name: 'PBMMPolicyID'
+    properties: {
+        isEncrypted: true
+        value: '"/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}"'
     }
   }
   resource variable5 'variables' = {
-    'name': 'GuardrailWorkspaceIDKeyName'
-    'properties': {
-        'isEncrypted': true
-        'value': '"WorkSpaceKey"'
+    name: 'GuardrailWorkspaceIDKeyName'
+    properties: {
+        isEncrypted: true
+        value: '"WorkSpaceKey"'
     }
   }
   resource variable6 'variables' = {
-    'name': 'StorageAccountName'
-    'properties': {
-        'isEncrypted': false
-        'value': '"${guardrailsStorage.name}"'
+    name: 'StorageAccountName'
+    properties: {
+        isEncrypted: false
+        value: '"${guardrailsStorage.name}"'
     }
   }
   resource variable7 'variables' = {
-    'name': 'ContainerName'
-    'properties': {
-        'isEncrypted': true
-        'value': '"${containername}"'
+    name: 'ContainerName'
+    properties: {
+        isEncrypted: true
+        value: '"${containername}"'
     }
   }
   resource variable8 'variables' = {
-    'name': 'ResourceGroupName'
-    'properties': {
-        'isEncrypted': true
-        'value': '"${resourceGroup().name}"'
+    name: 'ResourceGroupName'
+    properties: {
+        isEncrypted: true
+        value: '"${resourceGroup().name}"'
     }
   }
   resource variable9 'variables' = {
-    'name': 'AllowedLocationPolicyId'
-    'properties': {
-        'isEncrypted': true
-        'value': '"/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}"'
+    name: 'AllowedLocationPolicyId'
+    properties: {
+        isEncrypted: true
+        value: '"/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}"'
     }
   }
   resource variable10 'variables' = {
     name: 'DepartmentNumber'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${DepartmentNumber}"'
+    properties: {
+      isEncrypted: true
+      value: '"${DepartmentNumber}"'
   }
   }
   resource variable11 'variables' = {
     name: 'CBSSubscriptionName'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${CBSSubscriptionName}"'
+    properties: {
+      isEncrypted: true
+      value: '"${CBSSubscriptionName}"'
     }
   }
   resource variable12 'variables' = {
     name: 'SecurityLAWResourceId'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${SecurityLAWResourceId}"'
+    properties: {
+      isEncrypted: true
+      value: '"${SecurityLAWResourceId}"'
     }
   }
   resource variable13 'variables' = {
     name: 'HealthLAWResourceId'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${HealthLAWResourceId}"'
+    properties: {
+      isEncrypted: true
+      value: '"${HealthLAWResourceId}"'
     }
   }
   resource variable14 'variables' = {
     name: 'TenantDomainUPN'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${TenantDomainUPN}"'
+    properties: {
+      isEncrypted: true
+      value: '"${TenantDomainUPN}"'
     }
   }
   resource variable15 'variables' = {
     name: 'GuardRailsLocale'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${Locale}"'
+    properties: {
+      isEncrypted: true
+      value: '"${Locale}"'
   }
   }
 }
