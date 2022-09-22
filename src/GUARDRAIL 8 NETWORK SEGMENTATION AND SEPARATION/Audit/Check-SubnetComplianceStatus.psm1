@@ -156,23 +156,19 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                                 $UDR=$subnet.RouteTable.Id.Split("/")[8]
                                 Write-Debug "Found $UDR UDR"
                                 $routeTable=Get-AzRouteTable -ResourceGroupName $subnet.RouteTable.Id.Split("/")[4] -name $UDR
-                                $ComplianceStatus=$true
-                                $Comments= $msgTable.subnetCompliant
+                                $ComplianceStatus=$false # I still don´t know if it has a UDR with 0.0.0.0 being sent to a Virtual Appliance.
+                                $Comments = $msgTable.routeNVA
+                                $MitigationCommands = $msgTable.routeNVAMitigation
                                 $MitigationCommands="N/A"
                                 foreach ($route in $routeTable.Routes)
                                 {
-                                    if ($route.NextHopType -ne "VirtualAppliance")
+                                    if ($route.NextHopType -eq "VirtualAppliance" -and $route.AddressPrefix -eq "0.0.0.0/0") # Found the required UDR
                                     {
-                                        $ComplianceStatus=$false
-                                        $Comments = $msgTable.routeNVA
-                                        $MitigationCommands = $msgTable.routeNVAMitigation
+                                        $ComplianceStatus=$true
+                                        $Comments= $msgTable.subnetCompliant
+                                        $MitigationCommands="N/A"
                                     }
                                 }
-                            }
-                            else {
-                                $ComplianceStatus=$false
-                                $Comments= $msgTable.noUDR
-                                $MitigationCommands = $msgTable.noUDRMitigation
                             }
                         }
                         else { #subnet excluded
