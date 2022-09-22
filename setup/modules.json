@@ -24,7 +24,7 @@
       },
       {
         "Name": "itsgcode",
-        "Value": "AC4(9)"
+        "Value": "AC2"
       }      
     ]
   }, 
@@ -53,7 +53,7 @@
       },
       {
         "Name": "itsgcode",
-        "Value": "AC4(9)"
+        "Value": "AC2"
       }      
     ]
   }, 
@@ -78,7 +78,7 @@
      
       {
         "Name": "itsgcode",
-        "Value": "AC4(8)"
+        "Value": "AC2"
       }
     ]
   },
@@ -93,7 +93,7 @@
      
       {
         "Name": "itsgcode",
-        "Value": "AC4(7)"
+        "Value": "AC2(7)"
       }
     ]
   },
@@ -119,7 +119,7 @@
       
        {
          "Name": "itsgcode",
-         "Value": "AC4(6)"
+         "Value": "IA2(1)"
        }
      ]
   },
@@ -145,7 +145,7 @@
      
       {
         "Name": "itsgcode",
-        "Value": "AC4(5)"
+        "Value": "AC2(7)"
       }
     ]
   },
@@ -171,7 +171,7 @@
      
       {
         "Name": "itsgcode",
-        "Value": "AC4(3)"
+        "Value": "AC2"
       }
     ]
   },
@@ -186,7 +186,7 @@
      
       {
         "Name": "itsgcode",
-        "Value": "AC4(2)"
+        "Value": "AC2(3)"
       }
     ]
   },
@@ -201,7 +201,7 @@
       
        {
          "Name": "itsgcode",
-         "Value": "AC4(1)"
+         "Value": "AC6(6)"
        }
      ]
   },
@@ -238,7 +238,7 @@
       
        {
          "Name": "itsgcode",
-         "Value": "AC4"
+         "Value": "AC2(4)"
        }
      ]
   },
@@ -264,7 +264,7 @@
       
        {
          "Name": "itsgcode",
-         "Value": "AC3(10)"
+         "Value": "SA9(5)"
        }
      ]
   },
@@ -290,7 +290,7 @@
      
       {
         "Name": "itsgcode",
-        "Value": "AC3(9)"
+        "Value": "SA9(5)"
       }
     ]
  },
@@ -315,7 +315,7 @@
     [
       {
         "Name": "itsgcode",
-        "Value": "AC3(8)"
+        "Value": "SC28"
       }
     ]
  },
@@ -340,7 +340,7 @@
   [   
     {
       "Name": "itsgcode",
-      "Value": "AC3(6)"
+      "Value": "SC8"
     }
   ]
   },
@@ -362,11 +362,11 @@
      [
        {
          "Name": "itsgcodesegmentation",
-         "Value": "AC3(5)"
+         "Value": "SC7"
        },
        {
         "Name": "itsgcodeseparation",
-        "Value": "AC3(4)"
+        "Value": "SC7"
       }
      ]
   },
@@ -395,7 +395,7 @@
       },
       {
         "Name": "itsgcode",
-        "Value": "AC4(9)"
+        "Value": "SC7"
       }      
     ]
   }, 
@@ -416,7 +416,7 @@
      [
        {
          "Name": "itsgcode",
-         "Value": "AC3(3)"
+         "Value": "SC5"
        }
      ]
   },
@@ -437,7 +437,7 @@
      [
        {
          "Name": "itsgcode",
-         "Value": "AC3(2)"
+         "Value": "SI4"
        }
      ]
   },
@@ -466,15 +466,15 @@
      [
        {
          "Name": "itsgcodesecmon",
-         "Value": "AC2(10)"
+         "Value": "AU2"
        },
        {
         "Name": "itsgcodehealthmon",
-        "Value": "AC2(11)"
+        "Value": "AU2"
        },
        {
         "Name": "itsgcodedefender",
-        "Value": "AC2(12)"
+        "Value": "AU2"
        }
      ]
   },
@@ -488,7 +488,7 @@
      [
        {
          "Name": "itsgcode",
-         "Value": "AC3(1)"
+         "Value": "CM8(7)"
        }
      ]
   }
