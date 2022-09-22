@@ -51,6 +51,13 @@ mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes.
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 
+
+# GuardRail #3
+noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
+allPoliciesAreCompliant=Toutes les politiques sont conformes.
+noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
+consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
+
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
 checkUserExistsError = L'appel API a retourné l'erreur {0}. Veuillez vérifier si l'utilisateur existe.

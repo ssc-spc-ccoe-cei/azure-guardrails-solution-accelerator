@@ -164,7 +164,7 @@ var wbConfig1 ='''
             "type": 2,
             "isRequired": true,
             "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
-            "value": "2022-09-14 14:58:15",
+            "value": "2022-09-20 20:02:16",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -406,7 +406,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 5\",\"{RunTime}\")",
+        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 5",
         "timeContext": {
@@ -443,7 +443,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 6\",\"{RunTime}\")",
+        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 6",
         "timeContext": {
@@ -481,7 +481,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 7\",\"{RunTime}\")",
+        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\")",
         "size": 0,
         "title": "GR 7",
         "timeContext": {
@@ -1035,110 +1035,119 @@ resource module14 'modules' ={
       }
     }
   }
-resource variable1 'variables' = {
+  resource module24 'modules' ={
+    name: 'Check-CloudConsoleAccess'
+    properties: {
+      contentLink: {
+        uri: '${CustomModulesBaseURL}/Check-CloudConsoleAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource variable1 'variables' = {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
         value: '"${guardrailsKV.name}"'
     }
   }
-  
+    
   resource variable2 'variables' = {
-    'name': 'WorkSpaceID'
-    'properties': {
-        'isEncrypted': true
-        'value': '"${guardrailsLogAnalytics.properties.customerId}"'
+    name: 'WorkSpaceID'
+    properties: {
+        isEncrypted: true
+        value: '"${guardrailsLogAnalytics.properties.customerId}"'
     }
   }
   resource variable3 'variables' = {
-    'name': 'LogType'
-    'properties': {
-        'isEncrypted': true
-        'value': '"GuardrailsCompliance"'
+    name: 'LogType'
+    properties: {
+        isEncrypted: true
+        value: '"GuardrailsCompliance"'
     }
   }
   resource variable4 'variables' = {
-    'name': 'PBMMPolicyID'
-    'properties': {
-        'isEncrypted': true
-        'value': '"/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}"'
+    name: 'PBMMPolicyID'
+    properties: {
+        isEncrypted: true
+        value: '"/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}"'
     }
   }
   resource variable5 'variables' = {
-    'name': 'GuardrailWorkspaceIDKeyName'
-    'properties': {
-        'isEncrypted': true
-        'value': '"WorkSpaceKey"'
+    name: 'GuardrailWorkspaceIDKeyName'
+    properties: {
+        isEncrypted: true
+        value: '"WorkSpaceKey"'
     }
   }
   resource variable6 'variables' = {
-    'name': 'StorageAccountName'
-    'properties': {
-        'isEncrypted': false
-        'value': '"${guardrailsStorage.name}"'
+    name: 'StorageAccountName'
+    properties: {
+        isEncrypted: false
+        value: '"${guardrailsStorage.name}"'
     }
   }
   resource variable7 'variables' = {
-    'name': 'ContainerName'
-    'properties': {
-        'isEncrypted': true
-        'value': '"${containername}"'
+    name: 'ContainerName'
+    properties: {
+        isEncrypted: true
+        value: '"${containername}"'
     }
   }
   resource variable8 'variables' = {
-    'name': 'ResourceGroupName'
-    'properties': {
-        'isEncrypted': true
-        'value': '"${resourceGroup().name}"'
+    name: 'ResourceGroupName'
+    properties: {
+        isEncrypted: true
+        value: '"${resourceGroup().name}"'
     }
   }
   resource variable9 'variables' = {
-    'name': 'AllowedLocationPolicyId'
-    'properties': {
-        'isEncrypted': true
-        'value': '"/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}"'
+    name: 'AllowedLocationPolicyId'
+    properties: {
+        isEncrypted: true
+        value: '"/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}"'
     }
   }
   resource variable10 'variables' = {
     name: 'DepartmentNumber'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${DepartmentNumber}"'
+    properties: {
+      isEncrypted: true
+      value: '"${DepartmentNumber}"'
   }
   }
   resource variable11 'variables' = {
     name: 'CBSSubscriptionName'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${CBSSubscriptionName}"'
+    properties: {
+      isEncrypted: true
+      value: '"${CBSSubscriptionName}"'
     }
   }
   resource variable12 'variables' = {
     name: 'SecurityLAWResourceId'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${SecurityLAWResourceId}"'
+    properties: {
+      isEncrypted: true
+      value: '"${SecurityLAWResourceId}"'
     }
   }
   resource variable13 'variables' = {
     name: 'HealthLAWResourceId'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${HealthLAWResourceId}"'
+    properties: {
+      isEncrypted: true
+      value: '"${HealthLAWResourceId}"'
     }
   }
   resource variable14 'variables' = {
     name: 'TenantDomainUPN'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${TenantDomainUPN}"'
+    properties: {
+      isEncrypted: true
+      value: '"${TenantDomainUPN}"'
     }
   }
   resource variable15 'variables' = {
     name: 'GuardRailsLocale'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${Locale}"'
+    properties: {
+      isEncrypted: true
+      value: '"${Locale}"'
   }
   }
 }
@@ -1202,6 +1211,18 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     query: 'let baseurl="https://github.com/Azure/GuardrailsSolutionAccelerator/docs/";\nlet Link=strcat(baseurl,control,"-", replace_string(replace_string(itsgcode,"(","-"),")",""),".md");\nLink\n'
     functionAlias: 'gr_geturl'
     functionParameters: 'control:string, itsgcode:string'
+    version: 2
+  }
+}
+resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+  name: 'gr_data567'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_data567'
+    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar( GRITSGControls_CL | summarize max(TimeGenerated));\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)=="True", \'✔️ \', \'❌ \'),["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)'
+    functionAlias: 'gr_data567'
+    functionParameters: 'ctrlprefix:string, ReportTime:string'
     version: 2
   }
 }

@@ -51,6 +51,12 @@ mitigationCommands = Verify is the users reported are deprecated.
 apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
 
+# GuardRail #3
+consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
+noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
+allPoliciesAreCompliant=All policies are compliant.
+noLocationsCompliant=No locations have only Canada in them.
+
 # GuardRail #4
 monitorAccount = Monitor Account Creation
 checkUserExistsError = API call returned Error {0}. Please Check if the user exists.
