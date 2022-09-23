@@ -46,23 +46,39 @@ In this control the solution tries to validate multiple items as follow.
 
 ## GUARDRAIL 2 MANAGEMENT OF ADMINISTRATIVE PRIVILEGES
     
-This Module...
+1. Check Deleted and Disabled Users
+2. Check Deprecated Accounts
+3. Check External User Accounts
 
 ## GUARDRAIL 3 CLOUD CONSOLE ACCESS
     
-This Module...
+This Module module verifies the following items:
+- The existance of at least one Conditional Access Named Location that only contains Canada. If no Location is defined or no locations have just Canada in it, the control will be considered non-Compliant.
+- If the above is Compliant, the solution with check if there is at least one conditional access policy that uses any of the Canada only named locations determined before. If no policies with this criteria are found, the control will be considered non-compliant.
 
 ## GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS
-    
-This Module...
+
+This modules will look for the existance of an account in the following format:
+`"SSC-CBS-Reporting@" + DepartmentNumber + "gc.onmicrosoft.com"`
+The Department number is provided as a parameter in the config.json during deployment and can be updated in the Automation Account variables.
+If no account is found in Azure AD as per above, the control will be considered non-compliant.
+
 
 ## GUARDRAIL 5 DATA LOCATION
 
 ### Check-DataLocation
 
+This Module will verify the existence of an  assignment of the 'Allowed Locations' policy in the multiple subscriptions and management groups. The standard guid for this Policy is:
+`e56962a6-4747-49cd-b67b-bf8b01975c4c`. 
+If the built-in policy is used for this purpose, no configuration is required. If a custom policy is being used for this purpose (define allowed locations), this guid can be specified in the config.json file during deployment of in the Automation Account variables.
+
 ### Check-PBMMPolicy
     
 This Module will detect the PBMM Initiative. The detection will happen at the Root Tenant management group and down, looking for all subscriptions and management groups. Any subscription of MG without the applied initial will be marked as non compliant.
+
+The standard guid for this Policy is:
+`4c4a5f27-de81-430b-b4e5-9cbd50595a87`. 
+If the built-in policy is used for this purpose, no configuration is required. If a custom policy is being used for this purpose (PBMM initiative), this guid can be specified in the config.json file during deployment of in the Automation Account variables.
 
 ## GUARDRAIL 6 PROTECTION OF DATA-AT-REST
     
@@ -99,7 +115,7 @@ If any of the above rules is not true, the subnet will be considered non complia
 ### Separation
 
 - Existence of an UDR (Route table) assigned to the subnet
-- The UDR must have a default route set to a Virtual Appliance
+- The UDR must have a default (0.0.0.0/0) route set to a Virtual Appliance.
 
 If any of the above rules is not true, the subnet will be considered not compliant.
 
