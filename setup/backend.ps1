@@ -9,6 +9,7 @@ $GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDK
 $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 #$StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
 $Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
+$lighthouseTargetManagementGroupID = Get-AutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
 
 # Connects to Azure using the Automation Account's managed identity
 try {
@@ -36,6 +37,80 @@ Check-UpdateAvailable -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -Re
 
 # Updates Tenant info.
 Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -TenantId $tenantID
+
+# Ensure the 'Microsoft.ManagedServices' resource provider is registered under each subscription at the delegated management group
+If ($lighthouseTargetManagementGroupID) {
+    Write-Output "Variable lighthouseTargetManagementGroupID has a value: '$lighthouseTargetManagementGroupID'; continuing with checking Lighthouse provider registrations..."
+    # Azure.Graph module not installed on Azure Automation, using REST
+    # $lighthouseTargetSubscriptions = Search-AzGraph -query "resourceContainers | where type == 'microsoft.resources/subscriptions'" -ManagementGroup $lighthouseTargetManagementGroupID
+    $uri = 'https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01'
+    $body = @{
+        query = "resourceContainers | where type == 'microsoft.resources/subscriptions' | project subscriptionId"
+        managementGroups = @($lighthouseTargetManagementGroupID)
+    } | ConvertTo-Json
+
+    $response = Invoke-AzRestMethod -Method POST -uri $uri -Payload $body
+    If ([string]$response.StatusCode -ne '200') {
+        $responseContent = $response.Content | ConvertFrom-Json
+        Write-Error "Failed to query Azure Resource Graph for list of subscription under the target management group with error: $($response.StatusCode): $($response.Error.details.message)"
+    }
+    Else {
+        $lighthouseTargetSubscriptions = $response.content | ConvertFrom-Json | Select-Object -Expand data | Select-Object -expand subscriptionId
+    }
+
+    Write-Output "Found '$($lighthouseTargetSubscriptions.count)' subscription under management group '$lighthouseTargetManagementGroupID': $lighthouseTargetSubscriptions"
+    ## switching context for each subscription is slow, using REST API and jobs instead
+    $queryJobs = @()
+    ForEach ($subscription in $lighthouseTargetSubscriptions) {
+        $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}?api-version=2021-04-01" -f $subscription,'Microsoft.ManagedServices'
+        $queryJobs += Invoke-AzRestMethod -Method GET -Uri $uri -AsJob
+    }
+
+    Write-Output "Waiting for '$($queryJobs.count)' query resource provider jobs to complete (up to 15 minutes)..."
+    $queryJobs | Wait-Job -Timeout (New-TimeSpan -Minutes 15).TotalSeconds
+
+    $registerJobs = @()
+    ForEach ($job in $queryJobs) {
+        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
+		Write-Output "JobData: $($jobData | convertto-json)"
+        $subscriptionId = $jobData.id.split('/')[2]
+
+        If ($jobData.registrationState -notin ('Registered','Registering')) {
+            Write-Warning "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register"
+            Add-LogEntry 'Warning' "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
+                -additionalValues @{reportTime=$ReportTime; locale=$locale}
+
+            $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}/register?api-version=2021-04-01" -f $subscriptionId,'Microsoft.ManagedServices'
+            
+			Write-Output "Register job URI: $uri"
+            $registerJobs += Invoke-AzRestMethod -Method POST -Uri $uri -AsJob
+        }
+        Else {
+            Write-Output "Subscription '$subscriptionId' already has 'Microsoft.ManagedServices' RP in registerd or registering state ('$($jobData.registrationState)')..."
+        }
+    }
+
+    Write-Host "Waiting for '$($registerJobs.count)' to complete (up to 15 minutes)..."
+    $registerJobs | Wait-Job -Timeout (New-TimeSpan -Minutes 15).TotalSeconds
+
+    ForEach ($job in $registerJobs) {
+        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
+		Write-Output "JobData: $($jobData | convertto-json)"
+        $subscriptionId = $jobData.id.split('/')[2]
+
+        Write-Output "Checking on Lighthouse RP registration job status for subscription '$subscriptionId...'"
+        If ($job.error) {
+            Write-Error "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)"
+            Add-LogEntry 'Error' "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
+                -additionalValues @{reportTime=$ReportTime; locale=$locale}
+        }
+        Else {
+            Write-Output "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'"
+            Add-LogEntry 'Information' "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
+            -additionalValues @{reportTime=$ReportTime; locale=$locale}
+        }
+    }
+}
 
 Add-LogEntry 'Information' "Completed execution of backend runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
     -additionalValues @{reportTime=$ReportTime; locale=$locale}
