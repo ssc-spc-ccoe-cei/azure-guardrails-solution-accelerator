@@ -136,7 +136,11 @@ Alternatively, these parameters can be used to leverage existing KeyVault and Lo
 
 ### Lighthouse Configuration
 
-If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-configureLighthouseAccessDelegation` switch parameter when calling setup.ps1. In order for Azure Policy to automatically delegate access to Defender for Cloud data for every subscription under the specified Management Group, the Policy Assignment Managed Service Identity is granted 'Owner' rights at the Management Group scope.
+If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-configureLighthouseAccessDelegation` switch parameter when calling setup.ps1. 
+
+In order for Azure Policy to automatically delegate access to Defender for Cloud data for every subscription under the specified Management Group, the Policy Assignment Managed Service Identity is granted 'Owner' rights at the Management Group scope. 
+
+In addition, every subscription under the target management group (lighthouseTargetManagementGroupID) must be registered for the 'Microsoft.ManagedServices' Resource Provider. To accomplish this, the setup process creates a custom RBAC role called 'Custom-RegisterLighthouseResourceProvider', which includes only the permissions to register the Lighthouse resource provider. A role assignment is added for this role at the target Management Group for the Automation Account's managed identity, enabling a runbook to automatically register any existing or new subscriptions for the resource provider. 
 
 For this feature to deploy, the following values must also existing the config.json file:
 

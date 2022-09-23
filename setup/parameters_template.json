@@ -55,6 +55,9 @@
     },
     "TenantDomainUPN": {
       "value": "%tenantDomainUPN%"
+    },
+    "lighthouseTargetManagementGroupID": {
+      "value": "%lighthouseTargetManagementGroupID%"
     }
   }
 }
