@@ -56,14 +56,14 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |keyVaultName|Name for the KeyVault resource|
 |resourcegroup|Resource Group to deploy the solution|
 |region|Location to deploy. Canadacentral is the default|
-|storageaccountName||
-|logAnalyticsworkspaceName||
-|autoMationAccountName||
-|FirstBreakGlassAccountUPN||
-|SecondBreakGlassAccountUPN||
+|storageaccountName|name of the storage account to be used. 4 random characters will be added to this name to avoid conflicts|
+|logAnalyticsworkspaceName| base name for the log analytics workspace|
+|autoMationAccountName| base name for the automation account |
+|FirstBreakGlassAccountUPN| UPN for the first break glass account|
+|SecondBreakGlassAccountUPN| UPN for the second break glass account|
 |PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.|
 |AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default|
-|DepartmentNumber||
+|DepartmentNumber| a number to be used by module 4 when looking for the existence of the monitoring account in Azure AD|
 |CBSSubscriptionName|Subscription Name containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**|
 |SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)|
 |HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)|
@@ -131,6 +131,8 @@ Alternatively, these parameters can be used to leverage existing KeyVault and Lo
 `$existingWorkSpaceRG`: the resource group containing the Log Analytics Workspace above.
 
 `$skipDeployment`: the setup script will run everything but the Azure Resources deployment (for debug/testing only).
+
+`$subscriptionId`: if specified, the setup script will try to deploy the solution in that subscription. If not specified, it will detect if multiple subscriptions are available and interactively ask which one to use.
 
 ### Lighthouse Configuration
 

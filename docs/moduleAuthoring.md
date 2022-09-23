@@ -2,6 +2,35 @@
 
 Modules in the Guardrails solution are defined in a file called modules.json, with the structure described below.
 
+{
+  "ModuleName": "",
+  "Control":"Name of GR module",
+  "ModuleType": "Builtin",
+  "Status": "Enabled",
+  "Script": "the line to be run",
+  "variables":
+  [
+    {
+      "Name":"",
+      "Value":""
+    }
+  ],
+  "secrets":
+    [
+      {
+        "Name":"",
+        "Value":""
+      }
+    ],
+  "localVariables":
+    [
+      {
+        "Name":"",
+        "Value":""
+      }
+    ]
+}
+
 The general steps to create a module are:
 
 - Write PowerShell Module, sign it and zip it.
@@ -56,13 +85,23 @@ The general steps to create a module are:
      ]
   }
 
-variables: references to automation account variables.
+All variables, localvariables and secrets are added to `$vars.xxxxx' (where xxxxx is the name in the definition above) and can be used as module parameters.
 
-localvariables: variables added to the `$vars` object, only local to the execution of the module.
+variables: references to automation account variables. Use the name of the automation account variable in the Name and its content will be populates in $vars.<Value>
+for example:
+    "variables":
+    [
+      {
+        "Name":"variable1",
+        "Value":"myvariable"
+      }
+    ],
+can be referenced as $vars.myvariable in the script call.
+
+localvariables: variables added to the `$vars` object, only local to the execution of the module. 
 
 secrets: references to keyvault secrets.
 
-All variables, localvariables and secrets are added to `$vars.xxxxx' (where xxxxx is the name in the definition above) and can be used as module parameters.
 
 - Add automation account variable to the bicep file and update setup/config/etc if required.
     - Config.json file needs to receive a new entry.
@@ -79,6 +118,10 @@ These variables can be used in the module calls without the needs of creating cu
 - $ResourceGroupName : name of the resource group for guardrails.
 - $StorageAccountName : Name of the Storage Account.
 - $ReportTime: the unified report time for all modules in each execution.
+- $Locale: the specified local (en-CA is default)
+- $SubID: id of the installed subscription
+- $TenantId: id of the Azure AD tenant
+- $GraphAccessToken: a valid Graph token relative to the Automation Account managed identity.
 
 ## Exception Handling
 
@@ -96,5 +139,3 @@ From your fork (which will be public due to visibility inheritance) you can clon
 `"CustomModulesBaseURL": {
       "value": "<your github base url"
     }`
-
-
