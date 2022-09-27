@@ -21,7 +21,7 @@ Please make sure to select **PowerShell** as shell type.
 - Navigate to the repository main page and look for the Releases. Select the desired release and download the appropriate asset:
 For example:
 ```
-wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/v1.0.1.zip
+wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/relasenumber.zip
 ```
 Then unzip the files and change directories (Example. Folder names will vary depending the release):
 ```
