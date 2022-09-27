@@ -94,17 +94,16 @@ Get-AzPolicyDefinition | Select-Object Name -ExpandProperty Properties | select 
 
 In many organizations, Tags may be required in order for Resource Groups to be created. The Guardrails setup uses a file called `tags.json` to create tags for the Resource Group (only).
 
-The only default tag is:
-    
+The only default and required tags are:
+      
     {
-
-        "Name":"Solution",
-
-        "Value": "Guardrails Accelerator"
-
+        "Solution":"Guardrails Accelerator",
+        "ReleaseVersion": "1.0.4",
+        "ReleaseDate": "2022/09/01"
     }
 
 Add tags as required per your policies in a json array format.
+Please do not delete the default required tags 
 
 ## Deployment
 
