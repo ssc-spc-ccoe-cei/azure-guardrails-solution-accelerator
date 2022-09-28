@@ -1194,6 +1194,7 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
     releasedate: releaseDate
   }
   properties: {
+    retentionInDays:90
     sku: {
       name: 'PerGB2018'
     }
