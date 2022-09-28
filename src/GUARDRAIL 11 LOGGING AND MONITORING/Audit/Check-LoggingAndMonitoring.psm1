@@ -164,7 +164,7 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
         }
         else {
             #Workspace is there but need to check if logs are enabled.
-            $enabledLogs=(($p| ? {$_.workspaceId -eq $wsid}).logs | ? {$_.enabled -eq $true}).category
+            $enabledLogs=(($tenantWS| ? {$_.workspaceId -eq $wsid}).logs | ? {$_.enabled -eq $true}).category
             if ("AuditLogs" -notin $enabledLogs -or "SignInLogs" -notin $enabledLogs)
             {
                 $IsCompliant=$false
