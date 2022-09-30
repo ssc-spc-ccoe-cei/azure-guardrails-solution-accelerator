@@ -164,7 +164,7 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
         }
         else {
             #Workspace is there but need to check if logs are enabled.
-            $enabledLogs=(($p| ? {$_.workspaceId -eq $wsid}).logs | ? {$_.enabled -eq $true}).category
+            $enabledLogs=(($tenantWS| ? {$_.workspaceId -eq $wsid}).logs | ? {$_.enabled -eq $true}).category
             if ("AuditLogs" -notin $enabledLogs -or "SignInLogs" -notin $enabledLogs)
             {
                 $IsCompliant=$false
@@ -298,7 +298,11 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
             $Comments= $msgTable.noSecurityContactInfo -f $sub.Name
             $MitigationCommands += $msgTable.setSecurityContact -f $sub.Name
         }
-        if ((Get-AzSecurityPricing | Select-Object PricingTier | Where-Object {$_.PricingTier -eq 'Free'}).Count -gt 0)
+        
+        # We need to exlude 
+        # - CloudPosture since this plan is always shows as Free
+        # - KubernetesService and ContainerRegistry because two plans are deprecated in favor of the Container plan.
+        if ((Get-AzSecurityPricing | Where-Object {$_.PricingTier -eq 'Free' -and $_.Name -ne "CloudPosture" -and $_.Name -ne "KubernetesService" -and $_.Name -ne "ContainerRegistry"}).Count -gt 0)
         {
             $IsCompliant=$false
             $Comments += $msgTable.notAllDfCStandard -f $sub.Name

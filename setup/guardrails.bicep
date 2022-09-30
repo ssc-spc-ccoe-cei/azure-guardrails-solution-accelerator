@@ -21,6 +21,7 @@ param Locale string = 'EN'
 param releaseVersion string
 param releaseDate string 
 param TenantDomainUPN string
+param lighthouseTargetManagementGroupID string
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
@@ -1150,6 +1151,14 @@ resource module14 'modules' ={
       value: '"${Locale}"'
   }
   }
+
+  resource variable16 'variables' = {
+    name: 'lighthouseTargetManagementGroupID'
+    'properties': {
+      'isEncrypted': true
+      'value': '"${lighthouseTargetManagementGroupID}"'
+  }
+  }
 }
 
 resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = if (deployKV) {
@@ -1185,6 +1194,7 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
     releasedate: releaseDate
   }
   properties: {
+    retentionInDays:90
     sku: {
       name: 'PerGB2018'
     }
@@ -1196,7 +1206,7 @@ resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data'
-    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar( GRITSGControls_CL | summarize max(TimeGenerated));\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)=="True", \'✔️ \', \'❌ \'),["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)=="True", \'✔️ \', \'❌ \'),["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)'
     functionAlias: 'gr_data'
     functionParameters: 'ctrlprefix:string, ReportTime:string'
     version: 2
@@ -1220,7 +1230,7 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data567'
-    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar( GRITSGControls_CL | summarize max(TimeGenerated));\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)=="True", \'✔️ \', \'❌ \'),["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Comments=Comments_s, Status=iif(tostring(ComplianceStatus_b)=="True", \'✔️ \', \'❌ \'),["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)'
     functionAlias: 'gr_data567'
     functionParameters: 'ctrlprefix:string, ReportTime:string'
     version: 2
@@ -1287,3 +1297,5 @@ resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
     }
   }
 }
+
+output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

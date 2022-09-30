@@ -21,7 +21,7 @@ Please make sure to select **PowerShell** as shell type.
 - Navigate to the repository main page and look for the Releases. Select the desired release and download the appropriate asset:
 For example:
 ```
-wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/v1.0.1.zip
+wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/relasenumber.zip
 ```
 Then unzip the files and change directories (Example. Folder names will vary depending the release):
 ```
@@ -56,14 +56,14 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |keyVaultName|Name for the KeyVault resource|
 |resourcegroup|Resource Group to deploy the solution|
 |region|Location to deploy. Canadacentral is the default|
-|storageaccountName||
-|logAnalyticsworkspaceName||
-|autoMationAccountName||
-|FirstBreakGlassAccountUPN||
-|SecondBreakGlassAccountUPN||
+|storageaccountName|name of the storage account to be used. 4 random characters will be added to this name to avoid conflicts|
+|logAnalyticsworkspaceName| base name for the log analytics workspace|
+|autoMationAccountName| base name for the automation account |
+|FirstBreakGlassAccountUPN| UPN for the first break glass account|
+|SecondBreakGlassAccountUPN| UPN for the second break glass account|
 |PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.|
 |AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default|
-|DepartmentNumber||
+|DepartmentNumber| a number to be used by module 4 when looking for the existence of the monitoring account in Azure AD|
 |CBSSubscriptionName|Subscription Name containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**|
 |SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)|
 |HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)|
@@ -94,17 +94,16 @@ Get-AzPolicyDefinition | Select-Object Name -ExpandProperty Properties | select 
 
 In many organizations, Tags may be required in order for Resource Groups to be created. The Guardrails setup uses a file called `tags.json` to create tags for the Resource Group (only).
 
-The only default tag is:
-    
+The only default and required tags are:
+      
     {
-
-        "Name":"Solution",
-
-        "Value": "Guardrails Accelerator"
-
+        "Solution":"Guardrails Accelerator",
+        "ReleaseVersion": "1.0.4",
+        "ReleaseDate": "2022/09/01"
     }
 
 Add tags as required per your policies in a json array format.
+Please do not delete the default required tags 
 
 ## Deployment
 
@@ -132,9 +131,15 @@ Alternatively, these parameters can be used to leverage existing KeyVault and Lo
 
 `$skipDeployment`: the setup script will run everything but the Azure Resources deployment (for debug/testing only).
 
+`$subscriptionId`: if specified, the setup script will try to deploy the solution in that subscription. If not specified, it will detect if multiple subscriptions are available and interactively ask which one to use.
+
 ### Lighthouse Configuration
 
-If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-configureLighthouseAccessDelegation` switch parameter when calling setup.ps1. In order for Azure Policy to automatically delegate access to Defender for Cloud data for every subscription under the specified Management Group, the Policy Assignment Managed Service Identity is granted 'Owner' rights at the Management Group scope.
+If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-configureLighthouseAccessDelegation` switch parameter when calling setup.ps1. 
+
+In order for Azure Policy to automatically delegate access to Defender for Cloud data for every subscription under the specified Management Group, the Policy Assignment Managed Service Identity is granted 'Owner' rights at the Management Group scope. 
+
+In addition, every subscription under the target management group (lighthouseTargetManagementGroupID) must be registered for the 'Microsoft.ManagedServices' Resource Provider. To accomplish this, the setup process creates a custom RBAC role called 'Custom-RegisterLighthouseResourceProvider', which includes only the permissions to register the Lighthouse resource provider. A role assignment is added for this role at the target Management Group for the Automation Account's managed identity, enabling a runbook to automatically register any existing or new subscriptions for the resource provider. 
 
 For this feature to deploy, the following values must also existing the config.json file:
 
