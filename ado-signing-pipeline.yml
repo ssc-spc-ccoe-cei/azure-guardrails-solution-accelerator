@@ -9,7 +9,7 @@ pr:
       - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: windows-latest
 
 steps:
 
@@ -44,6 +44,51 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
   enabled: true
+
+#look for hash mismatch
+- powershell: |
+    $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+
+    Foreach ($signatureStatus in $signatureStatuses) {
+      If ($signatureStatus.Status -eq 'HashMismatch') {
+        throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      ElseIf ($signatureStatus.Status -eq 'NotSigned') {
+        Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      ElseIf ($signatureStatus.Status -eq 'Valid') {
+        Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      Else {
+        throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
+      }
+    }
+  name: CheckForSignFailures
+
+#test module imports
+- powershell: |
+    $ErrorActionPreference = 'Stop'
+
+    $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1
+    Write-Host "Count of module files: $($moduleFiles.count)"
+    
+    try {
+      ForEach ($moduleFile in $moduleFiles) {
+        Import-Module $moduleFile.Fullname -ErrorAction Stop
+      }
+    }
+    catch {
+      throw "Failed test import module '$moduleFile' with error: $_"
+    }
+
+    $importedModules = Get-Module
+    Write-Host "Imported modules: `n $($importedModules.Path | Out-String)"
+
+    $missingModules = $moduleFiles | Where-object {$_ -inotin ($importedModules).Path} 
+    If ($missingModules) {
+      throw "The following modules failed import test: $missingModules"
+    }
+  name: TestModuleImports
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
@@ -85,7 +130,7 @@ steps:
     }
 
     # output whether modules were changed
-        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($moduleManifestFilesObjs.count -gt 0)")
+    Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($moduleManifestFilesObjs.count -gt 0)")
   displayName: 'Zip signed modules'
   name: 'ZipFiles'
   enabled: false
@@ -115,7 +160,7 @@ steps:
     }
 
     # output whether modules were changed
-        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
+    Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
   displayName: 'Zip signed modules'
   name: 'ZipAllFiles'
   enabled: true
