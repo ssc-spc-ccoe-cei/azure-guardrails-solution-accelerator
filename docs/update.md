@@ -2,7 +2,7 @@
 
 Script: uses the same syntax of the setup, but adding the `-update` switch. For example:
 
-`.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN> -update'
+`.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN> -update`
 
 The setup.ps1, when called with the `-update` switch, will:
 - Reuse the same parameters from the config.json file
