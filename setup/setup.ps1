@@ -2,9 +2,9 @@ param (
     [Parameter(Mandatory = $true)]
     [string]
     $configFilePath,
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [string]
-    $userId,
+    $userId = '',
     [Parameter(Mandatory = $false)]
     [string]
     $existingKeyVaultName,
@@ -54,8 +54,8 @@ if (!$update)
         "Error reading config file."
         break
     }
-    #$tenantIDtoAppend="-"+$($env:ACC_TID).Split("-")[0]
-    $tenantIDtoAppend = "-" + $((Get-AzContext).Tenant.Id).Split("-")[0]
+    $tenantId = (Get-AzContext).Tenant.Id
+    $tenantIDtoAppend = "-" + $tenantId.Split("-")[0]
     $keyVaultName = $config.keyVaultName + $tenantIDtoAppend
     $resourcegroup = $config.resourcegroup + $tenantIDtoAppend
     $region = $config.region
@@ -152,16 +152,48 @@ if (!$update)
     }
 
     #config item validation
-    if ($config.SecurityLAWResourceId.split("/").Count -ne 9 -or $config.HealthLAWResourceId.Split("/").Count -ne 9) {
-        Write-Output "Error in SecurityLAWResourceId or HealthLAWResourceId ID. Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
+    Write-Verbose "Checking that the provided resource ID for SecurityLAWResourceId is valid..."
+    if ($config.SecurityLAWResourceId.split("/").Count -ne 9) {
+        Write-Error "Error in SecurityLAWResourceId. Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
         Break
     }
-    if ( $null -eq (Get-AzRoleAssignment | Where-Object { $_.RoleDefinitionName -eq "User Access Administrator"`
-                -and $_.SignInName -eq $userId -and $_.Scope -eq "/" })) {
-        Write-Output $userId + " doesn't have Access Management for Azure Resource permissions,please refer to the requirements section in the setup document"
+    Write-Verbose "Checking that the provided resource ID for HealthLAWResourceId is valid..."
+    if ($config.HealthLAWResourceId.Split("/").Count -ne 9) {
+        Write-Error "Error in HealthLAWResourceId ID. Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
+        Break
+    }
+
+    $context = Get-AzContext
+    If ($context.Account -match '^MSI@') {
+        # running in Cloud Shell, finding delegated user ID
+        $userId = (Get-AzAdUser -SignedIn).Id
+    }
+    ElseIf ($context.Account.Type -eq 'ServicePrincipal') {
+        $sp = Get-AzADServicePrincipal -ApplicationId $context.Account.Id
+        $userId = $sp.Id
+    }
+    Else {
+        # running locally
+        $userId = $context.Account.Id
+    }
+    $tenantRootMgmtGroupId = '/providers/Microsoft.Management/managementGroups/{0}' -f $tenantId
+    Write-Verbose "Checking that user '$userId' has role 'User Access Administrator' or 'Owner' assigned at the root management group scope (id: '$tenantRootMgmtGroupId')"
+    Write-Verbose "`t Getting role assignments with cmd: Get-AzRoleAssignment -Scope $tenantRootMgmtGroupId -RoleDefinitionName 'User Access Administrator' -ObjectId $userId -ErrorAction Continue"
+    Write-Verbose "`t Getting role assignments with cmd: Get-AzRoleAssignment -Scope $tenantRootMgmtGroupId -RoleDefinitionName 'Owner' -ObjectId $userId -ErrorAction Continue"
+    $roleAssignments = @()
+    $roleAssignments += Get-AzRoleAssignment -Scope $tenantRootMgmtGroupId -RoleDefinitionName 'User Access Administrator' -ObjectId "$userId" -ErrorAction Continue
+    $roleAssignments += Get-AzRoleAssignment -Scope $tenantRootMgmtGroupId -RoleDefinitionName 'Owner' -ObjectId "$userId" -ErrorAction Continue
+
+    Write-Verbose "`t Count of role assignments '$($roleAssignments.Count)'"
+    if ($roleAssignments.count -eq 0) {
+        Write-Error "Specified user ID '$userId' does not have role 'User Access Administrator' or 'Owner' assigned at the root management group scope!"
         Break                                                
     }
+    Else {
+        Write-Verbose "`t Sufficent role assignment for current user exists..."
+    }
     #Tests if logged in:
+    Write-Verbose "Verifying that the user is logged in and that the correct subscription is selected..."
     $subs = Get-AzSubscription -ErrorAction SilentlyContinue
     if (-not($subs)) {
         Connect-AzAccount
@@ -235,18 +267,9 @@ if (!$update)
     #endregion
     #before deploying anything, check if current user can be found.
     $begin = get-date
-    Write-Verbose "Adding current user as a Keyvault administrator (for setup)."
-    if ($userId -eq "") {
-        $currentUserId = (get-azaduser -SignedIn).Id 
-    }
-    else {
-        $currentUserId = (get-azaduser -UserPrincipalName $userId).Id
-    }
-    if ($null -eq $currentUserId) {
-        Write-Error "Error: no current user could be found in current Tenant. Context: $((Get-AzAdUser -SignedIn).UserPrincipalName). Override specified: $userId."
-        break;
-    }
-    $tenantDomainUPN=$userId.Split("@")[1]
+
+    $tenantDomainUPN = Get-AzTenant -TenantId $tenantId | Select-Object -Expand DefaultDomain
+
     #region  Template Deployment
     # gets tags information from tags.json, including version and release date.
     $tags = get-content ./tags.json | convertfrom-json
@@ -409,8 +432,19 @@ if (!$update)
             }
         }
 
-        ### wait 30 seconds to ensure AAD has time to propagate MSI identities before assigning a roles ###
-        Start-Sleep -Seconds 30
+        ### wait up to 5 minutes to ensure AAD has time to propagate MSI identities before assigning a roles ###
+        $i = 0
+        do {
+            Write-Verbose "Waiting for Policy assignment MSI to be available..."
+            Start-Sleep 5
+
+            $i++
+            If ($i -gt '60') {
+                Write-Error "[$i/60]Timeout while waiting for MSI '$($policyDeployment.Outputs.policyAssignmentMSIRoleAssignmentID.value)' to exist in Azure AD"
+                break
+            }
+        }
+        until ((Get-AzADServicePrincipal -id $policyDeployment.Outputs.policyAssignmentMSIRoleAssignmentID.value -ErrorAction SilentlyContinue))
 
         # deploy an 'Owner' role assignment for the MSI associated with the Policy Assignment created in the previous step
         # Owner rights are required so that the MSI can then assign the requested 'Security Reader' role on each subscription under the target management group
@@ -454,7 +488,7 @@ if (!$update)
 
     #Add current user as a Keyvault administrator (for setup)
     try { $kv = Get-AzKeyVault -ResourceGroupName $keyVaultRG -VaultName $keyVaultName } catch { "Error fetching KV object. $_"; break }
-    try { $null = New-AzRoleAssignment -ObjectId $currentUserId -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId }catch { "Error assigning permissions to KV. $_"; break }
+    try { $null = New-AzRoleAssignment -ObjectId $userId -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId }catch { "Error assigning permissions to KV. $_"; break }
     Write-Output "Sleeping 30 seconds to allow for permissions to be propagated."
     Start-Sleep -Seconds 30
     #region Secret Setup
@@ -520,30 +554,40 @@ if (!$update)
         $secret = Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "BGA2" -SecretValue $secretvalue
         #endregion
 
-        #region Assign permissions
-        $GraphAppId = "00000003-0000-0000-c000-000000000000"
-        Write-Output "Adding Permissions to Automation Account - Managed Identity"
-        import-module AzureAD.Standard.Preview
-        AzureAD.Standard.Preview\Connect-AzureAD -Identity -TenantID $env:ACC_TID
-        $MSI = (Get-AzureADServicePrincipal -Filter "displayName eq '$autoMationAccountName'")
-        #Start-Sleep -Seconds 10
-        $graph = Get-AzureADServicePrincipal -Filter "appId eq '$GraphAppId'"
+        #region Assign permissions>
+        $graphAppId = "00000003-0000-0000-c000-000000000000"
+        $graphAppSP = Get-AzADServicePrincipal -ApplicationId $graphAppId
         $appRoleIds = @("Organization.Read.All", "User.Read.All", "UserAuthenticationMethod.Read.All", "Policy.Read.All")
+
         foreach ($approleidName in $appRoleIds) {
             Write-Output "Adding permission to $approleidName"
-            $approleid = ($graph.AppRoles | Where-Object { $_.Value -eq $approleidName }).Id
+            $appRoleId = ($graphAppSP.AppRole | Where-Object { $_.Value -eq $approleidName }).Id
             if ($null -ne $approleid) {
                 try {
-                    New-AzureAdServiceAppRoleAssignment -ObjectId $MSI.ObjectId -PrincipalId $MSI.ObjectId -ResourceId $graph.ObjectId -Id $approleid
+                    $body = @{
+                        "principalId" = $guardrailsAutomationAccountMSI
+                        "resourceId" = $graphAppSP.Id
+                        "appRoleId" = $appRoleId
+                    } | ConvertTo-Json
+
+                    $uri = "https://graph.microsoft.com/v1.0/servicePrincipals/{0}/appRoleAssignments" -f $guardrailsAutomationAccountMSI
+                    $response = Invoke-AzRest -Method POST -Uri $uri -Payload $body -ErrorAction Stop
                 }
                 catch {
-                    "Error assigning permissions $approleid to $approleidName. $_"
+                    Write-Error "Error assigning permissions $approleid to $approleidName. $_"
+                    Break
+                }
+
+                If ([int]($response.StatusCode) -gt 299) {
+                    Write-Error "Error assigning permissions $approleid to $approleidName. $($response.Error)"
+                    Break
                 }
             }
             else {
-                Write-Output "App Role Id $approleid Not found... :("
+                Write-Output "App Role Id $approleidName ID Not found... :("
             }
         }
+        
     }
     catch {
         "Error assigning permissions to graph API. $_"
@@ -657,17 +701,7 @@ else {
     #endregion
     #before deploying anything, check if current user can be found.
     $begin = get-date
-    Write-Verbose "Adding current user as a Keyvault administrator (for setup)."
-    if ($userId -eq "") {
-        $currentUserId = (get-azaduser -UserPrincipalName (Get-AzAccessToken).UserId).Id 
-    }
-    else {
-        $currentUserId = (get-azaduser -UserPrincipalName $userId).Id
-    }
-    if ($null -eq $currentUserId) {
-        Write-Error "Error: no current user could be found in current Tenant. Context: $((Get-AzAccessToken).UserId). Override specified: $userId."
-        break;
-    }
+    
     #region  Template Deployment
     # gets tags information from tags.json, including version and release date.
     $tags = get-content ./tags.json | convertfrom-json
