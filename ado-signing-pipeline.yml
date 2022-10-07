@@ -12,7 +12,7 @@ pool:
   vmImage: windows-latest
 
 variables: 
-  group: 'GuardrailsTestDeployments'
+  - group: 'GuardrailsTestDeployments'
 
 steps:
 
