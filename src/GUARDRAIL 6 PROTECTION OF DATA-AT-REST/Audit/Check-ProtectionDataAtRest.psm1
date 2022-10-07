@@ -139,8 +139,17 @@ function Verify-ProtectionDataAtRest {
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the  `
             Az.Resources module; returned error message: $_"
     }
-    [string]$type = "Management Group"  
-    $ObjectList+=Check-StatusDataAtRest -objList $objs -itsgcode $itsgcode -objType $type -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+
+    try {
+        $ErrorActionPreference = 'Stop'
+        [string]$type = "Management Group"  
+        $ObjectList+=Check-StatusDataAtRest -objList $objs -itsgcode $itsgcode -objType $type -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+    }
+    catch {
+        Add-LogEntry 'Error' "Error occured when running 'Check-StatusDataAtRest' for management group: $_"  -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        throw "Error occured when running for management group'Check-StatusDataAtRest': $_"
+    }
+
     #Check Subscriptions
     try {
         $objs = Get-AzSubscription -ErrorAction Stop
@@ -151,9 +160,15 @@ function Verify-ProtectionDataAtRest {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the `
             Az.Resources module; returned error message: $_"
     }
-    [string]$type = "subscription"
-    $ObjectList+=Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
-    
+    try {
+            [string]$type = "subscription"
+            $ObjectList+=Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
+    }
+    catch {
+        $ErrorActionPreference = 'Stop'
+        Add-LogEntry 'Error' "Error occured when running 'Check-StatusDataAtRest' for subscription: $_"  -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        throw "Error occured when running 'Check-StatusDataAtRest' for subscription: $_"
+    }
     #Writes data
     $ObjectList #| convertto-json -Depth 3
     if ($ObjectList.Count -gt 0)
