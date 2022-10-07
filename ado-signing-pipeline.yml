@@ -11,6 +11,9 @@ pr:
 pool:
   vmImage: windows-latest
 
+variables: 
+  group: 'GuardrailsTestDeployments'
+
 steps:
 
 - task: EsrpCodeSigning@1
@@ -164,6 +167,162 @@ steps:
   displayName: 'Zip signed modules'
   name: 'ZipAllFiles'
   enabled: true
+
+- task: AzurePowerShell@5
+  inputs:
+    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      $configFilePath = Join-Path -Path $env:AGENT_TEMPDIRECTORY -ChildPath 'config.json'
+
+      $configContent = @'
+      {
+          "keyVaultName": "guardrails",
+          "resourcegroup": "Guardrails",
+          "region": "CanadaCentral",
+          "storageaccountName": "guardrail",
+          "logAnalyticsworkspaceName": "guardrails",
+          "autoMationAccountName": "guardrails",
+          "FirstBreakGlassAccountUPN": "breakglass1@$(testTenantDomain)",
+          "SecondBreakGlassAccountUPN": "breakglass2@$(testTenantDomain)",
+          "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
+          "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+          "DepartmentNumber": "",
+          "CBSSubscriptionName": "$(CBSSubscriptionName)",
+          "SecurityLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+          "HealthLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+          "Locale": "en-CA",
+          "lighthouseServiceProviderTenantID": "$(lighthouseProviderTenantId)",
+          "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+          "lighthousePrincipalId": "$(lighthousePrincipalId)",
+          "lighthouseTargetManagementGroupID": "mb_co"
+        }
+      '@
+      Set-Content -Path $configFilePath -Value $configContent
+
+      $userId = '$(testUserId)@$(testTenantDomain)'
+      $alternatePSModulesURL = "{0}/raw/{1}/psmodules" -f $env:BUILD_REPOSITORY_URI,$env:BUILD_SOURCEBRANCHNAME
+      Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
+
+      Push-Location -Path setup
+
+      try {
+          $ErrorActionPreference = 'Stop'
+          ./setup.ps1 -configFilePath $configFilePath -configureLighthouseAccessDelegation -alternatePSModulesURL $alternatePSModulesURL -Verbose
+      }
+      catch {
+          throw "Failed test deploy of solution with error: $_"
+      }
+      finally {
+        If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+      }
+  name: 'TestSolutionDeploy'
+
+- task: AzurePowerShell@5
+  condition: always()
+  inputs:
+    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      If (get-azresource -ResourceId '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e/providers/Microsoft.OperationalInsights/workspaces/guardrails-5c060f8e' -ErrorAction SilentlyContinue) {
+        Write-Verbose "Force deleting Log Analytics Workspace..."
+        get-azresource -ResourceId '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e/providers/Microsoft.OperationalInsights/workspaces/guardrails-5c060f8e' | 
+          get-AzOperationalInsightsWorkspace  | 
+          Remove-AzOperationalInsightsWorkspace -Force -ForceDelete
+      } 
+
+      If (Get-AzResourcegroup -Id '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e' -ErrorAction SilentlyContinue) {
+        Write-Verbose "Deleteting resource group (async)..."
+        Remove-AzResourceGroup -Id '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e' -force -AsJob | Out-Null # don't wait for delete to complete
+      }
+
+      #remove lighthouse assignments
+      Write-Verbose "Checking for Lighthouse assignments..."
+      $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationAssignments?api-version=2022-01-01-preview' -f '$(testSubscriptionId)'
+      $assignments = Invoke-AzRestMethod -Method GET -Uri $uri -Verbose
+      $assignmentValue = $assignments.Content | ConvertFrom-Json
+
+      ForEach ($assignment in $assignmentValue) {
+          If ($assignment.Value.name) {
+            Write-Verbose "Deleteing lighthouse assignment '$($assignment.name)'"
+            $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationAssignments/{1}?api-version=2022-01-01-preview' -f '$(testSubscriptionId)',$assignment.value.Name
+
+            Invoke-AzRestMethod -Method DELETE -Uri $uri -Verbose
+          }
+      }
+
+      #remove lighthouse definitions
+      Write-Verbose "Checking for lighthouse registration definitions..."
+      $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationdefinitions?api-version=2022-01-01-preview' -f '$(testSubscriptionId)'
+      $definitions = Invoke-AzRestMethod -Method GET -Uri $uri
+      $definitionsValue = $definitions.Content | ConvertFrom-Json
+
+      ForEach ($definition in $definitionsValue.value) {
+          if ($definition.name) {
+          Write-Verbose "Deleteing lighthouse registration definition '$($definition.Name)'"
+          $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationdefinitions/{1}?api-version=2022-01-01-preview' -f '$(testSubscriptionId)',$definition.Name
+
+          Invoke-AzRestMethod -Method DELETE -Uri $uri -Verbose
+          }
+      }
+
+      $lighthouseTargetManagementGroupID = 'mb_co'
+      If ($lighthouseTargetManagementGroupID -eq (Get-AzContext).Tenant.Id) {
+          $assignmentScopeMgmtmGroupId = '/'
+      }
+      Else {
+          $assignmentScopeMgmtmGroupId = $lighthouseTargetManagementGroupID
+      }
+
+      # check if a lighthouse defender for cloud policy MSI role assignment already exists - assignment name always 2cb8e1b1-fcf1-439e-bab7-b1b8b008c294 
+      Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Owner'"
+      $uri = 'https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleAssignments/{1}?&api-version=2018-01-01-preview' -f $lighthouseTargetManagementGroupID,'2cb8e1b1-fcf1-439e-bab7-b1b8b008c294'
+      $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET -Verbose | Select-Object -Expand Content | ConvertFrom-Json
+      If ($roleAssignments.id) {
+          Write-Verbose "Deleteing role assignments '$roleAssignments'"
+          $uri = 'https://management.azure.com/{0}?api-version=2015-07-01' -f $roleAssignments.id
+          Invoke-AzRestMethod -Uri $uri -Method DELETE -Verbose
+      }
+      Else {
+          Write-Verbose "No DfC role assignments found..."
+      }
+
+      
+      # check if a lighthouse Azure Automation MSI role assignment to register the Lighthouse resource provider already exists - assignment name always  5de3f84b-8866-4432-8811-24859ccf8146
+      Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Custom-RegisterLighthouseResourceProvider'"
+      $uri = 'https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleAssignments/{1}?&api-version=2018-01-01-preview' -f $lighthouseTargetManagementGroupID, '5de3f84b-8866-4432-8811-24859ccf8146'
+      $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET | Select-Object -Expand Content | ConvertFrom-Json   
+      If ($roleAssignments.id) { 
+          Write-Verbose "Deleteing role assignments '$roleAssignments'"
+          $uri = 'https://management.azure.com/{0}?api-version=2015-07-01' -f $roleAssignments.id
+          Invoke-AzRestMethod -Uri $uri -Method DELETE -verbose
+      }
+      else {
+          Write-Verbose "No MSI role assignemnts found"
+      }
+
+      # check if lighthouse Custom-RegisterLighthouseResourceProvider exists at a different scope
+      Write-Verbose "Checking for existing role definitions with name 'Custom-RegisterLighthouseResourceProvider'"
+      $uri = "https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleDefinitions?`$filter=roleName eq '{1}'&api-version=2018-01-01-preview" -f $lighthouseTargetManagementGroupID,'Custom-RegisterLighthouseResourceProvider'
+      $response = Invoke-AzRestMethod -Uri $uri -Method Get
+
+      If ($response.StatusCode -eq '200') {
+          If ($roleDefId = ($response.Content | ConvertFrom-Json).Name) {
+          $uri = 'https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleDefinitions/{1}?api-version=2018-01-01-preview' -f $lighthouseTargetManagementGroupID,$roleDefId
+
+          Invoke-AzRestMethod -Method DELETE -Uri $uri
+          }
+      }
+
+
+  name: 'CleanUpTest'
+
 
 - powershell: |
     $dest = "{0}/{1}.zip" -f $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY,(get-date -f 'yyyy-MM-dd-HH-mm-ss')
