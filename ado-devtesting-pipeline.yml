@@ -14,7 +14,7 @@ parameters:
     default: 'true'
   - name: 'testDeploymentSubscriptionConnectionName'
     type: string
-    default: 'Matthew Virtual Studio (mb_co)'
+    default: 'Matthew Visual Studio (mb_co)'
 
 pool:
   vmImage: windows-latest
