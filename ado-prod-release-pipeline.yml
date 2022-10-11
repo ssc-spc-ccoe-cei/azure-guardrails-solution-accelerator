@@ -1,12 +1,20 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# pipeline for publishing public releases 
 
-pr:
-  branches:
-    include: 
-      - main
+trigger: none
+
+parameters:
+  - name: 'signCode'
+    type: boolean
+    default: 'true'
+  - name: 'testDeployment'
+    type: boolean
+    default: 'true'
+  - name: 'publishGitHubRelease'
+    type: boolean
+    default: 'true'
+  - name: 'testDeploymentSubscriptionConnectionName'
+    type: string
+    default: 'Matthew Virtual Studio (mb_co)'
 
 pool:
   vmImage: windows-latest
@@ -47,6 +55,7 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
   enabled: true
+  condition: ${{ if eq(parameters.signCode, true)}}
 
 #look for hash mismatch
 - powershell: |
@@ -67,6 +76,7 @@ steps:
       }
     }
   name: CheckForSignFailures
+  condition: ${{ if eq(parameters.signCode, true)}}
 
 #test module imports
 - powershell: |
@@ -92,90 +102,20 @@ steps:
       throw "The following modules failed import test: $missingModules"
     }
   name: TestModuleImports
-
-- powershell: |
-    Write-Host "Executing powershell script in '$pwd'"
-    gci env: | FT -AutoSize
-    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
-    
-    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
-    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
-
-    $moduleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
-    Write-Host "'$($moduleManifestFiles.count)' module manifest files changed in last commit"
-
-    try {
-      $moduleManifestFilesObjs = @()
-
-      ForEach ($file in $moduleManifestFiles) {
-        $moduleManifestFilesObjs += Get-Item -Path $file -ErrorAction Stop
-      }
-    }
-    catch {
-      Write-Error "Failed to find file path '$file' with Get-Item -Path '$file'; Error: $_"
-    }
-
-    $zipsChanged = $false
-    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
-        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
-        
-        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
-          Write-Host "Module '$($moduleManifest.BaseName)' was changed, zipping module files..."
-
-          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
-          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Update
-
-          $zipsChanged = $true
-        }
-        Else {
-            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
-        }
-    }
-
-    # output whether modules were changed
-    Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($moduleManifestFilesObjs.count -gt 0)")
-  displayName: 'Zip signed modules'
-  name: 'ZipFiles'
-  enabled: false
-
-- powershell: |
-    Write-Host "Executing powershell script in '$pwd'"
-    gci env: | FT -AutoSize
-    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
-    
-
-    $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
-    Write-Host "'$($moduleManifestFiles.count)' module manifest files "
-
-    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
-        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
-        
-        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
-          Write-Host "Module '$($moduleManifest.BaseName)' found, zipping module files..."
-
-          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
-          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Force
-
-        }
-        Else {
-            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
-        }
-    }
-
-    # output whether modules were changed
-    Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
-  displayName: 'Zip signed modules'
-  name: 'ZipAllFiles'
-  enabled: true
+  condition: ${{ if eq(parameters.signCode, true)}}
 
 - task: AzurePowerShell@5
   inputs:
-    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    azureSubscription: ${{ parameters.testDeploymentSubscriptionConnectionName }}
     ScriptType: 'InlineScript'
     FailOnStandardError: true
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
+      If (Get-AzResourceGroup -Name 'guardrails-$guardrailsResourceSuffix' -ErrorAction 'SilentlyContinue') {
+        throw "The test deployment action cannot continue because resource group 'guardrails-$guardrailsResourceSuffix' already exists in subscription '$((get-azcontext).Subscription.Name)'; clean up the test subscription before proceeding."
+      }
+
       $configFilePath = Join-Path -Path $env:AGENT_TEMPDIRECTORY -ChildPath 'config.json'
 
       $configContent = @'
@@ -220,26 +160,29 @@ steps:
         If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
       }
   name: 'TestSolutionDeploy'
+  condition: ${{ if eq(parameters.testDeployment, true)}}
 
 - task: AzurePowerShell@5
-  condition: always()
+  condition: and(always(),${{ if eq(parameters.testDeployment, true)}})
   inputs:
-    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    azureSubscription: ${{ parameters.testDeploymentSubscriptionConnectionName }}
     ScriptType: 'InlineScript'
     FailOnStandardError: true
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
-      If (get-azresource -ResourceId '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e/providers/Microsoft.OperationalInsights/workspaces/guardrails-5c060f8e' -ErrorAction SilentlyContinue) {
+      $guardrailsResourceSuffix = (Get-AzContext).Tenant.id.Split("-")[0]
+
+      If (get-azresource -ResourceId "/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-$guardrailsResourceSuffix/providers/Microsoft.OperationalInsights/workspaces/guardrails-$guardrailsResourceSuffix" -ErrorAction SilentlyContinue) {
         Write-Verbose "Force deleting Log Analytics Workspace..."
-        get-azresource -ResourceId '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e/providers/Microsoft.OperationalInsights/workspaces/guardrails-5c060f8e' | 
+        get-azresource -ResourceId "/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-$guardrailsResourceSuffix/providers/Microsoft.OperationalInsights/workspaces/guardrails-$guardrailsResourceSuffix" | 
           get-AzOperationalInsightsWorkspace  | 
           Remove-AzOperationalInsightsWorkspace -Force -ForceDelete
       } 
 
-      If (Get-AzResourcegroup -Id '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e' -ErrorAction SilentlyContinue) {
+      If (Get-AzResourcegroup -Id "/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-$guardrailsResourceSuffix" -ErrorAction SilentlyContinue) {
         Write-Verbose "Deleteting resource group (async)..."
-        Remove-AzResourceGroup -Id '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e' -force -AsJob | Out-Null # don't wait for delete to complete
+        Remove-AzResourceGroup -Id "/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-$guardrailsResourceSuffix" -force -AsJob | Out-Null # don't wait for delete to complete
       }
 
       #remove lighthouse assignments
@@ -319,9 +262,8 @@ steps:
           Invoke-AzRestMethod -Method DELETE -Uri $uri
           }
       }
-
-
   name: 'CleanUpTest'
+  displayName: 'Clean up deployment test environment'
 
 
 - powershell: |
@@ -347,3 +289,5 @@ steps:
     assets: 'psmodules/*'
     changeLogCompareToRelease: 'lastFullRelease'
     changeLogType: 'commitBased'
+    isDraft: true
+  condition: ${{ if eq(parameters.publishGitHubRelease, true)}}
