@@ -55,7 +55,7 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
   enabled: true
-  condition: ${{ if eq(parameters.signCode, true)}}
+  condition: ${{ parameters.signCode }}
 
 #look for hash mismatch
 - powershell: |
@@ -76,7 +76,7 @@ steps:
       }
     }
   name: CheckForSignFailures
-  condition: ${{ if eq(parameters.signCode, true)}}
+  condition: ${{ parameters.signCode }}
 
 #test module imports
 - powershell: |
@@ -102,7 +102,7 @@ steps:
       throw "The following modules failed import test: $missingModules"
     }
   name: TestModuleImports
-  condition: ${{ if eq(parameters.signCode, true)}}
+  condition: ${{ parameters.signCode }}
 
 - task: AzurePowerShell@5
   inputs:
@@ -160,10 +160,10 @@ steps:
         If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
       }
   name: 'TestSolutionDeploy'
-  condition: ${{ if eq(parameters.testDeployment, true)}}
+  condition: ${{ parameters.testDeployment }}
 
 - task: AzurePowerShell@5
-  condition: and(always(),${{ if eq(parameters.testDeployment, true)}})
+  condition: and(always(), ${{ parameters.testDeployment }})
   inputs:
     azureSubscription: ${{ parameters.testDeploymentSubscriptionConnectionName }}
     ScriptType: 'InlineScript'
@@ -289,4 +289,4 @@ steps:
     changeLogCompareToRelease: 'lastFullRelease'
     changeLogType: 'commitBased'
     isDraft: true
-  condition: ${{ if eq(parameters.publishGitHubRelease, true)}}
+  condition: ${{ parameters.publishGitHubRelease }}
