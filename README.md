@@ -6,7 +6,7 @@ The purpose of the reference implementation is to help Canadian Public Sector de
 
 ## Goals
 
-Implementing the required GC Cloud Guardrails can take a considerable amount of time. This solution checks the environment for all [12 Cloud Guardrails Controls](https://github.com/canada-ca/cloud-guardrails#summary---initial-30-days) and provides guidance on what is required to remediate any that are non-compliant.  The solution runs on an ongoing basis, ensuring that your environment continues to meet the baseline requirements.  
+Implementing the required GC Cloud Guardrails can take a considerable amount of time. This solution checks the environment for all [12 Cloud Guardrails Controls](https://github.com/canada-ca/cloud-guardrails#summary---initial-30-days) and provides guidance on what is required to remediate any that are non-compliant. The solution runs on an ongoing basis, ensuring that your environment continues to meet the baseline requirements.  
 
 
 ## Architecture
