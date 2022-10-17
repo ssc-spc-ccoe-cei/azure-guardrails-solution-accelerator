@@ -12,7 +12,7 @@ pool:
   vmImage: windows-latest
 
 variables: 
-  group: 'GuardrailsTestDeployments'
+  - group: 'GuardrailsTestDeployments'
 
 steps:
 
@@ -170,7 +170,7 @@ steps:
 
 - task: AzurePowerShell@5
   inputs:
-    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
     FailOnStandardError: true
     azurePowerShellVersion: 'LatestVersion'
@@ -224,7 +224,7 @@ steps:
 - task: AzurePowerShell@5
   condition: always()
   inputs:
-    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
     FailOnStandardError: true
     azurePowerShellVersion: 'LatestVersion'
