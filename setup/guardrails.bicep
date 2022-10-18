@@ -165,14 +165,16 @@ var wbConfig1 ='''
             "type": 2,
             "isRequired": true,
             "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
-            "value": "2022-09-20 20:02:16",
             "typeSettings": {
-              "additionalResourceOptions": [],
+              "additionalResourceOptions": [
+                "value::1"
+              ],
               "showDefault": false
             },
             "timeContext": {
               "durationMs": 86400000
             },
+            "defaultValue": "value::1",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
           }
