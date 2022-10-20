@@ -91,11 +91,13 @@ noUDR = No User defined Route configured.
 noUDRMitigation = Please apply a custom route to this subnet, pointing to a virtual appliance.
 subnetExcluded = Subnet Excluded (manually or reserved name).
 networkDiagram = Confirm existence of network architecture diagram 
+noSubnets = No subnets found in the subscription.
 
 # GuardRail # 9
 vnetDDosConfig = VNet DDos configuration
 ddosEnabled=DDos Protection Enabled. 
 ddosNotEnabled=DDos Protection not enabled.
+noVNets = No VNet found in the subscription.
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
