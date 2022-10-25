@@ -23,6 +23,33 @@ function get-apiLinkedServicesData {
     }
     return $Data
 }
+
+function get-activitylogstatus {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $LAWResourceId
+    )
+    $subs=get-azsubscription
+    $totalsubs=$subs.Count
+    $GraphAccessToken = (Get-AzAccessToken).Token
+    $pcount=0
+    foreach ($sub in $subs) {
+        $URL="https://management.azure.com/subscriptions/$($sub.Id)/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview"
+        $configuredWSs=(Invoke-RestMethod -Headers @{Authorization = "Bearer $($GraphAccessToken)" } -Uri $URL -Method Get ).value.Properties.workspaceId
+        if ($LAWResourceId -in $configuredWSs) {
+            $pcount++
+        }
+    }
+    if ($pcount -ne $totalsubs) {
+        Write-Warning "Not all subscriptions are configured to send logs to the Log Analytics Workspace"
+        return $false
+    }
+    else {
+        Write-Host "All subscriptions are configured to send logs to the Log Analytics Workspace"
+        return $true
+    }
+}
 function get-tenantDiagnosticsSettings {
     #AadGraph, AnalysisServices, Arm, Attestation, Batch, DataLake, KeyVault, MSGraph, OperationalInsights, ResourceManager, Storage, Synapse
     $token=(Get-AzAccessToken -ResourceTypeName Arm).Token
@@ -134,12 +161,20 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
             $MitigationCommands += "$($msgTable.setRetention730Days) ($LAWName) -https://docs.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-archive?tabs=api-1%2Capi-2 `n"
         }
         #Verify presense of the Activity Logs as a source
-        $ActivityLogDS=Get-AzOperationalInsightsDataSource -Workspace $LAW -Kind AzureActivityLog
-        If ($ActivityLogDS -eq $null)
-        {
+        #Verify presense of the Activity Logs as a source
+        #old way:
+        #$ActivityLogDS=Get-AzOperationalInsightsDataSource -Workspace $LAW -Kind AzureActivityLog
+        #If ($ActivityLogDS -eq $null)
+        #{
+        #    $IsCompliant=$false
+        #    $Comments+=$msgTable.lawNoActivityLogs
+        #    $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"
+        #}
+        #New way:
+        if (!(get-activitylogstatus -LAWResourceId $LAW.ResourceId)) {
             $IsCompliant=$false
             $Comments+=$msgTable.lawNoActivityLogs
-            $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"
+            $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"    
         }
         # Tests for required Solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
