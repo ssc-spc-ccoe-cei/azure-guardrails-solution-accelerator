@@ -211,7 +211,7 @@ steps:
 
       try {
           $ErrorActionPreference = 'Stop'
-          ./setup.ps1 -configFilePath $configFilePath -configureLighthouseAccessDelegation -alternatePSModulesURL $alternatePSModulesURL -Verbose
+          ./setup.ps1 -configFilePath $configFilePath -configureLighthouseAccessDelegation -alternatePSModulesURL $alternatePSModulesURL -Yes -Verbose
       }
       catch {
           throw "Failed test deploy of solution with error: $_"

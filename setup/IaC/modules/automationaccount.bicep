@@ -16,8 +16,10 @@ param HealthLAWResourceId string
 param TenantDomainUPN string
 param Locale string
 param lighthouseTargetManagementGroupID string
+param newDeployment bool = true
+param updatePSModules bool = false
 
-resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = {
+resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules) {
   name: automationAccountName
   location: location
   tags: {
@@ -38,7 +40,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = {
         identity: {}
     }
   }
-  resource OMSModule 'modules' ={
+  resource OMSModule 'modules' = if (newDeployment || updatePSModules) {
     name: 'OMSIngestionAPI'
     properties: {
       contentLink: {
@@ -47,7 +49,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = {
       }
     }
   }
-  resource module1 'modules' ={
+  resource module1 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountOwnersInformation'
     properties: {
       contentLink: {
@@ -57,7 +59,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = {
       }
     }
   }
-resource module2 'modules' ={
+resource module2 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountIdentityProtectionLicense'
     properties: {
       contentLink: {
@@ -66,7 +68,7 @@ resource module2 'modules' ={
       }
     }
   }
-resource module4 'modules' ={
+resource module4 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DeprecatedAccounts'
     properties: {
       contentLink: {
@@ -75,7 +77,7 @@ resource module4 'modules' ={
       }
     }
   }
-resource module5 'modules' ={
+resource module5 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ExternalAccounts'
     properties: {
       contentLink: {
@@ -84,7 +86,7 @@ resource module5 'modules' ={
       }
     }
   }
-resource module7 'modules' ={
+resource module7 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MonitorAccount'
     properties: {
       contentLink: {
@@ -93,7 +95,7 @@ resource module7 'modules' ={
       }
     }
   }
-resource module8 'modules' ={
+resource module8 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PBMMPolicy'
     properties: {
       contentLink: {
@@ -102,7 +104,7 @@ resource module8 'modules' ={
       }
     }
   }
-  resource module22 'modules' ={
+  resource module22 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionDataAtRest'
     properties: {
       contentLink: {
@@ -111,7 +113,7 @@ resource module8 'modules' ={
       }
     }
   }
-  resource module23 'modules' ={
+  resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionOfDataInTransit'
     properties: {
       contentLink: {
@@ -120,7 +122,7 @@ resource module8 'modules' ={
       }
     }
   }
-resource module9 'modules' ={
+resource module9 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
     properties: {
       contentLink: {
@@ -129,7 +131,7 @@ resource module9 'modules' ={
       }
     }
   }
-resource module10 'modules' ={
+resource module10 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-VNetComplianceStatus'
     properties: {
       contentLink: {
@@ -138,7 +140,7 @@ resource module10 'modules' ={
       }
     }
   }
-resource module11 'modules' ={
+resource module11 'modules' = if (newDeployment || updatePSModules) {
     name: 'Detect-UserBGAUsersAuthMethods'
     properties: {
       contentLink: {
@@ -147,7 +149,7 @@ resource module11 'modules' ={
       }
     }
   }
-resource module12 'modules' ={
+resource module12 'modules' = if (newDeployment || updatePSModules) {
     name: 'Get-AzureADLicenseType'
     properties: {
       contentLink: {
@@ -156,7 +158,7 @@ resource module12 'modules' ={
       }
     }
   }
-resource module13 'modules' ={
+resource module13 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-Common'
     properties: {
       contentLink: {
@@ -165,7 +167,7 @@ resource module13 'modules' ={
       }
     }
   }
-resource module14 'modules' ={
+resource module14 'modules' = if (newDeployment || updatePSModules) {
     name: 'Validate-BreakGlassAccount'
     properties: {
       contentLink: {
@@ -174,7 +176,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource module15 'modules' ={
+  resource module15 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AllowedLocationPolicy'
     properties: {
       contentLink: {
@@ -183,7 +185,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource module16 'modules' ={
+  resource module16 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PrivateMarketPlace'
     properties: {
       contentLink: {
@@ -192,7 +194,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource module17 'modules' ={
+  resource module17 'modules' = if (newDeployment || updatePSModules) {
     name: 'Az.Marketplace'
     properties: {
       contentLink: {
@@ -201,7 +203,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource module19 'modules' ={
+  resource module19 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CyberSecurityServices'
     properties: {
       contentLink: {
@@ -210,7 +212,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource module20 'modules' ={
+  resource module20 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-LoggingAndMonitoring'
     properties: {
       contentLink: {
@@ -219,7 +221,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource module21 'modules' ={
+  resource module21 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
     properties: {
       contentLink: {
@@ -228,7 +230,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource module24 'modules' ={
+  resource module24 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudConsoleAccess'
     properties: {
       contentLink: {
@@ -237,7 +239,7 @@ resource module14 'modules' ={
       }
     }
   }
-  resource variable1 'variables' = {
+  resource variable1 'variables' = if (newDeployment) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
@@ -245,98 +247,98 @@ resource module14 'modules' ={
     }
   }
     
-  resource variable2 'variables' = {
+  resource variable2 'variables' = if (newDeployment) {
     name: 'WorkSpaceID'
     properties: {
         isEncrypted: true
         value: '"${guardrailsLogAnalyticscustomerId}"'
     }
   }
-  resource variable3 'variables' = {
+  resource variable3 'variables' = if (newDeployment) {
     name: 'LogType'
     properties: {
         isEncrypted: true
         value: '"GuardrailsCompliance"'
     }
   }
-  resource variable4 'variables' = {
+  resource variable4 'variables' = if (newDeployment) {
     name: 'PBMMPolicyID'
     properties: {
         isEncrypted: true
         value: '"/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}"'
     }
   }
-  resource variable5 'variables' = {
+  resource variable5 'variables' = if (newDeployment) {
     name: 'GuardrailWorkspaceIDKeyName'
     properties: {
         isEncrypted: true
         value: '"WorkSpaceKey"'
     }
   }
-  resource variable6 'variables' = {
+  resource variable6 'variables' = if (newDeployment) {
     name: 'StorageAccountName'
     properties: {
         isEncrypted: false
         value: '"${guardrailsStoragename}"'
     }
   }
-  resource variable7 'variables' = {
+  resource variable7 'variables' = if (newDeployment) {
     name: 'ContainerName'
     properties: {
         isEncrypted: true
         value: '"${containername}"'
     }
   }
-  resource variable8 'variables' = {
+  resource variable8 'variables' = if (newDeployment) {
     name: 'ResourceGroupName'
     properties: {
         isEncrypted: true
         value: '"${resourceGroup().name}"'
     }
   }
-  resource variable9 'variables' = {
+  resource variable9 'variables' = if (newDeployment) {
     name: 'AllowedLocationPolicyId'
     properties: {
         isEncrypted: true
         value: '"/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}"'
     }
   }
-  resource variable10 'variables' = {
+  resource variable10 'variables' = if (newDeployment) {
     name: 'DepartmentNumber'
     properties: {
       isEncrypted: true
       value: '"${DepartmentNumber}"'
   }
   }
-  resource variable11 'variables' = {
+  resource variable11 'variables' = if (newDeployment) {
     name: 'CBSSubscriptionName'
     properties: {
       isEncrypted: true
       value: '"${CBSSubscriptionName}"'
     }
   }
-  resource variable12 'variables' = {
+  resource variable12 'variables' = if (newDeployment) {
     name: 'SecurityLAWResourceId'
     properties: {
       isEncrypted: true
       value: '"${SecurityLAWResourceId}"'
     }
   }
-  resource variable13 'variables' = {
+  resource variable13 'variables' = if (newDeployment) {
     name: 'HealthLAWResourceId'
     properties: {
       isEncrypted: true
       value: '"${HealthLAWResourceId}"'
     }
   }
-  resource variable14 'variables' = {
+  resource variable14 'variables' = if (newDeployment) {
     name: 'TenantDomainUPN'
     properties: {
       isEncrypted: true
       value: '"${TenantDomainUPN}"'
     }
   }
-  resource variable15 'variables' = {
+  resource variable15 'variables' = if (newDeployment) {
     name: 'GuardRailsLocale'
     properties: {
       isEncrypted: true
@@ -344,7 +346,7 @@ resource module14 'modules' ={
   }
   }
 
-  resource variable16 'variables' = {
+  resource variable16 'variables' = if (newDeployment) {
     name: 'lighthouseTargetManagementGroupID'
     'properties': {
       'isEncrypted': true

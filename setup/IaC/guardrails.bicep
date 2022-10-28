@@ -22,6 +22,9 @@ param releaseVersion string
 param releaseDate string 
 param TenantDomainUPN string
 param lighthouseTargetManagementGroupID string
+param newDeployment bool = true
+param updateWorkbook bool = false
+param updatePSModules bool = false
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
@@ -32,8 +35,8 @@ module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
   name: 'pid-9c273620-d12d-4647-878a-8356201c7fe8'
   params: {}
 }
-module aa 'modules/automationaccount.bicep' = {
-  name: 'aa-${uniqueString(automationAccountName)}'
+module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules) {
+  name: 'guardrails-automationaccount'
   params: {
     automationAccountName: automationAccountName
     location: location
@@ -53,10 +56,12 @@ module aa 'modules/automationaccount.bicep' = {
     releaseDate: releaseDate
     TenantDomainUPN: TenantDomainUPN
     lighthouseTargetManagementGroupID: lighthouseTargetManagementGroupID
+    newDeployment: newDeployment
+    updatePSModules: updatePSModules
   }
 }
-module KV 'modules/keyvault.bicep' = {
-  name: 'pid-9c273620-d13d-4647-878a-8356201c7fe8'
+module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
+  name: 'guardrails-keyvault'
   params: {
     kvName: kvName
     location: location
@@ -67,8 +72,8 @@ module KV 'modules/keyvault.bicep' = {
     tenantId: subscription().tenantId
   }
 }
-module LAW 'modules/loganalyticsworkspace.bicep' = if (deployLAW) {
-  name: 'pid-9c273620-d12d-4647-878a-8352201c7fe8'
+module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployment) || updateWorkbook) {
+  name: 'guardrails-loganalytics'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     location: location
@@ -78,10 +83,12 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if (deployLAW) {
     deployLAW: deployLAW
     subscriptionId: subscription().subscriptionId
     GRDocsBaseUrl: GRDocsBaseUrl
+    newDeployment: newDeployment
+    updateWorkbook: updateWorkbook
   }
 }
-module storageaccount 'modules/storage.bicep' = {
-  name: 'pid-9c273620-d12d-4647-878a-8356201c22e8'
+module storageaccount 'modules/storage.bicep' = if (newDeployment) {
+  name: 'guardrails-storageaccount'
   params: {
     storageAccountName: storageAccountName
     location: location
@@ -89,4 +96,4 @@ module storageaccount 'modules/storage.bicep' = {
   }
 }
 
-output guardrailsAutomationAccountMSI string = aa.outputs.guardrailsAutomationAccountMSI
+output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
