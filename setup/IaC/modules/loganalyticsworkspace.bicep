@@ -1,4 +1,3 @@
-
 param subscriptionId string
 param rg string
 param logAnalyticsWorkspaceName  string
@@ -7,6 +6,8 @@ param releaseVersion  string
 param releaseDate string
 param deployLAW bool
 param GRDocsBaseUrl string
+param newDeployment bool = true
+param updateWorkbook bool = false
 
 var wbConfig1 ='''
 {
@@ -804,7 +805,7 @@ var wbConfig3='''
 '''
 var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
 
-resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if (deployLAW) {
+resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: logAnalyticsWorkspaceName
   location: location
   tags: {
@@ -818,7 +819,7 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
     }
   }
 }
-resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data'
   parent: guardrailsLogAnalytics
   properties: {
@@ -830,7 +831,7 @@ resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_geturl'
   parent: guardrailsLogAnalytics
   properties: {
@@ -842,7 +843,7 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data567'
   parent: guardrailsLogAnalytics
   properties: {
@@ -854,7 +855,7 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if (deployLAW) {
+resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   location: location
   kind: 'shared'
   name: guid('guardrails')
