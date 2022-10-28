@@ -91,7 +91,7 @@ routeNVAMitigation = Mettre à jour la route pour pointer vers une appliance vir
 noUDR = Aucune route définie par l'utilisateur configurée.
 noUDRMitigation = Veuillez appliquer une route personnalisée à ce sous-réseau, pointant vers une appliance virtuelle.
 subnetExcluded = Sous-réseau exclu (nom manuel ou réservé).
-networkDiagram = Existence d'un diagramme d'architecture réseau 
+networkDiagram = Diagramme d'architecture réseau 
 noSubnets = Aucun sous-réseau n'est présent.
 
 # GuardRail # 9
