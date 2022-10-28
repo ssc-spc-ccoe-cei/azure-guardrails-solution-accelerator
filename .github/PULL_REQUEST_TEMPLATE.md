@@ -25,3 +25,4 @@ Please provide any testing evidence to show that your Pull Request works/fixes a
 - [ ] Ensured my code/branch is up-to-date with the latest changes in the `main` [branch](https://github.com/Azure/GuardrailsSolutionAccelerator/tree/main)
 - [ ] Performed testing and provided evidence.
 - [ ] Updated relevant and associated documentation.
+- [ ] Ensure PowerShell module versions have been updated (manually or with the ./tools/Update-ModuleVersions.ps1 script)
