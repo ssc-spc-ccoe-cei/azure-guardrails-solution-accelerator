@@ -90,7 +90,7 @@ routeNVAMitigation = Update the route to point to a virtual appliance
 noUDR = No User defined Route configured.
 noUDRMitigation = Please apply a custom route to this subnet, pointing to a virtual appliance.
 subnetExcluded = Subnet Excluded (manually or reserved name).
-networkDiagram = Confirm existence of network architecture diagram 
+networkDiagram = Network architecture diagram 
 noSubnets = No subnets found in the subscription.
 
 # GuardRail # 9

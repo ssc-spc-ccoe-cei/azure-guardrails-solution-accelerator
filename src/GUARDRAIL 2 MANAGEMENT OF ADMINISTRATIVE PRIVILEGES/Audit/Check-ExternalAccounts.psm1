@@ -30,6 +30,7 @@
 
     if ($null -eq $guestUsers) {
         # There are no Guest users in the tenant
+        Write-Output "No Guest Users found in the tenant"
         $IsCompliant= $true
         $comment = $msgTable.noGuestAccounts
         $MitigationCommands = "N/A"
@@ -74,43 +75,50 @@
                         $guestUsersArray.add($Customuser)
                     }
                 }
+                else {
+                    Write-Output "Found no Guest users with role assignment"
+                }
             }
         }
-
-        if ($guestUsersArray.Count -eq 0) {
-            # Guest accounts don't have any permissions on the Azure subscriptions, it's fine
-            $IsCompliant= $true
-            $comment = $msgTable.guestAccountsNoPermission
-            $MitigationCommands = "N/A"    
-
-            $Customuser = [PSCustomObject] @{
-                DisplayName = "N/A"
-                Subscription = "N/A"
-                Mail = "N/A"
-                Type = "N/A"
-                CreatedDate = "N/A"
-                Enabled = "N/A"
-                Comments = $comment
-                ItemName= $ItemName 
-                ReportTime = $ReportTime
-                itsgcode = $itsgcode                
-            }
-            $guestUsersArray.add($Customuser)    
-        }
-        else {
-            $IsCompliant= $false
-            $comment = $msgTable.removeGuestAccountsComment
-            $MitigationCommands = $msgTable.removeGuestAccounts
-        }
-
-        # Convert data to JSON format for input in Azure Log Analytics
-        $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
-        Write-Output "Creating Log Analytics entry for $($guestUsersArray.Count) Guest Users"
-
-        # Add the list of non-compliant users to Log Analytics (in a different table)
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-        -body $JSONGuestUsers -logType "GR2ExternalUsers" -TimeStampField Get-Date
     }
+
+    # If there are no Guest accounts or Guest accounts don't have any permissions on the Azure subscriptions, it's fine
+    # we still create the Log Analytics table
+    if ($guestUsersArray.Count -eq 0) {
+        $IsCompliant= $true
+        $MitigationCommands = "N/A"             
+        # Don't overwrite the comment if there are no guest users
+        if (!$null -eq $guestUsers) {
+            $comment = $msgTable.guestAccountsNoPermission
+        }
+        
+        $Customuser = [PSCustomObject] @{
+            DisplayName = "N/A"
+            Subscription = "N/A"
+            Mail = "N/A"
+            Type = "N/A"
+            CreatedDate = "N/A"
+            Enabled = "N/A"
+            Comments = $comment
+            ItemName= $ItemName 
+            ReportTime = $ReportTime
+            itsgcode = $itsgcode
+        }
+        $guestUsersArray.add($Customuser)
+    }
+    else {
+        $IsCompliant= $false
+        $comment = $msgTable.removeGuestAccountsComment
+        $MitigationCommands = $msgTable.removeGuestAccounts
+    }
+
+    # Convert data to JSON format for input in Azure Log Analytics
+    $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
+    Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
+
+    # Add the list of non-compliant users to Log Analytics (in a different table)
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
+    -body $JSONGuestUsers -logType "GR2ExternalUsers" -TimeStampField Get-Date
 
     $GuestUserStatus = [PSCustomObject]@{
         ComplianceStatus= $IsCompliant
