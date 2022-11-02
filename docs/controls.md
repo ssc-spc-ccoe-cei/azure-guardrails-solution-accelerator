@@ -121,7 +121,7 @@ If any of the above rules is not true, the subnet will be considered not complia
 
 ### Network Architecture Diagram
 
-* If you have created a network diagram and sent it to the Cloud Security Posture Management Team (CSPM), make sure to upload an empty text file with the name "ConfirmNetworkDiagramExists.txt" to the container name "guardrailsstorage" in the storage account created by the setup. This file tells the solution that you have completed this task. Please do not upload the network diagram itself. Once the solution detects the file, the check mark status will be changed from (❌) to (✔️).
+* If you have created a network diagram and it meets ITSG-33 controls, make sure to upload an empty text file with the name "ConfirmNetworkDiagramExists.txt" to the container name "guardrailsstorage" in the storage account created by the setup. This file tells the solution that you have completed this task. Please do not upload the network diagram itself. Once the solution detects the file, the check mark status will be changed from (❌) to (✔️).
 
 ![ConfirmNetworkDiagramExists.txt uploaded to the storage account](/docs/media/ConfirmNetworkDiagramExists.png)
 
