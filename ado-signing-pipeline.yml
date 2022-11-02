@@ -11,12 +11,33 @@ pr:
 pool:
   vmImage: windows-latest
 
+parameters:
+- name: skipCleanup
+  displayName: 'Skip cleanup of test deployment'
+  type: boolean
+  default: 'false'
+- name: skipTestDeploy
+  displayName: 'Skip test deployment'
+  type: boolean
+  default: 'false'
+- name: skipSigning
+  displayName: 'Skip signing of modules'
+  type: boolean
+  default: 'false'
+
 variables: 
-  group: 'GuardrailsTestDeployments'
+  - group: 'GuardrailsTestDeployments'
+  - name: skipCleanup
+    value: ${{ parameters.skipCleanup }}
+  - name: skipTestDeploy
+    value: ${{ parameters.skipTestDeploy }}
+  - name: skipSigning
+    value: ${{ parameters.skipSigning }}
 
 steps:
 
 - task: EsrpCodeSigning@1
+  condition: eq(variables.skipSigning, 'false')
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
     FolderPath: './'
@@ -67,6 +88,7 @@ steps:
       }
     }
   name: CheckForSignFailures
+  condition: eq(variables.skipSigning, 'false')
 
 #test module imports
 - powershell: |
@@ -169,23 +191,41 @@ steps:
   enabled: true
 
 - task: AzurePowerShell@5
+  inputs: 
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      $storageContext = (Get-AzStorageAccount -ResourceGroupName $(pipelineModulesStagingRGName) -Name $(pipelineModulesStagingStorageAccountName)).Context
+
+      $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
+      ForEach ($moduleZip in $zippedModules) {
+
+        Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
+      }
+  name: stageZippedModules
+  displayName: 'Stage zipped/signed modules in Storage Account'
+
+- task: AzurePowerShell@5
+  condition: and(succeeded(), eq(variables.skipTestDeploy, 'false'))
   inputs:
-    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
     FailOnStandardError: true
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
       $configFilePath = Join-Path -Path $env:AGENT_TEMPDIRECTORY -ChildPath 'config.json'
-
       $configContent = @'
       {
-          "keyVaultName": "guardrails",
-          "resourcegroup": "Guardrails",
+          "keyVaultName": "gsapipe",
+          "resourcegroup": "gsapipe",
           "region": "CanadaCentral",
-          "storageaccountName": "guardrail",
-          "logAnalyticsworkspaceName": "guardrails",
-          "autoMationAccountName": "guardrails",
+          "storageaccountName": "gsapipe",
+          "logAnalyticsworkspaceName": "gsapipe",
+          "autoMationAccountName": "gsapipe",
           "FirstBreakGlassAccountUPN": "breakglass1@$(testTenantDomain)",
           "SecondBreakGlassAccountUPN": "breakglass2@$(testTenantDomain)",
           "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
@@ -204,7 +244,11 @@ steps:
       Set-Content -Path $configFilePath -Value $configContent
 
       $userId = '$(testUserId)@$(testTenantDomain)'
-      $alternatePSModulesURL = "{0}/raw/{1}/psmodules" -f $env:BUILD_REPOSITORY_URI,$env:BUILD_SOURCEBRANCHNAME
+
+      $storageContext = (Get-AzStorageAccount -ResourceGroupName $(pipelineModulesStagingRGName) -Name $(pipelineModulesStagingStorageAccountName)).context
+      $modulesStagingURI = New-AzStorageContainerSASToken -Context $storageContext -Name psmodules -ExpiryTime (Get-Date).AddHours(1) -Permission r -FullUri
+
+      $alternatePSModulesURL = $modulesStagingURI
       Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
 
       Push-Location -Path setup
@@ -218,109 +262,81 @@ steps:
       }
       finally {
         If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+        Pop-Location
       }
   name: 'TestSolutionDeploy'
 
 - task: AzurePowerShell@5
-  condition: always()
+  name: 'CheckForJobErrors'
+  displayName: 'Check for AA Job Errors'
+  condition: eq(variables.skipTestDeploy, 'false')
   inputs:
-    azureSubscription: 'Matthew Virtual Studio (mb_co)'
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
     FailOnStandardError: true
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
-      If (get-azresource -ResourceId '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e/providers/Microsoft.OperationalInsights/workspaces/guardrails-5c060f8e' -ErrorAction SilentlyContinue) {
-        Write-Verbose "Force deleting Log Analytics Workspace..."
-        get-azresource -ResourceId '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e/providers/Microsoft.OperationalInsights/workspaces/guardrails-5c060f8e' | 
-          get-AzOperationalInsightsWorkspace  | 
-          Remove-AzOperationalInsightsWorkspace -Force -ForceDelete
-      } 
+      ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-      If (Get-AzResourcegroup -Id '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e' -ErrorAction SilentlyContinue) {
-        Write-Verbose "Deleteting resource group (async)..."
-        Remove-AzResourceGroup -Id '/subscriptions/$(testSubscriptionId)/resourceGroups/Guardrails-5c060f8e' -force -AsJob | Out-Null # don't wait for delete to complete
-      }
-
-      #remove lighthouse assignments
-      Write-Verbose "Checking for Lighthouse assignments..."
-      $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationAssignments?api-version=2022-01-01-preview' -f '$(testSubscriptionId)'
-      $assignments = Invoke-AzRestMethod -Method GET -Uri $uri -Verbose
-      $assignmentValue = $assignments.Content | ConvertFrom-Json
-
-      ForEach ($assignment in $assignmentValue) {
-          If ($assignment.Value.name) {
-            Write-Verbose "Deleteing lighthouse assignment '$($assignment.name)'"
-            $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationAssignments/{1}?api-version=2022-01-01-preview' -f '$(testSubscriptionId)',$assignment.value.Name
-
-            Invoke-AzRestMethod -Method DELETE -Uri $uri -Verbose
-          }
-      }
-
-      #remove lighthouse definitions
-      Write-Verbose "Checking for lighthouse registration definitions..."
-      $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationdefinitions?api-version=2022-01-01-preview' -f '$(testSubscriptionId)'
-      $definitions = Invoke-AzRestMethod -Method GET -Uri $uri
-      $definitionsValue = $definitions.Content | ConvertFrom-Json
-
-      ForEach ($definition in $definitionsValue.value) {
-          if ($definition.name) {
-          Write-Verbose "Deleteing lighthouse registration definition '$($definition.Name)'"
-          $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationdefinitions/{1}?api-version=2022-01-01-preview' -f '$(testSubscriptionId)',$definition.Name
-
-          Invoke-AzRestMethod -Method DELETE -Uri $uri -Verbose
-          }
-      }
-
-      $lighthouseTargetManagementGroupID = 'mb_co'
-      If ($lighthouseTargetManagementGroupID -eq (Get-AzContext).Tenant.Id) {
-          $assignmentScopeMgmtmGroupId = '/'
-      }
-      Else {
-          $assignmentScopeMgmtmGroupId = $lighthouseTargetManagementGroupID
-      }
-
-      # check if a lighthouse defender for cloud policy MSI role assignment already exists - assignment name always 2cb8e1b1-fcf1-439e-bab7-b1b8b008c294 
-      Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Owner'"
-      $uri = 'https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleAssignments/{1}?&api-version=2018-01-01-preview' -f $lighthouseTargetManagementGroupID,'2cb8e1b1-fcf1-439e-bab7-b1b8b008c294'
-      $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET -Verbose | Select-Object -Expand Content | ConvertFrom-Json
-      If ($roleAssignments.id) {
-          Write-Verbose "Deleteing role assignments '$roleAssignments'"
-          $uri = 'https://management.azure.com/{0}?api-version=2015-07-01' -f $roleAssignments.id
-          Invoke-AzRestMethod -Uri $uri -Method DELETE -Verbose
-      }
-      Else {
-          Write-Verbose "No DfC role assignments found..."
-      }
-
+      $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
+      $config = $c.configString | ConvertFrom-Json
       
-      # check if a lighthouse Azure Automation MSI role assignment to register the Lighthouse resource provider already exists - assignment name always  5de3f84b-8866-4432-8811-24859ccf8146
-      Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Custom-RegisterLighthouseResourceProvider'"
-      $uri = 'https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleAssignments/{1}?&api-version=2018-01-01-preview' -f $lighthouseTargetManagementGroupID, '5de3f84b-8866-4432-8811-24859ccf8146'
-      $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET | Select-Object -Expand Content | ConvertFrom-Json   
-      If ($roleAssignments.id) { 
-          Write-Verbose "Deleteing role assignments '$roleAssignments'"
-          $uri = 'https://management.azure.com/{0}?api-version=2015-07-01' -f $roleAssignments.id
-          Invoke-AzRestMethod -Uri $uri -Method DELETE -verbose
+      Write-Output "Waiting for 'main' runbook job to complete (up to 5 mins)"
+      $timeout = New-TimeSpan -Minutes 5
+      $timer = [System.Diagnostics.Stopwatch]::StartNew()
+      do {
+        $job = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+          Sort-Object StartTIme -Descending |
+          Select-Object -First 1
+        
+        Start-Sleep 1
       }
-      else {
-          Write-Verbose "No MSI role assignemnts found"
+      until (($job.Status -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
+
+      If ($job.Status -eq 'Failed') {
+        throw "main runbook failed to execute"
       }
-
-      # check if lighthouse Custom-RegisterLighthouseResourceProvider exists at a different scope
-      Write-Verbose "Checking for existing role definitions with name 'Custom-RegisterLighthouseResourceProvider'"
-      $uri = "https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleDefinitions?`$filter=roleName eq '{1}'&api-version=2018-01-01-preview" -f $lighthouseTargetManagementGroupID,'Custom-RegisterLighthouseResourceProvider'
-      $response = Invoke-AzRestMethod -Uri $uri -Method Get
-
-      If ($response.StatusCode -eq '200') {
-          If ($roleDefId = ($response.Content | ConvertFrom-Json).Name) {
-          $uri = 'https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleDefinitions/{1}?api-version=2018-01-01-preview' -f $lighthouseTargetManagementGroupID,$roleDefId
-
-          Invoke-AzRestMethod -Method DELETE -Uri $uri
-          }
+      If ($job.Status -eq 'Completed') {
+        Write-Output "'main' runbook completed successfully, checking for errors in output. "
       }
 
+      $jobOutput = Get-AzAutomationJobOutput -Id $job.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
 
+      $errorsFound = $false
+      ForEach ($outputRecord in $jobOutput) {
+        If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+          $errorsFound = $true
+          Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($true)")
+        }
+      }
+      If (!$errorsFound) {
+        Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($false)")
+      }
+
+
+- task: AzurePowerShell@5
+  condition: and(succeededOrFailed(), eq(variables.skipCleanup, 'false'))
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      If ($env:SKIPCLEANUP -ne 'False') {
+        ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
+        $c = Get-GSAExportedConfig -KeyVaultName guardrails-5c060f8e -y
+        $config = $c.configString | ConvertFrom-Json
+
+        $c | remove-gsacentralizedReportingCustomerComponents -Force
+        $c | Remove-GSACentralizedDefenderCustomerComponents -Force
+        $c | Remove-GSACoreResources -Force -Wait
+      }
+      Else {
+        Write-Host "Skipping cleanup because `$env:skipCleanup is '$($env:SKIPCLEANUP)'"
+      }
   name: 'CleanUpTest'
 
 

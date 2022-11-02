@@ -1,33 +1,3 @@
-function new-customObject {
-    param (
-        [string] $Type,
-        [string] $Id,
-        [string] $Name,
-        [string] $DisplayName,
-        [string] $CtrlName,
-        [bool] $ComplianceStatus,
-        [string] $Comments,
-        [string] $ItemName,
-        [string] $itsgcode,
-        [string] $test,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime
-    )
-    $tempObject=[PSCustomObject]@{ 
-        Type = $Type
-        Id= $Id
-        Name = $Name
-        DisplayName = $DisplayName
-        ComplianceStatus = $ComplianceStatus
-        Comments = $Comments
-        ItemName = $ItemName
-        ControlName = $CtrlName
-        ReportTime = $ReportTime
-        itsgcode = $itsgcode
-    }
-    return $tempObject
-}
 function Test-ExemptionExists {
     param (
         [string] $ScopeId,
@@ -99,13 +69,20 @@ function Check-StatusDataAtRest {
         else {
             $DisplayName=$obj.DisplayName
         }
-        $c=new-customObject -Type $objType -Id $obj.Id -Name $obj.Name -DisplayName $DisplayName `
-                -CtrlName $ControlName `
-                -ComplianceStatus $ComplianceStatus `
-                -ItemName $ItemName `
-                -Comments $Comment`
-                -ReportTime $ReportTime `
-                -itsgcode $itsgcode
+
+        $c = New-Object -TypeName PSCustomObject -Property @{ 
+            Type = [string]$objType
+            Id = [string]$obj.Id
+            Name = [string]$obj.Name
+            DisplayName = [string]$DisplayName
+            ComplianceStatus = [boolean]$ComplianceStatus
+            Comments = [string]$Comment
+            ItemName = [string]$ItemName
+            itsgcode = [string]$itsgcode
+            ControlName = [string]$ControlName
+            ReportTime = [string]$ReportTime
+        }
+
         $tempObjectList.add($c)| Out-Null
     }
     return $tempObjectList
@@ -171,8 +148,8 @@ function Verify-ProtectionDataAtRest {
 # SIG # Begin signature block
 # MIInoQYJKoZIhvcNAQcCoIInkjCCJ44CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAlEp5xrISLje0k
-# bZ0F4HtkOPWnuPUH4E3Xe0cO+/TxzKCCDYEwggX/MIID56ADAgECAhMzAAACzI61
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAqPZCzuWh3pZIU
+# 3eyDM0c0BR1HHKOYUhXLqCs9kU5a56CCDYEwggX/MIID56ADAgECAhMzAAACzI61
 # lqa90clOAAAAAALMMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -249,19 +226,19 @@ function Verify-ProtectionDataAtRest {
 # HjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEoMCYGA1UEAxMfTWljcm9z
 # b2Z0IENvZGUgU2lnbmluZyBQQ0EgMjAxMQITMwAAAsyOtZamvdHJTgAAAAACzDAN
 # BglghkgBZQMEAgEFAKCBrjAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgor
-# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgWiyZSwBd
-# 6sva2iN6DBbgM1SC213xN30Z1rv+wrXOTjowQgYKKwYBBAGCNwIBDDE0MDKgFIAS
+# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgQdH5QXq+
+# pd3MjRAdowtJpCfKPTFO+q22XEvcpVWL1rgwQgYKKwYBBAGCNwIBDDE0MDKgFIAS
 # AE0AaQBjAHIAbwBzAG8AZgB0oRqAGGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbTAN
-# BgkqhkiG9w0BAQEFAASCAQALusNqjdMzSU4vK24SiFsWEgDv1aEaMDE7up1mX1rA
-# z5EgbuSE3oLuRmHZkWxZkWkOfWb/i8sCn+Pm1jOHpE3n6KtGRzl2UvFEsT/1Kudb
-# vpdDBv1aVy+gZSyv/4GHQbvVnf4uyRq98fAqYc1nNk5UzrXw4TTZjotRBrljUl3s
-# 5ea+6llaDNZlkja21QazQp/Mha30iLuVpuufl73DznbUzD35yOwXsfzXIF83ZuNJ
-# jQjlOIAeDWlT6NhckG6draAZ4fCSryR/C6av4lBbxKEymO8IwPuvANdvtS/ehPIW
-# aRhN9fjXlg6jCzqq2WyEdABtfA1JLyHhjRyq6hjGVRCkoYIXADCCFvwGCisGAQQB
+# BgkqhkiG9w0BAQEFAASCAQAJWclFeoQzpo2O5eejCJgz1GuuY2i2mO2KrwPoF5RP
+# dLJc/v7qT0BkPb6+CnbtxOMH2Rb/S+kBa01k/c1zBvmzT2xlz8MwX/H0fiHYQ9Db
+# EMrNH1Ji5FHDgfybtr+wqB7SDivmNRAzb52nZlo4I3a+djXRw76hfl+44HGkauAF
+# N4b5RZTe0+JTKP2qIfEwLYtnSdfvJkgMi76EbJ2jBq9Xk/2+4XI4YMwauv+BH3o1
+# D53hI7bgsZPncylYh4YHByLcGBTfdXuIJqCGtws1iDhiIFupo5MiHV3jwsk92qKj
+# sMGr+roVDzRiwVlOfFjiQseOM2IfTNcn/cXPDas897+AoYIXADCCFvwGCisGAQQB
 # gjcDAwExghbsMIIW6AYJKoZIhvcNAQcCoIIW2TCCFtUCAQMxDzANBglghkgBZQME
 # AgEFADCCAVEGCyqGSIb3DQEJEAEEoIIBQASCATwwggE4AgEBBgorBgEEAYRZCgMB
-# MDEwDQYJYIZIAWUDBAIBBQAEIHNrXRIZYLZnj6KbX2/FkwckwEY0i4MOW8DrQiiu
-# /wexAgZjIwNPqxkYEzIwMjIxMDA0MTQzOTE1LjE4M1owBIACAfSggdCkgc0wgcox
+# MDEwDQYJYIZIAWUDBAIBBQAEIKR6uDDp7NIMfXz81jH/WWtZ5FUVUw4KPP8OHHgM
+# 5prsAgZjR+4Uy/0YEzIwMjIxMTAyMTQyNDU3LjQzNVowBIACAfSggdCkgc0wgcox
 # CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
 # b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJTAjBgNVBAsTHE1p
 # Y3Jvc29mdCBBbWVyaWNhIE9wZXJhdGlvbnMxJjAkBgNVBAsTHVRoYWxlcyBUU1Mg
@@ -352,33 +329,33 @@ function Verify-ProtectionDataAtRest {
 # 9c0M+9dvU0CggYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGlu
 # Z3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBv
 # cmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0EgMjAxMDAN
-# BgkqhkiG9w0BAQUFAAIFAObmjaUwIhgPMjAyMjEwMDQxODQ3MDFaGA8yMDIyMTAw
-# NTE4NDcwMVowdzA9BgorBgEEAYRZCgQBMS8wLTAKAgUA5uaNpQIBADAKAgEAAgIe
-# WgIB/zAHAgEAAgIR8TAKAgUA5uffJQIBADA2BgorBgEEAYRZCgQCMSgwJjAMBgor
+# BgkqhkiG9w0BAQUFAAIFAOcMyeUwIhgPMjAyMjExMDIxODUwMTNaGA8yMDIyMTEw
+# MzE4NTAxM1owdzA9BgorBgEEAYRZCgQBMS8wLTAKAgUA5wzJ5QIBADAKAgEAAgIf
+# 3QIB/zAHAgEAAgIRzjAKAgUA5w4bZQIBADA2BgorBgEEAYRZCgQCMSgwJjAMBgor
 # BgEEAYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqGSIb3DQEBBQUA
-# A4GBAGOp8lVJ5ZWoSqf0a+E6aMxpRJ8yxVYgWmhYVpmI56Yi9x61vdrzQsL5SrtA
-# WnWrgXUn4/TGv5UOsCmKweSxQhj0erSzisTmUIhet5eD4Gco4yVei6VeARDbmuCh
-# 8sG0MpAMu8tLvtjTPuYTYCKa8l5F7R2PWV+cF9KrTBC7ekYaMYIEDTCCBAkCAQEw
+# A4GBAAWNezCe7PJ5wcFtkf/1/L3iwTj8EeJ3eI6Vg9/4jxR/kFAvMmAfAs4nxeiW
+# alVctLj4CDZ6MduXPffuAuE/bUQPdDq3bXXU5unQn7TiT/MZUURepj1kSuQnpAqs
+# cCw5o6kcwqXu6VlZm0MxGaGZjXYUnSyfoT8CQMziKP+BObaRMYIEDTCCBAkCAQEw
 # gZMwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcT
 # B1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UE
 # AxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGcD6ZNYdKeSygA
 # AQAAAZwwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzENBgsqhkiG9w0B
-# CRABBDAvBgkqhkiG9w0BCQQxIgQgZnejvw69e2DYqIzaRWbCmiot7Q3FP5pKh06t
-# p2R7/3kwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCA3D0WFII0syjoRd/Xe
+# CRABBDAvBgkqhkiG9w0BCQQxIgQgZNloP+r3JertR3zwPSIJE0m6doGY2u7eESUH
+# Y6hw3igwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCA3D0WFII0syjoRd/Xe
 # EIG0WUIKzzuy6P6hORrb0nqmvDCBmDCBgKR+MHwxCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0YW1w
-# IFBDQSAyMDEwAhMzAAABnA+mTWHSnksoAAEAAAGcMCIEIKZnsyzHZcfSLVt8Woy6
-# 35NuaT53kugLSyWbf74O9poHMA0GCSqGSIb3DQEBCwUABIICAGYOfZDl4Hp/D/WA
-# rR3yKe/SBOyzQGFgkaLQ5whJkI4+k+wPp/dIa8BbCAob+0pISCwHjVY4S3DQ6Gis
-# VhFkmsZCdB/8F+0YYRrMBoZg7YqOFWsVBFaRSZ6XiTT+C5zhbYlKsXWuS/Pnnhmr
-# vZ/XFMo0npsn6R15MMhE1KVNn7gFzLpS4VmYB4uQkViYZaFbFaSWGGlqLQ4uSIgs
-# xwAgIFWygG3LkVOsZ3j30K+v2UL7Q0SBqGj1PtPsQcXXjHx6poVY8OUza8E9Syxf
-# bq1gZMdxi7b5TxsZXeu3yCnmyT8BS9n7o6z2iovuHc/Y4N16Hh3mRpq6TClKPtII
-# zTXWASqvHQTSDp2IvxNCTnnqBb1RhtFscbmNZK7/hMk/pXI4bXMS6iOjG/lXaI0Y
-# Bi3RASkKQ11/e73hzqlCjRgvS8/dqrR+6P2zSd5EN7uSM3rqaaS2lvSS6FcRcfBw
-# I0G8/+rsQ6o9MgLBxGkhAm+mOHzK6cXJdbDcewXry+pHdFTAuWhlkSLJuTC/G0Hv
-# 1NcrqgcPuTEmkASttxvnI6bAAeD0iTMudPWWug1PruuQCNzMAJTC8RB4EL7KIOZh
-# FTfi4tPzaRViruj+FAwWfWmZ2xZycgg0upfB827/RTxWE3aYBwfj7xjPjL+vkAZn
-# vi+dea1qt+WktlOtQ7RYX6deSWmo
+# IFBDQSAyMDEwAhMzAAABnA+mTWHSnksoAAEAAAGcMCIEIOu9xgyEB+JSbWjtUbXe
+# 75wcsV8Y7DouycADVdjhHwbqMA0GCSqGSIb3DQEBCwUABIICAD26NNVu+I1q6p1+
+# r36vw2xAM6WCMuYQJ9Uqh8F+qrctjbfbqhXnGQWU0DwCP7JbNc9+rFw/Zx5X73h1
+# gwouZkJ9T1+wkZfbA1XUPALLIOp/8YUzD3LRl7HM6fDOGnk+FyFFnVTOZqPHMYuh
+# ShgpmCk4YXwbWXOclARI4U8ww9y7ZbZLjtPV/LlOc0LR39tqCoQFxweTKa2MtCiJ
+# CCuf2BZQC4CJgR07dE42tTpaAgp13RlJKnfDdG/njBURMm+0TMEES/DVO0Vv8XY3
+# BEhhrNhwgEtGll9Hp8UzronChSQWcGxP5/p5gxyDyXdrBMb5bTTSv+4yx0/c7Ck1
+# uVHSU8Sg9wQmfqPhnJKuNOMz5CcYAputt40HJMZU7lnQ6U2lHPqiNQAyGhYfZI8m
+# fOQsC4CiH7OuBwhNVrFGPSR+Vjw2k4COn2bT9eXYvAAHIqhc2xMYKf596baouhka
+# +ZLIQkfLvFP30SFPmz8wH3MLOBsUHSPhirE0FNJYTclXu0EDEdctXNRdUjWtXNoi
+# llHrOeW3t2iK4n2b8t0Y0aiEMTtnmmOzVYHgOOy0JFBGq4trXpi1RstNfp5j9Kc3
+# R2glsm7rRA7498wnA58FmV+KHMxo5Tn3fdwGifpiafqZEO6UBnW+64cuydH7mrmu
+# jYoCQHLOMihLVrP/cLcM/wqfsWG2
 # SIG # End signature block
