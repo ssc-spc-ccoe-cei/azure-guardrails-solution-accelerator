@@ -24,7 +24,6 @@ Product name: Microsoft 365 E5, String ID: SPE_E5
 #>
 function Get-BreakGlassAccountLicense {
     param (
-       [string] $token, 
        [string] $FirstBreakGlassUPN,
        [string] $SecondBreakGlassUPN, 
        [string] $ControlName, 
@@ -62,24 +61,29 @@ function Get-BreakGlassAccountLicense {
         $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGAccount.UserPrincipalName)
 
         try {
-            $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -Method Get -ErrorAction Stop
+            $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
         }
         catch {
+            If ($response.statusCode -eq 404) {continue}
+
             Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
-        $BGAccount.ID = $Data.id
+        $data = $response.Content | ConvertFrom-Json
+        $BGAccount.ID = $data.id
 
         $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGAccount.ID + "/licenseDetails")
 
         try {
-            $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -Method Get -ErrorAction Stop
+            $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
         }
         catch {
+            If ($response.statusCode -eq 404) {continue}
             Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
 
+        $data = $response.Content | ConvertFrom-Json
         if (($data.value).Length -gt 0 ) {
             $BGAccount.LicenseDetails = ($Data.value).skuPartNumber
         }

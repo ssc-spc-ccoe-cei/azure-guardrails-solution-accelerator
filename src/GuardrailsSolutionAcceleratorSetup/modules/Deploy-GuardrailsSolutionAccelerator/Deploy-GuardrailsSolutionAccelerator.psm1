@@ -69,7 +69,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'lighthouseTargetManagementGroupID' = $config.lighthouseTargetManagementGroupID
     }
     # Adding URL parameter if specified
-    [regex]$alternateURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules.+?)'
+    [regex]$alternateURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
     If (![string]::IsNullOrEmpty($alternatePSModulesURL)) {
         If ($alternatePSModulesURL -match $alternateURIRegex) {
             $templateParameterObject += @{CustomModulesBaseURL = $alternatePSModulesURL }

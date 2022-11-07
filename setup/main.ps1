@@ -44,8 +44,7 @@ catch {
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
     -additionalValues @{reportTime=$ReportTime; locale=$locale}
 
-# Gets a token for the current sessions (Automation account's MI that can be used by the modules.)
-[String] $GraphAccessToken = (Get-AzAccessToken -ResourceTypeName MSGraph).Token
+
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName="GR-ComplianceChecks-Msgs"

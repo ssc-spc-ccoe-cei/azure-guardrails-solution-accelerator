@@ -1,7 +1,6 @@
 
 function Check-ADDeletedUsers  {
     Param (
-        [string] $Token,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
@@ -16,13 +15,13 @@ function Check-ADDeletedUsers  {
     $apiUrl= "https://graph.microsoft.com/beta/directory/deleteditems/microsoft.graph.user"
 
     try {
-        $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl
+        $response = Invoke-AzRestMethod -Uri $apiUrl -ErrorAction Stop
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
         Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
     }
-
+    $data = $response.Content | ConvertFrom-Json
     $AllUsers = $Data.value
       
       forEach ($User in $AllUsers) {
@@ -49,14 +48,15 @@ function Check-ADDeletedUsers  {
  
     $apiUrl= "https://graph.microsoft.com/beta/users/"
     try {
-        $guestAccountData = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl
+        $response = Invoke-AzRestMethod -Uri $apiUrl
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
         Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
     }
     
-    $guestUsers = $guestAccountData.value
+    $data = $response.Content | ConvertFrom-Json
+    $guestUsers = $data.value
 
     forEach ($User in $guestUsers) {
         if($User.userType -eq "Guest") {

@@ -16,7 +16,6 @@ The module checks if the mutifactor authentication (MFA) is enable on the break 
 #>
 function Get-UserAuthenticationMethod { 
     param (
-        [string] $token, 
         [string] $ControlName,
         [string] $WorkSpaceID, 
         [string] $workspaceKey, 
@@ -40,12 +39,14 @@ function Get-UserAuthenticationMethod {
         $apiUrl = "https://graph.microsoft.com/beta/users/"+$BGAcct+"/authentication/methods"
 
         try {
-            $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl -ErrorAction Stop
+            $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
         }
         catch {
             Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
+
+        $data = $response.Content | ConvertFrom-Json
         $authenticationmethods =  $Data.value
 
         # To check if MFA is setup for a user, we're looking for either :

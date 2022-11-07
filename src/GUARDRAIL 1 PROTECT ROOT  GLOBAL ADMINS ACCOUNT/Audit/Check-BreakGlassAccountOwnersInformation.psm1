@@ -17,7 +17,6 @@
 #>
 function Get-BreakGlassOwnerinformation {
     param (
-        [string] $token, 
         [string] $FirstBreakGlassUPNOwner,
         [string] $SecondBreakGlassUPNOwner, 
         [string] $ControlName, 
@@ -56,12 +55,12 @@ function Get-BreakGlassOwnerinformation {
         
         $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGOwner.UserPrincipalName + "/manager")
         try {
-            $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -ErrorAction Stop
+            $response = Invoke-AzRestMethod -Uri $apiUrl -ErrorAction Stop
             $BGOwner.ComplianceStatus = $true
             $BGOwner.ComplianceComments = $msgTable.bgAccountHasManager -f $BGOwner.UserPrincipalName
         }
         catch {
-            If ($_.exception.response.statuscode.value__ -eq '404') {
+            If ($response.statusCode -eq 404) {
                 $BGOwner.ComplianceStatus = $false
                 $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $BGOwner.UserPrincipalName
             }

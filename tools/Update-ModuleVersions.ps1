@@ -35,7 +35,7 @@ ForEach ($moduleChangedFile in $moduleChangedFileList) {
             If ($version = $currentModuleVersion -as [version]) {
                 $major = $version.Major
                 $minor = $version.Minor
-                $build = $version.Build + 1 # add 1 to current version build number
+                $build = ($version.Build -eq -1) ? $version.Build + 2 : $version.Build + 1 # add 1 to current version build number
                 $newVersion = [version]::new($major,$minor,$build)
             }
             Else {
