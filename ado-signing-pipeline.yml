@@ -24,6 +24,10 @@ parameters:
   displayName: 'Skip signing of modules'
   type: boolean
   default: 'false'
+- name: preClean
+  displayName: 'Pre-clean the test environment of existing deployments'
+  type: boolean
+  default: 'true'
 
 variables: 
   - group: 'GuardrailsTestDeployments'
@@ -33,6 +37,8 @@ variables:
     value: ${{ parameters.skipTestDeploy }}
   - name: skipSigning
     value: ${{ parameters.skipSigning }}
+  - name: preClean
+    value: ${{ parameters.preClean }}
 
 steps:
 
@@ -209,6 +215,62 @@ steps:
   displayName: 'Stage zipped/signed modules in Storage Account'
 
 - task: AzurePowerShell@5
+  name: 'PreCleanTestEnvironment'
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
+      $configFilePath = Join-Path -Path $env:AGENT_TEMPDIRECTORY -ChildPath 'config.json'
+      $configContent = @'
+      {
+          "keyVaultName": "gsapipe",
+          "resourcegroup": "gsapipe",
+          "region": "CanadaCentral",
+          "storageaccountName": "gsapipe",
+          "logAnalyticsworkspaceName": "gsapipe",
+          "autoMationAccountName": "gsapipe",
+          "FirstBreakGlassAccountUPN": "breakglass1@$(testTenantDomain)",
+          "SecondBreakGlassAccountUPN": "breakglass2@$(testTenantDomain)",
+          "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
+          "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+          "DepartmentNumber": "",
+          "CBSSubscriptionName": "$(CBSSubscriptionName)",
+          "SecurityLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+          "HealthLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+          "Locale": "en-CA",
+          "lighthouseServiceProviderTenantID": "$(lighthouseProviderTenantId)",
+          "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+          "lighthousePrincipalId": "$(lighthousePrincipalId)",
+          "lighthouseTargetManagementGroupID": "mb_co",
+          "subscriptionId": "$(testSubscriptionId)"
+        }
+      '@
+      Set-Content -Path $configFilePath -Value $configContent
+
+      Push-Location -Path setup
+
+      try {
+          $ErrorActionPreference = 'Stop'
+          remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+          Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
+          Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
+      }
+      catch {
+          throw "Failed test deploy of solution with error: $_"
+      }
+      finally {
+        If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+        Pop-Location
+      }
+  displayName: 'Pre-clean the test environment'
+  condition: eq(variables.preClean, 'true')
+
+- task: AzurePowerShell@5
   condition: and(succeeded(), eq(variables.skipTestDeploy, 'false'))
   inputs:
     azureSubscription: 'Matthew Visual Studio (mb_co)'
@@ -238,7 +300,8 @@ steps:
           "lighthouseServiceProviderTenantID": "$(lighthouseProviderTenantId)",
           "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
           "lighthousePrincipalId": "$(lighthousePrincipalId)",
-          "lighthouseTargetManagementGroupID": "mb_co"
+          "lighthouseTargetManagementGroupID": "$(lighthouseTargetManagementGroupID)",
+          "subscriptionId": "$(testSubscriptionId)"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
@@ -246,7 +309,7 @@ steps:
       $userId = '$(testUserId)@$(testTenantDomain)'
 
       $storageContext = (Get-AzStorageAccount -ResourceGroupName $(pipelineModulesStagingRGName) -Name $(pipelineModulesStagingStorageAccountName)).context
-      $modulesStagingURI = New-AzStorageContainerSASToken -Context $storageContext -Name psmodules -ExpiryTime (Get-Date).AddHours(1) -Permission r -FullUri
+      $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
 
       $alternatePSModulesURL = $modulesStagingURI
       Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
@@ -264,12 +327,13 @@ steps:
         If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
         Pop-Location
       }
-  name: 'TestSolutionDeploy'
+  name: 'GuardrailsTestDeployments'
+  displayName: 'Deploy to test environment...'
 
 - task: AzurePowerShell@5
   name: 'CheckForJobErrors'
   displayName: 'Check for AA Job Errors'
-  condition: eq(variables.skipTestDeploy, 'false')
+  condition: and(eq(variables.skipTestDeploy, 'false'), succeeded())
   inputs:
     azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
@@ -306,17 +370,15 @@ steps:
       $errorsFound = $false
       ForEach ($outputRecord in $jobOutput) {
         If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-          $errorsFound = $true
-          Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($true)")
+          throw 'Errors found in Azure Automation jobs'
         }
       }
       If (!$errorsFound) {
-        Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($false)")
+        #Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($false)")
       }
 
-
 - task: AzurePowerShell@5
-  condition: and(succeededOrFailed(), eq(variables.skipCleanup, 'false'))
+  condition: and(succeeded(), eq(variables.skipCleanup, 'false'))
   inputs:
     azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
@@ -324,19 +386,14 @@ steps:
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
-      If ($env:SKIPCLEANUP -ne 'False') {
         ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-        $c = Get-GSAExportedConfig -KeyVaultName guardrails-5c060f8e -y
+        $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
         $config = $c.configString | ConvertFrom-Json
 
         $c | remove-gsacentralizedReportingCustomerComponents -Force
         $c | Remove-GSACentralizedDefenderCustomerComponents -Force
         $c | Remove-GSACoreResources -Force -Wait
-      }
-      Else {
-        Write-Host "Skipping cleanup because `$env:skipCleanup is '$($env:SKIPCLEANUP)'"
-      }
   name: 'CleanUpTest'
 
 

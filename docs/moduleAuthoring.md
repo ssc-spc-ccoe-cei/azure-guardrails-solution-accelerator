@@ -121,7 +121,7 @@ These variables can be used in the module calls without the needs of creating cu
 - $Locale: the specified local (en-CA is default)
 - $SubID: id of the installed subscription
 - $TenantId: id of the Azure AD tenant
-- $GraphAccessToken: a valid Graph token relative to the Automation Account managed identity.
+
 
 ## Exception Handling
 

@@ -66,16 +66,21 @@ ForEach ($legacyParameter in $legacyParameters) {
 
 Import-Module $PSScriptRoot\..\src\GuardrailsSolutionAcceleratorSetup
 
+$optionalParams = @{}
+if ($alternatePSModulesURL) {
+    $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+}
+
 If (!$update.IsPresent) {
     If (!$configureLighthouseAccessDelegation.IsPresent) {
-        Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -verbose:$useVerbose -Yes:$yes.isPresent
+        Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -verbose:$useVerbose -Yes:$yes.isPresent @optionalParams
     }
     Else {
-        Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes:$yes.isPresent -verbose:$useVerbose
+        Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes:$yes.isPresent @optionalParams -verbose:$useVerbose
     }
 }
 Else {
-    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -updateComponents All -Yes:$yes.isPresent -verbose:$useVerbose
+    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -updateComponents All -Yes:$yes.isPresent -verbose:$useVerbose @optionalParams
 }
 
 # SIG # Begin signature block
