@@ -20,18 +20,33 @@ function Check-MonitorAccountCreation {
   $apiUrl = $("https://graph.microsoft.com/beta/users/" + $MonitoringAccount)
 
   try {
-    $response = Invoke-AzRestMethod -Uri $apiUrl
-    $data = $response.Content | ConvertFrom-Json
-    $IsCompliant = $true
-    $MitigationCommands = "N/A"
+    $response = Invoke-AzRestMethod -Uri $apiUrl -ErrorAction Stop
   }
   catch {
-    $StatusCode = $_.Exception.Response.StatusCode.value__ 
-    $Comments = $msgTable.checkUserExistsError -f $StatusCode
+    $Comments = $msgTable.checkUserExistsError -f $response.StatusCode
     $MitigationCommands = $msgTable.checkUserExists
 
     Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
     Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+  }
+
+  If ($response.StatusCode -eq 200) {
+    # the monitoring user was found
+    $IsCompliant = $true
+    $Comments = $msgTable.checkUserExistsSuccess
+    $MitigationCommands = "N/A"
+  }
+  ElseIf ($response.StatusCode -eq 404) {
+    # the monitoring user was not found
+    $Comments = $msgTable.checkUserExistsError -f $response.statusCode
+    $MitigationCommands = $msgTable.checkUserExists
+  }
+  Else {
+    $Comments = $msgTable.checkUserExistsError -f $response.statusCode
+    $MitigationCommands = $msgTable.checkUserExists
+
+    Add-LogEntry 'Error' "An unhandled status code '$($response.StatusCode)' was returned when calling URI '$apiURL' to find the Monitoring Account" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+    Write-Error "Error: An unhandled status code '$($response.StatusCode)' was returned when calling URI '$apiURL' to find the Monitoring Account"
   }
        
   $Results = [pscustomobject]@{
@@ -43,11 +58,9 @@ function Check-MonitorAccountCreation {
     ReportTime  = $ReportTime
     MitigationCommands = $MitigationCommands
   }
-       
-  $Results_Jason = ConvertTo-json -inputObject $Results
-
+  
   Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-    -body $Results_Jason -logType $LogType -TimeStampField Get-Date  
+    -body $response.Content -logType $LogType -TimeStampField Get-Date  
       
 }
 
