@@ -233,13 +233,21 @@ Function Add-TenantInfo {
         $ReportTime,
         [Parameter(Mandatory=$true)]
         [string]
-        $TenantId
+        $TenantId,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $DepartmentName,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $DepartmentNumber
         )
     $tenantInfo=Get-AutomationVariable("tenantDomainUPN")
     $object = [PSCustomObject]@{ 
         TenantDomain = $tenantInfo
         DepartmentTenantID = $TenantId
         ReportTime = $ReportTime
+        DepartmentName = $DepartmentName
+        DepartmentNumber = $DepartmentNumber
     }
     Write-Output $tenantInfo
     $JSON= ConvertTo-Json -inputObject $object

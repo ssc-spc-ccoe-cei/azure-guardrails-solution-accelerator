@@ -1,30 +1,31 @@
 //Scope
 targetScope = 'resourceGroup'
 //Parameters and variables
-param storageAccountName string
-param subscriptionId string
-param location string = 'canadacentral'
-param kvName string = 'guardrails-kv'
-param automationAccountName string = 'guardrails-AC'
-param logAnalyticsWorkspaceName string = 'guardrails-LAW'
-param PBMMPolicyID string = '4c4a5f27-de81-430b-b4e5-9cbd50595a87'
 param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
+param automationAccountName string = 'guardrails-AC'
+param CBSSubscriptionName string 
+param CustomModulesBaseURL string = 'https://github.com/Azure/GuardrailsSolutionAccelerator/raw/main/psmodules'
 param DepartmentNumber string
+param DepartmentName string
 param deployKV bool = true
 param deployLAW bool = true
-param CBSSubscriptionName string 
-param SecurityLAWResourceId string
-param HealthLAWResourceId string
-param CustomModulesBaseURL string = 'https://github.com/Azure/GuardrailsSolutionAccelerator/raw/main/psmodules'
 param DeployTelemetry bool = true
-param Locale string = 'EN'
-param releaseVersion string
-param releaseDate string 
-param TenantDomainUPN string
+param HealthLAWResourceId string
+param kvName string = 'guardrails-kv'
 param lighthouseTargetManagementGroupID string
+param Locale string = 'EN'
+param location string = 'canadacentral'
+param logAnalyticsWorkspaceName string = 'guardrails-LAW'
 param newDeployment bool = true
-param updateWorkbook bool = false
+param PBMMPolicyID string = '4c4a5f27-de81-430b-b4e5-9cbd50595a87'
+param releaseDate string 
+param releaseVersion string
+param SecurityLAWResourceId string
+param storageAccountName string
+param subscriptionId string
+param TenantDomainUPN string
 param updatePSModules bool = false
+param updateWorkbook bool = false
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
@@ -38,25 +39,26 @@ module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
 module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules) {
   name: 'guardrails-automationaccount'
   params: {
-    automationAccountName: automationAccountName
-    location: location
-    containername: containername
-    PBMMPolicyID: PBMMPolicyID
     AllowedLocationPolicyId: AllowedLocationPolicyId
-    DepartmentNumber: DepartmentNumber
+    automationAccountName: automationAccountName
     CBSSubscriptionName: CBSSubscriptionName
-    SecurityLAWResourceId: SecurityLAWResourceId
-    HealthLAWResourceId: HealthLAWResourceId
+    containername: containername
     CustomModulesBaseURL: CustomModulesBaseURL
-    Locale: Locale
+    DepartmentNumber: DepartmentNumber
+    DepartmentName: DepartmentName
     guardrailsKVname: kvName
     guardrailsLogAnalyticscustomerId: LAW.outputs.logAnalyticsWorkspaceId
     guardrailsStoragename: storageAccountName
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
-    TenantDomainUPN: TenantDomainUPN
+    HealthLAWResourceId: HealthLAWResourceId
     lighthouseTargetManagementGroupID: lighthouseTargetManagementGroupID
+    Locale: Locale
+    location: location
     newDeployment: newDeployment
+    PBMMPolicyID: PBMMPolicyID
+    releaseDate: releaseDate
+    releaseVersion: releaseVersion
+    SecurityLAWResourceId: SecurityLAWResourceId
+    TenantDomainUPN: TenantDomainUPN
     updatePSModules: updatePSModules
   }
 }
