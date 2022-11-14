@@ -1,22 +1,23 @@
-param automationAccountName string
-param location string
-param releaseVersion string
-param releaseDate string
-param CustomModulesBaseURL string
-param guardrailsLogAnalyticscustomerId string
-param guardrailsKVname string
-param guardrailsStoragename string
-param PBMMPolicyID string
-param containername string
 param AllowedLocationPolicyId string
-param DepartmentNumber string
+param automationAccountName string
 param CBSSubscriptionName string
-param SecurityLAWResourceId string
+param containername string
+param CustomModulesBaseURL string
+param DepartmentNumber string
+param DepartmentName string
+param guardrailsKVname string
+param guardrailsLogAnalyticscustomerId string
+param guardrailsStoragename string
 param HealthLAWResourceId string
-param TenantDomainUPN string
-param Locale string
 param lighthouseTargetManagementGroupID string
+param Locale string
+param location string
 param newDeployment bool = true
+param PBMMPolicyID string
+param releaseDate string
+param releaseVersion string
+param SecurityLAWResourceId string
+param TenantDomainUPN string
 param updatePSModules bool = false
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules) {
@@ -351,6 +352,14 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     'properties': {
       'isEncrypted': true
       'value': '"${lighthouseTargetManagementGroupID}"'
+  }
+  }
+
+  resource variable17 'variables' = if (newDeployment) {
+    name: 'DepartmentName'
+    'properties': {
+      'isEncrypted': true
+      'value': '"${DepartmentName}"'
   }
   }
 }

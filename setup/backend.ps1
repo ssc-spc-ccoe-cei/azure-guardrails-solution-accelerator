@@ -10,6 +10,8 @@ $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 #$StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
 $Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
 $lighthouseTargetManagementGroupID = Get-AutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
+$DepartmentName = Get-AutomationVariable -Name "DepartmentName" 
+$DepartmentNumber = Get-AutomationVariable -Name "DepartmentNumber" 
 
 # Connects to Azure using the Automation Account's managed identity
 try {
@@ -36,7 +38,7 @@ get-itsgdata -URL $itsgURL -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey
 Check-UpdateAvailable -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime
 
 # Updates Tenant info.
-Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -TenantId $tenantID
+Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -TenantId $tenantID -DepartmentName $DepartmentName -DepartmentNumber $DepartmentNumber
 
 # Ensure the 'Microsoft.ManagedServices' resource provider is registered under each subscription at the delegated management group
 If ($lighthouseTargetManagementGroupID) {

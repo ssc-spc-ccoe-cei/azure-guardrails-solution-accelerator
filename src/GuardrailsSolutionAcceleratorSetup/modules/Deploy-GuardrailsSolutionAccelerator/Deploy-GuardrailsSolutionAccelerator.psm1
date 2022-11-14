@@ -48,25 +48,26 @@ Function New-GSACoreResourceDeploymentParamObject {
     
     Write-Verbose "Creating bicep parameters file for this deployment."
     $templateParameterObject = @{
-        'kvName'                            = $config['runtime']['keyVaultName']
-        'location'                          = $config.region
-        'storageAccountName'                = $config['runtime']['storageaccountName']
-        'logAnalyticsWorkspaceName'         = $config['runtime']['logAnalyticsworkspaceName']
+        'AllowedLocationPolicyId'           = $config.AllowedLocationPolicyId
         'automationAccountName'             = $config['runtime']['autoMationAccountName']
-        'subscriptionId'                    = (Get-AzContext).Subscription.Id
-        'PBMMPolicyID'                      = $config.PBMMPolicyID
+        'CBSSubscriptionName'               = $config.CBSSubscriptionName
+        'DepartmentNumber'                  = $config.DepartmentNumber
+        'DepartmentName'                    = $config['runtime']['departmentName']
         'deployKV'                          = $config['runtime']['deployKV']
         'deployLAW'                         = $config['runtime']['deployLAW']
-        'AllowedLocationPolicyId'           = $config.AllowedLocationPolicyId
-        'DepartmentNumber'                  = $config.DepartmentNumber
-        'CBSSubscriptionName'               = $config.CBSSubscriptionName
-        'SecurityLAWResourceId'             = $config.SecurityLAWResourceId
         'HealthLAWResourceId'               = $config.HealthLAWResourceId
-        'releaseVersion'                    = $config['runtime']['tagsTable'].ReleaseVersion
-        'releasedate'                       = $config['runtime']['tagsTable'].ReleaseDate
-        'Locale'                            = $config.Locale
-        'tenantDomainUPN'                   = $config['runtime']['tenantDomainUPN']
+        'kvName'                            = $config['runtime']['keyVaultName']
         'lighthouseTargetManagementGroupID' = $config.lighthouseTargetManagementGroupID
+        'Locale'                            = $config.Locale
+        'location'                          = $config.region
+        'logAnalyticsWorkspaceName'         = $config['runtime']['logAnalyticsworkspaceName']
+        'PBMMPolicyID'                      = $config.PBMMPolicyID
+        'releasedate'                       = $config['runtime']['tagsTable'].ReleaseDate
+        'releaseVersion'                    = $config['runtime']['tagsTable'].ReleaseVersion
+        'SecurityLAWResourceId'             = $config.SecurityLAWResourceId
+        'storageAccountName'                = $config['runtime']['storageaccountName']
+        'subscriptionId'                    = (Get-AzContext).Subscription.Id
+        'tenantDomainUPN'                   = $config['runtime']['tenantDomainUPN']
     }
     # Adding URL parameter if specified
     [regex]$alternateURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'

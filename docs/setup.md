@@ -63,7 +63,7 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |SecondBreakGlassAccountUPN| UPN for the second break glass account|
 |PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.|
 |AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default|
-|DepartmentNumber| a number to be used by module 4 when looking for the existence of the monitoring account in Azure AD|
+|DepartmentNumber| The office Government of Canada department number - see: https://open.canada.ca/data/en/dataset/22090865-f8a6-4b83-9bad-e9d61f26a821 |
 |CBSSubscriptionName|Subscription Name containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**|
 |SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)|
 |HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)|
