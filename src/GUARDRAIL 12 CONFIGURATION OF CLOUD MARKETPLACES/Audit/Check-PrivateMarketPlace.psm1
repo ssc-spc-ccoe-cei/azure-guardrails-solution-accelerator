@@ -18,9 +18,6 @@ try {
 catch {
     $ErrorList.Add("Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
     and up to date; returned error message: $_")
-    <#Add-LogEntry2 'Error' "Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
-        and up to date; returned error message: $_"
-        #>
     throw "Error: Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
         and up to date; returned error message: $_" 
 }

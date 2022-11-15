@@ -50,9 +50,9 @@ function Get-BreakGlassOwnerinformation {
     
     foreach ($BGOwner in $BGOwners) {
         
-        $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGOwner.UserPrincipalName + "/manager")
+        $urlPath = '/users/' + $BGOwner.UserPrincipalName + '/manager'
         try {
-            $response = Invoke-AzRestMethod -Uri $apiUrl -ErrorAction Stop
+            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
             $BGOwner.ComplianceStatus = $true
             $BGOwner.ComplianceComments = $msgTable.bgAccountHasManager -f $BGOwner.UserPrincipalName
         }
@@ -62,9 +62,8 @@ function Get-BreakGlassOwnerinformation {
                 $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $BGOwner.UserPrincipalName
             }
             Else {
-                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" )
-                #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
-                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
+                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
             }
         }
     }

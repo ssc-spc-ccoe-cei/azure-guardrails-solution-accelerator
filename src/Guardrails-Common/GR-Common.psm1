@@ -216,52 +216,6 @@ Function Add-LogEntry {
 
 }
 
-Function Add-LogEntry2 {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $True, Position = 0)]
-        [ValidateSet("Critical", "Error", "Warning", "Information", "Debug")]
-        [string]
-        $severity,
-
-        # message details (string)
-        [Parameter(Mandatory = $true, Position = 1)]
-        [string]
-        $message,
-
-        # module name
-        [Parameter(Mandatory = $false)]
-        [string]
-        $moduleName = (Split-Path -Path $MyInvocation.ScriptName -Leaf),
-
-        # additional values in hashtable
-        [Parameter(Mandatory = $false)]
-        [hashtable]
-        $additionalValues = @{},
-
-        # exception log type - this is the Log Analytics table name
-        [Parameter(Mandatory = $false)]
-        [string]
-        $exceptionLogTable = "GuardrailsComplianceException"
-    )
-
-    # build log entry object, convert to json
-    $entryHash = @{
-        "message" = $message
-        "moduleName" = $moduleName
-        "severity" = $severity
-    } + $additionalValues
-    
-    $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
-    
-    if (Get-ChildItem "./errors.txt" -ErrorAction SilentlyContinue) {
-        (Get-Content "./errors.txt").trim("]") | Out-File "./errors.txt"
-        ",$entryJson]" | Out-File -FilePath "./errors.txt" -Encoding UTF8 -Force -Append
-    }
-    else {
-        "[$entryJson]" | Out-File -FilePath "./errors.txt" -Encoding UTF8 -Force
-    }
-}
 Function Add-TenantInfo {
     param (
         [Parameter(Mandatory=$true)]
@@ -497,6 +451,30 @@ function New-LogAnalyticsData {
         -body $JsonObject `
         -logType $LogType `
         -TimeStampField Get-Date  
+}
+
+function Invoke-GraphQuery {
+    param(
+        # URL path (ex: /users)
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^(?!https://graph.microsoft.com/(v1|beta)/)')]
+        [string]
+        $urlPath
+    )
+
+    try {
+        $uri = "https://graph.microsoft.com/v1.0/$urlPath" -as [uri]
+
+        $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
+    }
+    catch {
+        Write-Error "An error occured constructing the URI or while calling Graph query for URI GET '$uri': $($_.Exception.Message)"
+    }
+    
+    @{
+        Content = $response.Content | ConvertFrom-Json
+        StatusCode = $response.StatusCode
+    }
 }
 # endregion
 

@@ -32,8 +32,8 @@ function Get-BreakGlassAccounts {
   [bool] $IsCompliant = $false
   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
-  [String] $FirstBreakGlassUPNUrl = $("https://graph.microsoft.com/beta/users/" + $FirstBreakGlassUPN)
-  [String] $SecondBreakGlassUPNUrl = $("https://graph.microsoft.com/beta/users/" + $SecondBreakGlassUPN)
+  [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN)
+  [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN)
 
   $FirstBreakGlassAcct = [PSCustomObject]@{
     UserPrincipalName  = $FirstBreakGlassUPN
@@ -56,36 +56,34 @@ function Get-BreakGlassAccounts {
   
   # get 1st break glass account
   try {
-    $apiURL = $FirstBreakGlassAcct.apiUrl
-    $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get
+    $urlPath = $FirstBreakGlassAcct.apiUrl
+    $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
 
-    $data = $response.Content | ConvertFrom-Json
+    $data = $response.Content
     
     if ($Data.userType -eq "Member") {
       $FirstBGAcctExist = $true
     } 
   }
   catch {
-    $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-    #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
-    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
   }
 
   # get 2nd break glass account
   try {
-    $apiURL = $SecondBreakGlassAcct.apiURL
-    $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get
+    $urlPath = $SecondBreakGlassAcct.apiURL
+    $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
 
-    $data = $response.Content | ConvertFrom-Json
+    $data = $response.Content
     
     if ($Data.userType -eq "Member") {
       $SecondBGAcctExist = $true
     } 
   }
   catch {
-    $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-    #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
-    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
   }
   $IsCompliant = $FirstBGAcctExist -and $SecondBGAcctExist
 
