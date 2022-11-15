@@ -4,9 +4,6 @@ function Check-DeprecatedUsers {
         [string] $token, 
         [string] $ControlName, 
         [string] $ItemName, 
-        [string] $WorkSpaceID, 
-        [string] $workspaceKey, 
-        [string] $LogType,
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
@@ -18,7 +15,8 @@ function Check-DeprecatedUsers {
     [string] $CComments = $msgTable.compliantComment
 
     [PSCustomObject] $DeprecatedUsers = New-Object System.Collections.ArrayList
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    
     # A Deprecated account is an account that is disabled and not synchronized to AD
     $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" | Where-Object {$null -eq $_.onPremisesSyncEnabled}
 
@@ -44,11 +42,18 @@ function Check-DeprecatedUsers {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
     }
-
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $DeprecatedUserStatus
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput  
+    <#
     $JasonDeprecatedUserStatus = ConvertTo-Json -inputObject $DeprecatedUserStatus
         
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
         -body $JasonDeprecatedUserStatus   -logType $LogType -TimeStampField Get-Date  
+    #>
 }
        
 

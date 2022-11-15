@@ -22,9 +22,6 @@ function Get-BreakGlassOwnerinformation {
         [string] $ControlName, 
         [string] $ItemName,
         [string] $itsgcode,
-        [string] $WorkSpaceID, 
-        [string] $WorkSpaceKey, 
-        [string] $LogType,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
@@ -47,9 +44,9 @@ function Get-BreakGlassOwnerinformation {
     }
 
     [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
-    $BGOwners.add( $FirstBreakGlassOwner)
-    $BGOwners.add( $SecondBreakGlassOwner)
-        
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $BGOwners.add( $FirstBreakGlassOwner) | Out-Null
+    $BGOwners.add( $SecondBreakGlassOwner) | Out-Null
     
     foreach ($BGOwner in $BGOwners) {
         
@@ -65,7 +62,8 @@ function Get-BreakGlassOwnerinformation {
                 $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $BGOwner.UserPrincipalName
             }
             Else {
-                Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" )
+                #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
                 Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
             }
         }
@@ -93,13 +91,12 @@ function Get-BreakGlassOwnerinformation {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    $JsonObject = convertTo-Json -inputObject $PsObject 
-
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date                            
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput               
 }
 
 

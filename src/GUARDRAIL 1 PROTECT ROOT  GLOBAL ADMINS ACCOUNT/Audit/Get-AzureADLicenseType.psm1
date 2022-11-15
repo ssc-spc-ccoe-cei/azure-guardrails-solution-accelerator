@@ -25,9 +25,6 @@ function Get-ADLicenseType {
     
  param (
      [string] $ControlName,
-     [string] $WorkSpaceID, 
-     [string] $workspaceKey, 
-     [string] $LogType,
      [string] $itsgcode,
      [hashtable] $msgTable,
      [string] $ItemName,
@@ -35,16 +32,18 @@ function Get-ADLicenseType {
     [string]
     $ReportTime
 )
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ADLicenseType  = "N/A"
     $IsCompliant = $false
     $apiUrl = "https://graph.microsoft.com/v1.0/subscribedSkus"
+    $Comments= $msgTable.AADLicenseTypeNotFound
 
     try {
         $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
+        #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -59,6 +58,7 @@ function Get-ADLicenseType {
            ($servicePlan.servicePlanName -eq "SPE_E5")){
             $IsCompliant = $true
             $ADLicenseType  = $servicePlan.servicePlanName
+            $Comments= $msgTable.AADLicenseTypeFound
         }
     }
 
@@ -69,15 +69,14 @@ function Get-ADLicenseType {
         ItemName= $ItemName
         ReportTime = $ReportTime
         itsgcode = $itsgcode
+        Comments = $Comments
      }
-     $JsonObject = convertTo-Json -inputObject $PsObject 
-
-     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-                               -sharedkey $workspaceKey `
-                               -body $JsonObject `
-                               -logType $LogType `
-                               -TimeStampField Get-Date 
-
+     $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput    
 }
 
 # SIG # Begin signature block

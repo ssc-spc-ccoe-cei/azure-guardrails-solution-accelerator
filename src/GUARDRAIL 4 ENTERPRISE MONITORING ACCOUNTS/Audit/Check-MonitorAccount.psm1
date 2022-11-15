@@ -3,9 +3,6 @@ function Check-MonitorAccountCreation {
     [string] $DepartmentNumber,
     [string] $ControlName, 
     [string] $ItemName, 
-    [string] $WorkSpaceID, 
-    [string] $workspaceKey, 
-    [string] $LogType,
     [string] $itsgcode,
     [hashtable] $msgTable,
     [Parameter(Mandatory=$true)]
@@ -14,6 +11,7 @@ function Check-MonitorAccountCreation {
 
   [bool] $IsCompliant = $false
   [string] $Comments = $null
+  [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
   [string] $MonitoringAccount = "SSC-CBS-Reporting@" + $DepartmentNumber + "gc.onmicrosoft.com"
 
@@ -26,7 +24,7 @@ function Check-MonitorAccountCreation {
     $Comments = $msgTable.checkUserExistsError -f $response.StatusCode
     $MitigationCommands = $msgTable.checkUserExists
 
-    Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+    $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
     Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
 
@@ -58,12 +56,13 @@ function Check-MonitorAccountCreation {
     ReportTime  = $ReportTime
     MitigationCommands = $MitigationCommands
   }
-  
-  $ResultsJson = ConvertTo-json -inputObject $Results
 
-  Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-    -body $ResultsJson -logType $LogType -TimeStampField Get-Date  
-      
+  $moduleOutput= [PSCustomObject]@{ 
+    ComplianceResults = $Results 
+    Errors=$ErrorList
+    AdditionalResults = $AdditionalResults
+  }
+  return $moduleOutput  
 }
 
 # SIG # Begin signature block

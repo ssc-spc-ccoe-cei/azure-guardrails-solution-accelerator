@@ -1,3 +1,18 @@
+function Test-AllowedLocation {
+    param (
+        [array] $AssignedLocations,
+        [array] $AllowedLocations
+    )
+    $IsCompliant = $true
+    foreach ($AssignedLocation in $AssignedLocations) {
+        if ( $AssignedLocation -notin $AllowedLocations) {
+            $IsCompliant = $false
+        }
+    }
+    
+    return $IsCompliant 
+}
+
 function Verify-AllowedLocationPolicy {
     param (
         [switch] $DebugData,
@@ -26,14 +41,14 @@ function Verify-AllowedLocationPolicy {
     [PSCustomObject] $SubscriptionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $CompliantList = New-Object System.Collections.ArrayList
     [PSCustomObject] $NonCompliantList = New-Object System.Collections.ArrayList
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $AllowedLocations = @("canada" , "canadaeast" , "canadacentral")
 
     try {
         $managementGroups = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     
@@ -55,41 +70,41 @@ function Verify-AllowedLocationPolicy {
                         $AssignedPolicyList = Get-AzPolicyAssignment -scope $c.Id -PolicyDefinitionId $PolicyID -ErrorAction Stop
                     }
                     catch {
-                        Add-LogEntry 'Error' "Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+                        $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
                         Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
                     }
                     $AssignedPolicyLocation = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value
 
                     If ($null -eq $AssignedPolicyList) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.policyNotAssigned -f $type)
-                        $c | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $false
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
+                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.policyNotAssigned -f $type) | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $false | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
                         $NonCompliantList.add($c)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))   ) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
+                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
                         if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation)
+                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation) | out-null
                         }
                         else {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type)
+                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type) | out-null
                         }
                         $NonCompliantList.add($c)  
                     }
                     else {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
+                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
                         $CompliantList.add($c) 
                     }
                 }
@@ -101,40 +116,40 @@ function Verify-AllowedLocationPolicy {
                         $AssignedPolicyList = Get-AzPolicyAssignment -scope $c.Id -PolicyDefinitionId $PolicyID -ErrorAction Stop
                     }
                     catch {
-                        Add-LogEntry 'Error' "Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+                        $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
                         Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
                     }
 
                     If ($null -eq $AssignedPolicyList) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.policyNotAssigned -f $type)
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
+                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.policyNotAssigned -f $type) | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
                         $NonCompliantList.add($c)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
+                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
                         if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation)
+                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation) | out-null
                         }
                         else {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type)
+                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type) | out-null
                         }
                         $NonCompliantList.add($c)  
                     }
                     else {       
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
+                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
                         $CompliantList.add($c) 
                     }
                 }
@@ -147,41 +162,43 @@ function Verify-AllowedLocationPolicy {
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $RootMG.Id -PolicyDefinitionId $PolicyID -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($RootMG.Id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($RootMG.Id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($RootMG.Id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
     }
     If ($null -eq $AssignedPolicyList) {
-        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-        $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.policyNotAssignedRootMG
-        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
-        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
+        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.policyNotAssignedRootMG | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
         $NonCompliantList.add($RootMG)
     }
     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
-        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName
-        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
-        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false
+        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
         if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
-            $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.rootMGExcluded + $msgTable.notAllowedLocation)
+            $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.rootMGExcluded + $msgTable.notAllowedLocation) | out-null
         }
         else {
-            $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.rootMGExcluded
+            $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.rootMGExcluded | out-null
         }
         $NonCompliantList.add($RootMG)  
     }
     else {       
-        $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant
-        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true
-        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force
-        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName -Force
-        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
-        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
+        $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName -Force | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
+        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
         $CompliantList.add($RootMG) 
     }
+    $finalList = $CompliantList + $NonCompliantList
+    <#
     if ($CompliantList.Count -gt 0) {
         $JsonObject = $CompliantList | convertTo-Json
         if ($DebugData) {
@@ -210,23 +227,14 @@ function Verify-AllowedLocationPolicy {
             -logType $LogType `
             -TimeStampField Get-Date
     }
-}
-
-
-function Test-AllowedLocation {
-    param (
-        [array] $AssignedLocations,
-        [array] $AllowedLocations
-    )
-    $IsCompliant = $true
-    foreach ($AssignedLocation in $AssignedLocations) {
-        if ( $AssignedLocation -notin $AllowedLocations) {
-            $IsCompliant = $false
-        }
+    #>
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $finalList 
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
     }
-    return $IsCompliant 
+    return $moduleOutput  
 }
-
 
 # SIG # Begin signature block
 # MIInoQYJKoZIhvcNAQcCoIInkjCCJ44CAQExDzANBglghkgBZQMEAgEFADB5Bgor

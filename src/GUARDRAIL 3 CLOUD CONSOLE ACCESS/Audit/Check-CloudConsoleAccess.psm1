@@ -1,25 +1,19 @@
 
 function Get-CloudConsoleAccess {
     param (      
-        #[Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [string] $ControlName,
-        #[Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [string] $ItemName,
-        #[Parameter(Mandatory=$true)]
-        [string] $WorkSpaceID,
-        #[Parameter(Mandatory=$true)]
-        [string] $workspaceKey,
-        #[Parameter(Mandatory=$true)]
-        [string] $LogType,
-        #[Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [string] $itsgcode,
-        #[Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
-        #[Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [string] $ReportTime
     )
     $IsCompliant = $false
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $locationsBaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations"
     $CABaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
     try {
@@ -28,8 +22,8 @@ function Get-CloudConsoleAccess {
         $locations = $data.value
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-        Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
     }
     # $locations
     $validLocations = @()
@@ -52,8 +46,8 @@ function Get-CloudConsoleAccess {
             $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $cap.state -eq 'enabled' }
         }
         catch {
-            Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-            Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
+            $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
+            Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
         }
         if (!$validPolicies) {
             #failed. No policies have valid locations.
@@ -61,7 +55,7 @@ function Get-CloudConsoleAccess {
             $IsCompliant = $false
         }
         else {
-            "Compliant Policies."
+            #"Compliant Policies."
             $IsCompliant = $true
             $Comments = $msgTable.allPoliciesAreCompliant
         }      
@@ -79,13 +73,12 @@ function Get-CloudConsoleAccess {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    $JsonObject = convertTo-Json -inputObject $PsObject 
-
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date 
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput   
 }
 
 # SIG # Begin signature block

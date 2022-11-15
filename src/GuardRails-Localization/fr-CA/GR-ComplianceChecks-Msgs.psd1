@@ -50,7 +50,8 @@ compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
-
+AADLicenseTypeFound = Type de licence AAD trouvé 
+AADLicenseTypeNotFound = Type de licence AAD non trouvé
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

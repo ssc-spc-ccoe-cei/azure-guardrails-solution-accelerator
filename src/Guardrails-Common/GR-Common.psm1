@@ -121,7 +121,6 @@ function get-blobs {
             ResourceGroupName = $resourcegroup
             Name              = $storageaccountName
         }
-
         $scParams = @{
             Container = $psModulesContainerName
         }
@@ -158,7 +157,6 @@ function read-blob {
         Context     = $Context
     }
     Get-AzStorageBlobContent @blobParams
-    
 }
 
 Function Add-LogEntry {
@@ -217,6 +215,53 @@ Function Add-LogEntry {
         -TimeStampField Get-Date 
 
 }
+
+Function Add-LogEntry2 {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $True, Position = 0)]
+        [ValidateSet("Critical", "Error", "Warning", "Information", "Debug")]
+        [string]
+        $severity,
+
+        # message details (string)
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]
+        $message,
+
+        # module name
+        [Parameter(Mandatory = $false)]
+        [string]
+        $moduleName = (Split-Path -Path $MyInvocation.ScriptName -Leaf),
+
+        # additional values in hashtable
+        [Parameter(Mandatory = $false)]
+        [hashtable]
+        $additionalValues = @{},
+
+        # exception log type - this is the Log Analytics table name
+        [Parameter(Mandatory = $false)]
+        [string]
+        $exceptionLogTable = "GuardrailsComplianceException"
+    )
+
+    # build log entry object, convert to json
+    $entryHash = @{
+        "message" = $message
+        "moduleName" = $moduleName
+        "severity" = $severity
+    } + $additionalValues
+    
+    $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
+    
+    if (Get-ChildItem "./errors.txt" -ErrorAction SilentlyContinue) {
+        (Get-Content "./errors.txt").trim("]") | Out-File "./errors.txt"
+        ",$entryJson]" | Out-File -FilePath "./errors.txt" -Encoding UTF8 -Force -Append
+    }
+    else {
+        "[$entryJson]" | Out-File -FilePath "./errors.txt" -Encoding UTF8 -Force
+    }
+}
 Function Add-TenantInfo {
     param (
         [Parameter(Mandatory=$true)]
@@ -249,7 +294,7 @@ Function Add-TenantInfo {
         DepartmentName = $DepartmentName
         DepartmentNumber = $DepartmentNumber
     }
-    Write-Output $tenantInfo
+    if ($debug) { Write-Output $tenantInfo}
     $JSON= ConvertTo-Json -inputObject $object
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
@@ -259,6 +304,30 @@ Function Add-TenantInfo {
     -TimeStampField Get-Date 
 }
 
+function Add-LogAnalyticsResults {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $WorkSpaceID,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $workspaceKey,
+        [Parameter(Mandatory=$false)]
+        [string]
+        $LogType="GR_Results",
+        [Parameter(Mandatory=$false)]
+        [array]
+        $Results
+   )
+
+    $JSON= ConvertTo-Json -inputObject $Results
+
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+    -sharedkey $workspaceKey `
+    -body $JSON `
+    -logType $LogType `
+    -TimeStampField Get-Date 
+}
 function Check-DocumentExistsInStorage {
     param (
         [string] $StorageAccountName,
@@ -269,33 +338,31 @@ function Check-DocumentExistsInStorage {
         [string] $ControlName, 
         [string]$ItemName,
         [hashtable] $msgTable, 
-        [string] $WorkSpaceID, 
-        [string] $workspaceKey, 
-        [string] $LogType,
         [string]$itsgcode,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime
     )
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-
     try {
-        Connect-AzAccount -Identity -Subscription  $SubscriptionID -ErrorAction Stop
+        Select-AzSubscription -Subscription $SubscriptionID | out-null
     }
     catch {
-        Add-LogEntry 'Error' "Failed to run 'Connect-AzAccount' with error: $_" -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
-        throw "Error: Failed to run 'Connect-AzAccount' with error: $_"
+        $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
+        #Add-LogEntry 'Error' 
+        throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
     }
-
     try {
         $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_" `
-            -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
+        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
+        #Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        #    subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_" `
+        #    -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
         Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
@@ -322,8 +389,13 @@ function Check-DocumentExistsInStorage {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    $JsonObject = convertTo-Json -inputObject $PsObject 
-    Send-OMSAPIIngestionFile -customerId $WorkSpaceID  -sharedkey $workspaceKey -body $JsonObject -logType $LogType -TimeStampField Get-Date 
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+return $moduleOutput
+
 }
 
 function Check-UpdateAvailable {
@@ -351,8 +423,8 @@ function Check-UpdateAvailable {
     }
     $rg=Get-AzResourceGroup -Name $ResourceGroupName 
     $currentVersion=get-rgtagValue -tagkey releaseversion -object $rg
-    Write-Output "RG Tag: $currentVersion"
-    Write-Output "Avail. Release: $ReleaseVersion"
+    if ($debug) { Write-Output "RG Tag: $currentVersion"}
+    if ($debug) { Write-Output "Avail. Release: $ReleaseVersion"}
     
     if ($currentVersion -ne $ReleaseVersion)
     {
@@ -401,6 +473,30 @@ function get-itsgdata {
    -body $JSONcontrols `
    -logType $LogType `
    -TimeStampField Get-Date
+}
+function New-LogAnalyticsData {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [array] 
+        $Data,
+        [Parameter()]
+        [string]
+        $WorkSpaceID,
+        [Parameter()]
+        [string]
+        $WorkSpaceKey,
+        [Parameter()]
+        [string]
+        $LogType
+    )
+    $JsonObject = convertTo-Json -inputObject $Data -Depth 3
+
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JsonObject `
+        -logType $LogType `
+        -TimeStampField Get-Date  
 }
 # endregion
 
