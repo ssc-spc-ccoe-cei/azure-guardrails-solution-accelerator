@@ -33,18 +33,17 @@ function Get-UserAuthenticationMethod {
     $BGAccountList = @($FirstBreakGlassEmail,$SecondBreakGlassEmail )
     
     foreach($BGAcct in $BGAccountList){
-        $apiUrl = "https://graph.microsoft.com/beta/users/"+$BGAcct+"/authentication/methods"
+        $urlPath = '/users/' + $BGAcct + '/authentication/methods'
 
         try {
-            $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
+            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         }
         catch {
-            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" )
-            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
-            Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
+            Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
         }
 
-        $data = $response.Content | ConvertFrom-Json
+        $data = $response.Content
         $authenticationmethods =  $Data.value
 
         # To check if MFA is setup for a user, we're looking for either :

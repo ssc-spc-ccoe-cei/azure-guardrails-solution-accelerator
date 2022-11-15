@@ -14,11 +14,11 @@ function Get-CloudConsoleAccess {
     )
     $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $locationsBaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations"
-    $CABaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
+    $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
+    $CABaseAPIUrl = '/identity/conditionalAccess/policies'
     try {
-        $response = Invoke-AzRestMethod -Uri $locationsBaseAPIUrl -Method Get -ErrorAction Stop
-        $data = $response.Content | ConvertFrom-Json
+        $response = Invoke-GraphQuery -urlPath $locationsBaseAPIUrl -ErrorAction Stop
+        $data = $response.Content
         $locations = $data.value
     }
     catch {
@@ -41,8 +41,10 @@ function Get-CloudConsoleAccess {
         # If there is no policy or the policy doesn't use one of the locations above, not compliant.
 
         try {
-            $caps = (Invoke-AzRestMethod -Uri $CABaseAPIUrl -Method Get -ErrorAction Stop).value
 
+            $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+
+            $caps = $response.Content.value
             $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $cap.state -eq 'enabled' }
         }
         catch {

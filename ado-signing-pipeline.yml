@@ -11,6 +11,7 @@ pr:
 pool:
   vmImage: windows-latest
 
+
 parameters:
 - name: skipCleanup
   displayName: 'Skip cleanup of test deployment'
@@ -41,8 +42,8 @@ variables:
     value: ${{ parameters.preClean }}
 
 steps:
-
-- task: EsrpCodeSigning@1
+  
+- task: EsrpCodeSigning@2
   condition: eq(variables.skipSigning, 'false')
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
@@ -386,14 +387,19 @@ steps:
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
-        ipmo ./src/GuardrailsSolutionAcceleratorSetup
+        If ($env:BUILD_SOURCEVERSIONMESSAGE.ToString() -notlike '*[skip_clean]*') {
+          ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-        $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
-        $config = $c.configString | ConvertFrom-Json
+          $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
+          $config = $c.configString | ConvertFrom-Json
 
-        $c | remove-gsacentralizedReportingCustomerComponents -Force
-        $c | Remove-GSACentralizedDefenderCustomerComponents -Force
-        $c | Remove-GSACoreResources -Force -Wait
+          $c | remove-gsacentralizedReportingCustomerComponents -Force
+          $c | Remove-GSACentralizedDefenderCustomerComponents -Force
+          $c | Remove-GSACoreResources -Force -Wait
+        }
+        Else {
+          Write-Output "Skipping cleanup because BUILD_SOURCEVERSIONMESSAGE contains '[skip_clean]'. `$env:BUILD_SOURCEVERSIONMESSAGE: '$env:BUILD_SOURCEVERSIONMESSAGE'"
+        }
   name: 'CleanUpTest'
 
 

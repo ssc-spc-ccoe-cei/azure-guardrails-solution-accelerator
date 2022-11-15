@@ -24,77 +24,78 @@ Product name: Microsoft 365 E5, String ID: SPE_E5
 #>
 function Get-BreakGlassAccountLicense {
     param (
-       [string] $FirstBreakGlassUPN,
-       [string] $SecondBreakGlassUPN, 
-       [string] $ControlName, 
-       [string] $ItemName, 
-       [string] $itsgcode,
-       [hashtable] $msgTable,      
-       [Parameter(Mandatory=$true)]
-       [string]
-       $ReportTime
-       )
-    [bool] $IsCompliant= $false
-    [string] $Comments= $null
+        [string] $FirstBreakGlassUPN,
+        [string] $SecondBreakGlassUPN, 
+        [string] $ControlName, 
+        [string] $ItemName, 
+        [string] $itsgcode,
+        [hashtable] $msgTable,      
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ReportTime
+    )
+    [bool] $IsCompliant = $false
+    [string] $Comments = $null
 
     [PSCustomObject] $BGAccounts = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
      
-    $FirstBreakGlassAcct= [PSCustomObject]@{
-        UserPrincipalName     = $FirstBreakGlassUPN
-        ID = $null
-        LicenseDetails= $msgTable.bgLicenseNotAssigned
+    $FirstBreakGlassAcct = [PSCustomObject]@{
+        UserPrincipalName = $FirstBreakGlassUPN
+        ID                = $null
+        LicenseDetails    = $msgTable.bgLicenseNotAssigned
     }
-    $SecondBreakGlassAcct= [PSCustomObject]@{
-        UserPrincipalName     = $SecondBreakGlassUPN
-        ID = $null
-        LicenseDetails= $msgTable.bgLicenseNotAssigned
+    $SecondBreakGlassAcct = [PSCustomObject]@{
+        UserPrincipalName = $SecondBreakGlassUPN
+        ID                = $null
+        LicenseDetails    = $msgTable.bgLicenseNotAssigned
     }
     $BGAccounts.add( $FirstBreakGlassAcct) | Out-Null
     $BGAccounts.add( $SecondBreakGlassAcct) | Out-Null
 
     foreach ($BGAccount in $BGAccounts) {
         
-        $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGAccount.UserPrincipalName)
+        $urlPath = '/users/' + $BGAccount.UserPrincipalName
 
         try {
-            $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
+            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         }
         catch {
-            If ($response.statusCode -eq 404) {continue}
-            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
-            Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+            Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
         }
-        $data = $response.Content | ConvertFrom-Json
+        $data = $response.Content
         $BGAccount.ID = $data.id
 
-        $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGAccount.ID + "/licenseDetails")
+        # if BGA account exists, check for license details
+        If ($BGAccount.ID) {
+            $urlPath = '/users/' + $BGAccount.UserPrincipalName + '/licenseDetails'
 
-        try {
-            $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
-        }
-        catch {
-            If ($response.statusCode -eq 404) {continue}
-            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
-            Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
-        }
+            try {
+                $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+            }
+            catch {
+                If ($response.statusCode -eq 404) { continue }
+                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+            }
 
-        $data = $response.Content | ConvertFrom-Json
-        if (($data.value).Length -gt 0 ) {
-            $BGAccount.LicenseDetails = ($Data.value).skuPartNumber
+            $data = $response.Content
+            if (($data.value).Length -gt 0 ) {
+                $BGAccount.LicenseDetails = ($Data.value).skuPartNumber
+            }
         }
     }
     if ((($FirstBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($FirstBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM")) -and `
         (($SecondBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($SecondBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM"))) {
-            $IsCompliant= $true
-            $Comments= $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $FirstBreakGlassAcct.LicenseDetails +
-                       $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $SecondBreakGlassAcct.LicenseDetails 
-   }    else {
-             $Comments= $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $FirstBreakGlassAcct.LicenseDetails +" & "+
-             $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $SecondBreakGlassAcct.LicenseDetails 
-   }
+        $IsCompliant = $true
+        $Comments = $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails +
+        $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
+    }
+    else {
+        $Comments = $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails + " & " +
+        $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
+    }
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
@@ -104,9 +105,9 @@ function Get-BreakGlassAccountLicense {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    $moduleOutput= [PSCustomObject]@{ 
+    $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject
-        Errors=$ErrorList
+        Errors            = $ErrorList
         AdditionalResults = $AdditionalResults
     }
     return $moduleOutput

@@ -15,17 +15,17 @@ function Check-MonitorAccountCreation {
 
   [string] $MonitoringAccount = "SSC-CBS-Reporting@" + $DepartmentNumber + "gc.onmicrosoft.com"
 
-  $apiUrl = $("https://graph.microsoft.com/beta/users/" + $MonitoringAccount)
+  $urlPath = $("/users/" + $MonitoringAccount)
 
   try {
-    $response = Invoke-AzRestMethod -Uri $apiUrl -ErrorAction Stop
+    $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
   }
   catch {
     $Comments = $msgTable.checkUserExistsError -f $response.StatusCode
     $MitigationCommands = $msgTable.checkUserExists
 
-    $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-    Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+    Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
   }
 
   If ($response.StatusCode -eq 200) {
@@ -43,8 +43,8 @@ function Check-MonitorAccountCreation {
     $Comments = $msgTable.checkUserExistsError -f $response.statusCode
     $MitigationCommands = $msgTable.checkUserExists
 
-    Add-LogEntry 'Error' "An unhandled status code '$($response.StatusCode)' was returned when calling URI '$apiURL' to find the Monitoring Account" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-    Write-Error "Error: An unhandled status code '$($response.StatusCode)' was returned when calling URI '$apiURL' to find the Monitoring Account"
+    $ErrorList.Add("An unhandled status code '$($response.StatusCode)' was returned when calling URI '$urlPath' to find the Monitoring Account")
+    Write-Error "Error: An unhandled status code '$($response.StatusCode)' was returned when calling URI '$urlPath' to find the Monitoring Account"
   }
        
   $Results = [pscustomobject]@{

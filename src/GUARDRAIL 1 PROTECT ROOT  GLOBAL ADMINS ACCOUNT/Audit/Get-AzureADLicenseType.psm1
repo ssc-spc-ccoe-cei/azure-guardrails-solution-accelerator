@@ -35,19 +35,18 @@ function Get-ADLicenseType {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ADLicenseType  = "N/A"
     $IsCompliant = $false
-    $apiUrl = "https://graph.microsoft.com/v1.0/subscribedSkus"
     $Comments= $msgTable.AADLicenseTypeNotFound
 
+    $urlPath = '/subscribedSkus'
     try {
-        $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
+        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
     }
     catch {
-        $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-        #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
-        Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+        $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+        Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
     }
 
-    $data = $response.Content | ConvertFrom-Json
+    $data = $response.Content
     
     $subscribedSkus = $Data.Value
     $servicePlans = $subscribedSkus.servicePlans

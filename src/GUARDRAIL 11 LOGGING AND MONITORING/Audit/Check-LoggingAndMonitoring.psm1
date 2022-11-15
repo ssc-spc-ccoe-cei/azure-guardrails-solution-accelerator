@@ -17,7 +17,6 @@ function get-apiLinkedServicesData {
         $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
-        #Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -60,7 +59,6 @@ function get-tenantDiagnosticsSettings {
         $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
-        #Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -137,7 +135,6 @@ function Check-LoggingAndMonitoring {
         $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
             error message: $_")
-        #Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
         #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
         #    error message: $_"
         throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
@@ -150,7 +147,6 @@ function Check-LoggingAndMonitoring {
     catch {
         $ErrorList.Add("Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
         workspace exists and that permissions are sufficient; returned error message: $_")
-        #Add-LogEntry2 'Error' "Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
         #    workspace exists and that permissions are sufficient; returned error message: $_"
     }
     if ($null -eq $LAW)
@@ -265,7 +261,6 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
             $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
             error message: $_")
-            #Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
             #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
             #    error message: $_"
             throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--ensure `
