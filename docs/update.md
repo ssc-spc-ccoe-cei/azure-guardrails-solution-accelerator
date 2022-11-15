@@ -9,6 +9,7 @@ The components which can be updated are:
 | GuardrailPowerShellModules | The PowerShell modules that define each guardrail and the required controls. | GitHub Azure/GuardrailsSolutionAccelerator 'main' branch |
 | AutomationAccountRunbooks | The Azure Automation Account runbook definitions which execute the guardrail PowerShell modules | Local clone of the GitHub repo |
 | Workbook | The Workbook definition which displays the results guardrail PowerShell module executions, pulling from the Log Analytics workspace | Local clone of the GitHub repo |
+| CoreComponents | This step updates the Azure ARM resource configurations based on the Bicep templates for resources not otherwise updated above (such as Automation Account config and variables) | Local clone of the GitHub repo |
 
 ## Update Process
 
@@ -47,16 +48,16 @@ The components which can be updated are:
    Import-Module ./src/GuardrailsSolutionAcceleratorSetup
    ```
 
-3. Run the `Deploy-GuardrailsSolutionAccelerator` function with the `-updateComponent` parameter. Either pass in the JSON configuration file you used when deploying the Guardrails solution initially or pull the last used configuration from the specified KeyVault (recommended).
+3. Run the `Deploy-GuardrailsSolutionAccelerator` function with the `-update` parameter. Either pass in the JSON configuration file you used when deploying the Guardrails solution initially or pull the last used configuration from the specified KeyVault (recommended).
 
    Get the last used configuration from the specified Guardrails KeyVault (found in your Guardrails Solution resource group). This option is only available to deployments created or updated since release version `v1.0.6` of the solution. The executing user must have permissions to read secrets in the specified KeyVault. 
 
    ```powershell
-      Get-GSAExportedConfig -KeyVaultName guardrails-xxxxx | Deploy-GuardrailsSolutionAccelerator -UpdateComponent All
+      Get-GSAExportedConfig -KeyVaultName guardrails-xxxxx | Deploy-GuardrailsSolutionAccelerator -update
    ```
 
    If you have the original JSON configuration file (or recreate one), you can pass it to the update process like this:
 
    ```powershell
-      Deploy-GuardrailsSolutionAccelerator -UpdateComponent All -ConfigFilePath c:/myconfig.json
+      Deploy-GuardrailsSolutionAccelerator -update -componentsToUpdate CoreResources -ConfigFilePath c:/myconfig.json
    ```

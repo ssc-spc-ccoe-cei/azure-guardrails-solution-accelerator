@@ -20,25 +20,15 @@ Function Update-GSACoreResources {
         # parameter object
         [Parameter(mandatory = $true)]
         [psobject]
-        $paramObject,
-
-        # update components list
-        [Parameter(Mandatory = $true)]
-        [string[]]
-        $updateComponents
+        $paramObject
     )
     $ErrorActionPreference = 'Stop'
 
     Write-Verbose "Initating update deployment of core GSA resources..."
-
-    If ($updateComponents -contains "All") {
-        Write-Verbose "Updating GSA Resource Group tags because -updateComponents 'All' specified..."
-        $resourceGroupId = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])"
-        Update-AzTag -ResourceId $resourceGroupId -Tag $config['runtime']['tagsTable'] -Operation Merge | Out-Null
-    }
-    Else {
-        Write-Warning "Skipping GSA Resource Group tags update because -updateComponents 'All' not specified..."
-    }
+    
+    Write-Verbose "Updating GSA Resource Group tags because -updateComponents 'All' specified..."
+    $resourceGroupId = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])"
+    Update-AzTag -ResourceId $resourceGroupId -Tag $config['runtime']['tagsTable'] -Operation Merge | Out-Null
 
     # deploy primary bicep template
     Write-Verbose "Updating GSA core resource via bicep template..."

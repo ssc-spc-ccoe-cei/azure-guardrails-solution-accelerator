@@ -119,7 +119,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -validatePrerequisites -newComponents CoreComponents,CentralizedCustomerDefenderForCloudSupport,CentralizedCustomerReportingSupport
     .EXAMPLE
         Update an existing GSA instance (PowerShell modules, workbooks, and runbooks):
-        Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -updateComponents All
+        Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -update
     .EXAMPLE
         Add the CentralizedCustomerDefenderForCloudSupport component to an existing deployment, retrieving the configuration from the existing deployment's Key Vault
         get-gsaExportedConfig -KeyVaultName guardrails-12345 -y | deploy-GuardrailsSolutionAccelerator -newComponents CentralizedCustomerDefenderForCloudSupport
@@ -164,14 +164,20 @@ Function Deploy-GuardrailsSolutionAccelerator {
         # components to be updated
         [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-configFilePath')]
         [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-configString')]
+        [switch]
+        $update,
+
+        # components to be updated - in most cases, this should not be specified and all components should be updated
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
         [ValidateSet(
-            'All',
+            'CoreComponents',
             'Workbook',
             'GuardrailPowerShellModules',
             'AutomationAccountRunbooks'
         )]
         [string[]]
-        $updateComponents,
+        $componentsToUpdate = @('Workbook','GuardrailPowerShellModules','AutomationAccountRunbooks', 'CoreComponents'),
 
         # confirm that config parameters are valid
         [Parameter(mandatory = $true, ParameterSetName = 'validateConfigFile')]
@@ -248,7 +254,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         }
         $paramObject = New-GSACoreResourceDeploymentParamObject -alternatePSModulesURL $alternatePSModulesURL -config $config @params -Verbose:$useVerbose
 
-        If (!$updateComponents) {
+        If (!$update.IsPresent) {
             Write-Host "Deploying Guardrails Solution Accelerator components ($($newComponents -join ','))..." -ForegroundColor Green
             Write-Verbose "Performing a new deployment of the Guardrails Solution Accelerator..."
 
@@ -274,7 +280,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "Completed new deployment."
         }
         Else {
-            Write-Host "Updating Guardrails Solution Accelerator components ($($updateComponents -join ','))..." -ForegroundColor Green
+            Write-Host "Updating Guardrails Solution Accelerator components ($($componentsToUpdate -join ','))..." -ForegroundColor Green
             Write-Verbose "Updating an existing deployment of the Guardrails Solution Accelerator..."
         
             # skip deployment of LAW and KV as they should exist already
@@ -282,14 +288,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
             $paramObject.deployLAW = $false
             $paramObject += @{newDeployment = $false }
 
-            If ($updateComponents -notcontains 'All') {
-                Write-Warning "Not using the -updateComponents 'All' option risks deploying out-of-sync components. You selected to update $($updateComponents -join ', '). Updating individual components should be done with caution. `n`nPress ENTER to continue or CTRL+C to cancel..."
+            If ($PSBoundParameters.ContainsKey('componentsToUpdate')) {
+                Write-Warning "Specifying individual components to update with -componentsToUpdate risks deploying out-of-sync components; ommiting this parameter and updating all components is recommended. You selected to update $($componentsToUpdate -join ', '). Updating individual components should be done with caution. `n`nPress ENTER to continue or CTRL+C to cancel..."
                 Read-Host
             }
 
-            $updateBicep = $false
+            $updateBicep = $false # if true, the bicep template will be deploy with the parameters in $paramObject
             # update workbook definitions
-            If ($updateComponents -contains 'Workbook' -or $updateComponents -contains 'All') {
+            If ($componentsToUpdate -contains 'Workbook') {
                 #removing any saved search in the gr_functions category since an incremental deployment fails...
                 Write-Verbose "Removing any saved searches in the gr_functions category prior to update (which will redeploy them)..."
                 $savedSearches = Get-AzOperationalInsightsSavedSearch -WorkspaceName $config['runtime']['logAnalyticsWorkspaceName'] -ResourceGroupName $config['runtime']['resourceGroup']
@@ -309,20 +315,27 @@ Function Deploy-GuardrailsSolutionAccelerator {
             }
 
             # update Guardrail powershell modules in AA
-            ElseIf ($updateComponents -contains 'GuardrailPowerShellModules' -or $updateComponents -contains 'All') {
+            ElseIf ($componentsToUpdate -contains 'GuardrailPowerShellModules') {
                 $paramObject += @{updatePSModules = $true }
 
                 $updateBicep = $true
             }
 
             # deploy core resources update
+            If ($componentsToUpdate -contains 'CoreComponents') {
+                $paramObject += @{updateCoreResources = $true }
+
+                $updateBicep = $true
+            }
+
+            # deploy the bicep template with the specified parameters
             If ($updateBicep) {
-                Write-Verbose "Deploying core Bicep template with update parameters..."
-                Update-GSACoreResources -config $config -paramObject $paramObject -updateComponents $updateComponents -Verbose:$useVerbose
+                Write-Verbose "Deploying core Bicep template with update parameters '$($paramObject.Keys.Where({$_ -like 'update*'}) -join ',')'..."
+                Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
             }
             
             # update runbook definitions in AA
-            If ($updateComponents -contains 'AutomationAccountRunbooks' -or $updateComponents -contains 'All') {
+            If ($componentsToUpdate -contains 'AutomationAccountRunbooks') {
                 Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
             }
 
