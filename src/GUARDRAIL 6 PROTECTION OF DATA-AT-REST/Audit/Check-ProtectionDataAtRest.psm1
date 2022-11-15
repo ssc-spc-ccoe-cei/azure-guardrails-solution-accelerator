@@ -91,11 +91,8 @@ function Verify-ProtectionDataAtRest {
     param (
             [string] $ControlName,
             [string]$ItemName,
-            [string] $PolicyID, `
-            [string] $WorkSpaceID,
-            [string] $workspaceKey,
-            [string] $LogType,
-            [string] $itsgcode,
+            [string] $PolicyID, 
+            [string] $itsgcode, 
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
             [string]
@@ -105,14 +102,15 @@ function Verify-ProtectionDataAtRest {
             $CBSSubscriptionName
     )
     [PSCustomObject] $ObjectList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $grRequiredPolicies=@("TransparentDataEncryptionOnSqlDatabasesShouldBeEnabled","DiskEncryptionShouldBeAppliedOnVirtualMachines")
     #Check management groups
     try {
         $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of `
-            the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of `
+            the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the  `
             Az.Resources module; returned error message: $_"
     }
@@ -123,26 +121,20 @@ function Verify-ProtectionDataAtRest {
         $objs = Get-AzSubscription -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of `
-            the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of `
+            the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the `
             Az.Resources module; returned error message: $_"
     }
     [string]$type = "subscription"
     $ObjectList+=Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
     
-    #Writes data
-    $ObjectList #| convertto-json -Depth 3
-    if ($ObjectList.Count -gt 0)
-    {
-        $JsonObject = $ObjectList | convertTo-Json -Depth 3
-        #$JsonObject
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $ObjectList 
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
     }
+    return $moduleOutput  
 }
 
 # SIG # Begin signature block

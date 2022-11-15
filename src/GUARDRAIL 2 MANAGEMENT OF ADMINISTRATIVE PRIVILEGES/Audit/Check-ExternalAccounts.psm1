@@ -5,12 +5,8 @@
     
     function Check-ExternalUsers  {
         Param ( 
-            [string] $token, 
             [string] $ControlName, 
             [string] $ItemName, 
-            [string] $WorkSpaceID, 
-            [string] $workspaceKey, 
-            [string] $LogType,
             [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
@@ -19,13 +15,14 @@
             )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant= $false
     
     $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
     $stopWatch.Start()
 
     # Only get the Guests accounts
-    Write-Output "Getting guest users in the tenant"
+    if ($debug) {Write-Output "Getting guest users in the tenant"}
     $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'" 
 
     if ($null -eq $guestUsers) {
@@ -36,26 +33,26 @@
         $MitigationCommands = "N/A"
     }
     else {
-        Write-Output "Found $($guestUsers.Count) Guest Users in the tenant"
+        if ($debug) {Write-Output "Found $($guestUsers.Count) Guest Users in the tenant"}
 
         $subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled'}
-        Write-Output "Found $($subs.Count) subscriptions"
+        if ($debug) {Write-Output "Found $($subs.Count) subscriptions"}
 
         foreach ($sub in $subs) {
             $scope="/subscriptions/$($sub.Id)"
-            Write-Output "Looking in subscription $($sub.Name)"
+            if ($debug) {Write-Output "Looking in subscription $($sub.Name)"}
 
             # Get the role assignments for this subscription
             $subRoleAssignments = Get-AzRoleAssignment -Scope $scope
 
             if (!$null -eq $subRoleAssignments) {
-                Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"
+                if ($debug) {Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"}
 
                 # Find each guest users having a role assignment
                 $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}  
 
                 if (!$null -eq $matchedUser) {
-                    Write-Output "Found $($matchedUser.Count) Guest users with role assignment"
+                    if ($debug) {Write-Output "Found $($matchedUser.Count) Guest users with role assignment"}
 
                     foreach ($user in $matchedUser) {
                         # What should we do if the same user may has multiple role assignments ?
@@ -113,12 +110,12 @@
     }
 
     # Convert data to JSON format for input in Azure Log Analytics
-    $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
-    Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
+    #$JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
+    #Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
 
     # Add the list of non-compliant users to Log Analytics (in a different table)
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-    -body $JSONGuestUsers -logType "GR2ExternalUsers" -TimeStampField Get-Date
+    <#Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
+    -body $JSONGuestUsers -logType "GR2ExternalUsers" -TimeStampField Get-Date#>
 
     $GuestUserStatus = [PSCustomObject]@{
         ComplianceStatus= $IsCompliant
@@ -129,15 +126,26 @@
         ReportTime = $ReportTime
         MitigationCommands = $MitigationCommands
     }
+    $AdditionalResults = [PSCustomObject]@{
+        records = $guestUsersArray
+        logType = "GR2ExternalUsers"
+    }
 
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $GuestUserStatus
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput 
+    <#
     $logAnalyticsEntry = ConvertTo-Json -inputObject $GuestUserStatus
         
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey -body $logAnalyticsEntry `
                                 -logType $LogType -TimeStampField Get-Date                 
-
+    #>
     
     $stopWatch.Stop()
-    Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "
+    if ($debug) {Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}
 }
 # SIG # Begin signature block
 # MIInoQYJKoZIhvcNAQcCoIInkjCCJ44CAQExDzANBglghkgBZQMEAgEFADB5Bgor

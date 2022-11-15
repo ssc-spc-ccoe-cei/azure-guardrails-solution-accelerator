@@ -17,7 +17,7 @@ function get-apiLinkedServicesData {
         $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        #Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -54,19 +54,43 @@ function get-activitylogstatus {
     }
 }
 function get-tenantDiagnosticsSettings {
-
-
     #$apiUrl="https://graph.microsoft.com/beta/auditLogs/directoryAudits"
     $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
     try {
         $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        #Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
     return $data.value.properties
+}
+function get-activitylogstatus {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $LAWResourceId
+    )
+    $subs=get-azsubscription
+    $totalsubs=$subs.Count
+    $GraphAccessToken = (Get-AzAccessToken).Token
+    $pcount=0
+    foreach ($sub in $subs) {
+        $URL="https://management.azure.com/subscriptions/$($sub.Id)/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview"
+        $configuredWSs=(Invoke-RestMethod -Headers @{Authorization = "Bearer $($GraphAccessToken)" } -Uri $URL -Method Get ).value.Properties.workspaceId
+        if ($LAWResourceId -in $configuredWSs) {
+            $pcount++
+        }
+    }
+    if ($pcount -ne $totalsubs) {
+        Write-Warning "Not all subscriptions are configured to send logs to the Log Analytics Workspace"
+        return $false
+    }
+    else {
+        Write-Host "All subscriptions are configured to send logs to the Log Analytics Workspace"
+        return $true
+    }
 }
 function Check-LoggingAndMonitoring {
     param (
@@ -79,15 +103,6 @@ function Check-LoggingAndMonitoring {
         [Parameter(Mandatory=$true)]
         [string]
         $ControlName,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $workspaceKey,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $LogType,
         [string] $itsginfosecmon,
         [string] $itsginfohealthmon,
         [string] $itsginfosecdefender,
@@ -100,7 +115,8 @@ function Check-LoggingAndMonitoring {
         [string]
         $CBSSubscriptionName
     )
-
+    [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     #$LogType="GuardrailsCompliance"
     #Code
 
@@ -115,18 +131,28 @@ function Check-LoggingAndMonitoring {
     $MitigationCommands=""
 
     try{
-        Select-AzSubscription -Subscription $Subscription -ErrorAction Stop
+        Select-AzSubscription -Subscription $Subscription -ErrorAction Stop | Out-Null
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+        $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-            error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+            error message: $_")
+        #Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+        #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+        #    error message: $_"
         throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
             you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
     }
 
-    $LAW = Get-AzOperationalInsightsWorkspace -Name $LAWName -ResourceGroupName $LAWRG -ErrorAction SilentlyContinue
-
+    try {
+        $LAW=Get-AzOperationalInsightsWorkspace -Name $LAWName -ResourceGroupName $LAWRG -ErrorAction Stop
+    }
+    catch {
+        $ErrorList.Add("Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
+        workspace exists and that permissions are sufficient; returned error message: $_")
+        #Add-LogEntry2 'Error' "Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
+        #    workspace exists and that permissions are sufficient; returned error message: $_"
+    }
     if ($null -eq $LAW)
     {
         $IsCompliant=$false
@@ -171,7 +197,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         if (!(get-activitylogstatus -LAWResourceId $LAW.ResourceId)) {
             $IsCompliant=$false
             $Comments+=$msgTable.lawNoActivityLogs
-            $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"    
+            $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"
         }
         # Tests for required Solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
@@ -179,12 +205,12 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         {
             $IsCompliant=$false
             $Comments+=$msgTable.lawSolutionNotFound # "Required solutions not present in the Log Analytics Workspace."
-            $MitigationCommands+=@"
+<#            $MitigationCommands+=@"
 $($msgTable.addUpdatesAndAntiMalware) ($LAWName)"
 https://docs.microsoft.com/en-us/azure/automation/update-management/overview
 https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalwareOMS?tab=Overview
 `n
-"@
+"@#>
         }
         # Tenant Diagnostics configuration. Needs Graph API...
         $tenantWS=get-tenantDiagnosticsSettings
@@ -220,13 +246,7 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
             ReportTime = $ReportTime
             MitigationCommands=$MitigationCommands
         }
-        $JSON= ConvertTo-Json -inputObject $object
-
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JSON `
-        -logType $LogType `
-        -TimeStampField Get-Date 
+        $FinalObjectList+=$object
         $IsCompliant=$true
     }
     #
@@ -239,12 +259,15 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
     if ($Subscription -ne $HSubscription)
     {
         try{
-            Select-AzSubscription -Subscription $HSubscription -ErrorAction Stop
+            Select-AzSubscription -Subscription $HSubscription -ErrorAction Stop | Out-Null
         }
         catch {
-            Add-LogEntry 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
-                ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-                error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+            $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
+            ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+            error message: $_")
+            #Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
+            #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+            #    error message: $_"
             throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--ensure `
                 you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
         }
@@ -303,14 +326,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         ReportTime = $ReportTime  
         MitigationCommands=$MitigationCommands      
     }
-    $JSON= ConvertTo-Json -inputObject $object
-
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
-   
+    $FinalObjectList+=$object
     #
     # Defender for cloud detection.
     #
@@ -322,7 +338,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
     # This will look for specific Defender for Cloud, on a per subscription basis.
     foreach ($sub in $sublist)
     {
-        Select-AzSubscription -SubscriptionObject $sub
+        Select-AzSubscription -SubscriptionObject $sub | Out-Null
         $ContactInfo=Get-AzSecurityContact
         if (($null -eq $ContactInfo.Email) -or ($null -eq $ContactInfo.Phone))
         {
@@ -355,14 +371,14 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         ReportTime = $ReportTime
         MitigationCommands=$MitigationCommands
     }
-    $JSON = ConvertTo-Json -inputObject $object
-
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
-    $IsCompliant=$true
+    $FinalObjectList+=$object
+    $IsCompliant=$true #?
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $FinalObjectList 
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput
 }
 
 # SIG # Begin signature block

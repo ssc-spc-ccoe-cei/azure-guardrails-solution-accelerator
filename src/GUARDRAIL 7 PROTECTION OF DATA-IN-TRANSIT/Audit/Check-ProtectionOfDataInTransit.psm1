@@ -92,10 +92,7 @@ function Verify-ProtectionDataInTransit {
     param (
             [string] $ControlName,
             [string] $ItemName,
-            [string] $PolicyID, `
-            [string] $WorkSpaceID,
-            [string] $workspaceKey,
-            [string] $LogType,
+            [string] $PolicyID, 
             [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
@@ -106,13 +103,14 @@ function Verify-ProtectionDataInTransit {
             $CBSSubscriptionName
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $grRequiredPolicies=@("FunctionAppShouldOnlyBeAccessibleOverHttps","WebApplicationShouldOnlyBeAccessibleOverHttps", "ApiAppShouldOnlyBeAccessibleOverHttps", "OnlySecureConnectionsToYourRedisCacheShouldBeEnabled","SecureTransferToStorageAccountsShouldBeEnabled")
     #Check management groups
     try {
         $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     [string]$type = "Management Group"  
@@ -122,24 +120,18 @@ function Verify-ProtectionDataInTransit {
         $objs = Get-AzSubscription -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     [string]$type = "subscription"
     $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
     
-    #Writes data
-    $FinalObjectList #| convertto-json -Depth 3
-    if ($FinalObjectList.Count -gt 0)
-    {
-        $JsonObject = $FinalObjectList | convertTo-Json -Depth 3
-        #$JsonObject
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $FinalObjectList 
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
     }
+    return $moduleOutput  
 }
 
 # SIG # Begin signature block

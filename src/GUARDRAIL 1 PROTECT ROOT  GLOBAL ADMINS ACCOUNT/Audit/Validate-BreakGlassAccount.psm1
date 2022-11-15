@@ -20,10 +20,7 @@ function Get-BreakGlassAccounts {
     [string] $FirstBreakGlassUPN, 
     [string] $SecondBreakGlassUPN,
     [hashtable] $msgTable,
-    [string] $LogType,
     [string] $itsgcode,
-    [string] $WorkSpaceID,
-    [string] $WorkspaceKey, 
     [string] $ControlName, 
     [string] $ItemName,
     [Parameter(Mandatory=$true)]
@@ -33,6 +30,7 @@ function Get-BreakGlassAccounts {
   [bool] $FirstBGAcctExist = $false
   [bool] $SecondBGAcctExist = $false    
   [bool] $IsCompliant = $false
+  [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
   [String] $FirstBreakGlassUPNUrl = $("https://graph.microsoft.com/beta/users/" + $FirstBreakGlassUPN)
   [String] $SecondBreakGlassUPNUrl = $("https://graph.microsoft.com/beta/users/" + $SecondBreakGlassUPN)
@@ -68,8 +66,9 @@ function Get-BreakGlassAccounts {
     } 
   }
   catch {
-    Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-    Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
+    #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
 
   # get 2nd break glass account
@@ -84,8 +83,9 @@ function Get-BreakGlassAccounts {
     } 
   }
   catch {
-    Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-    Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
+    #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
   $IsCompliant = $FirstBGAcctExist -and $SecondBGAcctExist
 
@@ -97,14 +97,12 @@ function Get-BreakGlassAccounts {
     ReportTime      = $ReportTime
     itsgcode = $itsgcode
   }
-
-  $JsonObject = convertTo-Json -inputObject $PsObject 
-
-  Send-OMSAPIIngestionFile -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JsonObject `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+  $moduleOutput= [PSCustomObject]@{ 
+    ComplianceResults = $PsObject
+    Errors=$ErrorList
+    AdditionalResults = $AdditionalResults
+  }
+  return $moduleOutput   
 }    
 
 

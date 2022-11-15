@@ -210,7 +210,7 @@ if (!$update)
         else { $selection = 0 }
         if ($selection -ne 0) {
             if ($selection -gt 0 -and $selection -le ($i - 1)) { 
-                Select-AzSubscription -SubscriptionObject $subs[$selection - 1]
+                Select-AzSubscription -SubscriptionObject $subs[$selection - 1] 
             }
             else {
                 Write-output "Invalid selection. ($selection)"
@@ -224,7 +224,7 @@ if (!$update)
     else {
         Write-Output "Selecting $subcriptionId subscription:"
         try {
-            Select-AzSubscription -Subscription $subscriptionId | Out-Null
+            Select-AzSubscription -Subscription $subscriptionId 
         }
         catch {
             Write-error "Error selecting provided subscription."
@@ -656,7 +656,7 @@ else {
     else { $selection = 0 }
     if ($selection -ne 0) {
         if ($selection -gt 0 -and $selection -le ($i - 1)) { 
-            Select-AzSubscription -SubscriptionObject $subs[$selection - 1]
+            Select-AzSubscription -SubscriptionObject $subs[$selection - 1] 
         }
         else {
             Write-output "Invalid selection. ($selection)"

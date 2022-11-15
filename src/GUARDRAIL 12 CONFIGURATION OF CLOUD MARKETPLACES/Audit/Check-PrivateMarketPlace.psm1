@@ -1,31 +1,30 @@
 function Check-PrivateMarketPlaceCreation {
 param (
         [string] $ControlName, 
-        [string] $WorkSpaceID, 
-        [string] $workspaceKey, 
-        [string] $LogType,
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime
 )
-                
     
 $IsCompliant=$false 
 $Object = New-Object PSObject
+[PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
 try {
         [String] $PrivateMarketPlace=  Get-AzMarketplacePrivateStore -ErrorAction Stop  
 }
 catch {
-    Add-LogEntry 'Error' "Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
-        and up to date; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+    $ErrorList.Add("Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
+    and up to date; returned error message: $_")
+    <#Add-LogEntry2 'Error' "Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
+        and up to date; returned error message: $_"
+        #>
     throw "Error: Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
         and up to date; returned error message: $_" 
 }
-
-
+ 
 if($null -eq $PrivateMarketPlace){
         $Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
         $Object| Add-Member NoteProperty -Name Comments  -Value $msgTable.mktPlaceNotCreated
@@ -37,18 +36,18 @@ else {
         $Object| Add-Member NoteProperty -Name Comments  -Value "$($msgTable.mktPlaceCreated) - $($PrivateMarketPlace.PrivateStoreId)"
         $MitigationCommands = ""
 }
-$Object| Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force
-$Object| Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
-$Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands -Force
-$Object| Add-Member -MemberType NoteProperty -Name ItemName -Value $msgTable.mktPlaceCreation -Force
-$Object| Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode -Force
+$Object| Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force | Out-Null
+$Object| Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
+$Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands -Force| Out-Null
+$Object| Add-Member -MemberType NoteProperty -Name ItemName -Value $msgTable.mktPlaceCreation -Force | Out-Null
+$Object| Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode -Force | Out-Null
 
-$JsonObject = $Object | convertTo-Json  
-Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JsonObject `
-    -logType $LogType `
-    -TimeStampField Get-Date
+$moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $Object
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+return $moduleOutput
 }
 
 

@@ -17,10 +17,7 @@ The module checks if the mutifactor authentication (MFA) is enable on the break 
 function Get-UserAuthenticationMethod { 
     param (
         [string] $ControlName,
-        [string] $WorkSpaceID, 
-        [string] $workspaceKey, 
         [hashtable] $msgTable,
-        [string] $LogType,
         [string] $ItemName,
         [string] $itsgcode,
         [string] $FirstBreakGlassEmail,
@@ -32,7 +29,7 @@ function Get-UserAuthenticationMethod {
 
    $IsCompliant = $true
    $Comments=$null
-   
+   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $BGAccountList = @($FirstBreakGlassEmail,$SecondBreakGlassEmail )
     
     foreach($BGAcct in $BGAccountList){
@@ -42,7 +39,8 @@ function Get-UserAuthenticationMethod {
             $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
         }
         catch {
-            Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" )
+            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
 
@@ -78,13 +76,12 @@ function Get-UserAuthenticationMethod {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
      }
-     $JsonObject = convertTo-Json -inputObject $PsObject 
-
-     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-                               -sharedkey $workspaceKey `
-                               -body $JsonObject `
-                               -logType $LogType `
-                               -TimeStampField Get-Date 
+     $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput    
    }
 
 # SIG # Begin signature block

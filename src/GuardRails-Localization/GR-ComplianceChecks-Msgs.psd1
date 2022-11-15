@@ -50,6 +50,8 @@ compliantComment = Didnt find any unsynced deprecated users
 mitigationCommands = Verify is the users reported are deprecated.
 apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
+AADLicenseTypeFound = Found correct license type
+AADLicenseTypeNotFound = Required AAD license type not found
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
