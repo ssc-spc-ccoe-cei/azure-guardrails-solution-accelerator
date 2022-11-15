@@ -19,8 +19,9 @@ param releaseVersion string
 param SecurityLAWResourceId string
 param TenantDomainUPN string
 param updatePSModules bool = false
+param updateCoreResources bool = false
 
-resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules) {
+resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
   location: location
   tags: {
@@ -240,7 +241,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource variable1 'variables' = if (newDeployment) {
+  resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
@@ -248,98 +249,98 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     }
   }
     
-  resource variable2 'variables' = if (newDeployment) {
+  resource variable2 'variables' = if (newDeployment || updateCoreResources) {
     name: 'WorkSpaceID'
     properties: {
         isEncrypted: true
         value: '"${guardrailsLogAnalyticscustomerId}"'
     }
   }
-  resource variable3 'variables' = if (newDeployment) {
+  resource variable3 'variables' = if (newDeployment || updateCoreResources) {
     name: 'LogType'
     properties: {
         isEncrypted: true
         value: '"GuardrailsCompliance"'
     }
   }
-  resource variable4 'variables' = if (newDeployment) {
+  resource variable4 'variables' = if (newDeployment || updateCoreResources) {
     name: 'PBMMPolicyID'
     properties: {
         isEncrypted: true
         value: '"/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}"'
     }
   }
-  resource variable5 'variables' = if (newDeployment) {
+  resource variable5 'variables' = if (newDeployment || updateCoreResources) {
     name: 'GuardrailWorkspaceIDKeyName'
     properties: {
         isEncrypted: true
         value: '"WorkSpaceKey"'
     }
   }
-  resource variable6 'variables' = if (newDeployment) {
+  resource variable6 'variables' = if (newDeployment || updateCoreResources) {
     name: 'StorageAccountName'
     properties: {
         isEncrypted: false
         value: '"${guardrailsStoragename}"'
     }
   }
-  resource variable7 'variables' = if (newDeployment) {
+  resource variable7 'variables' = if (newDeployment || updateCoreResources) {
     name: 'ContainerName'
     properties: {
         isEncrypted: true
         value: '"${containername}"'
     }
   }
-  resource variable8 'variables' = if (newDeployment) {
+  resource variable8 'variables' = if (newDeployment || updateCoreResources) {
     name: 'ResourceGroupName'
     properties: {
         isEncrypted: true
         value: '"${resourceGroup().name}"'
     }
   }
-  resource variable9 'variables' = if (newDeployment) {
+  resource variable9 'variables' = if (newDeployment || updateCoreResources) {
     name: 'AllowedLocationPolicyId'
     properties: {
         isEncrypted: true
         value: '"/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}"'
     }
   }
-  resource variable10 'variables' = if (newDeployment) {
+  resource variable10 'variables' = if (newDeployment || updateCoreResources) {
     name: 'DepartmentNumber'
     properties: {
       isEncrypted: true
       value: '"${DepartmentNumber}"'
   }
   }
-  resource variable11 'variables' = if (newDeployment) {
+  resource variable11 'variables' = if (newDeployment || updateCoreResources) {
     name: 'CBSSubscriptionName'
     properties: {
       isEncrypted: true
       value: '"${CBSSubscriptionName}"'
     }
   }
-  resource variable12 'variables' = if (newDeployment) {
+  resource variable12 'variables' = if (newDeployment || updateCoreResources) {
     name: 'SecurityLAWResourceId'
     properties: {
       isEncrypted: true
       value: '"${SecurityLAWResourceId}"'
     }
   }
-  resource variable13 'variables' = if (newDeployment) {
+  resource variable13 'variables' = if (newDeployment || updateCoreResources) {
     name: 'HealthLAWResourceId'
     properties: {
       isEncrypted: true
       value: '"${HealthLAWResourceId}"'
     }
   }
-  resource variable14 'variables' = if (newDeployment) {
+  resource variable14 'variables' = if (newDeployment || updateCoreResources) {
     name: 'TenantDomainUPN'
     properties: {
       isEncrypted: true
       value: '"${TenantDomainUPN}"'
     }
   }
-  resource variable15 'variables' = if (newDeployment) {
+  resource variable15 'variables' = if (newDeployment || updateCoreResources) {
     name: 'GuardRailsLocale'
     properties: {
       isEncrypted: true
@@ -347,7 +348,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
   }
   }
 
-  resource variable16 'variables' = if (newDeployment) {
+  resource variable16 'variables' = if (newDeployment || updateCoreResources) {
     name: 'lighthouseTargetManagementGroupID'
     'properties': {
       'isEncrypted': true
@@ -355,7 +356,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
   }
   }
 
-  resource variable17 'variables' = if (newDeployment) {
+  resource variable17 'variables' = if (newDeployment || updateCoreResources) {
     name: 'DepartmentName'
     'properties': {
       'isEncrypted': true

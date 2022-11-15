@@ -24,6 +24,7 @@ param SecurityLAWResourceId string
 param storageAccountName string
 param subscriptionId string
 param TenantDomainUPN string
+param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
 var containername = 'guardrailsstorage'
@@ -36,7 +37,7 @@ module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
   name: 'pid-9c273620-d12d-4647-878a-8356201c7fe8'
   params: {}
 }
-module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules) {
+module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: 'guardrails-automationaccount'
   params: {
     AllowedLocationPolicyId: AllowedLocationPolicyId
@@ -60,6 +61,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     SecurityLAWResourceId: SecurityLAWResourceId
     TenantDomainUPN: TenantDomainUPN
     updatePSModules: updatePSModules
+    updateCoreResources: updateCoreResources
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -74,7 +76,7 @@ module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
     tenantId: subscription().tenantId
   }
 }
-module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployment) || updateWorkbook) {
+module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'guardrails-loganalytics'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
@@ -89,7 +91,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     updateWorkbook: updateWorkbook
   }
 }
-module storageaccount 'modules/storage.bicep' = if (newDeployment) {
+module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
   name: 'guardrails-storageaccount'
   params: {
     storageAccountName: storageAccountName

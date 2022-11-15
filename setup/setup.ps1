@@ -80,7 +80,7 @@ If (!$update.IsPresent) {
     }
 }
 Else {
-    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -updateComponents All -Yes:$yes.isPresent -verbose:$useVerbose @optionalParams
+    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -update -Yes:$yes.isPresent -verbose:$useVerbose @optionalParams
 }
 
 # SIG # Begin signature block
