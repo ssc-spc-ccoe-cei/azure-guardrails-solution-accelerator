@@ -106,40 +106,40 @@ Add tags as required per your policies in a json array format.
 Please do not delete the default required tags 
 
 ## Deployment
+Import the GuardrailsSolutionAcceleratorSetup module from the downloaded code:
 
-If the deployment is being done using the Azure Cloud Shell, the currentuserUPN parameter below refers to the user logged in. This is required when using the cloud shell.
+```powershell
+cd ./GuardrailsSolutionAccelerator # navigate to the solution directory
+Import-Module -Path ./src/GuardrailsSolutionAcceleratorSetup
 
-In a B2B scenario, please use the full user name, typically something as below:
-
-user_inviteddomain#EXT@invitingDomain.com
-
-The solution will deploy new resources.
-
-Run:
 ```
-.\setup.ps1 -configFilePath .\config.json -userId <currentuserUPN>
+
+Start the Guardrails Solution Accelerator deployment with the default configuration (core resources only):
+```powershell
+Deploy-GuardrailsSolutionAccelerator -configFilePath .\config.json
 ```
-Alternatively, these parameters can be used to leverage existing KeyVault and Log Analytics resources:
 
-`$existingKeyVaultName` : the name of an existing Keyvault. If provided, **the RG below must be specified and the content of config.json will be ignored.**
+Alternatively, these parameters can be used to verify a deployment or to deploy additional components:
 
-`$existingKeyVaultRG` : the resource group containing the Keyvault above.
+`-newComponents`: This parameter defaults to 'coreComponents', but additional components can be specified (see Centralized Reporting section below)
 
-`$existingWorkspaceName`: the name of an existing Log Analytics Workspace. If provided, the RG below must be specified and the content of config.json will be ignored. Also, for now, the Workbook will not be deployed automatically and will have to be added manually to the existing workspace.
+`-validatePrerequisites`: Add this switch parameter to validate the target environment (but take no action)
 
-`$existingWorkSpaceRG`: the resource group containing the Log Analytics Workspace above.
+`-validateConfigFile`: Add this switch parameter to validate the values in the -configFilePath file (but take no action)
 
-`$skipDeployment`: the setup script will run everything but the Azure Resources deployment (for debug/testing only).
+To see additional examples and parameter details run:
 
-`$subscriptionId`: if specified, the setup script will try to deploy the solution in that subscription. If not specified, it will detect if multiple subscriptions are available and interactively ask which one to use.
+```powershell
+Get-Help Deploy-GuardrailsSolutionAccelerator -Detailed
+```
 
-### Lighthouse Configuration
+### Centralized Reporting (Lighthouse) Configuration
 
-If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-configureLighthouseAccessDelegation` switch parameter when calling setup.ps1. 
+If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-newComponents` parameter when calling `Deploy-GuardrailsSolutionAccelerator` and specify the centralized reporting components (along with CoreComponents) to be deployed. For example:
 
-In order for Azure Policy to automatically delegate access to Defender for Cloud data for every subscription under the specified Management Group, the Policy Assignment Managed Service Identity is granted 'Owner' rights at the Management Group scope. 
-
-In addition, every subscription under the target management group (lighthouseTargetManagementGroupID) must be registered for the 'Microsoft.ManagedServices' Resource Provider. To accomplish this, the setup process creates a custom RBAC role called 'Custom-RegisterLighthouseResourceProvider', which includes only the permissions to register the Lighthouse resource provider. A role assignment is added for this role at the target Management Group for the Automation Account's managed identity, enabling a runbook to automatically register any existing or new subscriptions for the resource provider. 
+```powershell
+ Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -validatePrerequisites -newComponents CoreComponents,CentralizedCustomerDefenderForCloudSupport,CentralizedCustomerReportingSupport. 
+```
 
 For this feature to deploy, the following values must also existing the config.json file:
 

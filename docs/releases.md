@@ -39,7 +39,7 @@
    `git checkout -b v1.0.x`
 1. Update tags.json in your new branch to the new version, commit the change
 1. Update sub-module versions by running ./tools/Update-ModuleVersions.ps1 [Module version updates are made locally for each PR]
-1. Update the GuardrailsSolutionAccelerator.psd1 module version to match the release version (ex: release v1.0.6 should be '1.0.6' in the module manifest)
+1. Update the GuardrailsSolutionAcceleratorSetup.psd1 module version to match the release version (ex: release v1.0.6 should be '1.0.6' in the module manifest)
 1. Commit your changes and publish your branch
 1. Push your commit to GitHub
 1. Navigate to Azure DevOps, find your Pipeline, and choose New Run. Select your new 'v1.0.x' branch.
