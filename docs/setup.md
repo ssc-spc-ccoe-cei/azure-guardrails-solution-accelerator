@@ -45,7 +45,7 @@ cd ./GuardrailsSolutionAccelerator/setup/
 
 Edit config.json with:
 ```
-code .\config.json
+code ./config.json
 ```
 Adjust parameters as required.
 
@@ -73,7 +73,7 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |lighthousePrincipalId|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the object ID (GUID) of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group|
 |lighthouseTargetManagementGroupID|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the name of the Management Group under which all subscriptions will grant Defender for Cloud access to the managing tenant|
 
-Save the file and exit VSCode.
+Save the file and exit VSCode [Ctrl+S] & [Ctrl+Q] .
 
 Note about policy definitions:
 
@@ -110,7 +110,7 @@ Import the GuardrailsSolutionAcceleratorSetup module from the downloaded code:
 
 ```powershell
 cd ./GuardrailsSolutionAccelerator # navigate to the solution directory
-Import-Module -Path ./src/GuardrailsSolutionAcceleratorSetup
+Import-Module ./src/GuardrailsSolutionAcceleratorSetup
 
 ```
 
