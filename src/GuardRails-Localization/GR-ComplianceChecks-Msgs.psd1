@@ -25,12 +25,12 @@ bgProcedure = Break Glass account Procedure
 bgCreation = Break Glass account Creation
 bgAccountResponsibility = Responsibility of break glass accounts must be with someone not-technical, director level or above
 bgAccountOwnerContact = Break Glass Account Owners Contact information
-bgAccountsCompliance = {0} Compliance status = {1}, {2} Compliance status = {3}
+bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
 bgAuthenticationMeth =  Authentication Methods 
 bgLicenseNotAssigned = NOT ASSIGNED
 bgAssignedLicense =  Assigned License = 
 bgAccountHasManager = BG Account {0} has a Manager
-bgAccountNoManager = BG Account {0} doesnt have a Manager 
+bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GuardRail #2

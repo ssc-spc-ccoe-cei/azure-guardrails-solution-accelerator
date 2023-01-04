@@ -27,31 +27,22 @@ function Get-BreakGlassAccounts {
     [string]
     $ReportTime
   )
-  [bool] $FirstBGAcctExist = $false
-  [bool] $SecondBGAcctExist = $false    
+
   [bool] $IsCompliant = $false
   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
-  [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN)
-  [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN)
+  [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
+  [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
 
   $FirstBreakGlassAcct = [PSCustomObject]@{
     UserPrincipalName  = $FirstBreakGlassUPN
     apiUrl             = $FirstBreakGlassUPNUrl
-    First_Name         = $null
-    Last_Name          = $null
-    Mobile_PhoneNumber = $null
-    Email_address      = $null
     ComplianceStatus   = $false
   }
   $SecondBreakGlassAcct = [PSCustomObject]@{
-    UserPrincipalName  = $SecondBreakGlassUPN
-    apiUrl             = $SecondBreakGlassUPNUrl
-    First_Name         = $null
-    Last_Name          = $null
-    Mobile_PhoneNumber = $null
-    Email_address      = $null
-    ComplianceStatus   = $false
+    UserPrincipalName   = $SecondBreakGlassUPN
+    apiUrl              = $SecondBreakGlassUPNUrl
+    ComplianceStatus    = $false
   }
   
   # get 1st break glass account
@@ -61,8 +52,8 @@ function Get-BreakGlassAccounts {
 
     $data = $response.Content
     
-    if ($Data.userType -eq "Member") {
-      $FirstBGAcctExist = $true
+    if ($data.userType -eq "Member") {
+      $FirstBreakGlassAcct.ComplianceStatus = $true
     } 
   }
   catch {
@@ -76,22 +67,22 @@ function Get-BreakGlassAccounts {
     $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
 
     $data = $response.Content
-    
-    if ($Data.userType -eq "Member") {
-      $SecondBGAcctExist = $true
+
+    if ($data.userType -eq "Member") {
+      $SecondBreakGlassAcct.ComplianceStatus = $true
     } 
   }
   catch {
     $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
     Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
   }
-  $IsCompliant = $FirstBGAcctExist -and $SecondBGAcctExist
+  $IsCompliant = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
 
   $PsObject = [PSCustomObject]@{
     ComplianceStatus = $IsCompliant
     ControlName      = $ControlName
     ItemName         = $ItemName
-    Comments          = $msgTable.bgAccountsCompliance -f $FirstBreakGlassUPN, $FirstBGAcctExist, $SecondBreakGlassUPN, $SecondBGAcctExist
+    Comments          = $msgTable.bgAccountsCompliance -f $FirstBreakGlassAcct.ComplianceStatus, $SecondBreakGlassAcct.ComplianceStatus
     ReportTime      = $ReportTime
     itsgcode = $itsgcode
   }
