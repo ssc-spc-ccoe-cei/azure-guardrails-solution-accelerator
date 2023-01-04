@@ -21,17 +21,17 @@ mfaEnforcement = Application MFA
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 m365Assignment = Affectation Microsoft 365 E5
-bgProcedure = Procédure de compte Brise Glass
-bgCreation = Création de compte Brise Glass
-bgAccountResponsibility = La responsabilité des comptes bris de glace doit incomber à une personne non technique, de niveau directeur ou supérieur
-bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glass
-bgAccountsCompliance = {0} Statut de conformité = {1}, {2} Statut de conformité = {3}
+bgProcedure = Procédure de compte Brise Glace
+bgCreation = Création de compte Brise Glace
+bgAccountResponsibility = La responsabilité des comptes brise-glace doit incomber à une personne non technique, de niveau directeur ou supérieur
+bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
+bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
 bgAuthenticationMeth =  Méthodes d'authentification 
 bgLicenseNotAssigned = NON ASSIGNÉ
 bgAssignedLicense =  Licence attribuée = 
 bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
-bgBothHaveManager =  Les deux comptes BreakGlass ont un gestionnaire
+bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GuardRail #2
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
