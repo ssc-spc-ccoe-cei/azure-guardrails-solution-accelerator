@@ -38,6 +38,7 @@ function get-activitylogstatus {
         
         $response = Invoke-AzRestMethod -Uri $URL -Method Get 
         $data = $response.Content | ConvertFrom-Json
+
         $configuredWSs=$data.value.Properties.workspaceId
         if ($LAWResourceId -in $configuredWSs) {
             $pcount++
@@ -53,15 +54,16 @@ function get-activitylogstatus {
     }
 }
 function get-tenantDiagnosticsSettings {
-    #$apiUrl="https://graph.microsoft.com/beta/auditLogs/directoryAudits"
+
     $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
     try {
-        $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
+        $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
     }
     catch {
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
+    $data = $response.Content | ConvertFrom-Json
     return $data.value.properties
 }
 function get-activitylogstatus {
@@ -70,13 +72,18 @@ function get-activitylogstatus {
         [string]
         $LAWResourceId
     )
+    
     $subs=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"}
     $totalsubs=$subs.Count
-    $GraphAccessToken = (Get-AzAccessToken).Token
+
     $pcount=0
     foreach ($sub in $subs) {
         $URL="https://management.azure.com/subscriptions/$($sub.Id)/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview"
-        $configuredWSs=(Invoke-RestMethod -Headers @{Authorization = "Bearer $($GraphAccessToken)" } -Uri $URL -Method Get ).value.Properties.workspaceId
+        
+        $response = Invoke-AzRestMethod -Uri $URL -Method Get 
+        
+        $data = $response.Content | ConvertFrom-Json
+        $configuredWSs = $data.value.Properties.workspaceId
         if ($LAWResourceId -in $configuredWSs) {
             $pcount++
         }

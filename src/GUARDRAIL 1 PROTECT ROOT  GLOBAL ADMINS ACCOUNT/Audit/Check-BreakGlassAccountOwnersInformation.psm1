@@ -29,8 +29,6 @@ function Get-BreakGlassOwnerinformation {
     )
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-
-    [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
      
     $FirstBreakGlassOwner = [PSCustomObject]@{
         UserPrincipalName  = $FirstBreakGlassUPNOwner
@@ -45,6 +43,7 @@ function Get-BreakGlassOwnerinformation {
 
     [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    
     $BGOwners.add( $FirstBreakGlassOwner) | Out-Null
     $BGOwners.add( $SecondBreakGlassOwner) | Out-Null
     
@@ -71,7 +70,6 @@ function Get-BreakGlassOwnerinformation {
             $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
         }
-        
     }
     $IsCompliant = $FirstBreakGlassOwner.ComplianceStatus -and $SecondBreakGlassOwner.ComplianceStatus
 
