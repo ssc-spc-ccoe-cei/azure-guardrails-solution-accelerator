@@ -248,7 +248,8 @@ steps:
           "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
           "lighthousePrincipalId": "$(lighthousePrincipalId)",
           "lighthouseTargetManagementGroupID": "mb_co",
-          "subscriptionId": "$(testSubscriptionId)"
+          "subscriptionId": "$(testSubscriptionId)",
+          "uniqueNameSuffix": "$(uniqueNameSuffix)"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
@@ -295,14 +296,15 @@ steps:
           "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
           "DepartmentNumber": "190",
           "CBSSubscriptionName": "$(CBSSubscriptionName)",
-          "SecurityLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
-          "HealthLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+          "SecurityLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/law-default01",
+          "HealthLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/law-default01",
           "Locale": "en-CA",
           "lighthouseServiceProviderTenantID": "$(lighthouseProviderTenantId)",
           "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
           "lighthousePrincipalId": "$(lighthousePrincipalId)",
           "lighthouseTargetManagementGroupID": "$(lighthouseTargetManagementGroupID)",
-          "subscriptionId": "$(testSubscriptionId)"
+          "subscriptionId": "$(testSubscriptionId)",
+          "uniqueNameSuffix": "$(uniqueNameSuffix)"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
@@ -348,7 +350,7 @@ steps:
     Inline: |
       ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-      $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
+      $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
       $config = $c.configString | ConvertFrom-Json
       
       Write-Output "Waiting for 'main' runbook job to complete (up to 5 mins)"
@@ -394,7 +396,7 @@ steps:
         If ($env:BUILD_SOURCEVERSIONMESSAGE.ToString() -notlike '*[skip_clean]*') {
           ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-          $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
+          $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
           $config = $c.configString | ConvertFrom-Json
 
           $c | remove-gsacentralizedReportingCustomerComponents -Force
