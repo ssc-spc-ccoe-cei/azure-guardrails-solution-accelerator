@@ -24,7 +24,7 @@ function Check-CBSSensors {
     $CBSResourceNames+="cbs-vault-" + $FirstTokenInTenantID
     $CBSResourceNames+="cbs"+$FirstTokenInTenantID
     if ($debug) { Write-Output $CBSResourceNames}
-    $sub=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -eq $SubscriptionName}
+    $sub=Get-AzSubscription -ErrorAction SilentlyContinue | Where-Object {$_.State -eq 'Enabled' -and $_.Name -eq $SubscriptionName}
     if ($null -ne $sub)
     {
         Set-AzContext -Subscription $sub

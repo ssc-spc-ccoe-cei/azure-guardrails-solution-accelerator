@@ -17,7 +17,7 @@ Function Confirm-GSASubscriptionSelection {
         Connect-AzAccount | Out-Null
     }
     if ([string]::IsNullOrEmpty($config.subscriptionId)) {
-        $subs = Get-AzSubscription -ErrorAction SilentlyContinue | Sort-Object -Property Name
+        $subs = Get-AzSubscription -ErrorAction SilentlyContinue  | Where-Object {$_.State -eq "Enabled"} | Sort-Object -Property Name
         if ($subs.count -gt 1) {
             Write-Host "More than one subscription detected. Current subscription $((get-azcontext).Name)"
             Write-Host "Please select subscription for deployment or Enter to keep current one:"

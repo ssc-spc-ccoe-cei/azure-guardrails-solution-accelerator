@@ -194,12 +194,12 @@ if (!$update)
     }
     #Tests if logged in:
     Write-Verbose "Verifying that the user is logged in and that the correct subscription is selected..."
-    $subs = Get-AzSubscription -ErrorAction SilentlyContinue
+    $subs = Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"} 
     if (-not($subs)) {
         Connect-AzAccount
     }
     if ([string]::IsNullOrEmpty($subscriptionId)){
-        $subs = Get-AzSubscription -ErrorAction SilentlyContinue
+        $subs = Get-AzSubscription -ErrorAction SilentlyContinue | Where-Object {$_.State -eq "Enabled"} 
         if ($subs.count -gt 1) {
             Write-output "More than one subscription detected. Current subscription $((get-azcontext).Name)"
             Write-output "Please select subscription for deployment or Enter to keep current one:"
@@ -641,10 +641,10 @@ else {
     }
 
     #Tests if logged in:
-    $subs = Get-AzSubscription -ErrorAction SilentlyContinue
+    $subs = Get-AzSubscription | Where-Object {$_.State -eq "Enabled"} -ErrorAction SilentlyContinue
     if (-not($subs)) {
         Connect-AzAccount
-        $subs = Get-AzSubscription -ErrorAction SilentlyContinue
+        $subs = Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"} 
     }
     if ($subs.count -gt 1) {
         Write-output "More than one subscription detected. Current subscription $((get-azcontext).Name)"
