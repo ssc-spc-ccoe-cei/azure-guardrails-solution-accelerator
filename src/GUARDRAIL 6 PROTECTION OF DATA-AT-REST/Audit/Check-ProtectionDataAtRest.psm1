@@ -37,9 +37,9 @@ function Check-StatusDataAtRest {
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)
     {
-
-        if ($objType -eq "subscription")
-        {$tempId="/subscriptions/$($obj.Id)"}
+        if ($objType -eq "subscription"){
+            $tempId="/subscriptions/$($obj.Id)"
+        }
         else {
             $tempId=$obj.Id
         }
@@ -118,7 +118,7 @@ function Verify-ProtectionDataAtRest {
     $ObjectList+=Check-StatusDataAtRest -objList $objs -itsgcode $itsgcode -objType $type -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
     #Check Subscriptions
     try {
-        $objs = Get-AzSubscription -ErrorAction Stop
+        $objs = Get-AzSubscription -ErrorAction Stop| Where-Object {$_.State -eq "Enabled"} 
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of `

@@ -1,4 +1,4 @@
-$subs=get-azsubscription
+$subs= Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"}
 $totalsubs=$subs.Count
 $GraphAccessToken = (Get-AzAccessToken).Token
 $lawId="/subscriptions/6c64f9ed-88d2-4598-8de6-7a9527dc16ca/resourceGroups/qGuardrails-6eb08c2c/providers/Microsoft.OperationalInsights/workspaces/qguardrails-6eb08c2c"

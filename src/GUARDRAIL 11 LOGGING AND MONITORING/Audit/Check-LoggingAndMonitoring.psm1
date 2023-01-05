@@ -30,7 +30,7 @@ function get-activitylogstatus {
         [string]
         $LAWResourceId
     )
-    $subs=get-azsubscription
+    $subs=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"}
     $totalsubs=$subs.Count
     $pcount=0
     foreach ($sub in $subs) {
@@ -70,7 +70,7 @@ function get-activitylogstatus {
         [string]
         $LAWResourceId
     )
-    $subs=get-azsubscription
+    $subs=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"}
     $totalsubs=$subs.Count
     $GraphAccessToken = (Get-AzAccessToken).Token
     $pcount=0
@@ -328,7 +328,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
     $IsCompliant=$true
     $MitigationCommands=""
     $Comments=""
-    $sublist=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName} 
+    $sublist=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName} 
     
     # This will look for specific Defender for Cloud, on a per subscription basis.
     foreach ($sub in $sublist)

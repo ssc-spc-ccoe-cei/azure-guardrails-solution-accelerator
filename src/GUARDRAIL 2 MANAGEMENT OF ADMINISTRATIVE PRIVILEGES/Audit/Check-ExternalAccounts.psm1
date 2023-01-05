@@ -35,7 +35,7 @@
     else {
         if ($debug) {Write-Output "Found $($guestUsers.Count) Guest Users in the tenant"}
 
-        $subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled'}
+        $subs=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled'}
         if ($debug) {Write-Output "Found $($subs.Count) subscriptions"}
 
         foreach ($sub in $subs) {
