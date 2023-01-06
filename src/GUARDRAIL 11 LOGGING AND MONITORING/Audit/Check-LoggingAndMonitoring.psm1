@@ -342,7 +342,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
     {
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         $ContactInfo=Get-AzSecurityContact
-        if (($null -eq $ContactInfo.Email) -or ($null -eq $ContactInfo.Phone))
+        if ([string]::IsNullOrEmpty($ContactInfo.Email) -or [string]::IsNullOrEmpty($null -eq $ContactInfo.Phone))
         {
             $IsCompliant=$false
             $Comments= $msgTable.noSecurityContactInfo -f $sub.Name
@@ -352,12 +352,17 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         # We need to exlude 
         # - CloudPosture since this plan is always shows as Free
         # - KubernetesService and ContainerRegistry because two plans are deprecated in favor of the Container plan.
-        if ((Get-AzSecurityPricing | Where-Object {$_.PricingTier -eq 'Free' -and $_.Name -ne "CloudPosture" -and $_.Name -ne "KubernetesService" -and $_.Name -ne "ContainerRegistry"}).Count -gt 0)
+
+        # check that ALL Defender pricing tier is not set to Free
+        $defenderPlans = Get-AzSecurityPricing -ErrorAction Stop | Where-Object {$_.Name -notin 'CloudPosture', 'KubernetesService', 'ContainerRegistry'}
+
+        if ($defenderPlans.PricingTier -contains 'Free')
         {
             $IsCompliant=$false
             $Comments += $msgTable.notAllDfCStandard -f $sub.Name
             $MitigationCommands += $msgTable.setDfCToStandard -f $sub.Name
         }
+
     }
     if ($IsCompliant)
     {
@@ -374,7 +379,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         MitigationCommands=$MitigationCommands
     }
     $FinalObjectList+=$object
-    $IsCompliant=$true #?
+
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $FinalObjectList 
         Errors=$ErrorList
