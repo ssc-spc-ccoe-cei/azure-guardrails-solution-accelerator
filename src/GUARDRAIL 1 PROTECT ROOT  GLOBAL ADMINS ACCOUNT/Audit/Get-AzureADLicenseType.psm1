@@ -1,17 +1,13 @@
 <#
 .SYNOPSIS
    
-The module will look for a P2 equivalent licensing, Once the solution find any of the following "String Id", the check mark status will be changed from (❌) to (✔️).
+The module will look for the AAD_PREMIUM_P2 service plan in all of the licences available on the tenant.
 
-Product name: AZURE ACTIVE DIRECTORY PREMIUM P2, String ID: AAD_PREMIUM_P2
-Product name: ENTERPRISE MOBILITY + SECURITY E5, String ID: EMSPREMIUM
-Product name: Microsoft 365 E5, String ID: SPE_E5
 .DESCRIPTION
-    The module will look for a P2 equivalent licensing, Once the solution find any of the following "String Id", the check mark status will be changed from (❌) to (✔️).
+    The module will look for the AAD_PREMIUM_P2 service plan in all of the licences available on the tenant, once it finds "AAD_PREMIUM_P2", the check mark status will be changed from (❌) to (✔️).
 
-Product name: AZURE ACTIVE DIRECTORY PREMIUM P2, String ID: AAD_PREMIUM_P2
-Product name: ENTERPRISE MOBILITY + SECURITY E5, String ID: EMSPREMIUM
-Product name: Microsoft 365 E5, String ID: SPE_E5
+    All details can be found here: https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference
+
 .PARAMETER Name
         token : auth token 
         ControlName :-  GUARDRAIL 1 PROTECT ROOT  GLOBAL ADMINS ACCOUNT
@@ -48,17 +44,13 @@ function Get-ADLicenseType {
 
     $data = $response.Content
     
-    $subscribedSkus = $Data.Value
-    $servicePlans = $subscribedSkus.servicePlans
+    $licenseAADP2Found = $data.value.servicePlans.ServicePlanName -contains 'AAD_PREMIUM_P2'
+
     #https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference
-    foreach ($servicePlan in $servicePlans) {
-        if(($servicePlan.servicePlanName -eq "AAD_PREMIUM_P2") -or`
-           ($servicePlan.servicePlanName -eq "EMSPREMIUM")-or`
-           ($servicePlan.servicePlanName -eq "SPE_E5")){
-            $IsCompliant = $true
-            $ADLicenseType  = $servicePlan.servicePlanName
-            $Comments= $msgTable.AADLicenseTypeFound
-        }
+    if ($licenseAADP2Found) {
+        $IsCompliant = $true
+        $ADLicenseType = "AAD_PREMIUM_P2"
+        $Comments = $msgTable.AADLicenseTypeFound
     }
 
     $PsObject = [PSCustomObject]@{
