@@ -393,7 +393,7 @@ steps:
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
-        If ($env:BUILD_SOURCEVERSIONMESSAGE.ToString() -notlike '*[skip_clean]*') {
+        If ($env:BUILD_SOURCEVERSIONMESSAGE.ToString() -match '\[clean\]') {
           ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
           $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
@@ -404,7 +404,7 @@ steps:
           $c | Remove-GSACoreResources -Force -Wait
         }
         Else {
-          Write-Output "Skipping cleanup because BUILD_SOURCEVERSIONMESSAGE contains '[skip_clean]'. `$env:BUILD_SOURCEVERSIONMESSAGE: '$env:BUILD_SOURCEVERSIONMESSAGE'"
+          Write-Output "Skipping cleanup because BUILD_SOURCEVERSIONMESSAGE does not match '\[clean\]'. `$env:BUILD_SOURCEVERSIONMESSAGE: '$env:BUILD_SOURCEVERSIONMESSAGE'"
         }
   name: 'CleanUpTest'
 
