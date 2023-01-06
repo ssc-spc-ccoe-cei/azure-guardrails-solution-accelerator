@@ -27,8 +27,10 @@ bgAccountResponsibility = Responsibility of break glass accounts must be with so
 bgAccountOwnerContact = Break Glass Account Owners Contact information
 bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
 bgAuthenticationMeth =  Authentication Methods 
-bgLicenseNotAssigned = NOT ASSIGNED
-bgAssignedLicense =  Assigned License = 
+firstBgAccount = First Break Glass Account
+secondBgAccount = Second Break Glass Account
+bgNoValidLicenseAssigned = No AAD P2 license assigned to
+bgValidLicenseAssigned =  has a valid AAD P2 assigned
 bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager

@@ -27,8 +27,10 @@ bgAccountResponsibility = La responsabilité des comptes brise-glace doit incomb
 bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
 bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
 bgAuthenticationMeth =  Méthodes d'authentification 
-bgLicenseNotAssigned = NON ASSIGNÉ
-bgAssignedLicense =  Licence attribuée = 
+firstBgAccount = Premier compte brise-glace
+secondBgAccount = Deuxième compte brise-glace
+bgNoValidLicenseAssigned = Aucune licence AAD P2 assignée au 
+bgValidLicenseAssigned =  a une licence AAD P2 valide
 bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire

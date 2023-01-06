@@ -1,17 +1,13 @@
 <#
 .SYNOPSIS
-   The module will look for a P2 equivalent licensing, Once the solution find any of the following "String Id", the check mark status will be changed from (❌) to (✔️).
+   The module will look for a P2 equivalent licensing assigned to the BG accounts.
 
-Product name: AZURE ACTIVE DIRECTORY PREMIUM P2, String ID: AAD_PREMIUM_P2
-Product name: ENTERPRISE MOBILITY + SECURITY E5, String ID: EMSPREMIUM
-Product name: Microsoft 365 E5, String ID: SPE_E5
 
 .DESCRIPTION
-The module will look for a P2 equivalent licensing, Once the solution find any of the following "String Id", the check mark status will be changed from (❌) to (✔️).
+    The module will look for the AAD_PREMIUM_P2 service plan in all of the licences assigned to the user, once it finds "AAD_PREMIUM_P2", the check mark status will be changed from (❌) to (✔️).
 
-Product name: AZURE ACTIVE DIRECTORY PREMIUM P2, String ID: AAD_PREMIUM_P2
-Product name: ENTERPRISE MOBILITY + SECURITY E5, String ID: EMSPREMIUM
-Product name: Microsoft 365 E5, String ID: SPE_E5
+
+
 .PARAMETER Name
         token : auth token 
         FirstBreakGlassUPN: UPN for the first Break Glass account 
@@ -43,12 +39,12 @@ function Get-BreakGlassAccountLicense {
     $FirstBreakGlassAcct = [PSCustomObject]@{
         UserPrincipalName = $FirstBreakGlassUPN
         ID                = $null
-        LicenseDetails    = $msgTable.bgLicenseNotAssigned
+        LicenseAADP2Found = $false
     }
     $SecondBreakGlassAcct = [PSCustomObject]@{
         UserPrincipalName = $SecondBreakGlassUPN
         ID                = $null
-        LicenseDetails    = $msgTable.bgLicenseNotAssigned
+        LicenseAADP2Found = $false
     }
     $BGAccounts.add( $FirstBreakGlassAcct) | Out-Null
     $BGAccounts.add( $SecondBreakGlassAcct) | Out-Null
@@ -81,20 +77,26 @@ function Get-BreakGlassAccountLicense {
             }
 
             $data = $response.Content
+
+            # A user can have multiple licences, so we need to look for all license sku that have AAD_PREMIUM_P2 in the service plans included
+            # https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference
             if (($data.value).Length -gt 0 ) {
-                $BGAccount.LicenseDetails = ($Data.value).skuPartNumber
+                $BGAccount.LicenseAADP2Found = $data.value.servicePlans.ServicePlanName -contains 'AAD_PREMIUM_P2'
             }
         }
     }
-    if ((($FirstBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($FirstBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM")) -and `
-        (($SecondBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($SecondBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM"))) {
+    if (($FirstBreakGlassAcct.LicenseAADP2Found) -and ($SecondBreakGlassAcct.LicenseAADP2Found)) {
         $IsCompliant = $true
-        $Comments = $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails +
-        $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
+        $Comments = $msgTable.firstBgAccount + ' ' + $msgTable.bgValidLicenseAssigned + " & " +
+        $msgTable.secondBgAccount + ' ' + $msgTable.bgValidLicenseAssigned 
     }
     else {
-        $Comments = $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails + " & " +
-        $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
+        if (!$FirstBreakGlassAcct.LicenseAADP2Found) {
+            $Comments = $msgTable.bgNoValidLicenseAssigned + ' ' + $msgTable.firstBgAccount
+        }
+        if (!$SecondBreakGlassAcct.LicenseAADP2Found) {
+            $Comments += ' ' + $msgTable.bgNoValidLicenseAssigned + ' ' + $msgTable.secondBgAccount
+        }
     }
 
     $PsObject = [PSCustomObject]@{
