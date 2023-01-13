@@ -180,3 +180,22 @@ For this feature to deploy, the following values must also existing the config.j
 #### Troubleshooting Lighthouse Configuration
 
 The Defender for Cloud automated Lighthouse delegation deployment to each subscription may take up to 24 hours to apply. If, after 24 hours, all subscriptions are not showing as properly delegated, ensure that the the Microsoft.ManagedServices and Microsoft.PolicyInsights Resource Providers are registered in each target subscription. Check that a Remediation Task exists at the target management group (on the customer side), and review it for deployment failures.
+
+## Removing an existing deployment
+
+In the event that an existing Guardrails deployment needs to be removed, the GuardrailsSolutionAcceleratorSetup has built-in modules to ensure a complete clean up. The modules are not imported automatically, but can be manually imported as shown below:
+
+> **Warning**
+> Removing your deployment permanently deletes your Log Analytics data. To retain the data, move the Log Analytics workspace to a different resource group before executing the Remove-GSACoreResource command!
+
+```powershell
+Import-Module src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources
+Import-Module src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents
+Import-Module src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents
+```
+
+To remove components, use the `Get-GSAExportedConfig` command to retrieve the deployment's configuration from the Key Vault and pass the config to the appropriate removal command over the pipeline. For example:
+
+```powershell
+Get-GSAExportedConfig -KeyVaultName <keyVaultName> | Remove-GSACoreResources
+```

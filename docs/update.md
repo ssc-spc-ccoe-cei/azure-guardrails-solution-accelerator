@@ -15,7 +15,7 @@ The components which can be updated are:
 
 1. Ensure you have the latest version of the Guardrails Solution Accelerator though one of the following processes. In most cases, downloading the latest release is the recommended approach. Use the `git` option if you want to deploy updates published between releases or pre-release updates.
 
-    **Download the latest release from GitHub**
+    **Option 1: Download the latest release from GitHub**
     Download the latest release with `wget` or `Invoke-WebRequest -outFile`, specifying the release version in the URL (v1.0.6 in examples below)
 
     Examples:
@@ -26,7 +26,7 @@ The components which can be updated are:
     Extract the downloaded release:
     `Expand-Archive -Path <path_to_downloaded_zip>`
 
-    **Use Git**
+    **Option 2: Use Git**
     If you already have a clone of the GuardrailsSolutionAccelerator, navigate to that directory in PowerShell and use `git` to make sure you have the most recent changes:
 
     ```git
