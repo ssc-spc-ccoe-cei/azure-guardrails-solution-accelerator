@@ -106,6 +106,10 @@ foreach ($module in $modules)
         try {
             $results=$NewScriptBlock.Invoke()
             #$results.ComplianceResults
+            #$results.Add("Required", $module.Required)
+            #Write-Output "required: $($module.Required)."
+            $results.ComplianceResults | Add-Member -MemberType Noteproperty -Name "Required" -Value $module.Required
+            #"Results Required: $($results.ComplianceResults.Required)"
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
             if ($null -ne $results.Errors) {
                 "Module $($module.modulename) failed with $($results.Errors.count) errors."

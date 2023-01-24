@@ -4,6 +4,7 @@
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "True",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables":
     [
@@ -33,6 +34,7 @@
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "False",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
     "variables":
     [
@@ -61,6 +63,7 @@
     "Control":"Guardrails1",
     "ModuleName": "Get-BreakGlassAccounts",
     "Status": "Enabled",
+    "Required": "False",
     "Script": "Get-BreakGlassAccounts -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgCreation -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets":
     [
@@ -87,6 +90,7 @@
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "False",
     "Script": "Get-ADLicenseType  -ControlName $msgTable.CtrName1 -ItemName $msgTable.adLicense -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables":
     [
@@ -101,6 +105,7 @@
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "True",
     "ModuleName": "Get-UserAuthenticationMethod",
     "Script": "Get-UserAuthenticationMethod  -ControlName $msgTable.CtrName1 -ItemName $msgTable.mfaEnforcement -FirstBreakGlassEmail $vars.FirstBreakGlassUPN -SecondBreakGlassEmail $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets":
@@ -127,6 +132,7 @@
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "False",
     "ModuleName": "Get-BreakGlassAccountLicense",
     "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName1 -ItemName $msgTable.m365Assignment -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets":
@@ -153,6 +159,7 @@
     "Control":"Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "False",
     "ModuleName": "Get-BreakGlassOwnerinformation",
     "Script": "Get-BreakGlassOwnerinformation  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAccountOwnerContact -FirstBreakGlassUPNOwner $vars.FirstBreakGlassUPN -SecondBreakGlassUPNOwner $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets":
@@ -180,6 +187,7 @@
     "Control":"Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "False",
     "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables":
     [
@@ -195,6 +203,7 @@
      "Control":"Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "False",
      "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
      "localVariables":
      [
@@ -210,6 +219,7 @@
     "Control":"Guardrails3",
    "ModuleType": "Builtin",
    "Status": "Enabled",
+    "Required": "False",
     "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables":
     [
@@ -225,6 +235,7 @@
      "Control":"Guardrails4",
      "ModuleType": "Builtin",
      "Status": "Enabled",
+    "Required": "True",
      "Script": "Check-MonitorAccountCreation  -DepartmentNumber $vars.departmentnumber -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
      "variables":
      [
@@ -247,6 +258,7 @@
      "Control":"Guardrails5",
      "ModuleType": "Builtin",
      "Status": "Enabled",
+    "Required": "True",
      "Script": "Verify-PBMMPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.pbmmCompliance -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
      "variables":
      [
@@ -273,6 +285,7 @@
     "Control":"Guardrails5",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "True",
     "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
     "variables":
     [
@@ -299,6 +312,7 @@
     "Control":"Guardrails6",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "True",
     "Script": "Verify-ProtectionDataAtRest -ControlName $msgTable.CtrName6 -ItemName $msgTable.dataAtRest -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
     "variables":
     [
@@ -324,6 +338,7 @@
   "Control":"Guardrails7",
   "ModuleType": "Builtin",
   "Status": "Enabled",
+  "Required": "True",
   "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
   "variables":
   [
@@ -350,6 +365,7 @@
      "Control":"Guardrails8",
      "ModuleType": "Builtin",
      "Status": "Enabled",
+    "Required": "False",
      "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation",
      "variables":
      [
@@ -375,6 +391,7 @@
     "Control":"Guardrails8",
     "ModuleType": "Builtin",
     "Status": "Enabled",
+    "Required": "False",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables":
     [
@@ -404,6 +421,7 @@
      "Control":"Guardrails9",
      "ModuleType": "Builtin",
      "Status": "Enabled",
+    "Required": "False",
      "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
      "variables":
      [
@@ -425,6 +443,7 @@
      "Control":"Guardrails10",
      "ModuleType": "Builtin",
      "Status": "Enabled",
+    "Required": "False",
      "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
      "variables":
      [
@@ -446,6 +465,7 @@
      "Control":"Guardrails11",
      "ModuleType": "Builtin",
      "Status": "Enabled",
+    "Required": "False",
      "Script": "Check-LoggingAndMonitoring -SecurityLAWResourceId $vars.SecurityLAWResourceId -HealthLAWResourceId $vars.HealthLAWResourceId  -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -itsginfohealthmon $vars.itsgcodehealthmon -itsginfosecdefender $vars.itsgcodedefender",
      "variables":
      [
@@ -483,6 +503,7 @@
      "Control":"Guardrails12",
      "ModuleType": "Builtin",
      "Status": "Enabled",
+    "Required": "True",
      "Script": "Check-PrivateMarketPlaceCreation -ControlName $msgTable.Ctrname12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
      "localVariables":
      [
