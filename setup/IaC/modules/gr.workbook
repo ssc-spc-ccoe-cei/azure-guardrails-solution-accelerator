@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select whether non-Required items are shown.\n\n(R) = Required / (O) = Optional",
+        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select whether Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended",
         "style": "info"
       },
       "name": "Details Title"
@@ -18,7 +18,7 @@
             "id": "c90ebce2-9568-40ee-82cd-a8fd774f2e6b",
             "version": "KqlParameterItem/1.0",
             "name": "RequiredYesNo",
-            "label": "Show Optional Controls",
+            "label": "Show Recommended Controls",
             "type": 10,
             "isRequired": true,
             "typeSettings": {
