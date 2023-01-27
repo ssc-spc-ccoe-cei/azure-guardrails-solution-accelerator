@@ -1,84 +1,77 @@
-[                                                  
-  {     
+[
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
-    "Control":"Guardrails1",
+    "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables":
-    [
+    "variables": [
       {
-        "Name":"storageAccountName",
+        "Name": "storageAccountName",
         "Value": "StorageAccountName"
       },
       {
-        "Name":"containerName",
+        "Name": "containerName",
         "Value": "ContainerName"
       }
     ],
-    "localVariables":
-    [
+    "localVariables": [
       {
-        "Name":"DocumentName",
+        "Name": "DocumentName",
         "Value": "BreakGlassAccountProcedure.txt"
       },
       {
         "Name": "itsgcode",
         "Value": "AC2"
-      }      
+      }
     ]
-  }, 
-  {     
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
-    "Control":"Guardrails1",
+    "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
-    "variables":
-    [
+    "variables": [
       {
-        "Name":"storageAccountName",
+        "Name": "storageAccountName",
         "Value": "StorageAccountName"
       },
       {
-        "Name":"containerName",
+        "Name": "containerName",
         "Value": "ContainerName"
       }
     ],
-    "localVariables":
-    [
+    "localVariables": [
       {
-        "Name":"DocumentName",
+        "Name": "DocumentName",
         "Value": "ConfirmBreakGlassAccountResponsibleIsNotTechnical.txt"
       },
       {
         "Name": "itsgcode",
         "Value": "AC2"
-      }      
+      }
     ]
-  }, 
+  },
   {
-    "Control":"Guardrails1",
+    "Control": "Guardrails1",
     "ModuleName": "Get-BreakGlassAccounts",
     "Status": "Enabled",
     "Required": "False",
     "Script": "Get-BreakGlassAccounts -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgCreation -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "secrets":
-    [
+    "secrets": [
       {
-        "Name":"FirstBreakGlassUPN",
-        "Value":"BGA1"
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
       },
       {
-        "Name":"SecondBreakGlassUPN",
+        "Name": "SecondBreakGlassUPN",
         "Value": "BGA2"
       }
     ],
-    "localVariables":
-    [
-     
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "AC2"
@@ -87,14 +80,12 @@
   },
   {
     "ModuleName": "Get-ADLicenseType",
-    "Control":"Guardrails1",
+    "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "Script": "Get-ADLicenseType  -ControlName $msgTable.CtrName1 -ItemName $msgTable.adLicense -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "localVariables":
-    [
-     
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "AC2(7)"
@@ -102,53 +93,47 @@
     ]
   },
   {
-    "Control":"Guardrails1",
+    "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
     "ModuleName": "Get-UserAuthenticationMethod",
     "Script": "Get-UserAuthenticationMethod  -ControlName $msgTable.CtrName1 -ItemName $msgTable.mfaEnforcement -FirstBreakGlassEmail $vars.FirstBreakGlassUPN -SecondBreakGlassEmail $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "secrets":
-     [
+    "secrets": [
       {
-        "Name":"FirstBreakGlassUPN",
-        "Value":"BGA1"
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
       },
       {
-        "Name":"SecondBreakGlassUPN",
+        "Name": "SecondBreakGlassUPN",
         "Value": "BGA2"
       }
-     ],
-     "localVariables":
-     [
-      
-       {
-         "Name": "itsgcode",
-         "Value": "IA2(1)"
-       }
-     ]
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
   },
   {
-    "Control":"Guardrails1",
+    "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "ModuleName": "Get-BreakGlassAccountLicense",
     "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName1 -ItemName $msgTable.m365Assignment -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "secrets":
-    [
-    {
-      "Name":"FirstBreakGlassUPN",
-      "Value":"BGA1"
-    },
-    {
-      "Name":"SecondBreakGlassUPN",
-      "Value": "BGA2"
-    }
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
     ],
-    "localVariables":
-    [
-     
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "AC2(7)"
@@ -156,26 +141,23 @@
     ]
   },
   {
-    "Control":"Guardrails1",
+    "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "ModuleName": "Get-BreakGlassOwnerinformation",
     "Script": "Get-BreakGlassOwnerinformation  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAccountOwnerContact -FirstBreakGlassUPNOwner $vars.FirstBreakGlassUPN -SecondBreakGlassUPNOwner $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "secrets":
-    [
-    {
-      "Name":"FirstBreakGlassUPN",
-      "Value":"BGA1"
-    },
-    {
-      "Name":"SecondBreakGlassUPN",
-      "Value": "BGA2"
-    }
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
     ],
-    "localVariables":
-    [
-     
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "AC2"
@@ -184,14 +166,12 @@
   },
   {
     "ModuleName": "Check-DeprecatedAccounts",
-    "Control":"Guardrails2",
+    "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "localVariables":
-    [
-     
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "AC2(3)"
@@ -199,318 +179,317 @@
     ]
   },
   {
-     "ModuleName": "Check-ExternalUsers",
-     "Control":"Guardrails2",
+    "ModuleName": "Check-ExternalUsers",
+    "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-     "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-     "localVariables":
-     [
-      
-       {
-         "Name": "itsgcode",
-         "Value": "AC6(6)"
-       }
-     ]
+    "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC6(6)"
+      }
+    ]
   },
   {
     "ModuleName": "Check-CloudConsoleAccess",
-    "Control":"Guardrails3",
-   "ModuleType": "Builtin",
-   "Status": "Enabled",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
     "Required": "False",
     "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "localVariables":
-    [
-     
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "AC4(7)"
       }
     ]
- },
-  {
-     "ModuleName": "Check-MonitorAccountCreation",
-     "Control":"Guardrails4",
-     "ModuleType": "Builtin",
-     "Status": "Enabled",
-    "Required": "True",
-     "Script": "Check-MonitorAccountCreation  -DepartmentNumber $vars.departmentnumber -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-     "variables":
-     [
-       {
-         "Name":"departmentnumber",
-         "Value":"DepartmentNumber"
-       }
-     ],
-     "localVariables":
-     [
-      
-       {
-         "Name": "itsgcode",
-         "Value": "AC2(4)"
-       }
-     ]
   },
   {
-     "ModuleName": "Verify-PBMMPolicy",
-     "Control":"Guardrails5",
-     "ModuleType": "Builtin",
-     "Status": "Enabled",
-    "Required": "True",
-     "Script": "Verify-PBMMPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.pbmmCompliance -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
-     "variables":
-     [
-       {
-         "Name":"cbssubscriptionName",
-         "Value":"CBSSubscriptionName"
-       },
-       {
-        "Name":"pbmmpolicyID",
-        "Value":"PBMMPolicyID"
-      }
-     ],
-     "localVariables":
-     [
-      
-       {
-         "Name": "itsgcode",
-         "Value": "SA9(5)"
-       }
-     ]
-  },
-  {
-    "ModuleName": "Verify-AllowedLocationPolicy",
-    "Control":"Guardrails5",
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails3",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
-    "variables":
-    [
-     {
-       "Name":"cbssubscriptionName",
-       "Value":"CBSSubscriptionName"
-     },
-     {
-       "Name":"AllowedLocationPolicyId",
-       "Value":"AllowedLocationPolicyId"
-     }
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
     ],
-    "localVariables":
-    [
-     
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "PrivilegedAccountManagementPlan.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-MonitorAccountCreation",
+    "Control": "Guardrails4",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-MonitorAccountCreation  -DepartmentNumber $vars.departmentnumber -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "departmentnumber",
+        "Value": "DepartmentNumber"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(4)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Verify-PBMMPolicy",
+    "Control": "Guardrails5",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Verify-PBMMPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.pbmmCompliance -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
+      }
+    ],
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "SA9(5)"
       }
     ]
- },
+  },
+  {
+    "ModuleName": "Verify-AllowedLocationPolicy",
+    "Control": "Guardrails5",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "AllowedLocationPolicyId",
+        "Value": "AllowedLocationPolicyId"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SA9(5)"
+      }
+    ]
+  },
   {
     "ModuleName": "Check-ProtectionDataAtRest",
-    "Control":"Guardrails6",
+    "Control": "Guardrails6",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
     "Script": "Verify-ProtectionDataAtRest -ControlName $msgTable.CtrName6 -ItemName $msgTable.dataAtRest -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
-    "variables":
-    [
+    "variables": [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
       },
       {
-       "Name":"pbmmpolicyID",
-       "Value":"PBMMPolicyID"
-     }
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
+      }
     ],
-    "localVariables":
-    [
+    "localVariables": [
       {
         "Name": "itsgcode",
         "Value": "SC28"
       }
     ]
- },
- {
-  "ModuleName": "Check-ProtectionOfDataInTransit",
-  "Control":"Guardrails7",
-  "ModuleType": "Builtin",
-  "Status": "Enabled",
-  "Required": "True",
-  "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
-  "variables":
-  [
-    {
-      "Name":"cbssubscriptionName",
-      "Value":"CBSSubscriptionName"
-    },
-    {
-     "Name":"pbmmpolicyID",
-     "Value":"PBMMPolicyID"
-   }
-  ],
-  "localVariables":
-  [   
-    {
-      "Name": "itsgcode",
-      "Value": "SC8"
-    }
-  ]
   },
-  
   {
-     "ModuleName": "Get-SubnetComplianceInformation",
-     "Control":"Guardrails8",
-     "ModuleType": "Builtin",
-     "Status": "Enabled",
-    "Required": "False",
-     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation",
-     "variables":
-     [
+    "ModuleName": "Check-ProtectionOfDataInTransit",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "variables": [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
       }
-     ],
-     "localVariables":
-     [
-       {
-         "Name": "itsgcodesegmentation",
-         "Value": "SC7"
-       },
-       {
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Get-SubnetComplianceInformation",
+    "Control": "Guardrails8",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcodesegmentation",
+        "Value": "SC7"
+      },
+      {
         "Name": "itsgcodeseparation",
         "Value": "SC7"
       }
-     ]
+    ]
   },
-  {     
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
-    "Control":"Guardrails8",
+    "Control": "Guardrails8",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables":
-    [
+    "variables": [
       {
-        "Name":"storageAccountName",
+        "Name": "storageAccountName",
         "Value": "StorageAccountName"
       },
       {
-        "Name":"containerName",
+        "Name": "containerName",
         "Value": "ContainerName"
       }
     ],
-    "localVariables":
-    [
+    "localVariables": [
       {
-        "Name":"DocumentName",
+        "Name": "DocumentName",
         "Value": "ConfirmNetworkDiagramExists.txt"
       },
       {
         "Name": "itsgcode",
         "Value": "SC7"
-      }      
+      }
     ]
-  }, 
-  {
-     "ModuleName": "Get-VnetComplianceInformation",
-     "Control":"Guardrails9",
-     "ModuleType": "Builtin",
-     "Status": "Enabled",
-    "Required": "False",
-     "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
-     "variables":
-     [
-      {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
-      }
-     ],
-     "localVariables":
-     [
-       {
-         "Name": "itsgcode",
-         "Value": "SC5"
-       }
-     ]
   },
   {
-     "ModuleName": "Check-CBSSensors",
-     "Control":"Guardrails10",
-     "ModuleType": "Builtin",
-     "Status": "Enabled",
+    "ModuleName": "Get-VnetComplianceInformation",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
     "Required": "False",
-     "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
-     "variables":
-     [
+    "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "variables": [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
       }
-     ],
-     "localVariables":
-     [
-       {
-         "Name": "itsgcode",
-         "Value": "SI4"
-       }
-     ]
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
   },
   {
-     "ModuleName": "Check-LoggingAndMonitoring",
-     "Control":"Guardrails11",
-     "ModuleType": "Builtin",
-     "Status": "Enabled",
+    "ModuleName": "Check-CBSSensors",
+    "Control": "Guardrails10",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
     "Required": "False",
-     "Script": "Check-LoggingAndMonitoring -SecurityLAWResourceId $vars.SecurityLAWResourceId -HealthLAWResourceId $vars.HealthLAWResourceId  -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -itsginfohealthmon $vars.itsgcodehealthmon -itsginfosecdefender $vars.itsgcodedefender",
-     "variables":
-     [
-       {
-         "Name":"SecurityLAWResourceId",
-         "Value":"SecurityLAWResourceId"
-       },
-       {
-        "Name":"HealthLAWResourceId",
-        "Value":"HealthLAWResourceId"
-      },       
+    "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "variables": [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
       }
-     ],
-     "localVariables":
-     [
-       {
-         "Name": "itsgcodesecmon",
-         "Value": "AU2"
-       },
-       {
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SI4"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-LoggingAndMonitoring",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Check-LoggingAndMonitoring -SecurityLAWResourceId $vars.SecurityLAWResourceId -HealthLAWResourceId $vars.HealthLAWResourceId  -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -itsginfohealthmon $vars.itsgcodehealthmon -itsginfosecdefender $vars.itsgcodedefender",
+    "variables": [
+      {
+        "Name": "SecurityLAWResourceId",
+        "Value": "SecurityLAWResourceId"
+      },
+      {
+        "Name": "HealthLAWResourceId",
+        "Value": "HealthLAWResourceId"
+      },
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcodesecmon",
+        "Value": "AU2"
+      },
+      {
         "Name": "itsgcodehealthmon",
         "Value": "AU2"
-       },
-       {
+      },
+      {
         "Name": "itsgcodedefender",
         "Value": "AU2"
-       }
-     ]
+      }
+    ]
   },
   {
-     "ModuleName": "Check-PrivateMarketPlaceCreation",
-     "Control":"Guardrails12",
-     "ModuleType": "Builtin",
-     "Status": "Enabled",
+    "ModuleName": "Check-PrivateMarketPlaceCreation",
+    "Control": "Guardrails12",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
     "Required": "True",
-     "Script": "Check-PrivateMarketPlaceCreation -ControlName $msgTable.Ctrname12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-     "localVariables":
-     [
-       {
-         "Name": "itsgcode",
-         "Value": "CM8(7)"
-       }
-     ]
+    "Script": "Check-PrivateMarketPlaceCreation -ControlName $msgTable.Ctrname12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "CM8(7)"
+      }
+    ]
   }
 ]
