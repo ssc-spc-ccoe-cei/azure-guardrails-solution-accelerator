@@ -356,11 +356,16 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation",
-    "variables": [
+     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation -ReservedSubnetList $vars.reservedSubnetList",
+     "variables":
+     [
       {
-        "Name": "cbssubscriptionName",
-        "Value": "CBSSubscriptionName"
+        "Name":"cbssubscriptionName",
+        "Value":"CBSSubscriptionName"
+      },
+      {
+        "Name":"reservedSubnetList",
+        "Value":"reservedSubnetList"
       }
     ],
     "localVariables": [

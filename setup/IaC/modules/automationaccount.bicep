@@ -363,5 +363,12 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       'value': '"${DepartmentName}"'
   }
   }
+  resource variable18 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'reservedSubnetList'
+    'properties': {
+      'isEncrypted': true
+      'value': '"GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet"'
+  }
+  }
 }
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId
