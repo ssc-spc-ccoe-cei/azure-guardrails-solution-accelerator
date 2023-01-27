@@ -55,6 +55,7 @@ In this control the solution tries to validate multiple items as follow.
 This Module module verifies the following items:
 - The existance of at least one Conditional Access Named Location that only contains Canada. If no Location is defined or no locations have just Canada in it, the control will be considered non-Compliant.
 - If the above is Compliant, the solution with check if there is at least one conditional access policy that uses any of the Canada only named locations determined before. If no policies with this criteria are found, the control will be considered non-compliant.
+- The existence of a file named 'PrivilegedAccountManagementPlan.txt' (case-sensitive) in the Guardrails Solution Accelerator storage account, providing attestation that the organization has the required privileged account management plan documented.
 
 ## GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS
 
