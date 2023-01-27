@@ -4,7 +4,7 @@ targetScope = 'resourceGroup'
 param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
 param automationAccountName string = 'guardrails-AC'
 param CBSSubscriptionName string 
-param CustomModulesBaseURL string = 'https://github.com/Azure/GuardrailsSolutionAccelerator/raw/main/psmodules'
+param ModuleBaseURL string
 param DepartmentNumber string
 param DepartmentName string
 param deployKV bool = true
@@ -44,7 +44,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     automationAccountName: automationAccountName
     CBSSubscriptionName: CBSSubscriptionName
     containername: containername
-    CustomModulesBaseURL: CustomModulesBaseURL
+    ModuleBaseURL: ModuleBaseURL
     DepartmentNumber: DepartmentNumber
     DepartmentName: DepartmentName
     guardrailsKVname: kvName

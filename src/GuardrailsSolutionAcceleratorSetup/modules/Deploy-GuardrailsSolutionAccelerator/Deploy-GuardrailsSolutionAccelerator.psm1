@@ -43,7 +43,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         # alternate module url
         [Parameter(Mandatory = $false)]
         [string]
-        $alternatePSModulesURL
+        $moduleBaseURL
     )
     
     Write-Verbose "Creating bicep parameters file for this deployment."
@@ -70,13 +70,13 @@ Function New-GSACoreResourceDeploymentParamObject {
         'tenantDomainUPN'                   = $config['runtime']['tenantDomainUPN']
     }
     # Adding URL parameter if specified
-    [regex]$alternateURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
-    If (![string]::IsNullOrEmpty($alternatePSModulesURL)) {
-        If ($alternatePSModulesURL -match $alternateURIRegex) {
-            $templateParameterObject += @{CustomModulesBaseURL = $alternatePSModulesURL }
+    [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
+    If (![string]::IsNullOrEmpty($moduleBaseURL)) {
+        If ($moduleBaseURL -match $moduleURIRegex) {
+            $templateParameterObject += @{ModuleBaseURL = $moduleBaseURL }
         }
         Else {
-            Write-Error "-alternatePSModulesURL provided, but does not match pattern '$alternateURIRegex'" -ErrorAction Stop
+            Write-Error "-moduleBaseURL provided, but does not match pattern '$moduleURIRegex'" -ErrorAction Stop
         }
     }
     Write-Verbose "templateParameterObject: `n$($templateParameterObject | ConvertTo-Json)"
@@ -193,7 +193,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         [switch]
         $validatePrerequisites,
 
-        # specify to source the GSA PowerShell modules from an alternate URL, like a pre-release branch on GitHub (default installs from the 'main' branch on GitHub public repo)
+        # specify to source the GSA PowerShell modules from an alternate URL, like a pre-release branch on GitHub (default installs from the 'latest' release on GitHub public repo)
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
         [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
@@ -251,11 +251,21 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
         Show-GSADeploymentSummary -deployParams $PSBoundParameters -deployParamSet $PSCmdlet.ParameterSetName -yes:$yes.isPresent -Verbose:$useVerbose
 
+        # set module install or update source URL
         $params = @{}
         If ($alternatePSModulesURL) {
-            $params = @{alternatePSModulesURL = $alternatePSModulesURL }
+            Write-Verbose "-alternatePSModulesURL specified, using alternate URL for Guardrails PowerShell modules: $alternatePSModulesURL"
+            $params = @{ moduleBaseURL = $alternatePSModulesURL }
         }
-        $paramObject = New-GSACoreResourceDeploymentParamObject -alternatePSModulesURL $alternatePSModulesURL -config $config @params -Verbose:$useVerbose
+        Else {
+            # getting latest release from GitHub
+            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest'
+            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/psmodules" -f $latestRelease.tag_name
+
+            Write-Verbose "Using latest release from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
+            $params = @{ moduleBaseURL = $moduleBaseURL }
+        }
+        $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
 
         If (!$update.IsPresent) {
             Write-Host "Deploying Guardrails Solution Accelerator components ($($newComponents -join ','))..." -ForegroundColor Green

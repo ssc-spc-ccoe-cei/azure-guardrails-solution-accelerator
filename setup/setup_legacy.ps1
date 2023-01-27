@@ -303,7 +303,7 @@ if (!$update)
 
     #region bicep deployment
 
-    # create a parameter object for dynamically passing a CustomModulesBaseURL value to bicep
+    # create a parameter object for dynamically passing a ModuleBaseURL value to bicep
     $templateParameterObject = @{}
     $paramFileContent = Get-Content .\parameters.json | ConvertFrom-Json -Depth 20
     $paramFileContent.parameters | Get-Member -MemberType Properties | ForEach-Object {
@@ -312,7 +312,7 @@ if (!$update)
 
     If (![string]::IsNullOrEmpty($alternatePSModulesURL)) {
         If ($alternatePSModulesURL -match 'https://github.com/.+?/raw/.*?/psmodules') {
-            $templateParameterObject += @{CustomModulesBaseURL = $alternatePSModulesURL }
+            $templateParameterObject += @{ModuleBaseURL = $alternatePSModulesURL }
         }
         Else {
             Write-Error "-alternatePSModulesURL provided, but does not match pattern 'https://github.com/.+?/raw/.*?/psmodules'" -ErrorAction Stop
@@ -733,7 +733,7 @@ else {
 
     #region bicep deployment
 
-    # create a parameter object for dynamically passing a CustomModulesBaseURL value to bicep
+    # create a parameter object for dynamically passing a ModuleBaseURL value to bicep
     $templateParameterObject = @{}
     $paramFileContent = Get-Content .\parameters.json | ConvertFrom-Json -Depth 20
     $paramFileContent.parameters | Get-Member -MemberType Properties | ForEach-Object {
@@ -741,7 +741,7 @@ else {
     }
 
     If (![string]::IsNullOrEmpty($alternatePSModulesURL)) {
-        $templateParameterObject += @{CustomModulesBaseURL = $alternatePSModulesURL }
+        $templateParameterObject += @{ModuleBaseURL = $alternatePSModulesURL }
     }
 
     Write-Verbose "Checking if $resourceGroup in $region location already exists."

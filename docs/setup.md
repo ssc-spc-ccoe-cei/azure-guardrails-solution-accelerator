@@ -30,6 +30,7 @@ Expand-Archive ./v1.0.1.zip
 ```
 cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/setup/
 ```
+
 ### Use current repo code
 
 You may use the current repo code. Be aware that the code in the repo may be in the process of being updated. Some modules may not be signed. If there is a requirement for fully signed and release code, use the previous option.
