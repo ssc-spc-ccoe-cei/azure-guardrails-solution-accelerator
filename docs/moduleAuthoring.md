@@ -45,7 +45,7 @@ The general steps to create a module are:
 
       contentLink: {
 
-        uri: '${CustomModulesBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
+        uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
 
         version: '1.0.0'
 
@@ -134,8 +134,8 @@ Exception handing in modules is implemented using try/catch blocks and the custo
 
 ## Testing
 
-From your fork (which will be public due to visibility inheritance) you can clone to the Cloud Shell storage normally. After that, you may edit the guardrails.bicep file and adjust the **CustomModulesBaseURL** parameter and point to the base URL of you repo. Make sure to test downloading a module to confirm the raw URL. Alternatively, add an entry to the parameters_template.json file, as per below:
+From your fork (which will be public due to visibility inheritance) you can clone to the Cloud Shell storage normally. After that, you may edit the guardrails.bicep file and adjust the **ModuleBaseURL** parameter and point to the base URL of you repo. Make sure to test downloading a module to confirm the raw URL. Alternatively, add an entry to the parameters_template.json file, as per below:
 
-`"CustomModulesBaseURL": {
+`"ModuleBaseURL": {
       "value": "<your github base url"
     }`
