@@ -212,7 +212,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "storageAccountName",
