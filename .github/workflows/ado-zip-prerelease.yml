@@ -1,0 +1,40 @@
+name: pr-zip-modules
+on: pull_request
+
+permissions: write-all
+
+jobs:
+  zip-pr-modules:
+    name: 'Zip modules in PR'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+    - name: zip-modules
+      shell: pwsh
+      run: |
+        Write-Host "Executing powershell script in '$pwd'"
+        
+        $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1 -Exclude *GuardrailsSolutionAcceleratorSetup*
+        Write-Host "'$($moduleManifestFiles.count)' module manifest files "
+
+        ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+            $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+            
+            Write-Host "Module '$($moduleManifest.BaseName)' found, zipping module files..."
+
+            $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+            Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Force
+        }
+
+    - name: commitSignedZippedModules
+      shell: pwsh
+      run: |
+          gci env:
+          git fetch
+          git checkout $($env:GITHUB_HEAD_REF)
+          git config --global user.name 'GitHub Workflow'
+          git config --global user.email 'mbratschun@microsoft.com'
+          git add -A
+          git commit -am "zipped modules from src and replaced in psmodules: $(git log -1 --pretty=%B)"
+          git push origin HEAD:$($env:GITHUB_HEAD_REF)
