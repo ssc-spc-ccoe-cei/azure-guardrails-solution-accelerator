@@ -30,7 +30,7 @@ parameters:
   default: 'true'
 
 variables: 
-  - group: 'GuardrailsTestDeployments'
+  - group: 'GuardrailsTestDeployments - Prerelease'
   - name: skipCleanup
     value: ${{ parameters.skipCleanup }}
   - name: skipTestDeploy
@@ -427,9 +427,11 @@ steps:
     target: '$(Build.SourceVersion)'
     tagSource: 'gitTag'
     tagPattern: 'prerelease-v1.*'
+    title: '$(Build.SourceBranchName)'
     assets: |
-      $(Build.ArtifactStagingDirectory)/*
-      $(Build.RepositoryLocalpath)/psmodules/*
+      ./psmodules/*
     isPreRelease: true
     changeLogCompareToRelease: 'lastFullRelease'
-    changeLogType: 'commitBased'
+    changeLogType: 'issueBased'
+  name: PublishGithubPreRelease
+  displayName: 'Publish GitHub Pre-release'
