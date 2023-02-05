@@ -23,7 +23,7 @@ function Get-VNetComplianceInformation {
     )
     [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-
+    $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
         $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
     }
@@ -31,7 +31,6 @@ function Get-VNetComplianceInformation {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
     }
-
     if ($ExcludedVNets -ne $null)
     {
         $ExcludedVNetsList=$ExcludedVNets.Split(",")
@@ -48,31 +47,17 @@ function Get-VNetComplianceInformation {
             foreach ($VNet in $VNets)
             {
                 Write-Debug "Working on $($VNet.Name) VNet..."
-                $ev=get-tagValue -tagKey "ExcludeFromCompliance" -object $VNet
+                $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet
                 if ($ev -ne "true" -and $vnet.Name -notin $ExcludedVNetsList)
                 {
                     if ($Vnet.EnableDdosProtection) 
                     {
                         $ComplianceStatus = $true 
                         $Comments="$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
-                        #$MitigationCommands="N/A"
                     }
                     else {
                         $ComplianceStatus = $false
                         $Comments= $msgTable.ddosNotEnabled
-                        <#$MitigationCommands=@"
-                        # https://docs.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview
-                        # Selects Subscription
-                        Select-azsubscription $($sub.SubscriptionId)
-                        # Create a new DDos Plan
-                        `$plan=new-azddosProtectionPlan -ResourceGroupName $($Vnet.ResourceGroupName) -Name '$($Vnet.Name)-plan' -Location '$($vnet.Location)'
-                        `$vnet=Get-AzVirtualNetwork -Name $($vnet.Name) -ResourceGroupName $($Vnet.ResourceGroupName)
-                        #change DDos configuration
-                        `$vnet.EnableDdosProtection=$true
-                        `$vnet.DdosProtectionPlan.Id=`$plan.id
-                        #Apply configuration
-                        Set-azvirtualNetwork -VirtualNetwork `$vnet
-    "@#>
                     }
                     # Create PSOBject with Information.
                     $VNetObject = [PSCustomObject]@{ 
@@ -83,7 +68,6 @@ function Get-VNetComplianceInformation {
                         ItemName = $msgTable.vnetDDosConfig
                         itsgcode = $itsgcode
                         ControlName = $ControlName
-                        #MitigationCommands=$MitigationCommands
                         ReportTime = $ReportTime
                     }
                     $VNetList.add($VNetObject) | Out-Null                
@@ -105,7 +89,6 @@ function Get-VNetComplianceInformation {
         AdditionalResults = $AdditionalResults
     }
     return $moduleOutput
-
 }
 
 
