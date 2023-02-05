@@ -27,7 +27,8 @@ function Get-SubnetComplianceInformation {
     [PSCustomObject] $SubnetList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $AdditionalResults= $null
-    
+    $ExcludeVnetTag="GR8-ExcludeVNetFromCompliance"
+    $ExcludedSubnetListTag="GR-ExcludedSubnets"
     $reservedSubnetNames=$ReservedSubnetList.Split(",")
     $ExcludedSubnets=$ExcludedSubnetsList.Split(",")
     $allexcluded=$ExcludedSubnets+$reservedSubnetNames
@@ -56,8 +57,8 @@ function Get-SubnetComplianceInformation {
             foreach ($VNet in $VNets)
             {
                 Write-Debug "Working on $($VNet.Name) VNet..."
-                $ev=get-tagValue -tagKey "GR-ExcludeFromCompliance" -object $VNet # this will exclude the VNet from the compliance check, altogether.
-                $ExcludeSubnetsTag=get-tagValue -tagKey "GR-ExcludedSubnets" -object $VNet
+                $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet # this will exclude the VNet from the compliance check, altogether.
+                $ExcludeSubnetsTag=get-tagValue -tagKey $ExcludedSubnetListTag -object $VNet
                 if (!([string]::IsNullOrEmpty($ExcludeSubnetsTag)))
                 {
                     $ExcludedSubnetListFromTag=$ExcludeSubnetsTag.Split(",")

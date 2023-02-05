@@ -132,7 +132,7 @@ Automatically:
 
 The whole VNet:
 
-  - If a tag named "GR-ExcludeFromCompliance" is found in the VNet, all subnets are ignored.
+  - If a tag named "GR8-ExcludeVNetFromCompliance" is found in the VNet, all subnets are ignored.
 
 One or more specific subnets: 
 
@@ -156,6 +156,8 @@ For each VNet the following items will be evaluated.
 - DDos Protection set to Standard (*Enabling DDos standard protection on your Azure environment will have a financial impact on your monthly billing*) 
 
 If any of the above rules is not true, the VNet will be considered not compliant.
+
+If the Vnet object containts a tag "GR9-ExcludeVNetFromCompliance" the VNet will be excluded from the compliance check.
 
 ## GUARDRAIL 10 CYBER DEFENSE SERVICES
     
