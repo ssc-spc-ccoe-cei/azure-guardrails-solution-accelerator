@@ -1,0 +1,436 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  tags:
+    include:
+    - v1* 
+
+pool:
+  vmImage: windows-latest
+
+parameters:
+- name: skipCleanup
+  displayName: 'Skip cleanup of test deployment'
+  type: boolean
+  default: 'false'
+- name: skipTestDeploy
+  displayName: 'Skip test deployment'
+  type: boolean
+  default: 'false'
+- name: skipSigning
+  displayName: 'Skip signing of modules'
+  type: boolean
+  default: 'false'
+- name: preClean
+  displayName: 'Pre-clean the test environment of existing deployments'
+  type: boolean
+  default: 'true'
+
+variables: 
+  - group: 'GuardrailsTestDeployments - Release'
+  - name: skipCleanup
+    value: ${{ parameters.skipCleanup }}
+  - name: skipTestDeploy
+    value: ${{ parameters.skipTestDeploy }}
+  - name: skipSigning
+    value: ${{ parameters.skipSigning }}
+  - name: preClean
+    value: ${{ parameters.preClean }}
+
+steps:
+  
+- task: EsrpCodeSigning@2
+  condition: eq(variables.skipSigning, 'false')
+  inputs:
+    ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
+    FolderPath: './'
+    Pattern: '*ps*'
+    signConfigType: 'inlineSignParams'
+    inlineOperation: |
+        [{
+            "KeyCode" : "CP-230012",
+            "OperationCode" : "SigntoolSign",
+            "Parameters" : {
+                "OpusName" : "Microsoft",
+                "OpusInfo" : "http://www.microsoft.com",
+                "FileDigest" : "/fd \"SHA256\"",
+                "PageHash" : "/NPH",
+                "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            },
+            "ToolName" : "sign",
+            "ToolVersion" : "1.0"
+        },
+        {
+            "KeyCode" : "CP-230012",
+            "OperationCode" : "SigntoolVerify",
+            "Parameters" : {},
+            "ToolName" : "sign",
+            "ToolVersion" : "1.0"
+        }]
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
+  enabled: true
+
+#look for hash mismatch
+- powershell: |
+    $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+
+    Foreach ($signatureStatus in $signatureStatuses) {
+      If ($signatureStatus.Status -eq 'HashMismatch') {
+        throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      ElseIf ($signatureStatus.Status -eq 'NotSigned') {
+        Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      ElseIf ($signatureStatus.Status -eq 'Valid') {
+        Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      Else {
+        throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
+      }
+    }
+  name: CheckForSignFailures
+  condition: eq(variables.skipSigning, 'false')
+
+#test module imports
+- powershell: |
+    $ErrorActionPreference = 'Stop'
+
+    $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1
+    Write-Host "Count of module files: $($moduleFiles.count)"
+    
+    try {
+      ForEach ($moduleFile in $moduleFiles) {
+        Import-Module $moduleFile.Fullname -ErrorAction Stop
+      }
+    }
+    catch {
+      throw "Failed test import module '$moduleFile' with error: $_"
+    }
+
+    $importedModules = Get-Module
+    Write-Host "Imported modules: `n $($importedModules.Path | Out-String)"
+
+    $missingModules = $moduleFiles | Where-object {$_ -inotin ($importedModules).Path} 
+    If ($missingModules) {
+      throw "The following modules failed import test: $missingModules"
+    }
+  name: TestModuleImports
+
+- powershell: |
+    Write-Host "Executing powershell script in '$pwd'"
+    gci env: | FT -AutoSize
+    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
+    
+    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
+    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
+
+    $moduleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files changed in last commit"
+
+    try {
+      $moduleManifestFilesObjs = @()
+
+      ForEach ($file in $moduleManifestFiles) {
+        $moduleManifestFilesObjs += Get-Item -Path $file -ErrorAction Stop
+      }
+    }
+    catch {
+      Write-Error "Failed to find file path '$file' with Get-Item -Path '$file'; Error: $_"
+    }
+
+    $zipsChanged = $false
+    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+        
+        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+          Write-Host "Module '$($moduleManifest.BaseName)' was changed, zipping module files..."
+
+          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Update
+
+          $zipsChanged = $true
+        }
+        Else {
+            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+        }
+    }
+
+    # output whether modules were changed
+    Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($moduleManifestFilesObjs.count -gt 0)")
+  displayName: 'Zip signed modules'
+  name: 'ZipFiles'
+  enabled: false
+
+- powershell: |
+    Write-Host "Executing powershell script in '$pwd'"
+    gci env: | FT -AutoSize
+    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
+    
+
+    $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files "
+
+    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+        
+        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+          Write-Host "Module '$($moduleManifest.BaseName)' found, zipping module files..."
+
+          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Force
+
+        }
+        Else {
+            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+        }
+    }
+
+    # output whether modules were changed
+    Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
+  displayName: 'Zip signed modules'
+  name: 'ZipAllFiles'
+  enabled: true
+
+- task: AzurePowerShell@5
+  inputs: 
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      $storageContext = (Get-AzStorageAccount -ResourceGroupName $(pipelineModulesStagingRGName) -Name $(pipelineModulesStagingStorageAccountName)).Context
+
+      $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
+      ForEach ($moduleZip in $zippedModules) {
+
+        Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
+      }
+  name: stageZippedModules
+  displayName: 'Stage zipped/signed modules in Storage Account'
+
+- task: AzurePowerShell@5
+  name: 'PreCleanTestEnvironment'
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
+      $configFilePath = Join-Path -Path $env:AGENT_TEMPDIRECTORY -ChildPath 'config.json'
+      $configContent = @'
+      {
+          "keyVaultName": "gsapipe",
+          "resourcegroup": "gsapipe",
+          "region": "CanadaCentral",
+          "storageaccountName": "gsapipe",
+          "logAnalyticsworkspaceName": "gsapipe",
+          "autoMationAccountName": "gsapipe",
+          "FirstBreakGlassAccountUPN": "breakglass1@$(testTenantDomain)",
+          "SecondBreakGlassAccountUPN": "breakglass2@$(testTenantDomain)",
+          "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
+          "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+          "DepartmentNumber": "190",
+          "CBSSubscriptionName": "$(CBSSubscriptionName)",
+          "SecurityLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+          "HealthLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+          "Locale": "en-CA",
+          "lighthouseServiceProviderTenantID": "$(lighthouseProviderTenantId)",
+          "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+          "lighthousePrincipalId": "$(lighthousePrincipalId)",
+          "lighthouseTargetManagementGroupID": "mb_co",
+          "subscriptionId": "$(testSubscriptionId)",
+          "uniqueNameSuffix": "$(uniqueNameSuffix)"
+        }
+      '@
+      Set-Content -Path $configFilePath -Value $configContent
+
+      Push-Location -Path setup
+
+      try {
+          $ErrorActionPreference = 'Stop'
+          remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+          Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
+          Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
+      }
+      catch {
+          throw "Failed test deploy of solution with error: $_"
+      }
+      finally {
+        If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+        Pop-Location
+      }
+  displayName: 'Pre-clean the test environment'
+  condition: eq(variables.preClean, 'true')
+
+- task: AzurePowerShell@5
+  condition: and(succeeded(), eq(variables.skipTestDeploy, 'false'))
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      $configFilePath = Join-Path -Path $env:AGENT_TEMPDIRECTORY -ChildPath 'config.json'
+      $configContent = @'
+      {
+          "keyVaultName": "gsapipe",
+          "resourcegroup": "gsapipe",
+          "region": "CanadaCentral",
+          "storageaccountName": "gsapipe",
+          "logAnalyticsworkspaceName": "gsapipe",
+          "autoMationAccountName": "gsapipe",
+          "FirstBreakGlassAccountUPN": "breakglass1@$(testTenantDomain)",
+          "SecondBreakGlassAccountUPN": "breakglass2@$(testTenantDomain)",
+          "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
+          "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+          "DepartmentNumber": "190",
+          "CBSSubscriptionName": "$(CBSSubscriptionName)",
+          "SecurityLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/law-default01",
+          "HealthLAWResourceId": "/subscriptions/$(testSubscriptionId)/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/law-default01",
+          "Locale": "en-CA",
+          "lighthouseServiceProviderTenantID": "$(lighthouseProviderTenantId)",
+          "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+          "lighthousePrincipalId": "$(lighthousePrincipalId)",
+          "lighthouseTargetManagementGroupID": "$(lighthouseTargetManagementGroupID)",
+          "subscriptionId": "$(testSubscriptionId)",
+          "uniqueNameSuffix": "$(uniqueNameSuffix)"
+        }
+      '@
+      Set-Content -Path $configFilePath -Value $configContent
+
+      $userId = '$(testUserId)@$(testTenantDomain)'
+
+      $storageContext = (Get-AzStorageAccount -ResourceGroupName $(pipelineModulesStagingRGName) -Name $(pipelineModulesStagingStorageAccountName)).context
+      $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
+
+      $alternatePSModulesURL = $modulesStagingURI
+      Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
+
+      $optionalParams = @{}
+      if ($alternatePSModulesURL) {
+          $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+      }
+
+      try {
+          $ErrorActionPreference = 'Stop'
+          ipmo ./src/GuardrailsSolutionAcceleratorSetup
+          Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+      }
+      catch {
+          throw "Failed test deploy of solution with error: $_"
+      }
+      finally {
+        If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+        Pop-Location
+      }
+  name: 'GuardrailsTestDeployments'
+  displayName: 'Deploy to test environment...'
+
+- task: AzurePowerShell@5
+  name: 'CheckForJobErrors'
+  displayName: 'Check for AA Job Errors'
+  condition: and(eq(variables.skipTestDeploy, 'false'), succeeded())
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
+      $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
+      $config = $c.configString | ConvertFrom-Json
+      
+      Write-Output "Waiting for 'main' runbook job to complete (up to 5 mins)"
+      $timeout = New-TimeSpan -Minutes 5
+      $timer = [System.Diagnostics.Stopwatch]::StartNew()
+      do {
+        $job = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+          Sort-Object StartTIme -Descending |
+          Select-Object -First 1
+        
+        Start-Sleep 1
+      }
+      until (($job.Status -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
+
+      If ($job.Status -eq 'Failed') {
+        throw "main runbook failed to execute"
+      }
+      If ($job.Status -eq 'Completed') {
+        Write-Output "'main' runbook completed successfully, checking for errors in output. "
+      }
+
+      $jobOutput = Get-AzAutomationJobOutput -Id $job.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+
+      $errorsFound = $false
+      ForEach ($outputRecord in $jobOutput) {
+        If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+          throw 'Errors found in Azure Automation jobs'
+        }
+      }
+      If (!$errorsFound) {
+        #Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($false)")
+      }
+
+- task: AzurePowerShell@5
+  condition: and(succeeded(), eq(variables.skipCleanup, 'false'))
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+        If ($env:BUILD_SOURCEVERSIONMESSAGE.ToString() -match '\[clean\]') {
+          ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
+          $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
+          $config = $c.configString | ConvertFrom-Json
+
+          $c | remove-gsacentralizedReportingCustomerComponents -Force
+          $c | Remove-GSACentralizedDefenderCustomerComponents -Force
+          $c | Remove-GSACoreResources -Force -Wait
+        }
+        Else {
+          Write-Output "Skipping cleanup because BUILD_SOURCEVERSIONMESSAGE does not match '\[clean\]'. `$env:BUILD_SOURCEVERSIONMESSAGE: '$env:BUILD_SOURCEVERSIONMESSAGE'"
+        }
+  name: 'CleanUpTest'
+
+
+- powershell: |
+    $dest = "{0}/{1}.zip" -f $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY,(get-date -f 'yyyy-MM-dd-HH-mm-ss')
+    Compress-Archive -Path ./* -DestinationPath $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY/$(get-date -f 'yyyy-MM-dd-HH-mm-ss').zip
+  name: 'zipartifact'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+
+- task: GitHubRelease@1
+  inputs:
+    gitHubConnection: 'Azure\GuardrailsSolutionAccelerator PAT Scoped Matthew'
+    repositoryName: 'Azure/GuardrailsSolutionAccelerator'
+    action: 'create'
+    target: '$(Build.SourceVersion)'
+    tagSource: 'gitTag'
+    tagPattern: 'v1.*'
+    title: '$(Build.SourceBranchName)'
+    assets: |
+      ./psmodules/*
+    changeLogCompareToRelease: 'lastFullRelease'
+    changeLogType: 'issueBased'
+  name: PublishGithubPreRelease
+  displayName: 'Publish GitHub Pre-release'
