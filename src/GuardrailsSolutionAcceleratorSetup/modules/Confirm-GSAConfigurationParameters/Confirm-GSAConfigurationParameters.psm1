@@ -158,12 +158,13 @@ Function Confirm-GSAConfigurationParameters {
             break
         }
         
-        If ($departmentList.'ï»¿Department_number-MinistÃ¨re_numÃ©ro' -notcontains $config.DepartmentNumber) {
+        If ($departmentList.'Department_number-Ministère_numéro' -notcontains $config.DepartmentNumber) {
             Write-Error "Department Number '$($config.DepartmentNumber)' is not a valid department number or is not found in this GOC-published list: $uri. Verify that the department number is correct and that the published list is accurate."
             $departmentName = 'Department_Name_Unknown'
         }
         Else {
-            $departmentName = $departmentList | Where-Object { $_.'ï»¿Department_number-MinistÃ¨re_numÃ©ro' -eq $config.DepartmentNumber } | Select-Object -ExpandProperty 'Department-name_English-MinistÃ¨re_nom_anglais'
+            $departmentName = $departmentList | Where-Object { $_.'Department_number-Ministère_numéro' -eq $config.DepartmentNumber } | 
+                Select-Object -ExpandProperty 'Department-name_English-Ministère_nom_anglais'
         }
     }
 
