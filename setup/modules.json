@@ -448,17 +448,33 @@
     ]
   },
   {
-    "ModuleName": "Check-LoggingAndMonitoring",
+    "ModuleName": "Check-DefenderForCloudConfig",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Check-LoggingAndMonitoring -SecurityLAWResourceId $vars.SecurityLAWResourceId -HealthLAWResourceId $vars.HealthLAWResourceId  -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -itsginfohealthmon $vars.itsgcodehealthmon -itsginfosecdefender $vars.itsgcodedefender",
+    "Script": "Get-DefenderForCloudConfig -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecdefender $vars.itsgcodedefender",
     "variables": [
       {
-        "Name": "SecurityLAWResourceId",
-        "Value": "SecurityLAWResourceId"
-      },
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcodedefender",
+        "Value": "AU2"
+      }
+    ]
+  },  
+  {
+    "ModuleName": "Check-HealthMonitoring",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Get-HealthMonitoringStatus -HealthLAWResourceId $vars.HealthLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfohealthmon $vars.itsgcodehealthmon",
+    "variables": [
       {
         "Name": "HealthLAWResourceId",
         "Value": "HealthLAWResourceId"
@@ -470,15 +486,30 @@
     ],
     "localVariables": [
       {
-        "Name": "itsgcodesecmon",
-        "Value": "AU2"
-      },
-      {
         "Name": "itsgcodehealthmon",
         "Value": "AU2"
+      }
+    ]
+  },  {
+    "ModuleName": "Check-SecurityMonitoring",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "get-SecurityMonitoringStatus -SecurityLAWResourceId $vars.SecurityLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon",
+    "variables": [
+      {
+        "Name": "SecurityLAWResourceId",
+        "Value": "SecurityLAWResourceId"
       },
       {
-        "Name": "itsgcodedefender",
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcodesecmon",
         "Value": "AU2"
       }
     ]

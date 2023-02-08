@@ -106,24 +106,6 @@ resource module8 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module22 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ProtectionDataAtRest'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
-        version: '1.0.0'
-      }
-    }
-  }
-  resource module23 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ProtectionOfDataInTransit'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ProtectionOfDataInTransit.zip'
-        version: '1.0.0'
-      }
-    }
-  }
 resource module9 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
     properties: {
@@ -215,10 +197,10 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     }
   }
   resource module20 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-LoggingAndMonitoring'
+    name: 'Check-DefenderForCloudConfig'
     properties: {
       contentLink: {
-        uri: '${ModuleBaseURL}/Check-LoggingAndMonitoring.zip'
+        uri: '${ModuleBaseURL}/Check-DefenderForCloudConfig.zip'
         version: '1.0.0'
       }
     }
@@ -232,11 +214,47 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
+  resource module22 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-ProtectionDataAtRest'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module23 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-ProtectionOfDataInTransit'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ProtectionOfDataInTransit.zip'
+        version: '1.0.0'
+      }
+    }
+  }
   resource module24 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudConsoleAccess'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudConsoleAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module25 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-HealthMonitoring'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-HealthMonitoring.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module26 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-SecurityMonitoring'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
         version: '1.0.0'
       }
     }
@@ -248,7 +266,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         value: '"${guardrailsKVname}"'
     }
   }
-    
   resource variable2 'variables' = if (newDeployment || updateCoreResources) {
     name: 'WorkSpaceID'
     properties: {
