@@ -1,54 +1,54 @@
 # Release Process
 
-## Prerequisites
+[This process is for the Microsoft maintainers of this repo]
 
-#### Create a Azure DevOps Pipeline that runs manually against your fork
+## Prerequisites for creating a release
 
-1. Navigate to: https://dev.azure.com/guardrailssolutionaccelerator/GuardrailsSolutionAccelerator
-2. Under Project Settings, create a Service Connection to your GitHub account, selecting the GuardrailsSolutionAccelerator fork
-3. Create a new pipeline:
+- Write permissions on GitHub repo [Azure/GuardrailsSolutionAccelerator](https://github.com/Azure/GuardrailsSolutionAccelerator)
+- [DevOps](https://dev.azure.com/guardrailssolutionaccelerator): a Service Connection named 'Guardrails Test Deployment Azure Connection' with sufficient rights to the target Azure tenant. 
+- [DevOps](https://dev.azure.com/guardrailssolutionaccelerator): a Service Connection named 'Guardrails GitHub Connection' with write permissions to the Azure\GuardrailsSolutionAccelerator GitHub repo. Due to limitations on the GitHub org, this Service Connection currently relies on a scoped GitHub Personal Access Token, which is associated with an individual's GitHub account and subject to expiration. 
+- [DevOps](https://dev.azure.com/guardrailssolutionaccelerator): a Service Connection named 'ESRP Guardrails Accelerator Signing' with access configured to Microsoft's internal ESRP code signing service
 
-    1. Where is your code: **GitHub**
-    1. Select a repository: Scroll past the list of repos and use the **'Select a specific Connection'** link at the very bottom of the page
-    1. Select your GitHub Service Connection
-    1. Select your **fork** of GuardrailsSolutionAccelerator
-    1. Select the **'main'** branch and **'/ado-signing-pipeline.yml'** pipeline definition file
-    1. Click the blue arrow on the Run button and choose Save
-    1. Navigate to your new pipeline, choose Edit
-    1. Find the Triggers settings under the '…' button:
+## Process to publish a pre-release
 
-       ![Trigger Settings](./media/release_trigger_settings.png)
-    1. Choose to Override the YAML CI trigger then disable both CI and PR validation
+Execution of the pre-release creation pipeline in Azure DevOps requires a new tag be added to trigger the pipeline. The tag must match the pattern: 'prerelease-v1.*'
 
-       ![Trigger Disable](./media/release_disable_triggers.png)
-    1. Save the Pipeline (do not run)
+A pre-release release is used to make code updates made between releases available for consumption in new or updated deployments.
 
-## Process to publish a new release
+```git
+# (After all PRs to be included are merged)
+git checkout main
+git fetch upstream
+git reset upstream/main --hard
+```
 
-1. Merge any outstanding PRs intended to be included in the release 
-2. Ensure your 'main' branch on your fork is in sync with 'Azure/GuardrailsSolutionAccelerator'
+**Update ./setup/tags.json** with the prerelease version number.
 
-   ```git
-    git checkout main
-    git fetch upstream
-    git reset --hard upstream/main
-    git push --force
-   ```
+```git
+git commit -am 'tags-prerelease-v1.0.8.8'
+git tag -f prerelease-v1.0.8.8
+git push upstream tag prerelease-v1.0.8.8
+```
 
-1. Create a new branch off of your fork's 'main' branch:
-   `git checkout -b v1.0.x`
-1. Update tags.json in your new branch to the new version, commit the change
-1. Update sub-module versions by running ./tools/Update-ModuleVersions.ps1 [Module version updates are made locally for each PR]
-1. Update the GuardrailsSolutionAcceleratorSetup.psd1 module version to match the release version (ex: release v1.0.6 should be '1.0.6' in the module manifest)
-1. Commit your changes and publish your branch
-1. Push your commit to GitHub
-1. Navigate to Azure DevOps, find your Pipeline, and choose New Run. Select your new 'v1.0.x' branch.
-1. Confirm that the DevOps pipeline executes all steps successfully
-1. Navigate to the release artifact created by the DevOps pipeline execution, download it, and extract it on your local system
-1. Copy and paste all files from the extracted Zip download to the directory containing your local clone of the repo (with the v1.0.x branch still checked out)
-1. Spot-check that your local copy changes only include changes to PowerShell file signatures, Zip files, tags.json and that the most recent changes from 'Azure/GuardrailsSolutionAccelerator' are included in the local repo
-1. Create a new PR from your fork to Azure/GuardrailsSolutionAccelerator 
-1. Merge the PR
-1. In GitHub Azure/GuardrailsSolutionAccelerator, create a new Release. On the tag selection, enter the new tag name that matches the release (ex: v1.0.6). 
-1. Check the box to generate release notes based on the previous release tag (ex: v1.0.5)
-1. Publish the release 
+Once the tag is pushed to GitHub, the tag created above will trigger the Pipeline named ['Azure.GuardrailsSolutionAccelerator Prerelease Pipeline' in Azure DevOps](https://dev.azure.com/guardrailssolutionaccelerator/GuardrailsSolutionAccelerator/_build?definitionId=10). Navigate to Azure DevOps to monitor the progress of the pipeline and address any issues. If the pipeline fails, a release will not be created in GitHub. 
+
+## Process to publish a full release
+
+Execution of the Release creation pipeline in Azure DevOps requires a new tag be added to trigger the pipeline. The tag must match the pattern: 'v1.*'
+
+```git
+# (After all PRs to be included are merged)
+git checkout main
+git fetch upstream
+git reset upstream/main --hard
+```
+
+**Update ./setup/tags.json** with the prerelease version number.
+
+```git
+git commit -am 'tags-v1.0.8'
+git tag -f v1.0.8
+git push upstream tag v1.0.8
+```
+
+Once the tag is pushed to GitHub, the tag created above will trigger the Pipeline named ['Azure.GuardrailsSolutionAccelerator Release Pipeline' in Azure DevOps](https://dev.azure.com/guardrailssolutionaccelerator/GuardrailsSolutionAccelerator/_build?definitionId=11). Navigate to Azure DevOps to monitor the progress of the pipeline and address any issues. If the pipeline fails, a release will not be created in GitHub. 
