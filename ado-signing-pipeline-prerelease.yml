@@ -4,8 +4,7 @@ trigger: none
 pr: 
   branches:
     include:
-    - prereleases/v*
-  drafts: false
+    - main
 
 pool:
   vmImage: windows-latest
@@ -40,7 +39,40 @@ variables:
     value: ${{ parameters.preClean }}
 
 steps:
-  
+
+- checkout: self
+  persistCredentials: true
+
+# - powershell: |
+#     $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
+#     $releaseNumber = $latestRelease.name -replace '(prerelease-)?v',''
+#     $releaseVersion = $releaseNumber -as [version]
+
+#     $prereleaseTag = 'prerelease-v{0}.{1}.{2}' -f $releaseVersion.Major,$releaseVersion.Minor,($releaseVersion.Build + 1)
+
+#     Write-Output ("##vso[task.setvariable variable=prereleaseTag;isOutput=true]$prereleaseTag")
+#   name: GetPrereleaseTagName
+
+- task: PowerShell@2
+  name: UpdatePrereleaseTag
+  inputs:
+    targetType: inline
+    ignoreLASTEXITCODE: true
+    script: |
+      $tags = ConvertFrom-Json -Path /setup/tags.json
+
+      If ($tags.releaseVersion -notlike 'prerelease-v*') {
+        Write-Error "The releaseVersion in tags.json should always start with 'prerelease-v' for a pre-release to be published. Update the tag and try again!" -ErrorAction Stop
+        exit
+      }
+
+      git push --delete origin $tags.releaseVersion
+      git tag -d $tags.releaseVersion
+      git tag $tags.releaseVersion
+      git push origin tag $tags.releaseVersion
+
+      Write-Output ("##vso[task.setvariable variable=prereleaseTag;isOutput=true]$prereleaseTag")
+
 - task: EsrpCodeSigning@2
   condition: eq(variables.skipSigning, 'false')
   inputs:
@@ -422,11 +454,18 @@ steps:
   inputs:
     gitHubConnection: 'Azure\GuardrailsSolutionAccelerator PAT Scoped Matthew'
     repositoryName: 'Azure/GuardrailsSolutionAccelerator'
+    action: 'delete'
+    tag: '$(UpdatePrereleaseTag.PrereleaseTag)'
+
+- task: GitHubRelease@1
+  inputs:
+    gitHubConnection: 'Azure\GuardrailsSolutionAccelerator PAT Scoped Matthew'
+    repositoryName: 'Azure/GuardrailsSolutionAccelerator'
     action: 'create'
     target: '$(Build.SourceVersion)'
-    tagSource: 'gitTag'
-    tagPattern: 'prerelease-v1.*'
-    title: '$(Build.SourceBranchName)'
+    tagSource: 'userSpecifiedTag'
+    tagPattern: '$(UpdatePrereleaseTag.PrereleaseTag)'
+    title: '$(UpdatePrereleaseTag.PrereleaseTag)'
     assets: |
       ./psmodules/*
     isPreRelease: true
