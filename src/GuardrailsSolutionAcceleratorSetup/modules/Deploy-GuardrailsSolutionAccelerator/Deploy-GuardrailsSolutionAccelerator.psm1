@@ -193,13 +193,31 @@ Function Deploy-GuardrailsSolutionAccelerator {
         [switch]
         $validatePrerequisites,
 
-        # specify to source the GSA PowerShell modules from an alternate URL, like a pre-release branch on GitHub (default installs from the 'latest' release on GitHub public repo)
+        # specify to source the GSA PowerShell modules from an alternate URL - this is useful for development
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
         [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
         [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
         [string]
         $alternatePSModulesURL,
+
+        # specify a release to deploy or update to - ex: 'v1.0.9', 'prerelease-v1.0.8.1'. If not specified, the latest release will be used
+        # the 'latest' release is typically the last full release, unless a critcal bug fix was applied since the last full release
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
+        [ValidatePattern('(prerelease-)?v\d+\.\d+\.\d+(\.\d+)?')]
+        [string]
+        $releaseVersion,
+
+        # if specified, deploy the lastest pre-release version. If used with -releaseVersion, the release version will take precedence
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
+        [switch]
+        $prerelease,
 
         # proceed through imput prompts - used for deployment via automation or testing
         [Parameter(Mandatory = $false)]
@@ -257,14 +275,52 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "-alternatePSModulesURL specified, using alternate URL for Guardrails PowerShell modules: $alternatePSModulesURL"
             $params = @{ moduleBaseURL = $alternatePSModulesURL }
         }
-        Else {
+        ElseIf ([string]::IsNullOrEmpty($releaseVersion) -and !$prerelease.IsPresent) {
             # getting latest release from GitHub
-            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest'
-            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/psmodules" -f $latestRelease.tag_name
+            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
+            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/psmodules" -f $latestRelease.name
 
             Write-Verbose "Using latest release from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
             $params = @{ moduleBaseURL = $moduleBaseURL }
         }
+        ElseIf ($releaseVersion) {
+            # check if prerelease version was specified 
+            If ($releaseVersion -like 'prerelease-*') {
+                Write-Warning "-releaseVersion specified with a pre-release version, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
+            }
+
+            # get releases from GitHub
+            $releases = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases' -Verbose:$false
+            
+            If ($releases.name -contains $releaseVersion) {
+                Write-Verbose "Found a release on GitHub match for $releaseVersion"
+                $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
+            }
+        }
+        ElseIf ($prerelease) {
+            Write-Warning "-Prerelease specified, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
+
+            # getting all release from github
+            $releases = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases' -Verbose:$false
+            $latestPreRelease = $releases | Where-Object { $_.prerelease -eq 'True' } | 
+                Sort-Object -Property published_at -Descending | 
+                Select-Object -First 1
+
+            $releaseVersion = $latestPreRelease.name
+            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
+        }
+
+        # check that the release contains the 'GR-Common.zip' file as an asset. 
+        Write-Verbose "Checking that the release contains the 'GR-Common.zip' file as an asset..."
+        try {
+            $null = Invoke-RestMethod -Method HEAD -Uri "$moduleBaseURL/GR-Common.zip" -ErrorAction Stop -Verbose:$false
+        }
+        catch {
+            Write-Error "The release $releaseVersion does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: https://github.com/Azure/GuardrailsSolutionAccelerator/releases"
+            return
+        }
+        Write-Verbose "The release $releaseVersion contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
+        
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
 
         If (!$update.IsPresent) {

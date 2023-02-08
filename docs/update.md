@@ -1,17 +1,44 @@
-# Guardrails - Update
+# Updating Guardrails Solution Accelerator Deployments
 
-Updating the components of a previously-deploy Guardrails Solution Accelerator instance is accomplished using the GuardrailsSolutionAcceleratorSetup PowerShell module. It is possible to update individual components of a deployment but recommended to update all components to ensure versions remain synchronized. 
+## Updating Deployed Components
 
 The components which can be updated are:
 
 | Name | Description | Update Source |
 |---|---|---|
-| GuardrailPowerShellModules | The PowerShell modules that define each guardrail and the required controls. | GitHub Azure/GuardrailsSolutionAccelerator 'main' branch |
+| GuardrailPowerShellModules | The PowerShell modules that define each guardrail and the required controls. | GitHub Azure/GuardrailsSolutionAccelerator latest full release (override with `-releaseVersion` or `-prerelease` parameters) |
 | AutomationAccountRunbooks | The Azure Automation Account runbook definitions which execute the guardrail PowerShell modules | Local clone of the GitHub repo |
 | Workbook | The Workbook definition which displays the results guardrail PowerShell module executions, pulling from the Log Analytics workspace | Local clone of the GitHub repo |
-| CoreComponents | This step updates the Azure ARM resource configurations based on the Bicep templates for resources not otherwise updated above (such as Automation Account config and variables) | Local clone of the GitHub repo |
+| CoreComponents | This process updates the Azure ARM resource configurations based on the Bicep templates for resources not otherwise updated above (such as Automation Account config and variables) | Local clone of the GitHub repo |
+| Configuration Variables | Make changes to the configuration values used when the solution was deployed or last updated | Configuration file or config Key Vault secret |
 
-## Update Process
+When updating a deployment, the default configuration deploys the PowerShell modules included in the latest full release on GitHub. To deploy a specific release, use the `-releaseVersion` parameter and specify a release name, such as `v1.0.9` or `prelease-v1.0.8.1`. Deploying a pre-release version is not typically recommended outside of testing scenarios, and if used should be updated to the next full release when available. Alternatively to specifying a release version, you can use the `-prelease` parameter to deploy the latest pre-release module versions.
+
+## Configuration Variable Update Process
+
+When updating the configuration variables used in an existing Guardrails deployment, it is important to ensure that the new value is also used during future deployment updates. To achieve this, both update the configuration variable in the Automation Account and in the config file or config Key Vault (depending on the process you use when updating). Another option is to just complete Step 2 below, then run an update deployment, which will update the Automation Account variables. 
+
+### Step 1: Updating the Automation Account Variables
+
+1. Navigate to the Automation Account under the Guardrails resource group in the Azure Portal
+1. In the Automation Account configuration, under Shared Resources, click Variables
+1. Update the variable to the new value and save.
+
+### Step 2: Updating the Configuration Variable Source
+
+If you are using a config.json file that you plan to maintain for future updates, replace the value in that file.
+
+If you are planning to use the configuration stored in the Guardrails Key Vault (recommended), update the config secret following these steps:
+
+1. Navigate to the Key Vault in the Guardrails resource group in the Azure Portal
+1. Under Secrets, open the `gsaConfigExportLatest` secret
+1. Copy the current secret version value and paste it into a text editor, such as VS Code
+1. Update the appropriate value
+1. Back in the Azure Portal, create a new version of the `gsaConfigExportLatest` secret with the updated value
+
+## Resource Update Process
+
+Updating the resource components of a previously-deploy Guardrails Solution Accelerator instance is accomplished using the GuardrailsSolutionAcceleratorSetup PowerShell module. It is possible to update individual components of a deployment but recommended to update all components to ensure versions remain synchronized.
 
 1. Ensure you have the latest version of the Guardrails Solution Accelerator though one of the following processes. In most cases, downloading the latest release is the recommended approach. Use the `git` option if you want to deploy updates published between releases or pre-release updates.
 
