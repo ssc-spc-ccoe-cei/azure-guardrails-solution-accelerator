@@ -211,13 +211,13 @@ Function Deploy-GuardrailsSolutionAccelerator {
         [string]
         $releaseVersion,
 
-        # if specified, deploy the lastest pre-release version. If used with -releaseVersion, the release version will take precedence
-        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
-        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
-        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
-        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
-        [switch]
-        $prerelease,
+        # # if specified, deploy the lastest pre-release version. If used with -releaseVersion, the release version will take precedence
+        # [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
+        # [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
+        # [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
+        # [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
+        # [switch]
+        # $prerelease,
 
         # proceed through imput prompts - used for deployment via automation or testing
         [Parameter(Mandatory = $false)]
@@ -297,18 +297,18 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
             }
         }
-        ElseIf ($prerelease) {
-            Write-Warning "-Prerelease specified, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
+        # ElseIf ($prerelease) {
+        #     Write-Warning "-Prerelease specified, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
 
-            # getting all release from github
-            $releases = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases' -Verbose:$false
-            $latestPreRelease = $releases | Where-Object { $_.prerelease -eq 'True' } | 
-                Sort-Object -Property published_at -Descending | 
-                Select-Object -First 1
+        #     # getting all release from github
+        #     $releases = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases' -Verbose:$false
+        #     $latestPreRelease = $releases | Where-Object { $_.prerelease -eq 'True' } | 
+        #         Sort-Object -Property published_at -Descending | 
+        #         Select-Object -First 1
 
-            $releaseVersion = $latestPreRelease.name
-            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
-        }
+        #     $releaseVersion = $latestPreRelease.name
+        #     $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
+        # }
 
         # check that the release contains the 'GR-Common.zip' file as an asset. 
         Write-Verbose "Checking that the release contains the 'GR-Common.zip' file as an asset..."

@@ -1,8 +1,5 @@
-
-trigger: none
-
-pr: 
-  branches:
+trigger:
+  tags:
     include:
     - v1*
   paths:

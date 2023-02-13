@@ -12,11 +12,13 @@ The components which can be updated are:
 | CoreComponents | This process updates the Azure ARM resource configurations based on the Bicep templates for resources not otherwise updated above (such as Automation Account config and variables) | Local clone of the GitHub repo |
 | Configuration Variables | Make changes to the configuration values used when the solution was deployed or last updated | Configuration file or config Key Vault secret |
 
-When updating a deployment, the default configuration deploys the PowerShell modules included in the latest full release on GitHub. To deploy a specific release, use the `-releaseVersion` parameter and specify a release name, such as `v1.0.9` or `prelease-v1.0.8.1`. Deploying a pre-release version is not typically recommended outside of testing scenarios, and if used should be updated to the next full release when available. Alternatively to specifying a release version, you can use the `-prelease` parameter to deploy the latest pre-release module versions.
+When updating a deployment, the default configuration deploys the PowerShell modules included in the latest full release on GitHub. To deploy a specific release, use the `-releaseVersion` parameter and specify a release name, such as `v1.0.9` or `v1.0.8.1`.
+
+To update a deployment to a pre-release version of the solution, see the steps in [Installing or Updating from Prerelease](./prerelease).
 
 ## Configuration Variable Update Process
 
-When updating the configuration variables used in an existing Guardrails deployment, it is important to ensure that the new value is also used during future deployment updates. To achieve this, both update the configuration variable in the Automation Account and in the config file or config Key Vault (depending on the process you use when updating). Another option is to just complete Step 2 below, then run an update deployment, which will update the Automation Account variables. 
+When updating the configuration variables used in an existing Guardrails deployment, it is important to ensure that the new value is also used during future deployment updates. To achieve this, both update the configuration variable in the Automation Account and in the config file or config Key Vault (depending on the process you use when updating). Another option is to just complete Step 2 below, then run an update deployment, which will update the Automation Account variables.
 
 ### Step 1: Updating the Automation Account Variables
 
