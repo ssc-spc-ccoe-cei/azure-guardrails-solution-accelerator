@@ -22,7 +22,7 @@ function Check-CBSSensors {
     $CBSResourceNames+="cbs-" + $FirstTokenInTenantID + "-CanadaCentral"
     $CBSResourceNames+="cbs-" + $FirstTokenInTenantID + "-CanadaEast"
     $CBSResourceNames+="cbs-vault-" + $FirstTokenInTenantID
-    $CBSResourceNames+="cbs"+$FirstTokenInTenantID
+    
     if ($debug) { Write-Output $CBSResourceNames}
     $sub=Get-AzSubscription -ErrorAction SilentlyContinue | Where-Object {$_.State -eq 'Enabled' -and $_.Name -eq $SubscriptionName}
     if ($null -ne $sub)
