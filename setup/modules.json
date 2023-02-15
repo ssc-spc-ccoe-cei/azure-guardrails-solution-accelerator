@@ -433,7 +433,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName 'CBS Subscription' -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "cbssubscriptionName",
