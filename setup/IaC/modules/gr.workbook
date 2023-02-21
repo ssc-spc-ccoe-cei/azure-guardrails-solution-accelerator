@@ -798,7 +798,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let dt = GR_VersionInfo_CL | summarize max(ReportTime_s);\nGR_VersionInfo_CL\n| where ReportTime_s == toscalar (dt)\n|project [\"Current Version\"]= CurrentVersion_s, [\"Version Available\"]=AvailableVersion_s, [\"Update Required\"]=iff(UpdateNeeded_b==true,\"Yes\",\"No\"),[\"Check date\"]=toscalar (dt)",
+        "query": "let dt = GR_VersionInfo_CL | summarize max(ReportTime_s);\nGR_VersionInfo_CL\n| where ReportTime_s == toscalar (dt)\n|project [\"Deployed Version\"]= DeployedVersion_s, [\"Version Available\"]=AvailableVersion_s, [\"Update Required\"]=iff(UpdateNeeded_b==true,\"Yes\",\"No\"),[\"Check date\"]=toscalar (dt)",
         "size": 4,
         "timeContext": {
           "durationMs": 86400000

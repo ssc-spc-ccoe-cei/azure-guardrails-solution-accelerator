@@ -371,16 +371,31 @@ function Check-UpdateAvailable {
         $ResourceGroupName
     )
     #fetches current public version (from repo...maybe should download the zip...)
-    $ReleaseVersion=((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/main/setup/tags.json).content | ConvertFrom-Json).ReleaseVersion
+    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
+    $tagsFileURI = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
+    $tags = Invoke-RestMethod $tagsFileURI -Verbose:$false
+
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
         $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
     }
     $rg=Get-AzResourceGroup -Name $ResourceGroupName 
-    $currentVersion=get-rgtagValue -tagkey releaseversion -object $rg
-    if ($debug) { Write-Output "RG Tag: $currentVersion"}
-    if ($debug) { Write-Output "Avail. Release: $ReleaseVersion"}
+
+    $deployedVersion=$rg.Tags["ReleaseVersion"]
+    $currentVersion = $tags.ReleaseVersion
+
+    try {
+        # script version numbers of surrounding characters and then converted to a version object
+        $deployedVersionVersion = ($deployedVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]+?$','$1') -as [version]
+        $currentVersionVersion = ($currentVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]+?$','$1') -as [version]
+    }
+    catch {
+        Write-Error "Error: Failed to convert version numbers to version objects. Error: $_"
+    }
+
+    if ($debug) { Write-Output "Resource Group Tag (deployed version): $deployedVersion; $deployedVersionVersion"}
+    if ($debug) { Write-Output "Latest available version from GitHub: $currentVersion; $currentVersionVersion"}
     
-    if ($currentVersion -ne $ReleaseVersion)
+    if ($deployedVersionVersion -lt $currentVersionVersion)
     {
         $updateNeeded=$true
     }
@@ -388,8 +403,8 @@ function Check-UpdateAvailable {
         $updateNeeded=$false
     }
     $object = [PSCustomObject]@{ 
-        CurrentVersion = $currentVersion
-        AvailableVersion = $ReleaseVersion
+        DeployedVersion = $deployedVersion
+        AvailableVersion = $currentVersion
         UpdateNeeded= $updateNeeded
         ReportTime = $ReportTime
     }
