@@ -310,16 +310,19 @@ Function Deploy-GuardrailsSolutionAccelerator {
         #     $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
         # }
 
-        # check that the release contains the 'GR-Common.zip' file as an asset. 
-        Write-Verbose "Checking that the release contains the 'GR-Common.zip' file as an asset..."
-        try {
-            $null = Invoke-RestMethod -Method HEAD -Uri "$moduleBaseURL/GR-Common.zip" -ErrorAction Stop -Verbose:$false
+        # if installing from a published release, check that the release contains zip assets
+        If (-NOT($alternatePSModulesURL)) {
+            # check that the release contains the 'GR-Common.zip' file as an asset. 
+            Write-Verbose "Checking that the release contains the 'GR-Common.zip' file as an asset..."
+            try {
+                $null = Invoke-RestMethod -Method HEAD -Uri "$moduleBaseURL/GR-Common.zip" -ErrorAction Stop -Verbose:$false
+            }
+            catch {
+                Write-Error "The release $releaseVersion does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: https://github.com/Azure/GuardrailsSolutionAccelerator/releases"
+                return
+            }
+            Write-Verbose "The release $releaseVersion contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
         }
-        catch {
-            Write-Error "The release $releaseVersion does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: https://github.com/Azure/GuardrailsSolutionAccelerator/releases"
-            return
-        }
-        Write-Verbose "The release $releaseVersion contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
         
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
 
