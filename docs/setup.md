@@ -33,7 +33,7 @@ cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/setup/
 
 ### Use prerelease code
 
-See [Installing or Updating from Prerelease](./prerelease)
+See [Installing or Updating from Prerelease](./prerelease.md)
 
 ## Configuration
 
