@@ -1,0 +1,12 @@
+{
+  "keyVaultName": "guardrails",
+  "resourcegroup": "Guardrails",
+  "region": "CanadaCentral",
+  "grafanaregion": "eastus",
+  "storageaccountName": "guardrails",
+  "logAnalyticsworkspaceName": "guardrails",
+  "functionName": "guardrails",
+  "Locale": "en-CA",
+  "ApplicationId": "",
+  "SecurePassword": ""
+}
