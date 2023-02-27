@@ -18,28 +18,31 @@ Please make sure to select **PowerShell** as shell type.
 
 ### Use Released Code (Recommended)
 
-- Navigate to the repository main page and look for the Releases. Select the desired release and download the appropriate asset:
-For example:
+- Run the following PowerShell script to download the latest release and prepare for configuration:
+
 ```
-wget https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/relasenumber.zip
-```
-Then unzip the files and change directories (Example. Folder names will vary depending the release):
-```
-Expand-Archive ./v1.0.1.zip
-```
-```
-cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/setup/
+# get the latest released version
+$latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest'
+
+# download the latest released version's Zip archive
+[System.Net.WebClient]::new().DownloadFile("https://github.com/Azure/GuardrailsSolutionAccelerator/archive/refs/tags/$($latestRelease.name).zip","$pwd/guardrailsSolution_$($latestRelease.name).zip")
+
+# extract the downloaded Zip
+Expand-Archive -Path "./guardrailsSolution_$($latestRelease.name).zip"
+
+# change location to the 'setup' directory of the downloaded release
+cd "./guardrailsSolution_$($latestRelease.name)/GuardrailsSolutionAccelerator-$($latestRelease.name.trim('v'))"
 ```
 
 ### Use prerelease code
 
-See [Installing or Updating from Prerelease](./prerelease.md)
+In certain testing or evaluation scenarios, it may make sense to deploy the solution from pre-release code. This is not recommended in most scenarios. See [Installing or Updating from Prerelease](./prerelease.md)
 
 ## Configuration
 
 Edit config.json with:
 ```
-code ./config.json
+code ./setup/config.json
 ```
 Adjust parameters as required.
 
@@ -86,32 +89,35 @@ Get-AzPolicyDefinition | Select-Object Name -ExpandProperty Properties | select 
 
 ## Adding Tags to the Resource Group
 
-In many organizations, Tags may be required in order for Resource Groups to be created. The Guardrails setup uses a file called `tags.json` to create tags for the Resource Group (only).
+In many organizations, Tags may be required in order for Resource Groups to be created. The Guardrails setup uses a file called `./setup/tags.json` to create tags for the Resource Group (only).
 
 The only default and required tags are:
-      
+
+```json
     {
         "Solution":"Guardrails Accelerator",
         "ReleaseVersion": "1.0.4",
         "ReleaseDate": "2022/09/01"
     }
+```
 
 Add tags as required per your policies in a json array format.
-Please do not delete the default required tags 
+Please do not delete the default required tags
 
 ## Deployment
 
 Import the GuardrailsSolutionAcceleratorSetup module from the downloaded code:
 
 ```powershell
-cd ./GuardrailsSolutionAccelerator # navigate to the solution directory
+
 Import-Module ./src/GuardrailsSolutionAcceleratorSetup
 
 ```
 
 Start the Guardrails Solution Accelerator deployment with the default configuration (core resources only):
+
 ```powershell
-Deploy-GuardrailsSolutionAccelerator -configFilePath .\setup\config.json
+Deploy-GuardrailsSolutionAccelerator -configFilePath ./setup/config.json
 ```
 
 Alternatively, these parameters can be used to verify a deployment or to deploy additional components:
@@ -130,7 +136,7 @@ Get-Help Deploy-GuardrailsSolutionAccelerator -Detailed
 
 ### Centralized Reporting (Lighthouse) Configuration
 
- The accelerator implements two different scenarios for centralized management, detailed below. Azure Lighthouse is used to delegate access to a managed tenant by a managing tenant. These components can be added to an existing deployment or included in a new deployment. 
+ The accelerator implements two different scenarios for centralized management, detailed below. Azure Lighthouse is used to delegate access to a managed tenant by a managing tenant. These components can be added to an existing deployment or included in a new deployment.
 
 #### Centralized Customer Reporting Support
 
