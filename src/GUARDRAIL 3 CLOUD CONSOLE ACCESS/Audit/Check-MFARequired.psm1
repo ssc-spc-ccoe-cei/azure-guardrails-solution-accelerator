@@ -1,102 +1,93 @@
-function Get-VNetComplianceInformation {
-    param (
-        [Parameter(Mandatory=$false)]
-        [string]
-        $token,
+
+function Check-MFARequired {
+    param (      
         [Parameter(Mandatory=$true)]
-        [string]
-        $ControlName,
+        [string] $ControlName,
+        [Parameter(Mandatory=$true)]
+        [string] $ItemName,
+        [Parameter(Mandatory=$true)]
         [string] $itsgcode,
-        [Parameter(Mandatory=$false)]
-        [string]
-        $ExcludedVNets,
+        [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $CBSSubscriptionName,
-        [Parameter(Mandatory=$false)]
-        [switch]
-        $debuginfo
+        [string] $ReportTime
     )
-    [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
+    $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
+    
+
+    # get conditional access policies
+    $CABaseAPIUrl = '/identity/conditionalAccess/policies'
     try {
-        $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
+        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+        
+        $caps = $response.Content.value
     }
     catch {
-        $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
-        throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
     }
-    if ($null -ne $ExcludedVNets)
-    {
-        $ExcludedVNetsList=$ExcludedVNets.Split(",")
+    
+    # check for a conditional access policy which meets these requirements:
+    # 1. state =  'enabled'
+    # 2. includedUsers = 'All'
+    # 3. includedApplications = 'All'
+    # 4. grantControls.builtInControls contains 'mfa'
+    # 5. clientAppTypes contains 'all'
+    # 6. userRiskLevels = @()
+    # 7. signInRiskLevels = @()
+    # 8. platforms = null
+    # 9. locations = null
+    # 10. devices = null
+    # 11. clientApplications = null
+
+    $validPolicies = $caps | Where-Object {
+        $_.state -eq 'enabled' -and
+        $_.conditions.users.includeUsers -contains 'All' -and
+        $_.conditions.applications.includeApplications -contains 'All' -and
+        $_.grantControls.builtInControls -contains 'mfa' -and
+        $_.conditions.clientAppTypes -contains 'all' -and
+        [string]::IsNullOrEmpty($_.conditions.userRiskLevels) -and
+        [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
+        [string]::IsNullOrEmpty($_.conditions.platforms) -and
+        [string]::IsNullOrEmpty($_.conditions.locations) -and
+        [string]::IsNullOrEmpty($_.conditions.devices)  -and
+        [string]::IsNullOrEmpty($_.conditions.clientApplications) 
     }
-    foreach ($sub in $subs)
-    {
-        Write-Verbose "Selecting subscription..."
-        Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        
-        $VNets=Get-AzVirtualNetwork
-        Write-Debug "Found $($VNets.count) VNets."
-        if ($VNets)
-        {
-            foreach ($VNet in $VNets)
-            {
-                Write-Debug "Working on $($VNet.Name) VNet..."
-                $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet
-                if ($ev -ne "true" -and $vnet.Name -notin $ExcludedVNetsList)
-                {
-                    if ($Vnet.EnableDdosProtection) 
-                    {
-                        $ComplianceStatus = $true 
-                        $Comments="$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
-                    }
-                    else {
-                        $ComplianceStatus = $false
-                        $Comments= $msgTable.ddosNotEnabled
-                    }
-                    # Create PSOBject with Information.
-                    $VNetObject = [PSCustomObject]@{ 
-                        VNETName = $VNet.Name
-                        SubscriptionName  = $sub.Name 
-                        ComplianceStatus = $ComplianceStatus
-                        Comments = $Comments
-                        ItemName = $msgTable.vnetDDosConfig
-                        itsgcode = $itsgcode
-                        ControlName = $ControlName
-                        ReportTime = $ReportTime
-                    }
-                    $VNetList.add($VNetObject) | Out-Null                
-                }
-                else {
-                    Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
-                }    
-            }
-        }
+
+    if ($validPolicies.count -ne 0) {
+
+        $IsCompliant = $true
+        $Comments = $msgTable.mfaRequiredForAllUsers    
+
     }
-    if ($debuginfo){ 
-        Write-Output "Listing $($VNetList.Count) List members."
-        $VNetList | Write-Output "VNet: $($_.VNETName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" 
+    else {
+        # Failed. Reason: No policies meet the requirements
+        $Comments = $msgTable.noMFAPolicyForAllUsers
+        $IsCompliant = $false
     }
-    #Creates Results object:
+    
+    $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
+        ControlName      = $ControlName
+        Comments         = $Comments
+        ItemName         = $ItemName
+        ReportTime       = $ReportTime
+        itsgcode         = $itsgcode
+    }
     $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $VNetList 
+        ComplianceResults = $PsObject
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
     }
-    return $moduleOutput
+    return $moduleOutput   
 }
-
 
 # SIG # Begin signature block
 # MIInrQYJKoZIhvcNAQcCoIInnjCCJ5oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCWDHH9GdDVqQgD
-# lBMP7TMWjwuC49O6MaKoAfJPDNiIR6CCDYEwggX/MIID56ADAgECAhMzAAACzI61
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB2tkuSEhSyyxDg
+# P73FaTVoStxbO7mR7qbFb8Hrln5TGqCCDYEwggX/MIID56ADAgECAhMzAAACzI61
 # lqa90clOAAAAAALMMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -173,19 +164,19 @@ function Get-VNetComplianceInformation {
 # HjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEoMCYGA1UEAxMfTWljcm9z
 # b2Z0IENvZGUgU2lnbmluZyBQQ0EgMjAxMQITMwAAAsyOtZamvdHJTgAAAAACzDAN
 # BglghkgBZQMEAgEFAKCBrjAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgor
-# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQg9zXunXTR
-# vmtGyQBPNJHH/R/0Iqs9Gi06suQYHIG10AkwQgYKKwYBBAGCNwIBDDE0MDKgFIAS
+# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgDfg0AzdV
+# 5Do4T1VMYMzTXDYQeOG6MwJnkTo0QlgyVHwwQgYKKwYBBAGCNwIBDDE0MDKgFIAS
 # AE0AaQBjAHIAbwBzAG8AZgB0oRqAGGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbTAN
-# BgkqhkiG9w0BAQEFAASCAQAN+Zz0vSzLhlnh/fJ/lIxFvk8CQJXYQZ9I3URMLmZD
-# cKXSJAkLg/zr8fGxWxFTR2AwJLEI7eJyultVxqAMX1wmPvTBC7NTBQvu8AR5sLmu
-# RzxbtNjLcpo5mNsGXfMI2l0566MSH1H3Q46cNycetoGC43W4ghe1sEnynoQKzA/K
-# gyEIYzC5NElofwGxvygTZSwGQFFlYME69zGSlaZLi+2lUXRibwTjeZfONym4rkjJ
-# ZqAT+t6SKyLY3OZtJ38/Lmkc9fVV3GgodvFGo2M7INXFpvUjZ8W531pQbN5rUvoC
-# HNOCYBLn2yI7c2NdJkTVaEBEgXa1mjxpN36PP6+DJ/q4oYIXDDCCFwgGCisGAQQB
+# BgkqhkiG9w0BAQEFAASCAQBaKa+oUnYbKvKkLQiK/c9620DODOuwFruCXPEKacWl
+# xro+EFufyWSHPi49xt6qSy6keXgYbVIs3L/bCZJwU5Uy6QWgnBMqaPvRBshmXQmI
+# +df5mPvSrszy8T7No957mCoP0viZwGMntJzSVU0QQAP2JlbRuT/6a9JFYbZ0YBKu
+# pmxPDgtluZ9nd3MwqPNb5zVUpC1qAMAaS6LdY7WLxdu/Ng76S8S5FgDNQahogrm7
+# is6MTW1MC6Iecynu6P9wrJ+AuFnlHWYhPp2xhmE2lktofMM/eFhk2dgXASgEYePB
+# TvKZe3IL8F2mBcTMBrKwOCCRX3wPIhRQ5e2HeZYzXtzyoYIXDDCCFwgGCisGAQQB
 # gjcDAwExghb4MIIW9AYJKoZIhvcNAQcCoIIW5TCCFuECAQMxDzANBglghkgBZQME
 # AgEFADCCAVUGCyqGSIb3DQEJEAEEoIIBRASCAUAwggE8AgEBBgorBgEEAYRZCgMB
-# MDEwDQYJYIZIAWUDBAIBBQAEIEDlSNYm+0pSNLdQsKsj0aQPYK7+STL9hctS6voz
-# aRA1AgZjxouK7GwYEzIwMjMwMjA2MTUwOTIyLjAxM1owBIACAfSggdSkgdEwgc4x
+# MDEwDQYJYIZIAWUDBAIBBQAEIHmmFUn2psZ6xRBAjLhq9iKTXCWc5DW9ns6lzO1c
+# /IBfAgZjxouK7GgYEzIwMjMwMjA2MTUwOTIyLjAwMVowBIACAfSggdSkgdEwgc4x
 # CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
 # b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1p
 # Y3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMg
@@ -287,22 +278,22 @@ function Get-VNetComplianceInformation {
 # b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3Jh
 # dGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMA
 # AAGnNbsuwmSFUCkAAQAAAacwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJ
-# AzENBgsqhkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgvoyjCrjtqzu22uXIkGOr
-# ADqsJaoGyhGv+upSmk2k91MwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBH
+# AzENBgsqhkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgyF6aIQZzfdjVMYgbr+fP
+# Dy3XIdeVJ3C3gDTup/e3Y7YwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBH
 # 8H/nCZUC4L0Yqbz3sH3w5kzhwJ4RqCkXXKxNPtqOGzCBmDCBgKR+MHwxCzAJBgNV
 # BAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4w
 # HAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29m
 # dCBUaW1lLVN0YW1wIFBDQSAyMDEwAhMzAAABpzW7LsJkhVApAAEAAAGnMCIEID7w
 # 4h15iO2oV82gC+RJvlCe9O+McMvUf1wfGtlYRZ8WMA0GCSqGSIb3DQEBCwUABIIC
-# AE7TbFi2294e2vxnLD1MDT1u7DlPCYxmFqYhbRO8H5AWYiKU40QdvMr5NTHvHyR5
-# AMYbZ+2CtHxcpylyyTkP+QSB9d14U5zkohxIhF2utLM6irrkb+Z18q6mU2RDeek9
-# VxcpUV+5OGiwlCMiWVOHCKYt4Li85IO3+U+OB2jLJIpm5Ek7HMEwO5y/2DQqV7i2
-# EZX34d/ol8EV8ab1SwCEHXCMorXmX0jkgp/PEfdDqzcNQwN+SHLHhD12xM4FZmXU
-# MAi7FMadj43gq3C2zDsQSX4a/bULWAZoxRHqkXE5JOpu4mcdViyU9CvIiuiKssEr
-# kYB3N5XnMfFe5Z6oivLTDbf4HcEciL9ChGhkabFH1pLAm8YJ60Kmk6LlSewOVIMy
-# H5La0rEBNEm7TVtaSSGhnIcp8e8G6GIveccaBHh4H+0xeJfavHqkkSJl/1/0D99B
-# YrcfrNfhCP/ba7wqePYe/FE/PZca4/pQgRlih6w/JtB7c5Wp5UWzKNnnsDVmiZbh
-# tcvV0QDBhqf4TuIFP7rO5QBqxtYduw3jxWItiTJ6Du8UZR/ryIAXUW09ZQp+5ZUA
-# OtTU/Cq4Y/k6issQ4SiOcxJRZmeAfk3Y2Su0TZpCn65aQdW9TMuwdwRl0TvKxqqk
-# gBQQLV+X2KWWe78lVnZnXDgwKLUnnRAWl4rZ6BvgPkQe
+# AOInUcbPhTYE++ZhHZg+otK8J6BPYtDDtQ3xlWsbR6HAi4psrhUJPNd54tJ7tCT3
+# RwgtZz7ecYUZgLUyY1nvsTCsQ0YCL6gHsGJVCP487AhaGYIMVCsvKMMc+D9sMYLt
+# AFvVGwh98vWdwO+idi5z6vHe0nCkXX+PP7j0N/d/RwWyE58cbSCQO7E9L5bwJMJ5
+# shOm8dd/PsNtXIquy3McssUrDSz/YiDpUNZnkQk4QzQe0S/54g2Kst/QKAR//lEr
+# yrALBnBP45s+MTlUJ4okHAsTif7B0sXNZXPSOWW5VLoT5c0rRuagAWbXO8UTBBLg
+# uadeVeG12Z+9tTHcCMR0dHiUtz6TDrxaQS+AVij9cDZKdo8DCUn+lRwAJcyshe25
+# FfhMsrkO44ZMkVL1AD+YiY+ThNJBvFJmQF74IFN6YtpTKpYvG4BkdB+TX21/mUYg
+# w7GLe4LaiSP0A+5HwSAWAaUnzv41ErjOBE9e1nrl47v0tKbbgqwRVmNHtq1Gehp6
+# 3rMNOXTEgVXLSsJHmE/s0GG0PK5TMnzUyd/NRIcUeRZ92EpV2T8asEO55ApbGqBq
+# IcHwxRl025NtuC92bOo/mZHTPRbDaw4AMFM9bzt4pxfqUkRwOuU0RnE2Hr0jU9ri
+# YuK/ZUE+NVJySW2NjaaeqDYVcb0d/OQKwXSVXIwkuagV
 # SIG # End signature block

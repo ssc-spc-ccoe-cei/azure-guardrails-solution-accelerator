@@ -18,7 +18,7 @@ parameters:
 - name: skipSigning
   displayName: 'Skip signing of modules'
   type: boolean
-  default: 'false'
+  default: 'true'
 - name: preClean
   displayName: 'Pre-clean the test environment of existing deployments'
   type: boolean

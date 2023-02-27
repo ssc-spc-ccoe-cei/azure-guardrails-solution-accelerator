@@ -33,7 +33,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAccountResponsibility -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -193,26 +193,40 @@
     ]
   },
   {
-    "ModuleName": "Check-CloudConsoleAccess",
-    "Control": "Guardrails3",
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
-    "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.gcPasswordGuidanceDoc -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
     "localVariables": [
       {
+        "Name": "DocumentName",
+        "Value": "GCPasswordGuidanceDoc.txt"
+      },
+      {
         "Name": "itsgcode",
-        "Value": "AC4(7)"
+        "Value": "AC2"
       }
     ]
   },
   {
     "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails3",
+    "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlan -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -227,6 +241,62 @@
       {
         "Name": "DocumentName",
         "Value": "PrivilegedAccountManagementPlan.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-CloudConsoleAccess",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-MFARequired",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Check-MFARequired -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaRequiredForAllUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.authorizedProcessedByCSO -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "AuthorizedProcessApprovedByCSO.txt"
       },
       {
         "Name": "itsgcode",
@@ -351,21 +421,48 @@
     ]
   },
   {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName7 -ItemName $msgTable.enableTLS12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "TLS12EnabledAttestation.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
+      }
+    ]
+  },
+  {
     "ModuleName": "Get-SubnetComplianceInformation",
     "Control": "Guardrails8",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation -ReservedSubnetList $vars.reservedSubnetList",
-     "variables":
-     [
+    "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation -ReservedSubnetList $vars.reservedSubnetList",
+    "variables": [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
       },
       {
-        "Name":"reservedSubnetList",
-        "Value":"reservedSubnetList"
+        "Name": "reservedSubnetList",
+        "Value": "reservedSubnetList"
       }
     ],
     "localVariables": [
@@ -384,7 +481,7 @@
     "Control": "Guardrails8",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
+    "Required": "True",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -428,6 +525,110 @@
     ]
   },
   {
+    "ModuleName": "Check-NetworkWatcherEnabled",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Get-NetworkWatcherStatus -ControlName $msgTable.CtrName9 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.NetworkBoundaryProtectionPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "NetworkBoundaryProtectionPolicy.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.LimitPublicIPsPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "LimitPublicIPsPolicy.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.AuthSourceIPPolicyConfirm -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "AuthSourceIPPolicyConfirm.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-CBSSensors",
     "Control": "Guardrails10",
     "ModuleType": "Builtin",
@@ -444,6 +645,68 @@
       {
         "Name": "itsgcode",
         "Value": "SI4"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails10",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentsExistInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName10 -ItemName $msgTable.MOUwithCCCS -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": [
+          "MemorandumOfUnderstanding.txt",
+          "ChiefDirectoryOfficeConfirmation.txt"
+        ]
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentsExistInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.SeverityNotificationToEmailConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": [
+          "MemorandumOfUnderstanding.txt",
+          "SeverityNotificationToEmailConfigured.txt"
+        ]
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
       }
     ]
   },
@@ -466,7 +729,7 @@
         "Value": "AU2"
       }
     ]
-  },  
+  },
   {
     "ModuleName": "Check-HealthMonitoring",
     "Control": "Guardrails11",
@@ -490,7 +753,8 @@
         "Value": "AU2"
       }
     ]
-  },  {
+  },
+  {
     "ModuleName": "Check-SecurityMonitoring",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",
@@ -510,6 +774,34 @@
     "localVariables": [
       {
         "Name": "itsgcodesecmon",
+        "Value": "AU2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.passwordNotificationsConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "ConfirmPasswordNotificationsConfigured.txt"
+      },
+      {
+        "Name": "itsgcode",
         "Value": "AU2"
       }
     ]

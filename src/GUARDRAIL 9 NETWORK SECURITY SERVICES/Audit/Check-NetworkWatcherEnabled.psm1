@@ -1,4 +1,4 @@
-function Get-VNetComplianceInformation {
+function Get-NetworkWatcherStatus {
     param (
         [Parameter(Mandatory=$false)]
         [string]
@@ -21,7 +21,7 @@ function Get-VNetComplianceInformation {
         [switch]
         $debuginfo
     )
-    [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
@@ -42,6 +42,8 @@ function Get-VNetComplianceInformation {
         
         $VNets=Get-AzVirtualNetwork
         Write-Debug "Found $($VNets.count) VNets."
+
+        $nonExcludedVnetRegions = @()
         if ($VNets)
         {
             foreach ($VNet in $VNets)
@@ -50,41 +52,48 @@ function Get-VNetComplianceInformation {
                 $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet
                 if ($ev -ne "true" -and $vnet.Name -notin $ExcludedVNetsList)
                 {
-                    if ($Vnet.EnableDdosProtection) 
-                    {
-                        $ComplianceStatus = $true 
-                        $Comments="$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
-                    }
-                    else {
-                        $ComplianceStatus = $false
-                        $Comments= $msgTable.ddosNotEnabled
-                    }
-                    # Create PSOBject with Information.
-                    $VNetObject = [PSCustomObject]@{ 
-                        VNETName = $VNet.Name
-                        SubscriptionName  = $sub.Name 
-                        ComplianceStatus = $ComplianceStatus
-                        Comments = $Comments
-                        ItemName = $msgTable.vnetDDosConfig
-                        itsgcode = $itsgcode
-                        ControlName = $ControlName
-                        ReportTime = $ReportTime
-                    }
-                    $VNetList.add($VNetObject) | Out-Null                
+
+                    # add vnet region to regions list - used in checking for network watcher in that region
+                    $nonExcludedVnetRegions += $VNet.Location             
                 }
                 else {
                     Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
                 }    
             }
+
+            # check if network watcher is enabled in the region
+            $comments = $null
+            $ComplianceStatus = $false
+            ForEach ($region in ($nonExcludedVnetRegions | Get-Unique)) {
+                $nw = Get-AzNetworkWatcher -Location $region -ErrorAction SilentlyContinue
+                if ($nw) {
+                    $ComplianceStatus = $true 
+                    $Comments= $msgTable.networkWatcherEnabled -f $region
+                }
+                else {
+                    $ComplianceStatus = $false
+                    $Comments = $msgTable.networkWatcherNotEnabled -f $region
+                }
+                # Create PSOBject with Information.
+                $RegionObject = [PSCustomObject]@{ 
+                    SubscriptionName  = $sub.Name 
+                    ComplianceStatus = $ComplianceStatus
+                    Comments = $Comments
+                    ItemName = $msgTable.networkWatcherConfig
+                    itsgcode = $itsgcode
+                    ControlName = $ControlName
+                    ReportTime = $ReportTime
+                }
+                $RegionList.add($RegionObject) | Out-Null                               
+            }
         }
     }
     if ($debuginfo){ 
-        Write-Output "Listing $($VNetList.Count) List members."
-        $VNetList | Write-Output "VNet: $($_.VNETName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" 
+        Write-Output "Listing $($RegionList.Count) List members."
     }
     #Creates Results object:
     $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $VNetList 
+        ComplianceResults = $RegionList 
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
     }
