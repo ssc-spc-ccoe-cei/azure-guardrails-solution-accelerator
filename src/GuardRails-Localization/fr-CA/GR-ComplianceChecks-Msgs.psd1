@@ -36,30 +36,35 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GuardRail #2
+AADLicenseTypeFound = Type de licence AAD trouvé 
+AADLicenseTypeNotFound = Type de licence AAD non trouvé
+accountNotDeleted = Ce compte d'utilisateur a été supprimé mais n'a pas encore été SUPPRIMÉ DÉFINITIVEMENT d'Azure Active Directory
+ADDeletedUser = Utilisateur AD Supprimé
+ADDisabledUsers = Utilisateur AD désactivé
+apiError = Erreur API
+apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
+compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
+gcPasswordGuidanceDoc = GC Password Guidance Doc
+guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
+guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
+mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
+noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
+noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
+noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
+privilegedAccountManagementPlan = Privileged Account Management plan 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 removeGuestAccounts = Supprimez les comptes invités.
-accountNotDeleted = Ce compte d'utilisateur a été supprimé mais n'a pas encore été SUPPRIMÉ DÉFINITIVEMENT d'Azure Active Directory
-guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
 removeGuestAccountsComment = Supprimez les comptes invités d'Azure AD ou supprimez leurs permissions dans les abonnements Azure.
-noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
-guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
-ADDeletedUser = Utilisateur AD Supprimé
-ADDisabledUsers = Utilisateur AD désactivé
-noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
-noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
-compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
-mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
-apiError = Erreur API
-apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
-AADLicenseTypeFound = Type de licence AAD trouvé 
-AADLicenseTypeNotFound = Type de licence AAD non trouvé
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
+authorizedProcessedByCSO = Accès Autorisé
+mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
+noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
@@ -82,6 +87,9 @@ allowLocationPolicy = Politique de localisation autorisée
 dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
 dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
+# GuardRail #7
+enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
+
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
 subnetCompliant = Le sous-réseau est conforme.
@@ -98,16 +106,23 @@ networkDiagram = Diagramme d'architecture réseau
 noSubnets = Aucun sous-réseau n'est présent.
 
 # GuardRail # 9
-vnetDDosConfig = Configuration DDos VNet
+authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
+limitPublicIPsPolicy = Attestation que la politique de limitation des IPs publiques est respectée.
+networkBoundaryProtectionPolicy = Attestation que la politique de protection des limites du réseau est respectée.
+networkWatcherEnabled=Network Watcher existe pour la région '{0}'
+networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
+vnetDDosConfig = Configuration DDos VNet
+networkWatcherConfig = Configuration de Network Watcher
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
 cbcSensorsdontExist = Les capteurs CBC attendus n'existent pas
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
 cbssCompliant = Ressources trouvées dans ces abonnements: 
+MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
 securityMonitoring = Surveillance de la sécurité
@@ -141,6 +156,8 @@ noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
 notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
+passwordNotificationsConfigured = Notifications activées
+severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

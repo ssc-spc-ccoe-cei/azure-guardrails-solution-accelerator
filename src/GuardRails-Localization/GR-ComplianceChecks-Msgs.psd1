@@ -17,11 +17,11 @@ CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 
 # Guardrail 1
 adLicense = AD License Type
-mfaEnforcement = MFA Enforcement
+mfaEnforcement = MFA Enforcement Excl. Break Glass Accounts
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0} 
 m365Assignment = Microsoft 365 E5 Assignment
-bgProcedure = Break Glass account Procedure
+bgProcedure = Break Glass Account Non-technical
 bgCreation = Break Glass account Creation
 bgAccountResponsibility = Responsibility of break glass accounts must be with someone not-technical, director level or above
 bgAccountOwnerContact = Break Glass Account Owners Contact information
@@ -36,30 +36,35 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GuardRail #2
+AADLicenseTypeFound = Found correct license type
+AADLicenseTypeNotFound = Required AAD license type not found
+accountNotDeleted = This user account has been deleted but has not yet been DELETED PERMANENTLY from Azure Active Directory
+ADDeletedUser = AD Deleted User
+ADDisabledUsers = AD Disabled Users
+apiError = API Error
+apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
+compliantComment = Didnt find any unsynced deprecated users
+gcPasswordGuidanceDoc = GC Password Guidance Doc
+guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
+guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
+mitigationCommands = Verify is the users reported are deprecated.
+noGuestAccounts = There are no GUEST users in your tenant.
+noncompliantComment = Total Number of non-compliant users {0}. 
+noncompliantUsers = The following Users are disabled and not synchronized with AD: -
+privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 removeGuestAccounts = Remove guest accounts.
-accountNotDeleted = This user account has been deleted but has not yet been DELETED PERMANENTLY from Azure Active Directory
-guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
 removeGuestAccountsComment = Remove guest accounts from Azure AD or remove their permissions from the Azure subscriptions.
-noGuestAccounts = There are no GUEST users in your tenant.
-guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
-ADDeletedUser = AD Deleted User
-ADDisabledUsers = AD Disabled Users
-noncompliantUsers = The following Users are disabled and not synchronized with AD: - 
-noncompliantComment = Total Number of non-compliant users {0}. 
-compliantComment = Didnt find any unsynced deprecated users
-mitigationCommands = Verify is the users reported are deprecated.
-apiError = API Error
-apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
-AADLicenseTypeFound = Found correct license type
-AADLicenseTypeNotFound = Required AAD license type not found
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
+authorizedProcessedByCSO = Authorized Access
+mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
+noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
@@ -82,6 +87,9 @@ allowedLocationPolicy = AllowedLocationPolicy
 dataAtRest = PROTECTION OF DATA-AT-REST
 dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
+# GuardRail #7
+enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
+
 # GuardRail #8
 noNSG=No NSG is present.
 subnetCompliant = Subnet is compliant.
@@ -98,16 +106,23 @@ networkDiagram = Network architecture diagram
 noSubnets = No subnets found in the subscription.
 
 # GuardRail # 9
-vnetDDosConfig = VNet DDos configuration
+authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
 ddosEnabled=DDos Protection Enabled. 
 ddosNotEnabled=DDos Protection not enabled.
+limitPublicIPsPolicy = Attestation that the limit public IPs policy is adhered to.
+networkBoundaryProtectionPolicy = Attestation that the network boundary protection policy is adhered to.
+networkWatcherEnabled=Network Watcher exists for region '{0}'
+networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
 noVNets = No VNet found in the subscription.
+vnetDDosConfig = VNet DDos configuration
+networkWatcherConfig = VNet Network Watcher configuration
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
 cbcSensorsdontExist = The expected CBC sensors do not exist
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
 cbssCompliant = Found resources in these subscriptions: 
+MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
 securityMonitoring =SecurityMonitoring
@@ -141,6 +156,8 @@ noSecurityContactInfo = Subscription {0} is missing Contact Information.
 setSecurityContact = Please set a security contact for Defender for Cloud in the subscription. {0}
 notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
+passwordNotificationsConfigured = Notifications Enabled
+severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
@@ -150,7 +167,7 @@ enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft
 
 # GR-Common
 procedureFileFound = File {0} found in Container.
-procedureFileNotFound = Coudnt find document for {0}, please create and upload a file with the name {1} in Container {2} on {3} Storage account to confirm you have completed the Item in the control.
+procedureFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
 
 '@
 # SIG # Begin signature block

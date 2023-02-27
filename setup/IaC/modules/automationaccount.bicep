@@ -251,10 +251,28 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     }
   }
   resource module26 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-NetworkWatcherEnabled'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module27 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SecurityMonitoring'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module28 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-MFARequired'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-MFARequired.zip'
         version: '1.0.0'
       }
     }

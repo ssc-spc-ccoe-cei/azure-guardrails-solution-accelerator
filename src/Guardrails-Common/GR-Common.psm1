@@ -99,7 +99,7 @@ function copy-toBlob {
             Blob = ($FilePath | Split-Path -Leaf)
         }
         if ($force)
-        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force | Out-Null}
+        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force | Out-Null }
         else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
     }
     catch {
@@ -200,9 +200,9 @@ Function Add-LogEntry {
 
     # build log entry object, convert to json
     $entryHash = @{
-        "message" = $message
+        "message"    = $message
         "moduleName" = $moduleName
-        "severity" = $severity
+        "severity"   = $severity
     } + $additionalValues
     
     $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
@@ -218,82 +218,83 @@ Function Add-LogEntry {
 
 Function Add-TenantInfo {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $workspaceKey,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
-        $LogType="GR_TenantInfo",
-        [Parameter(Mandatory=$true)]
+        $LogType = "GR_TenantInfo",
+        [Parameter(Mandatory = $true)]
         [string]
         $ReportTime,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $TenantId,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $DepartmentName,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $DepartmentNumber
-        )
-    $tenantInfo=Get-AutomationVariable("tenantDomainUPN")
+    )
+    $tenantInfo = Get-AutomationVariable("tenantDomainUPN")
     $object = [PSCustomObject]@{ 
-        TenantDomain = $tenantInfo
+        TenantDomain       = $tenantInfo
         DepartmentTenantID = $TenantId
-        ReportTime = $ReportTime
-        DepartmentName = $DepartmentName
-        DepartmentNumber = $DepartmentNumber
+        ReportTime         = $ReportTime
+        DepartmentName     = $DepartmentName
+        DepartmentNumber   = $DepartmentNumber
     }
-    if ($debug) { Write-Output $tenantInfo}
-    $JSON= ConvertTo-Json -inputObject $object
+    if ($debug) { Write-Output $tenantInfo }
+    $JSON = ConvertTo-Json -inputObject $object
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 
 function Add-LogAnalyticsResults {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $workspaceKey,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
-        $LogType="GR_Results",
-        [Parameter(Mandatory=$false)]
+        $LogType = "GR_Results",
+        [Parameter(Mandatory = $false)]
         [array]
         $Results
-   )
+    )
 
-    $JSON= ConvertTo-Json -inputObject $Results
+    $JSON = ConvertTo-Json -inputObject $Results
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 function Check-DocumentExistsInStorage {
+    [Alias('Check-DocumentsExistInStorage')]
     param (
         [string] $StorageAccountName,
         [string] $ContainerName, 
         [string] $ResourceGroupName,
         [string] $SubscriptionID, 
-        [string] $DocumentName, 
+        [string[]] $DocumentName, 
         [string] $ControlName, 
         [string]$ItemName,
         [hashtable] $msgTable, 
         [string]$itsgcode,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $ReportTime
     )
@@ -321,17 +322,29 @@ function Check-DocumentExistsInStorage {
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
-    # check for procedure doc in blob storage account
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName -ErrorAction SilentlyContinue
+    $docMissing = $false
+    $commentsArray = @()
+    ForEach ($docName in $DocumentName) {
+        # check for procedure doc in blob storage account
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
 
-    If ($blobs) {
-        # a blob with the name $DocumentName was located in the specified storage account
-        $IsCompliant = $True
-        $Comments = $msgTable.procedureFileFound -f $DocumentName
+        If ($blobs) {
+            # a blob with the name $DocumentName was located in the specified storage account
+            $commentsArray += $msgTable.procedureFileFound -f $docName
+        }
+        else {
+            # no blob with the name $DocumentName was found in the specified storage account
+            $docMissing = $true
+            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
+        }
     }
-    else {
-        # no blob with the name $DocumentName was found in the specified storage account
-        $Comments = $msgTable.procedureFileNotFound -f $ItemName, $DocumentName, $ContainerName, $StorageAccountName
+    $Comments = $commentsArray -join ";"
+
+    If ($docMissing) {
+        $IsCompliant = $false
+    }
+    Else {
+        $IsCompliant = $true
     }
 
     $PsObject = [PSCustomObject]@{
@@ -343,30 +356,30 @@ function Check-DocumentExistsInStorage {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    $moduleOutput= [PSCustomObject]@{ 
+    $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject
-        Errors=$ErrorList
+        Errors            = $ErrorList
         AdditionalResults = $AdditionalResults
     }
-return $moduleOutput
+    return $moduleOutput
 
 }
 
 function Check-UpdateAvailable {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $workspaceKey,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
-        $LogType="GR_VersionInfo",
-        [Parameter(Mandatory=$true)]
+        $LogType = "GR_VersionInfo",
+        [Parameter(Mandatory = $true)]
         [string]
         $ReportTime,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
         $ResourceGroupName
     )
@@ -376,7 +389,7 @@ function Check-UpdateAvailable {
     $tags = Invoke-RestMethod $tagsFileURI -Verbose:$false
 
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
-        $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
+        $ResourceGroupName = Get-AutomationVariable -Name "ResourceGroupName"
     }
     $rg=Get-AzResourceGroup -Name $ResourceGroupName 
 
@@ -400,7 +413,7 @@ function Check-UpdateAvailable {
         $updateNeeded=$true
     }
     else {
-        $updateNeeded=$false
+        $updateNeeded = $false
     }
     $object = [PSCustomObject]@{ 
         DeployedVersion = $deployedVersion
@@ -408,13 +421,13 @@ function Check-UpdateAvailable {
         UpdateNeeded= $updateNeeded
         ReportTime = $ReportTime
     }
-    $JSON= ConvertTo-Json -inputObject $object
+    $JSON = ConvertTo-Json -inputObject $object
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 function get-itsgdata {
     [CmdletBinding()]
@@ -424,13 +437,13 @@ function get-itsgdata {
         $URL,
         [string] $WorkSpaceID,
         [string] $workspaceKey,
-        [string] $LogType="GRITSGControls",
+        [string] $LogType = "GRITSGControls",
         [switch] $DebugCode
     )
     (Invoke-WebRequest -UseBasicParsing $URL).Content | out-file tempitsg.csv
-    $Header="Family","Control ID","Enhancement","Name","Class","Definition","Supplemental Guidance,References"
-    $itsgtempinfo=Import-Csv ./tempitsg.csv -Header $Header
-    $itsginfo=$itsgtempinfo | Select-Object Name,Definition, @{Name="itsgcode";Expression={ ($_.Family + $_."Control ID" + $_.Enhancement).replace("`t","") }}
+    $Header = "Family", "Control ID", "Enhancement", "Name", "Class", "Definition", "Supplemental Guidance,References"
+    $itsgtempinfo = Import-Csv ./tempitsg.csv -Header $Header
+    $itsginfo = $itsgtempinfo | Select-Object Name, Definition, @{Name = "itsgcode"; Expression = { ($_.Family + $_."Control ID" + $_.Enhancement).replace("`t", "") } }
     $JSONcontrols = ConvertTo-Json -inputObject $itsginfo
     
     if ($DebugCode) {
@@ -438,15 +451,15 @@ function get-itsgdata {
     }
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-   -sharedkey $workspaceKey `
-   -body $JSONcontrols `
-   -logType $LogType `
-   -TimeStampField Get-Date
+        -sharedkey $workspaceKey `
+        -body $JSONcontrols `
+        -logType $LogType `
+        -TimeStampField Get-Date
 }
 function New-LogAnalyticsData {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [array] 
         $Data,
         [Parameter()]
@@ -487,7 +500,7 @@ function Invoke-GraphQuery {
     }
     
     @{
-        Content = $response.Content | ConvertFrom-Json
+        Content    = $response.Content | ConvertFrom-Json
         StatusCode = $response.StatusCode
     }
 }
