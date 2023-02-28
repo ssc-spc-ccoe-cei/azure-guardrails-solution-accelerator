@@ -3,14 +3,12 @@ targetScope = 'resourceGroup'
 //Parameters and variables
 param storageAccountName string
 param location string = 'canadacentral'
-param grafanaregion string = 'eastus'
 param kvName string = ''
 param functionname string = ''
 param logAnalyticsWorkspaceName string = ''
 param version string
 param releaseDate string 
 param appInsightslocation string = 'canadacentral'
-param deploygrafana bool = false
 
 var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name

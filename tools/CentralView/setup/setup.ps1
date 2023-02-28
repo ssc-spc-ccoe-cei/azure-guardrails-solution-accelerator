@@ -6,10 +6,7 @@ param (
     [string]
     $userId,
     [string] 
-    $subscriptionId,
-    [bool] 
-    $deploygrafana=$false
-
+    $subscriptionId
 )
 #region Configuration and initialization
 #Other Variables
@@ -48,7 +45,6 @@ $tenantIDtoAppend = "-" + $((Get-AzContext).Tenant.Id).Split("-")[0]
 $keyVaultName = $config.keyVaultName + $tenantIDtoAppend
 $resourcegroup = $config.resourcegroup + $tenantIDtoAppend
 $region = $config.region
-$grafanaregion = $config.grafanaregion
 $logAnalyticsworkspaceName = $config.logAnalyticsworkspaceName + $tenantIDtoAppend
 $functionname = $config.functionName + $tenantIDtoAppend
 $keyVaultRG=$resourcegroup
@@ -103,11 +99,9 @@ $templateParameterObject = @{
     'location' = $region
     'storageAccountName' = $storageaccountName
     'logAnalyticsWorkspaceName' = $logAnalyticsworkspaceName
-    'grafanaregion' = $grafanaregion
     'version' = $tags.ReleaseVersion
     'releasedate' = $tags.ReleaseDate
     'functionname' = $functionname
-    'deploygrafana' = $deploygrafana
 }
 # Adding URL parameter if specified
 If (![string]::IsNullOrEmpty($alternatePSModulesURL)) {
@@ -153,7 +147,7 @@ if (!$update)
     $templateParameterObject
 
     Write-Output "Deploying solution through bicep."
-    try { 
+    try { =======
         New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
             -TemplateParameterObject $templateParameterObject -TemplateFile .\IaC\grfunc.bicep -WarningAction SilentlyContinue
     }
@@ -179,18 +173,7 @@ if (!$update)
         "Error assigning permissions to Automation account (for keyvault). $_"
         break
     }
-    #Grafana Permissions - when deployed from templates, no permissions are added to the Grafana instance.
-    if ($deploygrafana) {
-        try {
-            $grafanaId=(Get-AzResource -ResourceGroupName $resourcegroup -ResourceType Microsoft.Dashboard/grafana).Id
-            new-azroleAssignment -ObjectId $currentUserId -RoleDefinitionName "Grafana Admin" -Scope $grafanaId
-        }
-        catch {
-            "Error assigning permissions to Grafana. $_"
-            break
-        }
-    }
-    Write-Verbose "Adding workspacekey information to keyvault."
+      Write-Verbose "Adding workspacekey information to keyvault."
     # Application Id and Secure Password will be empty. Need to be updates with customer's information.
     try {
         $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
@@ -219,22 +202,7 @@ if (!$update)
         break
     }
     #endregion
-    #region Configure grafana - preview
-    if ($deploygrafana) {
-        Write-Verbose "Configuring Grafana files."
-        $query = "resources | where type == 'microsoft.dashboard/grafana' and resourceGroup == '$resourcegroup'"
-        $LAWId=(Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourcegroup -Name $logAnalyticsworkspaceName).ResourceId
-        $grafanaURL=(Search-AzGraph -Query $query).properties.endpoint
-        if (!([string]::IsNullOrEmpty($grafanaURL)))
-        {
-            ./grafana/customizegrafana.ps1 -LAWResourceId $LawId -grafanaURL $grafanaURL -LAWResourceIdSubscriptionId $subscriptionId -basePath "./grafana"
-        }
-        else {
-            Write-Error "Error fetching Grafana URL."
-            break
-        }
-    }
-    #endregion
+
     $timetaken = ((get-date) - $begin) 
     "Time to deploy: $([Math]::Round($timetaken.TotalMinutes,0)) Minutes."
 }
