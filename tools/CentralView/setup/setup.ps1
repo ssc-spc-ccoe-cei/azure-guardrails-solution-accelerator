@@ -147,7 +147,7 @@ if (!$update)
     $templateParameterObject
 
     Write-Output "Deploying solution through bicep."
-    try { =======
+    try { 
         New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
             -TemplateParameterObject $templateParameterObject -TemplateFile .\IaC\grfunc.bicep -WarningAction SilentlyContinue
     }
