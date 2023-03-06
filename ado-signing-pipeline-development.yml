@@ -243,6 +243,7 @@ steps:
           "lighthousePrincipalId": "$(lighthousePrincipalId)",
           "lighthouseTargetManagementGroupID": "mb_co",
           "subscriptionId": "$(testSubscriptionId)",
+          "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
           "uniqueNameSuffix": "$(uniqueNameSuffix)"
         }
       '@
@@ -298,6 +299,7 @@ steps:
           "lighthousePrincipalId": "$(lighthousePrincipalId)",
           "lighthouseTargetManagementGroupID": "$(lighthouseTargetManagementGroupID)",
           "subscriptionId": "$(testSubscriptionId)",
+          "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
           "uniqueNameSuffix": "$(uniqueNameSuffix)"
         }
       '@
