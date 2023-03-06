@@ -17,6 +17,7 @@ param PBMMPolicyID string
 param releaseDate string
 param releaseVersion string
 param SecurityLAWResourceId string
+param SSCReadOnlyServicePrincipalNameAPPID string
 param TenantDomainUPN string
 param updatePSModules bool = false
 param updateCoreResources bool = false
@@ -405,5 +406,15 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       'value': '"GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet"'
   }
   }
+  
+  resource variable19 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'SSCReadOnlyServicePrincipalNameAPPID'
+    'properties': {
+      'isEncrypted': true
+      'value': '"${SSCReadOnlyServicePrincipalNameAPPID}"'
+  }
+  }
+
+
 }
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

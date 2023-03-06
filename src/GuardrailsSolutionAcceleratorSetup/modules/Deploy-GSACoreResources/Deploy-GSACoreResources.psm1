@@ -99,7 +99,7 @@ Function Deploy-GSACoreResources {
         #region Assign permissions>
         $graphAppId = "00000003-0000-0000-c000-000000000000"
         $graphAppSP = Get-AzADServicePrincipal -ApplicationId $graphAppId
-        $appRoleIds = @("Organization.Read.All", "User.Read.All", "UserAuthenticationMethod.Read.All", "Policy.Read.All")
+        $appRoleIds = @("Organization.Read.All", "User.Read.All", "UserAuthenticationMethod.Read.All", "Policy.Read.All","Directory.Read.All")
 
         foreach ($approleidName in $appRoleIds) {
             Write-Verbose "`tAdding permission to $approleidName"
