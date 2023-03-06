@@ -21,16 +21,19 @@ param PBMMPolicyID string = '4c4a5f27-de81-430b-b4e5-9cbd50595a87'
 param releaseDate string 
 param releaseVersion string
 param SecurityLAWResourceId string
+param SSCReadOnlyServicePrincipalNameAPPID string
 param storageAccountName string
 param subscriptionId string
 param TenantDomainUPN string
 param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
+
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name
+
 //Resources:
 //KeyVault
 module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
@@ -59,6 +62,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     releaseDate: releaseDate
     releaseVersion: releaseVersion
     SecurityLAWResourceId: SecurityLAWResourceId
+    SSCReadOnlyServicePrincipalNameAPPID:SSCReadOnlyServicePrincipalNameAPPID
     TenantDomainUPN: TenantDomainUPN
     updatePSModules: updatePSModules
     updateCoreResources: updateCoreResources

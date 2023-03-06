@@ -70,6 +70,11 @@ noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MF
 monitorAccount = Surveiller la création de compte
 checkUserExistsError = L'appel API a retourné l'erreur {0}. Veuillez vérifier si l'utilisateur existe.
 checkUserExists = Veuillez vérifier si l'utilisateur existe.
+ServicePrincipalNameHasNoReaderRole = SPN n'a pas de rôle de lecteur sur le groupe de gestion ROOT.
+ServicePrincipalNameHasReaderRole = SPN a le rôle de lecteur sur le groupe de gestion ROOT.
+ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN n'a pas de rôle d'administrateur de Marketplace.
+ServicePrincipalNameHasMarketPlaceAdminRole = SPN a pas le rôle d'administrateur de Marketplace.
+NoSPN = SPN n'existe pas. 
 
 # GuardRail #5-6
 pbmmCompliance = Conformité PBMMPolicy
