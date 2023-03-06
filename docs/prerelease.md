@@ -40,7 +40,7 @@ If ($storageAccount = Get-AzStorageAccount -ResourceGroupName $resourceGroupName
 }
 Else {
     Write-Host "Creating storage account '$storageAccountName'..."
-    $storageAccount = New-AzStorageAccount -ResourceGroupName $resourceGroupName -Location $location -Name $storageAccountName -SkuName Standard_LRS -EnableHTTPSTrafficOnly $true
+    $storageAccount = New-AzStorageAccount -ResourceGroupName $resourceGroupName -Location $location -Name $storageAccountName -SkuName Standard_LRS -EnableHTTPSTrafficOnly $true -AllowBlobPublicAccess $true
 }
 
 $container = New-AzStorageContainer -name psmodules -Permission Container -Context $storageAccount.Context -ErrorAction SilentlyContinue
