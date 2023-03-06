@@ -7,7 +7,7 @@
   "automationAccountName": "guardrails",
   "firstBreakGlassAccountUPN": "user1@domain.com",
   "secondBreakGlassAccountUPN": "user2@domain.com",
-  "SSCReadOnlyServicePrincipalNameAPPID": "N/A",
+  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
   "pbmmPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
   "allowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
   "departmentNumber": "",
