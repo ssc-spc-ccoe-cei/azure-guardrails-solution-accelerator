@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Check-ProtectionDataAtRest.psm1'
+RootModule = 'Check-ProtectionDataAtRest'
 
 # Version number of this module.
 ModuleVersion = '1.2.2'

@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Check-PrivateMarketPlace.psm1'
+RootModule = 'Check-PrivateMarketPlace'
 
 # Version number of this module.
 ModuleVersion = '1.1.3'

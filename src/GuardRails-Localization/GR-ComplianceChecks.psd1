@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\GR-ComplianceChecks.psm1'
+RootModule = 'GR-ComplianceChecks'
 
 # Version number of this module.
 ModuleVersion = '1.4.4'

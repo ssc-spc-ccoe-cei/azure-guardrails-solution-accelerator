@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Detect-UserBGAUsersAuthMethods.psm1'
+RootModule = 'Detect-UserBGAUsersAuthMethods'
 
 # Version number of this module.
 ModuleVersion = '1.2.3'

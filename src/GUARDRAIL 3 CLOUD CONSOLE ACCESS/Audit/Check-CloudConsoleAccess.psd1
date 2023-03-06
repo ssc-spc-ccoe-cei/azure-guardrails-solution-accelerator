@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Check-CloudConsoleAccess.psm1'
+RootModule = 'Check-CloudConsoleAccess'
 
 # Version number of this module.
 ModuleVersion = '1.0.5'
