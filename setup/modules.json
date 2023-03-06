@@ -305,16 +305,16 @@
     ]
   },
   {
-    "ModuleName": "Check-MonitorAccountCreation",
+    "ModuleName": "Check-ServicePrincipalName",
     "Control": "Guardrails4",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-MonitorAccountCreation  -DepartmentNumber $vars.departmentnumber -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DepartmentServicePrincipalName  -SPNID $vars.SSCReadOnlyServicePrincipalNameAPPID -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
-        "Name": "departmentnumber",
-        "Value": "DepartmentNumber"
+        "Name":  "SSCReadOnlyServicePrincipalNameAPPID",
+        "Value": "SSCReadOnlyServicePrincipalNameAPPID"
       }
     ],
     "localVariables": [

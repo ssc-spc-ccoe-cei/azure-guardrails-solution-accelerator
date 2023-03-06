@@ -5,7 +5,7 @@ How the controls work.
 ## GUARDRAIL 1 PROTECT ROOT  GLOBAL ADMINS ACCOUNT
 In this control the solution tries to validate multiple items as follow.
 
-1. Break Glass accounts Creation
+1. #### Break Glass accounts Creation
 
       The solution will verify the existence of the two Break Glass accounts that you have  entered in the config.json during the setup process.Once the solution detects both accounts the check mark status will be changed from (❌) to (✔️).
 

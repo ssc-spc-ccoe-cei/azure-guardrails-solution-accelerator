@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Check-ExternalAccounts.psm1'
+RootModule = 'Check-ExternalAccounts'
 
 # Version number of this module.
 ModuleVersion = '1.2.4'

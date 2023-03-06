@@ -9,10 +9,10 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\gr-common.psm1'
+RootModule = 'GR-Common'
 
 # Version number of this module.
-ModuleVersion = '1.1.8'
+ModuleVersion = '1.1.9'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

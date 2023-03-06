@@ -48,26 +48,27 @@ Function New-GSACoreResourceDeploymentParamObject {
     
     Write-Verbose "Creating bicep parameters file for this deployment."
     $templateParameterObject = @{
-        'AllowedLocationPolicyId'           = $config.AllowedLocationPolicyId
-        'automationAccountName'             = $config['runtime']['autoMationAccountName']
-        'CBSSubscriptionName'               = $config.CBSSubscriptionName
-        'DepartmentNumber'                  = $config.DepartmentNumber
-        'DepartmentName'                    = $config['runtime']['departmentName']
-        'deployKV'                          = $config['runtime']['deployKV']
-        'deployLAW'                         = $config['runtime']['deployLAW']
-        'HealthLAWResourceId'               = $config.HealthLAWResourceId
-        'kvName'                            = $config['runtime']['keyVaultName']
-        'lighthouseTargetManagementGroupID' = $config.lighthouseTargetManagementGroupID
-        'Locale'                            = $config.Locale
-        'location'                          = $config.region
-        'logAnalyticsWorkspaceName'         = $config['runtime']['logAnalyticsworkspaceName']
-        'PBMMPolicyID'                      = $config.PBMMPolicyID
-        'releasedate'                       = $config['runtime']['tagsTable'].ReleaseDate
-        'releaseVersion'                    = $config['runtime']['tagsTable'].ReleaseVersion
-        'SecurityLAWResourceId'             = $config.SecurityLAWResourceId
-        'storageAccountName'                = $config['runtime']['storageaccountName']
-        'subscriptionId'                    = (Get-AzContext).Subscription.Id
-        'tenantDomainUPN'                   = $config['runtime']['tenantDomainUPN']
+        'AllowedLocationPolicyId'               = $config.AllowedLocationPolicyId
+        'automationAccountName'                 = $config['runtime']['autoMationAccountName']
+        'CBSSubscriptionName'                   = $config.CBSSubscriptionName
+        'DepartmentNumber'                      = $config.DepartmentNumber
+        'DepartmentName'                        = $config['runtime']['departmentName']
+        'deployKV'                              = $config['runtime']['deployKV']
+        'deployLAW'                             = $config['runtime']['deployLAW']
+        'HealthLAWResourceId'                   = $config.HealthLAWResourceId
+        'kvName'                                = $config['runtime']['keyVaultName']
+        'lighthouseTargetManagementGroupID'     = $config.lighthouseTargetManagementGroupID
+        'Locale'                                = $config.Locale
+        'location'                              = $config.region
+        'logAnalyticsWorkspaceName'             = $config['runtime']['logAnalyticsworkspaceName']
+        'PBMMPolicyID'                          = $config.PBMMPolicyID
+        'releasedate'                           = $config['runtime']['tagsTable'].ReleaseDate
+        'releaseVersion'                        = $config['runtime']['tagsTable'].ReleaseVersion
+        'SecurityLAWResourceId'                 = $config.SecurityLAWResourceId
+        'SSCReadOnlyServicePrincipalNameAPPID'  = $config.SSCReadOnlyServicePrincipalNameAPPID
+        'storageAccountName'                    = $config['runtime']['storageaccountName']
+        'subscriptionId'                        = (Get-AzContext).Subscription.Id
+        'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
     }
     # Adding URL parameter if specified
     [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'

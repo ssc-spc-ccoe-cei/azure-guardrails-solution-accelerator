@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Check-DeprecatedAccounts.psm1'
+RootModule = 'Check-DeprecatedAccounts'
 
 # Version number of this module.
 ModuleVersion = '1.2.1'

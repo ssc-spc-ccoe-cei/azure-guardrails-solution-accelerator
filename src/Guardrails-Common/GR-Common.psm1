@@ -155,6 +155,7 @@ function read-blob {
         Container   = $containerName
         Destination = $FilePath
         Context     = $Context
+        Force       = $true
     }
     Get-AzStorageBlobContent @blobParams
 }
@@ -240,7 +241,7 @@ Function Add-TenantInfo {
         [string]
         $DepartmentNumber
     )
-    $tenantInfo = Get-AutomationVariable("tenantDomainUPN")
+    $tenantInfo = Get-GSAAutomationVariable("tenantDomainUPN")
     $object = [PSCustomObject]@{ 
         TenantDomain       = $tenantInfo
         DepartmentTenantID = $TenantId
@@ -504,6 +505,7 @@ function Invoke-GraphQuery {
         StatusCode = $response.StatusCode
     }
 }
+
 # endregion
 
 # SIG # Begin signature block
