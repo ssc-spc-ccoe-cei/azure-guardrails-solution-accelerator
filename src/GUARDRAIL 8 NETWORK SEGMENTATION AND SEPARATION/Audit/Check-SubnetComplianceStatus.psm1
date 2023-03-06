@@ -41,23 +41,20 @@ function Get-SubnetComplianceInformation {
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
     }
 
-    # if ($ExcludedSubnets -ne $null)
-    # {
-    #     $ExcludedSubnetsList=$ExcludedSubnets.Split(",")
-    # }
     foreach ($sub in $subs)
     {
         Write-Verbose "Selecting subscription: $($sub.Name)"
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         
-        $VNets=Get-AzVirtualNetwork
-        Write-Debug "Found $($VNets.count) VNets."
-        if ($VNets)
+        $allVNETs=Get-AzVirtualNetwork
+        $includedVNETs=$allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
+        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
+        if ($includedVNETs)
         {
-            foreach ($VNet in $VNets)
+            foreach ($VNet in $includedVNETs)
             {
                 Write-Debug "Working on $($VNet.Name) VNet..."
-                $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet # this will exclude the VNet from the compliance check, altogether.
+
                 $ExcludeSubnetsTag=get-tagValue -tagKey $ExcludedSubnetListTag -object $VNet
                 if (!([string]::IsNullOrEmpty($ExcludeSubnetsTag)))
                 {
@@ -67,95 +64,91 @@ function Get-SubnetComplianceInformation {
                     $ExcludedSubnetListFromTag=@()
                 }
 
-                if ($ev -ne "true")
+                #Handles the subnets
+                foreach ($subnet in Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $VNet)
                 {
-                    #Handles the subnets
-                    foreach ($subnet in Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $VNet)
+                    Write-Debug "Working on $($subnet.Name) Subnet..."
+                    if ($subnet.Name -notin $allexcluded -and $subnet.Name -notin $ExcludedSubnetListFromTag)
                     {
-                        Write-Debug "Working on $($subnet.Name) Subnet..."
-                        if ($subnet.Name -notin $allexcluded -and $subnet.Name -notin $ExcludedSubnetListFromTag)
+                        #checks NSGs
+                        $ComplianceStatus=$false
+                        $Comments = $msgTable.noNSG
+                        if ($null -ne $subnet.NetworkSecurityGroup)
                         {
-                            #checks NSGs
-                            $ComplianceStatus=$false
-                            $Comments = $msgTable.noNSG
-                            if ($null -ne $subnet.NetworkSecurityGroup)
+                            Write-Debug "Found $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) NSG"
+                            #Add routine to analyze NSG regarding standard rules.
+                            $nsg=Get-AzNetworkSecurityGroup -Name $subnet.NetworkSecurityGroup.Id.Split("/")[8] -ResourceGroupName $subnet.NetworkSecurityGroup.Id.Split("/")[4]
+                            if ($nsg.SecurityRules.count -ne 0) #NSG has other rules on top of standard rules.
                             {
-                                Write-Debug "Found $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) NSG"
-                                #Add routine to analyze NSG regarding standard rules.
-                                $nsg=Get-AzNetworkSecurityGroup -Name $subnet.NetworkSecurityGroup.Id.Split("/")[8] -ResourceGroupName $subnet.NetworkSecurityGroup.Id.Split("/")[4]
-                                if ($nsg.SecurityRules.count -ne 0) #NSG has other rules on top of standard rules.
+                                $LastSecurityRule=($nsg.SecurityRules | Sort-Object Priority -Descending)[0]
+                                if ($LastSecurityRule.DestinationAddressPrefix -eq '*' -and $LastSecurityRule.Access -eq "Deny") # Determine all criteria for good or bad here...
                                 {
-                                    $LastSecurityRule=($nsg.SecurityRules | Sort-Object Priority -Descending)[0]
-                                    if ($LastSecurityRule.DestinationAddressPrefix -eq '*' -and $LastSecurityRule.Access -eq "Deny") # Determine all criteria for good or bad here...
-                                    {
-                                        $ComplianceStatus=$true
-                                        $Comments = $msgTable.subnetCompliant
-                                    }
-                                    else {
-                                        $ComplianceStatus=$false
-                                        $Comments = $msgTable.nsgConfigDenyAll
-                                    }
+                                    $ComplianceStatus=$true
+                                    $Comments = $msgTable.subnetCompliant
                                 }
                                 else {
-                                    #NSG is present but has no custom rules at all.
                                     $ComplianceStatus=$false
-                                    $Comments = $msgTable.nsgCustomRule
-    
+                                    $Comments = $msgTable.nsgConfigDenyAll
                                 }
                             }
-                            $SubnetObject = [PSCustomObject]@{ 
-                                SubscriptionName  = $sub.Name 
-                                SubnetName="$($VNet.Name)\$($subnet.Name)"
-                                ComplianceStatus = $ComplianceStatus
-                                Comments = $Comments
-                                ItemName = $msgTable.networkSegmentation
-                                ControlName = $ControlName
-                                itsgcode = $itsgcodesegmentation
-                                ReportTime = $ReportTime
+                            else {
+                                #NSG is present but has no custom rules at all.
+                                $ComplianceStatus=$false
+                                $Comments = $msgTable.nsgCustomRule
+
                             }
-                            $SubnetList.add($SubnetObject) | Out-Null
-                            #Checks Routes
-                            if ($subnet.RouteTable)
-                            {
-                                $UDR=$subnet.RouteTable.Id.Split("/")[8]
-                                Write-Debug "Found $UDR UDR"
-                                $routeTable=Get-AzRouteTable -ResourceGroupName $subnet.RouteTable.Id.Split("/")[4] -name $UDR
-                                $ComplianceStatus=$false # I still don´t know if it has a UDR with 0.0.0.0 being sent to a Virtual Appliance.
-                                $Comments = $msgTable.routeNVA
-                                foreach ($route in $routeTable.Routes)
-                                {
-                                    if ($route.NextHopType -eq "VirtualAppliance" -and $route.AddressPrefix -eq "0.0.0.0/0") # Found the required UDR
-                                    {
-                                        $ComplianceStatus=$true
-                                        $Comments= $msgTable.subnetCompliant
-                                    }
-                                }
-                            }
-                        }
-                        else { #subnet excluded
-                            $ComplianceStatus=$true
-                            $Comments=$msgTable.subnetExcluded
                         }
                         $SubnetObject = [PSCustomObject]@{ 
                             SubscriptionName  = $sub.Name 
                             SubnetName="$($VNet.Name)\$($subnet.Name)"
                             ComplianceStatus = $ComplianceStatus
                             Comments = $Comments
-                            ItemName = $msgTable.networkSeparation
-                            itsgcode = $itsgcodeseparation
+                            ItemName = $msgTable.networkSegmentation
                             ControlName = $ControlName
+                            itsgcode = $itsgcodesegmentation
                             ReportTime = $ReportTime
                         }
                         $SubnetList.add($SubnetObject) | Out-Null
+                        #Checks Routes
+                        if ($subnet.RouteTable)
+                        {
+                            $UDR=$subnet.RouteTable.Id.Split("/")[8]
+                            Write-Debug "Found $UDR UDR"
+                            $routeTable=Get-AzRouteTable -ResourceGroupName $subnet.RouteTable.Id.Split("/")[4] -name $UDR
+                            $ComplianceStatus=$false # I still don´t know if it has a UDR with 0.0.0.0 being sent to a Virtual Appliance.
+                            $Comments = $msgTable.routeNVA
+                            foreach ($route in $routeTable.Routes)
+                            {
+                                if ($route.NextHopType -eq "VirtualAppliance" -and $route.AddressPrefix -eq "0.0.0.0/0") # Found the required UDR
+                                {
+                                    $ComplianceStatus=$true
+                                    $Comments= $msgTable.subnetCompliant
+                                }
+                            }
+                        }
                     }
+                    else { #subnet excluded
+                        $ComplianceStatus=$true
+                        $Comments=$msgTable.subnetExcluded
+                    }
+                    $SubnetObject = [PSCustomObject]@{ 
+                        SubscriptionName  = $sub.Name 
+                        SubnetName="$($VNet.Name)\$($subnet.Name)"
+                        ComplianceStatus = $ComplianceStatus
+                        Comments = $Comments
+                        ItemName = $msgTable.networkSeparation
+                        itsgcode = $itsgcodeseparation
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                    }
+                    $SubnetList.add($SubnetObject) | Out-Null
                 }
-                else {
-                    Write-Verbose "Excluding $($VNet.Name) based on tagging."
-                }    
+               
             }
         }
-        else {
-            #No subnets found
+        
+        if ($includedVNETs.count -eq 0 -or $SubnetList.count -eq 0) {
+            #No vnets found or no subnets found in vnets
             $ComplianceStatus=$true
             $Comments="$($msgTable.noSubnets) - $($sub.Name)"
             $SubnetObject = [PSCustomObject]@{ 
