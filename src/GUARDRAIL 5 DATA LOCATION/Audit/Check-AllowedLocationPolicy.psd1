@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Check-AllowedLocationPolicy.psm1'
+RootModule = 'Check-AllowedLocationPolicy'
 
 # Version number of this module.
 ModuleVersion = '1.0.5'

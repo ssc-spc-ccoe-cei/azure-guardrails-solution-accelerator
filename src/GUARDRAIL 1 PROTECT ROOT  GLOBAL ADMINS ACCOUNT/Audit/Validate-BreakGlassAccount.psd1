@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Validate-BreakGlassAccount.psm1'
+RootModule = 'Validate-BreakGlassAccount'
 
 # Version number of this module.
 ModuleVersion = '1.0.5'

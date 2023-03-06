@@ -1,38 +1,118 @@
-Disable-AzContextAutosave
+param (
+    [switch]$localExecution,
+    [string]$keyVaultName,
+    [string[]]$modulesToExecute
+)
 
-#Standard variables
-$WorkSpaceID=Get-AutomationVariable -Name "WorkSpaceID" 
-$LogType=Get-AutomationVariable -Name "LogType" 
-$KeyVaultName=Get-AutomationVariable -Name "KeyVaultName" 
-$GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
-$ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
-# This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
-$ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
-$StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
-$Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
+Disable-AzContextAutosave -Scope Process | Out-Null
+
+function Get-GSAAutomationVariable {
+    param ([parameter(Mandatory = $true)]$name)
+
+    Write-Verbose "Getting automation variable '$name'"
+    # when running in an Azure Automation Account
+    If ($ENV:AZUREPS_HOST_ENVIRONMENT -eq 'AzureAutomation/') {
+        $value = Get-AutomationVariable -Name $name
+        return $value
+    }
+    # when running outside an automation account
+    Else {
+        If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
+            Write-Host "Found variable '$name' in environment variables"
+            return $value
+        }
+        Else {
+            Write-Host "Variable '$name' not found in environment variables, trying keyvault"
+            $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+            return $secretValue.trim('"')
+        }
+    }
+}
 
 # Connects to Azure using the Automation Account's managed identity
-try {
-    Connect-AzAccount -Identity -ErrorAction Stop
+If (!$localExecution.IsPresent) {
+    try {
+        Connect-AzAccount -Identity -ErrorAction Stop
+    }
+    catch {
+        throw "Critical: Failed to connect to Azure with the 'Connect-AzAccount' command and '-identity' (MSI) parameter; verify that Azure Automation identity is configured. Error message: $_"
+    }
 }
-catch {
-    throw "Critical: Failed to connect to Azure with the 'Connect-AzAccount' command and '-identity' (MSI) parameter; verify that Azure Automation identity is configured. Error message: $_"
+Else {
+    Write-Output "Running locally, skipping Azure connection."
+    
+    Write-Output "Removing previously imported Guardrail modules..."
+    Get-Module | where-object {$_.Path -like '*GUARDRAIL*'} | Remove-Module
+
+    Write-Output "Importing all modules manually..."
+    Get-ChildItem -path ../src -Filter *.psd1 -Recurse -File -Exclude 'GR-ComplianceCheck*' | Import-Module -Force 
+
+    # manually import localization module due to directory structure
+    Import-Module ../src/Guardrails-Localization/GR-ComplianceChecks.psd1
+
+    # install marketplace module
+    Install-Module -Name Az.Marketplace -Scope CurrentUser 
+
+    # setting local environment variables
+    $config = Get-GSAExportedConfig -KeyVaultName $keyVaultName -yes | Select-Object -Expand configString | ConvertFrom-Json | Select-Object -ExcludeProperty runtime
+    $config.psobject.properties | ForEach-Object {
+        Write-Host "Setting environment variable: $($_.Name) = $($_.Value.ToString())"
+        [System.Environment]::SetEnvironmentVariable($_.Name, $_.Value.ToString(), [System.EnvironmentVariableTarget]::Process)
+    }
+    ## overwrite config vars with runtime full values
+    $config = Get-GSAExportedConfig -KeyVaultName $keyVaultName -yes | Select-Object -Expand configString | ConvertFrom-Json | Select-Object -Expand runtime
+    $config.psobject.properties | ForEach-Object {
+        Write-Host "Setting environment variable: $($_.Name) = $($_.Value.ToString())"
+        [System.Environment]::SetEnvironmentVariable($_.Name, $_.Value.ToString(), [System.EnvironmentVariableTarget]::Process)
+    }
+
+    # manually set additional variables
+    [System.Environment]::SetEnvironmentVariable('GuardrailWorkspaceIDKeyName', 'WorkSpaceKey', [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('LogType', 'GuardrailsCompliance', [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('WorkSpaceID', (Get-AzOperationalInsightsWorkspace -ResourceGroupName $env:ResourceGroup -Name $env:logAnalyticsworkspaceName).CustomerId, [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('ContainerName', 'guardrailsstorage', [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('ReservedSubnetList', "GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet", [System.EnvironmentVariableTarget]::Process)
 }
+
+#Standard variables
+$WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID" 
+$LogType = Get-GSAAutomationVariable -Name "LogType" 
+$KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
+$GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
+$ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
+# This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
+$ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
+$StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
+$Locale = Get-GSAAutomationVariable -Name "GuardRailsLocale"
+
+If ($Locale -eq $null) {
+    $Locale = "en-CA"
+}
+
+
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
 Write-Output "Starting main runbooks."
 Write-Output "Reading configuration file."
 read-blob -FilePath ".\modules.json" -resourcegroup $ResourceGroupName -storageaccountName $StorageAccountName -containerName "configuration"
 try {
-    $modulesList=Get-Content .\modules.json
+    $modulesList = Get-Content .\modules.json
 }
 catch {
     Write-Error "Couldn't find module configuration file."    
     break
 }
-$modules=$modulesList | convertfrom-json
+$modules = $modulesList | convertfrom-json
 
 Write-Output "Found $($modules.Count) modules."
+
+If ($localExecution.IsPresent -and $modulesToExecute.IsPresent) {
+    Write-Output "Running locally and filtering modules to those specified in the -modulesToExecute parameter."
+    
+    $modules = $modules | Where-Object { $modulesToExecute.Value -icontains $_.ModuleName }
+    Write-Output "Running only $($modules.Count) modules: $($modules.name -join ', ')"
+}
+
 Write-Output "Reading required secrets."
 try {
     [String] $WorkspaceKey = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
@@ -42,21 +122,19 @@ catch {
 }
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
-    -additionalValues @{reportTime=$ReportTime; locale=$locale}
-
-
+    -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
-$messagesFileName="GR-ComplianceChecks-Msgs"
-$messagesBaseDirectory="C:\Modules\User\GR-ComplianceChecks"
-$messagesBindingVariableName="msgTable"
-Write-Output "Loading messages in $($Locale)"
+$messagesFileName = "GR-ComplianceChecks-Msgs"
+$messagesBaseDirectory = (Get-Module -Name GR-ComplianceChecks -ListAvailable).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
+$messagesBindingVariableName = "msgTable"
+Write-Output "Loading messages in '$($Locale)'"
 #dir 'C:\Modules\User\GR-ComplianceChecks'
 try {
     Import-LocalizedData -BindingVariable $messagesBindingVariableName -UICulture $Locale -FileName $messagesFileName -BaseDirectory $messagesBaseDirectory #-ErrorAction SilentlyContinue
 }
 catch {
-    $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey','***')))
+    $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey', '***')))
             
     Add-LogEntry 'Error' "Failed to load message table for main module. script: '$sanitizedScriptblock' `
         with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
@@ -67,36 +145,28 @@ catch {
 }
 Write-Output "Loaded $($msgTable.Count) messages." 
 Write-Output "Starting modules loop."
-foreach ($module in $modules)
-{
-    if ($module.Status -eq "Enabled")
-    {
+foreach ($module in $modules) {
+    if ($module.Status -eq "Enabled") {
         $NewScriptBlock = [scriptblock]::Create($module.Script)
         Write-Output "Processing Module $($module.modulename)" 
-        $variables=$module.variables
-        $secrets=$module.secrets
-        $localVariables=$module.localVariables
+        $variables = $module.variables
+        $secrets = $module.secrets
+        $localVariables = $module.localVariables
         $vars = [PSCustomObject]@{}          
-        if ($null -ne $variables)
-        {
-            foreach ($v in $variables)
-            {
-                $tempvarvalue=Get-AutomationVariable -Name $v.value
+        if ($null -ne $variables) {
+            foreach ($v in $variables) {
+                $tempvarvalue = Get-GSAAutomationVariable -Name $v.value
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
             }      
         }
-        if ($null -ne $secrets)
-        {
-            foreach ($v in $secrets)
-            {
-                $tempvarvalue=Get-AzKeyVaultSecret -VaultName $KeyVaultName -AsPlainText -Name $v.value
+        if ($null -ne $secrets) {
+            foreach ($v in $secrets) {
+                $tempvarvalue = Get-AzKeyVaultSecret -VaultName $KeyVaultName -AsPlainText -Name $v.value
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
             }
         }
-        if ($null -ne $localVariables)
-        {
-            foreach ($v in $localVariables)
-            {
+        if ($null -ne $localVariables) {
+            foreach ($v in $localVariables) {
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $v.value
             }
         }
@@ -104,7 +174,7 @@ foreach ($module in $modules)
         #Write-host $module.Script
 
         try {
-            $results=$NewScriptBlock.Invoke()
+            $results = $NewScriptBlock.Invoke()
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
             #Write-Output "required: $($module.Required)."
@@ -115,14 +185,15 @@ foreach ($module in $modules)
                 "Module $($module.modulename) failed with $($results.Errors.count) errors."
                 New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException"
             }
-            if ($null -ne $results.AdditionalResults) { # There is more data!
+            if ($null -ne $results.AdditionalResults) {
+                # There is more data!
                 "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID `
-                -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType
+                    -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType
             }
         }
         catch {
-            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey','***')))
+            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey', '***')))
             
             Add-LogEntry 'Error' "Failed invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
                 with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
@@ -135,7 +206,7 @@ foreach ($module in $modules)
 }
 
 Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
-    -additionalValues @{reportTime=$ReportTime; locale=$locale}
+    -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
 # SIG # Begin signature block
 # MIInqgYJKoZIhvcNAQcCoIInmzCCJ5cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
