@@ -79,4 +79,5 @@ resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((dep
 }
 
 output logAnalyticsWorkspaceId string = guardrailsLogAnalytics.properties.customerId 
+output logAnalyticsResourceId string = guardrailsLogAnalytics.id
 

@@ -104,4 +104,23 @@ module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreR
   }
 }
 
+module alertNewVersion 'modules/alert.bicep' = {
+  name: 'guardrails-alertNewVersion'
+  dependsOn: [
+    aa
+    LAW
+  ]
+  params: {
+    alertRuleDescription: 'Alerts when a new version of the Guardrails Solution Accelerator is available'
+    alertRuleName: 'GuardrailsNewVersion'
+    alertRuleDisplayName: 'Guardrails New Version Available.'
+    alertRuleSeverity: 3
+    location: location
+    query: 'GR_VersionInfo_CL | summarize total=count() by UpdateAvailable=iff(CurrentVersion_s != AvailableVersion_s, "Yes",\'No\') | where UpdateAvailable == \'Yes\''
+    scope: LAW.outputs.logAnalyticsResourceId
+    autoMitigate: true
+    evaluationFrequency: 'PT6H'
+    windowSize: 'PT6H'
+  }
+}
 output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
