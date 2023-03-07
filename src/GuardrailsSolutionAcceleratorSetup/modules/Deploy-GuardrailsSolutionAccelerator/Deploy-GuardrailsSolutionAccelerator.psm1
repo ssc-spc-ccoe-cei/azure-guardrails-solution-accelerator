@@ -279,7 +279,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         ElseIf ([string]::IsNullOrEmpty($releaseVersion) -and !$prerelease.IsPresent) {
             # getting latest release from GitHub
             $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
-            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/psmodules" -f $latestRelease.name
+            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $latestRelease.name
 
             Write-Verbose "Using latest release from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
             $params = @{ moduleBaseURL = $moduleBaseURL }
