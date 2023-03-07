@@ -71,7 +71,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
     }
     # Adding URL parameter if specified
-    [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
+    [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)|(https://github.com/.+?/.+?/releases/download/.+?/)'
     If (![string]::IsNullOrEmpty($moduleBaseURL)) {
         If ($moduleBaseURL -match $moduleURIRegex) {
             $templateParameterObject += @{ModuleBaseURL = $moduleBaseURL }
