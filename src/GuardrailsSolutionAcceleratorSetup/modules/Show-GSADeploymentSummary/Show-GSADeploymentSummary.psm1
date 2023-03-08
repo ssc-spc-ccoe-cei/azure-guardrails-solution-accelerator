@@ -34,7 +34,7 @@ Core components deployments will make the following changes to your environment:
     - Create a Log Analyics workspace, Automation Account, Storage Account, Key Vault, and Workbook resources in the new resource group
     - Grant the Automation Account Managed Service Identity (MSI) permissions to the Key Vault, Storage Account, and Log Analytics workspace in the new resource group
     - Grant the Automation Account Managed Service Identity (MSI) reader rights to your Azure tenant at the root Management Group scope
-    - Grant the Automation Account MSI the following roles in Azure AD: "Organization.Read.All", "User.Read.All", "UserAuthenticationMethod.Read.All", "Policy.Read.All"`n
+    - Grant the Automation Account MSI the following roles in Azure AD: "Organization.Read.All", "User.Read.All", "UserAuthenticationMethod.Read.All", "Policy.Read.All", "Directory.Read.All"`n
 "@
             }
             If ($components -contains 'CentralizedCustomerReportingSupport') {
