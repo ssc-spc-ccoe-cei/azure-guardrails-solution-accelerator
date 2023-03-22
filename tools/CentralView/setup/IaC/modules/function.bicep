@@ -115,7 +115,7 @@ resource azfunctionsite 'Microsoft.Web/sites@2021-03-01' = {
       hostNamesDisabled: false
       containerSize: 1536
       dailyMemoryTimeQuota: 0
-      httpsOnly: false
+      httpsOnly: true
       redundancyMode: 'None'
       storageAccountRequired: false
       keyVaultReferenceIdentity: 'SystemAssigned'
