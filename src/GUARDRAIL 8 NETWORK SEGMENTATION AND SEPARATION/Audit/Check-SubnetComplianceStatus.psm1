@@ -49,7 +49,7 @@ function Get-SubnetComplianceInformation {
         $allVNETs=Get-AzVirtualNetwork
         $includedVNETs=$allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
-        if ($includedVNETs)
+        if ($includedVNETs.count -gt 0)
         {
             foreach ($VNet in $includedVNETs)
             {
@@ -80,8 +80,12 @@ function Get-SubnetComplianceInformation {
                             $nsg=Get-AzNetworkSecurityGroup -Name $subnet.NetworkSecurityGroup.Id.Split("/")[8] -ResourceGroupName $subnet.NetworkSecurityGroup.Id.Split("/")[4]
                             if ($nsg.SecurityRules.count -ne 0) #NSG has other rules on top of standard rules.
                             {
-                                $LastSecurityRule=($nsg.SecurityRules | Sort-Object Priority -Descending)[0]
-                                if ($LastSecurityRule.DestinationAddressPrefix -eq '*' -and $LastSecurityRule.Access -eq "Deny") # Determine all criteria for good or bad here...
+
+                                $LastInboundSecurityRule=($nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object {$_.Direction -eq 'Inbound'})[0]
+                                $LastOutboundSecurityRule=($nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object {$_.Direction -eq 'Outbound'})[0]
+
+                                if ($LastInboundSecurityRule.SourceAddressPrefix -eq '*' -and $LastInboundSecurityRule.Access -eq "Deny" -and 
+                                    $LastOutboundSecurityRule.DestinationAddressPrefix -eq '*' -and $LastOutboundSecurityRule.Access -eq "Deny") 
                                 {
                                     $ComplianceStatus=$true
                                     $Comments = $msgTable.subnetCompliant

@@ -121,6 +121,7 @@ networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
 noVNets = No VNet found in the subscription.
 vnetDDosConfig = VNet DDos configuration
 networkWatcherConfig = VNet Network Watcher configuration
+networkWatcherConfigNoRegions = Either due to no VNETs or all VNETs being excluded, there are no regions to check for Network Watcher configuration
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
