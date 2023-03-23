@@ -121,6 +121,7 @@ networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
 vnetDDosConfig = Configuration DDos VNet
 networkWatcherConfig = Configuration de Network Watcher
+networkWatcherConfigNoRegions = En raison d'aucun VNETs ou de tous les VNETs étant exclus, il n'y a aucune région pour vérifier la configuration de Network Watcher
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas

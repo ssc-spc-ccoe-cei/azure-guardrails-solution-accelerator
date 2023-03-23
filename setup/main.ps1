@@ -9,7 +9,7 @@ Disable-AzContextAutosave -Scope Process | Out-Null
 function Get-GSAAutomationVariable {
     param ([parameter(Mandatory = $true)]$name)
 
-    Write-Verbose "Getting automation variable '$name'"
+    Write-Debug "Getting automation variable '$name'"
     # when running in an Azure Automation Account
     If ($ENV:AZUREPS_HOST_ENVIRONMENT -eq 'AzureAutomation/') {
         $value = Get-AutomationVariable -Name $name
@@ -18,11 +18,11 @@ function Get-GSAAutomationVariable {
     # when running outside an automation account
     Else {
         If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
-            Write-Host "Found variable '$name' in environment variables"
+            Write-Debug "Found variable '$name' in environment variables"
             return $value
         }
         Else {
-            Write-Host "Variable '$name' not found in environment variables, trying keyvault"
+            Write-Debug "Variable '$name' not found in environment variables, trying keyvault"
             $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
             return $secretValue.trim('"')
         }
@@ -40,6 +40,8 @@ If (!$localExecution.IsPresent) {
 }
 Else {
     Write-Output "Running locally, skipping Azure connection."
+
+    Update-AzConfig -Scope Process -DisplayBreakingChangeWarning:$false
     
     Write-Output "Removing previously imported Guardrail modules..."
     Get-Module | where-object {$_.Path -like '*GUARDRAIL*'} | Remove-Module
@@ -67,6 +69,8 @@ Else {
     }
 
     # manually set additional variables
+    #[System.Environment]::SetEnvironmentVariable('GuardRailsLocale', '', [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('ResourceGroupName', $env:ResourceGroup, [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('GuardrailWorkspaceIDKeyName', 'WorkSpaceKey', [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('LogType', 'GuardrailsCompliance', [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('WorkSpaceID', (Get-AzOperationalInsightsWorkspace -ResourceGroupName $env:ResourceGroup -Name $env:logAnalyticsworkspaceName).CustomerId, [System.EnvironmentVariableTarget]::Process)
@@ -94,7 +98,7 @@ $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
 Write-Output "Starting main runbooks."
 Write-Output "Reading configuration file."
-read-blob -FilePath ".\modules.json" -resourcegroup $ResourceGroupName -storageaccountName $StorageAccountName -containerName "configuration"
+read-blob -FilePath ".\modules.json" -resourcegroup $ResourceGroupName -storageaccountName $StorageAccountName -containerName "configuration" | Out-Null
 try {
     $modulesList = Get-Content .\modules.json
 }
@@ -126,7 +130,13 @@ Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName = "GR-ComplianceChecks-Msgs"
-$messagesBaseDirectory = (Get-Module -Name GR-ComplianceChecks -ListAvailable).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
+if (Get-Module -Name GR-ComplianceChecks) {
+    $messagesBaseDirectory = (Get-Module -Name GR-ComplianceChecks).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
+}
+else {
+    # module is not imported preemptively in Automation Account
+    $messagesBaseDirectory = (Get-Module -Name GR-ComplianceChecks -ListAvailable).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
+}
 $messagesBindingVariableName = "msgTable"
 Write-Output "Loading messages in '$($Locale)'"
 #dir 'C:\Modules\User\GR-ComplianceChecks'
@@ -180,16 +190,16 @@ foreach ($module in $modules) {
             #Write-Output "required: $($module.Required)."
             $results.ComplianceResults | Add-Member -MemberType Noteproperty -Name "Required" -Value $module.Required
             #"Results Required: $($results.ComplianceResults.Required)"
-            New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
+            New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
             if ($null -ne $results.Errors) {
                 "Module $($module.modulename) failed with $($results.Errors.count) errors."
-                New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException"
+                New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
             }
             if ($null -ne $results.AdditionalResults) {
                 # There is more data!
                 "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID `
-                    -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType
+                    -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
             }
         }
         catch {

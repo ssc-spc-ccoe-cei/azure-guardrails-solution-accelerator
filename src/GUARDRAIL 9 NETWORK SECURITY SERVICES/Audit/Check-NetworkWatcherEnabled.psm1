@@ -40,25 +40,18 @@ function Get-NetworkWatcherStatus {
         Write-Verbose "Selecting subscription..."
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         
-        $VNets=Get-AzVirtualNetwork
-        Write-Debug "Found $($VNets.count) VNets."
+        $allVNETs=Get-AzVirtualNetwork
+        $includedVNETs=$allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' -and $_.Name -notin $ExcludedVNetsList }
+        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag or -ExcludedVNets parameter."
 
         $nonExcludedVnetRegions = @()
-        if ($VNets)
+        if ($includedVNETs.count -gt 0)
         {
-            foreach ($VNet in $VNets)
+            foreach ($VNet in $includedVNETs)
             {
-                Write-Debug "Working on $($VNet.Name) VNet..."
-                $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet
-                if ($ev -ne "true" -and $vnet.Name -notin $ExcludedVNetsList)
-                {
-
-                    # add vnet region to regions list - used in checking for network watcher in that region
-                    $nonExcludedVnetRegions += $VNet.Location             
-                }
-                else {
-                    Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
-                }    
+                Write-Debug "Working on VNET '$($VNet.Name)'..."
+                # add vnet region to regions list - used in checking for network watcher in that region
+                $nonExcludedVnetRegions += $VNet.Location  
             }
 
             # check if network watcher is enabled in the region
@@ -86,6 +79,19 @@ function Get-NetworkWatcherStatus {
                 }
                 $RegionList.add($RegionObject) | Out-Null                               
             }
+        }
+        else {
+            $ComplianceStatus = $true
+            $RegionObject = [PSCustomObject]@{ 
+                SubscriptionName  = $sub.Name 
+                ComplianceStatus = $ComplianceStatus
+                Comments = $Comments
+                ItemName = $msgTable.networkWatcherConfigNoRegions
+                itsgcode = $itsgcode
+                ControlName = $ControlName
+                ReportTime = $ReportTime
+            }
+            $RegionList.add($RegionObject) | Out-Null   
         }
     }
     if ($debuginfo){ 
