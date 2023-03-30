@@ -72,6 +72,7 @@ Function Deploy-GSACoreResources {
     Write-Verbose "Adding workspacekey secret to key vault."
     try {
         $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsworkspaceName']).PrimarySharedKey
+
         $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "WorkSpaceKey" -SecretValue $secretvalue
     }
@@ -86,6 +87,7 @@ Function Deploy-GSACoreResources {
 
         $secretvalue = ConvertTo-SecureString $config.FirstBreakGlassAccountUPN -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA1" -SecretValue $secretvalue
+
         $secretvalue = ConvertTo-SecureString $config.SecondBreakGlassAccountUPN -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA2" -SecretValue $secretvalue
     }

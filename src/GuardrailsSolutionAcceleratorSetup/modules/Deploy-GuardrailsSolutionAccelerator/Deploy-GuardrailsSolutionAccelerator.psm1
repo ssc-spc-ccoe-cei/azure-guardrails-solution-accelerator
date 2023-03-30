@@ -426,6 +426,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             'deployerLocalUsername' = $env:USERNAME
             'deployerAzureID'       = $config['runtime']['userId']
         }
+
         $secretValue = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
         Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue $secretValue -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
 
