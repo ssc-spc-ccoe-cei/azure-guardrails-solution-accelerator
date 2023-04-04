@@ -52,7 +52,7 @@ steps:
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
     FolderPath: './'
-    Pattern: '*ps*'
+    Pattern: '*.ps1,*.psm1,*.psd1'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
         [{
