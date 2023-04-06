@@ -1,7 +1,6 @@
 param (
     [switch]$localExecution,
-    [string]$keyVaultName,
-    [string[]]$modulesToExecute
+    [string]$keyVaultName
 )
 
 Disable-AzContextAutosave -Scope Process | Out-Null

@@ -81,11 +81,12 @@ function Get-SubnetComplianceInformation {
                             if ($nsg.SecurityRules.count -ne 0) #NSG has other rules on top of standard rules.
                             {
 
-                                $LastInboundSecurityRule=($nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object {$_.Direction -eq 'Inbound'})[0]
-                                $LastOutboundSecurityRule=($nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object {$_.Direction -eq 'Outbound'})[0]
+                                $LastInboundSecurityRule=$nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object {$_.Direction -eq 'Inbound'} | Select-Object -First 1
+                                $LastOutboundSecurityRule=$nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object {$_.Direction -eq 'Outbound'} | Select-Object -First 1
 
-                                if ($LastInboundSecurityRule.SourceAddressPrefix -eq '*' -and $LastInboundSecurityRule.Access -eq "Deny" -and 
-                                    $LastOutboundSecurityRule.DestinationAddressPrefix -eq '*' -and $LastOutboundSecurityRule.Access -eq "Deny") 
+                                if ($LastInboundSecurityRule -and $LastOutboundSecurityRule -and
+                                    $LastInboundSecurityRule.SourceAddressPrefix -eq '*' -and $LastInboundSecurityRule.destinationPortRange -eq '*' -and $LastInboundSecurityRule.sourcePortRange -eq '*' -and $LastInboundSecurityRule.Access -eq "Deny" -and 
+                                    $LastOutboundSecurityRule.DestinationAddressPrefix -eq '*' -and $LastOutboundSecurityRule.destinationPortRange -eq '*' -and $LastOutboundSecurityRule.sourcePortRange -eq '*' -and $LastOutboundSecurityRule.Access -eq "Deny") 
                                 {
                                     $ComplianceStatus=$true
                                     $Comments = $msgTable.subnetCompliant
