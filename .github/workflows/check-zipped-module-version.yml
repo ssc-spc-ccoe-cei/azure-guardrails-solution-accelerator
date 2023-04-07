@@ -1,0 +1,55 @@
+name: CheckZippedModuleVersions
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check Zipped Module Versions Against Source
+      run: |
+        $moduleVersionRegex = [regex]"(?:ModuleVersion\s?=\s?')([\d\.]*)'" 
+        $zippedModules = Get-ChildItem -path psmodules
+        $allManifestFiles = Get-ChildItem -path src -Filter *.psd1 -Recurse -File
+
+        ForEach ($zippedModule in $zippedModules) {
+            $zipFile = [System.IO.Compression.zipfile]::OpenRead($zippedModule.FullName)
+            $zippedManifests = $zipFile.Entries | Where-Object { $_.Name -like "*.psd1" } 
+            
+            Foreach ($zippedManifest in $zippedManifests) {
+                $stream = $zippedManifest.Open()
+
+                $streamReader = New-Object System.IO.StreamReader($stream)
+                $content = $streamReader.ReadToEnd()
+            
+                If ($zippedModuleVersionMatches = $moduleVersionRegex.matches($content)) {
+                    If ($zippedModuleVersionMatches.count -eq 1) {
+                        $zippedModuleVersion = $zippedModuleVersionMatches[0].Groups[1].Value
+
+                        $manifestFile = $allManifestFiles | Where-Object { $_.PSChildName -eq $zippedManifest.Name }
+
+                        If ($manifestFile) {
+                            $manifestContent = Get-Content $manifestFile.FullName
+                            If ($manifestVersionMatches = $moduleVersionRegex.matches($manifestContent)) {
+                                If ($manifestVersionMatches.count -eq 1) {
+                                    $manifestVersion = $manifestVersionMatches[0].Groups[1].Value
+                                    If ($manifestVersion -ne $zippedModuleVersion) {
+                                        Write-Host "Module version mismatch for $($zippedManifest.Name):" -ForegroundColor Red
+                                        Write-Host "  Manifest version: $manifestVersion" -ForegroundColor Red
+                                        Write-Host "  Zipped version: $zippedModuleVersion" -ForegroundColor Red
+                                        
+                                        throw "Module zip '$($zippedManifest.Name)' mismatch!"
+                                    }
+                                    Write-Verbose "zip: $zippedModuleVersion src: $manifestVersion"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
