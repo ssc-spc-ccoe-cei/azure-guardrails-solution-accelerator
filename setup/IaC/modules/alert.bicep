@@ -9,49 +9,9 @@ param evaluationFrequency string = 'PT15M'
 param autoMitigate bool = false
 param query string
 
-var parentname = split(scope, '/')[8]
-
-resource featuresTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = {
-  name: '${parentname}/GR_VersionInfo_CL'
-  properties: {
-    totalRetentionInDays: 31
-    plan: 'Analytics'
-    schema: {
-        name: 'GR_VersionInfo_CL'
-        columns: [
-            {
-                name: 'CurrentVersion_s'
-                type: 'string'
-            }
-            {
-                name: 'AvailableVersion_s'
-                type: 'string'
-            }
-            {
-              name: 'ReportTime_s'
-              type: 'string'
-            }
-            {
-              name: 'UpdateNeeded_b'
-              type: 'bool'
-            }
-            {
-              name: 'TimeGenerated'
-              type: 'datetime'
-            }
-        ]
-    }
-    retentionInDays: 31
-  }  
-}
-
-
 resource rule 'Microsoft.Insights/scheduledQueryRules@2022-08-01-preview' = {
   location: location
   name: alertRuleName
-  dependsOn: [
-    featuresTable
-  ]
   properties: {
     description: alertRuleDescription
     displayName: alertRuleDisplayName
@@ -80,6 +40,7 @@ resource rule 'Microsoft.Insights/scheduledQueryRules@2022-08-01-preview' = {
           }
       ]
     }
+    skipQueryValidation: true
     autoMitigate: autoMitigate
   }
 }
