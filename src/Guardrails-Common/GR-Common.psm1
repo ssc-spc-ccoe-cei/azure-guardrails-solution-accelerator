@@ -399,8 +399,8 @@ function Check-UpdateAvailable {
 
     try {
         # script version numbers of surrounding characters and then converted to a version object
-        $deployedVersionVersion = ($deployedVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]+?$','$1') -as [version]
-        $currentVersionVersion = ($currentVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]+?$','$1') -as [version]
+        $deployedVersionVersion = [version]::Parse(($deployedVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]*$','$1'))
+        $currentVersionVersion = [version]::Parse(($currentVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]*$','$1'))
     }
     catch {
         Write-Error "Error: Failed to convert version numbers to version objects. Error: $_"
