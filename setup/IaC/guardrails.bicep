@@ -28,6 +28,7 @@ param TenantDomainUPN string
 param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
+param securityRetentionDays string 
 
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
@@ -66,6 +67,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     TenantDomainUPN: TenantDomainUPN
     updatePSModules: updatePSModules
     updateCoreResources: updateCoreResources
+    securityRetentionDays: securityRetentionDays
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
