@@ -18,5 +18,6 @@
   "lighthouseServiceProviderTenantID": "",
   "lighthousePrincipalDisplayName": "",
   "lighthousePrincipalId": "",
-  "lighthouseTargetManagementGroupID": ""
+  "lighthouseTargetManagementGroupID": "",
+  "securityRetentionDays": "730"
 }
