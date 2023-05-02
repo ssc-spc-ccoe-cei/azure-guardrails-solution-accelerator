@@ -244,7 +244,8 @@ steps:
           "lighthouseTargetManagementGroupID": "mb_co",
           "subscriptionId": "$(testSubscriptionId)",
           "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-          "uniqueNameSuffix": "$(uniqueNameSuffix)"
+          "uniqueNameSuffix": "$(uniqueNameSuffix)",
+          "securityRetentionDays": "730"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
@@ -300,7 +301,8 @@ steps:
           "lighthouseTargetManagementGroupID": "$(lighthouseTargetManagementGroupID)",
           "subscriptionId": "$(testSubscriptionId)",
           "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-          "uniqueNameSuffix": "$(uniqueNameSuffix)"
+          "uniqueNameSuffix": "$(uniqueNameSuffix)",
+          "securityRetentionDays": "730"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
