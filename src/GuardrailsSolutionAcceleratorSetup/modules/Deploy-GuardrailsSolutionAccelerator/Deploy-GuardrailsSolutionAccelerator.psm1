@@ -50,7 +50,10 @@ Function New-GSACoreResourceDeploymentParamObject {
     $templateParameterObject = @{
         'AllowedLocationPolicyId'               = $config.AllowedLocationPolicyId
         'automationAccountName'                 = $config['runtime']['autoMationAccountName']
+        'breakglassAccount1'                    = $config.firstBreakGlassAccountUPN
+        'breakglassAccount2'                    = $config.secondBreakGlassAccountUPN    
         'CBSSubscriptionName'                   = $config.CBSSubscriptionName
+        'currentUserObjectId'                   = $config['runtime']['userId']
         'DepartmentNumber'                      = $config.DepartmentNumber
         'DepartmentName'                        = $config['runtime']['departmentName']
         'deployKV'                              = $config['runtime']['deployKV']
