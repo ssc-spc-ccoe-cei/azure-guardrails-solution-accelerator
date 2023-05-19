@@ -18,28 +18,25 @@ function Get-DefenderForCloudConfig {
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    #$LogType="GuardrailsCompliance"
-    #Code
-    #
     # Defender for cloud detection.
     #
-    $IsCompliant=$true
+    $IsCompliant=$false
     
     $Comments=""
     $sublist=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName} 
     
     # This will look for specific Defender for Cloud, on a per subscription basis.
+    $nonCompliantSubs=0
     foreach ($sub in $sublist)
     {
+        $noncomplianParameters=2
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         $ContactInfo=Get-AzSecurityContact
         if ([string]::IsNullOrEmpty($ContactInfo.Email) -or [string]::IsNullOrEmpty($null -eq $ContactInfo.Phone))
         {
-            $IsCompliant=$false
-            $Comments= $msgTable.noSecurityContactInfo -f $sub.Name
-            # $MitigationCommands += $msgTable.setSecurityContact -f $sub.Name
+            $nonCompliantSubs++
+            $Comments+= $msgTable.noSecurityContactInfo -f $sub.Name
         }
-        
         # We need to exlude 
         # - CloudPosture since this plan is always shows as Free
         # - KubernetesService and ContainerRegistry because two plans are deprecated in favor of the Container plan.
@@ -49,11 +46,18 @@ function Get-DefenderForCloudConfig {
 
         if ($defenderPlans.PricingTier -contains 'Free')
         {
-            $IsCompliant=$false
+            $noncomplianParameters--
             $Comments += $msgTable.notAllDfCStandard -f $sub.Name
-            # $MitigationCommands += $msgTable.setDfCToStandard -f $sub.Name
         }
-
+    
+    }
+    if ($nonCompliantSubs -eq 0)
+    {
+        $IsCompliant=$true
+        $Comments += "All subscriptions have a security contact and Defender for Cloud is set to Standard."
+    }
+    else {
+        $IsCompliant=$false
     }
     if ($IsCompliant)
     {
@@ -67,7 +71,6 @@ function Get-DefenderForCloudConfig {
         itsgcode = $itsginfosecdefender
         ControlName = $ControlName
         ReportTime = $ReportTime
-        # MitigationCommands=$MitigationCommands
     }
     $FinalObjectList+=$object
 

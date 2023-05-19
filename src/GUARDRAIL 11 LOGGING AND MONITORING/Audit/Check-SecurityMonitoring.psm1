@@ -99,8 +99,8 @@ function get-SecurityMonitoringStatus {
     $LAWRG=$SecurityLAWResourceId.Split("/")[4]
     $LAWName=$SecurityLAWResourceId.Split("/")[8]
     
-    $IsCompliant=$true
-    
+    $IsCompliant=$false
+    $uncompliantParameters=7
     try{
         Select-AzSubscription -Subscription $Subscription -ErrorAction Stop | Out-Null
     }
@@ -126,86 +126,61 @@ function get-SecurityMonitoringStatus {
     {
         $IsCompliant=$false
         $Comments=$msgTable.securityLAWNotFound
-        # $MitigationCommands = $msgTable.createLAW
     }
     else {
-        # Test linked automation account
+        # 1 - Test linked automation account
         $LinkedServices=get-apiLinkedServicesData -subscriptionId $Subscription `
             -resourceGroup $LAWRG `
             -LAWName $LAWName
         if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -lt 1)
         {
-            $IsCompliant=$false
-            $Comments+=$msgTable.lawNoAutoAcct #"No linked automation account has been found."
-            # $MitigationCommands+=@"
-# $($msgTable.connectAutoAcct) ($LAWName).
-# https://docs.microsoft.com/en-us/azure/automation/quickstarts/create-account-portal
-# https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
-# `n
-# "@
+            $uncompliantParameters--
+            $Comments+=$msgTable.lawNoAutoAcct
         }
-        #Test Retention Days
+        # 2 -Test Retention Days
         $Retention=$LAW.retentionInDays
         if ($Retention -ne $LAWRetention)
         {
-            $IsCompliant=$false
+            $uncompliantParameters--
             $Comments+=$msgTable.lawRetention730Days
-            # $MitigationCommands += "$($msgTable.setRetention730Days) ($LAWName) -https://docs.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-archive?tabs=api-1%2Capi-2 `n"
         }
-        #Verify presense of the Activity Logs as a source
-        #Verify presense of the Activity Logs as a source
-        #old way:
-        #$ActivityLogDS=Get-AzOperationalInsightsDataSource -Workspace $LAW -Kind AzureActivityLog
-        #If ($ActivityLogDS -eq $null)
-        #{
-        #    $IsCompliant=$false
-        #    $Comments+=$msgTable.lawNoActivityLogs
-        #    $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"
-        #}
-        #New way:
+        # 3
         if (!(get-activitylogstatus -LAWResourceId $LAW.ResourceId)) {
-            $IsCompliant=$false
+            $uncompliantParameters--
             $Comments+=$msgTable.lawNoActivityLogs
-            # $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"
         }
-        # Tests for required Solutions
+        # 4 - Tests for required Solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
         if ($enabledSolutions -notcontains "Updates" -or $enabledSolutions -notcontains "AntiMalware")
         {
-            $IsCompliant=$false
-            $Comments+=$msgTable.lawSolutionNotFound # "Required solutions not present in the Log Analytics Workspace."
-<#            $MitigationCommands+=@"
-$($msgTable.addUpdatesAndAntiMalware) ($LAWName)"
-https://docs.microsoft.com/en-us/azure/automation/update-management/overview
-https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalwareOMS?tab=Overview
-`n
-"@#>
+            $uncompliantParameters--
+            $Comments+=$msgTable.lawSolutionNotFound
         }
-        # Tenant Diagnostics configuration. Needs Graph API...
+        # 5 - Tenant Diagnostics configuration. Needs Graph API...
         $tenantWS=get-tenantDiagnosticsSettings
         if ($SecurityLAWResourceId -notin $tenantWS.workspaceId)
         {
-            $IsCompliant=$false
-            $Comments+=$msgTable.lawNoTenantDiag # "Tenant Diagnostics settings are not pointing to the provided log analysitcs workspace."
-            # $MitigationCommands+="$($msgTable.configTenantDiag) ($LAWName) https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-integrate-activity-logs-with-log-analytics#send-logs-to-azure-monitor  `n"
+            $uncompliantParameters--
+            $Comments+=$msgTable.lawNoTenantDiag
         }
-        else {
-            #Workspace is there but need to check if logs are enabled.
-            $enabledLogs=(($tenantWS| Where-Object {$_.workspaceId -eq $SecurityLAWResourceId}).logs | Where-Object {$_.enabled -eq $true}).category
-            if ("AuditLogs" -notin $enabledLogs -or "SignInLogs" -notin $enabledLogs)
-            {
-                $IsCompliant=$false
-                $Comments+=$msgTable.lawMissingLogTypes # "Workspace set in tenant config but not all required log types are enabled (Audit and signin)."
-                # $MitigationCommands+="$($msgTable.addAuditAndSignInsLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-integrate-activity-logs-with-log-analytics#send-logs-to-azure-monitor `n"
-            }
+        # 6 - Workspace is there but need to check if logs are enabled.
+        $enabledLogs=(($tenantWS| Where-Object {$_.workspaceId -eq $SecurityLAWResourceId}).logs | Where-Object {$_.enabled -eq $true}).category
+        if ("AuditLogs" -notin $enabledLogs -or "SignInLogs" -notin $enabledLogs)
+        {
+            $uncompliantParameters--
+            $Comments+=$msgTable.lawMissingLogTypes
         }
         #Blueprint redirection
         # Sentinel, not sure how to detect this.
-        if ($IsCompliant)
+        if ($uncompliantParameters -eq 0)
         {
+            $IsCompliant=$true
             $Comments= $msgTable.logsAndMonitoringCompliantForSecurity
-            # $MitigationCommands+="N/A"
         }
+        else {
+            $IsCompliant=$false #Not compliant
+        }
+        
         $object = [PSCustomObject]@{ 
             ComplianceStatus = $IsCompliant
             Comments = $Comments
@@ -213,7 +188,6 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
             itsgcode = $itsginfosecmon
             ControlName = $ControlName
             ReportTime = $ReportTime
-            # MitigationCommands=$MitigationCommands
         }
         $FinalObjectList+=$object
         $IsCompliant=$true

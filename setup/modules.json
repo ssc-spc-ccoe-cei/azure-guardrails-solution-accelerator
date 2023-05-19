@@ -354,7 +354,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -AllowedLocationsString $vars.AllowedLocationsString",
     "variables": [
       {
         "Name": "cbssubscriptionName",
@@ -369,6 +369,10 @@
       {
         "Name": "itsgcode",
         "Value": "SA9(5)"
+      },
+      {
+        "Name": "AllowedLocationsString",
+        "Value": "canada,canadaeast,canadacentral"
       }
     ]
   },

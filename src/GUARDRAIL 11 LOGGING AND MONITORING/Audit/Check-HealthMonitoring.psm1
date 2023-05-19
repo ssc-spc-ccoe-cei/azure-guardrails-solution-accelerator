@@ -52,6 +52,8 @@ function Get-HealthMonitoringStatus {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
+        [int]
+        $RetentionDays=90,
         [Parameter(Mandatory=$true)]
         [string]
         $CBSSubscriptionName
@@ -66,9 +68,7 @@ function Get-HealthMonitoringStatus {
     $HealthLAWRG=$HealthLAWResourceId.Split("/")[4]
     $HealthLAWName=$HealthLAWResourceId.Split("/")[8]
     
-    $IsCompliant=$true
-    $MitigationCommands=""
-
+    $IsCompliant=$false
     try{
         Select-AzSubscription -Subscription $Subscription -ErrorAction Stop | Out-Null
     }
@@ -84,58 +84,56 @@ function Get-HealthMonitoringStatus {
     #
     #Health
     #
-    $IsCompliant=$true
     $Comments=""
+    $uncompliantParameters=4
     $LAW=Get-AzOperationalInsightsWorkspace -Name $HealthLAWName -ResourceGroupName $HealthLAWRG
     if ($null -eq $LAW)
     {
-        $IsCompliant=$false
-        $Comments+=$msgTable.healthLAWNotFound # "The specified Log Analytics Workspace for Health monitoring has not been found."
-        $MitigationCommands+= "$($msgTable.createHealthLAW) ($HealthLAWName)"
+        $Comments+=$msgTable.healthLAWNotFound 
     }
     else {
+        #1
         $LinkedServices=get-apiLinkedServicesData -subscriptionId $Subscription `
-        -resourceGroup $LAW.ResourceGroupName `
-        -LAWName $LAW.Name
+            -resourceGroup $LAW.ResourceGroupName `
+            -LAWName $LAW.Name
         if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -lt 1)
         {
-            $IsCompliant=$false
-            $Comments+=$msgTable.lawNoAutoAcct #"No linked automation account has been found."
-#             $MitigationCommands+=@"
-# $($msgTable.connectAutoAcct) ($HealthLAWName).
-# https://docs.microsoft.com/en-us/azure/automation/quickstarts/create-account-portal
-# https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
-# `n
-# "@
+            $uncompliantParameters--
+            $Comments+=$msgTable.lawNoAutoAcct 
         }
+        #2
+        #Test Retention
         $Retention=$LAW.retentionInDays
-        if ($Retention -lt 90)
+        if ($Retention -lt $RetentionDays)
         {
-            $IsCompliant=$false
-            $Comments+=$msgTable.lawRetention90Days # "Retention not set to at least90 days."
-            # $MitigationCommands+= "$($msgTable.setRetention60Days) ($HealthLAWName) - https://docs.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-archive?tabs=api-1%2Capi-2 `n"
+            $uncompliantParameters--
+            $Comments+=$msgTable.lawRetention90Days 
         }
+        #3
         #Checks required solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
         if ($enabledSolutions -notcontains "AgentHealthAssessment")
         {
-            $IsCompliant=$false
+            $uncompliantParameters--
             $Comments+=$msgTable.lawHealthNoSolutionFound # "Required solutions not present in the Health Log Analytics Workspace."
-            # $MitigationCommands+= "$($msgTable.enableAgentHealthSolution) ($HealthLAWName) - https://docs.microsoft.com/en-us/azure/azure-monitor/insights/solution-agenthealth `n"
         }
+        #4
         # add as per SSC request, github issue 
         if ($enabledSolutions -notcontains "Updates")
         {
-            $IsCompliant=$false
+            $uncompliantParameters--
             $Comments+=$msgTable.lawSolutionNotFound # "Required solutions not present in the Log Analytics Workspace."
         }
         #Tenant...No information on how to detect it.
         #Blueprint
     }
-    if ($IsCompliant)
+    if ($uncompliantParameters -eq 0)
     {
+        $IsCompliant=$true
         $Comments= $msgTable.logsAndMonitoringCompliantForHealth
-        # $MitigationCommands+="N/A."
+    }
+    else {
+        $IsCompliant=$false #Not compliant
     }
     $object = [PSCustomObject]@{ 
         ComplianceStatus = $IsCompliant
@@ -144,7 +142,6 @@ function Get-HealthMonitoringStatus {
         itsgcode = $itsginfohealthmon
         ControlName = $ControlName
         ReportTime = $ReportTime  
-        # MitigationCommands=$MitigationCommands      
     }
     $FinalObjectList+=$object
     
