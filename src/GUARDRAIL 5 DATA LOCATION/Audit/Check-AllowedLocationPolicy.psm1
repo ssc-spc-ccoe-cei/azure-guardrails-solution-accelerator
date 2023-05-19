@@ -86,6 +86,8 @@ function Verify-AllowedLocationPolicy {
         [string] $PolicyID, 
         [string] $LogType,
         [string] $itsgcode,
+        [Parameter(Mandatory=$true)]
+        [string] $AllowedLocationsString,#locations, separated by comma.
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
@@ -97,7 +99,13 @@ function Verify-AllowedLocationPolicy {
 
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $AllowedLocations = @("canada" , "canadaeast" , "canadacentral")
+    $AllowedLocations = $AllowedLocationsString.Split(",")
+    if ($AllowedLocations.Count -eq 0 -or $AllowedLocations -eq $null) {
+        $Errorlist.Add("No allowed locations were provided. Please provide a list of allowed locations separated by commas.")
+        throw "No allowed locations were provided. Please provide a list of allowed locations separated by commas."
+        break
+    }
+    # @("canada" , "canadaeast" , "canadacentral")
     #Check management groups   
     try {
         $objs = Get-AzManagementGroup -ErrorAction Stop
