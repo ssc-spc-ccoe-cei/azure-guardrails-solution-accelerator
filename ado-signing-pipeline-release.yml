@@ -172,26 +172,28 @@ steps:
   enabled: false
 
 - powershell: |
-    Write-Host "Executing powershell script in '$pwd'"
-    gci env: | FT -AutoSize
-    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
-    
+    $moduleCodeFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1 -Exclude '*-GSA*','*GuardrailsSolutionAcceleratorSetup*','*Deploy-GuardrailsSolutionAccelerator*'
+    Write-Host "'$($moduleCodeFilesObjs.count)' module manifest files "
 
-    $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
-    Write-Host "'$($moduleManifestFiles.count)' module manifest files "
-
-    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
-        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+    ForEach ($moduleCodeFile in $moduleCodeFilesObjs) {
+        $moduleManifestFile = Get-Item -Path $moduleCodeFile.FullName.replace('psm1','psd1')
         
-        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
-          Write-Host "Module '$($moduleManifest.BaseName)' found, zipping module files..."
+        If ($moduleCodeFilesObjs.FullName -icontains $moduleCodeFile.FullName -or $moduleCodeFilesObjs.FullName -icontains $moduleManifestFile.FullName) {
+          Write-Host "Module '$($moduleCodeFile.BaseName)' found, zipping module files..."
 
-          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
-          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Force
+          $destPath = "./psmodules/$($moduleCodeFile.BaseName).zip"
+
+          If ($moduleCodeFile.DIrectory.Name -eq 'Guardrails-Localization') {
+            Compress-Archive -Path "$($moduleCodeFile.Directory)/*" -DestinationPath $destPath -Force
+          }
+          Else {
+            $filesToZip = $moduleManifestFile,$moduleCodeFile
+            Compress-Archive -Path $filesToZip -DestinationPath $destPath -Force
+          }
 
         }
         Else {
-            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+            Write-Host "Neither the manifest '$($moduleCodeFile.FullName.toLower())' or script file '$($moduleManifestFile.FullName.ToLower())' for module '$($moduleCodeFile.BaseName)' was changed, skipping zipping..."
         }
     }
 

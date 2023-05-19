@@ -106,7 +106,9 @@ routeNVA = Route présente mais non dirigée vers une appliance virtuelle.
 routeNVAMitigation = Mettre à jour la route pour pointer vers une appliance virtuelle
 noUDR = Aucune route définie par l'utilisateur configurée.
 noUDRMitigation = Veuillez appliquer une route personnalisée à ce sous-réseau, pointant vers une appliance virtuelle.
-subnetExcluded = Sous-réseau exclu (nom manuel ou réservé).
+subnetExcludedByTag = Subnet '{0}' is excluded from compliance because VNET '{1}' has tag '{2}' with a value of 'true'
+subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because its name is in the reserved subnet list '{1}'
+subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
 networkDiagram = Diagramme d'architecture réseau 
 noSubnets = Aucun sous-réseau n'est présent.
 
@@ -120,6 +122,8 @@ networkWatcherEnabled=Network Watcher existe pour la région '{0}'
 networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
 vnetDDosConfig = Configuration DDos VNet
+vnetExcludedByParameter = VNet '{0}' is excluded from compliance because it is in the excluded VNet list '{1}'
+vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{1}' with a value of 'true'
 networkWatcherConfig = Configuration de Network Watcher
 networkWatcherConfigNoRegions = En raison d'aucun VNETs ou de tous les VNETs étant exclus, il n'y a aucune région pour vérifier la configuration de Network Watcher
 
