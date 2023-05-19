@@ -43,9 +43,9 @@ function Get-VNetComplianceInformation {
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
 
         if ($includedVNETs.count -gt 0) {
-            foreach ($VNet in $includedVNETs) {
+            foreach ($VNet in $allVNETs) {
                 Write-Debug "Working on $($VNet.Name) VNet..."
-                if ($vnet.Name -notin $ExcludedVNetsList) {
+                if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.name -in $includedVNETs) {
                     if ($Vnet.EnableDdosProtection) {
                         $ComplianceStatus = $true 
                         $Comments = "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
@@ -69,6 +69,27 @@ function Get-VNetComplianceInformation {
                 }
                 else {
                     Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
+                    $ComplianceStatus = $true
+                    
+                    If ($VNet.Name -in $ExcludedVNetsList) {
+                        $Comments = $msgTable.vnetExcludedByParameter -f $Vnet.name, $ExcludedVNets
+                    }
+                    ElseIf ($VNet.Name -notin $includedVNETs) {
+                        $Comments = $msgTable.vnetExcludedByTag -f $VNet.Name, $ExcludeVnetTag
+                    }
+
+                    # Create PSOBject with Information.
+                    $VNetObject = [PSCustomObject]@{ 
+                        VNETName         = $VNet.Name
+                        SubscriptionName = $sub.Name 
+                        ComplianceStatus = $ComplianceStatus
+                        Comments         = $Comments
+                        ItemName         = $msgTable.vnetDDosConfig
+                        itsgcode         = $itsgcode
+                        ControlName      = $ControlName
+                        ReportTime       = $ReportTime
+                    }
+                    $VNetList.add($VNetObject) | Out-Null 
                 }    
             }
         }

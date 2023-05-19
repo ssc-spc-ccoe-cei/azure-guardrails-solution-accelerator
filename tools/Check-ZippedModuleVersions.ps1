@@ -35,6 +35,8 @@ ForEach ($zippedModule in $zippedModules) {
             }
         }
     }
+
+    $zipFile.Dispose()
 }
 # SIG # Begin signature block
 # MIInrQYJKoZIhvcNAQcCoIInnjCCJ5oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
