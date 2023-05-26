@@ -142,7 +142,7 @@ function get-SecurityMonitoringStatus {
         if ($Retention -ne $LAWRetention)
         {
             $uncompliantParameters--
-            $Comments+=$msgTable.lawRetention730Days
+            $Comments+=$msgTable.lawRetentionSecDays -f $LAWRetention
         }
         # 3
         if (!(get-activitylogstatus -LAWResourceId $LAW.ResourceId)) {
