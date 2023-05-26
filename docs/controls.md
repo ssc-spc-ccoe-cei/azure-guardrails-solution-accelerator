@@ -161,7 +161,7 @@ If the Vnet object containts a tag "GR9-ExcludeVNetFromCompliance" the VNet will
 
 ## GUARDRAIL 10 CYBER DEFENSE SERVICES
     
-  The solution will verify the existence of the [Cyber Defence Services resources](https://github.com/canada-ca/cloud-guardrails/blob/master/EN/10_Cyber-Defense-Services.md) in the dedicated Cyber Defence Services subscription in the config.json during the setup process. Once the solution detects these resources the check mark status will be changed from (❌) to (✔️).
+  The solution will verify the existence of the [Cyber Defense Services resources](https://github.com/canada-ca/cloud-guardrails/blob/master/EN/10_Cyber-Defense-Services.md) in the dedicated Cyber Defense Services subscription in the config.json during the setup process. Once the solution detects these resources the check mark status will be changed from (❌) to (✔️).
 ## GUARDRAIL 11 LOGGING AND MONITORING
     
 This module will detect the items below:
@@ -170,7 +170,7 @@ This module will detect the items below:
 | ----------- | ----------- |
 | SECURITY ||
 |Create a RG for security monitoring | Implied since the Log Analytics workspace needs to be informed as a parameter |
-|Create LAW, Retention needs to be 2 years.|Checks the retention of the provided LAW|
+|Create LAW, Retention needs to be 2 years. This retention can be configured as a parameter in config.json|Checks the retention of the provided LAW|
 |Workspace summary, add the log types:  activity log analytics. Ensure to add all subscriptions except sandbox|Checks for a data source set to Activity Logs |
 |Workspace summary, add, anti-malware assessment|Checks for the presence of the anti-malware solution|
 |Workspace summary, add, KeyVault analytics|This solution has been deprecated. KeyVault insights is recommended. **Not being detected at the moment**|
@@ -180,7 +180,7 @@ This module will detect the items below:
 |Need to redirect blueprint to this LAW |**TBD**|
 |Go to Azure sentinel and select the LAW and add it to sentinel. Go to data connectors. Add azure activity, office 365 and anything we use |**TBD**|
 |HEALTH||
-|create a RG for performance and health monitoring. Create LAW, Retention needs to be 90 days.   |Checks for the specific retention in the provided health LAW|
+|create a RG for performance and health monitoring. Create LAW, Retention needs to be 90 days. This number of days can be changed in modules.json |Checks for the specific retention in the provided health LAW|
 |Workspace summary, add the log types . Make sure to add all subscriptions except sandbox |Right now all subscriptions are tested, **no exceptions.**|
 |Workspace summary, add, Azure Log Analytics Agent Health |Checks for the solution|
 |Create a resource, automation account |Checks for a connected automation account in the provided LAW|

@@ -69,6 +69,7 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |lighthousePrincipalDisplayName| If using Lighthouse cross-tenant delegated access to Guardrails data, specify the display name of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group|
 |lighthousePrincipalId|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the object ID (GUID) of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group|
 |lighthouseTargetManagementGroupID|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the name of the Management Group under which all subscriptions will grant Defender for Cloud access to the managing tenant|
+|securityRetentionDays | Defines the minimum number retention days for the Security Log Analytics workspace provided. 730 days by default. Can be changed to accommodate other scenarios.|
 
 Save the file and exit VSCode [Ctrl+S] & [Ctrl+Q] .
 

@@ -107,7 +107,7 @@ function Get-HealthMonitoringStatus {
         if ($Retention -lt $RetentionDays)
         {
             $uncompliantParameters--
-            $Comments+=$msgTable.lawRetention90Days 
+            $Comments+=$msgTable.lawRetentionHealthDays -f $RetentionDays
         }
         #3
         #Checks required solutions
