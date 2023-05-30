@@ -42,8 +42,10 @@ var rg=resourceGroup().name
 
 //Resources:
 //KeyVault
-module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
-  name: 'pid-9c273620-d12d-4647-878a-8356201c7fe8'
+var telemetryInfo = json(loadTextContent('./modules/telemetry.json'))
+
+module telemetry './nested_telemetry.bicep' =  if (telemetryInfo.customerUsageAttribution.enabled) {
+  name: telemetryInfo.customerUsageAttribution.SolutionIdentifier
   params: {}
 }
 module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
