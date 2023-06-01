@@ -800,6 +800,7 @@
         "version": "KqlItem/1.0",
         "query": "let dt = GR_VersionInfo_CL | summarize max(ReportTime_s);\nGR_VersionInfo_CL\n| where ReportTime_s == toscalar (dt)\n|project [\"Deployed Version\"]= DeployedVersion_s, [\"Version Available\"]=AvailableVersion_s, [\"Update Required\"]=iff(UpdateNeeded_b==true,\"Yes\",\"No\"),[\"Check date\"]=toscalar (dt)",
         "size": 4,
+        "title": "Guardrails Version Information",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -812,6 +813,27 @@
         "value": "information"
       },
       "name": "information"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let dt = GR_TenantInfo_CL | summarize max(ReportTime_s);\r\nGR_TenantInfo_CL\r\n| where ReportTime_s == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(cloudUsageProfiles_s == 'default',toscalar(\"Cloud Usage Profile not specified or 'default'\"),cloudUsageProfiles_s),[\"Report Time\"]=toscalar (dt)",
+        "size": 0,
+        "title": "Cloud Usage Profile Configuration",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "card"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "query - 20"
     }
   ],
   "fallbackResourceIds": [
