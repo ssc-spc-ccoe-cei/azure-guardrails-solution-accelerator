@@ -30,6 +30,7 @@ param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
 param securityRetentionDays string 
+param cloudUsageProfiles string = 'default'
 @secure()
 param breakglassAccount1 string = ''
 @secure()
@@ -75,6 +76,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updatePSModules: updatePSModules
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
+    cloudUsageProfiles: cloudUsageProfiles
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {

@@ -19,5 +19,6 @@
   "lighthousePrincipalDisplayName": "",
   "lighthousePrincipalId": "",
   "lighthouseTargetManagementGroupID": "",
-  "securityRetentionDays": "730"
+  "securityRetentionDays": "730",
+  "cloudUsageProfiles": "default"
 }

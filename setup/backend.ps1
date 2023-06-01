@@ -35,6 +35,7 @@ $Locale=Get-GSAAutomationVariable -Name "GuardRailsLocale"
 $lighthouseTargetManagementGroupID = Get-GSAAutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
 $DepartmentName = Get-GSAAutomationVariable -Name "DepartmentName" 
 $DepartmentNumber = Get-GSAAutomationVariable -Name "DepartmentNumber" 
+$cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
 
 # Connects to Azure using the Automation Account's managed identity
 try {
@@ -61,7 +62,9 @@ get-itsgdata -URL $itsgURL -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey
 Check-UpdateAvailable -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime
 
 # Updates Tenant info.
-Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -TenantId $tenantID -DepartmentName $DepartmentName -DepartmentNumber $DepartmentNumber
+Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -TenantId $tenantID -DepartmentName $DepartmentName -DepartmentNumber $DepartmentNumber -CloudUsageProfiles $cloudUsageProfiles
+
+# Update cloudUsageProfiles
 
 # Ensure the 'Microsoft.ManagedServices' resource provider is registered under each subscription at the delegated management group
 If ($lighthouseTargetManagementGroupID) {

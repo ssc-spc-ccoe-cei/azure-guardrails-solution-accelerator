@@ -22,6 +22,7 @@ param TenantDomainUPN string
 param updatePSModules bool = false
 param updateCoreResources bool = false
 param securityRetentionDays string
+param cloudUsageProfiles string = 'default'
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -429,6 +430,13 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     'properties': {
       'isEncrypted': true
       'value': '"${securityRetentionDays}"'
+  }
+  }
+  resource variable21 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'cloudUsageProfiles'
+    'properties': {
+      'isEncrypted': true
+      'value': '"${cloudUsageProfiles}"'
   }
   }
 }
