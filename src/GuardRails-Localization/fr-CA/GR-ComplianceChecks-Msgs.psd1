@@ -26,6 +26,7 @@ bgCreation = Création de compte Brise Glace
 bgAccountResponsibility = La responsabilité des comptes brise-glace doit incomber à une personne non technique, de niveau directeur ou supérieur
 bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
 bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
+bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
 bgAuthenticationMeth =  Méthodes d'authentification 
 firstBgAccount = Premier compte brise-glace
 secondBgAccount = Deuxième compte brise-glace

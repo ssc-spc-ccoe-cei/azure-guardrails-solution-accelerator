@@ -26,6 +26,7 @@ bgCreation = Break Glass account Creation
 bgAccountResponsibility = Responsibility of break glass accounts must be with someone not-technical, director level or above
 bgAccountOwnerContact = Break Glass Account Owners Contact information
 bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
+bgAccountsCompliance2 = Both accounts are identical, please check the config.json file
 bgAuthenticationMeth =  Authentication Methods 
 firstBgAccount = First Break Glass Account
 secondBgAccount = Second Break Glass Account
