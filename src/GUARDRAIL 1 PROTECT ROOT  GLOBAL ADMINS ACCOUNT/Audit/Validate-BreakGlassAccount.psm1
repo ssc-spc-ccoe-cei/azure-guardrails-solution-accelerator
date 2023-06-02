@@ -34,6 +34,20 @@ function Get-BreakGlassAccounts {
   [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
   [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
 
+if(FirstBreakGlassUPN -eq SecondBreakGlassUPN){
+
+  $IsCompliant = $false
+  $PsObject = [PSCustomObject]@{
+    ComplianceStatus = $IsCompliant
+    ControlName      = $ControlName
+    ItemName         = $ItemName
+    Comments          = $msgTable.bgAccountsCompliance2
+    ReportTime      = $ReportTime
+    itsgcode = $itsgcode
+  }
+
+} else {
+
   $FirstBreakGlassAcct = [PSCustomObject]@{
     UserPrincipalName  = $FirstBreakGlassUPN
     apiUrl             = $FirstBreakGlassUPNUrl
@@ -76,6 +90,7 @@ function Get-BreakGlassAccounts {
     $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
     Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
   }
+
   $IsCompliant = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
 
   $PsObject = [PSCustomObject]@{
@@ -86,6 +101,7 @@ function Get-BreakGlassAccounts {
     ReportTime      = $ReportTime
     itsgcode = $itsgcode
   }
+}
   $moduleOutput= [PSCustomObject]@{ 
     ComplianceResults = $PsObject
     Errors=$ErrorList
