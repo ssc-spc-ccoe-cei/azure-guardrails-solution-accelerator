@@ -34,7 +34,7 @@ function Get-BreakGlassAccounts {
   [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
   [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
 
-if(FirstBreakGlassUPN -eq SecondBreakGlassUPN){
+if($FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
 
   $IsCompliant = $false
   $PsObject = [PSCustomObject]@{
