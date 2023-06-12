@@ -18,7 +18,7 @@ function Check-DeprecatedUsers {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     
     # A Deprecated account is an account that is disabled and not synchronized to AD
-    $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" | Where-Object {$null -eq $_.onPremisesSyncEnabled}
+    $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" -Select OnPremisesSyncEnabled,UserPrincipalName | Where-Object {$null -eq $_.onPremisesSyncEnabled}
 
     if ($DeprecatedUsers.count -gt 0) {
         foreach ($user in $DeprecatedUsers) {
