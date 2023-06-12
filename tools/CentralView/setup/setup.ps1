@@ -173,7 +173,36 @@ if (!$update)
         "Error assigning permissions to Automation account (for keyvault). $_"
         break
     }
-      Write-Verbose "Adding workspacekey information to keyvault."
+    # Gets aggregation tenant info and store in Keyvault
+    Write-Verbose "Adding Aggretation tenant information to keyvault for future retrieval."
+    try {
+        $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json
+        $tenantId = $response.value.id
+        $secretvalue = ConvertTo-SecureString $tenantId -AsPlainText -Force 
+    }
+    catch {
+        "Error getting tenant ID information. $_"
+        break
+    }
+    try {
+        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "tenantId" -SecretValue $secretvalue
+        $tenantName= $response.value.displayName
+        $secretvalue = ConvertTo-SecureString $tenantName -AsPlainText -Force 
+        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "tenantName" -SecretValue $secretvalue
+    }
+    catch {
+        "Error setting tenant name information. $_"
+        break
+    }
+    try {
+        $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
+        $secretvalue = ConvertTo-SecureString $tenantDomainUPN -AsPlainText -Force 
+        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "tenantDomainUPN" -SecretValue $secretvalue                        
+    }
+    catch {
+        "Error setting tenant domain UPN information. $_"
+    }
+    Write-Verbose "Adding workspacekey information to keyvault."
     # Application Id and Secure Password will be empty. Need to be updates with customer's information.
     try {
         $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
@@ -187,14 +216,16 @@ if (!$update)
         if (!([string]::IsNullOrEmpty($config.applicationId))) {
             "Adding Application ID to Keyvault."
 
-            $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
+            $secureString = (ConvertTo-SecureString $config.applicationId -AsPlainText -Force)
             Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "ApplicationId" -SecretValue $secureString
 
-            $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
+            $secureString = (ConvertTo-SecureString $config.SecurePassword -AsPlainText -Force)
             set-azkeyvaultsecret -VaultName $keyVaultName -Name "SecurePassword" -SecretValue $secureString
         }
     }
     catch { "Error adding secrets to KV. $_"; break }
+
+
     #endregion
     #region Import main runbook
     Write-Verbose "Installing function code." #install function trigger code

@@ -242,12 +242,17 @@ Function Add-TenantInfo {
         $DepartmentNumber,
         [Parameter(Mandatory = $true)]
         [string]
-        $cloudUsageProfiles
+        $cloudUsageProfiles,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $tenantName
     )
     $tenantInfo = Get-GSAAutomationVariable("tenantDomainUPN")
+
     $object = [PSCustomObject]@{ 
         TenantDomain       = $tenantInfo
         DepartmentTenantID = $TenantId
+        DepartmentTenantName= $tenantName
         ReportTime         = $ReportTime
         DepartmentName     = $DepartmentName
         DepartmentNumber   = $DepartmentNumber

@@ -27,7 +27,7 @@ var wbConfig1 ='''
             "name": "Departments",
             "type": 2,
             "isRequired": true,
-            "query": "let mrt=GuardrailsTenantsCompliance_CL | where TimeGenerated > ago(6h)| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where ReportTime_s == toscalar(mrt)\n| summarize by Department=DepartmentName_s//, [\"Dep. Number\"]=DepartmentNumber_s, TenantDomain_s\n| summarize by Department",
+            "query": "let mrt=GuardrailsTenantsCompliance_CL | where TimeGenerated > ago(6h)| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where ReportTime_s == toscalar(mrt)\n| summarize by Department=DepartmentName_s",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -37,14 +37,14 @@ var wbConfig1 ='''
             },
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "Canadian Transportation Accident Investigation and Safety Board"
+            "value": "Canadian Grain Commission"
           },
           {
             "id": "646611b4-e874-4008-8b32-0be7f94e1f82",
             "version": "KqlParameterItem/1.0",
             "name": "Tenants",
             "type": 2,
-            "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where Status_s == \"Non-Compliant\" and ReportTime_s == toscalar(mrt) and DepartmentName_s == \"{Departments}\"\n| summarize sum(toint(Count_s)) by ControlName_s_s, TenantDomain_s\n| summarize by TenantDomain=TenantDomain_s\n",
+            "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where ReportTime_s == toscalar(mrt) and DepartmentName_s == \"{Departments}\"\n| summarize sum(toint(Count_s)) by ControlName_s_s, TenantDomain_s\n| summarize by TenantDomain=TenantDomain_s\n",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -54,7 +54,7 @@ var wbConfig1 ='''
             },
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "mtbco.onmicrosoft.com"
+            "value": "fehsecorp.onmicrosoft.com"
           }
         ],
         "style": "pills",

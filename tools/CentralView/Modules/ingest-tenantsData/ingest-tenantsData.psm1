@@ -10,7 +10,16 @@ function get-tenantdata {
         $LogType="GuardrailsTenantsCompliance",
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime, 
+        $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $TenantName, #aggregation tenant Name
+        [Parameter(Mandatory=$true)]
+        [string]
+        $TenantID, #aggregation tenant ID
+        [Parameter(Mandatory=$true)]
+        [string]
+        $tenantDomainUPN,
         [Parameter(Mandatory=$false)]
         [switch]
         $DebugInfo
@@ -66,11 +75,13 @@ GuardrailsCompliance_CL
         "Working on $ws workspace."
         # Get latest report time for that Tenant
         try {
-            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project TenantDomain=TenantDomain_s, DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A')"
+            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project  DepartmentTenantID=DepartmentTenantID_g,TenantDomain=TenantDomain_s,TenantDomainName=DepartmentTenantName_s, DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A')"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
             $TenantDomain=$resultsArray[0].TenantDomain
             $DepartmentName=$resultsArray[0].DepartmentName
             $DepartmentNumber=$resultsArray[0].DepartmentNumber
+            $DepartmentTenantName=$resultsArray[0].TenantDomainName
+            $DepartmentTenanId=$resultsArray[0].DepartmentTenantID
         }
         catch {
             "Error reading info from $ws workspace."
@@ -119,11 +130,23 @@ GuardrailsCompliance_CL
                         if ($debuginfo) {
                             " Found $($tempArray.count) items running the query."
                         }
+                        # Gets aggregation tenant info. This is commented because it won't work without special permissions for the function MI.
+                        # $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json
+                        # $tenantId = $response.value.id
+                        # $tenantName= $response.value.displayName
+                        # $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
+                        
                         #$tempArray=$tempArray | Select-Object ControlName_s, ItemName, Status
                         $tempArray | Add-Member -MemberType NoteProperty -Name TenantDomain -Value $TenantDomain -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentName -Value $DepartmentName -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentNumber -Value $DepartmentNumber -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantName -Value $DepartmentTenantName -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantID -Value $DepartmentTenanId -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantID -Value $TenantID -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantName -Value $TenantName -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantUPN -Value $tenantDomainUPN -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentReportTime -Value $LatestRT -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name WSId -Value $ws -Force 
                         if ($DebugInfo) { $tempArray}
                         $FinalObjectList+=$tempArray
