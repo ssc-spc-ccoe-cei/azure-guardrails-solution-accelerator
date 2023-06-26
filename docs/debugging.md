@@ -23,6 +23,6 @@ Running the Guardrails modules in Azure Automation account make them difficult t
     ./main.ps1 -localExecution -KeyVaultName <name of the Guardrails deployment KV>
   ```
 1. To filter the modules to execute, add the `-modulesToExecute <moduleNameFromModules.json>[,<moduleNameFromModules.json>]`
-1. The modules in `./modules.json` will execute and your previously-set breakpoint should be hit. If the breakpoint is not working, try: `Set-PSBreakpoint -Path <module .PSM1 file> -Line <line number for breakpoint>`
+1. The modules in `./modules.json` will execute and your previously-set breakpoint should be hit. If the breakpoint is not working, try: `Set-PSBreakpoint -Script <module .PSM1 file> -Line <line number for breakpoint>`
 
 See [Using Visual Studio Code for PowerShell Development](https://learn.microsoft.com/powershell/scripting/dev-cross-plat/vscode/using-vscode) for more information
