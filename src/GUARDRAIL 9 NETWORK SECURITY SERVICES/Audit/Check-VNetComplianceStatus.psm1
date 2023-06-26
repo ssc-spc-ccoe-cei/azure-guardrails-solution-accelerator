@@ -45,7 +45,7 @@ function Get-VNetComplianceInformation {
         if ($includedVNETs.count -gt 0) {
             foreach ($VNet in $allVNETs) {
                 Write-Debug "Working on $($VNet.Name) VNet..."
-                if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.name -in $includedVNETs) {
+                if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
                     if ($Vnet.EnableDdosProtection) {
                         $ComplianceStatus = $true 
                         $Comments = "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
