@@ -37,6 +37,25 @@ Function Confirm-GSAPrerequisites {
             Write-Verbose "`t Sufficent role assignment for current user exists..."
         }
 
+        ## resource providers - proactively registers RPs if missing
+        Write-Verbose "Verifying that required resource providers are pre-registered..."
+        "Microsoft.Network","Microsoft.Security","Microsoft.Management", "Microsoft.Storage", "Microsoft.KeyVault" | ForEach-Object {
+            Write-Verbose "`tChecking that resource provider '$_' is registered..."
+
+            $rpStatus = Get-AzResourceProvider -ProviderNamespace $_
+            If ($rpStatus.RegistrationState -eq 'Registered') {
+                Write-Verbose "`t`tResource provider '$_' is already registered."
+            }
+            ElseIf ($_ -in ("Microsoft.Storage", "Microsoft.KeyVault")) {
+                Write-Verbose "`t`tRegistering resource provider '$_', waiting for completion."
+                Register-AzResourceProvider -ProviderNamespace $_ | Out-Null
+            }
+            Else {
+                Write-Verbose "`t`tRegistering resource provider '$_' as background job."
+                Register-AzResourceProvider -ProviderNamespace $_ -AsJob | Out-Null
+            }
+        }
+
         # confirm that target resources do not already exist
 
         ## storage account
@@ -57,21 +76,6 @@ Function Confirm-GSAPrerequisites {
         if (!($kvContent) -and $deployKV) {
             write-output "Error: keyvault name '$($config['runtime']['keyVaultName'])' is not available. Specify another prefix in config.json or a different unique resource name suffix"
             break
-        }
-
-        ## resource providers - proactively registers RPs if missing
-        Write-Verbose "Verifying that required resource providers are pre-registered..."
-        "Microsoft.Network","Microsoft.Security","Microsoft.Management" | ForEach-Object {
-            Write-Verbose "`tChecking that resource provider '$_' is registered..."
-
-            $rpStatus = Get-AzResourceProvider -ProviderNamespace $_
-            If ($rpStatus.RegistrationState -eq 'Registered') {
-                Write-Verbose "`t`tResource provider '$_' is already registered."
-            }
-            Else {
-                Write-Verbose "`t`tRegistering resource provider '$_' as background job."
-                Register-AzResourceProvider -ProviderNamespace $_ -AsJob | Out-Null
-            }
         }
     }
 
