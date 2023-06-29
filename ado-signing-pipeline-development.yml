@@ -247,7 +247,8 @@ steps:
           "subscriptionId": "$(testSubscriptionId)",
           "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
           "uniqueNameSuffix": "$(uniqueNameSuffix)",
-          "securityRetentionDays": "730"
+          "securityRetentionDays": "730",
+          "cloudUsageProfiles": "1,2"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
@@ -304,7 +305,8 @@ steps:
           "subscriptionId": "$(testSubscriptionId)",
           "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
           "uniqueNameSuffix": "$(uniqueNameSuffix)",
-          "securityRetentionDays": "730"
+          "securityRetentionDays": "730",
+          "cloudUsageProfiles": "1,2"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
