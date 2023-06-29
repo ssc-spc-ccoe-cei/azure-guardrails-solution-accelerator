@@ -53,6 +53,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'breakglassAccount1'                    = $config.firstBreakGlassAccountUPN
         'breakglassAccount2'                    = $config.secondBreakGlassAccountUPN    
         'CBSSubscriptionName'                   = $config.CBSSubscriptionName
+        'cloudUsageProfiles'                    = $config.cloudUsageProfiles
         'currentUserObjectId'                   = $config['runtime']['userId']
         'DepartmentNumber'                      = $config.DepartmentNumber
         'DepartmentName'                        = $config['runtime']['departmentName']
