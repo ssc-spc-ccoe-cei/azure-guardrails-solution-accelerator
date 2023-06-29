@@ -48,29 +48,29 @@ Adjust parameters as required.
 
 All named resources will have the first 6 characters of the tenant Id appended to their names.
 
-|Parameter|Description|
-|---------|-----------|
-|keyVaultName|Name for the KeyVault resource|
-|resourcegroup|Resource Group to deploy the solution|
-|region|Location to deploy. Canadacentral is the default|
-|storageaccountName|name of the storage account to be used. 4 random characters will be added to this name to avoid conflicts|
-|logAnalyticsworkspaceName| base name for the log analytics workspace|
-|autoMationAccountName| base name for the automation account |
-|FirstBreakGlassAccountUPN| UPN for the first break glass account|
-|SecondBreakGlassAccountUPN| UPN for the second break glass account|
-|PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.|
-|AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default|
-|DepartmentNumber| The office Government of Canada department number - see: https://open.canada.ca/data/en/dataset/22090865-f8a6-4b83-9bad-e9d61f26a821 |
-|CBSSubscriptionName|Subscription Name containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**|
-|SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)|
-|HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)|
-|Locale|Language of the messages in the solution. At the moment, supported languages are english or french and default is english (en-CA or fr-CA)|
-|lighthouseServiceProviderTenantID| If using Lighthouse cross-tenant delegated access to Guardrails data, specify the Azure AD tenant ID (GUID) of the managing tenant|
-|lighthousePrincipalDisplayName| If using Lighthouse cross-tenant delegated access to Guardrails data, specify the display name of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group|
-|lighthousePrincipalId|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the object ID (GUID) of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group|
-|lighthouseTargetManagementGroupID|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the name of the Management Group under which all subscriptions will grant Defender for Cloud access to the managing tenant|
-|securityRetentionDays | Defines the minimum number retention days for the Security Log Analytics workspace provided. 730 days by default. Can be changed to accommodate other scenarios.|
-|cloudUsageProfiles| Specifies the [Cloud Usage Profiles](https://github.com/canada-ca/cloud-guardrails/blob/master/EN/00_Applicable-Scope.md) as a comma-separated string. Example: "1,2,3" Default value is: "default" |
+|Parameter|Description|Is Required| Default Value | Validation Pattern |
+|---------|-----------|-----------|---------------|---------|
+|keyVaultName|Name prefix for the KeyVault resource | True | 'guardrails' | '^[a-z0-9]{3,12}$' |
+|resourcegroup|Resource Group name prefix for the deployed the solution| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
+|region|Location to deploy. 'canadacentral' is the default| False | 'canadacentral' | _Azure Region Name_|
+|storageaccountName|name prefix of the storage account to be used. 4 random characters will be added to this name to avoid conflicts| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,11}$' |
+|logAnalyticsworkspaceName| name prefix for the Log Analytics workspace| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
+|autoMationAccountName| Name prefix for the Automation Account | True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
+|FirstBreakGlassAccountUPN| User principal name of the first break glass account (ex: breakglass@contoso.com) | True | | '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' |
+|SecondBreakGlassAccountUPN| User principal name of the second break glass account (ex: breakglass@contoso.com) | True | | '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' |
+|PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.| True |'4c4a5f27-de81-430b-b4e5-9cbd50595a87' | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$' |
+|AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default| True |'e56962a6-4747-49cd-b67b-bf8b01975c4c' | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$' |
+|DepartmentNumber| The office Government of Canada department number - see: https://open.canada.ca/data/en/dataset/22090865-f8a6-4b83-9bad-e9d61f26a821 | True | | integer 1-999 |
+|CBSSubscriptionName|Subscription Name containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**| False | 'N/A' | string |
+|SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)| True | | '^\/subscriptions\/[a-fA-F0-9]{8}-([a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}\/resourceGroups\/[^\/]+\/providers\/[^\/]+(\/[^\/]+)*$'|
+|HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)| True | | '^\/subscriptions\/[a-fA-F0-9]{8}-([a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}\/resourceGroups\/[^\/]+\/providers\/[^\/]+(\/[^\/]+)*$'|
+|Locale|Language of the messages in the solution. At the moment, supported languages are english or french and default is english (en-CA or fr-CA)| True | 'en-CA' | '^(en\|fr)-CA$' |
+|lighthouseServiceProviderTenantID| If using Lighthouse cross-tenant delegated access to Guardrails data, specify the Azure AD tenant ID (GUID) of the managing tenant| False | | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$' |
+|lighthousePrincipalDisplayName| If using Lighthouse cross-tenant delegated access to Guardrails data, specify the display name of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group| False | | string |
+|lighthousePrincipalId|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the object ID (GUID) of the Azure AD principal (group or user) to be delegated access to your Guardrails resource group| False | | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$'|
+|lighthouseTargetManagementGroupID|If using Lighthouse cross-tenant delegated access to Guardrails data, specify the name of the Management Group under which all subscriptions will grant Defender for Cloud access to the managing tenant| False | | string |
+|securityRetentionDays | Defines the minimum number retention days for the Security Log Analytics workspace provided. 730 days by default. Can be changed to accommodate other scenarios.| False | 730 | integer 0-730 |
+|cloudUsageProfiles| Specifies the [Cloud Usage Profiles](https://github.com/canada-ca/cloud-guardrails/blob/master/EN/00_Applicable-Scope.md) as a comma-separated string. Example: "1,2,3" | False | 'default' | '^(default|[0-9](,[0-9])+?)$'|
 
 Save the file and exit VSCode [Ctrl+S] & [Ctrl+Q] .
 

@@ -17,7 +17,7 @@ Function Confirm-GSASubscriptionSelection {
         Connect-AzAccount | Out-Null
     }
     if ([string]::IsNullOrEmpty($config.subscriptionId)) {
-        $subs = Get-AzSubscription -ErrorAction SilentlyContinue  | Where-Object {$_.State -eq "Enabled"} | Sort-Object -Property Name
+        $subs = Get-AzSubscription -ErrorAction SilentlyContinue  | Where-Object { $_.State -eq "Enabled" } | Sort-Object -Property Name
         if ($subs.count -gt 1) {
             Write-Host "More than one subscription detected. Current subscription $((get-azcontext).Name)"
             Write-Host "Please select subscription for deployment or Enter to keep current one:"
@@ -129,14 +129,125 @@ Function Confirm-GSAConfigurationParameters {
         $config += @{ $_.Name = $_.Value }
     }
 
-    # verify standard config parameters
-    if ($config.SecurityLAWResourceId.split("/").Count -ne 9) {
-        Write-Output "Error in SecurityLAWResourceId ID ('$($config.SecurityLAWResourceId)'). Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
-        Break
+    # verify params match expected patterns
+    Write-Verbose "Validating parameters in config file/string..."
+    $paramsValidationTable = @{
+        keyVaultName                      = @{
+            IsRequired        = $true
+            ValidationPattern = '^[a-z0-9]{3,12}$'
+        }
+        resourcegroup                     = @{
+            IsRequired        = $true
+            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
+        }
+        region                            = @{
+            IsRequired        = $false
+            ValidationList = (Get-AzLocation).Location
+        }
+        storageaccountName                = @{
+            IsRequired        = $true
+            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,11}$'
+        }
+        logAnalyticsworkspaceName         = @{
+            IsRequired        = $true
+            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
+        }
+        autoMationAccountName             = @{
+            IsRequired        = $true
+            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
+        }
+        PBMMPolicyID                      = @{
+            IsRequired        = $true
+            ValidationByType = 'guid'
+        }
+        AllowedLocationPolicyId           = @{
+            IsRequired        = $true
+            ValidationByType = 'guid'
+        }
+        FirstBreakGlassAccountUPN        = @{
+            IsRequired        = $true
+            ValidationPattern = '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        }
+        SecondBreakGlassAccountUPN        = @{
+            IsRequired        = $true
+            ValidationPattern = '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        }
+        DepartmentNumber                  = @{
+            IsRequired        = $true
+            ValidationByType = 'int'
+        }
+        CBSSubscriptionName               = @{
+            IsRequired = $false
+            ValidationPattern = '^[a-zA-Z0-9][a-zA-Z0-9-_]{2,128}$'
+        }
+        SecurityLAWResourceId             = @{
+            IsRequired        = $true
+            ValidationPattern = '^\/subscriptions\/[a-fA-F0-9]{8}-([a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}\/resourceGroups\/[^\/]+\/providers\/[^\/]+(\/[^\/]+)*$'
+        }
+        HealthLAWResourceId               = @{
+            IsRequired        = $true
+            ValidationPattern = '^\/subscriptions\/[a-fA-F0-9]{8}-([a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}\/resourceGroups\/[^\/]+\/providers\/[^\/]+(\/[^\/]+)*$'
+        }
+        Locale                            = @{
+            IsRequired        = $true
+            ValidationList = @('en-ca', 'fr-ca')
+        }
+        lighthouseServiceProviderTenantID = @{
+            IsRequired        = $false
+            ParameterSetName  = 'lighthouse'
+            ValidationByType = 'guid'
+        }
+        lighthousePrincipalDisplayName    = @{
+            IsRequired        = $false
+            ParameterSetName  = 'lighthouse'
+            ValidationPattern = '^[a-zA-Z0-9][a-zA-Z0-9-_\s]{2,128}$'
+        }
+        lighthousePrincipalId             = @{
+            IsRequired        = $false
+            ParameterSetName  = 'lighthouse'
+            ValidationByType = 'guid'
+        }
+        lighthouseTargetManagementGroupID = @{
+            IsRequired = $true
+            ParameterSetName  = 'lighthouse'
+            ValidationPattern = '^[a-zA-Z0-9][a-zA-Z0-9-_\s]{2,128}$'
+        }
+        securityRetentionDays             = @{
+            IsRequiredq       = $false
+            ValidationByType = 'int'
+        }
+        cloudUsageProfiles                = @{
+            IsRequired        = $false
+            ValidationPattern = '^default|([0-9](,[0-9]){0,9})$'
+        }
     }
-    if ( $config.HealthLAWResourceId.Split("/").Count -ne 9) {
-        Write-Output "Error in HealthLAWResourceId ID ('$($config.HealthLAWResourceId)'). Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
-        Break
+
+    ForEach ($configParam in $config.GetEnumerator()) {
+        $paramName = $configParam.Key
+        $paramValue = $configParam.Value
+        $paramValidation = $paramsValidationTable[$paramName]
+
+        Write-Verbose "Validating parameter '$paramName' wtih value '$paramValue'..."
+        if ($paramValidation -eq $null) {
+            Write-Warning "Parameter '$paramName' is not a valid configuration parameter or has not been added to the `$paramsValidationTable above yet."
+            continue
+        }
+        if ($paramValidation.IsRequired -and $null -eq $paramValue) {
+            Write-Error "Parameter '$paramName' is required but not specified."
+            break
+        }
+        if ($null -ne $paramValue -and $null -ne $paramValidation.ValidationList -and $paramValue -notin $paramValidation.ValidationList) {
+            Write-Error "Parameter '$paramName' value '$paramValue' is not in the expected list of values '$($paramValidation.ValidationList -join ', ')."
+            break
+        }
+        if ($null -ne $paramValue -and $null -ne $paramValidation.ValidationByType -and -NOT ($paramValue -as $paramValidation.ValidationByType)) {
+            Write-Error "Parameter '$paramName' value '$paramValue' is not a valid type '$($paramValidation.ValidationByType)'."
+            break
+        }
+        if ($null -ne $paramValue -and $null -ne $paramValidation.ValidationPattern -and $paramValue -inotmatch $paramValidation.ValidationPattern) {
+            Write-Error "Parameter '$paramName' value '$paramValue' does not match the expected pattern '$($paramValidation.ValidationPattern)'."
+            break
+        }
     }
 
     # verify that Department Number has an associated Department Name, get name value for AA variable
@@ -164,7 +275,7 @@ Function Confirm-GSAConfigurationParameters {
         }
         Else {
             $departmentName = $departmentList | Where-Object { $_.'Department_number-Ministère_numéro' -eq $config.DepartmentNumber } | 
-                Select-Object -ExpandProperty 'Department-name_English-Ministère_nom_anglais'
+            Select-Object -ExpandProperty 'Department-name_English-Ministère_nom_anglais'
         }
     }
 
