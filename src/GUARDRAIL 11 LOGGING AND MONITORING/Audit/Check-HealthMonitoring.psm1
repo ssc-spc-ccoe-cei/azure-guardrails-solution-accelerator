@@ -96,7 +96,7 @@ function Get-HealthMonitoringStatus {
         $LinkedServices=get-apiLinkedServicesData -subscriptionId $Subscription `
             -resourceGroup $LAW.ResourceGroupName `
             -LAWName $LAW.Name
-        if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -lt 1)
+        if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -gt 0)
         {
             $uncompliantParameters--
             $Comments+=$msgTable.lawNoAutoAcct 
@@ -104,7 +104,7 @@ function Get-HealthMonitoringStatus {
         #2
         #Test Retention
         $Retention=$LAW.retentionInDays
-        if ($Retention -lt $RetentionDays)
+        if ($Retention -ge $RetentionDays)
         {
             $uncompliantParameters--
             $Comments+=$msgTable.lawRetentionHealthDays -f $RetentionDays
@@ -112,14 +112,14 @@ function Get-HealthMonitoringStatus {
         #3
         #Checks required solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
-        if ($enabledSolutions -notcontains "AgentHealthAssessment")
+        if ($enabledSolutions -contains "AgentHealthAssessment")
         {
             $uncompliantParameters--
             $Comments+=$msgTable.lawHealthNoSolutionFound # "Required solutions not present in the Health Log Analytics Workspace."
         }
         #4
         # add as per SSC request, github issue 
-        if ($enabledSolutions -notcontains "Updates")
+        if ($enabledSolutions -contains "Updates")
         {
             $uncompliantParameters--
             $Comments+=$msgTable.lawSolutionNotFound # "Required solutions not present in the Log Analytics Workspace."
