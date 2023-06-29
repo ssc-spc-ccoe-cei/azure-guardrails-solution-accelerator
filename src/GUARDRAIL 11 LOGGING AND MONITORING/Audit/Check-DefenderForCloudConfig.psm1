@@ -29,7 +29,6 @@ function Get-DefenderForCloudConfig {
     $nonCompliantSubs=0
     foreach ($sub in $sublist)
     {
-        $noncomplianParameters=2
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         $ContactInfo=Get-AzSecurityContact
         if ([string]::IsNullOrEmpty($ContactInfo.Email) -or [string]::IsNullOrEmpty($null -eq $ContactInfo.Phone))
@@ -46,7 +45,7 @@ function Get-DefenderForCloudConfig {
 
         if ($defenderPlans.PricingTier -contains 'Free')
         {
-            $noncomplianParameters--
+            $nonCompliantSubs++
             $Comments += $msgTable.notAllDfCStandard -f $sub.Name
         }
     
