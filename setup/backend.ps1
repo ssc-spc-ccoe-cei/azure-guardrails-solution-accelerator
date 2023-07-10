@@ -66,7 +66,7 @@ $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1
 $tenantName = $response.value.displayName
 
 Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime `
-               -TenantId $tenantID -DepartmentName $DepartmentName -DepartmentNumber $DepartmentNumber -tenantName $tenantName
+               -TenantId $tenantID -DepartmentName $DepartmentName -DepartmentNumber $DepartmentNumber -tenantName $tenantName -cloudUsageProfiles $cloudUsageProfiles
 
 # Ensure the 'Microsoft.ManagedServices' resource provider is registered under each subscription at the delegated management group
 If ($lighthouseTargetManagementGroupID) {
