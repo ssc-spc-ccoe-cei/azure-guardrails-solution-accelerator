@@ -355,33 +355,51 @@ steps:
       $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
       $config = $c.configString | ConvertFrom-Json
       
-      Write-Output "Waiting for 'main' runbook job to complete (up to 5 mins)"
+      Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
       $timeout = New-TimeSpan -Minutes 5
       $timer = [System.Diagnostics.Stopwatch]::StartNew()
       do {
-        $job = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+        $jobMain = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+          Sort-Object StartTIme -Descending |
+          Select-Object -First 1
+        
+        $jobBackend = Get-AzAutomationJob -RunbookName 'backend' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
           Sort-Object StartTIme -Descending |
           Select-Object -First 1
         
         Start-Sleep 1
       }
-      until (($job.Status -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
+      until (($jobMain.Status -in 'Completed','Failed' -and $jobBackend -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
 
-      If ($job.Status -eq 'Failed') {
+      If ($jobMain.Status -eq 'Failed') {
         throw "main runbook failed to execute"
       }
-      If ($job.Status -eq 'Completed') {
+      If ($jobMain.Status -eq 'Completed') {
         Write-Output "'main' runbook completed successfully, checking for errors in output. "
       }
 
-      $jobOutput = Get-AzAutomationJobOutput -Id $job.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+      If ($jobBackend.Status -eq 'Failed') {
+        throw "backend runbook failed to execute"
+      }
+      If ($jobBackend.Status -eq 'Completed') {
+        Write-Output "'backend' runbook completed successfully, checking for errors in output. "
+      }
+
+      $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+      $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
 
       $errorsFound = $false
-      ForEach ($outputRecord in $jobOutput) {
+      ForEach ($outputRecord in $jobMainOutput) {
         If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-          throw 'Errors found in Azure Automation jobs'
+          throw 'Errors found in "main" runbook Azure Automation jobs'
         }
       }
+      ForEach ($outputRecord in $jobBackendOutput) {
+        If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+          throw 'Errors found in "backend" runbook Azure Automation jobs'
+        }
+      }
+
       If (!$errorsFound) {
         #Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($false)")
       }
