@@ -231,6 +231,7 @@ if (!$update)
     Write-Verbose "Installing function code." #install function trigger code
     try {
         ###Deploy function code
+        [System.Net.ServicePointManager]::SecurityProtocol = 'TLS12'
         Compress-Archive -Path ../* -DestinationPath /tmp/sscview.zip -Force
         Publish-AzWebApp -ResourceGroupName $resourcegroup -Name $functionname -ArchivePath /tmp/sscview.zip -Force
         ### Publish-AzWebApp -ResourceGroupName $resourcegroup -Name $functionname -ArchivePath /tmp/sscview.zip -Force
