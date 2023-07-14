@@ -37,11 +37,11 @@ resource serverfarm 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: '${functionname}-farm'
   location: location
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
-    size: 'Y1'
-    family: 'Y'
-    capacity: 0
+    name: 'P2v2'
+    tier: 'PremiumV2'
+    size: 'P2v2'
+    family: 'Pv2'
+    capacity: 1
   }
   kind: 'functioapp'
   properties: {
@@ -105,6 +105,9 @@ resource azfunctionsite 'Microsoft.Web/sites@2021-03-01' = {
               }
           ]
           http20Enabled: false
+          minTlsVersion: '1.2'
+          minTlsCipherSuite: 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384'
+          //minTlsCipherSuite: 'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384' -> this is the requested option but seems to be causing issues when deploying.
           functionAppScaleLimit: 200
           minimumElasticInstanceCount: 0
       }
