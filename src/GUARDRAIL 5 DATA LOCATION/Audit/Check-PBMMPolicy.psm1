@@ -67,7 +67,7 @@ function Verify-PBMMPolicy {
         [parameter(mandatory=$true)][string] $itsgcode,
         [parameter(mandatory=$true)][hashtable] $msgTable,
         [Parameter(Mandatory=$true)][string]$ReportTime,
-        [Parameter(Mandatory=$true)][string]$CBSSubscriptionName
+        [Parameter(Mandatory=$false)][string]$CBSSubscriptionName
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

@@ -54,7 +54,7 @@ function Get-HealthMonitoringStatus {
         $ReportTime,
         [int]
         $RetentionDays=90,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [string]
         $CBSSubscriptionName
     )

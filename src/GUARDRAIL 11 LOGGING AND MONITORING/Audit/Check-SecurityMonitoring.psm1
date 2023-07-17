@@ -82,7 +82,7 @@ function get-SecurityMonitoringStatus {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [string]
         $CBSSubscriptionName,
         [Parameter(Mandatory=$false)]
