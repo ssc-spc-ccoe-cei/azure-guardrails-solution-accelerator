@@ -98,7 +98,7 @@ function Verify-ProtectionDataInTransit {
             [Parameter(Mandatory=$true)]
             [string]
             $ReportTime,
-            [Parameter(Mandatory=$true)]
+            [Parameter(Mandatory=$false)]
             [string]
             $CBSSubscriptionName
     )

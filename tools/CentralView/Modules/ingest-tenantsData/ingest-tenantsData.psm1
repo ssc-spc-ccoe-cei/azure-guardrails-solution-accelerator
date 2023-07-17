@@ -1,4 +1,3 @@
-#$$wsidList=@("c2ffc603-69a7-4da1-a999-74b3fdc5f171","3235e0e7-74a4-481e-85e7-faa4d4fd6bc7")
 function get-tenantdata {
     param (
         $WorkSpaceID,
@@ -25,7 +24,7 @@ function get-tenantdata {
         $DebugInfo
     )
     "Querying for tenant data - Workspaces"
-    $wsidList=Search-azgraph -Query 'resources| where type == "microsoft.operationalinsights/workspaces"| project name, rg=split(id, "/")[4],wsid=properties.customerId | where tolower(rg) contains "guardrails"' -UseTenantScope
+    $wsidList=Search-azgraph -first 300 -Query 'resources| where type == "microsoft.operationalinsights/workspaces"| project name, rg=split(id, "/")[4],wsid=properties.customerId' -UseTenantScope
     if ($wsidList.count -eq 0)
     {
         "No ws found."
@@ -75,19 +74,32 @@ GuardrailsCompliance_CL
         "Working on $ws workspace."
         # Get latest report time for that Tenant
         try {
-            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project  DepartmentTenantID=DepartmentTenantID_g,TenantDomain=TenantDomain_s,TenantDomainName=DepartmentTenantName_s, DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A')"
+            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project  DepartmentTenantID=DepartmentTenantID_g,TenantDomain=TenantDomain_s,TenantDomainName=DepartmentTenantName_s, DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A'),CloudUsageProfiles=cloudUsageProfiles_s"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
             $TenantDomain=$resultsArray[0].TenantDomain
             $DepartmentName=$resultsArray[0].DepartmentName
             $DepartmentNumber=$resultsArray[0].DepartmentNumber
             $DepartmentTenantName=$resultsArray[0].TenantDomainName
-            $DepartmentTenanId=$resultsArray[0].DepartmentTenantID
+            $DepartmentTenantId=$resultsArray[0].DepartmentTenantID
+            $DepartmentCloudUsageProfiles=$resultsArray[0].CloudUsageProfiles
         }
         catch {
             "Error reading info from $ws workspace."
             $TenantDomain=""
         }
-
+        # Now getting version info for that tenant
+        try {
+            $Query="GR_VersionInfo_CL | project DeployedVersion=DeployedVersion_s, AvailableVersion=AvailableVersion_s, UpdatedNeeded=UpdateNeeded_b, CheckDate=ReportTime_s"
+            $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
+            $DepartmentDeployedVersion=$resultsArray[0].DeployedVersion
+            $DepartmentAvailableVersion=$resultsArray[0].AvailableVersion
+            $DepartmentUpdatedNeeded=$resultsArray[0].UpdatedNeeded
+            $DepartmentVersionCheckDate=$resultsArray[0].CheckDate
+        }
+        catch {
+            "Error reading info from $ws workspace."
+            $TenantDomain=""
+        }
         if ($TenantDomain -ne "")
         {
 
@@ -98,10 +110,8 @@ GuardrailsCompliance_CL
                 "No data found for $TenantDomain."
             }
             else {
-                <# Action when all if and elseif conditions are false #>
-                
+                <# Action when all if and elseif conditions are false #>               
                 "$TenantDomain @ $LatestRT"
-
                 $QueryList=@($generalQuery -f "GUARDRAIL 1:",$LatestRT)
                 $QueryList+=$generalQuery -f "GUARDRAIL 2",$LatestRT
                 $QueryList+=$generalQuery -f "GUARDRAIL 3",$LatestRT
@@ -137,16 +147,26 @@ GuardrailsCompliance_CL
                         # $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
                         
                         #$tempArray=$tempArray | Select-Object ControlName_s, ItemName, Status
+                        #tenant info
                         $tempArray | Add-Member -MemberType NoteProperty -Name TenantDomain -Value $TenantDomain -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentName -Value $DepartmentName -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentNumber -Value $DepartmentNumber -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantName -Value $DepartmentTenantName -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantID -Value $DepartmentTenanId -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantID -Value $DepartmentTenantId -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantID -Value $TenantID -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantName -Value $TenantName -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantUPN -Value $tenantDomainUPN -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentCloudUsageProfiles -Value $DepartmentCloudUsageProfiles -Force | Out-Null
+                        
+                        # Report time info
                         $tempArray | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentReportTime -Value $LatestRT -Force | Out-Null
+                        # Version info
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DeployedVersion -Value $DepartmentDeployedVersion -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name AvailableVersion -Value $DepartmentAvailableVersion -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name UpdatedNeeded -Value $DepartmentUpdatedNeeded -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentVersionCheckDate -Value $DepartmentVersionCheckDate -Force | Out-Null
+                        # Workspace info
                         $tempArray | Add-Member -MemberType NoteProperty -Name WSId -Value $ws -Force 
                         if ($DebugInfo) { $tempArray}
                         $FinalObjectList+=$tempArray

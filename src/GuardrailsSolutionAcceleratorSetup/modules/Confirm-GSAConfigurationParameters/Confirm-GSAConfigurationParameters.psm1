@@ -134,14 +134,14 @@ Function Confirm-GSAConfigurationParameters {
     $paramsValidationTable = @{
         keyVaultName                      = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-z0-9]{3,12}$'
+            ValidationPattern = '^[a-z0-9][a-z0-9-]{3,12}$'
         }
         resourcegroup                     = @{
             IsRequired        = $true
             ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
         }
         region                            = @{
-            IsRequired        = $false
+            IsRequired     = $false
             ValidationList = (Get-AzLocation).Location
         }
         storageaccountName                = @{
@@ -157,14 +157,14 @@ Function Confirm-GSAConfigurationParameters {
             ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
         }
         PBMMPolicyID                      = @{
-            IsRequired        = $true
+            IsRequired       = $true
             ValidationByType = 'guid'
         }
         AllowedLocationPolicyId           = @{
-            IsRequired        = $true
+            IsRequired       = $true
             ValidationByType = 'guid'
         }
-        FirstBreakGlassAccountUPN        = @{
+        FirstBreakGlassAccountUPN         = @{
             IsRequired        = $true
             ValidationPattern = '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         }
@@ -173,12 +173,12 @@ Function Confirm-GSAConfigurationParameters {
             ValidationPattern = '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         }
         DepartmentNumber                  = @{
-            IsRequired        = $true
+            IsRequired       = $true
             ValidationByType = 'int'
         }
         CBSSubscriptionName               = @{
-            IsRequired = $false
-            ValidationPattern = '^[a-zA-Z0-9][a-zA-Z0-9-_]{2,128}$'
+            IsRequired        = $false
+            ValidationPattern = '^([a-zA-Z0-9][a-zA-Z0-9-_]{2,128})|(N/A)$'
         }
         SecurityLAWResourceId             = @{
             IsRequired        = $true
@@ -189,12 +189,12 @@ Function Confirm-GSAConfigurationParameters {
             ValidationPattern = '^\/subscriptions\/[a-fA-F0-9]{8}-([a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}\/resourceGroups\/[^\/]+\/providers\/[^\/]+(\/[^\/]+)*$'
         }
         Locale                            = @{
-            IsRequired        = $true
+            IsRequired     = $true
             ValidationList = @('en-ca', 'fr-ca')
         }
         lighthouseServiceProviderTenantID = @{
-            IsRequired        = $false
-            ParameterSetName  = 'lighthouse'
+            IsRequired       = $false
+            ParameterSetName = 'lighthouse'
             ValidationByType = 'guid'
         }
         lighthousePrincipalDisplayName    = @{
@@ -203,17 +203,17 @@ Function Confirm-GSAConfigurationParameters {
             ValidationPattern = '^[a-zA-Z0-9][a-zA-Z0-9-_\s]{2,128}$'
         }
         lighthousePrincipalId             = @{
-            IsRequired        = $false
-            ParameterSetName  = 'lighthouse'
+            IsRequired       = $false
+            ParameterSetName = 'lighthouse'
             ValidationByType = 'guid'
         }
         lighthouseTargetManagementGroupID = @{
-            IsRequired = $true
+            IsRequired        = $false
             ParameterSetName  = 'lighthouse'
             ValidationPattern = '^[a-zA-Z0-9][a-zA-Z0-9-_\s]{2,128}$'
         }
         securityRetentionDays             = @{
-            IsRequiredq       = $false
+            IsRequired       = $false
             ValidationByType = 'int'
         }
         cloudUsageProfiles                = @{
@@ -227,29 +227,38 @@ Function Confirm-GSAConfigurationParameters {
         $paramValue = $configParam.Value
         $paramValidation = $paramsValidationTable[$paramName]
 
-        Write-Verbose "Validating parameter '$paramName' wtih value '$paramValue'..."
+        Write-Verbose "Validating config file parameter '$paramName' with value '$paramValue'..."
         if ($paramValidation -eq $null) {
-            Write-Warning "Parameter '$paramName' is not a valid configuration parameter or has not been added to the `$paramsValidationTable above yet."
+            Write-Warning "`tParameter '$paramName' is not a valid configuration parameter or has not been added to the `$paramsValidationTable above yet."
             continue
         }
-        if ($paramValidation.IsRequired -and $null -eq $paramValue) {
+        if ($paramValidation.IsRequired -and [string]::IsNUllOrEmpty($paramValue)) {
             Write-Error "Parameter '$paramName' is required but not specified."
             break
         }
-        if ($null -ne $paramValue -and $null -ne $paramValidation.ValidationList -and $paramValue -notin $paramValidation.ValidationList) {
+        elseif (!$paramValidation.IsRequired -and [string]::IsNUllOrEmpty($paramValue)) {
+            Write-Verbose "Parameter '$paramName' is not required and is empty, skipping."
+            continue
+        }
+        if ($paramValidation.IsRequired -and [string]::IsNUllOrEmpty($paramValue)) {
+            Write-Error "Parameter '$paramName' is required but not specified."
+            break
+        }
+        if (![string]::IsNUllOrEmpty($paramValue) -and $null -ne $paramValidation.ValidationList -and $paramValue -notin $paramValidation.ValidationList) {
             Write-Error "Parameter '$paramName' value '$paramValue' is not in the expected list of values '$($paramValidation.ValidationList -join ', ')."
             break
         }
-        if ($null -ne $paramValue -and $null -ne $paramValidation.ValidationByType -and -NOT ($paramValue -as $paramValidation.ValidationByType)) {
+        if (![string]::IsNUllOrEmpty($paramValue) -and $null -ne $paramValidation.ValidationByType -and -NOT ($paramValue -as $paramValidation.ValidationByType)) {
             Write-Error "Parameter '$paramName' value '$paramValue' is not a valid type '$($paramValidation.ValidationByType)'."
             break
         }
-        if ($null -ne $paramValue -and $null -ne $paramValidation.ValidationPattern -and $paramValue -inotmatch $paramValidation.ValidationPattern) {
+        if (![string]::IsNUllOrEmpty($paramValue) -and $null -ne $paramValidation.ValidationPattern -and $paramValue -inotmatch $paramValidation.ValidationPattern) {
             Write-Error "Parameter '$paramName' value '$paramValue' does not match the expected pattern '$($paramValidation.ValidationPattern)'."
             break
         }
     }
 
+    
     # verify that Department Number has an associated Department Name, get name value for AA variable
     try {
         $uri = 'https://donnees-data.tpsgc-pwgsc.gc.ca/ba1/min-dept/min-dept.csv'
