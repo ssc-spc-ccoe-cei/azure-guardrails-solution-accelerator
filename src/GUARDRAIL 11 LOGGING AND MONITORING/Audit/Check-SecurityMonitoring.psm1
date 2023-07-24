@@ -100,7 +100,7 @@ function get-SecurityMonitoringStatus {
     $LAWName=$SecurityLAWResourceId.Split("/")[8]
     
     $IsCompliant=$false
-    $uncompliantParameters=7
+    $uncompliantParameters=6
     try{
         Select-AzSubscription -Subscription $Subscription -ErrorAction Stop | Out-Null
     }
@@ -135,6 +135,9 @@ function get-SecurityMonitoringStatus {
         if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -gt 0)
         {
             $uncompliantParameters--
+            Write-Verbose "1 is good."
+        }
+        else {
             $Comments+=$msgTable.lawNoAutoAcct
         }
         # 2 -Test Retention Days
@@ -142,18 +145,27 @@ function get-SecurityMonitoringStatus {
         if ($Retention -ge $LAWRetention)
         {
             $uncompliantParameters--
+            Write-Verbose "2 is good."
+        }
+        else {
             $Comments+=$msgTable.lawRetentionSecDays -f $LAWRetention
         }
         # 3
         if (get-activitylogstatus -LAWResourceId $LAW.ResourceId) {
             $uncompliantParameters--
-            $Comments+=$msgTable.lawNoActivityLogs
+            Write-Verbose "3 is good."
+        }
+        else {
+            $Comments+=$msgTable.lawNoActivityLogs<# Action when all if and elseif conditions are false #>
         }
         # 4 - Tests for required Solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
         if ($enabledSolutions -contains "Updates" -and $enabledSolutions -contains "AntiMalware")
         {
             $uncompliantParameters--
+            Write-Verbose "4 is good."
+        }
+        else {
             $Comments+=$msgTable.lawSolutionNotFound
         }
         # 5 - Tenant Diagnostics configuration. Needs Graph API...
@@ -161,6 +173,9 @@ function get-SecurityMonitoringStatus {
         if ($SecurityLAWResourceId -in $tenantWS.workspaceId)
         {
             $uncompliantParameters--
+            Write-Verbose "5 is good."
+        }
+        else {
             $Comments+=$msgTable.lawNoTenantDiag
         }
         # 6 - Workspace is there but need to check if logs are enabled.
@@ -168,6 +183,9 @@ function get-SecurityMonitoringStatus {
         if ("AuditLogs" -in $enabledLogs -and "SignInLogs" -in $enabledLogs)
         {
             $uncompliantParameters--
+            Write-Verbose "6 is good."
+        }
+        else {
             $Comments+=$msgTable.lawMissingLogTypes
         }
         #Blueprint redirection
@@ -180,7 +198,7 @@ function get-SecurityMonitoringStatus {
         else {
             $IsCompliant=$false #Not compliant
         }
-        
+        Write-Verbose "Found $($uncompliantParameters) non-compliant parameters."
         $object = [PSCustomObject]@{ 
             ComplianceStatus = $IsCompliant
             Comments = $Comments
