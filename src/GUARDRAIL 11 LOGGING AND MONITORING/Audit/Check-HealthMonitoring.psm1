@@ -99,6 +99,8 @@ function Get-HealthMonitoringStatus {
         if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -gt 0)
         {
             $uncompliantParameters--
+        }
+        else {
             $Comments+=$msgTable.lawNoAutoAcct 
         }
         #2
@@ -107,6 +109,8 @@ function Get-HealthMonitoringStatus {
         if ($Retention -ge $RetentionDays)
         {
             $uncompliantParameters--
+        }
+        else {
             $Comments+=$msgTable.lawRetentionHealthDays -f $RetentionDays
         }
         #3
@@ -115,6 +119,8 @@ function Get-HealthMonitoringStatus {
         if ($enabledSolutions -contains "AgentHealthAssessment")
         {
             $uncompliantParameters--
+        }
+        else {
             $Comments+=$msgTable.lawHealthNoSolutionFound # "Required solutions not present in the Health Log Analytics Workspace."
         }
         #4
@@ -122,6 +128,8 @@ function Get-HealthMonitoringStatus {
         if ($enabledSolutions -contains "Updates")
         {
             $uncompliantParameters--
+        }
+        else {
             $Comments+=$msgTable.lawSolutionNotFound # "Required solutions not present in the Log Analytics Workspace."
         }
         #Tenant...No information on how to detect it.
