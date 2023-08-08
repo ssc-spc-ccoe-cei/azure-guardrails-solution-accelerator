@@ -18,6 +18,7 @@ resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
     allowBlobPublicAccess: false
     allowSharedKeyAccess: true
     supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
   }
   resource blobServices 'blobServices'={
     name: 'default'
