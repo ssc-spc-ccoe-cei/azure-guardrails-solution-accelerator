@@ -146,15 +146,15 @@ Function Confirm-GSAConfigurationParameters {
         }
         storageaccountName                = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,11}$'
+            ValidationPattern = '^[a-z0-9][a-z0-9]{2,11}$'
         }
         logAnalyticsworkspaceName         = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
+            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,51}[a-z0-9]$'
         }
         autoMationAccountName             = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
+            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,40}[a-z0-9]$'
         }
         PBMMPolicyID                      = @{
             IsRequired       = $true

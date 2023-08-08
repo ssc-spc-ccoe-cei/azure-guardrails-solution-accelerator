@@ -53,9 +53,9 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |keyVaultName|Name prefix for the KeyVault resource | True | 'guardrails' | '^[a-z0-9]{3,12}$' |
 |resourcegroup|Resource Group name prefix for the deployed the solution| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
 |region|Location to deploy. 'canadacentral' is the default| False | 'canadacentral' | _Azure Region Name_|
-|storageaccountName|name prefix of the storage account to be used. 4 random characters will be added to this name to avoid conflicts| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,11}$' |
-|logAnalyticsworkspaceName| name prefix for the Log Analytics workspace| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
-|autoMationAccountName| Name prefix for the Automation Account | True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
+|storageaccountName|name prefix of the storage account to be used. 4 random characters will be added to this name to avoid conflicts| True | 'guardrails' | '^[a-z0-9][a-z0-9]{2,11}$' |
+|logAnalyticsworkspaceName| name prefix for the Log Analytics workspace| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,51}[a-z0-9]$' |
+|autoMationAccountName| Name prefix for the Automation Account | True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,40}[a-z0-9]$' |
 |FirstBreakGlassAccountUPN| User principal name of the first break glass account (ex: breakglass@contoso.com) | True | | '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' |
 |SecondBreakGlassAccountUPN| User principal name of the second break glass account (ex: breakglass@contoso.com) | True | | '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' |
 |PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.| True |'4c4a5f27-de81-430b-b4e5-9cbd50595a87' | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$' |
