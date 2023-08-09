@@ -24,7 +24,7 @@ function get-tenantdata {
         $DebugInfo
     )
     "Querying for tenant data - Workspaces"
-    $wsidList=Search-azgraph -first 300 -Query 'resources| where type == "microsoft.operationalinsights/workspaces"| project name, rg=split(id, "/")[4],wsid=properties.customerId' -UseTenantScope
+    $wsidList=Search-azgraph -first 300 -Query 'resources| where type == "microsoft.operationalinsights/workspaces"| project name, rg=split(id, "/")[4],wsid=properties.customerId | where tolower(rg) contains "guardrails"' -UseTenantScope
     if ($wsidList.count -eq 0)
     {
         "No ws found."
