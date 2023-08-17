@@ -74,7 +74,7 @@ GuardrailsCompliance_CL
         "Working on $ws workspace."
         # Get latest report time for that Tenant
         try {
-            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project  DepartmentTenantID=DepartmentTenantID_g,TenantDomain=TenantDomain_s,TenantDomainName=DepartmentTenantName_s, DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A'),CloudUsageProfiles=cloudUsageProfiles_s"
+            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project  DepartmentTenantID=column_ifexists('DepartmentTenantID_g','N/A'),TenantDomain=column_ifexists('TenantDomain_s','N/A'),TenantDomainName=column_ifexists('DepartmentTenantName_s','N/A'), DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A'),CloudUsageProfiles=column_ifexists('cloudUsageProfiles_s','N/A')"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
             $TenantDomain=$resultsArray[0].TenantDomain
             $DepartmentName=$resultsArray[0].DepartmentName
@@ -89,7 +89,7 @@ GuardrailsCompliance_CL
         }
         # Now getting version info for that tenant
         try {
-            $Query="GR_VersionInfo_CL | project DeployedVersion=DeployedVersion_s, AvailableVersion=AvailableVersion_s, UpdatedNeeded=UpdateNeeded_b, CheckDate=ReportTime_s"
+            $Query="GR_VersionInfo_CL | summarize arg_max(ReportTime_s, *) by Type | project DeployedVersion=DeployedVersion_s, AvailableVersion=AvailableVersion_s, UpdatedNeeded=UpdateNeeded_b, CheckDate=ReportTime_s"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
             $DepartmentDeployedVersion=$resultsArray[0].DeployedVersion
             $DepartmentAvailableVersion=$resultsArray[0].AvailableVersion
