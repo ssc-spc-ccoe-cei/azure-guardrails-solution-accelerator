@@ -62,6 +62,7 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default| True |'e56962a6-4747-49cd-b67b-bf8b01975c4c' | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$' |
 |DepartmentNumber| The office Government of Canada department number - see: https://open.canada.ca/data/en/dataset/22090865-f8a6-4b83-9bad-e9d61f26a821 | True | | integer 1-999 |
 |CBSSubscriptionName|Subscription Name containing the CBS solution. This subscription will be used to find the required components. **This subscription will also be excluded from checks.**| False | 'N/A' | string |
+|SSCReadOnlyServicePrincipalNameAPPID | The application ID of the SSC read-only principal | True | '00000000-0000-0000-0000-000000000000' | guid |
 |SecurityLAWResourceId|Full resource Id of the Log analytics workspace used for Security (/subscriptions/...)| True | | '^\/subscriptions\/[a-fA-F0-9]{8}-([a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}\/resourceGroups\/[^\/]+\/providers\/[^\/]+(\/[^\/]+)*$'|
 |HealthLAWResourceId|Full resource Id of the Log analytics workspace used for resource Health (/subscriptions/...)| True | | '^\/subscriptions\/[a-fA-F0-9]{8}-([a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}\/resourceGroups\/[^\/]+\/providers\/[^\/]+(\/[^\/]+)*$'|
 |Locale|Language of the messages in the solution. At the moment, supported languages are english or french and default is english (en-CA or fr-CA)| True | 'en-CA' | '^(en\|fr)-CA$' |
