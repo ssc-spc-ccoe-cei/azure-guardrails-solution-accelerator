@@ -76,6 +76,11 @@ ServicePrincipalNameHasReaderRole = SPN a le rôle de lecteur sur le groupe de g
 ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN n'a pas de rôle d'administrateur de Marketplace.
 ServicePrincipalNameHasMarketPlaceAdminRole = SPN a pas le rôle d'administrateur de Marketplace.
 NoSPN = SPN n'existe pas. 
+SPNCredentialsCompliance = Statut de conformité des clés SPN
+SPNSingleValidCredential = SPN a une seule clé valide. {0}
+SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
+SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
+CSPMEncryptedEmailConfirmation= Confirmacion d'email encrypté envoyé
 
 # GuardRail #5-6
 pbmmCompliance = Conformité PBMMPolicy
