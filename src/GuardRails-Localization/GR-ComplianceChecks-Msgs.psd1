@@ -69,6 +69,7 @@ noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all user
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
+
 checkUserExistsError = API call returned Error {0}. Please Check if the user exists.
 checkUserExists = Please Check if the user exists.
 ServicePrincipalNameHasNoReaderRole = SPN doesnt have Reader Role on the ROOT Management Group.
@@ -76,6 +77,11 @@ ServicePrincipalNameHasReaderRole = SPN has Reader Role on the ROOT Management G
 ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN doesnt have Marketplace Admin Role on the Marketplace.
 ServicePrincipalNameHasMarketPlaceAdminRole = SPN has Marketplace Admin Role on the Marketplace.
 NoSPN = SPN doesnt exist.
+SPNCredentialsCompliance = SPN Credentials Compliance
+CSPMEncryptedEmailConfirmation= CSPM encrypted email with credentials sent
+SPNSingleValidCredential = SPN has a single valid credential. {0}
+SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
+SPNNoValidCredentials = SPN has no valid credentials. {0}
 
 # GuardRail #5-6
 pbmmCompliance = PBMMPolicy Compliance

@@ -334,7 +334,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-DepartmentServicePrincipalName  -SPNID $vars.SSCReadOnlyServicePrincipalNameAPPID -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DepartmentServicePrincipalName -SPNID $vars.SSCReadOnlyServicePrincipalNameAPPID -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name":  "SSCReadOnlyServicePrincipalNameAPPID",
@@ -345,6 +345,54 @@
       {
         "Name": "itsgcode",
         "Value": "AC2(4)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-ServicePrincipalNameSecrets",
+    "Control": "Guardrails4",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Get-DepartmentServicePrincipalNameSecrets -SPNID $vars.SSCReadOnlyServicePrincipalNameAPPID -ControlName $msgTable.CtrName4 -ItemName $msgTable.SPNCredentialsCompliance -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name":  "SSCReadOnlyServicePrincipalNameAPPID",
+        "Value": "SSCReadOnlyServicePrincipalNameAPPID"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(4)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails4",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName4 -ItemName $msgTable.CSPMEncryptedEmailConfirmation -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "SPNEnencryptedEmailToCSPMSentAttestation.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
       }
     ]
   },
