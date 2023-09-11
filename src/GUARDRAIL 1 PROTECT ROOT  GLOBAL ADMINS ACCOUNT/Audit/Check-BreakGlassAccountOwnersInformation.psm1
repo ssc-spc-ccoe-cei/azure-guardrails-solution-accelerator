@@ -53,13 +53,15 @@ function Get-BreakGlassOwnerinformation {
         try {
             $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
 
+            $hiddenUserPrincipalName = Hide-Email -email $BGOwner.UserPrincipalName
+
             If ($response.statusCode -eq 200) {
                 $BGOwner.ComplianceStatus = $true
-                $BGOwner.ComplianceComments = $msgTable.bgAccountHasManager -f $BGOwner.UserPrincipalName
+                $BGOwner.ComplianceComments = $msgTable.bgAccountHasManager -f $hiddenUserPrincipalName
             }
             ElseIf ($response.statusCode -eq 404) {
                 $BGOwner.ComplianceStatus = $false
-                $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $BGOwner.UserPrincipalName
+                $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $hiddenUserPrincipalName
             }
             Else {
                 $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; unhandled status code in response: '$($response.statusCode)'" )

@@ -491,6 +491,26 @@ function New-LogAnalyticsData {
         -TimeStampField Get-Date  
 }
 
+function Hide-Email {
+    param (
+        [string]$email
+    )
+
+    $parts = $email -split '@'
+    if ($parts.Length -eq 2) {
+        $username = $parts[0]
+        $domain = $parts[1]
+
+        $hiddenUsername = $username[0] + ($username.Substring(1, $username.Length - 2) -replace '.', '#') + $username[-1]
+        $hiddenDomain = $domain[0] + ($domain.Substring(1, $domain.Length - 5) -replace '.', '#') + $domain[-4] + $domain[-3] + $domain[-2] + $domain[-1]
+
+        $hiddenEmail = "$hiddenUsername@$hiddenDomain"
+        return $hiddenEmail
+    } else {
+        return "Invalid email format"
+    }
+}
+
 function Invoke-GraphQuery {
     param(
         # URL path (ex: /users)
