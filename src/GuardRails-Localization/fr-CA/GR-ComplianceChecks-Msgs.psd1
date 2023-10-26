@@ -21,6 +21,7 @@ mfaEnforcement = Application MFA
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 m365Assignment = Affectation Microsoft 365 E5
+bgAadLicense = Licence AAD P2 de compte en cas de bris de verre (R) 
 bgProcedure = Procédure de compte Brise Glace
 bgCreation = Création de compte Brise Glace
 bgAccountResponsibility = La responsabilité des comptes brise-glace doit incomber à une personne non technique, de niveau directeur ou supérieur

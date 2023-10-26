@@ -122,7 +122,7 @@
     "Status": "Enabled",
     "Required": "False",
     "ModuleName": "Get-BreakGlassAccountLicense",
-    "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName1 -ItemName $msgTable.m365Assignment -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAadLicense -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
