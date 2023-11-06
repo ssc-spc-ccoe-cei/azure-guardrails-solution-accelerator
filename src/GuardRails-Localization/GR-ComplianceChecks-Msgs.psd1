@@ -16,12 +16,11 @@ CtrName11 = GUARDRAIL 11: LOGGING AND MONITORING
 CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 
 # Guardrail 1
-adLicense = AD License Type
+MSEntIDLicense = Microsoft Entra ID License Type
 mfaEnforcement = MFA Enforcement Excl. Break Glass Accounts
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
-m365Assignment = Microsoft 365 E5 Assignment
-bgAadLicense = Break Glass AAD P2 License (R)
+bgMSEntID = Break Glass Microsoft Entra ID P2
 bgProcedure = Break Glass Account Non-technical
 bgCreation = Break Glass account Creation
 bgAccountResponsibility = Responsibility of break glass accounts must be with someone not-technical, director level or above
@@ -31,18 +30,18 @@ bgAccountsCompliance2 = Both accounts are identical, please check the config.jso
 bgAuthenticationMeth =  Authentication Methods 
 firstBgAccount = First Break Glass Account
 secondBgAccount = Second Break Glass Account
-bgNoValidLicenseAssigned = No AAD P2 license assigned to
-bgValidLicenseAssigned =  has a valid AAD P2 assigned
+bgNoValidLicenseAssigned = No Microsoft Entra ID P2 license assigned to
+bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
 bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GuardRail #2
-AADLicenseTypeFound = Found correct license type
-AADLicenseTypeNotFound = Required AAD license type not found
-accountNotDeleted = This user account has been deleted but has not yet been DELETED PERMANENTLY from Azure Active Directory
-ADDeletedUser = AD Deleted User
-ADDisabledUsers = AD Disabled Users
+MSEntIDLicenseTypeFound = Found correct license type
+MSEntIDLicenseTypeNotFound = Required Microsoft Entra ID license type not found
+accountNotDeleted = This user account has been deleted but has not yet been DELETED PERMANENTLY from Microsoft Entra ID
+MSEntIDDeletedUser =  Microsoft Entra ID Deleted User
+MSEntIDDisabledUsers = Microsoft Entra ID Disabled Users
 apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
 compliantComment = Didnt find any unsynced deprecated users
@@ -52,13 +51,12 @@ guestMustbeRemoved = This GUEST account should not have any role assignment in t
 mitigationCommands = Verify is the users reported are deprecated.
 noGuestAccounts = There are no GUEST users in your tenant.
 noncompliantComment = Total Number of non-compliant users {0}. 
-noncompliantUsers = The following Users are disabled and not synchronized with AD: -
+noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
 privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 removeGuestAccounts = Remove guest accounts.
-removeGuestAccountsComment = Remove guest accounts from Azure AD or remove their permissions from the Azure subscriptions.
-
+removeGuestAccountsComment = Remove guest accounts from Microsoft Entra ID or remove their permissions from the Azure subscriptions.
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
