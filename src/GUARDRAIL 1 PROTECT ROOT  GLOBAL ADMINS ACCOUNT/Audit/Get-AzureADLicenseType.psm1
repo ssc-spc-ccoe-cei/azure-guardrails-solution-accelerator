@@ -31,7 +31,7 @@ function Get-ADLicenseType {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ADLicenseType  = "N/A"
     $IsCompliant = $false
-    $Comments= $msgTable.AADLicenseTypeNotFound
+    $Comments= $msgTable.MSEntIDLicenseTypeNotFound
 
     $urlPath = '/subscribedSkus'
     try {
@@ -50,7 +50,7 @@ function Get-ADLicenseType {
     if ($licenseAADP2Found) {
         $IsCompliant = $true
         $ADLicenseType = "AAD_PREMIUM_P2"
-        $Comments = $msgTable.AADLicenseTypeFound
+        $Comments = $msgTable.MSEntIDLicenseTypeFound
     }
 
     $PsObject = [PSCustomObject]@{
