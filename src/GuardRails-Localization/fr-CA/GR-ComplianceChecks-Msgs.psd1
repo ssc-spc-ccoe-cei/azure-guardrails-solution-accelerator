@@ -16,12 +16,11 @@ CtrName11 = GUARDRAIL 11: ENREGISTREMENT ET SURVEILLANCE
 CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARKETPLACES
 
 # Guardrail 1
-adLicense = Type de licence AD
+MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnforcement = Application MFA
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
-m365Assignment = Affectation Microsoft 365 E5
-bgAadLicense = Licence AAD P2 de compte en cas de bris de verre (R) 
+bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
 bgProcedure = Procédure de compte Brise Glace
 bgCreation = Création de compte Brise Glace
 bgAccountResponsibility = La responsabilité des comptes brise-glace doit incomber à une personne non technique, de niveau directeur ou supérieur
@@ -31,18 +30,18 @@ bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le 
 bgAuthenticationMeth =  Méthodes d'authentification 
 firstBgAccount = Premier compte brise-glace
 secondBgAccount = Deuxième compte brise-glace
-bgNoValidLicenseAssigned = Aucune licence AAD P2 assignée au 
-bgValidLicenseAssigned =  a une licence AAD P2 valide
+bgNoValidLicenseAssigned = Aucune licence Microsoft Entra ID P2 assignée au 
+bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
 bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GuardRail #2
-AADLicenseTypeFound = Type de licence AAD trouvé 
-AADLicenseTypeNotFound = Type de licence AAD non trouvé
-accountNotDeleted = Ce compte d'utilisateur a été supprimé mais n'a pas encore été SUPPRIMÉ DÉFINITIVEMENT d'Azure Active Directory
-ADDeletedUser = Utilisateur AD Supprimé
-ADDisabledUsers = Utilisateur AD désactivé
+MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
+MSEntIDLicenseTypeNotFound = Type de licence requis Microsoft Entra ID non trouvé
+accountNotDeleted = Ce compte d'utilisateur a été supprimé mais n'a pas encore été SUPPRIMÉ DÉFINITIVEMENT d'Azure Microsoft Entra ID
+MSEntIDDeletedUser = Utilisateur Microsoft Entra ID Supprimé
+MSEntIDDisabledUsers = Utilisateur Microsoft Entra ID désactivé
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
@@ -52,13 +51,12 @@ guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans le
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
-noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
+noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
 privilegedAccountManagementPlan = Privileged Account Management plan 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 removeGuestAccounts = Supprimez les comptes invités.
-removeGuestAccountsComment = Supprimez les comptes invités d'Azure AD ou supprimez leurs permissions dans les abonnements Azure.
-
+removeGuestAccountsComment = Supprimer les comptes d'invités de Microsoft Entra ID ou supprimer les permissions des abonnements Azure.
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
