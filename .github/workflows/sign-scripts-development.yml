@@ -1,4 +1,4 @@
-name: Sign PowerShell Scripts
+name: Sign PowerShell Scripts and Deploy to Test environment
 on:
   workflow_dispatch:
   push:
@@ -12,6 +12,8 @@ jobs:
     name: Sign, validate, test and publish PowerShell scripts as pipeline artifacts
     runs-on: ubuntu-latest
     steps:
+      - name: Install PowerShell
+        uses: microsoft/setup-powershell@v1                
       - name: Import code signing certificate
         shell: pwsh
         run: |
@@ -23,8 +25,6 @@ jobs:
           PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Install PowerShell
-        uses: microsoft/setup-powershell@v1                
       - name: Sign pwsh scripts and modules
         shell: pwsh
         run: |
