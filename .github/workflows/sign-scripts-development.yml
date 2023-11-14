@@ -3,6 +3,10 @@ on:
   workflow_dispatch:
   push:
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   ARTIFACT_NAME: PowerShell.Workflows.ScriptSigning
 
