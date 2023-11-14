@@ -174,7 +174,7 @@ jobs:
               $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
               $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
 
-              $configContent = @'
+              $configContent = @"
               {
                   "keyVaultName": "gsapipe",
                   "resourcegroup": "gsapipe",
@@ -201,7 +201,7 @@ jobs:
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,2"
               }
-              '@
+              "@
               Set-Content -Path $configFilePath -Value $configContent
 
               Push-Location -Path setup
@@ -240,7 +240,7 @@ jobs:
               $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
               $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
 
-              $configContent = @'
+              $configContent = @"
               {
                   "keyVaultName": "gsapipe",
                   "resourcegroup": "gsapipe",
@@ -267,7 +267,7 @@ jobs:
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,2"
                 }
-              '@
+              "@
               Set-Content -Path $configFilePath -Value $configContent
 
               $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
