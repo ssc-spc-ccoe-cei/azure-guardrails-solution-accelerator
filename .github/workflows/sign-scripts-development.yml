@@ -221,8 +221,68 @@ jobs:
           LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
           LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
-
       - name: Deploy Test environment
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+              $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+              $configContent = @'
+              {
+                  "keyVaultName": "gsapipe",
+                  "resourcegroup": "gsapipe",
+                  "region": "CanadaCentral",
+                  "storageaccountName": "gsapipe",
+                  "logAnalyticsworkspaceName": "gsapipe",
+                  "autoMationAccountName": "gsapipe",
+                  "FirstBreakGlassAccountUPN": "cspm.alpha@$env:TESTTENANT_DOMAIN",
+                  "SecondBreakGlassAccountUPN": "cspm.bravo@$env:TESTTENANT_DOMAIN",
+                  "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
+                  "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+                  "DepartmentNumber": "163",
+                  "CBSSubscriptionName": "$env:CBSSUBSCRIPTION_NAME",
+                  "SecurityLAWResourceId": "/subscriptions/$env:TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+                  "HealthLAWResourceId": "/subscriptions/$env:TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+                  "Locale": "en-CA",
+                  "lighthouseServiceProviderTenantID": "$env:LIGHTHOUSEPROVIDER_TENANTID",
+                  "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+                  "lighthousePrincipalId": "$env:LIGHTHOUSEPROVIDER_PRINCIPALID",
+                  "lighthouseTargetManagementGroupID": "$env:LIGHTHOUSEPROVIDER_MGMTGRPID",
+                  "subscriptionId": "$env:TESTSUBSCRIPTION_ID",
+                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+                  "uniqueNameSuffix": "$env:UNIQUENAME_SUFFIX",
+                  "securityRetentionDays": "730",
+                  "cloudUsageProfiles": "1,2"
+                }
+              '@
+              Set-Content -Path $configFilePath -Value $configContent
+
+              $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
+              $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
+
+              $alternatePSModulesURL = $modulesStagingURI
+              Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
+
+              $optionalParams = @{}
+              if ($alternatePSModulesURL) {
+                  $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+              }
+
+              try {
+                  $ErrorActionPreference = 'Stop'
+                  ipmo ./src/GuardrailsSolutionAcceleratorSetup
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+              }
+              catch {
+                  throw "Failed test deploy of solution with error: $_"
+              }
+              finally {
+                If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+                Pop-Location
+              }
+        env:
+          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
+      - name: Check for AA Job Errors
         uses: azure/powershell@v1
         with:
           inlineScript: |
