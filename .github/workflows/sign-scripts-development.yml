@@ -126,6 +126,7 @@ jobs:
     name: Deploy CAC to a tenant
     needs: sign_scripts
     runs-on: ubuntu-latest
+    environment: test
     steps:
       - name: Check Out
         uses: actions/checkout@v3
