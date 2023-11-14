@@ -145,6 +145,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
+            Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
             $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
 
             $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
@@ -155,6 +156,7 @@ jobs:
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
+          SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Pre-Clean Test environment
         uses: azure/powershell@v1
