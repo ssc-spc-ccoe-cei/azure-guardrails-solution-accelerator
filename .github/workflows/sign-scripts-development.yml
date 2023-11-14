@@ -13,55 +13,55 @@ jobs:
     steps:
       - name: Install PowerShell
         uses: microsoft/setup-powershell@v1                
-      - name: Import code signing certificate
-        shell: pwsh
-        run: |
-          $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-          Set-Content -Value $([System.Convert]::FromBase64String($env:BASE64_PFX)) -Path $pfxCertFilePath -Encoding Byte
-          $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath -Password $($env:PFX_PASSWORD | ConvertTo-SecureString -AsPlainText -Force) -CertStoreLocation ./cert/codesingingcert/
-        env:
-          BASE64_PFX: ${{ secrets.BASE64_PFX }}
-          PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
+      # - name: Import code signing certificate
+      #   shell: pwsh
+      #   run: |
+      #     $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
+      #     Set-Content -Value $([System.Convert]::FromBase64String($env:BASE64_PFX)) -Path $pfxCertFilePath -Encoding Byte
+      #     $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath -Password $($env:PFX_PASSWORD | ConvertTo-SecureString -AsPlainText -Force) -CertStoreLocation ./cert/codesingingcert/
+      #   env:
+      #     BASE64_PFX: ${{ secrets.BASE64_PFX }}
+      #     PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Sign pwsh scripts and modules
-        shell: pwsh
-        run: |
-          # remove git dir from checked out repo
-          Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
-          $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
-          # load cert
-          $codeSigningCert = Get-ChildItem ./cert/codesingingcert | Select-Object -First 1
-          foreach ($script in $scripts) {
-              try {
-                    $scriptContent = Get-Content -Path $script.FullName
-                    Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
-                    # sign script
-                    $null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
-              }
-              catch {
-                  Write-Error $_
-              }
-          }
-      - name: Validate Signature
-        shell: pwsh
-        run: |
-          $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+      # - name: Sign pwsh scripts and modules
+      #   shell: pwsh
+      #   run: |
+      #     # remove git dir from checked out repo
+      #     Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
+      #     $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
+      #     # load cert
+      #     $codeSigningCert = Get-ChildItem ./cert/codesingingcert | Select-Object -First 1
+      #     foreach ($script in $scripts) {
+      #         try {
+      #               $scriptContent = Get-Content -Path $script.FullName
+      #               Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
+      #               # sign script
+      #               $null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
+      #         }
+      #         catch {
+      #             Write-Error $_
+      #         }
+      #     }
+      # - name: Validate Signature
+      #   shell: pwsh
+      #   run: |
+      #     $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
 
-          Foreach ($signatureStatus in $signatureStatuses) {
-            If ($signatureStatus.Status -eq 'HashMismatch') {
-              throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            ElseIf ($signatureStatus.Status -eq 'NotSigned') {
-              Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            ElseIf ($signatureStatus.Status -eq 'Valid') {
-              Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            Else {
-              throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
-            }
-          }
+      #     Foreach ($signatureStatus in $signatureStatuses) {
+      #       If ($signatureStatus.Status -eq 'HashMismatch') {
+      #         throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      #       }
+      #       ElseIf ($signatureStatus.Status -eq 'NotSigned') {
+      #         Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      #       }
+      #       ElseIf ($signatureStatus.Status -eq 'Valid') {
+      #         Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      #       }
+      #       Else {
+      #         throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
+      #       }
+      #     }
       - name: Test Module Imports
         shell: pwsh
         run: |
@@ -129,11 +129,12 @@ jobs:
         with:
           name:  ${{ env.ARTIFACT_NAME }}
           path: ./psmodules
-      - name: Login to Azure 
+      - name: AZ Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          enable-AzPSSession: true 
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Stage zipped/signed modules in Storage Account
         uses: azure/powershell@v1
         with:
@@ -145,9 +146,9 @@ jobs:
               Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
             }
           azPSVersion: "latest"
-          env:
-            PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
-            PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.ORGANIZATION_VAR }}
+        env:
+          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
 
       - name: Pre-Clean Test environment
         uses: azure/powershell@v1
@@ -164,11 +165,11 @@ jobs:
                 "storageaccountName": "gsapipe",
                 "logAnalyticsworkspaceName": "gsapipe",
                 "autoMationAccountName": "gsapipe",
-                "FirstBreakGlassAccountUPN": "breakglass1@$env:TESTTENANT_DOMAIN",
-                "SecondBreakGlassAccountUPN": "breakglass2@$env:TESTTENANT_DOMAIN",
+                "FirstBreakGlassAccountUPN": "cspm.alpha@$env:TESTTENANT_DOMAIN",
+                "SecondBreakGlassAccountUPN": "cspm.bravo@$env:TESTTENANT_DOMAIN",
                 "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
                 "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
-                "DepartmentNumber": "190",
+                "DepartmentNumber": "163",
                 "CBSSubscriptionName": "$env:CBSSUBSCRIPTION_NAME",
                 "SecurityLAWResourceId": "/subscriptions/$env:TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
                 "HealthLAWResourceId": "/subscriptions/$env:TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
@@ -176,7 +177,7 @@ jobs:
                 "lighthouseServiceProviderTenantID": "$env:LIGHTHOUSEPROVIDER_TENANTID",
                 "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
                 "lighthousePrincipalId": "$env:LIGHTHOUSEPROVIDER_PRINCIPALID",
-                "lighthouseTargetManagementGroupID": "mb_co",
+                "lighthouseTargetManagementGroupID": "$env:LIGHTHOUSEPROVIDER_MGMTGRPID",
                 "subscriptionId": "$env:TESTSUBSCRIPTION_ID",
                 "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
                 "uniqueNameSuffix": "$env:UNIQUENAME_SUFFIX",
@@ -202,14 +203,15 @@ jobs:
               Pop-Location
             }
           azPSVersion: "latest"
-          env:
-            TESTTENANT_DOMAIN: ${{ vars.TESTTENANT_DOMAIN }}
-            TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
-            CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
-            TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
-            LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
-            LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
-            UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+        env:
+          TESTTENANT_DOMAIN: ${{ vars.TESTTENANT_DOMAIN }}
+          TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
+          CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
+          TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
+          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
 
       - name: Deploy Test environment
         uses: azure/powershell@v1
