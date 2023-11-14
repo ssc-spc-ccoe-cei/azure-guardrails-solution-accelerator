@@ -11,8 +11,8 @@ jobs:
     name: Sign, validate, test and publish PowerShell scripts as pipeline artifacts
     runs-on: ubuntu-latest
     steps:
-      - name: Install PowerShell
-        uses: microsoft/setup-powershell@v1                
+      # - name: Install PowerShell
+      #   uses: microsoft/setup-powershell@v1                
       # - name: Import code signing certificate
       #   shell: pwsh
       #   run: |
@@ -120,6 +120,7 @@ jobs:
           path: ./psmodules/*.zip
   deploy:
     name: Deploy CAC to a tenant
+    needs: sign_scripts
     runs-on: ubuntu-latest
     steps:
       - name: Check Out
