@@ -2,7 +2,6 @@ name: Run Azure Login with OpenID Connect and PowerShell
 on: 
   workflow_dispatch:
   push:
-    branches: [ "main" ]
 
 
 permissions:
