@@ -145,6 +145,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
+            Get-AzContext
             Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
             $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
 
