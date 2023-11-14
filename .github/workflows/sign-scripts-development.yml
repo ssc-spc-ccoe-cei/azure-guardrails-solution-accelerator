@@ -279,6 +279,7 @@ jobs:
                 If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
                 Pop-Location
               }
+          azPSVersion: "latest"
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
