@@ -141,19 +141,18 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true 
       - name: Stage zipped/signed modules in Storage Account
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            Get-AzContext
-            Get-AzResourceGroup
-            # Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
-            # $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
+            Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
+            $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
 
-            # $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
-            # ForEach ($moduleZip in $zippedModules) {
-            #   Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
-            # }
+            $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
+            ForEach ($moduleZip in $zippedModules) {
+              Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
+            }
           azPSVersion: "latest"
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
