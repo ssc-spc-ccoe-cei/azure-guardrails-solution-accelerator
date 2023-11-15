@@ -195,9 +195,9 @@ jobs:
                   "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
                   "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
                   "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
-                  "subscriptionId": $TESTSUBSCRIPTION_ID,
+                  "subscriptionId": "$TESTSUBSCRIPTION_ID",
                   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-                  "uniqueNameSuffix": $UNIQUENAME_SUFFIX,
+                  "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,2"
               }
@@ -261,9 +261,9 @@ jobs:
                   "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
                   "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
                   "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
-                  "subscriptionId": $TESTSUBSCRIPTION_ID,
+                  "subscriptionId": "$TESTSUBSCRIPTION_ID",
                   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-                  "uniqueNameSuffix": $UNIQUENAME_SUFFIX,
+                  "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,2"
                 }
