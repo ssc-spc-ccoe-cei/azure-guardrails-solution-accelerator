@@ -335,6 +335,8 @@ Function Confirm-GSAConfigurationParameters {
     $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
 
     Write-Verbose "Context Account type is '$context.Account.Type' context is '$context'"
+    Write-Verbose "Context Account id is '$context.Account.Id'"
+    
     ## get executing user identifier
     If ($context.Account -match '^MSI@') {
         Write-Verbose "Context is MSI."
