@@ -334,16 +334,20 @@ Function Confirm-GSAConfigurationParameters {
     $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json -Depth 10
     $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
 
+    Write-Verbose "Context Account is $context.Account"
     ## get executing user identifier
     If ($context.Account -match '^MSI@') {
+        Write-Verbose "Context is MSI."
         # running in Cloud Shell, finding delegated user ID
         $userId = (Get-AzAdUser -SignedIn).Id
     }
     ElseIf ($context.Account.Type -eq 'ServicePrincipal') {
+        Write-Verbose "Context is Service Principal."
         $sp = Get-AzADServicePrincipal -ApplicationId $context.Account.Id
         $userId = $sp.Id
     }
     Else {
+        Write-Verbose "Context is Local."
         # running locally
         $userId = (Get-AzAdUser -SignedIn).Id
     }
