@@ -334,7 +334,7 @@ Function Confirm-GSAConfigurationParameters {
     $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json -Depth 10
     $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
 
-    Write-Verbose "Context Account is $context.Account"
+    Write-Verbose "Context Account type is $context.Account.Type"
     ## get executing user identifier
     If ($context.Account -match '^MSI@') {
         Write-Verbose "Context is MSI."
