@@ -336,7 +336,8 @@ Function Confirm-GSAConfigurationParameters {
 
     $jsonString = $context | ConvertTo-Json
     # Print the JSON string
-    Write-Output $jsonString
+    Write-Verbose "Contex JSON String is"
+    Write-Verbose $jsonString
 
     Write-Verbose "Context Account type is '$context.Account.Type' context is '$context'"
     Write-Verbose "Context Account id is '$context.Account.Id'"
