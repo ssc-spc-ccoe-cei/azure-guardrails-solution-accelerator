@@ -353,6 +353,9 @@ Function Confirm-GSAConfigurationParameters {
         $sp = Get-AzADServicePrincipal -ApplicationId $context.Account.Id
         $userId = $sp.Id
     }
+    ElseIf ($context.Account.Type -eq 'ClientAssertion') { # Federated Identity
+        $userId = $context.Account.Id
+    }
     Else {
         Write-Verbose "Context is Local."
         # running locally
