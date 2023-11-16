@@ -164,6 +164,7 @@ jobs:
         continue-on-error: true
         with:
           inlineScript: |
+              Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
               ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
               $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
@@ -232,6 +233,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
+              Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
               $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
               $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
               $TESTSUBSCRIPTION_ID = $env:TESTSUBSCRIPTION_ID
