@@ -2,6 +2,12 @@
     {
         "Solution":"Guardrails Accelerator",
         "ReleaseVersion": "v1.1.6",
-        "ReleaseDate": "2023/08/28"
+        "ReleaseDate": "2023/08/28",
+        "ClientOrganization": "SSC",
+        "CostCenter": "CostCenter",
+        "DataSensitivity": "PB",
+        "ProjectContact": "Amrinder",
+        "ProjectName": "ProjectName",
+        "TechnicalContact": "Amrinder"
     }
 ]
