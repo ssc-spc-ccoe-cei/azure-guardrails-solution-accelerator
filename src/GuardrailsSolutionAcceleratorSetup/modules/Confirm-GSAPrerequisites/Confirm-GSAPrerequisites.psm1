@@ -170,12 +170,12 @@ Function Confirm-GSAPrerequisites {
                 }
             }
         
-            If ($lighthouseTargetManagementGroupID -eq $config['runtime']['tenantId']) {
-                $assignmentScopeMgmtmGroupId = '/'
-            }
-            Else {
-                $assignmentScopeMgmtmGroupId = $lighthouseTargetManagementGroupID
-            }
+            # If ($lighthouseTargetManagementGroupID -eq $config['runtime']['tenantId']) {
+            #     $assignmentScopeMgmtmGroupId = '/'
+            # }
+            # Else {
+            $assignmentScopeMgmtmGroupId = $lighthouseTargetManagementGroupID
+            # }
 
             # check if a lighthouse defender for cloud policy MSI role assignment already exists - assignment name always 2cb8e1b1-fcf1-439e-bab7-b1b8b008c294 
             Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Owner'"
