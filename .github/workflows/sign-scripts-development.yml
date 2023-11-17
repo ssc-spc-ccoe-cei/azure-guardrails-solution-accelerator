@@ -209,9 +209,9 @@ jobs:
 
               try {
                   $ErrorActionPreference = 'Stop'
-                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
-                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
-                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
+                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
+                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
+                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
               }
               catch {
                   throw "Failed test deploy of solution with error: $_"
