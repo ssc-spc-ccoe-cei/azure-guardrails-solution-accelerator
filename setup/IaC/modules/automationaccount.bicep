@@ -71,9 +71,6 @@ resource module2 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module1
-    ]  
   }
 resource module4 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DeprecatedAccounts'
@@ -83,9 +80,6 @@ resource module4 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module2
-    ]  
   }
 resource module5 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ExternalAccounts'
@@ -95,9 +89,6 @@ resource module5 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module4
-    ]  
   }
 resource module7 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MonitorAccount'
@@ -107,9 +98,6 @@ resource module7 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module5
-    ]  
   }
 resource module8 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PBMMPolicy'
@@ -119,9 +107,6 @@ resource module8 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module7
-    ]  
   }
 resource module9 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
@@ -131,9 +116,6 @@ resource module9 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module8
-    ]  
   }
 resource module10 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-VNetComplianceStatus'
@@ -143,9 +125,6 @@ resource module10 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module9
-    ]  
   }
 resource module11 'modules' = if (newDeployment || updatePSModules) {
     name: 'Detect-UserBGAUsersAuthMethods'
@@ -155,9 +134,6 @@ resource module11 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module10
-    ]  
   }
 resource module12 'modules' = if (newDeployment || updatePSModules) {
     name: 'Get-AzureADLicenseType'
@@ -167,9 +143,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module11
-    ]  
   }
 resource module13 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-Common'
@@ -179,9 +152,6 @@ resource module13 'modules' = if (newDeployment || updatePSModules) {
         version: '1.1.2'
       }
     }
-    dependsOn: [
-      module12
-    ]  
   }
 resource module14 'modules' = if (newDeployment || updatePSModules) {
     name: 'Validate-BreakGlassAccount'
@@ -191,9 +161,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module13
-    ]  
   }
   resource module15 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AllowedLocationPolicy'
@@ -203,9 +170,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module14
-    ]  
   }
   resource module16 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PrivateMarketPlace'
@@ -215,9 +179,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module15
-    ]  
   }
   resource module17 'modules' = if (newDeployment || updatePSModules) {
     name: 'Az.Marketplace'
@@ -227,9 +188,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '0.3.0'
       }
     }
-    dependsOn: [
-      module16
-    ]  
   }
   resource module19 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CyberSecurityServices'
@@ -239,9 +197,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module17
-    ]  
   }
   resource module20 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DefenderForCloudConfig'
@@ -251,9 +206,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module19
-    ]  
   }
   resource module21 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
@@ -263,9 +215,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module20
-    ]  
   }
   resource module22 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionDataAtRest'
@@ -275,9 +224,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module21
-    ]  
   }
   resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionOfDataInTransit'
@@ -287,9 +233,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module22
-    ]  
   }
   resource module24 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudConsoleAccess'
@@ -299,9 +242,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module23
-    ]  
   }
   resource module25 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-HealthMonitoring'
@@ -311,9 +251,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module24
-    ]  
   }
   resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
@@ -323,9 +260,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module25
-    ]  
   }
   resource module27 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SecurityMonitoring'
@@ -335,9 +269,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module26
-    ]  
   }
   resource module28 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MFARequired'
@@ -347,9 +278,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module27
-    ]  
   }
   resource module29 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
@@ -359,9 +287,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module28
-    ]  
   }
   resource module30 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipalSecrets'
@@ -371,9 +296,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      module29
-    ]  
   }
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
