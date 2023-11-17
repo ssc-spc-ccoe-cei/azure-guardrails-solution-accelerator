@@ -189,8 +189,8 @@ jobs:
                   "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
-                  "SecurityLAWResourceId": "/subscriptions/$TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
-                  "HealthLAWResourceId": "/subscriptions/$TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+                  "securityLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodsecuritylaw",
+                  "healthLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodhealthlaw",
                   "Locale": "en-CA",
                   "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
                   "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
@@ -200,7 +200,7 @@ jobs:
                   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "1,2"
+                  "cloudUsageProfiles": "3"
               }
               "@
               Set-Content -Path $configFilePath -Value $configContent
@@ -263,8 +263,8 @@ jobs:
                   "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
-                  "SecurityLAWResourceId": "/subscriptions/$TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
-                  "HealthLAWResourceId": "/subscriptions/$TESTSUBSCRIPTION_ID/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/mtb-law01",
+                  "securityLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodsecuritylaw",
+                  "healthLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodhealthlaw",
                   "Locale": "en-CA",
                   "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
                   "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
@@ -274,7 +274,7 @@ jobs:
                   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "1,2"
+                  "cloudUsageProfiles": "3"
                 }
               "@
               Set-Content -Path $configFilePath -Value $configContent
