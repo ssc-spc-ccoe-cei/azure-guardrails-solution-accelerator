@@ -229,6 +229,13 @@ jobs:
           LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
           LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+      - name: ReLogin AZ (due to timeout issue)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true 
       - name: Deploy Test environment
         uses: azure/powershell@v1
         with:

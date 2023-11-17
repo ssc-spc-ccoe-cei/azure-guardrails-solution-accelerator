@@ -64,7 +64,7 @@ Function Remove-GSACentralizedDefenderCustomerComponents {
         Read-Host
     }
 
-$lighthouseTargetManagementGroupID = 'mb_co'
+#$lighthouseTargetManagementGroupID = 'mb_co'
 If ($lighthouseTargetManagementGroupID -eq (Get-AzContext).Tenant.Id) {
     $assignmentScopeMgmtmGroupId = '/'
 }
