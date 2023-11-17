@@ -183,9 +183,12 @@ Function Confirm-GSAPrerequisites {
             $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET | Select-Object -Expand Content | ConvertFrom-Json
             If ($roleAssignments.id) {
                 Write-Verbose "role assignment: $(($roleAssignments).id)"
-                Write-Error "A role assignment exists with the name '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294' at the Management group '$lighthouseTargetManagementGroupID'. This was likely
-                created by a previous Guardrails deployment and must be removed. Navigate to the Managment Group in the Portal and delete the Owner role assignment listed as 'Identity Not Found'"
-                Exit
+                Write-Verbose "Removing role assignment: $(($roleAssignments).id)"
+                Remove-AzRoleAssignment -RoleDefinitionName '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294'
+
+                # Write-Error "A role assignment exists with the name '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294' at the Management group '$lighthouseTargetManagementGroupID'. This was likely
+                # created by a previous Guardrails deployment and must be removed. Navigate to the Managment Group in the Portal and delete the Owner role assignment listed as 'Identity Not Found'"
+                # Exit
             }
     
             # check if lighthouse Custom-RegisterLighthouseResourceProvider exists at a different scope
@@ -195,6 +198,7 @@ Function Confirm-GSAPrerequisites {
             
             Write-Verbose "Found '$($roleDef.count)' role definitions with name 'Custom-RegisterLighthouseResourceProvider'. Verifying assignable scopes includes '$targetAssignableScope'"
             If ($roleDef -and $roleDef.AssignableScopes -notcontains $targetAssignableScope) {
+                # Remove-AzRoleDefinition -Id "52a6cc13-ff92-47a8-a39b-2a8205c3087e"
                 Write-Error "Role definition name 'Custom-RegisterLighthouseResourceProvider' already exists and has an assignable scope of '$($roleDef.AssignableScopes)'. Assignable scopes
                 should include '$targetAssignableScope'. Delete the role definition (and any assignments) and run the script again."
                 Exit
