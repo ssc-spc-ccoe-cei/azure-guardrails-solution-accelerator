@@ -48,170 +48,335 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
   resource OMSModule 'modules' = if (newDeployment || updatePSModules) {
     name: 'OMSIngestionAPI'
     properties: {
-      contentLink: retryModuleImport('https://devopsgallerystorage.blob.core.windows.net/packages/omsingestionapi.1.6.0.nupkg', '1.6.0')
+      contentLink: {
+        uri: 'https://devopsgallerystorage.blob.core.windows.net/packages/omsingestionapi.1.6.0.nupkg'
+        version: '1.6.0'
+      }
     }
   }
   resource module1 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountOwnersInformation'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
+        version: '1.0.0'
       }
+    }
+    dependsOn: [
+      OMSModule
+    ]  
   }
 resource module2 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountIdentityProtectionLicense'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
+        version: '1.0.0'
+      }
     }
-}
+    dependsOn: [
+      module1
+    ]  
+  }
 resource module4 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DeprecatedAccounts'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-DeprecatedAccounts.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-DeprecatedAccounts.zip'
+        version: '1.0.0'
+      }
     }
-}
+    dependsOn: [
+      module2
+    ]  
+  }
 resource module5 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ExternalAccounts'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-ExternalAccounts.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
+        version: '1.0.0'
+      }
     }
-}
+    dependsOn: [
+      module4
+    ]  
+  }
 resource module7 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MonitorAccount'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-MonitorAccount.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-MonitorAccount.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module5
+    ]  
   }
 resource module8 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PBMMPolicy'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-PBMMPolicy.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-PBMMPolicy.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module7
+    ]  
   }
 resource module9 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-SubnetComplianceStatus.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-SubnetComplianceStatus.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module8
+    ]  
   }
 resource module10 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-VNetComplianceStatus'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-VNetComplianceStatus.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module9
+    ]  
   }
 resource module11 'modules' = if (newDeployment || updatePSModules) {
     name: 'Detect-UserBGAUsersAuthMethods'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module10
+    ]  
   }
 resource module12 'modules' = if (newDeployment || updatePSModules) {
     name: 'Get-AzureADLicenseType'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Get-AzureADLicenseType.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Get-AzureADLicenseType.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module11
+    ]  
   }
 resource module13 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-Common'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/GR-Common.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/GR-Common.zip'
+        version: '1.1.2'
+      }
     }
+    dependsOn: [
+      module12
+    ]  
   }
 resource module14 'modules' = if (newDeployment || updatePSModules) {
     name: 'Validate-BreakGlassAccount'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Validate-BreakGlassAccount.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module13
+    ]  
   }
   resource module15 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AllowedLocationPolicy'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-AllowedLocationPolicy.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module14
+    ]  
   }
   resource module16 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PrivateMarketPlace'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-PrivateMarketPlace.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-PrivateMarketPlace.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module15
+    ]  
   }
   resource module17 'modules' = if (newDeployment || updatePSModules) {
     name: 'Az.Marketplace'
     properties: {
-      contentLink: retryModuleImport('https://devopsgallerystorage.blob.core.windows.net:443/packages/az.marketplace.0.3.0.nupkg', '1.0.0')
+      contentLink: {
+        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.marketplace.0.3.0.nupkg'
+        version: '0.3.0'
+      }
     }
+    dependsOn: [
+      module16
+    ]  
   }
   resource module19 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CyberSecurityServices'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-CyberSecurityServices.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-CyberSecurityServices.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module17
+    ]  
   }
   resource module20 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DefenderForCloudConfig'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-DefenderForCloudConfig.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-DefenderForCloudConfig.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module19
+    ]  
   }
   resource module21 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/GR-ComplianceChecks.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module20
+    ]  
   }
   resource module22 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionDataAtRest'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-ProtectionDataAtRest.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module21
+    ]  
   }
   resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionOfDataInTransit'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-ProtectionOfDataInTransit.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ProtectionOfDataInTransit.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module22
+    ]  
   }
   resource module24 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudConsoleAccess'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-CloudConsoleAccess.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-CloudConsoleAccess.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module23
+    ]  
   }
   resource module25 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-HealthMonitoring'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-HealthMonitoring.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-HealthMonitoring.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module24
+    ]  
   }
   resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module25
+    ]  
   }
   resource module27 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SecurityMonitoring'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-SecurityMonitoring.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module26
+    ]  
   }
   resource module28 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MFARequired'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-MFARequired.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-MFARequired.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module27
+    ]  
   }
   resource module29 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-ServicePrincipal.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module28
+    ]  
   }
   resource module30 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipalSecrets'
     properties: {
-      contentLink: retryModuleImport('${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip', '1.0.0')
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip'
+        version: '1.0.0'
+      }
     }
+    dependsOn: [
+      module29
+    ]  
   }
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
@@ -362,26 +527,6 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       'isEncrypted': true
       'value': '"${cloudUsageProfiles}"'
   }
-  }  
-}
-
-function retryModuleImport(uri: string, version: string) = {
-  // Retry logic
-  for retryCount in range(0, maxRetries) {
-    var result = {
-      uri: uri,
-      version: version
-    };
-
-    if (retryCount < maxRetries) {
-      delay(delayBetweenRetries);
-    } else {
-      break;
-    }
   }
-
-  result
 }
-
-
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId
