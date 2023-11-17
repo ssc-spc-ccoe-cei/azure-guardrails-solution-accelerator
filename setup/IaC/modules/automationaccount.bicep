@@ -62,9 +62,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         version: '1.0.0'
       }
     }
-    dependsOn: [
-      OMSModule
-    ]  
   }
 resource module2 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountIdentityProtectionLicense'
