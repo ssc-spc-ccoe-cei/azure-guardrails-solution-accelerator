@@ -332,7 +332,9 @@ Function Confirm-GSAConfigurationParameters {
     
     ## get tenant default domain - use Graph to support SPNs
     $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json -Depth 10
+    Write-Verbose "response is '$response'"
     $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
+    Write-Verbose "tenantDomainUPN is '$tenantDomainUPN'"
 
     $jsonString = $context | ConvertTo-Json
     # Print the JSON string
