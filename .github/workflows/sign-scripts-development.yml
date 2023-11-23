@@ -41,8 +41,9 @@ jobs:
       - name: Sign pwsh scripts and modules
         shell: pwsh
         run: |
+          Install-Module -Name PKI -Force -AllowClobber
           $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-          # $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation $pfxCertFilePath
+          $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
           # remove git dir from checked out repo
           Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
