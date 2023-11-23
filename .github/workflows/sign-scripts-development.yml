@@ -34,6 +34,7 @@ jobs:
             $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
             Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
             $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
+          azPSVersion: "latest"
         env:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
