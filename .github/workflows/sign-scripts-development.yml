@@ -30,7 +30,6 @@ jobs:
         with:
           inlineScript: |          
             Install-Module WindowsCompatibility -Confirm
-            Import-WinModule PKI -Confirm
             $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
             $CertBytes = [Convert]::FromBase64String($CertBase64)
             $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
