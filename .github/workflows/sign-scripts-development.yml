@@ -34,8 +34,8 @@ jobs:
           Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
           $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
         env:
-          CERTNAME: ${{ secrets.CERTNAME }}
-          VAULTNAME: ${{ secrets.VAULTNAME }}
+          CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
+          VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
       - name: Sign pwsh scripts and modules
         shell: pwsh
         run: |
