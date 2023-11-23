@@ -28,12 +28,12 @@ jobs:
       - name: Download code signing certificate
         uses: azure/powershell@v1
         with:
-        inlineScript: |
-          $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
-          $CertBytes = [Convert]::FromBase64String($CertBase64)
-          $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-          Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
-          $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
+          inlineScript: |
+            $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
+            $CertBytes = [Convert]::FromBase64String($CertBase64)
+            $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
+            Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
+            $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
         env:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
