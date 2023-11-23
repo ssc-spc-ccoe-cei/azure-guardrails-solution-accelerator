@@ -375,5 +375,3 @@ jobs:
           azPSVersion: "latest"
         env:
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
-
-
