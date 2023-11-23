@@ -14,6 +14,7 @@ jobs:
   sign_scripts:
     name: Sign, validate, test and publish PowerShell scripts as pipeline artifacts
     runs-on: ubuntu-latest
+    environment: test
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
