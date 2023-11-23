@@ -49,7 +49,7 @@ jobs:
           Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
           # load cert
-          $codeSigningCert = Get-ChildItem ./cert/codesingingcert | Select-Object -First 1
+          #$codeSigningCert = Get-ChildItem ./cert/codesingingcert | Select-Object -First 1
           foreach ($script in $scripts) {
               try {
                     $scriptContent = Get-Content -Path $script.FullName
