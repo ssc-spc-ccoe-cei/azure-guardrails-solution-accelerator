@@ -34,7 +34,6 @@ jobs:
             $CertBytes = [Convert]::FromBase64String($CertBase64)
             $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
             Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
-            $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
           azPSVersion: "latest"
         env:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
@@ -42,6 +41,8 @@ jobs:
       - name: Sign pwsh scripts and modules
         shell: pwsh
         run: |
+          $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
+          $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
           # remove git dir from checked out repo
           Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
