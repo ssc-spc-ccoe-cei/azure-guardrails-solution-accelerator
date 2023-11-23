@@ -41,6 +41,7 @@ jobs:
       - name: Sign pwsh scripts and modules
         shell: pwsh
         run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
           Install-Module -Name PKI -Force -AllowClobber
           $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
           $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
