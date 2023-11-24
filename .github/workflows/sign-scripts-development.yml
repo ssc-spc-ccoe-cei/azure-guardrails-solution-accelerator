@@ -39,9 +39,10 @@ jobs:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
       - name: Sign pwsh scripts and modules
-        shell: powershell
+        shell: pwsh
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Authenticode
           $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
           $codeSigningCert = Get-PfxCertificate -FilePath $pfxCertFilePath
           #$codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
