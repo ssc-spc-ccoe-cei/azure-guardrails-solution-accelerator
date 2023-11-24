@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
+      - name: Install AzureSignTool
+        run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
       - name: AZ Login
         uses: azure/login@v1
         with:
@@ -25,37 +27,39 @@ jobs:
           tenant-id: ${{ secrets.ENT_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.ENT_AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
+      - name: Azure token
+        run: |
+            $az_token=$(az account get-access-token --scope https://vault.azure.net/.default --query accessToken --output tsv)
+            echo "::add-mask::$az_token"
+            echo "AZ_TOKEN=$az_token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Download code signing certificate
-        uses: azure/powershell@v1
-        with:
-          inlineScript: |
-            $accessToken = (Get-AzAccessToken -ResourceUrl https://management.azure.com).Token
-            Write-Host "Access Token: $accessToken"
-            #Install-Module WindowsCompatibility -Confirm
-            $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
-            $CertBytes = [Convert]::FromBase64String($CertBase64)
-            # $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-            # Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
+      # - name: Download code signing certificate
+      #   uses: azure/powershell@v1
+      #   with:
+      #     inlineScript: |
+      #       $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
+      #       $CertBytes = [Convert]::FromBase64String($CertBase64)
+      #       # $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
+      #       # Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
 
-            # Build pfx
-            $pfxcert = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2
-            $keyStoreFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable `
-                -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::UserKeySet `
-                -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet;
-            $pfxcert.Import($secretBytes, $null, $keyStoreFlags);
+      #       # Build pfx
+      #       $pfxcert = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2
+      #       $keyStoreFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable `
+      #           -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::UserKeySet `
+      #           -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet;
+      #       $pfxcert.Import($secretBytes, $null, $keyStoreFlags);
 
-            # import to personal store
-            $store = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store -ArgumentList @("My", "CurrentUser")
-            $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);
-            $store.Add($pfxcert)
-            $store.Close()
+      #       # import to personal store
+      #       $store = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store -ArgumentList @("My", "CurrentUser")
+      #       $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);
+      #       $store.Add($pfxcert)
+      #       $store.Close()
 
 
-          azPSVersion: "latest"
-        env:
-          CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
-          VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
+      #     azPSVersion: "latest"
+      #   env:
+      #     CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
+      #     VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
       - name: Sign pwsh scripts and modules
         shell: powershell
         run: |
@@ -69,16 +73,21 @@ jobs:
 
           foreach ($script in $scripts) {
               try {
-                    $scriptContent = Get-Content -Path $script.FullName
-                    $codeSigningCert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Select-Object -First 1
-                    Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
+                    #$scriptContent = Get-Content -Path $script.FullName
+                    #$codeSigningCert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Select-Object -First 1
+                    #Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
                     # sign script
-                    $null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
+                    azuresigntool.exe sign --verbose -kvu https://cicd-kv-01.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
+                    #$null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
               }
               catch {
                   Write-Error $_
               }
           }
+        env:
+          CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
+          VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
+
       - name: Validate Signature
         shell: powershell
         run: |
