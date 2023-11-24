@@ -31,6 +31,7 @@ jobs:
           inlineScript: |          
             #Install-Module WindowsCompatibility -Confirm
             $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
+            Write-Host "Cert is $CertBase64"
             $CertBytes = [Convert]::FromBase64String($CertBase64)
             $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
             Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
