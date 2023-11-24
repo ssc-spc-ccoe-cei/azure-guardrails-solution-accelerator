@@ -13,7 +13,7 @@ env:
 jobs:
   sign_scripts:
     name: Sign, validate, test and publish PowerShell scripts as pipeline artifacts
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
     environment: test
     steps:
       - name: Check out repository
@@ -29,7 +29,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |          
-            Install-Module WindowsCompatibility -Confirm
+            #Install-Module WindowsCompatibility -Confirm
             $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
             $CertBytes = [Convert]::FromBase64String($CertBase64)
             $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
@@ -39,32 +39,31 @@ jobs:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
       - name: Sign pwsh scripts and modules
-        shell: pwsh
+        shell: powershell
         run: |
-          Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module -Name Authenticode
+          # Set-PSRepository PSGallery -InstallationPolicy Trusted
+          # Install-Module -Name Authenticode
           $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-          $codeSigningCert = Get-PfxCertificate -FilePath $pfxCertFilePath
-          #$codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
+          #$codeSigningCert = Get-PfxCertificate -FilePath $pfxCertFilePath
+          $codeSigningCert = Import-PfxCertificate -FilePath $pfxCertFilePath  -CertStoreLocation ./cert/codesingingcert/
           # remove git dir from checked out repo
           Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
           # load cert
-          #$codeSigningCert = Get-ChildItem ./cert/codesingingcert | Select-Object -First 1
-          ls *.ps1,*.psm1,*.psd1 | gci | Set-AuthenticodeSignature -Certificate $codeSigningCert -TimestampServer "http://timestamp.comodoca.com/rfc3161"
-          # foreach ($script in $scripts) {
-          #     try {
-          #           $scriptContent = Get-Content -Path $script.FullName
-          #           Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
-          #           # sign script
-          #           $null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
-          #     }
-          #     catch {
-          #         Write-Error $_
-          #     }
-          # }
+          $codeSigningCert = Get-ChildItem ./cert/codesingingcert | Select-Object -First 1
+          foreach ($script in $scripts) {
+              try {
+                    $scriptContent = Get-Content -Path $script.FullName
+                    Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
+                    # sign script
+                    $null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
+              }
+              catch {
+                  Write-Error $_
+              }
+          }
       - name: Validate Signature
-        shell: pwsh
+        shell: powershell
         run: |
           $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
 
@@ -83,7 +82,7 @@ jobs:
             }
           }
       - name: Test Module Imports
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
 
@@ -107,7 +106,7 @@ jobs:
             throw "The following modules failed import test: $missingModules"
           }
       - name: Zip Signed Modules
-        shell: pwsh
+        shell: powershell
         run: |
           $moduleCodeFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1 -Exclude '*-GSA*','*GuardrailsSolutionAcceleratorSetup*','*Deploy-GuardrailsSolutionAccelerator*'
           Write-Host "'$($moduleCodeFilesObjs.count)' module manifest files "
