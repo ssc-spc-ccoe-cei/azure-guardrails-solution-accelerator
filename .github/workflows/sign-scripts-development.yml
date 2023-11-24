@@ -29,7 +29,9 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            $token = Get-AzAccessToken
+            $env = (Get-AzContext).Environment 
+            Write-Host "Environment is $env" 
+            $token = Get-AzAccessToken -ResourceUrl $env
             Write-Host "Access Token is $token"
             #Install-Module WindowsCompatibility -Confirm
             $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
