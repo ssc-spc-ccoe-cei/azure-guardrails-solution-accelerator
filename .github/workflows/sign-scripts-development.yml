@@ -31,10 +31,24 @@ jobs:
           inlineScript: |          
             #Install-Module WindowsCompatibility -Confirm
             $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
-            Write-Host "Cert is $CertBase64"
             $CertBytes = [Convert]::FromBase64String($CertBase64)
-            $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-            Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
+            # $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
+            # Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
+
+            # Build pfx
+            $pfxcert = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2
+            $keyStoreFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable `
+                -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::UserKeySet `
+                -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet;
+            $pfxcert.Import($secretBytes, $null, $keyStoreFlags);
+
+            # import to personal store
+            $store = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store -ArgumentList @("My", "CurrentUser")
+            $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);
+            $store.Add($pfxcert)
+            $store.Close()
+
+
           azPSVersion: "latest"
         env:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
@@ -44,8 +58,8 @@ jobs:
         run: |
           # Set-PSRepository PSGallery -InstallationPolicy Trusted
           # Install-Module -Name Authenticode
-          $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-          $codeSigningCert = Get-PfxCertificate -FilePath $pfxCertFilePath
+          # $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
+          # $codeSigningCert = Get-PfxCertificate -FilePath $pfxCertFilePath
           # remove git dir from checked out repo
           Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
@@ -53,6 +67,7 @@ jobs:
           foreach ($script in $scripts) {
               try {
                     $scriptContent = Get-Content -Path $script.FullName
+                    $codeSigningCert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Select-Object -First 1
                     Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
                     # sign script
                     $null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
