@@ -39,7 +39,7 @@ jobs:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
       - name: Sign pwsh scripts and modules
-        shell: pwsh
+        shell: powershell
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
           $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
