@@ -170,12 +170,12 @@ Function Confirm-GSAPrerequisites {
                 }
             }
         
-            # If ($lighthouseTargetManagementGroupID -eq $config['runtime']['tenantId']) {
-            #     $assignmentScopeMgmtmGroupId = '/'
-            # }
-            # Else {
+            If ($lighthouseTargetManagementGroupID -eq $config['runtime']['tenantId']) {
+                $assignmentScopeMgmtmGroupId = '/'
+            }
+            Else {
             $assignmentScopeMgmtmGroupId = $lighthouseTargetManagementGroupID
-            # }
+            }
 
             # check if a lighthouse defender for cloud policy MSI role assignment already exists - assignment name always 2cb8e1b1-fcf1-439e-bab7-b1b8b008c294 
             Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Owner'"
@@ -183,8 +183,7 @@ Function Confirm-GSAPrerequisites {
             $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET | Select-Object -Expand Content | ConvertFrom-Json
             If ($roleAssignments.id) {
                 Write-Verbose "role assignment: '$roleAssignments.id'"
-                Write-Verbose "Removing role assignment: $(($roleAssignments).id)"
-                # Remove-AzRoleAssignment -RoleDefinitionName '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294' -ObjectId $roleAssignments.id
+                Remove-AzRoleAssignment -RoleDefinitionName '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294' -ObjectId $roleAssignments.id
                 Write-Error "A role assignment exists with the name '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294' at the Management group '$lighthouseTargetManagementGroupID'. This was likely
                 created by a previous Guardrails deployment and must be removed. Navigate to the Managment Group in the Portal and delete the Owner role assignment listed as 'Identity Not Found'"
                 Exit
@@ -197,12 +196,9 @@ Function Confirm-GSAPrerequisites {
             
             Write-Verbose "Found '$($roleDef.count)' role definitions with name 'Custom-RegisterLighthouseResourceProvider'. Verifying assignable scopes includes '$targetAssignableScope'"
             If ($roleDef -and $roleDef.AssignableScopes -notcontains $targetAssignableScope) {
-                Write-Verbose "Removing role definition with name 'Custom-RegisterLighthouseResourceProvider'"
-                Remove-AzRoleDefinition $roleDef
-                # # Remove-AzRoleDefinition -Id "52a6cc13-ff92-47a8-a39b-2a8205c3087e"
-                # Write-Error "Role definition name 'Custom-RegisterLighthouseResourceProvider' already exists and has an assignable scope of '$($roleDef.AssignableScopes)'. Assignable scopes
-                # should include '$targetAssignableScope'. Delete the role definition (and any assignments) and run the script again."
-                # Exit
+                Write-Error "Role definition name 'Custom-RegisterLighthouseResourceProvider' already exists and has an assignable scope of '$($roleDef.AssignableScopes)'. Assignable scopes
+                should include '$targetAssignableScope'. Delete the role definition (and any assignments) and run the script again."
+                Exit
             }
     
             # check if a lighthouse Azure Automation MSI role assignment to register the Lighthouse resource provider already exists - assignment name always  5de3f84b-8866-4432-8811-24859ccf8146

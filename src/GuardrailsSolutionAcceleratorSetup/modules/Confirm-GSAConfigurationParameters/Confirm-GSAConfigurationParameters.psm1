@@ -332,35 +332,18 @@ Function Confirm-GSAConfigurationParameters {
     
     ## get tenant default domain - use Graph to support SPNs
     $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json -Depth 10
-    Write-Verbose "response is '$response'"
     $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
-    Write-Verbose "tenantDomainUPN is '$tenantDomainUPN'"
-
-    $jsonString = $context | ConvertTo-Json
-    # Print the JSON string
-    Write-Verbose "Contex JSON String is"
-    Write-Verbose $jsonString
-
-    Write-Verbose "Context Account type is '$context.Account.Type' context is '$context'"
-    Write-Verbose "Context Account id is '$context.Account.Id'"
 
     ## get executing user identifier
     If ($context.Account -match '^MSI@') {
-        Write-Verbose "Context is MSI."
         # running in Cloud Shell, finding delegated user ID
         $userId = (Get-AzAdUser -SignedIn).Id
     }
-    ElseIf ($context.Account.Type -eq 'ServicePrincipal') {
-        Write-Verbose "Context is Service Principal."
-        $sp = Get-AzADServicePrincipal -ApplicationId $context.Account.Id
-        $userId = $sp.Id
-    }
-    ElseIf ($context.Account.Type -eq 'ClientAssertion') { # Federated Identity
+    ElseIf ($context.Account.Type -eq 'ServicePrincipal' -or $context.Account.Type -eq 'ClientAssertion') { # Federated Identity
         $sp = Get-AzADServicePrincipal -ApplicationId $context.Account.Id
         $userId = $sp.Id
     }
     Else {
-        Write-Verbose "Context is Local."
         # running locally
         $userId = (Get-AzAdUser -SignedIn).Id
     }

@@ -33,52 +33,17 @@ jobs:
             echo "::add-mask::$az_token"
             echo "AZ_TOKEN=$az_token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      # - name: Download code signing certificate
-      #   uses: azure/powershell@v1
-      #   with:
-      #     inlineScript: |
-      #       $CertBase64 = Get-AzKeyVaultSecret -VaultName $env:VAULTNAME -Name $env:CERTNAME -AsPlainText
-      #       $CertBytes = [Convert]::FromBase64String($CertBase64)
-      #       # $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-      #       # Set-Content -Value $CertBytes  -Path $pfxCertFilePath -AsByteStream
-
-      #       # Build pfx
-      #       $pfxcert = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2
-      #       $keyStoreFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable `
-      #           -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::UserKeySet `
-      #           -bxor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet;
-      #       $pfxcert.Import($secretBytes, $null, $keyStoreFlags);
-
-      #       # import to personal store
-      #       $store = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store -ArgumentList @("My", "CurrentUser")
-      #       $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);
-      #       $store.Add($pfxcert)
-      #       $store.Close()
-
-
-      #     azPSVersion: "latest"
-      #   env:
-      #     CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
-      #     VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
       - name: Sign pwsh scripts and modules
         shell: powershell
         run: |
-          # Set-PSRepository PSGallery -InstallationPolicy Trusted
-          # Install-Module -Name Authenticode
-          # $pfxCertFilePath = Join-Path -Path $PSScriptRoot -ChildPath "CodeSigningCertificate.pfx"
-          # $codeSigningCert = Get-PfxCertificate -FilePath $pfxCertFilePath
-          # remove git dir from checked out repo
           Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
+          $vaultName = $env:VAULTNAME
 
           foreach ($script in $scripts) {
               try {
-                    #$scriptContent = Get-Content -Path $script.FullName
-                    #$codeSigningCert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Select-Object -First 1
-                    #Write-Output "Signing script `"$($script.Name)`" with certificate `"$($codeSigningCert.Thumbprint)`""
                     # sign script
-                    azuresigntool.exe sign --verbose -kvu https://cicd-kv-01.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
-                    #$null = Set-AuthenticodeSignature -Certificate $codeSigningCert -FilePath $script.FullName -TimestampServer "http://timestamp.comodoca.com/rfc3161"
+                    azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
               }
               catch {
                   Write-Error $_
@@ -320,6 +285,22 @@ jobs:
               "@
               Set-Content -Path $configFilePath -Value $configContent
 
+              # Load tags JSON content into a variable
+              $setupFileRelativePath = "setup/tags.json"
+              $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
+
+              $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
+
+              # Add additional required tags for test tenant
+              $jsonContent.Add("ClientOrganization", "SSC")
+              $jsonContent.Add("CostCenter", "SSC Cloud Operations")
+              $jsonContent.Add("DataSensitivity", "PB")
+              $jsonContent.Add("ProjectContact", "Amrinder")
+              $jsonContent.Add("ProjectName", "ComplianceAsCodeAzure")
+
+              # Save the modified content back to the tags JSON file
+              $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
+
               $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
               $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
 
@@ -409,4 +390,4 @@ jobs:
           azPSVersion: "latest"
         env:
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
-          
+
