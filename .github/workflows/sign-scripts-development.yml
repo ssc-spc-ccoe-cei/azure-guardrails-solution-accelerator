@@ -297,6 +297,7 @@ jobs:
               $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
               $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
               $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
 
               # Save the modified content back to the tags JSON file
               $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
