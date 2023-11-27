@@ -292,11 +292,11 @@ jobs:
               $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
 
               # Add additional required tags for test tenant
-              $jsonContent.Add("ClientOrganization", "SSC")
-              $jsonContent.Add("CostCenter", "SSC Cloud Operations")
-              $jsonContent.Add("DataSensitivity", "PB")
-              $jsonContent.Add("ProjectContact", "Amrinder")
-              $jsonContent.Add("ProjectName", "ComplianceAsCodeAzure")
+              $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
 
               # Save the modified content back to the tags JSON file
               $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
