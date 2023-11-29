@@ -339,7 +339,7 @@ Function Confirm-GSAConfigurationParameters {
         # running in Cloud Shell, finding delegated user ID
         $userId = (Get-AzAdUser -SignedIn).Id
     }
-    ElseIf ($context.Account.Type -eq 'ServicePrincipal') {
+    ElseIf ($context.Account.Type -eq 'ServicePrincipal' -or $context.Account.Type -eq 'ClientAssertion') { # Federated Identity
         $sp = Get-AzADServicePrincipal -ApplicationId $context.Account.Id
         $userId = $sp.Id
     }

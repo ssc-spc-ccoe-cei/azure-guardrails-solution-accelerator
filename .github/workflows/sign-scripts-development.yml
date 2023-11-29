@@ -1,0 +1,402 @@
+name: Sign PowerShell Scripts and Deploy to Test environment
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'SECURITY.md'
+      - 'SUPPORT.md'
+      - 'psmodules/**'
+      - 'docs/**'
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ARTIFACT_NAME: PowerShell.Workflows.ScriptSigning
+
+jobs:
+  sign_scripts:
+    name: Sign, validate, test and publish PowerShell scripts as pipeline artifacts
+    runs-on: windows-2019
+    environment: test
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Install AzureSignTool
+        run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
+      - name: AZ Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.ENT_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.ENT_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.ENT_AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true 
+      - name: Azure token
+        run: |
+            $az_token=$(az account get-access-token --scope https://vault.azure.net/.default --query accessToken --output tsv)
+            echo "::add-mask::$az_token"
+            echo "AZ_TOKEN=$az_token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Sign pwsh scripts and modules
+        shell: powershell
+        run: |
+          Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
+          $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
+          $vaultName = $env:VAULTNAME
+
+          foreach ($script in $scripts) {
+              try {
+                    # sign script
+                    azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
+              }
+              catch {
+                  Write-Error $_
+              }
+          }
+        env:
+          CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
+          VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
+
+      - name: Validate Signature
+        shell: powershell
+        run: |
+          $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+
+          Foreach ($signatureStatus in $signatureStatuses) {
+            If ($signatureStatus.Status -eq 'HashMismatch') {
+              throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+            }
+            ElseIf ($signatureStatus.Status -eq 'NotSigned') {
+              Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+            }
+            ElseIf ($signatureStatus.Status -eq 'Valid') {
+              Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+            }
+            Else {
+              throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
+            }
+          }
+      - name: Test Module Imports
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1
+          Write-Host "Count of module files: $($moduleFiles.count)"
+          
+          try {
+            ForEach ($moduleFile in $moduleFiles) {
+              Import-Module $moduleFile.Fullname -ErrorAction Stop
+            }
+          }
+          catch {
+            throw "Failed test import module '$moduleFile' with error: $_"
+          }
+
+          $importedModules = Get-Module
+          Write-Host "Imported modules: `n $($importedModules.Path | Out-String)"
+
+          $missingModules = $moduleFiles | Where-object {$_ -inotin ($importedModules).Path} 
+          If ($missingModules) {
+            throw "The following modules failed import test: $missingModules"
+          }
+      - name: Zip Signed Modules
+        shell: powershell
+        run: |
+          $moduleCodeFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1 -Exclude '*-GSA*','*GuardrailsSolutionAcceleratorSetup*','*Deploy-GuardrailsSolutionAccelerator*'
+          Write-Host "'$($moduleCodeFilesObjs.count)' module manifest files "
+
+          ForEach ($moduleCodeFile in $moduleCodeFilesObjs) {
+              $moduleManifestFile = Get-Item -Path $moduleCodeFile.FullName.replace('psm1','psd1')
+              
+              If ($moduleCodeFilesObjs.FullName -icontains $moduleCodeFile.FullName -or $moduleCodeFilesObjs.FullName -icontains $moduleManifestFile.FullName) {
+                Write-Host "Module '$($moduleCodeFile.BaseName)' found, zipping module files..."
+
+                $destPath = "./psmodules/$($moduleCodeFile.BaseName).zip"
+
+                If ($moduleCodeFile.DIrectory.Name -eq 'Guardrails-Localization') {
+                  Compress-Archive -Path "$($moduleCodeFile.Directory)/*" -DestinationPath $destPath -Force
+                }
+                Else {
+                  $filesToZip = $moduleManifestFile,$moduleCodeFile
+                  Compress-Archive -Path $filesToZip -DestinationPath $destPath -Force
+                }
+
+              }
+              Else {
+                  Write-Host "Neither the manifest '$($moduleCodeFile.FullName.toLower())' or script file '$($moduleManifestFile.FullName.ToLower())' for module '$($moduleCodeFile.BaseName)' was changed, skipping zipping..."
+              }
+          }
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./psmodules/*.zip
+  deploy:
+    name: Deploy CAC to a tenant
+    needs: sign_scripts
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Check Out
+        uses: actions/checkout@v3
+      - name: Download zipped modules and replace old ones
+        uses: actions/download-artifact@v3
+        with:
+          name:  ${{ env.ARTIFACT_NAME }}
+          path: ./psmodules
+      - name: AZ Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true 
+      - name: Stage zipped/signed modules in Storage Account
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
+            $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
+
+            $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
+            ForEach ($moduleZip in $zippedModules) {
+              Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
+            }
+          azPSVersion: "latest"
+        env:
+          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
+          SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Pre-Clean Test environment
+        uses: azure/powershell@v1
+        continue-on-error: true
+        with:
+          inlineScript: |
+              Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
+              ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
+              $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+              $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
+              $TESTSUBSCRIPTION_ID = $env:TESTSUBSCRIPTION_ID
+              $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
+              $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
+              $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
+              $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
+
+              $configContent = @"
+              {
+                  "keyVaultName": "gsapipe",
+                  "resourcegroup": "gsapipe",
+                  "region": "CanadaCentral",
+                  "storageaccountName": "gsapipe",
+                  "logAnalyticsworkspaceName": "gsapipe",
+                  "autoMationAccountName": "gsapipe",
+                  "FirstBreakGlassAccountUPN": "cspm.alpha@163gccspm.onmicrosoft.com",
+                  "SecondBreakGlassAccountUPN": "cspm.bravo@163gccspm.onmicrosoft.com",
+                  "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
+                  "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+                  "DepartmentNumber": "163",
+                  "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
+                  "securityLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodsecuritylaw",
+                  "healthLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodhealthlaw",
+                  "Locale": "en-CA",
+                  "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
+                  "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+                  "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
+                  "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
+                  "subscriptionId": "$TESTSUBSCRIPTION_ID",
+                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+                  "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
+                  "securityRetentionDays": "730",
+                  "cloudUsageProfiles": "3"
+              }
+              "@
+              Set-Content -Path $configFilePath -Value $configContent
+
+              Push-Location -Path setup
+
+              try {
+                  $ErrorActionPreference = 'Stop'
+                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
+                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
+                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
+              }
+              catch {
+                  throw "Failed test deploy of solution with error: $_"
+              }
+              finally {
+                If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+                Pop-Location
+              }
+          azPSVersion: "latest"
+        env:
+          TESTTENANT_DOMAIN: ${{ vars.TESTTENANT_DOMAIN }}
+          TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
+          CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
+          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+      - name: ReLogin AZ (due to timeout issue)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true 
+      - name: Deploy Test environment
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+              Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
+              $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+              $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
+              $TESTSUBSCRIPTION_ID = $env:TESTSUBSCRIPTION_ID
+              $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
+              $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
+              $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
+              $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
+
+              $configContent = @"
+              {
+                  "keyVaultName": "gsapipe",
+                  "resourcegroup": "gsapipe",
+                  "region": "CanadaCentral",
+                  "storageaccountName": "gsapipe",
+                  "logAnalyticsworkspaceName": "gsapipe",
+                  "autoMationAccountName": "gsapipe",
+                  "FirstBreakGlassAccountUPN": "cspm.alpha@163gccspm.onmicrosoft.com",
+                  "SecondBreakGlassAccountUPN": "cspm.bravo@163gccspm.onmicrosoft.com",
+                  "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
+                  "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+                  "DepartmentNumber": "163",
+                  "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
+                  "securityLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodsecuritylaw",
+                  "healthLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodhealthlaw",
+                  "Locale": "en-CA",
+                  "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
+                  "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+                  "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
+                  "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
+                  "subscriptionId": "$TESTSUBSCRIPTION_ID",
+                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+                  "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
+                  "securityRetentionDays": "730",
+                  "cloudUsageProfiles": "3"
+                }
+              "@
+              Set-Content -Path $configFilePath -Value $configContent
+
+              # Load tags JSON content into a variable
+              $setupFileRelativePath = "setup/tags.json"
+              $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
+
+              $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
+
+              # Add additional required tags for test tenant
+              $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
+
+              # Save the modified content back to the tags JSON file
+              $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
+
+              $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
+              $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
+
+              $alternatePSModulesURL = $modulesStagingURI
+              Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
+
+              $optionalParams = @{}
+              if ($alternatePSModulesURL) {
+                  $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+              }
+
+              try {
+                  $ErrorActionPreference = 'Stop'
+                  ipmo ./src/GuardrailsSolutionAcceleratorSetup
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+              }
+              catch {
+                  throw "Failed test deploy of solution with error: $_"
+              }
+              finally {
+                If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+                Pop-Location
+              }
+          azPSVersion: "latest"
+        env:
+          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
+          TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
+          CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
+          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+      - name: Check for AA Job Errors
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
+            $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$env:UNIQUENAME_SUFFIX -y
+            $config = $c.configString | ConvertFrom-Json
+            
+            Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
+            $timeout = New-TimeSpan -Minutes 5
+            $timer = [System.Diagnostics.Stopwatch]::StartNew()
+            do {
+              $jobMain = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+                Sort-Object StartTIme -Descending |
+                Select-Object -First 1
+              
+              $jobBackend = Get-AzAutomationJob -RunbookName 'backend' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+                Sort-Object StartTIme -Descending |
+                Select-Object -First 1
+              
+              Start-Sleep 1
+            }
+            until (($jobMain.Status -in 'Completed','Failed' -and $jobBackend -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
+
+            If ($jobMain.Status -eq 'Failed') {
+              throw "main runbook failed to execute"
+            }
+            If ($jobMain.Status -eq 'Completed') {
+              Write-Output "'main' runbook completed successfully, checking for errors in output. "
+            }
+
+            If ($jobBackend.Status -eq 'Failed') {
+              throw "backend runbook failed to execute"
+            }
+            If ($jobBackend.Status -eq 'Completed') {
+              Write-Output "'backend' runbook completed successfully, checking for errors in output. "
+            }
+
+            $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+            $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+
+            $errorsFound = $false
+            ForEach ($outputRecord in $jobMainOutput) {
+              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+                throw 'Errors found in "main" runbook Azure Automation jobs'
+              }
+            }
+            ForEach ($outputRecord in $jobBackendOutput) {
+              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+                throw 'Errors found in "backend" runbook Azure Automation jobs'
+              }
+            }
+          azPSVersion: "latest"
+        env:
+          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+
