@@ -6,7 +6,7 @@ The components which can be updated are:
 
 | Name | Description | Update Source |
 |---|---|---|
-| GuardrailPowerShellModules | The PowerShell modules that define each guardrail and the required controls. | GitHub Azure/GuardrailsSolutionAccelerator latest full release (override with `-releaseVersion` or `-prerelease` parameters) |
+| GuardrailPowerShellModules | The PowerShell modules that define each guardrail and the required controls. | GitHub ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator latest full release (override with `-releaseVersion` or `-prerelease` parameters) |
 | AutomationAccountRunbooks | The Azure Automation Account runbook definitions which execute the guardrail PowerShell modules | Local clone of the GitHub repo |
 | Workbook | The Workbook definition which displays the results guardrail PowerShell module executions, pulling from the Log Analytics workspace | Local clone of the GitHub repo |
 | CoreComponents | This process updates the Azure ARM resource configurations based on the Bicep templates for resources not otherwise updated above (such as Automation Account config and variables) | Local clone of the GitHub repo |
@@ -48,9 +48,9 @@ Updating the resource components of a previously-deploy Guardrails Solution Acce
     Download the latest release with `wget` or `Invoke-WebRequest -outFile`, specifying the release version in the URL (v1.0.6 in examples below)
 
     Examples:
-    `wget https://codeload.github.com/Azure/GuardrailsSolutionAccelerator/zip/refs/tags/v1.0.6`
+    `wget https://codeload.github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/zip/refs/tags/v1.0.6`
 
-    `Invoke-WebRequest -Uri https://codeload.github.com/Azure/GuardrailsSolutionAccelerator/zip/refs/tags/v1.0.6 -OutFile GR1.0.6.zip`
+    `Invoke-WebRequest -Uri https://codeload.github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/zip/refs/tags/v1.0.6 -OutFile GR1.0.6.zip`
 
     Extract the downloaded release:
     `Expand-Archive -Path <path_to_downloaded_zip>`
@@ -67,7 +67,7 @@ Updating the resource components of a previously-deploy Guardrails Solution Acce
     Otherwise, if you do not have a clone of the repo, use the `git` in a PowerShell console to pull a copy down to your system or Cloud Shell:
 
     ```git
-    git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git GuardrailsSolutionAccelerator
+    git clone https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator.git GuardrailsSolutionAccelerator
     ```
 
 2. Import the GuardrailsSolutionAcceleratorPowershell module from your clone of the repo:

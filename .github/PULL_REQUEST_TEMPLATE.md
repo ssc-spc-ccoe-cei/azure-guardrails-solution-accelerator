@@ -20,9 +20,9 @@ Please provide any testing evidence to show that your Pull Request works/fixes a
 
 ## As part of this Pull Request I have
 
-- [ ] Checked for duplicate [Pull Requests](https://github.com/Azure/GuardrailsSolutionAccelerator/pulls)
-- [ ] Associated it with relevant [GitHub Issues](https://github.com/Azure/GuardrailsSolutionAccelerator/issues)
-- [ ] Ensured my code/branch is up-to-date with the latest changes in the `main` [branch](https://github.com/Azure/GuardrailsSolutionAccelerator/tree/main)
+- [ ] Checked for duplicate [Pull Requests](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/pulls)
+- [ ] Associated it with relevant [GitHub Issues](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/issues)
+- [ ] Ensured my code/branch is up-to-date with the latest changes in the `main` [branch](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main)
 - [ ] Performed testing and provided evidence.
 - [ ] Updated relevant and associated documentation.
 - [ ] Ensure PowerShell module versions have been updated (manually or with the ./tools/Update-ModuleVersions.ps1 script)
