@@ -37,7 +37,7 @@ param breakglassAccount1 string = ''
 param breakglassAccount2 string = ''
 
 var containername = 'guardrailsstorage'
-var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
+var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name
 
