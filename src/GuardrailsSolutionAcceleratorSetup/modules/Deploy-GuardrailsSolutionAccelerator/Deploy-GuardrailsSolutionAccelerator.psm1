@@ -98,7 +98,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         This function will deploy or update the Guardrails Solution Accelerator, depending on the specified parameters. It can also be used to verify deployment parameters and prerequisites. 
 
         For new deployments, a configuration file must be provided using the -configFilePath parameter. This file is a JSON file specifying the deployment configuration
-        and resource naming conventions. See this page for details: https://github.com/Azure/GuardrailsSolutionAccelerator/blob/main/docs/setup.md.
+        and resource naming conventions. See this page for details: https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/docs/setup.md.
 
         For update deployments to an existing environment, either the -ConfigFilePath should be used, or the Get-GSAExportedConfiguration function can be used to retrieve the current 
         deployment's configuration from the specified KeyVault. 
@@ -113,7 +113,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
     .NOTES
         Information or caveats about the function e.g. 'This function is not supported in Linux'
     .LINK
-        https://github.com/Azure/GuardrailsSolutionAccelerator
+        https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator
     .EXAMPLE 
         # Deploy new GSA instance, with core components only:
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json"
@@ -283,8 +283,8 @@ Function Deploy-GuardrailsSolutionAccelerator {
         }
         ElseIf ([string]::IsNullOrEmpty($releaseVersion) -and !$prerelease.IsPresent) {
             # getting latest release from GitHub
-            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
-            $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/psmodules" -f $latestRelease.name
+            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
+            $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/psmodules" -f $latestRelease.name
 
             Write-Verbose "Using latest release from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
             $params = @{ moduleBaseURL = $moduleBaseURL }
@@ -296,24 +296,24 @@ Function Deploy-GuardrailsSolutionAccelerator {
             }
 
             # get releases from GitHub
-            $releases = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases' -Verbose:$false
+            $releases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
             
             If ($releases.name -contains $releaseVersion) {
                 Write-Verbose "Found a release on GitHub match for $releaseVersion"
-                $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
+                $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/{0}/" -f $releaseVersion
             }
         }
         # ElseIf ($prerelease) {
         #     Write-Warning "-Prerelease specified, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
 
         #     # getting all release from github
-        #     $releases = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases' -Verbose:$false
+        #     $releases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
         #     $latestPreRelease = $releases | Where-Object { $_.prerelease -eq 'True' } | 
         #         Sort-Object -Property published_at -Descending | 
         #         Select-Object -First 1
 
         #     $releaseVersion = $latestPreRelease.name
-        #     $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/releases/download/{0}/" -f $releaseVersion
+        #     $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/{0}/" -f $releaseVersion
         # }
 
         # if installing from a published release, check that the release contains zip assets
@@ -324,7 +324,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 $null = Invoke-RestMethod -Method HEAD -Uri "$moduleBaseURL/GR-Common.zip" -ErrorAction Stop -Verbose:$false
             }
             catch {
-                Write-Error "The release $releaseVersion does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: https://github.com/Azure/GuardrailsSolutionAccelerator/releases"
+                Write-Error "The release $releaseVersion does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases"
                 return
             }
             Write-Verbose "The release $releaseVersion contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
