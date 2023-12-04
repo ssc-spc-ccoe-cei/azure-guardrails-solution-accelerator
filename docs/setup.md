@@ -25,7 +25,7 @@ Please make sure to select **PowerShell** as shell type.
 $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest'
 
 # download the latest released version's Zip archive
-[System.Net.WebClient]::new().DownloadFile("https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/archive/refs/tags/$($latestRelease.name).zip","$pwd/guardrailsSolution_$($latestRelease.name).zip")
+[System.Net.WebClient]::new().DownloadFile("https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/$($latestRelease.name)/azure-cac-solution-$($latestRelease.name).zip","$pwd/guardrailsSolution_$($latestRelease.name).zip")
 
 # extract the downloaded Zip
 Expand-Archive -Path "./guardrailsSolution_$($latestRelease.name).zip"
