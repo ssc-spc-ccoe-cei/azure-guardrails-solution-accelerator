@@ -18,7 +18,7 @@ jobs:
     environment: test
     permissions:
       id-token: write
-      content: read
+      contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -136,7 +136,7 @@ jobs:
     needs: sign_scripts
     runs-on: ubuntu-latest
     permissions:
-      content: write
+      contents: write
     steps:
       - name: Download signed ps scripts and zipped modules
         uses: actions/download-artifact@v3
