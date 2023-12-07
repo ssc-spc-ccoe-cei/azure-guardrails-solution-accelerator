@@ -134,7 +134,8 @@ jobs:
   create-pr:
     needs: sign_scripts
     runs-on: ubuntu-latest
-    permissions: write-all      
+    permissions:
+      pull-requests: write
     steps:
       - name: Check Out
         uses: actions/checkout@v3
