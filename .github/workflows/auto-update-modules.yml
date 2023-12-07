@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ github.workspace }}
+          path: ./psmodules/*.zip
 
   create-pr:
     needs: sign_scripts
@@ -137,15 +137,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download signed ps scripts and zipped modules
+      - name: Check Out
+        uses: actions/checkout@v3
+      - name: Download zipped modules and replace old ones
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: .
-
-      - name: Create and checkout dynamic branch
+          name:  ${{ env.ARTIFACT_NAME }}
+          path: ./psmodules
+      - name: Create, checkout dynamic branch and raise PR
         run: |
-          #Git config for creating PR
+          # Git config for creating PR
           git config --global user.email "you@example.com"
           git config --global user.name "Your Name"
           # Create a dynamic branch name using the run_id or sha
@@ -154,13 +155,5 @@ jobs:
           # Commit the changes
           git add psmodules/*
           git commit -m "Update Modules"
-
-      - name: Push changes to dynamic feature branch
-        run: |
-          # Push the changes to the dynamic feature branch
           git push origin "$branch_name"
-
-      - name: Create PR
-        run: |
-          # Use GitHub CLI to create a pull request
           gh pr create --base main --head "$branch_name" --title "Update Modules Pre Release" --body "Updating Modules Pre Release"
