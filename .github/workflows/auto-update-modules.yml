@@ -157,3 +157,5 @@ jobs:
           git commit -m "Update Modules"
           git push origin "$branch_name"
           gh pr create --base main --head "$branch_name" --title "Update Modules Pre Release" --body "Updating Modules Pre Release"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
