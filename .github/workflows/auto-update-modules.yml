@@ -147,8 +147,8 @@ jobs:
       - name: Create, checkout dynamic branch and raise PR
         run: |
           # Git config for creating PR
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
+          git config --global user.email "release.bot@ssc-spc.gc.ca"
+          git config --global user.name "Release Bot"
           # Create a dynamic branch name using the run_id or sha
           branch_name="update-modules-${{ github.run_id }}"
           git checkout -b "$branch_name"
