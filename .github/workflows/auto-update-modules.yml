@@ -140,24 +140,24 @@ jobs:
       - name: Download signed ps scripts and zipped modules
         uses: actions/download-artifact@v3
         with:
-          name:  ${{ env.ARTIFACT_NAME }}
-          path: .        
+          name: ${{ env.ARTIFACT_NAME }}
+          path: .
 
-    - name: Create and checkout dynamic branch
-      run: |
-        # Create a dynamic branch name using the run_id or sha
-        branch_name="update-modules-${{ github.run_id }}"
-        git checkout -b "$branch_name"
-        # Commit the changes
-        git add .
-        git commit -m "Update Modules"
+      - name: Create and checkout dynamic branch
+        run: |
+          # Create a dynamic branch name using the run_id or sha
+          branch_name="update-modules-${{ github.run_id }}"
+          git checkout -b "$branch_name"
+          # Commit the changes
+          git add .
+          git commit -m "Update Modules"
 
-    - name: Push changes to dynamic feature branch
-      run: |
-        # Push the changes to the dynamic feature branch
-        git push origin "$branch_name"
+      - name: Push changes to dynamic feature branch
+        run: |
+          # Push the changes to the dynamic feature branch
+          git push origin "$branch_name"
 
-    - name: Create PR
-      run: |
-        # Use GitHub CLI to create a pull request
-        gh pr create --base main --head "$branch_name" --title "Update Modules Pre Release" --body "Updating Modules Pre Release"
+      - name: Create PR
+        run: |
+          # Use GitHub CLI to create a pull request
+          gh pr create --base main --head "$branch_name" --title "Update Modules Pre Release" --body "Updating Modules Pre Release"
