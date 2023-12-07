@@ -145,11 +145,14 @@ jobs:
 
       - name: Create and checkout dynamic branch
         run: |
+          #Git config for creating PR
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
           # Create a dynamic branch name using the run_id or sha
           branch_name="update-modules-${{ github.run_id }}"
           git checkout -b "$branch_name"
           # Commit the changes
-          git add .
+          git add psmodules/*
           git commit -m "Update Modules"
 
       - name: Push changes to dynamic feature branch
