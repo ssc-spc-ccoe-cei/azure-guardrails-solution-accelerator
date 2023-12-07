@@ -1,0 +1,164 @@
+name: Auto Update Modules On Merge
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'setup/tags.json'  
+    branches:
+      - main
+env:
+  ARTIFACT_NAME: PowerShell.Workflows.Modules.ScriptSigning
+
+jobs:
+  sign_scripts:
+    name: Sign, validate, test and publish PowerShell scripts
+    runs-on: windows-2019
+    environment: test
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Install AzureSignTool
+        run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
+      - name: AZ Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.ENT_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.ENT_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.ENT_AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true 
+      - name: Azure token
+        run: |
+            $az_token=$(az account get-access-token --scope https://vault.azure.net/.default --query accessToken --output tsv)
+            echo "::add-mask::$az_token"
+            echo "AZ_TOKEN=$az_token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Sign pwsh scripts and modules
+        shell: powershell
+        run: |
+          $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
+          $vaultName = $env:VAULTNAME
+
+          foreach ($script in $scripts) {
+              try {
+                    # sign script
+                    azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
+              }
+              catch {
+                  Write-Error $_
+              }
+          }
+        env:
+          CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
+          VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
+
+      - name: Validate Signature
+        shell: powershell
+        run: |
+          $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+
+          Foreach ($signatureStatus in $signatureStatuses) {
+            If ($signatureStatus.Status -eq 'HashMismatch') {
+              throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+            }
+            ElseIf ($signatureStatus.Status -eq 'NotSigned') {
+              Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+            }
+            ElseIf ($signatureStatus.Status -eq 'Valid') {
+              Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+            }
+            Else {
+              throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
+            }
+          }
+      - name: Test Module Imports
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1
+          Write-Host "Count of module files: $($moduleFiles.count)"
+          
+          try {
+            ForEach ($moduleFile in $moduleFiles) {
+              Import-Module $moduleFile.Fullname -ErrorAction Stop
+            }
+          }
+          catch {
+            throw "Failed test import module '$moduleFile' with error: $_"
+          }
+
+          $importedModules = Get-Module
+          Write-Host "Imported modules: `n $($importedModules.Path | Out-String)"
+
+          $missingModules = $moduleFiles | Where-object {$_ -inotin ($importedModules).Path} 
+          If ($missingModules) {
+            throw "The following modules failed import test: $missingModules"
+          }
+      - name: Zip Signed Modules
+        shell: powershell
+        run: |
+          $moduleCodeFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1 -Exclude '*-GSA*','*GuardrailsSolutionAcceleratorSetup*','*Deploy-GuardrailsSolutionAccelerator*'
+          Write-Host "'$($moduleCodeFilesObjs.count)' module manifest files "
+
+          ForEach ($moduleCodeFile in $moduleCodeFilesObjs) {
+              $moduleManifestFile = Get-Item -Path $moduleCodeFile.FullName.replace('psm1','psd1')
+              
+              If ($moduleCodeFilesObjs.FullName -icontains $moduleCodeFile.FullName -or $moduleCodeFilesObjs.FullName -icontains $moduleManifestFile.FullName) {
+                Write-Host "Module '$($moduleCodeFile.BaseName)' found, zipping module files..."
+
+                $destPath = "./psmodules/$($moduleCodeFile.BaseName).zip"
+
+                If ($moduleCodeFile.DIrectory.Name -eq 'Guardrails-Localization') {
+                  Compress-Archive -Path "$($moduleCodeFile.Directory)/*" -DestinationPath $destPath -Force
+                }
+                Else {
+                  $filesToZip = $moduleManifestFile,$moduleCodeFile
+                  Compress-Archive -Path $filesToZip -DestinationPath $destPath -Force
+                }
+
+              }
+              Else {
+                  Write-Host "Neither the manifest '$($moduleCodeFile.FullName.toLower())' or script file '$($moduleManifestFile.FullName.ToLower())' for module '$($moduleCodeFile.BaseName)' was changed, skipping zipping..."
+              }
+          }
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ github.workspace }}
+
+  create-pr:
+    runs-on: ubuntu-latest
+    needs: sign_scripts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed ps scripts and zipped modules
+        uses: actions/download-artifact@v3
+        with:
+          name:  ${{ env.ARTIFACT_NAME }}
+          path: .        
+
+    - name: Create and checkout dynamic branch
+      run: |
+        # Create a dynamic branch name using the run_id or sha
+        branch_name="update-modules-${{ github.run_id }}"
+        git checkout -b "$branch_name"
+        # Commit the changes
+        git add .
+        git commit -m "Update Modules"
+
+    - name: Push changes to dynamic feature branch
+      run: |
+        # Push the changes to the dynamic feature branch
+        git push origin "$branch_name"
+
+    - name: Create PR
+      run: |
+        # Use GitHub CLI to create a pull request
+        gh pr create --base main --head "$branch_name" --title "Update Modules Pre Release" --body "Updating Modules Pre Release"
