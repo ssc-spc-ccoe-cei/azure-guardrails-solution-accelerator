@@ -14,7 +14,7 @@ Running the Guardrails modules in Azure Automation account make them difficult t
 
 > **NOTE**: Local debugging will use the configuration variable values exported during the last solution deployment or update operation. If you have updated values in the Automation Account Variables directly, you may need to manually update the exported config secret value to reflect the same change. 
 
-1. Clone the deployed version of the solution on your local system, either using `git clone` and `git checkout v1.10.0` (for example) or downloading the appropriate release from the [GuardrailsSolutionAccelerator Releases](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases) page (downloading the source.zip file)
+1. Clone the deployed version of the solution on your local system, either using `git clone` and `git checkout v1.10.0` (for example) or downloading the appropriate release from the [GuardrailsSolutionAccelerator Releases](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases) page (downloading the Azure CAC Solution.zip file)
 1. Open the solution directory in Visual Studio Code
 1. Navigate to the module to be debugged in the `./src` directory and place a breakpoint at an appropriate location
 1. In the Powershell Extension's Integrated Terminal, login to the target Azure Subscription (if you are not already signed in): `Connect-AzAccount -Scope Process`
