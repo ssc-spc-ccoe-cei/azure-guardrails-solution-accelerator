@@ -51,7 +51,7 @@ function Check-StatusDataAtRest {
         }
         else {
             #PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
-            if (Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $gr7RequiredPolicies)
+            if (Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds)
             { # boolean, exemption for gr6 required policies exists.
                 $ComplianceStatus=$false
                 $Comment=$msgTable.grexemptionFound -f $obj.Id,$objType
