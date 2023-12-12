@@ -85,7 +85,7 @@ function Get-NetworkWatcherStatus {
             $RegionObject = [PSCustomObject]@{ 
                 SubscriptionName  = $sub.Name 
                 ComplianceStatus = $ComplianceStatus
-                Comments = $Comments
+                Comments = $msgTable.networkWatcherConfigNoRegions
                 ItemName = $msgTable.networkWatcherConfigNoRegions
                 itsgcode = $itsgcode
                 ControlName = $ControlName
