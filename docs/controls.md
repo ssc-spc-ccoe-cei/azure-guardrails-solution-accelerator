@@ -23,9 +23,9 @@ In this control the solution tries to validate multiple items as follow.
       
 4. Responsibility of Break Glass accounts 
 
-    After you confirm that the person(s) responsible of the Break Glass accounts is not technical and and has a director level or above make sure to upload an empty Text file with the name "ConfirmBreakGlassAccountResponsibleIsNotTechnical.txt" to the container name "guardrailsstorage" in the storage account created by the setup. this file tells the solution that you have completed this task. Once the solution detects the file,  the check mark status will be changed from (❌) to (✔️).
+    After you confirm that the person(s) responsible of the Break Glass accounts is not technical and and has a director level or above make sure to upload an empty Text file with the name "BGFollowProcedureResponsibility.txt.txt" to the container name "guardrailsstorage" in the storage account created by the setup. this file tells the solution that you have completed this task. Once the solution detects the file,  the check mark status will be changed from (❌) to (✔️).
 
-      ![BreakGlassAccountProcedure.txt uploaded to the storage account](/docs/media/ConfirmBreakGlassAccountResponsibleIsNotTechnical.png)
+      ![BreakGlassAccountProcedure.txt uploaded to the storage account](/docs/media/BGFollowProcedureResponsibility.png)
 
 5. AD License Type
 
