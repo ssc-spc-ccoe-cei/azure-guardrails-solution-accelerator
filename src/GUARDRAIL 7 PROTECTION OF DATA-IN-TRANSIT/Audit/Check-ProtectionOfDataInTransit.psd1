@@ -21,10 +21,10 @@ ModuleVersion = '1.2.3'
 GUID = '3c6ef9c1-b069-4c05-8112-e089d6490498'
 
 # Author of this module
-Author = 'FastTrack for Azure Team'
+Author = 'Cloud Security Compliance'
 
 # Company or vendor of this module
-CompanyName = 'Microsoft'
+CompanyName = 'Shared Services Canada'
 
 # Copyright statement for this module
 Copyright = '(c) FastTrack for Azure Team. All rights reserved.'
