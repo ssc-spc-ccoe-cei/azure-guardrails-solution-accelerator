@@ -29,10 +29,6 @@ CompanyName = 'Shared Services Canada'
 # Copyright statement for this module
 Copyright = ''
 
-# Contact Information of this module
-ContactInformation = 'cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca'
-
-
 # Description of the functionality provided by this module
 # Description = ''
 
