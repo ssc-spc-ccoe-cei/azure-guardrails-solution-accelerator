@@ -352,11 +352,11 @@ function Check-GAAuthenticationMethods {
             $blobContent = (Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -ErrorAction SilentlyContinue).ICloudBlob.DownloadText()
         
             if ($blobContent -eq '' -or $blobContent -eq ' ') {
-                docFileEmpty = $true
+                $docFileEmpty = $true
                 $commentsArray += $msgTable.globalAdminFileEmpty -f $docName
             }
             elseif ($blobContent -eq 'N/A' -or $blobContent -eq 'n/a') {
-                docFileNotAvailable = $true
+                $docFileNotAvailable = $true
                 $commentsArray += $msgTable.globalAdminNotExist -f $docName
             }
             else {
