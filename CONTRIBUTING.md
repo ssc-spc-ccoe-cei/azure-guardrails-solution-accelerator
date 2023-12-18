@@ -23,7 +23,7 @@ or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any addi
 
 ## Deployment to your environment
 
-Please refer to the following how to [setup](https://github.com/Azure/GuardrailsSolutionAccelerator/blob/main/docs/setup.md) and [how it works](https://github.com/Azure/GuardrailsSolutionAccelerator/blob/main/docs/controls.md)
+Please refer to the following how to [setup](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/docs/setup.md) and [how it works](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/docs/controls.md)
 
 ## Pull Requests
 

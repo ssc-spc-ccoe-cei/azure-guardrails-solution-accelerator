@@ -1,4 +1,4 @@
-#New-ModuleManifest -Path .\Check-BreakGlassAccountOwnersInformation.psd1 -Author "FastTrack for Azure Team" -CompanyName Microsoft -ModuleVersion 1.0.0 -Tags "GOC 30 days Guardrails"
+#New-ModuleManifest -Path .\Check-BreakGlassAccountOwnersInformation.psd1 -Author "Cloud Security Compliance Team" -CompanyName Shared Services Canada -ModuleVersion 1.0.0 -Tags "GOC 30 days Guardrails"
 function Generate-Manifest {
     [CmdletBinding()]
     param (
@@ -39,7 +39,7 @@ function Generate-Manifest {
         else {
             "File $manifestFileName not found."
             "Creating new manifest."
-            New-ModuleManifest -Path $manifestFileName -Author "FastTrack for Azure Team" -CompanyName Microsoft -ModuleVersion $ModuleVersion -Tags "GOC 30 days Guardrails" `
+            New-ModuleManifest -Path $manifestFileName -Author "Cloud Security Compliance" -CompanyName "Shared Services Canada" -ModuleVersion $ModuleVersion -Tags "GOC 30 days Guardrails" `
                                -RootModule $(".\"+$file.Name) -FunctionsToExport '*' -VariablesToExport '*'  -Confirm                                    
         }
         #create zip file from both files in the Modules Target folder.

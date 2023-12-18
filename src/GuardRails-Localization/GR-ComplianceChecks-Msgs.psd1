@@ -21,9 +21,9 @@ mfaEnforcement = MFA Enforcement Excl. Break Glass Accounts
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 bgMSEntID = Break Glass Microsoft Entra ID P2
-bgProcedure = Break Glass Account Non-technical
+bgProcedure = Break Glass Account Procedure
 bgCreation = Break Glass account Creation
-bgAccountResponsibility = Responsibility of break glass accounts must be with someone not-technical, director level or above
+bgAccountResponsibility = BG Responsibility Follows Department Procedure
 bgAccountOwnerContact = Break Glass Account Owners Contact information
 bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
 bgAccountsCompliance2 = Both accounts are identical, please check the config.json file

@@ -7,9 +7,9 @@ Updates to the Guardrails Solution Accelerator are made continuously and rolled 
 
 ## Installing individual modules from pre-release
 
-1. Clone the solution from GitHub with Git (if you do not have a copy already): `git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git`
+1. Clone the solution from GitHub with Git (if you do not have a copy already): `git clone https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator.git`
 1. Checkout the `main` branch: `git checkout main`
-1. Ensure you have the latest copy of the `main` branch locally: `git pull https://github.com/Azure/GuardrailsSolutionAccelerator.git main`
+1. Ensure you have the latest copy of the `main` branch locally: `git pull https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator.git main`
 1. In the cloned repo, navigate to the `./src` directory and find the module or modules you want to upload under the named Guardrail directories
 1. For each module you want to update, create a Zip file containing both the `.psd1` and `.psm1` files for the module. Make sure the Zip file name matches the module name.
 1. In the Azure Portal, navigate to the Azure Automation account. Under *Shared Resources*, click *Modules*.

@@ -63,7 +63,7 @@ catch {
 }
 
 # Updates ITSG Controls
-$itsgURL="https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/main/setup/itsg33-ann4a-eng.csv"
+$itsgURL="https://raw.githubusercontent.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/main/setup/itsg33-ann4a-eng.csv"
 
 get-itsgdata -URL $itsgURL -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey
 

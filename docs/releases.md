@@ -4,7 +4,7 @@
 
 ## Prerequisites for creating a release
 
-- Write permissions on GitHub repo [Azure/GuardrailsSolutionAccelerator](https://github.com/Azure/GuardrailsSolutionAccelerator)
+- Write permissions on GitHub repo [ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator)
 - [DevOps](https://dev.azure.com/guardrailssolutionaccelerator): a Service Connection named 'Guardrails Test Deployment Azure Connection' with sufficient rights to the target Azure tenant. 
 - [DevOps](https://dev.azure.com/guardrailssolutionaccelerator): a Service Connection named 'Guardrails GitHub Connection' with write permissions to the Azure\GuardrailsSolutionAccelerator GitHub repo. Due to limitations on the GitHub org, this Service Connection currently relies on a scoped GitHub Personal Access Token, which is associated with an individual's GitHub account and subject to expiration. 
 - [DevOps](https://dev.azure.com/guardrailssolutionaccelerator): a Service Connection named 'ESRP Guardrails Accelerator Signing' with access configured to Microsoft's internal ESRP code signing service
