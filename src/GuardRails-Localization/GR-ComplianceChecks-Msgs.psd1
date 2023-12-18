@@ -35,6 +35,7 @@ bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
 bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
+gaAccntsMFACheck = Global Administrators Accounts MFA check
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
@@ -183,5 +184,13 @@ enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft
 # GR-Common
 procedureFileFound = File {0} found in Container.
 procedureFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
+procedureFileDataInvalid = The global administrator file(s) contain(s) invalid User Principal Names (UPNs). Ensure that UPNs start with a hyphen, and type each of them on a new line.
+globalAdminFileFound = File {0} found in Container.
+globalAdminFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
+globalAdminFileEmpty = Empty file {0} found in Container.
+globalAdminNotExist = Global Administrator accounts not found or declared in file {0}.
+globalAdminMFAPassAndMin2Accnts = Two or more global administrator accounts have been identified, and multi-factor authentication (MFA) is enabled for all of them.
+globalAdminMinAccnts = There must be at least two global administrator accounts.
+globalAdminAccntsMFADisabled = Not all the global administrator accounts have multi-factor authentication (MFA) enabled
 
 '@

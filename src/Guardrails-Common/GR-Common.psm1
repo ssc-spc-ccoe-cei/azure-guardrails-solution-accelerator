@@ -292,6 +292,150 @@ function Add-LogAnalyticsResults {
         -logType $LogType `
         -TimeStampField Get-Date 
 }
+
+function Check-GAAuthenticationMethods {
+    param (
+        [string] $StorageAccountName,
+        [string] $ContainerName, 
+        [string] $ResourceGroupName,
+        [string] $SubscriptionID, 
+        [string[]] $DocumentName, 
+        [string] $ControlName, 
+        [string]$ItemName,
+        [hashtable] $msgTable, 
+        [string]$itsgcode,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ReportTime
+    )
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [bool] $IsCompliant = $false
+    [string] $Comments = $null
+
+    try {
+        Select-AzSubscription -Subscription $SubscriptionID | out-null
+    }
+    catch{
+        $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
+        throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
+    }
+    try {
+        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+    }
+    catch {
+        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
+
+        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
+    }
+
+    $docFileEmpty = $false
+    $docFileNotAvailable = $false
+    $mfaEnabled = $false
+    $globalAdminFound = $false
+    $globalAdminCount = 0
+    $mfaCounter = 0
+    $commentsArray = @()
+    $globalAdminUPNs = @()
+
+    ForEach ($docName in $DocumentName) {
+
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+
+        If ($null -eq $blobs) {
+            # a blob with the name $DocumentName was located in the specified storage account
+            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
+        }
+        else {
+            # get blob content if blob exists
+            $blobContent = (Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -ErrorAction SilentlyContinue).ICloudBlob.DownloadText()
+        
+            if ($blobContent -eq '' -or $blobContent -eq ' ') {
+                docFileEmpty = $true
+                $commentsArray += $msgTable.globalAdminFileEmpty -f $docName
+            }
+            elseif ($blobContent -eq 'N/A' -or $blobContent -eq 'n/a') {
+                docFileNotAvailable = $true
+                $commentsArray += $msgTable.globalAdminNotExist -f $docName
+            }
+            else {
+                $globalAdminFound = $true
+                $globalAdminUPNs = $blobContent -split '-' | Where-Object { $_ -ne '' }
+            } 
+        }   
+    }
+
+    if ($globalAdminFound) {
+
+        #Clean up the data and remove any invalid email formats
+        $filteredUPNs = Clean-GAData -GAUPNs $globalAdminUPNs
+
+        $globalAdminCount = $filteredUPNs.Count
+
+        ForEach ($globalAdminAccount in $filteredUPNs) {
+            $urlPath = '/users/' + $globalAdminAccount + '/authentication/methods'
+
+            try {
+                $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+            }
+            catch {
+                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
+                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+            }
+    
+            $data = $response.Content
+            $authenticationmethods =  $data.value
+    
+            # To check if MFA is setup for a user, we're looking for either :
+            #    #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
+            #    #microsoft.graph.phoneAuthenticationMethod
+            Write-Host $authenticationmethods
+    
+            foreach ($authmeth in $authenticationmethods) {
+               if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
+                    ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
+                    $mfaCounter += 1 #Need to keep track of each GA mfa in counter and compare it to count
+                }
+            }
+        }
+    }
+
+    if($mfaCounter -eq $globalAdminCount) {
+        $mfaEnabled = $true
+    }
+    else{
+        $commentsArray += $msgTable.globalAdminAccntsMFADisabled
+    }
+
+    if ($globalAdminCount -lt 2 -and ($docFileEmpty -and $docFileNotAvailable)) {
+        $commentsArray += $msgTable.globalAdminMinAccnts
+    }
+
+    if ($globalAdminCount -ge 2 -and $mfaEnabled) {
+        $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
+        $IsCompliant = $mfaEnabled
+    }
+    $Comments = $commentsArray -join ";"
+
+    $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
+        ControlName      = $ControlName
+        ItemName         = $ItemName
+        DocumentName     = $DocumentName
+        Comments         = $Comments
+        ReportTime       = $ReportTime
+        itsgcode         = $itsgcode
+    }
+    $moduleOutput = [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors            = $ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput
+
+}
+
 function Check-DocumentExistsInStorage {
     [Alias('Check-DocumentsExistInStorage')]
     param (
@@ -508,6 +652,18 @@ function Hide-Email {
         return $hiddenEmail
     } else {
         return "Invalid email format"
+    }
+}
+
+function Clean-GAData {
+    param (
+        [string[]] $GAUPNs
+    )
+
+    $FilteredUPNs = $GAUPNs | Where-Object { $_ -match '\S' -and $_ -like "*@*" } | ForEach-Object { $_ -replace '\s' }
+
+    if ($FilteredUPNs) {
+        return $FilteredUPNs
     }
 }
 
