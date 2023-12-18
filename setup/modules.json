@@ -28,6 +28,34 @@
     ]
   },
   {
+    "ModuleName": "Check-GlobalAdministratorAccntsMFA",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-GAAuthenticationMethods -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.gaAccntsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "GlobalAdministratorsUPN.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
