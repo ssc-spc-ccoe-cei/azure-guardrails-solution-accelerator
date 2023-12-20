@@ -17,7 +17,6 @@ CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 
 # Guardrail 1
 MSEntIDLicense = Microsoft Entra ID License Type
-mfaEnforcement = MFA Enforcement Excl. Break Glass Accounts
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 bgMSEntID = Break Glass Microsoft Entra ID P2

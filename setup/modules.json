@@ -124,30 +124,6 @@
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "True",
-    "ModuleName": "Get-UserAuthenticationMethod",
-    "Script": "Get-UserAuthenticationMethod  -ControlName $msgTable.CtrName1 -ItemName $msgTable.mfaEnforcement -FirstBreakGlassEmail $vars.FirstBreakGlassUPN -SecondBreakGlassEmail $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "secrets": [
-      {
-        "Name": "FirstBreakGlassUPN",
-        "Value": "BGA1"
-      },
-      {
-        "Name": "SecondBreakGlassUPN",
-        "Value": "BGA2"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "IA2(1)"
-      }
-    ]
-  },
-  {
-    "Control": "Guardrails1",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
     "Required": "False",
     "ModuleName": "Get-BreakGlassAccountLicense",
     "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgMSEntID -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
@@ -329,30 +305,6 @@
       {
         "Name": "itsgcode",
         "Value": "AC2"
-      }
-    ]
-  },
-  {
-    "Control": "Guardrails3",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "ModuleName": "Get-UserAuthenticationMethod",
-    "Script": "Get-UserAuthenticationMethod  -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaEnforcement -FirstBreakGlassEmail $vars.FirstBreakGlassUPN -SecondBreakGlassEmail $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "secrets": [
-      {
-        "Name": "FirstBreakGlassUPN",
-        "Value": "BGA1"
-      },
-      {
-        "Name": "SecondBreakGlassUPN",
-        "Value": "BGA2"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "IA2(1)"
       }
     ]
   },
