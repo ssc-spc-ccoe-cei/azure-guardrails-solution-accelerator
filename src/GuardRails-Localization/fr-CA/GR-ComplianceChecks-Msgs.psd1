@@ -34,7 +34,7 @@ bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
 bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
-gaAccntsMFACheck = Global Administrators Accounts MFA check
+gaAccntsMFACheck = Vérification d’authentification multifacteur de comptes d’administrateur général
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
