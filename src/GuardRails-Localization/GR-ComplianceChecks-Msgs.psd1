@@ -58,6 +58,7 @@ removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 removeGuestAccounts = Remove guest accounts.
 removeGuestAccountsComment = Remove guest accounts from Microsoft Entra ID or remove their permissions from the Azure subscriptions.
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
