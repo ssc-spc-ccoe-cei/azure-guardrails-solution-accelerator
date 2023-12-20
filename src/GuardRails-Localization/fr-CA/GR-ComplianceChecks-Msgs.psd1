@@ -181,7 +181,14 @@ mktPlaceNotCreated = Le marché privé n'a pas été créé.
 enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
 
 # GR-Common
-procedureFileFound = Fichier {0} trouvé.
-procedureFileNotFound = Impossible de trouver le document pour {0}, veuillez créer et télécharger un fichier avec le nom {1} dans le conteneur {2} du compte de stockage {3} pour confirmer que vous avez terminé l'élément dans le contrôle.
+procedureFileFound = Fichier {0} trouvé dans le conteneur.
+procedureFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom « {1} » dans le conteneur « {2} » sur le compte de stockage « {3} » pour confirmer que vous avez terminé l'élément dans le contrôle.
+procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
+globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
+globalAdminFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom « {1} » dans le conteneur « {2} » sur le compte de stockage « {3} » pour confirmer que vous avez terminé l'élément dans le contrôle.
+globalAdminFileEmpty =  Fichier vide {0} trouvé dans le conteneur.
+globalAdminNotExist = Comptes d'administrateur général non trouvés ou déclarés dans le fichier {0}.
+globalAdminMFAPassAndMin2Accnts = Deux comptes d'administrateur général ou plus ont été identifiés et l'authentification multifacteur est activée pour chacun d'eux.
+globalAdminMinAccnts = Il doit y avoir au moins deux comptes d'administrateur général.
 
 '@
