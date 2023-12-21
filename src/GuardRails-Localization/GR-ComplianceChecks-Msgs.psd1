@@ -17,7 +17,6 @@ CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 
 # Guardrail 1
 MSEntIDLicense = Microsoft Entra ID License Type
-mfaEnforcement = MFA Enforcement Excl. Break Glass Accounts
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 bgMSEntID = Break Glass Microsoft Entra ID P2
@@ -58,6 +57,7 @@ removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 removeGuestAccounts = Remove guest accounts.
 removeGuestAccountsComment = Remove guest accounts from Microsoft Entra ID or remove their permissions from the Azure subscriptions.
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
