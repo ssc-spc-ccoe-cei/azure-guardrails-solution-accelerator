@@ -1,0 +1,37 @@
+name: TestModuleImports
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Test Module Imports
+      shell: powershell
+      run: |
+        $ErrorActionPreference = 'Stop'
+
+        $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1
+        Write-Host "Count of module files: $($moduleFiles.count)"
+          
+        try {
+          ForEach ($moduleFile in $moduleFiles) {
+            Import-Module $moduleFile.Fullname -ErrorAction Stop
+          }
+        }
+        catch {
+          throw "Failed test import module '$moduleFile' with error: $_"
+        }
+
+        $importedModules = Get-Module
+        Write-Host "Imported modules: `n $($importedModules.Path | Out-String)"
+
+        $missingModules = $moduleFiles | Where-object {$_ -inotin ($importedModules).Path} 
+        If ($missingModules) {
+          throw "The following modules failed import test: $missingModules"
+        }
