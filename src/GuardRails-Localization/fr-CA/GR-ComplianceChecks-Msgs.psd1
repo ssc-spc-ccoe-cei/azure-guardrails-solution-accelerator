@@ -57,6 +57,7 @@ removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 removeGuestAccounts = Supprimez les comptes invités.
 removeGuestAccountsComment = Supprimer les comptes d'invités de Microsoft Entra ID ou supprimer les permissions des abonnements Azure.
+
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -190,5 +191,11 @@ globalAdminFileEmpty =  Fichier vide {0} trouvé dans le conteneur.
 globalAdminNotExist = Comptes d'administrateur général non trouvés ou déclarés dans le fichier {0}.
 globalAdminMFAPassAndMin2Accnts = Deux comptes d'administrateur général ou plus ont été identifiés et l'authentification multifacteur est activée pour chacun d'eux.
 globalAdminMinAccnts = Il doit y avoir au moins deux comptes d'administrateur général.
+
+# globalAdminAccntsMFADisabled = Not all the global administrator accounts have multi-factor authentication (MFA) enabled
+globalAdminAccntsMFADisabled1 = Le compte suivant: {0} n'a pas d'authentification multifacteur activée
+globalAdminAccntsMFADisabled1 =  Les comptes suivants: {0} n'ont pas d'authentification multifacteur activée 
+globalAdminAccntsMFADisabled3 = Aucun des comptes d'administrateur général n'a l'authentification multifacteur activée 
+
 
 '@
