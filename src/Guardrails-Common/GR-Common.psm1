@@ -405,7 +405,7 @@ function Check-GAAuthenticationMethods {
         $mfaEnabled = $true
     }
     else{
-        $commentsArray += $msgTable.globalAdminAccntsMFADisabled
+        $mfaEnabled = $false
     }
 
     if ($globalAdminCount -lt 2 -and ($docFileEmpty -and $docFileNotAvailable)) {
@@ -416,6 +416,21 @@ function Check-GAAuthenticationMethods {
         $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
         $IsCompliant = $mfaEnabled
     }
+
+    # when mfa is not enabled for the GA accounts
+    if (!($mfaEnabled)) {
+        if ($globalAdminCount -lt 2) {
+            $commentsArray += $msgTable.globalAdminAccntsMFADisabled1
+        }
+        elseif ($globalAdminCount -ge 2) {
+            $commentsArray += $msgTable.globalAdminAccntsMFADisabled2    
+        }
+        else{
+            $commentsArray += $msgTable.globalAdminAccntsMFADisabled3
+        }
+
+    }
+   
     $Comments = $commentsArray -join ";"
 
     $PsObject = [PSCustomObject]@{
