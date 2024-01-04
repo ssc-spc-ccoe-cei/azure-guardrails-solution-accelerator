@@ -659,8 +659,10 @@ function Clean-GAData {
     param (
         [string[]] $GAUPNs
     )
-
-    $FilteredUPNs = $GAUPNs | Where-Object { $_ -match '\S' -and $_ -like "*@*" } | ForEach-Object { $_ -replace '\s' }
+    #$FilteredUPNs = $GAUPNs | Where-Object { $_ -match '\S' -and $_ -like "*@*" } | ForEach-Object { $_ -replace '\s' }
+    $FilteredUPNs = $GAUPNs | Where-Object { $_ -match '\S' -and $_ -like "*@*" }
+    $FilteredUPNs = $FilteredUPNs -split '\s+'
+    $FilteredUPNs = $FilteredUPNs | ForEach-Object { $_ -replace '\s' }
 
     if ($FilteredUPNs) {
         return $FilteredUPNs
