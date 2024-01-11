@@ -330,8 +330,6 @@ function Check-GAAuthenticationMethods {
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
-    $docFileEmpty = $false
-    $docFileNotAvailable = $false
     $mfaEnabled = $false
     $globalAdminFound = $false
     $globalAdminCount = 0
@@ -350,30 +348,28 @@ function Check-GAAuthenticationMethods {
         else {
             # get blob content if blob exists
             $blobContent = (Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -ErrorAction SilentlyContinue).ICloudBlob.DownloadText()
-        
+            #Get rid of any empty newlines
+
             if ($blobContent -eq '' -or $blobContent -eq ' ') {
-                $docFileEmpty = $true
                 $commentsArray += $msgTable.globalAdminFileEmpty -f $docName
             }
             elseif ($blobContent -eq 'N/A' -or $blobContent -eq 'n/a') {
-                $docFileNotAvailable = $true
                 $commentsArray += $msgTable.globalAdminNotExist -f $docName
             }
             else {
-                $globalAdminFound = $true
-                $globalAdminUPNs = $blobContent -split '-' | Where-Object { $_ -ne '' }
+                #Parses the UPNs and sanitizes them
+                $result = Parse-BlobContent -blobContent $blobContent
+                $globalAdminFound = $result.GlobalAdminFound
+                $globalAdminUPNs = $result.GlobalAdminUPNs
             } 
         }   
     }
 
     if ($globalAdminFound) {
 
-        #Clean up the data and remove any invalid email formats
-        $filteredUPNs = Clean-GAData -GAUPNs $globalAdminUPNs
+        $globalAdminCount = $globalAdminUPNs.Count
 
-        $globalAdminCount = $filteredUPNs.Count
-
-        ForEach ($globalAdminAccount in $filteredUPNs) {
+        ForEach ($globalAdminAccount in $globalAdminUPNs) {
             $urlPath = '/users/' + $globalAdminAccount + '/authentication/methods'
 
             try {
@@ -396,22 +392,22 @@ function Check-GAAuthenticationMethods {
                if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
                     ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
                     $mfaCounter += 1 #Need to keep track of each GA mfa in counter and compare it to count
+                    break #Found atleast one auth method so we move to the next UPN
                 }
             }
         }
     }
 
-    if($mfaCounter -eq $globalAdminCount) {
+    if ($globalAdminCount -lt 2) {
+        $commentsArray += $msgTable.globalAdminMinAccnts
+    }
+    elseif($mfaCounter -eq $globalAdminCount) {
         $mfaEnabled = $true
     }
     else{
         $commentsArray += $msgTable.globalAdminAccntsMFADisabled
     }
-
-    if ($globalAdminCount -lt 2 -and ($docFileEmpty -and $docFileNotAvailable)) {
-        $commentsArray += $msgTable.globalAdminMinAccnts
-    }
-
+    
     if ($globalAdminCount -ge 2 -and $mfaEnabled) {
         $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
         $IsCompliant = $mfaEnabled
@@ -538,8 +534,8 @@ function Check-UpdateAvailable {
         $ResourceGroupName
     )
     #fetches current public version (from repo...maybe should download the zip...)
-    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-    $tagsFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
+    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
+    $tagsFileURI = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
     $tags = Invoke-RestMethod $tagsFileURI -Verbose:$false
 
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
@@ -655,16 +651,45 @@ function Hide-Email {
     }
 }
 
-function Clean-GAData {
+function Parse-BlobContent {
     param (
-        [string[]] $GAUPNs
+        [string]$blobContent
     )
 
-    $FilteredUPNs = $GAUPNs | Where-Object { $_ -match '\S' -and $_ -like "*@*" } | ForEach-Object { $_ -replace '\s' }
-
-    if ($FilteredUPNs) {
-        return $FilteredUPNs
+    # Check if blob content is retrieved
+    if (-not $blobContent) {
+        throw "Failed to retrieve blob content or blob is empty."
     }
+
+    # Split content into lines
+    $lines = $blobContent -split "`r`n|`n"
+
+    $filteredLines = $lines | Where-Object { $_ -match '\S' -and $_ -like "*@*" } | ForEach-Object { $_ -replace '\s' }
+
+    # Initialize an empty array
+    $globalAdminUPNs = @()
+
+    #Boolean to verify if admins were found
+    $globalAdminFound = $false
+
+    # Check each line, remove the hyphen, and add to array
+    foreach ($line in $filteredLines) {
+        if ($line.StartsWith("-")) {
+            # Remove the leading hyphen and any potential whitespace after it
+            $trimmedLine = $line.Substring(1).Trim()
+            $globalAdminUPNs += $trimmedLine
+        } else {
+            throw "Invalid format found: $line"
+        }
+    }
+    $globalAdminFound = $true
+
+    $result = New-Object PSObject -Property @{
+        GlobalAdminUPNs = $globalAdminUPNs
+        GlobalAdminFound = $globalAdminFound
+    }
+
+    return $result
 }
 
 function Invoke-GraphQuery {
