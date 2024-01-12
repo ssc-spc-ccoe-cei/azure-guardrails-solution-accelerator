@@ -1,6 +1,3 @@
-# Set the debug preference to continue so that debug messages are displayed
-$DebugPreference = 'Continue'
-
 function get-tagValue {
     param (
         [string] $tagKey,
