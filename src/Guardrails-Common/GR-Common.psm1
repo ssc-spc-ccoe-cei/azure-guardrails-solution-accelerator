@@ -357,7 +357,7 @@ function Check-GAAuthenticationMethods {
                 Write-Error "Error: $errorMsg"                    
             }
             if ([string]::IsNullOrWhiteSpace($blobContent)) {
-                commentsArray += $msgTable.globalAdminFileEmpty -f $docName
+                $commentsArray += $msgTable.globalAdminFileEmpty -f $docName
             }
             elseif ($blobContent -ieq 'N/A') {
                 $commentsArray += $msgTable.globalAdminNotExist -f $docName
