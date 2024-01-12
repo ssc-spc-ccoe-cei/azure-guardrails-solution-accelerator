@@ -1,3 +1,6 @@
+# Set the debug preference to continue so that debug messages are displayed
+$DebugPreference = 'Continue'
+
 function get-tagValue {
     param (
         [string] $tagKey,
@@ -311,9 +314,8 @@ function Check-GAAuthenticationMethods {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-
     try {
-        Select-AzSubscription -Subscription $SubscriptionID | out-null
+        Set-AzContext -Subscription $SubscriptionID | out-null
     }
     catch{
         $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
@@ -326,48 +328,50 @@ function Check-GAAuthenticationMethods {
         $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
         subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
 
-        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        throw "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
-    $mfaEnabled = $false
-    $globalAdminFound = $false
-    $globalAdminCount = 0
     $mfaCounter = 0
     $commentsArray = @()
     $globalAdminUPNs = @()
 
     ForEach ($docName in $DocumentName) {
+        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
 
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
-
-        If ($null -eq $blobs) {
-            # a blob with the name $DocumentName was located in the specified storage account
+        If ($null -eq $blob) {            
+            # a blob with the name $DocumentName was not located in the specified storage account
+            $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg"                    
             $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
         }
         else {
-            # get blob content if blob exists
-            $blobContent = (Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -ErrorAction SilentlyContinue).ICloudBlob.DownloadText()
-            #Get rid of any empty newlines
-
-            if ($blobContent -eq '' -or $blobContent -eq ' ') {
-                $commentsArray += $msgTable.globalAdminFileEmpty -f $docName
+            try {
+                $blobContent = $blob.ICloudBlob.DownloadText()
+                # Further processing of $blobContent...
+            } catch {
+                $errorMsg = "Error downloading content from blob '$docName': $_"
+                $ErrorList.Add($errorMsg)
+                Write-Error "Error: $errorMsg"                    
             }
-            elseif ($blobContent -eq 'N/A' -or $blobContent -eq 'n/a') {
+            if ([string]::IsNullOrWhiteSpace($blobContent)) {
+                commentsArray += $msgTable.globalAdminFileEmpty -f $docName
+            }
+            elseif ($blobContent -ieq 'N/A') {
                 $commentsArray += $msgTable.globalAdminNotExist -f $docName
             }
             else {
-                #Parses the UPNs and sanitizes them
+                # Blob content is present and needs to be parsed
+                # Parses the UPNs and sanitizes them
                 $result = Parse-BlobContent -blobContent $blobContent
-                $globalAdminFound = $result.GlobalAdminFound
                 $globalAdminUPNs = $result.GlobalAdminUPNs
-            } 
+            }
         }   
     }
 
-    if ($globalAdminFound) {
-
-        $globalAdminCount = $globalAdminUPNs.Count
+    if ($globalAdminUPNs.Count -ge 2) {
 
         ForEach ($globalAdminAccount in $globalAdminUPNs) {
             $urlPath = '/users/' + $globalAdminAccount + '/authentication/methods'
@@ -376,42 +380,54 @@ function Check-GAAuthenticationMethods {
                 $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
             }
             catch {
-                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
-                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+                $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+                $ErrorList.Add($errorMsg)
+                Write-Error "Error: $errorMsg"
             }
-    
-            $data = $response.Content
-            $authenticationmethods =  $data.value
-    
-            # To check if MFA is setup for a user, we're looking for either :
-            #    #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
-            #    #microsoft.graph.phoneAuthenticationMethod
-            Write-Host $authenticationmethods
-    
-            foreach ($authmeth in $authenticationmethods) {
-               if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
-                    ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
-                    $mfaCounter += 1 #Need to keep track of each GA mfa in counter and compare it to count
-                    break #Found atleast one auth method so we move to the next UPN
+
+            if ($null -ne $response) {
+                $data = $response.Content
+                if ($null -ne $data -and $null -ne $data.value) {
+                    $authenticationmethods = $data.value
+
+                    # To check if MFA is setup for a user, we're looking for either :
+                    #    #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
+                    #    #microsoft.graph.phoneAuthenticationMethod            
+                    foreach ($authmeth in $authenticationmethods) {
+                    if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
+                            ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
+                            # need to keep track of each GA mfa in counter and compare it to count
+                            $mfaCounter += 1
+                            # found atleast one auth method so we move to the next UPN 
+                            break 
+                        }
+                    }
+                }
+                else {
+                    $errorMsg = "No authentication methods data found for $globalAdminAccount"                
+                    $ErrorList.Add($errorMsg)
+                    Write-Error "Error: $errorMsg"    
                 }
             }
+            else {
+                $errorMsg = "Failed to get response from Graph API for $globalAdminAccount"                
+                $ErrorList.Add($errorMsg)
+                Write-Error "Error: $errorMsg"    
+            }    
         }
     }
 
-    if ($globalAdminCount -lt 2) {
+    if ($globalAdminUPNs.Count -lt 2) {
         $commentsArray += $msgTable.globalAdminMinAccnts
     }
-    elseif($mfaCounter -eq $globalAdminCount) {
-        $mfaEnabled = $true
+    elseif($globalAdminUPNs.Count -ge 2 -and $mfaCounter -eq $globalAdminUPNs.Count) {
+        $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
+        $IsCompliant = $true
     }
     else{
         $commentsArray += $msgTable.globalAdminAccntsMFADisabled
     }
     
-    if ($globalAdminCount -ge 2 -and $mfaEnabled) {
-        $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
-        $IsCompliant = $mfaEnabled
-    }
     $Comments = $commentsArray -join ";"
 
     $PsObject = [PSCustomObject]@{
@@ -669,9 +685,6 @@ function Parse-BlobContent {
     # Initialize an empty array
     $globalAdminUPNs = @()
 
-    #Boolean to verify if admins were found
-    $globalAdminFound = $false
-
     # Check each line, remove the hyphen, and add to array
     foreach ($line in $filteredLines) {
         if ($line.StartsWith("-")) {
@@ -682,11 +695,9 @@ function Parse-BlobContent {
             throw "Invalid format found: $line"
         }
     }
-    $globalAdminFound = $true
 
     $result = New-Object PSObject -Property @{
         GlobalAdminUPNs = $globalAdminUPNs
-        GlobalAdminFound = $globalAdminFound
     }
 
     return $result
@@ -702,7 +713,7 @@ function Invoke-GraphQuery {
     )
 
     try {
-        $uri = "https://graph.microsoft.com/v1.0/$urlPath" -as [uri]
+        $uri = "https://graph.microsoft.com/v1.0$urlPath" -as [uri]
 
         $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
     }
