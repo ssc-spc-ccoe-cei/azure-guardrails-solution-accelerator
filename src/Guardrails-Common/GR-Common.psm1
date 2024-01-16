@@ -547,8 +547,8 @@ function Check-UpdateAvailable {
         $ResourceGroupName
     )
     #fetches current public version (from repo...maybe should download the zip...)
-    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
-    $tagsFileURI = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
+    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
+    $tagsFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
     $tags = Invoke-RestMethod $tagsFileURI -Verbose:$false
 
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
