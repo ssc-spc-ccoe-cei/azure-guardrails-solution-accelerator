@@ -340,8 +340,8 @@ function Check-GAAuthenticationMethods {
             # a blob with the name $DocumentName was not located in the specified storage account
             $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
             subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
-            $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"                    
+            $ErrorList.Add($errorMsg) 
+            #Write-Error "Error: $errorMsg"                 
             $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
         }
         else {
