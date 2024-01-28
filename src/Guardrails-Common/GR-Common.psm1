@@ -311,6 +311,8 @@ function Check-GAAuthenticationMethods {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
+
+    
     try {
         Set-AzContext -Subscription $SubscriptionID | out-null
     }
@@ -332,6 +334,8 @@ function Check-GAAuthenticationMethods {
     $mfaCounter = 0
     $commentsArray = @()
     $globalAdminUPNs = @()
+
+    $GAUPNsMFA = @()
 
     ForEach ($docName in $DocumentName) {
         $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
@@ -368,13 +372,19 @@ function Check-GAAuthenticationMethods {
         }   
     }
 
+    
     if ($globalAdminUPNs.Count -ge 2) {
-
+        
         ForEach ($globalAdminAccount in $globalAdminUPNs) {
             $urlPath = '/users/' + $globalAdminAccount + '/authentication/methods'
-
+            
+            # create hidden format UPN
+            $hiddenUPN = Hide-Email -email $globalAdminAccount
+            
+            
             try {
                 $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+                
             }
             catch {
                 $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
@@ -388,8 +398,8 @@ function Check-GAAuthenticationMethods {
                     $authenticationmethods = $data.value
 
                     # To check if MFA is setup for a user, we're looking for either :
-                    #    #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
-                    #    #microsoft.graph.phoneAuthenticationMethod            
+                       #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
+                       #microsoft.graph.phoneAuthenticationMethod            
                     foreach ($authmeth in $authenticationmethods) {
                     if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
                             ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
@@ -398,6 +408,17 @@ function Check-GAAuthenticationMethods {
                             # found atleast one auth method so we move to the next UPN 
                             break 
                         }
+                    else {
+                        # create an instance of inner list object
+                        $GAUPNtemplate = [PSCustomObject]@{
+                            UPN  = $globalAdminAccount
+                            MFAStatus   = $false
+                            MFAComments = $hiddenUPN
+                            
+                        }
+                        #add the list to GA MFA list
+                        $GAUPNsMFA += $GAUPNtemplate
+                    }
                     }
                 }
                 else {
@@ -412,17 +433,38 @@ function Check-GAAuthenticationMethods {
                 Write-Error "Error: $errorMsg"    
             }    
         }
+    
     }
 
+    # GA UPN list has less than 2 UPN
     if ($globalAdminUPNs.Count -lt 2) {
         $commentsArray += $msgTable.globalAdminMinAccnts
     }
+    # GA UPN list has > 2 UPNs and all MFA enabled
     elseif($globalAdminUPNs.Count -ge 2 -and $mfaCounter -eq $globalAdminUPNs.Count) {
         $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
         $IsCompliant = $true
     }
+    # GA UPN list has > 2 UPNs and not all UPN has MFA enabled
     else{
-        $commentsArray += $msgTable.globalAdminAccntsMFADisabled
+        # only one UPN is not MFA enable
+        if ( $GAUPNsMFA.Count -eq 1 ) {
+            $commentsArray += $msgTable.globalAdminAccntsMFADisabled1 -f $GAUPNsMFA.MFAComments
+        }
+        # None are MFA enabled
+        elseif ( $GAUPNsMFA.Count -eq $globalAdminUPNs.Count) {
+            $commentsArray += $msgTable.globalAdminAccntsMFADisabled3
+        }
+        # GA UPN list > 2 and not all are MFA enabled
+        else {
+            $hiddenUPNsString = ""
+            for ($i =0; $i -lt $GAUPNsMFA.Count; $i++) {
+                $hiddenUPNsString += $GAUPNsMFA[$i].MFAComments + ", "
+            }
+            $hiddenUPNsString = $hiddenUPNsString.TrimEnd(', ')
+            $commentsArray += $msgTable.globalAdminAccntsMFADisabled2 -f $hiddenUPNsString
+        }
+
     }
     
     $Comments = $commentsArray -join ";"
@@ -711,8 +753,9 @@ function Invoke-GraphQuery {
 
     try {
         $uri = "https://graph.microsoft.com/v1.0$urlPath" -as [uri]
-
+        
         $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
+
     }
     catch {
         Write-Error "An error occured constructing the URI or while calling Graph query for URI GET '$uri': $($_.Exception.Message)"
@@ -721,7 +764,9 @@ function Invoke-GraphQuery {
     @{
         Content    = $response.Content | ConvertFrom-Json
         StatusCode = $response.StatusCode
+
     }
+
 }
 
 # endregion
