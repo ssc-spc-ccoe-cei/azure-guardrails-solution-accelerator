@@ -191,6 +191,9 @@ globalAdminFileEmpty = Empty file {0} found in Container.
 globalAdminNotExist = Global Administrator accounts not found or declared in file {0}.
 globalAdminMFAPassAndMin2Accnts = Two or more global administrator accounts have been identified, and multi-factor authentication (MFA) is enabled for all of them.
 globalAdminMinAccnts = There must be at least two global administrator accounts.
-globalAdminAccntsMFADisabled = Not all the global administrator accounts have multi-factor authentication (MFA) enabled
+
+globalAdminAccntsMFADisabled1 = The following account: {0} does not have multi-factor authentication (MFA) enabled
+globalAdminAccntsMFADisabled2 = The following accounts: {0} do not have multi-factor authentication (MFA) enabled 
+globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled 
 
 '@
