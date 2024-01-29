@@ -384,7 +384,7 @@ function Check-GAAuthenticationMethods {
             
             try {
                 $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-                
+
             }
             catch {
                 $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
@@ -398,8 +398,8 @@ function Check-GAAuthenticationMethods {
                     $authenticationmethods = $data.value
 
                     # To check if MFA is setup for a user, we're looking for either :
-                       #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
-                       #microsoft.graph.phoneAuthenticationMethod            
+                    #   #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
+                    #   #microsoft.graph.phoneAuthenticationMethod            
                     foreach ($authmeth in $authenticationmethods) {
                     if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
                             ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
@@ -440,12 +440,12 @@ function Check-GAAuthenticationMethods {
     if ($globalAdminUPNs.Count -lt 2) {
         $commentsArray += $msgTable.globalAdminMinAccnts
     }
-    # GA UPN list has > 2 UPNs and all MFA enabled
+    # GA UPN list has > 2 UPNs and all are MFA enabled
     elseif($globalAdminUPNs.Count -ge 2 -and $mfaCounter -eq $globalAdminUPNs.Count) {
         $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
         $IsCompliant = $true
     }
-    # GA UPN list has > 2 UPNs and not all UPN has MFA enabled
+    # GA UPN list has > 2 UPNs and not all UPNs are MFA enabled
     else{
         # only one UPN is not MFA enable
         if ( $GAUPNsMFA.Count -eq 1 ) {
@@ -455,7 +455,7 @@ function Check-GAAuthenticationMethods {
         elseif ( $GAUPNsMFA.Count -eq $globalAdminUPNs.Count) {
             $commentsArray += $msgTable.globalAdminAccntsMFADisabled3
         }
-        # GA UPN list > 2 and not all are MFA enabled
+        # 2 or more UPNs in the list are not MFA enabled
         else {
             $hiddenUPNsString = ""
             for ($i =0; $i -lt $GAUPNsMFA.Count; $i++) {
