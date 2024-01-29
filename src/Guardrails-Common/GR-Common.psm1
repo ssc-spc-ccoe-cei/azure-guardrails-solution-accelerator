@@ -401,24 +401,24 @@ function Check-GAAuthenticationMethods {
                     #   #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
                     #   #microsoft.graph.phoneAuthenticationMethod            
                     foreach ($authmeth in $authenticationmethods) {
-                    if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
-                            ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
-                            # need to keep track of each GA mfa in counter and compare it to count
-                            $mfaCounter += 1
-                            # found atleast one auth method so we move to the next UPN 
-                            break 
+                        if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
+                                ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
+                                # need to keep track of each GA mfa in counter and compare it to count
+                                $mfaCounter += 1
+                                # found atleast one auth method so we move to the next UPN 
+                                break 
+                            }
+                        else {
+                            # create an instance of inner list object
+                            $GAUPNtemplate = [PSCustomObject]@{
+                                UPN  = $globalAdminAccount
+                                MFAStatus   = $false
+                                MFAComments = $hiddenUPN
+                                
+                            }
+                            #add the list to GA MFA list
+                            $GAUPNsMFA += $GAUPNtemplate
                         }
-                    else {
-                        # create an instance of inner list object
-                        $GAUPNtemplate = [PSCustomObject]@{
-                            UPN  = $globalAdminAccount
-                            MFAStatus   = $false
-                            MFAComments = $hiddenUPN
-                            
-                        }
-                        #add the list to GA MFA list
-                        $GAUPNsMFA += $GAUPNtemplate
-                    }
                     }
                 }
                 else {
