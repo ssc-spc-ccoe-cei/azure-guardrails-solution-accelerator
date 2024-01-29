@@ -191,4 +191,8 @@ globalAdminNotExist = Comptes d'administrateur général non trouvés ou déclar
 globalAdminMFAPassAndMin2Accnts = Deux comptes d'administrateur général ou plus ont été identifiés et l'authentification multifacteur est activée pour chacun d'eux.
 globalAdminMinAccnts = Il doit y avoir au moins deux comptes d'administrateur général.
 
+globalAdminAccntsMFADisabled1 = Le compte suivant: {0} n'a pas d'authentification multifacteur activée
+globalAdminAccntsMFADisabled2 =  Les comptes suivants: {0} n'ont pas d'authentification multifacteur activée 
+globalAdminAccntsMFADisabled3 = Aucun des comptes d'administrateur général n'a l'authentification multifacteur activée 
+
 '@
