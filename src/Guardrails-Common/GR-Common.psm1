@@ -398,7 +398,7 @@ function Check-GAAuthenticationMethods {
                     $authenticationmethods = $data.value
                     
                     # To check if MFA is setup for a user, we're looking for 4 types of authentication methods :
-                        # 1.  #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
+                        # 1.  #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
                         # 2.  #microsoft.graph.phoneAuthenticationMethod    
                         # 3.  #microsoft.graph.passwordAuthenticationMethod 
                         # 4.  #microsoft.graph.emailAuthenticationMethod  
@@ -412,6 +412,7 @@ function Check-GAAuthenticationMethods {
                                     
                         }
                         else {
+                            # This message will be used for debugging
                             Write-Host "Found only 1 authentication method with MFA not enabled"
                             # create an instance of inner list object
                             $GAUPNtemplate = [PSCustomObject]@{
