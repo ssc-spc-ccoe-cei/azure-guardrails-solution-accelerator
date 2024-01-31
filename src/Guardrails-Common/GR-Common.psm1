@@ -420,7 +420,7 @@ function Check-GAAuthenticationMethods {
                                 MFAComments = $hiddenUPN
                                 
                             }
-                            #add the list to GA MFA list
+                            # add the list to GA MFA list
                             $GAUPNsMFA += $GAUPNtemplate
                         }
                     }
@@ -445,7 +445,7 @@ function Check-GAAuthenticationMethods {
                                     MFAComments = $hiddenUPN
                                     
                                 }
-                                #add the list to GA MFA list
+                                # add the list to GA MFA list
                                 $GAUPNsMFA += $GAUPNtemplate
                             }
                         }
@@ -479,7 +479,7 @@ function Check-GAAuthenticationMethods {
     else{
         # This will be used for debugging
         if($GAUPNsMFA.Count -lt 1){
-            Write-Host "Something is wrong as GAUPNsMFA Count equals 0. This output should will only execute for error"
+            Write-Host "Something is wrong as GAUPNsMFA Count equals 0. This output should only execute if there is an error populating GAUPNsMFA"
         }
         else{
             # only one UPN is not MFA enable
