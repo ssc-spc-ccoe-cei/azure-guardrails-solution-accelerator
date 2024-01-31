@@ -396,19 +396,23 @@ function Check-GAAuthenticationMethods {
                 $data = $response.Content
                 if ($null -ne $data -and $null -ne $data.value) {
                     $authenticationmethods = $data.value
-
-                    # To check if MFA is setup for a user, we're looking for either :
-                    #   #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
-                    #   #microsoft.graph.phoneAuthenticationMethod            
-                    foreach ($authmeth in $authenticationmethods) {
-                        if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
-                                ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod")) {
-                                # need to keep track of each GA mfa in counter and compare it to count
-                                $mfaCounter += 1
-                                # found atleast one auth method so we move to the next UPN 
-                                break 
-                            }
+                    
+                    # To check if MFA is setup for a user, we're looking for 4 types of authentication methods :
+                        # 1.  #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
+                        # 2.  #microsoft.graph.phoneAuthenticationMethod    
+                        # 3.  #microsoft.graph.passwordAuthenticationMethod 
+                        # 4.  #microsoft.graph.emailAuthenticationMethod  
+                        
+                    # Condition: when there is only 1 authentication method found, usually MFA is not setup - it needs to be checked separately
+                    if ($authenticationmethods.Count -eq 1){
+                        if(($($authmeth.'@odata.type') -eq "#microsoft.graph.passwordAuthenticationMethod") ) {
+                            
+                            # need to keep track of each GA mfa in counter and compare it to count
+                            $mfaCounter += 1
+                                    
+                        }
                         else {
+                            Write-Host "Found only 1 authentication method with MFA not enabled"
                             # create an instance of inner list object
                             $GAUPNtemplate = [PSCustomObject]@{
                                 UPN  = $globalAdminAccount
@@ -418,6 +422,32 @@ function Check-GAAuthenticationMethods {
                             }
                             #add the list to GA MFA list
                             $GAUPNsMFA += $GAUPNtemplate
+                        }
+                    }
+                    # Condition: when user's authentication methods > 1
+                    else{
+                        foreach ($authmeth in $authenticationmethods) {
+                            if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
+                                ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or `
+                                ($($authmeth.'@odata.type') -eq "#microsoft.graph.passwordAuthenticationMethod") -or `
+                                ($($authmeth.'@odata.type') -eq "#microsoft.graph.emailAuthenticationMethod") ) {
+                                    
+                                    # need to keep track of each GA mfa in counter and compare it to count
+                                    $mfaCounter += 1
+                                    # atleast one auth method is true - so we move to the next UPN 
+                                    break 
+                            }
+                            else {
+                                # create an instance of inner list object
+                                $GAUPNtemplate = [PSCustomObject]@{
+                                    UPN  = $globalAdminAccount
+                                    MFAStatus   = $false
+                                    MFAComments = $hiddenUPN
+                                    
+                                }
+                                #add the list to GA MFA list
+                                $GAUPNsMFA += $GAUPNtemplate
+                            }
                         }
                     }
                 }
@@ -436,34 +466,41 @@ function Check-GAAuthenticationMethods {
     
     }
 
-    # GA UPN list has less than 2 UPN
+    # Condition: GA UPN list has less than 2 UPN
     if ($globalAdminUPNs.Count -lt 2) {
         $commentsArray += $msgTable.globalAdminMinAccnts
     }
-    # GA UPN list has > 2 UPNs and all are MFA enabled
+    # Condition: GA UPN list has > 2 UPNs and all are MFA enabled
     elseif($globalAdminUPNs.Count -ge 2 -and $mfaCounter -eq $globalAdminUPNs.Count) {
         $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
         $IsCompliant = $true
     }
-    # GA UPN list has > 2 UPNs and not all UPNs are MFA enabled
+    # Condition: GA UPN list has > 2 UPNs and not all UPNs are MFA enabled
     else{
-        # only one UPN is not MFA enable
-        if ( $GAUPNsMFA.Count -eq 1 ) {
-            $commentsArray += $msgTable.globalAdminAccntsMFADisabled1 -f $GAUPNsMFA.MFAComments
+        # This will be used for debugging
+        if($GAUPNsMFA.Count -lt 1){
+            Write-Host "Something is wrong as GAUPNsMFA Count equals 0. This output should will only execute for error"
         }
-        # None are MFA enabled
-        elseif ( $GAUPNsMFA.Count -eq $globalAdminUPNs.Count) {
-            $commentsArray += $msgTable.globalAdminAccntsMFADisabled3
-        }
-        # 2 or more UPNs in the list are not MFA enabled
-        else {
-            $hiddenUPNsString = ""
-            for ($i =0; $i -lt $GAUPNsMFA.Count; $i++) {
-                $hiddenUPNsString += $GAUPNsMFA[$i].MFAComments + ", "
+        else{
+            # only one UPN is not MFA enable
+            if ( $GAUPNsMFA.Count -eq 1 ) {
+                $commentsArray += $msgTable.globalAdminAccntsMFADisabled1 -f $GAUPNsMFA.MFAComments
             }
-            $hiddenUPNsString = $hiddenUPNsString.TrimEnd(', ')
-            $commentsArray += $msgTable.globalAdminAccntsMFADisabled2 -f $hiddenUPNsString
+            # None are MFA enabled
+            elseif ( $GAUPNsMFA.Count -eq $globalAdminUPNs.Count) {
+                $commentsArray += $msgTable.globalAdminAccntsMFADisabled3
+            }
+            # 2 or more UPNs in the list are not MFA enabled
+            else {
+                $hiddenUPNsString = ""
+                for ($i =0; $i -lt $GAUPNsMFA.Count; $i++) {
+                    $hiddenUPNsString += $GAUPNsMFA[$i].MFAComments + ", "
+                }
+                $hiddenUPNsString = $hiddenUPNsString.TrimEnd(', ')
+                $commentsArray += $msgTable.globalAdminAccntsMFADisabled2 -f $hiddenUPNsString
+            }
         }
+        
 
     }
     
