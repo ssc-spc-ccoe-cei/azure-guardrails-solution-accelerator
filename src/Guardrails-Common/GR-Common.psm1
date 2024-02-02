@@ -750,13 +750,11 @@ function Parse-BlobContent {
         if ($line.StartsWith("-")) {
             # Remove the leading hyphen and any potential whitespace after it
             $trimmedLine = $line.Substring(1).Trim()
-            $globalAdminUPNs += $trimmedLine
         } 
         else {
             $trimmedLine = $line.Trim()
-            $globalAdminUPNs += $trimmedLine
-            # throw "Invalid format found: $line"
         }
+        $globalAdminUPNs += $trimmedLine
     }
 
     $result = New-Object PSObject -Property @{
