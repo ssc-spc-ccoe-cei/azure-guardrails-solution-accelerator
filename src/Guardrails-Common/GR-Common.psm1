@@ -360,7 +360,8 @@ function Check-GAAuthenticationMethods {
             if ([string]::IsNullOrWhiteSpace($blobContent)) {
                 $commentsArray += $msgTable.globalAdminFileEmpty -f $docName
             }
-            elseif ($blobContent -ieq 'N/A') {
+            elseif ($blobContent -ieq 'N/A' -or`
+                    $blobContent -ieq 'NA') {
                 $commentsArray += $msgTable.globalAdminNotExist -f $docName
             }
             else {
@@ -737,21 +738,24 @@ function Parse-BlobContent {
     }
 
     # Split content into lines
-    $lines = $blobContent -split "`r`n|`n"
+    $lines = $blobContent -split "`r`n|`n|,|;|,\s|;\s"
 
     $filteredLines = $lines | Where-Object { $_ -match '\S' -and $_ -like "*@*" } | ForEach-Object { $_ -replace '\s' }
 
     # Initialize an empty array
     $globalAdminUPNs = @()
 
-    # Check each line, remove the hyphen, and add to array
+    # Check each line, remove the hyphen (if any), and add to array
     foreach ($line in $filteredLines) {
         if ($line.StartsWith("-")) {
             # Remove the leading hyphen and any potential whitespace after it
             $trimmedLine = $line.Substring(1).Trim()
             $globalAdminUPNs += $trimmedLine
-        } else {
-            throw "Invalid format found: $line"
+        } 
+        else {
+            $trimmedLine = $line.Trim()
+            $globalAdminUPNs += $trimmedLine
+            # throw "Invalid format found: $line"
         }
     }
 
