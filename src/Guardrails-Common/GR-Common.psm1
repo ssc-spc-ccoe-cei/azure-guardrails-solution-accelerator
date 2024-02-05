@@ -749,11 +749,12 @@ function Parse-BlobContent {
     foreach ($line in $filteredLines) {
         if ($line.StartsWith("-")) {
             # Remove the leading hyphen and any potential whitespace after it
-            $trimmedLine = $line.Substring(1).Trim()
+            $trimmedLine = $line.Substring(1)
         } 
-        else {
-            $trimmedLine = $line.Trim()
+        else{
+            $trimmedLine = $line
         }
+        $trimmedLine = $trimmedLine.Trim()
         $globalAdminUPNs += $trimmedLine
     }
 
