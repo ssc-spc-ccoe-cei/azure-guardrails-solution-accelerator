@@ -40,7 +40,6 @@ function Get-DefenderForCloudConfig {
             }
             $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts?api-version=2020-01-01-preview"
             $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
-
             $ContactInfo  = $response.properties
             # This line will be used for debugging
             Write-Host "contactInfo $ContactInfo"
