@@ -45,7 +45,7 @@ function Get-DefenderForCloudConfig {
             # This line will be used for debugging
             Write-Host "contactInfo $ContactInfo"
         }catch {
-            $errorMsg = "Error in Get-AzSecurityContact: $_"
+            $errorMsg = "Error in response: $_"
             $ErrorList.Add($errorMsg)
         }
 
