@@ -23,7 +23,7 @@ function Get-DefenderForCloudConfig {
     $IsCompliant=$false
     
     $Comments=""
-    $sublist=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
+    $sublist=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}
     
     # This will look for specific Defender for Cloud, on a per subscription basis.
     $nonCompliantSubs=0
