@@ -23,14 +23,31 @@ function Get-DefenderForCloudConfig {
     $IsCompliant=$false
     
     $Comments=""
-    $sublist=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName} 
+    $sublist=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}
     
     # This will look for specific Defender for Cloud, on a per subscription basis.
     $nonCompliantSubs=0
     foreach ($sub in $sublist)
     {
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        $ContactInfo=Get-AzSecurityContact
+        
+        try{
+            $azContext = Get-AzContext
+            $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId
+            $authHeader = @{
+                'Content-Type'  = 'application/json'
+                'Authorization' = 'Bearer ' + $token.Token
+            }
+            $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts?api-version=2020-01-01-preview"
+            $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
+            $ContactInfo  = $response.properties
+            # This line will be used for debugging
+            Write-Host "contactInfo $ContactInfo"
+        }catch {
+            $errorMsg = "Error in response: $_"
+            $ErrorList.Add($errorMsg)
+        }
+
         if ([string]::IsNullOrEmpty($ContactInfo.Email) -or [string]::IsNullOrEmpty($null -eq $ContactInfo.Phone))
         {
             $nonCompliantSubs++

@@ -203,7 +203,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudConfig.zip'
-        version: '1.0.0'
+        version: '1.1.9'
       }
     }
   }
