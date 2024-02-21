@@ -187,6 +187,12 @@ jobs:
               $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
               $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
               $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
+              $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
+              $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
+              $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+              $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+              $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
+              $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
 
               $configContent = @"
               {
@@ -196,14 +202,14 @@ jobs:
                   "storageaccountName": "gsapipe",
                   "logAnalyticsworkspaceName": "gsapipe",
                   "autoMationAccountName": "gsapipe",
-                  "FirstBreakGlassAccountUPN": "cspm.alpha@163gccspm.onmicrosoft.com",
-                  "SecondBreakGlassAccountUPN": "cspm.bravo@163gccspm.onmicrosoft.com",
-                  "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
-                  "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+                  "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
+                  "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
+                  "PBMMPolicyID": "$PBMMPOLICY_ID",
+                  "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
-                  "securityLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodsecuritylaw",
-                  "healthLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodhealthlaw",
+                  "securityLAWResourceId": "$TESTSEC_RESRC_ID",
+                  "healthLAWResourceId": "$TESTHEALTHLAW_RESRC_ID",
                   "Locale": "en-CA",
                   "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
                   "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
@@ -242,6 +248,12 @@ jobs:
           LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
           LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+          TESTTENANT_BGA1: ${{ vars.TESTTENANT_BGA1 }}
+          TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
+          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
+          TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: ReLogin AZ (due to timeout issue)
         uses: azure/login@v1
         with:
@@ -261,6 +273,12 @@ jobs:
               $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
               $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
               $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
+              $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
+              $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
+              $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+              $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+              $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
+              $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
 
               $configContent = @"
               {
@@ -270,14 +288,14 @@ jobs:
                   "storageaccountName": "gsapipe",
                   "logAnalyticsworkspaceName": "gsapipe",
                   "autoMationAccountName": "gsapipe",
-                  "FirstBreakGlassAccountUPN": "cspm.alpha@163gccspm.onmicrosoft.com",
-                  "SecondBreakGlassAccountUPN": "cspm.bravo@163gccspm.onmicrosoft.com",
-                  "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
-                  "AllowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
+                  "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
+                  "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
+                  "PBMMPolicyID": "$PBMMPOLICY_ID",
+                  "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
-                  "securityLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodsecuritylaw",
-                  "healthLAWResourceId": "/subscriptions/87b94215-20de-4561-8fdb-0836899cf924/resourcegroups/ss-cto-cspm-prod-coremanagement-rg/providers/microsoft.operationalinsights/workspaces/ssctocspmprodhealthlaw",
+                  "securityLAWResourceId": "$TESTSEC_RESRC_ID",
+                  "healthLAWResourceId": "$TESTHEALTHLAW_RESRC_ID",
                   "Locale": "en-CA",
                   "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
                   "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
@@ -342,6 +360,12 @@ jobs:
           LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
           LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+          TESTTENANT_BGA1: ${{ vars.TESTTENANT_BGA1 }}
+          TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
+          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
+          TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: Check for AA Job Errors
         uses: azure/powershell@v1
         with:
