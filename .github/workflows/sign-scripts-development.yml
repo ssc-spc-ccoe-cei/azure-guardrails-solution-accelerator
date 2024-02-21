@@ -189,8 +189,8 @@ jobs:
               $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
               $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
               $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
-              $TESTPBMMPOLICY_ID = $env:TESTPBMMPOLICY_ID
-              $TESTLOCATIONPOLICY_ID = $env:TESTLOCATIONPOLICY_ID
+              $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+              $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
 
@@ -204,8 +204,8 @@ jobs:
                   "autoMationAccountName": "gsapipe",
                   "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
-                  "PBMMPolicyID": "$TESTPBMMPOLICY_ID",
-                  "AllowedLocationPolicyId": "$TESTLOCATIONPOLICY_ID",
+                  "PBMMPolicyID": "$PBMMPOLICY_ID",
+                  "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
                   "securityLAWResourceId": "$TESTSEC_RESRC_ID",
@@ -250,8 +250,8 @@ jobs:
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
           TESTTENANT_BGA1: ${{ vars.TESTTENANT_BGA1 }}
           TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
-          TESTPBMMPOLICY_ID: ${{ vars.TESTPBMMPOLICY_ID }}
-          TESTLOCATIONPOLICY_ID: ${{ vars.TESTLOCATIONPOLICY_ID }}
+          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: ReLogin AZ (due to timeout issue)
@@ -275,8 +275,8 @@ jobs:
               $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
               $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
               $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
-              $TESTPBMMPOLICY_ID = $env:TESTPBMMPOLICY_ID
-              $TESTLOCATIONPOLICY_ID = $env:TESTLOCATIONPOLICY_ID
+              $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+              $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
 
@@ -290,8 +290,8 @@ jobs:
                   "autoMationAccountName": "gsapipe",
                   "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
-                  "PBMMPolicyID": "$TESTPBMMPOLICY_ID",
-                  "AllowedLocationPolicyId": "$TESTLOCATIONPOLICY_ID",
+                  "PBMMPolicyID": "$PBMMPOLICY_ID",
+                  "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
                   "securityLAWResourceId": "$TESTSEC_RESRC_ID",
@@ -362,8 +362,8 @@ jobs:
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
           TESTTENANT_BGA1: ${{ vars.TESTTENANT_BGA1 }}
           TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
-          TESTPBMMPOLICY_ID: ${{ vars.TESTPBMMPOLICY_ID }}
-          TESTLOCATIONPOLICY_ID: ${{ vars.TESTLOCATIONPOLICY_ID }}
+          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: Check for AA Job Errors
