@@ -53,7 +53,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         version: '1.6.0'
       }
     }
-  }Detect-UserBGAUsersAuthMethods
+  }
   resource module1 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountOwnersInformation'
     properties: {
