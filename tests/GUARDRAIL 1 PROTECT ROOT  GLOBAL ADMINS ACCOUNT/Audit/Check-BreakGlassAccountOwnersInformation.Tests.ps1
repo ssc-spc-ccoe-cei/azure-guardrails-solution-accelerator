@@ -1,17 +1,19 @@
 Import-Module '.\src\GUARDRAIL 1 PROTECT ROOT  GLOBAL ADMINS ACCOUNT\Audit\Check-BreakGlassAccountOwnersInformation.psm1'
 
 Describe "Get-BreakGlassOwnerinformation Function" {
-    $FirstBreakGlassUPNOwner = "test123@gmail.com"
-    $SecondBreakGlassUPNOwner = "test321@gmail.com"
-    $ControlName = "Guardrails1"
-    $ItemName = "Break Glass Account Owners Contact information"
-    $itsgcode = "AC2"
+    BeforeAll{
+        $FirstBreakGlassUPNOwner = "test123@gmail.com"
+        $SecondBreakGlassUPNOwner = "test321@gmail.com"
+        $ControlName = "Guardrails1"
+        $ItemName = "Break Glass Account Owners Contact information"
+        $itsgcode = "AC2"
 
 
-    $msgTable = @{
-        bgAccountHasManager = "{0} has a manager listed in the directory."
-        bgAccountNoManager  = "{0} doesn't have a manager listed in the directory."
-        bgBothHaveManager   = "Both Break Glass Accounts have a manager listed in the directory."
+        $msgTable = @{
+            bgAccountHasManager = "{0} has a manager listed in the directory."
+            bgAccountNoManager  = "{0} doesn't have a manager listed in the directory."
+            bgBothHaveManager   = "Both Break Glass Accounts have a manager listed in the directory."
+        }
     }
 
     It "Should return compliant results when both accounts have a manager listed" {
