@@ -571,7 +571,6 @@ function Check-DocumentExistsInStorage {
 
     $blobFound = $false
    
-    # ForEach ($docName in $DocumentName) {
     ForEach ($docName in $DocumentName_new) {
         # check for procedure doc in blob storage account
         $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
