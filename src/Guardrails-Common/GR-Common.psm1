@@ -527,6 +527,22 @@ function Check-DocumentExistsInStorage {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
+
+    if ($ItemName.ToLower() -eq 'network architecture diagram'){
+        $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
+    }
+    elseif ($ItemName.ToLower() -eq 'global administrators accounts mfa check') {
+        $fileExtensions = @(".txt")
+    }
+    else {
+        $fileExtensions = @(".txt",".docx", ".doc")
+    }
+    
+    $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
+    ForEach ($fileExt in $fileExtensions) {
+        $DocumentName_new.Add($DocumentName[0] + $fileExt)
+    }
+
     try {
         Select-AzSubscription -Subscription $SubscriptionID | out-null
     }
@@ -550,20 +566,27 @@ function Check-DocumentExistsInStorage {
 
     $docMissing = $false
     $commentsArray = @()
-    ForEach ($docName in $DocumentName) {
+    $blobFound = $false
+   
+    ForEach ($docName in $DocumentName_new) {
         # check for procedure doc in blob storage account
         $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
-
         If ($blobs) {
-            # a blob with the name $DocumentName was located in the specified storage account
-            $commentsArray += $msgTable.procedureFileFound -f $docName
-        }
-        else {
-            # no blob with the name $DocumentName was found in the specified storage account
-            $docMissing = $true
-            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
+            $blobFound = $true
+            break
         }
     }
+
+    if ($blobFound){
+        # a blob with the name $attestationFileName was located in the specified storage account
+        $commentsArray += $msgTable.procedureFileFound -f $docName
+    }
+    else {
+        # no blob with the name $attestationFileName was found in the specified storage account
+        $docMissing = $true
+        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $DocumentName[0], $ContainerName, $StorageAccountName
+    }
+
     $Comments = $commentsArray -join ";"
 
     If ($docMissing) {

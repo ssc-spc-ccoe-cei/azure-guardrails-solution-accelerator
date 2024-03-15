@@ -19,7 +19,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "BreakGlassAccountProcedure.txt"
+        "Value": "BreakGlassAccountProcedure"
       },
       {
         "Name": "itsgcode",
@@ -33,7 +33,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-GAAuthenticationMethods -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.gaAccntsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-GAAuthenticationMethods -StorageAccountName $vars.storageAccountName -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.gaAccntsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -47,7 +47,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "GlobalAdministratorsUPN.txt"
+        "Value": "GlobalAdministratorsUPN"
       },
       {
         "Name": "itsgcode",
@@ -75,7 +75,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "BGFollowProcedureResponsibility.txt"
+        "Value": "BGFollowProcedureResponsibility"
       },
       {
         "Name": "itsgcode",
@@ -216,7 +216,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "GCPasswordGuidanceDoc.txt"
+        "Value": "GCPasswordGuidanceDoc"
       },
       {
         "Name": "itsgcode",
@@ -244,7 +244,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "PrivilegedAccountManagementPlan.txt"
+        "Value": "PrivilegedAccountManagementPlan"
       },
       {
         "Name": "itsgcode",
@@ -300,7 +300,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "AuthorizedProcessApprovedByCSO.txt"
+        "Value": "AuthorizedProcessApprovedByCSO"
       },
       {
         "Name": "itsgcode",
@@ -328,7 +328,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "GlobalAdministratorsUPN.txt"
+        "Value": "GlobalAdministratorsUPN"
       },
       {
         "Name": "itsgcode",
@@ -396,7 +396,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "SPNEncryptedEmailToCSPMSentAttestation.txt"
+        "Value": "SPNEnencryptedEmailToCSPMSentAttestation"
       },
       {
         "Name": "itsgcode",
@@ -524,7 +524,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "TLS12EnabledAttestation.txt"
+        "Value": "TLS12EnabledAttestation"
       },
       {
         "Name": "itsgcode",
@@ -580,7 +580,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "ConfirmNetworkDiagramExists.txt"
+        "Value": "ConfirmNetworkDiagramExists"
       },
       {
         "Name": "itsgcode",
@@ -648,7 +648,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "NetworkBoundaryProtectionPolicy.txt"
+        "Value": "NetworkBoundaryProtectionPolicy"
       },
       {
         "Name": "itsgcode",
@@ -676,7 +676,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "LimitPublicIPsPolicy.txt"
+        "Value": "LimitPublicIPsPolicy"
       },
       {
         "Name": "itsgcode",
@@ -704,7 +704,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "AuthSourceIPPolicyConfirm.txt"
+        "Value": "AuthSourceIPPolicyConfirm"
       },
       {
         "Name": "itsgcode",
@@ -753,8 +753,8 @@
       {
         "Name": "DocumentName",
         "Value": [
-          "MemorandumOfUnderstanding.txt",
-          "ChiefDirectoryOfficeConfirmation.txt"
+          "MemorandumOfUnderstanding",
+          "ChiefDirectoryOfficeConfirmation"
         ]
       },
       {
@@ -784,7 +784,7 @@
       {
         "Name": "DocumentName",
         "Value": [
-          "SeverityNotificationToEmailConfigured.txt"
+          "SeverityNotificationToEmailConfigured"
         ]
       },
       {
@@ -885,7 +885,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "ConfirmPasswordNotificationsConfigured.txt"
+        "Value": "ConfirmPasswordNotificationsConfigured"
       },
       {
         "Name": "itsgcode",
