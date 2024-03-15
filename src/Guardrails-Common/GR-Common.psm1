@@ -538,8 +538,6 @@ function Check-DocumentExistsInStorage {
         $fileExtensions = @(".txt",".docx", ".doc")
     }
     
-
-
     $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
     ForEach ($fileExt in $fileExtensions) {
         $DocumentName_new.Add($DocumentName[0] + $fileExt)
@@ -568,7 +566,6 @@ function Check-DocumentExistsInStorage {
 
     $docMissing = $false
     $commentsArray = @()
-
     $blobFound = $false
    
     ForEach ($docName in $DocumentName_new) {
