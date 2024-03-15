@@ -76,3 +76,76 @@ All documentation to support the solution can be found on gcxchange, including t
 https://gcxgce.sharepoint.com/teams/10001628
 
 Note: If you have never used gcxchange, you will need to register first (Virtual Private Network (VPN) access is required for registration). Register for gcxchange at https://www.gcx-gce.gc.ca/
+
+ 
+## Introduction
+L’objectif de cette mise en œuvre est d’aider les ministères et agences du secteur public canadien à identifier et remédier les [Mesures de protection du nuage du GC](https://github.com/canada-ca/cloud-guardrails?tab=readme-ov-file#mesures-de-protection-du-nuage-du-gc) afin d’assurer la conformité continue aux validations de la Politique sur les mesures de sécurité infonuagique du GC.
+
+## Contexte du projet 
+Les mesures de sécurité infonuagique du GC sont les contrôles de sécurité minimaux requis définis par le Secrétariat du Conseil du trésor (SCT) pour protéger et sécuriser les données afin de maintenir la posture de sécurité des environnements infonuagiques. Les clients de GC doivent mettre en œuvre les mesures de sécurité dans les 30 premiers jours suivant la création du compte infonuagique. Les mesures de sécurité ont été mappés à six différents profils d’utilisation infonuagique. 
+
+Cette mise en œuvre fournit un point de départ pour les équipes de projet et elles ont été sélectionnées pour atteindre les objectifs suivants :
+
+* conformer aux procédures obligatoires applicables dans la Directive sur la gestion de la sécurité
+* satisfaire aux exigences de la Directive sur l’utilisation sécurisée des services infonuagiques commerciaux : [Avis de mise en œuvre de la Politique sur la sécurité (AMOPS)](https://www.canada.ca/fr/gouvernement/systeme/gouvernement-numerique/politiques-normes/amops.html)
+* appliquer les 10 principales mesures de sécurité du Centre de la sécurité des télécommunications (CST)
+* aligner le profil de contrôle de sécurité du gouvernement du Canada avec les services infonuagiques du GC
+* concentrer sur la sélection des contrôles de sécurité à ceux mis en œuvre dans les composants logiciels des solutions de systèmes d’information
+* atteindre les objectifs de protection contre les menaces précisées dans le profil générique des Conseils en matière de sécurité des technologies de l’information (ITSG-33) Protégé B, intégrité moyenne et disponibilité moyenne (PBMM) et le profil de contrôle de sécurité du gouvernement du Canada pour les services infonuagiques du GC
+
+L’objectif principal de l’automatisation des mesures de sécurité de Conformité en tant que code (CC) est de déclarer efficacement les données de conformité des environnements GC Azure au SCT.
+
+L’automatisation des mesures de sécurité de Conformité en tant que code (CC) aide les ministères et agences du secteur public canadien à identifier et remédier les mesures de sécurité infonuagique du GC afin d’assurer la conformité continue aux exigences relatives aux mesures de sécurité. Les exigences relatives aux mesures de sécurité infonuagique du GC se trouvent dans le référentiel GitHub public du gouvernement canadien.
+
+Objectifs d’automatisation de CC :
+* développer des processus automatisés pour la surveillance et la production de rapports sur les mesures de sécurité infonuagique du SCT du GC
+* automatiser la surveillance de la conformité des clients aux mesures de sécurité infonuagique obligatoires (c’est-à-dire les contrôles de sécurité minimum requis pour protéger et sécuriser les données).
+* étendre la surveillance de la conformité à des mesures de sécurité supplémentaires et créer des tableaux de bord de conformité [Infrastructure en tant que service (IaaS)/Plateforme en tant que service (PaaS)] pour soutenir les rapports
+*supporter l’adoption croissante et évolutive des services infonuagiques au sein du GC
+* renforcer et optimiser les processus et services de sécurité infonuagique existants
+
+## Architecture
+Consultez la présentation d’intégration Azure à gcéchange. https://gcxgce.sharepoint.com/teams/10001628
+
+## Configuration et Installation 
+Le Livre de jeu d’installation Azure se trouve sur gcéchange. https://gcxgce.sharepoint.com/teams/10001628
+
+## Comment ça fonctionne
+La solution CC comporte plusieurs modules. Chaque module vérifie un ensemble précis de configuration dans l’environnement et les compare aux validations [Mesures de sécurité du GC] [Mesures de sécurité infonuagique](https://github.com/canada-ca/cloud-guardrails?tab=readme-ov-file#mesures-de-protection-du-nuage-du-gc)) mandatées par le [Secrétariat du Conseil du Trésor](https://www.canada.ca/fr/secretariat-conseil-tresor.html) et [Services partagés Canada](https://www.canada.ca/fr/services-partages.html).
+
+Pour comprendre ce que le module surveille, consultez le Livre de jeu de Remédiation Azure sur gcéchange
+https://gcxgce.sharepoint.com/teams/10001628. 
+
+## Contribuer
+Ce projet accueille les contributions et les suggestions via la soumission de problème / bogue de GitHub.
+
+Remarque : S’il y a des questions liées mais n’impliquent pas de bogue ou de problème de code, vous pouvez envoyer un courriel à Conformité à la sécurité infonuagique de SPC : [cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca](mailto:cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca).
+
+La plupart des contributions exigent que vous acceptiez une entente de licence de contributeur « Contributor License Agreement (CLA) » déclarant que vous avez le droit de nous accorder les droits d’utiliser votre contribution, et que vous le faites réellement. Pour plus de détails, visitez https://cla.opensource.microsoft.com/.
+
+Les « commits » ne sont pas acceptés à la branche principale. Vous pouvez effectuer une demande de tirage « pull request (PR) » à partir d’un référentiel fourché. Vous ne pourrez pas pousser une branche directement. Nous avons également deux examinateurs de SPC tenus d’examiner tous les PR.
+
+Lorsque vous soumettez une PR, un robot « bot » CLA déterminera automatiquement si vous devez fournir un CLA et décorer la PR de manière appropriée (par exemple, vérification de l’état, commentaire). Il suffit de suivre les instructions fournies par le « bot ». Vous n’aurez besoin de le faire qu’une seule fois dans tous les référentiels en utilisant notre CLA.
+
+Ce projet a adopté le Code de conduite « open-source » de Microsoft. Pour plus d’informations, consultez la foire aux questions sur le code de conduite ou contactez [opencode@microsoft.com](mailto:opencode@microsoft.com) pour toute question ou commentaire supplémentaire.
+
+## Télémétrie 
+La télémétrie est établie à faux par défaut. Si vous souhaitez envoyer des données d’utilisation à Microsoft, vous pouvez définir le paramètre « customerUsageAttribution.enabled » à « vrai » dans « setup/IaC/modules/telemetry.json ».
+
+Microsoft peut corréler ces ressources utilisées pour prendre en charge les déploiements. Microsoft collecte ces informations pour offrir les meilleures expériences avec leurs produits et pour exploiter leur entreprise. La télémétrie est collectée via l’attribution de l’utilisation par le client. Les données sont collectées et régies par les politiques de confidentialité de Microsoft, situées à https://www.microsoft.com/trustcenter.
+
+Le projet « Bicep » recueille la télémétrie dans certains scénarios dans le cadre de l’amélioration du produit.
+
+## Licence
+Tous les fichiers à l’exception de « Super-Linter » dans le référentiel sont soumis à la licence « MIT ».
+
+« Super-Linter » dans ce projet est fourni à titre d’exemple pour activer les capacités de « linting » de code source. Il est soumis à la licence basée sur son référentiel.
+
+## Marque de commerce 
+Ce projet peut contenir des marques de commerce ou des logos pour des projets, des produits ou des services. L’utilisation autorisée des marques de commerce ou des logos Microsoft est soumise et doit respecter les Directives relatives aux marques de commerce et à la marque de Microsoft. L’utilisation de marques de commerce ou de logos Microsoft dans les versions modifiées de ce projet ne doit pas être source de confusion ni impliquer le parrainage de Microsoft. Toute utilisation de marques de commerce ou de logos de tiers est soumise aux politiques de ces tiers.
+
+## gcéchange
+Toute la documentation à l’appui de la solution peut être trouvée sur gcéchange, y compris l’architecture, le Livre de jeu d’installation et le Livre de jeu de remédiation.
+https://gcxgce.sharepoint.com/teams/10001628
+
+Remarque : Si vous n’avez jamais utilisé gcéchange, vous devrez d’abord vous inscrire [accès au Réseau privé virtuel (RPV) est requis pour l’enregistrement]. Inscrivez-vous à https://www.gcx-gce.gc.ca/.
