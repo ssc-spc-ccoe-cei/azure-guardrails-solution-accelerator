@@ -176,7 +176,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivateMarketPlace.zip'
-        version: '1.1.3'
+        version: '1.1.4'
       }
     }
   }
@@ -212,7 +212,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.7'
+        version: '1.4.8'
       }
     }
   }

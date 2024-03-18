@@ -13,7 +13,6 @@ $Object = New-Object PSObject
 [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
 try {
-        # [String] $PrivateMarketPlace=  Get-AzMarketplacePrivateStore -ErrorAction Stop 
         $PrivateMarketPlace =  Get-AzMarketplacePrivateStore -ErrorAction Stop
 }
 catch {
@@ -42,11 +41,7 @@ else {
                 $Object| Add-Member NoteProperty -Name Comments  -Value $msgTable.mktPlaceCreatedNotEnabled
                 $MitigationCommands = $msgTable.enableMktPlace
         }
-        # $IsCompliant= $true
-        # $Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
-        # $Object| Add-Member NoteProperty -Name Comments  -Value "$($msgTable.mktPlaceCreated) - $($PrivateMarketPlace.PrivateStoreId)"
-        # $Object| Add-Member NoteProperty -Name Comments  -Value "$($msgTable.mktPlaceCreatedEnabled) - $($PrivateMarketPlace.PrivateStoreId)"
-
+        
         $Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
         $MitigationCommands = ""
 }
