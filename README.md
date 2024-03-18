@@ -37,7 +37,7 @@ The Azure Installation Playbook can be found on gcxchange. https://gcxgce.sharep
 
 ## How it works
 
-The CaC solution has multiple modules. Each module verifies specific set of configurations in the environment and compares them with the validations [GC guardrails] ([https://github.com/canada-ca/cloud-guardrails](https://github.com/canada-ca/cloud-guardrails#gc-cloud-guardrails)) mandated by [Treasury Board Secretariat](https://www.canada.ca/en/treasury-board-secretariat.html) and [Shared Services Canada](https://www.canada.ca/en/shared-services.html). 
+The CaC solution has multiple modules. Each module verifies specific set of configurations in the environment and compares them with the validations [GC guardrails](https://github.com/canada-ca/cloud-guardrails#gc-cloud-guardrails) mandated by [Treasury Board Secretariat](https://www.canada.ca/en/treasury-board-secretariat.html) and [Shared Services Canada](https://www.canada.ca/en/shared-services.html). 
 
 To understand what the module is monitoring, consult the Azure Remediation Playbook on gcxchange 
 https://gcxgce.sharepoint.com/teams/10001628.
@@ -111,7 +111,7 @@ Consultez la présentation d’intégration Azure à gcéchange. https://gcxgce.
 Le Livre de jeu d’installation Azure se trouve sur gcéchange. https://gcxgce.sharepoint.com/teams/10001628
 
 ## Comment ça fonctionne
-La solution CC comporte plusieurs modules. Chaque module vérifie un ensemble précis de configuration dans l’environnement et les compare aux validations [Mesures de sécurité du GC] [Mesures de sécurité infonuagique](https://github.com/canada-ca/cloud-guardrails?tab=readme-ov-file#mesures-de-protection-du-nuage-du-gc)) mandatées par le [Secrétariat du Conseil du Trésor](https://www.canada.ca/fr/secretariat-conseil-tresor.html) et [Services partagés Canada](https://www.canada.ca/fr/services-partages.html).
+La solution CC comporte plusieurs modules. Chaque module vérifie un ensemble précis de configuration dans l’environnement et les compare aux validations [Mesures de sécurité infonuagique](https://github.com/canada-ca/cloud-guardrails?tab=readme-ov-file#mesures-de-protection-du-nuage-du-gc) mandatées par le [Secrétariat du Conseil du Trésor](https://www.canada.ca/fr/secretariat-conseil-tresor.html) et [Services partagés Canada](https://www.canada.ca/fr/services-partages.html).
 
 Pour comprendre ce que le module surveille, consultez le Livre de jeu de Remédiation Azure sur gcéchange
 https://gcxgce.sharepoint.com/teams/10001628. 
