@@ -34,17 +34,16 @@ else {
         $availability =  $PrivateMarketPlace.Availability
         if ($availability -eq "enabled"){
                 $Object| Add-Member NoteProperty -Name Comments  -Value "$($msgTable.mktPlaceCreatedEnabled) - $($PrivateMarketPlace.PrivateStoreId)"
-
+                $MitigationCommands = ""
         }
         else{
                 $IsCompliant= $false 
                 $Object| Add-Member NoteProperty -Name Comments  -Value $msgTable.mktPlaceCreatedNotEnabled
                 $MitigationCommands = $msgTable.enableMktPlace
         }
-        
-        $Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
-        $MitigationCommands = ""
 }
+        
+$Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
 $Object| Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force | Out-Null
 $Object| Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
 $Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands -Force| Out-Null
