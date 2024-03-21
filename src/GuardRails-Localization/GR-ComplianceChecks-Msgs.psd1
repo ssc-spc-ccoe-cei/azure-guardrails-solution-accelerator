@@ -177,7 +177,8 @@ severityNotificationToEmailConfigured = Severity Notifications to a Primary Emai
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
-mktPlaceCreated = The Private Marketplace has been created.
+mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
+mktPlaceCreatedNotEnabled = The Private Marketplace has been created but not enabled.
 mktPlaceNotCreated = The Private Marketplace has not been created.
 enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
 

@@ -13,7 +13,7 @@ $Object = New-Object PSObject
 [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
 try {
-        [String] $PrivateMarketPlace=  Get-AzMarketplacePrivateStore -ErrorAction Stop  
+        $PrivateMarketPlace =  Get-AzMarketplacePrivateStore -ErrorAction Stop
 }
 catch {
     $ErrorList.Add("Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
@@ -27,12 +27,23 @@ if($null -eq $PrivateMarketPlace){
         $Object| Add-Member NoteProperty -Name Comments  -Value $msgTable.mktPlaceNotCreated
         $MitigationCommands = $msgTable.enableMktPlace
 }
-else {       
+else {
         $IsCompliant= $true
-        $Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
-        $Object| Add-Member NoteProperty -Name Comments  -Value "$($msgTable.mktPlaceCreated) - $($PrivateMarketPlace.PrivateStoreId)"
-        $MitigationCommands = ""
+        
+        # Extract availability for the private store
+        $availability =  $PrivateMarketPlace.Availability
+        if ($availability -eq "enabled"){
+                $Object| Add-Member NoteProperty -Name Comments  -Value "$($msgTable.mktPlaceCreatedEnabled) - $($PrivateMarketPlace.PrivateStoreId)"
+                $MitigationCommands = ""
+        }
+        else{
+                $IsCompliant= $false 
+                $Object| Add-Member NoteProperty -Name Comments  -Value $msgTable.mktPlaceCreatedNotEnabled
+                $MitigationCommands = $msgTable.enableMktPlace
+        }
 }
+        
+$Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
 $Object| Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force | Out-Null
 $Object| Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
 $Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands -Force| Out-Null
