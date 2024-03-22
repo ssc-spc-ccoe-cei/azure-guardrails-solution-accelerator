@@ -1,14 +1,6 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  #workflow_run:
-  # workflows:
-  #   - "Azure CAC Release"
-  # types:
-  #   - completed
-
-  #This workflow will be triggered by push to main for test purposes
-  on:
   workflow_dispatch:
   push:
     paths-ignore:
@@ -19,6 +11,8 @@ on:
       - 'docs/**'
     branches:
       - main
+
+    #Testing the workflow by triggering it on push to main
 
 
 permissions:
