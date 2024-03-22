@@ -112,7 +112,7 @@ jobs:
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
-          SUBSCRIPTIONID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID }}
+          DEVSUBSCRIPTION_ID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
 
       - name: Pre-Clean Dev environment
         uses: azure/powershell@v1
