@@ -137,12 +137,12 @@ jobs:
 
             $configContent = @"
             {
-              "keyVaultName": "kv-cac",
-              "resourcegroup": "rg-cac",
+              "keyVaultName": "kvcac",
+              "resourcegroup": "rgcac",
               "region": "CanadaCentral",
-              "storageaccountName": "stac-cac",
-              "logAnalyticsworkspaceName": "log-cac",
-              "autoMationAccountName": "aa-cac",
+              "storageaccountName": "stcac",
+              "logAnalyticsworkspaceName": "logcac",
+              "autoMationAccountName": "aacac",
               "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
               "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
               "PBMMPolicyID": "$PBMMPOLICY_ID",
@@ -222,12 +222,12 @@ jobs:
 
             $configContent = @"
             {  
-              "keyVaultName": "kv-cac",
-              "resourcegroup": "rg-cac",
+              "keyVaultName": "kvcac",
+              "resourcegroup": "rgcac",
               "region": "CanadaCentral",
-              "storageaccountName": "stac-cac",
-              "logAnalyticsworkspaceName": "log-cac",
-              "autoMationAccountName": "aa-cac",
+              "storageaccountName": "stcac",
+              "logAnalyticsworkspaceName": "logcac",
+              "autoMationAccountName": "aacac",
               "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
               "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
               "PBMMPolicyID": "$PBMMPOLICY_ID",
