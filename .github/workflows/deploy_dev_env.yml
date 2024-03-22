@@ -1,6 +1,14 @@
 name: Deploy to Dev environment upon Release
 
 on:
+  #workflow_run:
+  # workflows:
+  #   - "Azure CAC Release"
+  # types:
+  #   - completed
+
+  #This workflow will be triggered by push to main for test purposes
+  on:
   workflow_dispatch:
   push:
     paths-ignore:
@@ -11,8 +19,6 @@ on:
       - 'docs/**'
     branches:
       - main
-
-    #Testing the workflow by triggering it on push to main
 
 
 permissions:
@@ -99,215 +105,110 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: ./psmodules/*.zip
 
-deploy:
-  name: Deploy CaC to Dev Tenant
-  needs: sign-scripts
-  runs-on: ubuntu-latest
-  environment: dev
-  steps:
-    - name: Check out
-      uses: actions/checkout@v3
-    - name: Download zipped modules and replace old ones
-      uses: actions/download-artifact@v3
-      with:
-        name: ${{env.ARTIFACT_NAME}}
-        path: ./psmodules
-    - name: AZ Login
-      uses: azure/login@v1
-      with:
-        client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
-        tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
-        subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
-        enable-AzPSSession: true
-    - name: Stage zipped/signed modules in Storage Account
-      uses: azure/powershell@v1
-      with:
-        inlineScript: |
-          Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
-          $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
-          $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
-          ForEach ($moduleZip in $zippedModules) {
-            Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
-          }
-        azPSVersion: "latest"
-      env:
-        PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
-        PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
-        SUBSCRIPTIONID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID }}
-
-    - name: Pre-Clean Test environment
-      uses: azure/powershell@v1
-      continue-on-error: true
-      with:
-        inlineScript: |
-          Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
-          ipmo ./src/GuardrailsSolutionAcceleratorSetup
-          $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
-          $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
-          $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
-          $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
-          $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
-          $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
-          $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
-          $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
-          $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
-          $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
-          $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
-          $DEVLAW_SEC_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
-          $DEVLAW_HEALTH_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
-
-          $configContent = @"
-          {
-            "keyVaultName": "kv-cac",
-            "resourcegroup": "rg-cac",
-            "region": "CanadaCentral",
-            "storageaccountName": "stac-cac",
-            "logAnalyticsworkspaceName": "log-cac",
-            "autoMationAccountName": "aa-cac",
-            "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
-            "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
-            "PBMMPolicyID": "$PBMMPOLICY_ID",
-            "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-            "DepartmentNumber": "163",
-            "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
-            "securityLAWResourceId": "$DEVLAW_SEC_RESOURCEID",
-            "healthLAWResourceId": "$DEVLAW_HEALTH_RESOURCEID",
-            "Locale": "en-CA",
-            "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-            "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
-            "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
-            "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
-            "subscriptionId": "$DEVSUBSCRIPTION_ID",
-            "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-            "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
-            "securityRetentionDays": "730",
-            "cloudUsageProfiles": "3"
-          }
-          "@
-          Set-Content -Path $configFilePath -Value $configContent
-          Push-Location -Path setup
-
-          try {
-              $ErrorActionPreference = 'Stop'
-              remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
-              Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
-              Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
-          }
-          catch {
-              throw "Failed test deploy of solution with error: $_"
-          }
-          finally {
-            If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
-            Pop-Location
-          }
-        azPSVersion: "latest"
-      env:
-        DEVTENANT_DOMAIN: ${{ vars.DEVTENANT_DOMAIN }}
-        DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
-        CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
-        LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
-        LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
-        LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
-        UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-        DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
-        DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
-        PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
-        LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
-        DEVLAW_SEC_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
-        DEVLAW_HEALTH_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
-    - name: Relogin AZ 
-      uses: azure/login@v1
-      with:
-        client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
-        tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
-        subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
-        enable-AzPSSession: true
-    - name: Deploy Test Environment
-      uses: azure/powershell@v1
-      with:
-        inlineScript: |
-          Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
-          $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
-          $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
-          $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
-          $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
-          $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
-          $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
-          $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
-          $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
-          $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
-          $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
-          $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
-          $DEVLAW_SEC_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
-          $DEVLAW_HEALTH_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
-
-          $configContent = @"
-          {  
-            "keyVaultName": "kv-cac",
-            "resourcegroup": "rg-cac",
-            "region": "CanadaCentral",
-            "storageaccountName": "stac-cac",
-            "logAnalyticsworkspaceName": "log-cac",
-            "autoMationAccountName": "aa-cac",
-            "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
-            "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
-            "PBMMPolicyID": "$PBMMPOLICY_ID",
-            "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-            "DepartmentNumber": "163",
-            "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
-            "securityLAWResourceId": "$DEVLAW_SEC_RESOURCEID",
-            "healthLAWResourceId": "$DEVLAW_HEALTH_RESOURCEID",
-            "Locale": "en-CA",
-            "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-            "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
-            "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
-            "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
-            "subscriptionId": "$DEVSUBSCRIPTION_ID",
-            "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-            "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
-            "securityRetentionDays": "730",
-            "cloudUsageProfiles": "3"
+  deploy:
+    name: Deploy CaC to Dev Tenant
+    needs: sign-scripts
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+      - name: Download zipped modules and replace old ones
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{env.ARTIFACT_NAME}}
+          path: ./psmodules
+      - name: AZ Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
+          tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
+          subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
+          enable-AzPSSession: true
+      - name: Stage zipped/signed modules in Storage Account
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
+            $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
+            $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
+            ForEach ($moduleZip in $zippedModules) {
+              Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
             }
-          "@
-          Set-Content -Path $configFilePath -Value $configContent
-
-          # Load tags JSON content into a variable
-          $setupFileRelativePath = "setup/tags.json"
-          $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
-          $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
-          # Add additional tags for dev tenant
-          $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
-          $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
-          $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
-          $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
-          $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
-          $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
-          # Save the modified content back to the tags JSON file
-          $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
-          $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
-          $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
-          $alternatePSModulesURL = $modulesStagingURI
-          Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
-          $optionalParams = @{}
-          if ($alternatePSModulesURL) {
-              $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
-          }
-          try {
-              $ErrorActionPreference = 'Stop'
-              ipmo ./src/GuardrailsSolutionAcceleratorSetup
-              Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
-          }
-          catch {
-              throw "Failed test deploy of solution with error: $_"
-          }
-          finally {
-            If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
-            Pop-Location
-          }
           azPSVersion: "latest"
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
+          SUBSCRIPTIONID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Pre-Clean Test environment
+        uses: azure/powershell@v1
+        continue-on-error: true
+        with:
+          inlineScript: |
+            Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
+            ipmo ./src/GuardrailsSolutionAcceleratorSetup
+            $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+            $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
+            $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
+            $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
+            $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
+            $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
+            $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
+            $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
+            $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
+            $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+            $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+            $DEVLAW_SEC_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
+            $DEVLAW_HEALTH_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
+
+            $configContent = @"
+            {
+              "keyVaultName": "kv-cac",
+              "resourcegroup": "rg-cac",
+              "region": "CanadaCentral",
+              "storageaccountName": "stac-cac",
+              "logAnalyticsworkspaceName": "log-cac",
+              "autoMationAccountName": "aa-cac",
+              "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
+              "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
+              "PBMMPolicyID": "$PBMMPOLICY_ID",
+              "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+              "DepartmentNumber": "163",
+              "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
+              "securityLAWResourceId": "$DEVLAW_SEC_RESOURCEID",
+              "healthLAWResourceId": "$DEVLAW_HEALTH_RESOURCEID",
+              "Locale": "en-CA",
+              "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
+              "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
+              "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
+              "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
+              "subscriptionId": "$DEVSUBSCRIPTION_ID",
+              "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+              "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
+              "securityRetentionDays": "730",
+              "cloudUsageProfiles": "3"
+            }
+            "@
+            Set-Content -Path $configFilePath -Value $configContent
+            Push-Location -Path setup
+
+            try {
+                $ErrorActionPreference = 'Stop'
+                remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
+                Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
+                Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
+            }
+            catch {
+                throw "Failed test deploy of solution with error: $_"
+            }
+            finally {
+              If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+              Pop-Location
+            }
+          azPSVersion: "latest"
+        env:
+          DEVTENANT_DOMAIN: ${{ vars.DEVTENANT_DOMAIN }}
           DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
           CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
           LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
@@ -320,55 +221,160 @@ deploy:
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
           DEVLAW_SEC_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
           DEVLAW_HEALTH_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
+      - name: Relogin AZ 
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
+          tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
+          subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
+          enable-AzPSSession: true
+      - name: Deploy Test Environment
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
+            $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+            $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
+            $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
+            $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
+            $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
+            $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
+            $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
+            $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
+            $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
+            $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+            $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+            $DEVLAW_SEC_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
+            $DEVLAW_HEALTH_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
 
-    - name: Check for AA Job Errors
-      uses: azure/powershell@v1
-      with:
-        inlineScript: |
-          ipmo ./src/GuardrailsSolutionAcceleratorSetup
-          $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$env:UNIQUENAME_SUFFIX_DEV -y
-          $config = $c.configString | ConvertFrom-Json
-          
-          Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
-          $timeout = New-TimeSpan -Minutes 5
-          $timer = [System.Diagnostics.Stopwatch]::StartNew()
-          do {
-            $jobMain = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
-              Sort-Object StartTIme -Descending |
-              Select-Object -First 1
-            
-            $jobBackend = Get-AzAutomationJob -RunbookName 'backend' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
-              Sort-Object StartTIme -Descending |
-              Select-Object -First 1
-            
-            Start-Sleep 1
-          }
-          until (($jobMain.Status -in 'Completed','Failed' -and $jobBackend -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
-          If ($jobMain.Status -eq 'Failed') {
-            throw "main runbook failed to execute"
-          }
-          If ($jobMain.Status -eq 'Completed') {
-            Write-Output "'main' runbook completed successfully, checking for errors in output. "
-          }
-          If ($jobBackend.Status -eq 'Failed') {
-            throw "backend runbook failed to execute"
-          }
-          If ($jobBackend.Status -eq 'Completed') {
-            Write-Output "'backend' runbook completed successfully, checking for errors in output. "
-          }
-          $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
-          $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
-          $errorsFound = $false
-          ForEach ($outputRecord in $jobMainOutput) {
-            If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-              throw 'Errors found in "main" runbook Azure Automation jobs'
+            $configContent = @"
+            {  
+              "keyVaultName": "kv-cac",
+              "resourcegroup": "rg-cac",
+              "region": "CanadaCentral",
+              "storageaccountName": "stac-cac",
+              "logAnalyticsworkspaceName": "log-cac",
+              "autoMationAccountName": "aa-cac",
+              "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
+              "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
+              "PBMMPolicyID": "$PBMMPOLICY_ID",
+              "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+              "DepartmentNumber": "163",
+              "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
+              "securityLAWResourceId": "$DEVLAW_SEC_RESOURCEID",
+              "healthLAWResourceId": "$DEVLAW_HEALTH_RESOURCEID",
+              "Locale": "en-CA",
+              "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
+              "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
+              "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
+              "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
+              "subscriptionId": "$DEVSUBSCRIPTION_ID",
+              "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+              "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
+              "securityRetentionDays": "730",
+              "cloudUsageProfiles": "3"
+              }
+            "@
+            Set-Content -Path $configFilePath -Value $configContent
+
+            # Load tags JSON content into a variable
+            $setupFileRelativePath = "setup/tags.json"
+            $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
+            $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
+            # Add additional tags for dev tenant
+            $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
+            # Save the modified content back to the tags JSON file
+            $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
+            $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
+            $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
+            $alternatePSModulesURL = $modulesStagingURI
+            Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
+            $optionalParams = @{}
+            if ($alternatePSModulesURL) {
+                $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
             }
-          }
-          ForEach ($outputRecord in $jobBackendOutput) {
-            If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-              throw 'Errors found in "backend" runbook Azure Automation jobs'
+            try {
+                $ErrorActionPreference = 'Stop'
+                ipmo ./src/GuardrailsSolutionAcceleratorSetup
+                Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
             }
-          }
-        azPSVersion: "latest"
-      env:
-        UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
+            catch {
+                throw "Failed test deploy of solution with error: $_"
+            }
+            finally {
+              If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+              Pop-Location
+            }
+            azPSVersion: "latest"
+          env:
+            PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+            PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
+            DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
+            CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
+            LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+            LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+            LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
+            UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
+            DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
+            DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
+            PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+            LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+            DEVLAW_SEC_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
+            DEVLAW_HEALTH_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
+
+      - name: Check for AA Job Errors
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            ipmo ./src/GuardrailsSolutionAcceleratorSetup
+            $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$env:UNIQUENAME_SUFFIX_DEV -y
+            $config = $c.configString | ConvertFrom-Json
+            
+            Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
+            $timeout = New-TimeSpan -Minutes 5
+            $timer = [System.Diagnostics.Stopwatch]::StartNew()
+            do {
+              $jobMain = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+                Sort-Object StartTIme -Descending |
+                Select-Object -First 1
+              
+              $jobBackend = Get-AzAutomationJob -RunbookName 'backend' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+                Sort-Object StartTIme -Descending |
+                Select-Object -First 1
+              
+              Start-Sleep 1
+            }
+            until (($jobMain.Status -in 'Completed','Failed' -and $jobBackend -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
+            If ($jobMain.Status -eq 'Failed') {
+              throw "main runbook failed to execute"
+            }
+            If ($jobMain.Status -eq 'Completed') {
+              Write-Output "'main' runbook completed successfully, checking for errors in output. "
+            }
+            If ($jobBackend.Status -eq 'Failed') {
+              throw "backend runbook failed to execute"
+            }
+            If ($jobBackend.Status -eq 'Completed') {
+              Write-Output "'backend' runbook completed successfully, checking for errors in output. "
+            }
+            $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+            $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+            $errorsFound = $false
+            ForEach ($outputRecord in $jobMainOutput) {
+              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+                throw 'Errors found in "main" runbook Azure Automation jobs'
+              }
+            }
+            ForEach ($outputRecord in $jobBackendOutput) {
+              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+                throw 'Errors found in "backend" runbook Azure Automation jobs'
+              }
+            }
+          azPSVersion: "latest"
+        env:
+          UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
