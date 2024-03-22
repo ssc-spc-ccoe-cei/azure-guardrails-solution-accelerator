@@ -11,7 +11,7 @@ on:
       - 'docs/**'
     branches:
       - main
-
+#Triggering the workflow by push to main for testing purposes
 
 permissions:
   id-token: write
