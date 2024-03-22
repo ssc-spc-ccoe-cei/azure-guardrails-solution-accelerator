@@ -132,8 +132,8 @@ jobs:
             $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
             $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
             $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
-            $DEVLAW_SEC_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
-            $DEVLAW_HEALTH_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
+            $DEVLAW_SEC = $env:DEVLAW_SEC
+            $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
 
             $configContent = @"
             {
@@ -149,8 +149,8 @@ jobs:
               "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
               "DepartmentNumber": "163",
               "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
-              "securityLAWResourceId": "$DEVLAW_SEC_RESOURCEID",
-              "healthLAWResourceId": "$DEVLAW_HEALTH_RESOURCEID",
+              "securityLAWResourceId": "$DEVLAW_SEC",
+              "healthLAWResourceId": "$DEVLAW_HEALTH",
               "Locale": "en-CA",
               "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
               "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
@@ -192,8 +192,8 @@ jobs:
           DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
-          DEVLAW_SEC_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
-          DEVLAW_HEALTH_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
+          DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
+          DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
       - name: Relogin AZ 
         uses: azure/login@v1
         with:
@@ -217,8 +217,8 @@ jobs:
             $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
             $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
             $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
-            $DEVLAW_SEC_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
-            $DEVLAW_HEALTH_RESOURCEID = $env:DEVLAW_SEC_HEALTH_SHARED
+            $DEVLAW_SEC = $env:DEVLAW_SEC
+            $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
 
             $configContent = @"
             {  
@@ -234,8 +234,8 @@ jobs:
               "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
               "DepartmentNumber": "163",
               "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
-              "securityLAWResourceId": "$DEVLAW_SEC_RESOURCEID",
-              "healthLAWResourceId": "$DEVLAW_HEALTH_RESOURCEID",
+              "securityLAWResourceId": "$DEVLAW_SEC",
+              "healthLAWResourceId": "$DEVLAW_HEALTH",
               "Locale": "en-CA",
               "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
               "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
@@ -297,8 +297,8 @@ jobs:
           DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
-          DEVLAW_SEC_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
-          DEVLAW_HEALTH_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
+          DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
+          DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
 
       - name: Check for AA Job Errors
         uses: azure/powershell@v1
