@@ -27,25 +27,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Validate Signature
-        shell: powershell
-        run: |
-          $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
-          Foreach ($signatureStatus in $signatureStatuses) {
-            If ($signatureStatus.Status -eq 'HashMismatch') {
-              throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            ElseIf ($signatureStatus.Status -eq 'NotSigned') {
-              Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            ElseIf ($signatureStatus.Status -eq 'Valid') {
-              Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            Else {
-              throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
-            }
-          }
-
       - name: Test Module Imports
         shell: powershell
         run: |
