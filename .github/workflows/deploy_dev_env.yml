@@ -1,14 +1,6 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  #workflow_run:
-  # workflows:
-  #   - "Azure CAC Release"
-  # types:
-  #   - completed
-
-  #This workflow will be triggered by push to main for test purposes
-  on:
   workflow_dispatch:
   push:
     paths-ignore:
@@ -311,21 +303,21 @@ jobs:
               Pop-Location
             }
             azPSVersion: "latest"
-          env:
-            PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
-            PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
-            DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
-            CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
-            LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
-            LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
-            LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
-            UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-            DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
-            DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
-            PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
-            LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
-            DEVLAW_SEC_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
-            DEVLAW_HEALTH_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
+        env:
+          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
+          DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
+          CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
+          UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
+          DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
+          DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
+          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          DEVLAW_SEC_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
+          DEVLAW_HEALTH_RESOURCEID: ${{ vars.DEVLAW_SEC_HEALTH_SHARED }}
 
       - name: Check for AA Job Errors
         uses: azure/powershell@v1
