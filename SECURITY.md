@@ -1,41 +1,38 @@
 <!-- BEGIN MICROSOFT SECURITY.MD V0.0.5 BLOCK -->
 
-## Security
-
-Microsoft takes the security of our software products and services seriously, which includes all source code repositories managed through our GitHub organizations, which include [Microsoft](https://github.com/Microsoft), [Azure](https://github.com/Azure), [DotNet](https://github.com/dotnet), [AspNet](https://github.com/aspnet), [Xamarin](https://github.com/xamarin), and [our GitHub organizations](https://opensource.microsoft.com/).
-
-If you believe you have found a security vulnerability in any Microsoft-owned repository that meets [Microsoft's definition of a security vulnerability](https://docs.microsoft.com/en-us/previous-versions/tn-archive/cc751383(v=technet.10)), please report it to us as described below.
-
 ## Reporting Security Issues
-
-**Please do not report security vulnerabilities through public GitHub issues.**
-
-Instead, please report them to the Microsoft Security Response Center (MSRC) at [https://msrc.microsoft.com/create-report](https://msrc.microsoft.com/create-report).
-
-If you prefer to submit without logging in, send email to [secure@microsoft.com](mailto:secure@microsoft.com).  If possible, encrypt your message with our PGP key; please download it from the [Microsoft Security Response Center PGP Key page](https://www.microsoft.com/en-us/msrc/pgp-key-msrc).
-
-You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Additional information can be found at [microsoft.com/msrc](https://www.microsoft.com/msrc). 
+To report a security issue, email [cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca](mailto:cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca) and include the word "SECURITY" in the subject line.
 
 Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
 
-  * Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
-  * Full paths of source file(s) related to the manifestation of the issue
-  * The location of the affected source code (tag/branch/commit or direct URL)
-  * Any special configuration required to reproduce the issue
-  * Step-by-step instructions to reproduce the issue
-  * Proof-of-concept or exploit code (if possible)
-  * Impact of the issue, including how an attacker might exploit the issue
+- Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
+- Full paths of source file(s) related to the manifestation of the issue
+- The location of the affected source code [tag/branch/commit or direct Uniform Resource Locator (URL)]
+- Any special configuration required to reproduce the issue
+- Step-by-step instructions to reproduce the issue
+- Proof-of-concept or exploit code (if possible)
+- Impact of the issue, including how an attacker might exploit the issue
 
-This information will help us triage your report more quickly.
+This information will help us triage your issue more quickly.
 
-If you are reporting for a bug bounty, more complete reports can contribute to a higher bounty award. Please visit our [Microsoft Bug Bounty Program](https://microsoft.com/msrc/bounty) page for more details about our active programs.
+The Shared Services Canada (SSC) Cloud Security Compliance (CSC) team will send a response indicating the next steps in handling your issue. After the initial reply to your issue, the SSC CSC team will keep you informed of the progress towards a fix and full announcement, and may ask for additional information or guidance.
+________________________________________
+## Signalement des problèmes de sécurité
+Pour signaler un problème de sécurité, envoyez un courriel à [cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca](mailto:cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca) et ajoutez le mot « SÉCURITÉ » à la ligne d’objet.
 
-## Preferred Languages
+Veuillez inclure les informations demandées ci-dessous (dans la mesure où vous pouvez les fournir) pour nous aider à mieux comprendre la nature et l’étendue du problème possible :
 
-We prefer all communications to be in English.
+- Type de problème (par exemple, débordement de la mémoire tampon, injection SQL, script intersite, etc.)
+- Chemins d’accès complets au(x) fichier(s) source(s) associé(s) à la manifestation du problème
+- L’emplacement du code source concerné [étiquette/branche/commit ou Localisateur de ressources uniforme (URL) directe]
+- Toute configuration spéciale requise pour reproduire le problème
+- Instructions étape par étape pour reproduire le problème
+- Preuve de concept ou code d’exploitation (si possible)
+- Impact du problème, y compris la façon dont un attaquant pourrait exploiter le problème
 
-## Policy
+Ces informations nous aideront à trier votre problème plus rapidement.
 
-Microsoft follows the principle of [Coordinated Vulnerability Disclosure](https://www.microsoft.com/en-us/msrc/cvd).
+L’équipe du Conformité à la sécurité infonuagique (CSI) de Services partagés Canada (SPC) enverra une réponse indiquant les prochaines étapes de la gestion de votre problème. Après la réponse initiale à votre problème, l’équipe CSI de SPC vous tiendra au courant des progrès vers une solution et l’annonce complète, et peut demander des informations ou des conseils supplémentaires.
+
 
 <!-- END MICROSOFT SECURITY.MD BLOCK -->
