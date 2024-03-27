@@ -23,7 +23,7 @@ jobs:
   sign-scripts:
     name: Validate, test and publish Powershell scripts as pipeline artifacts
     runs-on: windows-2019
-    environment: dev
+    environment: test
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
