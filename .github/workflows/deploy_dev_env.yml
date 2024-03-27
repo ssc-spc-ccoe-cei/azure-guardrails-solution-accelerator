@@ -305,7 +305,7 @@ jobs:
         with:
           inlineScript: |
             ipmo ./src/GuardrailsSolutionAcceleratorSetup
-            $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$env:UNIQUENAME_SUFFIX_DEV -y
+            $c = Get-GSAExportedConfig -KeyVaultName kvcac-$env:UNIQUENAME_SUFFIX_DEV -y
             $config = $c.configString | ConvertFrom-Json
             
             Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
