@@ -10,7 +10,7 @@ on:
       - 'psmodules/**'
       - 'docs/**'
     branches:
-      - dev_pipeline_aalvi
+      - main
 #Triggering the workflow by push to main for testing purposes
 
 permissions:
