@@ -1,53 +1,24 @@
-# Contributing Reference Implementation
+## Contributing
 
-This project welcomes contributions and suggestions. Most contributions require you to
-agree to a Contributor License Agreement (CLA) declaring that you have the right to,
-and actually do, grant us the rights to use your contribution. For details, visit
-https://cla.microsoft.com.
+This project welcomes contributions and suggestions via GitHub’s issue/bug submission.
+Note: If there are any questions related but do not involve a code bug or issue you can email SSC Cloud Security Compliance: [cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca](mailto:cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca).
 
-When you submit a pull request, a CLA-bot will automatically determine whether you need
-to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the
-instructions provided by the bot. You will only need to do this once across all repositories using our CLA.
+Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com/.
+Commits are not accepted to the main branch. You may do a Pull Request (PR) from a forked repository. You will not be able to push a branch directly. We also have two SSC reviewers required to review all PRs.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/)
-or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repos using our CLA.
 
-## Getting Started
+This project has adopted the Microsoft Open-Source Code of Conduct. For more information, refer to the Code of Conduct Frequently Asked Questions (FAQs) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-* You are free to work on automation templates on any platform using any editor, but you may find it quickest to get started using [VSCode](https://code.visualstudio.com/Download) with the [Bicep extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-bicep), and [PowerShell extension] (https://docs.microsoft.com/en-us/powershell/scripting/dev-cross-plat/vscode/using-vscode?view=powershell-7.2)
+## Contribuer
 
-* Fork this repository
+Ce projet accueille les contributions et les suggestions via la soumission de problème / bogue de GitHub.
+Remarque : S’il y a des questions liées mais n’impliquent pas de bogue ou de problème de code, vous pouvez envoyer un courriel à Conformité à la sécurité infonuagique de SPC : [cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca](mailto:cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca).
 
-* Clone the forked repository to your local development environment
+La plupart des contributions exigent que vous acceptiez une entente de licence de contributeur « Contributor License Agreement (CLA) » déclarant que vous avez le droit de nous accorder les droits d’utiliser votre contribution, et que vous le faites réellement. Pour plus de détails, visitez https://cla.opensource.microsoft.com/.
 
-## Deployment to your environment
+Les « commits » ne sont pas acceptés à la branche principale. Vous pouvez effectuer une demande de tirage « pull request (PR) » à partir d’un référentiel fourché. Vous ne pourrez pas pousser une branche directement. Nous avons également deux examinateurs de SPC tenus d’examiner tous les PR.
 
-Please refer to the following how to [setup](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/docs/setup.md) and [how it works](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/docs/controls.md)
+Lorsque vous soumettez une PR, un robot « bot » CLA déterminera automatiquement si vous devez fournir un CLA et décorer la PR de manière appropriée (par exemple, vérification de l’état, commentaire). Il suffit de suivre les instructions fournies par le « bot ». Vous n’aurez besoin de le faire qu’une seule fois dans tous les référentiels en utilisant notre CLA.
 
-## Pull Requests
-
-* Ensure that a user story or an issue has been created to track the feature enhancement or bug that is being fixed.
-
-* In the PR description, make sure you've included "Fixes #{issue_number}" e.g. "Fixes #242" so that Azure DevOps or GitHub knows to link it to an issue.
-
-* To avoid multiple contributors working on the same issue, please add a comment to the issue to let us know you plan to work on it.
-
-* If a significant amount of design is required, please include a proposal in the issue and wait for approval before working on code. If there's anything you're not sure about, please feel free to discuss this in the issue. We'd much rather all be on the same page at the start, so that there's less chance that drastic changes will be needed when your pull request is reviewed.
-
-## Feature Suggestions
-
-* Ensure you have included a "What?" - what your feature entails, being as specific as possible, and giving use cases where possible.
-
-* Ensure you have included a "Why?" - what the benefit of including this feature will be.
-
-## Bug Reports
-
-* Be as specific as possible such as steps to reproduce the issue, and any example files or snippets of code needed to reproduce it.
-
-
-## CLA
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).  For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+Ce projet a adopté le Code de conduite « open-source » de Microsoft. Pour plus d’informations, consultez la foire aux questions sur le code de conduite ou contactez [opencode@microsoft.com](mailto:opencode@microsoft.com) pour toute question ou commentaire supplémentaire.

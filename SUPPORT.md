@@ -1,41 +1,29 @@
 <!-- BEGIN MICROSOFT SECURITY.MD V0.0.5 BLOCK -->
 
-## Security
 
-Microsoft takes the security of our software products and services seriously, which includes all source code repositories managed through our GitHub organizations, which include [Microsoft](https://github.com/Microsoft), [Azure](https://github.com/Azure), [DotNet](https://github.com/dotnet), [AspNet](https://github.com/aspnet), [Xamarin](https://github.com/xamarin), and [our GitHub organizations](https://opensource.microsoft.com/).
+The Shared Services Canada (SSC) Cloud Security Compliance (CSC) team is the first  point of contact to provide support for the Compliance as Code (CaC) solution.
+Cloud Security Compliance (CSC) Incident Management Support
 
-If you believe you have found a security vulnerability in any Microsoft-owned repository that meets [Microsoft's definition of a security vulnerability](https://docs.microsoft.com/en-us/previous-versions/tn-archive/cc751383(v=technet.10)), please report it to us as described below.
+- Leads engagement with client.
+- Reviews alerts and incidents raised by way of CSC mailbox notifications
+- Reviews Compliance as Code reports and processes them accordingly.
+- Single point of contact via CSC mailbox, which is monitored daily.
 
-## Reporting Security Issues
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+CSC Support Business Hours: (Monday – Friday 8:00 AM – 5:00 PM EST)
+Email: [cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca](mailto:cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca)
 
-Instead, please report them to the Microsoft Security Response Center (MSRC) at [https://msrc.microsoft.com/create-report](https://msrc.microsoft.com/create-report).
+________________________________________________________________________________________________________
 
-If you prefer to submit without logging in, send email to [secure@microsoft.com](mailto:secure@microsoft.com).  If possible, encrypt your message with our PGP key; please download it from the [Microsoft Security Response Center PGP Key page](https://www.microsoft.com/en-us/msrc/pgp-key-msrc).
+L’équipe Conformité à la sécurité infonuagique (CSI) de Services partagés Canada (SPC) est le premier point de contact pour fournir du soutien pour la solution Conformité en tant que code (CC).
+Support de la gestion des incidents Conformité à la sécurité infonuagique (CSI) 
 
-You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Additional information can be found at [microsoft.com/msrc](https://www.microsoft.com/msrc). 
+- Dirige l’intégration avec le client.
+- Examine les alertes et les incidents signalés au moyen des notifications de la boîte aux lettres de CSI.
+- Examine les rapports de Conformité en tant que code et les traitent en conséquence.
+- Point de contact unique via la boîte aux lettres de CSI, qui est surveillée quotidiennement.
 
-Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
-
-  * Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
-  * Full paths of source file(s) related to the manifestation of the issue
-  * The location of the affected source code (tag/branch/commit or direct URL)
-  * Any special configuration required to reproduce the issue
-  * Step-by-step instructions to reproduce the issue
-  * Proof-of-concept or exploit code (if possible)
-  * Impact of the issue, including how an attacker might exploit the issue
-
-This information will help us triage your report more quickly.
-
-If you are reporting for a bug bounty, more complete reports can contribute to a higher bounty award. Please visit our [Microsoft Bug Bounty Program](https://microsoft.com/msrc/bounty) page for more details about our active programs.
-
-## Preferred Languages
-
-We prefer all communications to be in English.
-
-## Policy
-
-Microsoft follows the principle of [Coordinated Vulnerability Disclosure](https://www.microsoft.com/en-us/msrc/cvd).
+Heures d’ouverture du support de CSI : (Lundi – Vendredi 8:00 AM – 5:00 PM HNE)
+Courriel : [cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca](mailto:cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca)
 
 <!-- END MICROSOFT SECURITY.MD BLOCK -->
