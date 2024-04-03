@@ -1,17 +1,10 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  workflow_dispatch:
-  push:
-    paths-ignore:
-      - 'README.md'
-      - 'SECURITY.md'
-      - 'SUPPORT.md'
-      - 'psmodules/**'
-      - 'docs/**'
-    branches:
-      - main
-#Triggering the workflow by push to main for testing purposes
+  workflow_run:
+    workflows: [Azure CAC Release]
+    types: 
+      - completed
 
 permissions:
   id-token: write
