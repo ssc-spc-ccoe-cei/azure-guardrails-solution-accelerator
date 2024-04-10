@@ -48,7 +48,7 @@ function Get-DefenderForCloudConfig {
             $ErrorList.Add($errorMsg)
         }
 
-        if ([string]::IsNullOrEmpty($ContactInfo.Email) -or [string]::IsNullOrEmpty($null -eq $ContactInfo.Phone))
+        if ([string]::IsNullOrEmpty($ContactInfo.emails) -or [string]::IsNullOrEmpty($null -eq $ContactInfo.phone))
         {
             $nonCompliantSubs++
             $Comments+= $msgTable.noSecurityContactInfo -f $sub.Name
@@ -63,10 +63,18 @@ function Get-DefenderForCloudConfig {
         if ($defenderPlans.PricingTier -contains 'Free')
         {
             $nonCompliantSubs++
-            $Comments += $msgTable.notAllDfCStandard -f $sub.Name
+            if ($Comments -eq ""){
+                $Comments += $msgTable.notAllDfCStandard -f $sub.Name
+            }
+            else{
+                $Comments += " " + $msgTable.notAllDfCStandard -f $sub.Name
+            }
+            
         }
     
     }
+
+    # compliance status
     if ($nonCompliantSubs -eq 0)
     {
         $IsCompliant=$true
