@@ -78,7 +78,7 @@ function Get-DefenderForCloudConfig {
     if ($nonCompliantSubs -eq 0)
     {
         $IsCompliant=$true
-        $Comments += "All subscriptions have a security contact and Defender for Cloud is set to Standard."
+        
     }
     else {
         $IsCompliant=$false
@@ -86,6 +86,7 @@ function Get-DefenderForCloudConfig {
     if ($IsCompliant)
     {
         $Comments= $msgTable.logsAndMonitoringCompliantForDefender
+        $Comments += "All subscriptions have a security contact and Defender for Cloud is set to Standard."
     }
 
     $object = [PSCustomObject]@{ 
