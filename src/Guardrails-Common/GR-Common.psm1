@@ -313,7 +313,7 @@ function Check-GAAuthenticationMethods {
     [string] $Comments = $null
 
     # Add possible file extensions
-    $DocumentName_new = add-documentFileExtention -DocumentName $DocumentName -ItemName $ItemName
+    $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
     
     try {
         Set-AzContext -Subscription $SubscriptionID | out-null
@@ -531,7 +531,7 @@ function Check-DocumentExistsInStorage {
     [string] $Comments = $null
 
     # Add possible file extensions
-    $DocumentName_new = add-documentFileExtention -DocumentName $DocumentName -ItemName $ItemName
+    $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
 
     try {
         Select-AzSubscription -Subscription $SubscriptionID | out-null
@@ -807,7 +807,7 @@ function Invoke-GraphQuery {
 }
 
 # Function to add other possible file extension(s) to the module file names
-function add-documentFileExtention {
+function add-documentFileExtensions {
     param (
         [string[]] $DocumentName,
         [string]$ItemName
