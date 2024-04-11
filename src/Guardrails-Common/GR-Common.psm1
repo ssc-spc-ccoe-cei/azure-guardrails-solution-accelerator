@@ -312,6 +312,8 @@ function Check-GAAuthenticationMethods {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
+    # Add possible file extensions
+    $DocumentName_new = add-documentFileExtention -DocumentName $DocumentName -ItemName $ItemName
     
     try {
         Set-AzContext -Subscription $SubscriptionID | out-null
@@ -337,7 +339,7 @@ function Check-GAAuthenticationMethods {
 
     $GAUPNsMFA = @()
 
-    ForEach ($docName in $DocumentName) {
+    ForEach ($docName in $DocumentName_new) {
         $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
 
         If ($null -eq $blob) {            
@@ -528,20 +530,8 @@ function Check-DocumentExistsInStorage {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
-    if ($ItemName.ToLower() -eq 'network architecture diagram'){
-        $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
-    }
-    elseif ($ItemName.ToLower() -eq 'global administrators accounts mfa check') {
-        $fileExtensions = @(".txt")
-    }
-    else {
-        $fileExtensions = @(".txt",".docx", ".doc")
-    }
-    
-    $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
-    ForEach ($fileExt in $fileExtensions) {
-        $DocumentName_new.Add($DocumentName[0] + $fileExt)
-    }
+    # Add possible file extensions
+    $DocumentName_new = add-documentFileExtention -DocumentName $DocumentName -ItemName $ItemName
 
     try {
         Select-AzSubscription -Subscription $SubscriptionID | out-null
@@ -571,6 +561,7 @@ function Check-DocumentExistsInStorage {
     ForEach ($docName in $DocumentName_new) {
         # check for procedure doc in blob storage account
         $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+
         If ($blobs) {
             $blobFound = $true
             break
@@ -813,6 +804,32 @@ function Invoke-GraphQuery {
 
     }
 
+}
+
+# Function to add other possible file extension(s) to the module file names
+function add-documentFileExtention {
+    param (
+        [string[]] $DocumentName,
+        [string]$ItemName
+
+    )
+
+    if ($ItemName.ToLower() -eq 'network architecture diagram'){
+        $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
+    }
+    elseif ($ItemName.ToLower() -eq 'global administrators accounts mfa check') {
+        $fileExtensions = @(".txt")
+    }
+    else {
+        $fileExtensions = @(".txt",".docx", ".doc")
+    }
+    
+    $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
+    ForEach ($fileExt in $fileExtensions) {
+        $DocumentName_new.Add($DocumentName[0] + $fileExt)
+    }
+
+    return $DocumentName_new
 }
 
 # endregion
