@@ -396,7 +396,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "SPNEnencryptedEmailToCSPMSentAttestation"
+        "Value": "SPNEncryptedEmailToCSPMSentAttestation"
       },
       {
         "Name": "itsgcode",
