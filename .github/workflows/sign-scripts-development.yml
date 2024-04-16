@@ -10,7 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/upgrade_preserve_storage_file
 
 permissions:
   id-token: write
