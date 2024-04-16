@@ -1,10 +1,20 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  workflow_run:
-    workflows: [Azure CAC Release]
-    types: 
-      - completed
+  # workflow_run:
+  #   workflows: [Azure CAC Release]
+  #   types: 
+  #     - completed
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'SECURITY.md'
+      - 'SUPPORT.md'
+      - 'psmodules/**'
+      - 'docs/**'
+    branches:
+    - idutta/upgrade_preserve_storage_file
 
 permissions:
   id-token: write
@@ -108,7 +118,91 @@ jobs:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
           DEVSUBSCRIPTION_ID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
-    
+      
+      - name: Pre-Clean Dev environment
+        uses: azure/powershell@v1
+        continue-on-error: true
+        with:
+          inlineScript: |
+            Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
+            ipmo ./src/GuardrailsSolutionAcceleratorSetup
+            $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+            $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
+            $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
+            $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
+            $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
+            $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
+            $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
+            $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
+            $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
+            $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+            $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+            $DEVLAW_SEC = $env:DEVLAW_SEC
+            $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
+
+            $configContent = @"
+            {
+              "keyVaultName": "kvcac",
+              "resourcegroup": "rgcac",
+              "region": "CanadaCentral",
+              "storageaccountName": "stcac",
+              "logAnalyticsworkspaceName": "logcac",
+              "autoMationAccountName": "aacac",
+              "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
+              "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
+              "PBMMPolicyID": "$PBMMPOLICY_ID",
+              "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+              "DepartmentNumber": "163",
+              "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
+              "securityLAWResourceId": "$DEVLAW_SEC",
+              "healthLAWResourceId": "$DEVLAW_HEALTH",
+              "Locale": "en-CA",
+              "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
+              "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
+              "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
+              "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
+              "subscriptionId": "$DEVSUBSCRIPTION_ID",
+              "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+              "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
+              "securityRetentionDays": "730",
+              "cloudUsageProfiles": "3"
+            }
+            "@
+            Set-Content -Path $configFilePath -Value $configContent
+            
+            Push-Location -Path setup
+
+            try {
+              $ErrorActionPreference = 'Stop'
+              remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
+              Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
+              Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
+            }
+            catch {
+                throw "Failed test deploy of solution with error: $_"
+            }
+            finally {
+              If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+              Pop-Location
+            }
+            
+          azPSVersion: "latest"
+        env:
+          DEVTENANT_DOMAIN: ${{ vars.DEVTENANT_DOMAIN }}
+          DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
+          CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
+          UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
+          DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
+          DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
+          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
+          DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
+        if: ${{env.DEV_UPGRADE_VAR != 'true'}}
+        
       - name: Relogin AZ 
         uses: azure/login@v1
         with:
@@ -134,6 +228,8 @@ jobs:
             $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
+
+            $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
 
             $configContent = @"
             {  
@@ -196,7 +292,12 @@ jobs:
             try {
                 $ErrorActionPreference = 'Stop'
                 ipmo ./src/GuardrailsSolutionAcceleratorSetup
-                Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -update -Yes @optionalParams -verbose
+                if ($DEV_UPGRADE_VAR == "true"){
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -update -Yes @optionalParams -verbose
+                }
+                else {
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+                }   
             }
             catch {
                 throw "Failed test deploy of solution with error: $_"
