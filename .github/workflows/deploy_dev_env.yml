@@ -87,14 +87,14 @@ jobs:
           name: ${{env.ARTIFACT_NAME}}
           path: ./psmodules
       - name: AZ Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
           tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
           subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
           enable-AzPSSession: true
       - name: Stage zipped/signed modules in Storage Account
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         with:
           inlineScript: |
             Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
@@ -111,7 +111,7 @@ jobs:
 
       - name: Pre-Clean Dev environment
         if: ${{ env.DEV_UPGRADE_VAR != 'true'}}
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         continue-on-error: true
         with:
           inlineScript: |
@@ -196,14 +196,14 @@ jobs:
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}       
         
       - name: Relogin AZ 
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
           tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
           subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
           enable-AzPSSession: true
       - name: Deploy Dev Environment
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         with:
           inlineScript: |
             Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
@@ -321,7 +321,7 @@ jobs:
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
 
       - name: Check for AA Job Errors
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         with:
           inlineScript: |
             ipmo ./src/GuardrailsSolutionAcceleratorSetup
