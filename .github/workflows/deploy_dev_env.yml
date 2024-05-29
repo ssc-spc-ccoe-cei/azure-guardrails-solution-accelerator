@@ -1,10 +1,9 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  workflow_run:
-    workflows: [Azure CAC Release]
-    types: 
-      - completed
+  push:
+    branches:
+      - alalvi00-patch-1
 
 permissions:
   id-token: write
