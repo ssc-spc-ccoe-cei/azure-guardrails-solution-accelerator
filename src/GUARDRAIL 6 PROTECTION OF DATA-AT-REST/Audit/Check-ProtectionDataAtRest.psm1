@@ -25,8 +25,13 @@ function Test-ComplianceForSubscription {
         [System.Object] $obj,
         [System.Object] $subscription,
         [string] $PolicyID,
-        [array]  $requiredPolicyExemptionIds
+        [array]  $requiredPolicyExemptionIds,
+        [string] $objType
     )
+    $strPattern = "/providers/microsoft.authorization/policysetdefinitions/(.*)"
+    if ($PolicyID -match $strPattern){
+        $PolicyID = $matches[1]
+    }
     Write-Host "Get compliance details for Subscription : $($subscription.DisplayName)"
     $complianceDetails = Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}  
     
@@ -41,7 +46,14 @@ function Test-ComplianceForSubscription {
         }
         # Filter for GR6 required policies
         $complianceDetails = $complianceDetails | Where-Object{ $_.PolicyDefinitionReferenceId -in $requiredPolicyExemptionIds_smallCaps}
-        Write-Host "$($complianceDetails.count) Comliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
+        
+        if ($objType -eq "subscription"){
+            Write-Host "$($complianceDetails.count) Comliance details found for subscription: $($subscription.DisplayName)"
+        }
+        else {
+            Write-Host "$($complianceDetails.count) Comliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"                            
+        }
+        
     }
 
 
@@ -68,13 +80,7 @@ function Check-StatusDataAtRest {
     foreach ($obj in $objList)
     {
         Write-Verbose "Checking $objType : $($obj.Name)"
-        # Used for debugging
-        if (!($PolicyID -like "/providers/microsoft.authorization/policysetdefinitions")) {
-            $PolicyDefinitionID = "/providers/microsoft.authorization/policysetdefinitions/$PolicyID"
-        }
-        # Used for debugging
-        Write-Host "PBMM policy PolicyDefinitionID is $PolicyDefinitionID" 
-        Write-Host "PBMM policy PolicyID is $PolicyID"
+        Write-Verbose "PBMM policy PolicyID is $PolicyID"
 
         # Find scope
         if ($objType -eq "subscription"){
@@ -83,13 +89,16 @@ function Check-StatusDataAtRest {
         else {
             $tempId=$obj.Id                              
         }
-        Write-Host "Scope is $tempId for $($obj.Name)"
+        Write-Host "Scope is $tempId"
         
         # Find assigned policy list from PBMM policy for the scope
 
-        # # Portal
+        # Portal
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
         # # LocalExecution:
+        # if (!($PolicyID -like "/providers/microsoft.authorization/policysetdefinitions")) {
+        #     $PolicyDefinitionID = "/providers/microsoft.authorization/policysetdefinitions/$PolicyID"
+        # }
         # $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyDefinitionID
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
@@ -106,10 +115,11 @@ function Check-StatusDataAtRest {
             }
             else {
                 # # No exemption exists. Find compliance details for the assigned PBMM policy
-                
                 # Check the number of resources and compliance status under required policies in applied PBMM
+
+                # Subscription
                 if ($objType -eq "subscription"){
-                    Write-Host "Subscription : $($obj.Name)"
+                    Write-Host "Find compliance details for Subscription : $($obj.Name)"
                     $subscription = @()
                     $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
                     
@@ -122,18 +132,18 @@ function Check-StatusDataAtRest {
 
                     # $complianceDetailsSubscription = (Get-AzPolicyState -SubscriptionId $($subscription.SubscriptionID) ) #| Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}
                     # $complianceDetailsSubscription = $complianceDetailsSubscription | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}
-                    $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds
+                    $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds -objType $objType
                     
                     # $complianceDetailsSubscription = $complianceDetailsSubscription | Where-Object{$_.PolicyAssignmentScope -like "*$($obj.TenantId)*" }
                     
-
                     $complianceDetailsList = $complianceDetailsSubscription | Select-Object `
                         Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
                         ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
                         ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
                 }
+                # Management Group
                 else {
-                    Write-Host "Management Group : $($obj.Name)"
+                    Write-Host "Find compliance details for Management Group : $($obj.Name)"
                     # get all subscription under this management group: $obj
                     $topLvlMgmtGrp =  $obj.Name        
                     $allSubscriptions = @()                   
@@ -158,17 +168,16 @@ function Check-StatusDataAtRest {
                             }
                         }
                     }
-
                     
+                    Write-Host "Loop through all Subscriptions within $($obj.Name) "
                     $complianceDetailsList = @()
-                    # [PSCustomObject] $complianceDetailsList = New-Object System.Collections.ArrayList
                     foreach ($subscription in $allSubscriptions) {
                         Write-Host "Subscription ID: $($subscription.SubscriptionId)"
                         
                         # Set context to the current subscription
                         Set-AzContext -SubscriptionId $subscription.SubscriptionID
                         Write-Host "AzContext set to $($subscription.DisplayName)"
-                        $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds
+                        $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds -objType $objType
                         Write-Host "complianceDetailsSubscription count: $($complianceDetailsSubscription.count)"
                         
                         if ($null -eq $complianceDetailsSubscription) {
@@ -198,9 +207,9 @@ function Check-StatusDataAtRest {
                             }
                             Write-Host "comD count: $($comD.count)"
                             foreach($c in $comD){
-                                [array]$complianceDetailsList += $c ## DEBUG THIS-not working
+                                [array]$complianceDetailsList += $c
                             }
-                            Write-Host " $($complianceDetailsList.count) complianceDetailsList count for Management Group $($obj.DisplayName) and subscription $($subscription.DisplayName)"
+                            # Write-Host " $($complianceDetailsList.count) complianceDetailsList count for Management Group $($obj.DisplayName) and subscription $($subscription.DisplayName)"
                         }
                     }
                     
@@ -222,7 +231,7 @@ function Check-StatusDataAtRest {
                     $resourceNonCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "NonCompliant" -and $_.ResourceName -ne $obj.Id}
                     $policyResourceNonCompliant = $resourceNonCompliant.PolicyDefinitionReferenceId | Select-Object -Unique
                     $resourceNonCompliantPolicyCount = $policyResourceNonCompliant.Count
-                    # join all policies to a string
+                    # join all non-compliant policies to a string
                     $resourceNonCompliantAllPolicies = $policyResourceNonCompliant -join ","
                 }
 
@@ -318,7 +327,7 @@ function Verify-ProtectionDataAtRest {
     $ObjectList_filtered = $ObjectList | Where-Object { $_.GetType() -notlike "*PSAzureContext*" }
 
     $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $ObjectList_filtered 
+        ComplianceResults = $ObjectList_filtered
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
     }
