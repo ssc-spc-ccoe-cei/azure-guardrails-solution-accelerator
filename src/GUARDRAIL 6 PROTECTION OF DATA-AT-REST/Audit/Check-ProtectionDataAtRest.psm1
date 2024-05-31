@@ -36,7 +36,7 @@ function Test-ComplianceForSubscription {
     $complianceDetails = Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}  
     
     If ($null -eq $complianceDetails) {
-        Write-Host "No comliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
+        Write-Host "No compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
     }
     else{   
         $complianceDetails = $complianceDetails | Where-Object{$_.PolicyAssignmentScope -like "*$($obj.TenantId)*" }
@@ -48,10 +48,10 @@ function Test-ComplianceForSubscription {
         $complianceDetails = $complianceDetails | Where-Object{ $_.PolicyDefinitionReferenceId -in $requiredPolicyExemptionIds_smallCaps}
         
         if ($objType -eq "subscription"){
-            Write-Host "$($complianceDetails.count) Comliance details found for subscription: $($subscription.DisplayName)"
+            Write-Host "$($complianceDetails.count) Compliance details found for subscription: $($subscription.DisplayName)"
         }
         else {
-            Write-Host "$($complianceDetails.count) Comliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"                            
+            Write-Host "$($complianceDetails.count) Compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"                            
         }
         
     }
@@ -92,14 +92,8 @@ function Check-StatusDataAtRest {
         Write-Host "Scope is $tempId"
         
         # Find assigned policy list from PBMM policy for the scope
-
-        # Portal
+        # Az Portal
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
-        # # LocalExecution:
-        # if (!($PolicyID -like "/providers/microsoft.authorization/policysetdefinitions")) {
-        #     $PolicyDefinitionID = "/providers/microsoft.authorization/policysetdefinitions/$PolicyID"
-        # }
-        # $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyDefinitionID
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
             $Comment=$msgTable.pbmmNotApplied 
@@ -109,39 +103,44 @@ function Check-StatusDataAtRest {
             $Comment = $msgTable.pbmmApplied
             #PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
             if (Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds)
-            { # boolean, exemption for gr6 required policies exists.
+            {   # boolean, exemption for gr6 required policies exists.
                 $ComplianceStatus=$false
                 $Comment += $msgTable.grexemptionFound -f $obj.Id,$objType
             }
             else {
-                # # No exemption exists. Find compliance details for the assigned PBMM policy
-                # Check the number of resources and compliance status under required policies in applied PBMM
+                # No exemption exists. Find compliance details for the assigned PBMM policy
+                # Check the number of resources and compliance for the required policies in applied PBMM initiative
 
+                # ----------------#
                 # Subscription
+                # ----------------#
                 if ($objType -eq "subscription"){
                     Write-Host "Find compliance details for Subscription : $($obj.Name)"
                     $subscription = @()
                     $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
                     
                     $currentSubscription = Get-AzContext
-                    if($currentSubscription -ne $subscription){
+                    if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
                         # Set Az context to the this subscription
                         Set-AzContext -SubscriptionId $subscription.SubscriptionID
                         Write-Host "AzContext set to $($subscription.DisplayName)"
                     }
 
-                    # $complianceDetailsSubscription = (Get-AzPolicyState -SubscriptionId $($subscription.SubscriptionID) ) #| Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}
-                    # $complianceDetailsSubscription = $complianceDetailsSubscription | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}
                     $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds -objType $objType
-                    
-                    # $complianceDetailsSubscription = $complianceDetailsSubscription | Where-Object{$_.PolicyAssignmentScope -like "*$($obj.TenantId)*" }
-                    
-                    $complianceDetailsList = $complianceDetailsSubscription | Select-Object `
-                        Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
-                        ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
-                        ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
+                    if ($null -eq $complianceDetailsSubscription) {
+                        Write-Host "Compliance details for $($subscription.DisplayName) outputs as NULL"
+                        $complianceDetailsList = $null
+                    }
+                    else{
+                        $complianceDetailsList = $complianceDetailsSubscription | Select-Object `
+                            Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
+                            ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
+                            ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
+                    } 
                 }
+                # ----------------#
                 # Management Group
+                # ----------------#
                 else {
                     Write-Host "Find compliance details for Management Group : $($obj.Name)"
                     # get all subscription under this management group: $obj
@@ -217,30 +216,36 @@ function Check-StatusDataAtRest {
 
                 if ($null -eq $complianceDetailsList) {
                     Write-Host "Check for compliance details; outputs as NULL"
-                    $resourceCompliant = 0 ## DEBUG CHECK LATER
+                    $resourceCompliant = 0 
+                    $resourceNonCompliant = 0
                 }
                 else{
                     # # check the compliant & non-compliant resources only for $requiredPolicyExemptionIds policies
 
                     # count compliant resource
-                    $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant" -and $_.ResourceName -ne $obj.Id}
+                    $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}# -and $_.ResourceName -ne $obj.Id}
                     $resourceIdResourceCompliant = $resourceCompliant.ResourceId | Select-Object -Unique
                     $policyResourceCompliant = $resourceCompliant.PolicyDefinitionReferenceId | Select-Object -Unique
 
                     # count non-compliant resources
-                    $resourceNonCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "NonCompliant" -and $_.ResourceName -ne $obj.Id}
+                    $resourceNonCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "NonCompliant"}# -and $_.ResourceName -ne $obj.Id}
+                    if (-not ($resourceNonCompliant -is [System.Array])) {
+                        $resourceNonCompliant = @($resourceNonCompliant)
+                    }
                     $policyResourceNonCompliant = $resourceNonCompliant.PolicyDefinitionReferenceId | Select-Object -Unique
                     $resourceNonCompliantPolicyCount = $policyResourceNonCompliant.Count
                     # join all non-compliant policies to a string
                     $resourceNonCompliantAllPolicies = $policyResourceNonCompliant -join ","
+                    $countResourceNonCompliant = $resourceNonCompliant.Count
                 }
 
                 # find compliance status for this scope
-                if ($null -eq $resourceNonCompliant.Count) {
+                if ($null -eq $countResourceNonCompliant) {
+                    # At this point it will execute only when there is something wrong previously
                     $ComplianceStatus=$false
                     $Comment=$msgTable.isNullCompliantResource -f $PolicyId, $($obj.Name), $($obj.DisplayName)
                 }
-                elseif ($resourceNonCompliant.Count -eq 0) {
+                elseif ($countResourceNonCompliant -eq 0) {
                     # all resources are compliant
                     $ComplianceStatus = $true
                     $Comment += ' ' + $msgTable.isCompliantResource -f $resourceIdResourceCompliant.Count, $policyResourceCompliant.Count

@@ -212,7 +212,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.8'
+        version: '1.4.9'
       }
     }
   }
@@ -221,7 +221,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
-        version: '1.2.2'
+        version: '1.3.0'
       }
     }
   }

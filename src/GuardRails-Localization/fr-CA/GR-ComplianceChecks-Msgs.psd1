@@ -97,6 +97,12 @@ allowLocationPolicy = Politique de localisation autorisée
 dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
 dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
+# GuardRail #6
+pbmmApplied = L'initiative PBMM a été appliquée.
+isCompliantResource = Conforme. {0} Définition(s) de politique comporte(nt) {1} ressource(s) conforme(s).
+isNotCompliantResource = Non conforme. {0} Définition(s) de politique ({1}) a {2} ressource(s) non conforme(s).
+isNullCompliantResource = La politique PBMM {0} n'est pas appliqué aux ressources {1} {2}.
+
 # GuardRail #7
 enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
 

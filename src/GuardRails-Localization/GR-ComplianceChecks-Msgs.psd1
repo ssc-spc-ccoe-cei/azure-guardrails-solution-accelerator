@@ -87,8 +87,8 @@ SPNNoValidCredentials = SPN has no valid credentials. {0}
 pbmmCompliance = PBMMPolicy Compliance
 policyNotAssigned = The Policy or Initiative is not assigned to the {0}
 excludedFromScope = {0} is excluded from the scope of the assignment
-grexemptionFound = Exemption for {0} {1} found.
 isCompliant = Compliant
+grexemptionFound = Exemption for {0} {1} found.
 policyNotAssignedRootMG = The Policy or Initiative is not assigned on the Root Management Groups
 rootMGExcluded =This Root Management Groups is excluded from the scope of the assignment
 pbmmNotApplied =PBMM Initiative is not applied.
@@ -100,10 +100,10 @@ dataAtRest = PROTECTION OF DATA-AT-REST
 dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
 # GuardRail #6
-pbmmApplied = PBMM Initiative has been applied.
+pbmmApplied = PBMM initiative has been applied.
 isCompliantResource = Compliant. {0} Policy Definition(s) has {1} compliant resource(s).
 isNotCompliantResource = Non-compliant. {0} Policy Definition(s) ({1}) has {2} non-compliant resource(s).
-isNullCompliantResource = PBMM policy {0} is not applied to the resource {1} {2}"
+isNullCompliantResource = PBMM policy {0} is not applied to the resource {1} {2}.
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
