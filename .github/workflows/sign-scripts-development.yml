@@ -28,7 +28,7 @@ jobs:
       - name: Install AzureSignTool
         run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
       - name: AZ Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.ENT_AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.ENT_AZURE_TENANT_ID }}
@@ -149,14 +149,14 @@ jobs:
           name:  ${{ env.ARTIFACT_NAME }}
           path: ./psmodules
       - name: AZ Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
       - name: Stage zipped/signed modules in Storage Account
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         with:
           inlineScript: |
             Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
@@ -173,7 +173,7 @@ jobs:
           SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Pre-Clean Test environment
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         continue-on-error: true
         with:
           inlineScript: |
@@ -255,14 +255,14 @@ jobs:
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: ReLogin AZ (due to timeout issue)
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
       - name: Deploy Test environment
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         with:
           inlineScript: |
               Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
@@ -367,7 +367,7 @@ jobs:
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: Check for AA Job Errors
-        uses: azure/powershell@v1
+        uses: azure/powershell@v2
         with:
           inlineScript: |
             ipmo ./src/GuardrailsSolutionAcceleratorSetup
