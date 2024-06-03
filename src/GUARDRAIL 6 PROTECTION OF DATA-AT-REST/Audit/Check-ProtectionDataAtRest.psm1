@@ -218,6 +218,7 @@ function Check-StatusDataAtRest {
                     Write-Host "Check for compliance details; outputs as NULL"
                     $resourceCompliant = 0 
                     $resourceNonCompliant = 0
+                    $countResourceNonCompliant = $null          # PBMM applied but none of the requred policies are not applied to this resource
                 }
                 else{
                     # # check the compliant & non-compliant resources only for $requiredPolicyExemptionIds policies
@@ -241,9 +242,9 @@ function Check-StatusDataAtRest {
 
                 # find compliance status for this scope
                 if ($null -eq $countResourceNonCompliant) {
-                    # At this point it will execute only when there is something wrong previously
+                    # PBMM applied but none of the requred policies are not applied to this resource
                     $ComplianceStatus=$false
-                    $Comment=$msgTable.isNullCompliantResource -f $PolicyId, $($obj.Name), $($obj.DisplayName)
+                    $Comment += ' ' + $msgTable.isNullCompliantResource -f $($obj.DisplayName), $($obj.Name)
                 }
                 elseif ($countResourceNonCompliant -eq 0) {
                     # all resources are compliant
@@ -253,7 +254,7 @@ function Check-StatusDataAtRest {
                 else {
                     # all or some resources are non-compliant
                     $ComplianceStatus = $false
-                    $Comment += ' ' + $msgTable.isNotCompliantResource -f $resourceNonCompliantPolicyCount, $resourceNonCompliantAllPolicies, $resourceNonCompliant.Count
+                    $Comment += ' ' + $msgTable.isNotCompliantResource -f $resourceNonCompliantPolicyCount, $resourceNonCompliantAllPolicies, $countResourceNonCompliant
                 }
             }
         }
@@ -339,4 +340,3 @@ function Verify-ProtectionDataAtRest {
 
     return $moduleOutput  
 }
-
