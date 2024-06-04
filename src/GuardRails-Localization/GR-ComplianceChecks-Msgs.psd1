@@ -103,7 +103,7 @@ dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 pbmmApplied = PBMM initiative has been applied.
 isCompliantResource = Compliant. {0} Policy Definition(s) has {1} compliant resource(s).
 isNotCompliantResource = Non-compliant. {0} Policy Definition(s) ({1}) has {2} non-compliant resource(s).
-isNullCompliantResource = None of the required PBMM policies are applied to the resource {0} in {1}.
+isNullCompliantResource = None of the required PBMM policies is applied to the resource {0}.
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit

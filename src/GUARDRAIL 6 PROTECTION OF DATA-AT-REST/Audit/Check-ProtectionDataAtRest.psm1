@@ -232,12 +232,12 @@ function Check-StatusDataAtRest {
                     # # check the compliant & non-compliant resources only for $requiredPolicyExemptionIds policies
 
                     # count compliant resource
-                    $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}# -and $_.ResourceName -ne $obj.Id}
+                    $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}
                     $resourceIdResourceCompliant = $resourceCompliant.ResourceId | Select-Object -Unique
                     $policyResourceCompliant = $resourceCompliant.PolicyDefinitionReferenceId | Select-Object -Unique
 
                     # count non-compliant resources
-                    $resourceNonCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "NonCompliant"}# -and $_.ResourceName -ne $obj.Id}
+                    $resourceNonCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "NonCompliant"}
                     if (-not ($resourceNonCompliant -is [System.Array])) {
                         $resourceNonCompliant = @($resourceNonCompliant)
                     }
@@ -250,7 +250,7 @@ function Check-StatusDataAtRest {
 
                 # find compliance status for this scope
                 if ($null -eq $countResourceNonCompliant) {
-                    # PBMM applied but none of the requred policies are not applied to this resource
+                    # PBMM applied but none of the requred policies are not applied to this resource; usually for subscription
                     $ComplianceStatus=$false
                     $Comment += ' ' + $msgTable.isNullCompliantResource -f $($obj.DisplayName), $($obj.Name)
                 }
