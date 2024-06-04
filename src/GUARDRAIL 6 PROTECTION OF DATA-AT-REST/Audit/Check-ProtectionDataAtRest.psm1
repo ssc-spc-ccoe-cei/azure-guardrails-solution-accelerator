@@ -149,6 +149,9 @@ function Check-StatusDataAtRest {
 
                     # Collect data from managementgroups
                     $mgmtGroups = Get-AzManagementGroup -GroupId $topLvlMgmtGrp -Expand -Recurse
+                    if( $null -eq $mgmtGroups){
+                        Write-Host "mgmtGroups outputs as null"
+                    }
 
                     $children = $true
                     while ($children) {
@@ -171,6 +174,7 @@ function Check-StatusDataAtRest {
                     Write-Host "Loop through all Subscriptions within $($obj.Name) "
                     $complianceDetailsList = @()
                     foreach ($subscription in $allSubscriptions) {
+                        $complianceDetailsList_by_subscription = @()
                         Write-Host "Subscription ID: $($subscription.SubscriptionId)"
                         
                         # Set context to the current subscription
@@ -181,7 +185,7 @@ function Check-StatusDataAtRest {
                         
                         if ($null -eq $complianceDetailsSubscription) {
                             Write-Host "Compliance details for $($subscription.DisplayName) outputs as NULL"
-                            $complianceDetailsList = $null
+                            $complianceDetailsList_by_subscription = $null
                         }
                         else{
                             $comD = $complianceDetailsSubscription | ForEach-Object {
@@ -201,18 +205,22 @@ function Check-StatusDataAtRest {
                                     PolicyDefinitionReferenceId = $_.PolicyDefinitionReferenceId
                                     ResourceTags                = $_.ResourceTags
                                     ResourceName                = $_.ResourceId
-                            
                                 }
                             }
                             Write-Host "comD count: $($comD.count)"
                             foreach($c in $comD){
-                                [array]$complianceDetailsList += $c
+                                [array]$complianceDetailsList_by_subscription += $c
                             }
-                            # Write-Host " $($complianceDetailsList.count) complianceDetailsList count for Management Group $($obj.DisplayName) and subscription $($subscription.DisplayName)"
+                        }
+                        
+                        if (-not $null -eq $complianceDetailsList_by_subscription){
+                            foreach($cDetails in $complianceDetailsList_by_subscription){
+                                [array]$complianceDetailsList += $cDetails
+                            }
                         }
                     }
-                    
                 }
+               
 
                 if ($null -eq $complianceDetailsList) {
                     Write-Host "Check for compliance details; outputs as NULL"
