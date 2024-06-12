@@ -265,31 +265,22 @@ Function Confirm-GSAConfigurationParameters {
     
     # verify that Department Number has an associated Department Name, get name value for AA variable
     try {
-        $uri = 'https://donnees-data.tpsgc-pwgsc.gc.ca/ba1/min-dept/min-dept.csv'
-        $response = Invoke-RestMethod -Method GET -Uri $uri -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h
-    }
-    catch {
-        Write-Error "Error retrieving department list from '$uri'. Verify that you have access to the internet. Falling back to local department list, which may be outdated."
-        
         $departmentList = Import-Csv -Path "$PSScriptRoot/../../../../setup/departmentList.csv"
+    }   
+    catch {
+        # Write-Error "Error reading department list from csv file"
+        $string_err = $_ | Out-String
+        Write-Error $string_err
+        Write-Error "Error reading department list from csv file"
     }
-    If ($statusCode -eq 200) {
-        try {
-            $departmentList = $response | ConvertFrom-CSV -ErrorAction Stop
-        }
-        catch {
-            Write-Error "Error converting department list from CSV to hashtable. Verify that the CSV format and response is valid!"
-            break
-        }
-        
-        If ($departmentList.'Department_number-Ministère_numéro' -notcontains $config.DepartmentNumber) {
-            Write-Error "Department Number '$($config.DepartmentNumber)' is not a valid department number or is not found in this GOC-published list: $uri. Verify that the department number is correct and that the published list is accurate."
-            $departmentName = 'Department_Name_Unknown'
-        }
-        Else {
-            $departmentName = $departmentList | Where-Object { $_.'Department_number-Ministère_numéro' -eq $config.DepartmentNumber } | 
-            Select-Object -ExpandProperty 'Department-name_English-Ministère_nom_anglais'
-        }
+
+    If ($departmentList.'Department_number-Ministère_numéro' -notcontains $config.DepartmentNumber) {
+        Write-Error "Department Number '$($config.DepartmentNumber)' is not a valid department number or is not found in this GOC-published list: $uri. Verify that the department number is correct and that the published list is accurate."
+        $departmentName = 'Department_Name_Unknown'
+    }
+    Else {
+        $departmentName = $departmentList | Where-Object { $_.'Department_number-Ministère_numéro' -eq $config.DepartmentNumber } | 
+        Select-Object -ExpandProperty 'Department-name_English-Ministère_nom_anglais'
     }
 
     # get tenant id from curent context
