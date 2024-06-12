@@ -221,7 +221,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
-        version: '1.3.0'
+        version: '1.3.1'
       }
     }
   }
