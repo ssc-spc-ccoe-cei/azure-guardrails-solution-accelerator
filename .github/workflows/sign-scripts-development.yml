@@ -10,6 +10,7 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/main_deploy_clean_test
 
 permissions:
   id-token: write
