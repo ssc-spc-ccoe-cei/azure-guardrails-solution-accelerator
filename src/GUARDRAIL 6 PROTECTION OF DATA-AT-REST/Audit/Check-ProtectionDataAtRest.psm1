@@ -306,7 +306,7 @@ function Verify-ProtectionDataAtRest {
     )
     [PSCustomObject] $ObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $grRequiredPolicies=@("TransparentDataEncryptionOnSqlDatabasesShouldBeEnabled","DiskEncryptionShouldBeAppliedOnVirtualMachines","AuditUnrestrictedNetworkAccessToStorageAccounts","SecureTransferToStorageAccountsShouldBeEnabled")
+    $grRequiredPolicies=@("TransparentDataEncryptionOnSqlDatabasesShouldBeEnabled","AdvancedDataSecurityShouldBeEnabledOnYourSqlServers","AdvancedDataSecurityShouldBeEnabledOnYourManagedInstances")
     
     #Check management groups
     try {
