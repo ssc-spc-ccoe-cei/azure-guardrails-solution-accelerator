@@ -10,7 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/Update_departmentList_Uri_without_release
 
 permissions:
   id-token: write

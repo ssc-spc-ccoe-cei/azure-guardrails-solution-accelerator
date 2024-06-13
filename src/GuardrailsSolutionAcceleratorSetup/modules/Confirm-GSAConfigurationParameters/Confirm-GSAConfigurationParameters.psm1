@@ -266,11 +266,15 @@ Function Confirm-GSAConfigurationParameters {
     # verify that Department Number has an associated Department Name, get name value for AA variable
     try {
         #fetches current public version (from repo...maybe should download the zip...)
-        $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-        # Change to this before release
+
+        # Change to Option 1 before version release; using Option 2 for this issue update
+
+        # Option: 1
+        # $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
         # $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/departmentList.csv" -f $latestRelease.name
         
-        # fetch updated list from main branch for now
+        # Option: 2
+        # fetch updated list from main branch
         $departmentListFileURI = "https://raw.githubusercontent.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/main/setup/departmentList.csv"
         
         $response = Invoke-RestMethod -Method GET -Uri $departmentListFileURI -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h  
