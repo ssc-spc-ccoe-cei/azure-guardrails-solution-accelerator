@@ -270,7 +270,7 @@ Function Confirm-GSAConfigurationParameters {
 
         #fetches current public version (from repo...maybe should download the zip...)
         $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-        $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/idutta/update_department_names/setup/departmentList.csv" -f $latestRelease.name
+        $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/setup/departmentList.csv" -f $latestRelease.name
         $response = Invoke-RestMethod -Method GET -Uri $departmentListFileURI -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h
 
         # $DocumentName = "departmentList.csv"
