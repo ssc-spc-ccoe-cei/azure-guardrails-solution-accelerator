@@ -265,21 +265,16 @@ Function Confirm-GSAConfigurationParameters {
     
     # verify that Department Number has an associated Department Name, get name value for AA variable
     try {
-        # $uri = 'https://donnees-data.tpsgc-pwgsc.gc.ca/ba1/min-dept/min-dept.csv'
-        # $response = Invoke-RestMethod -Method GET -Uri $uri -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h
-
-        # #fetches current public version (from repo...maybe should download the zip...)
-        # $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-        # $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/departmentList.csv" -f $latestRelease.name
+        #fetches current public version (from repo...maybe should download the zip...)
+        $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
+        $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/departmentList.csv" -f $latestRelease.name
+        # $departmentListFileURI = "https://raw.githubusercontent.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/idutta/update_department_names/setup/departmentList.csv "
         
-        $departmentListFileURI = "https://raw.githubusercontent.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/idutta/update_department_names/setup/departmentList.csv "
-        $response = Invoke-RestMethod -Method GET -Uri $departmentListFileURI -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h
-
-        
+        $response = Invoke-RestMethod -Method GET -Uri $departmentListFileURI -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h  
     }   
     catch {
-        Write-Error "Error retrieving department list from '$uri'. Verify that you have access to the internet. Falling back to local department list, which may be outdated."
-        # Write-Error "Error reading department list from storage file. Falling back to local department list."
+        Write-Error "Error retrieving department list from '$departmentListFileURI'. Verify that you have access to the internet. Falling back to local department list, which may be outdated."
+
         $departmentList = Import-Csv -Path "$PSScriptRoot/../../../../setup/departmentList.csv"
     }
 
