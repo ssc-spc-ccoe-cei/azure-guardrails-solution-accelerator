@@ -271,7 +271,7 @@ Function Confirm-GSAConfigurationParameters {
         # $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/departmentList.csv" -f $latestRelease.name
         
         # fetch updated list from main branch for now
-        $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/setup/departmentList.csv"
+        $departmentListFileURI = "https://raw.githubusercontent.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/main/setup/departmentList.csv"
         
         $response = Invoke-RestMethod -Method GET -Uri $departmentListFileURI -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h  
     }   
