@@ -268,47 +268,13 @@ Function Confirm-GSAConfigurationParameters {
         # $uri = 'https://donnees-data.tpsgc-pwgsc.gc.ca/ba1/min-dept/min-dept.csv'
         # $response = Invoke-RestMethod -Method GET -Uri $uri -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h
 
-        #fetches current public version (from repo...maybe should download the zip...)
-        $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-        $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/setup/departmentList.csv" -f $latestRelease.name
+        # #fetches current public version (from repo...maybe should download the zip...)
+        # $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
+        # $departmentListFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/departmentList.csv" -f $latestRelease.name
+        
+        $departmentListFileURI = "https://raw.githubusercontent.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/idutta/update_department_names/setup/departmentList.csv "
         $response = Invoke-RestMethod -Method GET -Uri $departmentListFileURI -StatusCodeVariable statusCode -ErrorAction Stop -ResponseHeadersVariable h
 
-        # $DocumentName = "departmentList.csv"
-        # try {
-        #     Set-AzContext -Subscription $SubscriptionID | out-null
-        # }
-        # catch{
-        #     $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
-        #     throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
-        # }
-        # try {
-        #     $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
-        # }
-        # catch {
-        #     $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        #     subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
-
-        #     throw "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        #         subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
-        # }
-
-        # $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
-        # If ($null -eq $blob) {            
-        #     # a blob with the name $DocumentName was not located in the specified storage account
-        #     $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        #     subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
-        #     Write-Error "Error: $errorMsg"
-        # }
-        # else {
-        #     try {
-        #         $departmentList = Import-Csv -Path $DocumentName
-        #     } catch {
-        #         $errorMsg = "Error downloading content from blob '$DocumentName': $_"
-        #         $ErrorList.Add($errorMsg)
-        #         Write-Error "Error: $errorMsg"                    
-        #     }
-
-        # }
         
     }   
     catch {
