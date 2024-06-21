@@ -25,29 +25,46 @@ function Check-PolicyStatus {
         else {
             $tempId=$obj.Id
         }
+
         try {
-            $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
+            try{
+                $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
+            }
+            catch{
+                $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command on policy list for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+                Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command on policy list for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"  
+            }
+            try{
+                $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId "/providers/Microsoft.Management/managementGroups/55478155-7956-45c8-9f3e-97f15f0ef871/providers/Microsoft.Authorization/policySetDefinitions/c21e80d9464d452f92f4f1a1"
+            }
+            catch{
+                $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command on initiatives for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+                Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command on initiatives for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"  
+            }
         }
         catch {
             $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
             Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
         }
-        If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
+        If (($null -eq $AssignedPolicyList -and $null -eq $AssignedInitiatives) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -and (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
         {
             $Comment=$($msgTable.policyNotAssigned -f $objType)
             $ComplianceStatus=$false
         }
         else {
-            # Test for allowed locations if not null
+            # Test for allowed locations in policies if not null
             $ComplianceStatus=$true # should be true unless we find a non-compliant location
-            $Comment=$msgTable.isCompliant 
-            if (!([string]::IsNullOrEmpty($AllowedLocations)))
-            {
-                $AssignedLocations = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
-                foreach ($AssignedLocation in $AssignedLocations) {
-                    if ( $AssignedLocation -notin $AllowedLocations) {
-                        $ComplianceStatus=$false
-                        $Comment=$msgTable.notAllowedLocation
+            $Comment=$msgTable.isCompliant
+            
+            if ($null -ne $AssignedPolicyList){
+                if (!([string]::IsNullOrEmpty($AllowedLocations)))
+                {
+                    $AssignedLocations = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
+                    foreach ($AssignedLocation in $AssignedLocations) {
+                        if ( $AssignedLocation -notin $AllowedLocations) {
+                            $ComplianceStatus=$false
+                            $Comment=$msgTable.notAllowedLocation
+                        }
                     }
                 }
             }
