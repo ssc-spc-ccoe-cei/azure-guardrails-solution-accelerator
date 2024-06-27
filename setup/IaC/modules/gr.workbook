@@ -180,6 +180,14 @@
             "style": "link"
           },
           {
+            "id": "6a683959-2ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "GUARDRAIL 13",
+            "subTarget": "gr13",
+            "style": "link"
+          },
+          {
             "id": "8c5914bd-a497-473f-b767-f646b642fe5e",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
@@ -710,6 +718,45 @@
         "value": "gr12"
       },
       "name": "GR11"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
+        "size": 0,
+        "title": "GR 13",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mitigation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Gr13"
     },
     {
       "type": 12,
