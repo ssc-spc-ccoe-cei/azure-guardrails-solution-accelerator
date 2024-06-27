@@ -5,7 +5,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -61,7 +61,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAccountResponsibility -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountResponsibility -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -88,7 +88,7 @@
     "ModuleName": "Get-BreakGlassAccounts",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Get-BreakGlassAccounts -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgCreation -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Get-BreakGlassAccounts -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgCreation -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
@@ -126,7 +126,7 @@
     "Status": "Enabled",
     "Required": "False",
     "ModuleName": "Get-BreakGlassAccountLicense",
-    "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgMSEntID -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgMSEntID -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
@@ -150,7 +150,7 @@
     "Status": "Enabled",
     "Required": "False",
     "ModuleName": "Get-BreakGlassOwnerinformation",
-    "Script": "Get-BreakGlassOwnerinformation  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAccountOwnerContact -FirstBreakGlassUPNOwner $vars.FirstBreakGlassUPN -SecondBreakGlassUPNOwner $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Get-BreakGlassOwnerinformation  -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountOwnerContact -FirstBreakGlassUPNOwner $vars.FirstBreakGlassUPN -SecondBreakGlassUPNOwner $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
