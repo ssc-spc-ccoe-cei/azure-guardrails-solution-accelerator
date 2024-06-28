@@ -55,7 +55,7 @@ noncompliantUsers = The following Users are disabled and not synchronized with M
 privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
-removeGuestAccounts = Remove guest accounts.
+removeGuestAccounts = Existing Guest User Accounts.
 removeGuestAccountsComment = Remove guest accounts from Microsoft Entra ID or remove their permissions from the Azure subscriptions.
 
 # GuardRail #3

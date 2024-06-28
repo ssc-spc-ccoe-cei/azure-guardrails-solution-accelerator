@@ -55,8 +55,9 @@ noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas s
 privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
-removeGuestAccounts = Supprimez les comptes invités.
+removeGuestAccounts = Comptes d'utilisateurs invités existants.
 removeGuestAccountsComment = Supprimer les comptes d'invités de Microsoft Entra ID ou supprimer les permissions des abonnements Azure.
+
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -123,7 +124,7 @@ subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because 
 networkDiagram = Diagramme d'architecture réseau 
 noSubnets = Aucun sous-réseau n'est présent.
 
-# GuardRail # 9
+# GuardRail #9
 authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
