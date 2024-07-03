@@ -14,11 +14,16 @@ CtrName9 = GUARDRAIL 9: NETWORK SECURITY SERVICES
 CtrName10 = GUARDRAIL 10: CYBER DEFENSE SERVICES
 CtrName11 = GUARDRAIL 11: LOGGING AND MONITORING
 CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
+CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 
 # Guardrail 1
 MSEntIDLicense = Microsoft Entra ID License Type
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
+
+gaAccntsMFACheck = Global Administrators Accounts MFA check
+
+# Guardrail 13
 bgMSEntID = Break Glass Microsoft Entra ID P2
 bgProcedure = Break Glass Account Procedure
 bgCreation = Break Glass account Creation
@@ -34,7 +39,6 @@ bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
 bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
-gaAccntsMFACheck = Global Administrators Accounts MFA check
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
