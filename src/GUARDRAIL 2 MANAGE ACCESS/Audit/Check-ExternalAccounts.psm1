@@ -1,6 +1,6 @@
     # Checking for GUEST accounts  
     # Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
-    # This query looks for accounts marked as GUEST
+    # This querly looks for accounts marked as GUEST
     # It does not list GUEST accounts from the list of deleted accounts.
     
     function Check-ExternalUsers  {
