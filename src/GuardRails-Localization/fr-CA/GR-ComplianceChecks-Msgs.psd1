@@ -16,29 +16,11 @@ CtrName11 = GUARDRAIL 11: ENREGISTREMENT ET SURVEILLANCE
 CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARKETPLACES
 CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 
-# Guardrail 1
+# Guardrail #1
 MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
-
 gaAccntsMFACheck = Vérification d'authentification multifacteur de comptes d'administrateur général
-
-# Guardrail 13
-bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
-bgProcedure = Procédure de compte de bris de verre
-bgCreation = Création de compte Brise Glace
-bgAccountResponsibility = Responsabilité BV suit la procédure du ministère
-bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
-bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
-bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
-bgAuthenticationMeth =  Méthodes d'authentification 
-firstBgAccount = Premier compte brise-glace
-secondBgAccount = Deuxième compte brise-glace
-bgNoValidLicenseAssigned = Aucune licence Microsoft Entra ID P2 assignée au 
-bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
-bgAccountHasManager = Le compte BG {0} a un responsable
-bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
-bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
@@ -50,17 +32,19 @@ apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
 gcPasswordGuidanceDoc = Document d'orientation sur les mots de passe du GC
-guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
-guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
-noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
 privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
-removeGuestAccounts = Comptes d'utilisateurs invités existants.
-removeGuestAccountsComment = Supprimer les comptes d'invités de Microsoft Entra ID ou supprimer les permissions des abonnements Azure.
+
+noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
+guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
+# guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
+guestNotAssigned = This GUEST account does not have any role assignment in the Azure subscriptions
+existingGuestAccounts = Comptes d'utilisateurs invités existants.
+existingGuestAccountsComment = Examinez et validez la liste des utilisateurs invités. Supprimez les comptes invités conformément aux procédures et politiques du service, au besoin.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
@@ -191,6 +175,23 @@ mktPlaceCreatedEnabled = Le marché privé a été créé et activé.
 mktPlaceCreatedNotEnabled = Le marché privé a été créé, mais n'est pas activé.
 mktPlaceNotCreated = Le marché privé n'a pas été créé.
 enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
+
+# Guardrail #13
+bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
+bgProcedure = Procédure de compte de bris de verre
+bgCreation = Création de compte Brise Glace
+bgAccountResponsibility = Responsabilité BV suit la procédure du ministère
+bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
+bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
+bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
+bgAuthenticationMeth =  Méthodes d'authentification 
+firstBgAccount = Premier compte brise-glace
+secondBgAccount = Deuxième compte brise-glace
+bgNoValidLicenseAssigned = Aucune licence Microsoft Entra ID P2 assignée au 
+bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
+bgAccountHasManager = Le compte BG {0} a un responsable
+bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
+bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
 procedureFileFound = Fichier {0} trouvé dans le conteneur.

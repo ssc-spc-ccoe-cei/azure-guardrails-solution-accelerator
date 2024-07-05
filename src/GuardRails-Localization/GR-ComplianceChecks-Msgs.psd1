@@ -16,29 +16,12 @@ CtrName11 = GUARDRAIL 11: LOGGING AND MONITORING
 CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 
-# Guardrail 1
+# Guardrail #1
 MSEntIDLicense = Microsoft Entra ID License Type
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
-
 gaAccntsMFACheck = Global Administrators Accounts MFA check
 
-# Guardrail 13
-bgMSEntID = Break Glass Microsoft Entra ID P2
-bgProcedure = Break Glass Account Procedure
-bgCreation = Break Glass account Creation
-bgAccountResponsibility = BG Responsibility Follows Department Procedure
-bgAccountOwnerContact = Break Glass Account Owners Contact information
-bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
-bgAccountsCompliance2 = Both accounts are identical, please check the config.json file
-bgAuthenticationMeth =  Authentication Methods 
-firstBgAccount = First Break Glass Account
-secondBgAccount = Second Break Glass Account
-bgNoValidLicenseAssigned = No Microsoft Entra ID P2 license assigned to
-bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
-bgAccountHasManager = BG Account {0} has a Manager
-bgAccountNoManager = BG Account {0} doesn't have a Manager 
-bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
@@ -50,17 +33,19 @@ apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
 compliantComment = Didnt find any unsynced deprecated users
 gcPasswordGuidanceDoc = GC Password Guidance Doc
-guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
-guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
 mitigationCommands = Verify is the users reported are deprecated.
-noGuestAccounts = There are no GUEST users in your tenant.
 noncompliantComment = Total Number of non-compliant users {0}. 
 noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
 privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
-removeGuestAccounts = Existing Guest User Accounts.
-removeGuestAccountsComment = Remove guest accounts from Microsoft Entra ID or remove their permissions from the Azure subscriptions.
+
+noGuestAccounts = There are no GUEST users in your tenant.
+guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
+# guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
+guestNotAssigned = This GUEST account does not have any role assignment in the Azure subscriptions
+existingGuestAccounts = Existing Guest User Accounts.
+existingGuestAccountsComment = Review and validate list of guest users. Remove guest accounts according to departmental procedures and policies as needed.
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
@@ -129,7 +114,7 @@ subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because 
 networkDiagram = Network architecture diagram 
 noSubnets = No subnets found in the subscription.
 
-# GuardRail # 9
+# GuardRail #9
 authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
 ddosEnabled=DDos Protection Enabled. 
 ddosNotEnabled=DDos Protection not enabled.
@@ -191,6 +176,23 @@ mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
 mktPlaceCreatedNotEnabled = The Private Marketplace has been created but not enabled.
 mktPlaceNotCreated = The Private Marketplace has not been created.
 enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
+
+# Guardrail #13
+bgMSEntID = Break Glass Microsoft Entra ID P2
+bgProcedure = Break Glass Account Procedure
+bgCreation = Break Glass account Creation
+bgAccountResponsibility = BG Responsibility Follows Department Procedure
+bgAccountOwnerContact = Break Glass Account Owners Contact information
+bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
+bgAccountsCompliance2 = Both accounts are identical, please check the config.json file
+bgAuthenticationMeth =  Authentication Methods 
+firstBgAccount = First Break Glass Account
+secondBgAccount = Second Break Glass Account
+bgNoValidLicenseAssigned = No Microsoft Entra ID P2 license assigned to
+bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
+bgAccountHasManager = BG Account {0} has a Manager
+bgAccountNoManager = BG Account {0} doesn't have a Manager 
+bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GR-Common
 procedureFileFound = File {0} found in Container.

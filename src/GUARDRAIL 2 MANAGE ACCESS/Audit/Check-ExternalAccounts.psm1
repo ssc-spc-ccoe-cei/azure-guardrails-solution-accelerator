@@ -1,6 +1,6 @@
     # Checking for GUEST accounts  
     # Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
-    # This querly looks for accounts marked as GUEST
+    # This query looks for accounts marked as GUEST
     # It does not list GUEST accounts from the list of deleted accounts.
     
     function Check-ExternalUsers  {
@@ -24,17 +24,20 @@
     # Only get the Guests accounts
     if ($debug) {Write-Output "Getting guest users in the tenant"}
     $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'" 
-
+    
+    # Default pass (v2.0) for no guest account OR if Guest accounts whether or not have any permissions on the Azure subscriptions
+    $IsCompliant= $true
+    
+    # Find the number of guest accounts
     if ($null -eq $guestUsers) {
         # There are no Guest users in the tenant
         Write-Output "No Guest Users found in the tenant"
-        $IsCompliant= $true
         $comment = $msgTable.noGuestAccounts
         $MitigationCommands = "N/A"
     }
     else {
         if ($debug) {Write-Output "Found $($guestUsers.Count) Guest Users in the tenant"}
-
+        # get the Azure subscriptions
         $subs=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled'}
         if ($debug) {Write-Output "Found $($subs.Count) subscriptions"}
 
@@ -49,8 +52,7 @@
                 if ($debug) {Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"}
 
                 # Find each guest users having a role assignment
-                $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}  
-
+                $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}
                 if (!$null -eq $matchedUser) {
                     if ($debug) {Write-Output "Found $($matchedUser.Count) Guest users with role assignment"}
 
@@ -64,7 +66,9 @@
                             Type = $user.userType
                             CreatedDate = $user.createdDateTime
                             Enabled = $user.accountEnabled
-                            Comments = $msgTable.guestMustbeRemoved
+                            Roles = "True"                           # At least one role assigned to the user in this scope(i.e. subscription)
+                            # Comments = $msgTable.guestMustbeRemoved
+                            Comments = $msgTable.guestNotAssigned
                             ItemName= $ItemName 
                             ReportTime = $ReportTime
                             itsgcode = $itsgcode                            
@@ -72,17 +76,44 @@
                         $guestUsersArray.add($Customuser)
                     }
                 }
-                else {
+                else{
                     Write-Output "Found no Guest users with role assignment"
                 }
+                
+                # Find each guest users without having a role assignment
+                $guestUsers_wo_matchedUsers = $guestUsers | Where-Object { $_ -notin $matchedUser }  
+                if (!$null -eq $guestUsers_wo_matchedUsers)  {
+                    
+                    # Add the guest users without role assignment to the list
+                    foreach ($user in $guestUsers_wo_matchedUsers) {
+                        $Customuser_noMatch = [PSCustomObject] @{
+                            DisplayName = $user.DisplayName
+                            Subscription = $sub.Name
+                            Mail = $user.mail
+                            Type = $user.userType
+                            CreatedDate = $user.createdDateTime
+                            Enabled = $user.accountEnabled
+                            Roles = "False"                        # No role assigned to the user in this scope(i.e. subscription)
+                            Comments = ""
+                            ItemName= $ItemName 
+                            ReportTime = $ReportTime
+                            itsgcode = $itsgcode                            
+                        }
+                        $guestUsersArray.add($Customuser_noMatch)
+                    }
+                }
+                else{
+                    Write-Output "All Guest users have role assignment"
+                }
+
+                
             }
         }
     }
-
+    
     # If there are no Guest accounts or Guest accounts don't have any permissions on the Azure subscriptions, it's fine
     # we still create the Log Analytics table
     if ($guestUsersArray.Count -eq 0) {
-        $IsCompliant= $true
         $MitigationCommands = "N/A"             
         # Don't overwrite the comment if there are no guest users
         if (!$null -eq $guestUsers) {
@@ -96,6 +127,7 @@
             Type = "N/A"
             CreatedDate = "N/A"
             Enabled = "N/A"
+            Roles = "N/A"
             Comments = $comment
             ItemName= $ItemName 
             ReportTime = $ReportTime
@@ -104,14 +136,13 @@
         $guestUsersArray.add($Customuser)
     }
     else {
-        $IsCompliant= $false
-        $comment = $msgTable.removeGuestAccountsComment
-        $MitigationCommands = $msgTable.removeGuestAccounts
+        $comment = $msgTable.existingGuestAccountsComment
+        $MitigationCommands = $msgTable.existingGuestAccounts
     }
 
     # Convert data to JSON format for input in Azure Log Analytics
-    #$JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
-    #Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
+    # $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
+    # Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
 
     # Add the list of non-compliant users to Log Analytics (in a different table)
     <#Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
