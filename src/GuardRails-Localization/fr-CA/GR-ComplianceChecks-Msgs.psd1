@@ -42,8 +42,9 @@ removeDeprecatedAccount = Supprimez les comptes obsolètes
 noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
 guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
 # guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
+guestAssigned = This GUEST account has role assignment in the Azure subscriptions
 guestNotAssigned = This GUEST account does not have any role assignment in the Azure subscriptions
-existingGuestAccounts = Comptes d'utilisateurs invités existants.
+existingGuestAccounts = Comptes d'utilisateurs invités existants
 existingGuestAccountsComment = Examinez et validez la liste des utilisateurs invités. Supprimez les comptes invités conformément aux procédures et politiques du service, au besoin.
 
 # GuardRail #3

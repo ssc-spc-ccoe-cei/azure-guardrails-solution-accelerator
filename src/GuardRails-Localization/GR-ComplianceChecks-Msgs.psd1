@@ -43,8 +43,9 @@ removeDeprecatedAccount = Remove deprecated accounts
 noGuestAccounts = There are no GUEST users in your tenant.
 guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
 # guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
+guestAssigned = This GUEST account has role assignment in the Azure subscriptions
 guestNotAssigned = This GUEST account does not have any role assignment in the Azure subscriptions
-existingGuestAccounts = Existing Guest User Accounts.
+existingGuestAccounts = Existing Guest User Accounts
 existingGuestAccountsComment = Review and validate list of guest users. Remove guest accounts according to departmental procedures and policies as needed.
 
 # GuardRail #3

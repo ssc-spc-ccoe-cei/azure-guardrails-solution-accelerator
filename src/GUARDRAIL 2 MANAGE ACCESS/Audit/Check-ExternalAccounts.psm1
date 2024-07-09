@@ -10,8 +10,7 @@
             [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
-            [string]
-            $ReportTime
+            [string] $ReportTime
             )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
@@ -70,8 +69,7 @@
                             CreatedDate = $user.createdDateTime
                             Enabled = $user.accountEnabled
                             Roles = "True"                           # At least one role assigned to the user in this scope(i.e. subscription)
-                            # Comments = $msgTable.guestMustbeRemoved
-                            Comments = ""
+                            Comments = $msgTable.guestAssigned
                             ItemName= $ItemName 
                             ReportTime = $ReportTime
                             itsgcode = $itsgcode                            
@@ -143,23 +141,36 @@
         $MitigationCommands = $msgTable.existingGuestAccounts
 
         # Group by DisplayName and others, aggregate Subscription
-        $guestUsersArray_grouped = $guestUsersArray | Group-Object -Property DisplayName, Roles | ForEach-Object {
-                $subscriptions = $_.Group.Subscription -join ', '
-                [PSCustomObject]@{
-                    DisplayName = $_.Group[0].DisplayName
-                    Subscription = $subscriptions
-                    Mail = $_.Group[0].Mail
-                    Type = $_.Group[0].Type
-                    CreatedDate = $_.Group[0].CreatedDate
-                    Enabled = $_.Group[0].Enabled
-                    Role = $_.Group[0].Roles
-                    Comments = $_.Group[0].comment
-                    ItemName= $_.Group[0].ItemName 
-                    ReportTime = $_.Group[0].ReportTime
-                    itsgcode = $_.Group[0].itsgcode
-                }
+        $guestUsersArray_grouped = $guestUsersArray | Group-Object -Property DisplayName, Roles, Comments | ForEach-Object {
+            $subscriptions = $_.Group.Subscription -join ', '
+            [PSCustomObject]@{
+                DisplayName = $_.Group[0].DisplayName
+                Subscription = $subscriptions
+                Mail = $_.Group[0].Mail
+                Type = $_.Group[0].Type
+                CreatedDate = $_.Group[0].CreatedDate
+                Enabled = $_.Group[0].Enabled
+                Role = $_.Group[0].Roles
+                Comments = $_.Group[0].Comments
+                ItemName= $_.Group[0].ItemName 
+                ReportTime = $_.Group[0].ReportTime
+                itsgcode = $_.Group[0].itsgcode
             }
+        } 
+        $filtered_unique_guestUsersArray_grouped = $guestUsersArray_grouped |
+            Sort-Object -Property Role -Descending |  # Sort by Role descending so True comes before False
+            Sort-Object -Property DisplayName -Unique  # Get unique DisplayNames, keeping the first occurrence  
+
+        # Modify Subscription to blank if Role = False
+        $unique_guestUsersArray = $filtered_unique_guestUsersArray_grouped | ForEach-Object {
+            if ($_.Role -eq "False") {
+                $_.Subscription = ""
+            }
+            $_  # Output the modified object
+        }
     }
+
+    
 
     # Convert data to JSON format for input in Azure Log Analytics
     # $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
@@ -179,7 +190,7 @@
         MitigationCommands = $MitigationCommands
     }
     $AdditionalResults = [PSCustomObject]@{
-        records = $guestUsersArray_grouped
+        records = $unique_guestUsersArray
         logType = "GR2ExternalUsers"
     }
 
