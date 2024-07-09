@@ -85,7 +85,7 @@
                 
                 # Find each guest users without having a role assignment
                 $guestUsers_wo_matchedUsers = $guestUsers | Where-Object { $_ -notin $matchedUser }  
-                if (!$null -eq $guestUsers_wo_matchedUsers)  {
+                if (!$null -eq $guestUsers_wo_matchedUsers) {
                     
                     # Add the guest users without role assignment to the list
                     foreach ($user in $guestUsers_wo_matchedUsers) {
@@ -143,7 +143,7 @@
         $MitigationCommands = $msgTable.existingGuestAccounts
 
         # Group by DisplayName and others, aggregate Subscription
-        $guestUsersArray_grouped = $guestUsersArray | Group-Object -Property DisplayName | ForEach-Object {
+        $guestUsersArray_grouped = $guestUsersArray | Group-Object -Property DisplayName, Roles | ForEach-Object {
                 $subscriptions = $_.Group.Subscription -join ', '
                 [PSCustomObject]@{
                     DisplayName = $_.Group[0].DisplayName
@@ -152,7 +152,7 @@
                     Type = $_.Group[0].Type
                     CreatedDate = $_.Group[0].CreatedDate
                     Enabled = $_.Group[0].Enabled
-                    Roles = $_.Group[0].Roles
+                    Role = $_.Group[0].Roles
                     Comments = $_.Group[0].comment
                     ItemName= $_.Group[0].ItemName 
                     ReportTime = $_.Group[0].ReportTime
