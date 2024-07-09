@@ -17,13 +17,16 @@
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant= $false
+
+    $guestUsers_wo_matchedUsers = @()
+    $guestUsersArray_grouped = @()
     
     $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
     $stopWatch.Start()
 
     # Only get the Guests accounts
     if ($debug) {Write-Output "Getting guest users in the tenant"}
-    $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'" 
+    $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'"
     
     # Default pass (v2.0) for no guest account OR if Guest accounts whether or not have any permissions on the Azure subscriptions
     $IsCompliant= $true
@@ -43,18 +46,18 @@
 
         foreach ($sub in $subs) {
             $scope="/subscriptions/$($sub.Id)"
-            if ($debug) {Write-Output "Looking in subscription $($sub.Name)"}
+            if ($debug) {Write-Host "Looking in subscription $($sub.Name)"}
 
             # Get the role assignments for this subscription
             $subRoleAssignments = Get-AzRoleAssignment -Scope $scope
 
             if (!$null -eq $subRoleAssignments) {
-                if ($debug) {Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"}
+                if ($debug) {Write-Host "Found $($subRoleAssignments.Count) Role Assignments in that subscription"}
 
                 # Find each guest users having a role assignment
                 $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}
                 if (!$null -eq $matchedUser) {
-                    if ($debug) {Write-Output "Found $($matchedUser.Count) Guest users with role assignment"}
+                    if ($debug) {Write-Host "Found $($matchedUser.Count) Guest users with role assignment"}
 
                     foreach ($user in $matchedUser) {
                         # What should we do if the same user may has multiple role assignments ?
@@ -68,7 +71,7 @@
                             Enabled = $user.accountEnabled
                             Roles = "True"                           # At least one role assigned to the user in this scope(i.e. subscription)
                             # Comments = $msgTable.guestMustbeRemoved
-                            Comments = $msgTable.guestNotAssigned
+                            Comments = ""
                             ItemName= $ItemName 
                             ReportTime = $ReportTime
                             itsgcode = $itsgcode                            
@@ -77,7 +80,7 @@
                     }
                 }
                 else{
-                    Write-Output "Found no Guest users with role assignment"
+                    Write-Host "Found no Guest users with role assignment"
                 }
                 
                 # Find each guest users without having a role assignment
@@ -94,7 +97,7 @@
                             CreatedDate = $user.createdDateTime
                             Enabled = $user.accountEnabled
                             Roles = "False"                        # No role assigned to the user in this scope(i.e. subscription)
-                            Comments = ""
+                            Comments = $msgTable.guestNotAssigned
                             ItemName= $ItemName 
                             ReportTime = $ReportTime
                             itsgcode = $itsgcode                            
@@ -138,6 +141,24 @@
     else {
         $comment = $msgTable.existingGuestAccountsComment
         $MitigationCommands = $msgTable.existingGuestAccounts
+
+        # Group by DisplayName and others, aggregate Subscription
+        $guestUsersArray_grouped = $guestUsersArray | Group-Object -Property DisplayName | ForEach-Object {
+                $subscriptions = $_.Group.Subscription -join ', '
+                [PSCustomObject]@{
+                    DisplayName = $_.Group[0].DisplayName
+                    Subscription = $subscriptions
+                    Mail = $_.Group[0].Mail
+                    Type = $_.Group[0].Type
+                    CreatedDate = $_.Group[0].CreatedDate
+                    Enabled = $_.Group[0].Enabled
+                    Roles = $_.Group[0].Roles
+                    Comments = $_.Group[0].comment
+                    ItemName= $_.Group[0].ItemName 
+                    ReportTime = $_.Group[0].ReportTime
+                    itsgcode = $_.Group[0].itsgcode
+                }
+            }
     }
 
     # Convert data to JSON format for input in Azure Log Analytics
@@ -158,7 +179,7 @@
         MitigationCommands = $MitigationCommands
     }
     $AdditionalResults = [PSCustomObject]@{
-        records = $guestUsersArray
+        records = $guestUsersArray_grouped
         logType = "GR2ExternalUsers"
     }
 

@@ -314,7 +314,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR2ExternalUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, Mail_s, Subscription_s",
+        "query": "GR2ExternalUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, Mail_s, Subscription_s", Roles_s",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
