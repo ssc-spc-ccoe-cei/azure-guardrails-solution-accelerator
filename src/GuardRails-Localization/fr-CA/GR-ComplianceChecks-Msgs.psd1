@@ -14,11 +14,16 @@ CtrName9 = GUARDRAIL 9: SERVICES DE SÉCURITÉ RÉSEAU
 CtrName10 = GUARDRAIL 10: SERVICES DE CYBER DÉFENSE
 CtrName11 = GUARDRAIL 11: ENREGISTREMENT ET SURVEILLANCE
 CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARKETPLACES
+CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 
 # Guardrail 1
 MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
+
+gaAccntsMFACheck = Vérification d'authentification multifacteur de comptes d'administrateur général
+
+# Guardrail 13
 bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
 bgProcedure = Procédure de compte de bris de verre
 bgCreation = Création de compte Brise Glace
@@ -34,7 +39,6 @@ bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
 bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
-gaAccntsMFACheck = Vérification d'authentification multifacteur de comptes d'administrateur général
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
