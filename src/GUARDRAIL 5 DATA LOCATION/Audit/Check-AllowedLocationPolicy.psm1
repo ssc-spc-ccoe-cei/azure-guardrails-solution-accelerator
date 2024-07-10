@@ -1,11 +1,10 @@
-
-
 function Check-PolicyStatus {
     param (
         [System.Object] $objList,
         [Parameter(Mandatory=$true)]
         [string] $objType, #subscription or management Group
         [string] $PolicyID, # full policy id, not just the GUID
+        [string] $InitiativeID,
         [string] $ControlName,
         [string] $ItemName,
         [string] $itsgcode,
@@ -29,13 +28,14 @@ function Check-PolicyStatus {
         try {
             try{
                 $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
+
             }
             catch{
                 $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command on policy list for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
                 Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command on policy list for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"  
             }
             try{
-                $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId "/providers/Microsoft.Management/managementGroups/55478155-7956-45c8-9f3e-97f15f0ef871/providers/Microsoft.Authorization/policySetDefinitions/c21e80d9464d452f92f4f1a1"
+                $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $InitiativeID
             }
             catch{
                 $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command on initiatives for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
@@ -46,7 +46,7 @@ function Check-PolicyStatus {
             $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
             Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
         }
-        If (($null -eq $AssignedPolicyList -and $null -eq $AssignedInitiatives) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -and (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
+        If (($null -eq $AssignedPolicyList -and $null -eq $AssignedInitiatives) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
         {
             $Comment=$($msgTable.policyNotAssigned -f $objType)
             $ComplianceStatus=$false
@@ -68,6 +68,20 @@ function Check-PolicyStatus {
                     }
                 }
             }
+
+            if ($null -ne $AssignedInitiatives){
+                if (!([string]::IsNullOrEmpty($AllowedLocations)))
+                {
+                    $AssignedLocations = $AssignedInitiatives.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
+                    foreach ($AssignedLocation in $AssignedLocations) {
+                        if ( $AssignedLocation -notin $AllowedLocations) {
+                            $ComplianceStatus=$false
+                            $Comment=$msgTable.notAllowedLocation
+                        }
+                    }
+                }
+            }
+            
         }
         if ($null -eq $obj.DisplayName)
         {
@@ -101,6 +115,7 @@ function Verify-AllowedLocationPolicy {
         [string] $ControlName,
         [string] $ItemName,
         [string] $PolicyID, 
+        [string] $InitiativeID,
         [string] $LogType,
         [string] $itsgcode,
         [Parameter(Mandatory=$true)]
@@ -117,7 +132,7 @@ function Verify-AllowedLocationPolicy {
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $AllowedLocations = $AllowedLocationsString.Split(",")
-    if ($AllowedLocations.Count -eq 0 -or $AllowedLocations -eq $null) {
+    if ($AllowedLocations.Count -eq 0 -or $null -eq $AllowedLocations) {
         $Errorlist.Add("No allowed locations were provided. Please provide a list of allowed locations separated by commas.")
         throw "No allowed locations were provided. Please provide a list of allowed locations separated by commas."
         break
@@ -135,7 +150,7 @@ function Verify-AllowedLocationPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "Management Group"
-        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_")
@@ -156,7 +171,7 @@ function Verify-AllowedLocationPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "subscription"
-        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_" )

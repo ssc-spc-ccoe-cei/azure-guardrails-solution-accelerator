@@ -48,6 +48,7 @@ Function New-GSACoreResourceDeploymentParamObject {
     
     Write-Verbose "Creating bicep parameters file for this deployment."
     $templateParameterObject = @{
+        'AllowedLocationInitiativeId'           = $config.AllowedLocationInitiativeId
         'AllowedLocationPolicyId'               = $config.AllowedLocationPolicyId
         'automationAccountName'                 = $config['runtime']['autoMationAccountName']
         'breakglassAccount1'                    = $config.firstBreakGlassAccountUPN
