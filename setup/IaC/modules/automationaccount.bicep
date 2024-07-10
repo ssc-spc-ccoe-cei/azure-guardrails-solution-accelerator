@@ -1,4 +1,5 @@
 param AllowedLocationPolicyId string
+param AllowedLocationInitiativeId string
 param automationAccountName string
 param CBSSubscriptionName string
 param containername string
@@ -446,6 +447,13 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       'isEncrypted': true
       'value': '"${cloudUsageProfiles}"'
   }
+  }
+  resource variable22 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'AllowedLocationInitiativeId'
+    properties: {
+        isEncrypted: true
+        value: '"${AllowedLocationInitiativeId}"'
+    }
   }
 }
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

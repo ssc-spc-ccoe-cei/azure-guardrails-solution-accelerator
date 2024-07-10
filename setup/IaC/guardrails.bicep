@@ -2,6 +2,7 @@
 targetScope = 'resourceGroup'
 //Parameters and variables
 param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
+param AllowedLocationInitiativeId string = '/providers/Microsoft.Management/managementGroups/30f67ca4-856c-49d6-9a9c-75106c07c4b3/providers/Microsoft.Authorization/policySetDefinitions/aa365c54acfe40ebae916772'
 param automationAccountName string = 'guardrails-AC'
 param CBSSubscriptionName string 
 param currentUserObjectId string = ''
@@ -54,6 +55,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
   name: 'guardrails-automationaccount'
   params: {
     AllowedLocationPolicyId: AllowedLocationPolicyId
+    AllowedLocationInitiativeId: AllowedLocationInitiativeId
     automationAccountName: automationAccountName
     CBSSubscriptionName: CBSSubscriptionName
     containername: containername
