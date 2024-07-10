@@ -172,8 +172,6 @@
         }
     }
 
-    
-
     # Convert data to JSON format for input in Azure Log Analytics
     # $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
     # Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
