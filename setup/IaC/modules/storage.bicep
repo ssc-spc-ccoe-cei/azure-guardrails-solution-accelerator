@@ -32,7 +32,7 @@ resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2021-06-01
 }
  
 resource container1 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-06-01' = {
-  name: containername
+  name: '${guardrailsStorage.name}/default/${containername}'
   properties: {
     immutableStorageWithVersioning: {
       enabled: false
