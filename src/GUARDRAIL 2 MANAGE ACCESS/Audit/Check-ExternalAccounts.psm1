@@ -17,8 +17,10 @@
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant= $false
 
+    # $guestUsersArray = @()
     $guestUsers_wo_matchedUsers = @()
     $guestUsersArray_grouped = @()
+    $unique_guestUsersArray = @()
     
     $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
     $stopWatch.Start()
@@ -81,7 +83,7 @@
                     Write-Host "Found no Guest users with role assignment"
                 }
                 
-                # Find each guest users without having a role assignment
+                # Find any guest users without having a role assignment
                 $guestUsers_wo_matchedUsers = $guestUsers | Where-Object { $_ -notin $matchedUser }  
                 if (!$null -eq $guestUsers_wo_matchedUsers) {
                     
@@ -111,7 +113,7 @@
             }
         }
     }
-    
+
     # If there are no Guest accounts or Guest accounts don't have any permissions on the Azure subscriptions, it's fine
     # we still create the Log Analytics table
     if ($guestUsersArray.Count -eq 0) {
@@ -161,7 +163,7 @@
             Sort-Object -Property Role -Descending |  # Sort by Role descending so True comes before False
             Sort-Object -Property DisplayName -Unique  # Get unique DisplayNames, keeping the first occurrence  
 
-        # Modify Subscription to blank if Role = False
+        # Modify Subscription field to blank if Role = False
         $unique_guestUsersArray = $filtered_unique_guestUsersArray_grouped | ForEach-Object {
             if ($_.Role -eq "False") {
                 $_.Subscription = ""
