@@ -17,7 +17,6 @@
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant= $false
 
-    # $guestUsersArray = @()
     $guestUsers_wo_matchedUsers = @()
     $guestUsersArray_grouped = @()
     $unique_guestUsersArray = @()
