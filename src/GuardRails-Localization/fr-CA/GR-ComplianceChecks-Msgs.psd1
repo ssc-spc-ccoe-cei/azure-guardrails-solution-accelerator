@@ -39,12 +39,12 @@ privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 
-noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
-guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
-guestAssigned = This GUEST account has role assignment in the Azure subscriptions
-guestNotAssigned = This GUEST account does not have any role assignment in the Azure subscriptions
+noGuestAccounts = Il n'y a présentement aucun compte d'utilisateur invité dans votre environnement locataire.
+guestAccountsNoPermission = Il y a des comptes d'utilisateurs invités dans l'environnement locataire et ils n'ont aucune permission dans le(s) abonnement(s) Azure du locataire.
+guestAssigned = Ce compte d'utilisateur invité a une attribution de rôle dans le(s) abonnement(s) Azure du locataire.
+guestNotAssigned = Ce compte d'utilisateur invité n'a pas d'attribution de rôle dans les abonnement(s) Azure du locataire.
 existingGuestAccounts = Comptes d'utilisateurs invités existants
-existingGuestAccountsComment = Examinez et validez la liste des utilisateurs invités. Supprimez les comptes invités conformément aux procédures et politiques du service, au besoin.
+existingGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités. Supprimez les comptes d'utilisateurs invités selon les procédures et les politiques ministérielles, au besoin.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

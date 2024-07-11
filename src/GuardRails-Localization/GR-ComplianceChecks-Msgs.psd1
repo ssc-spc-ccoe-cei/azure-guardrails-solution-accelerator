@@ -40,12 +40,12 @@ privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 
-noGuestAccounts = There are no GUEST users in your tenant.
-guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
-guestAssigned = This GUEST account has role assignment in the Azure subscriptions
-guestNotAssigned = This GUEST account does not have any role assignment in the Azure subscriptions
+noGuestAccounts = There are currently no GUEST User Accounts in your tenant environment.
+guestAccountsNoPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions in the tenant's Azure subscription(s).
+guestAssigned = This GUEST User Account has a role assignment in the tenant's Azure subscriptions.
+guestNotAssigned = This GUEST User Account does not have any role assignment in the tenant's Azure subscription(s).
 existingGuestAccounts = Existing Guest User Accounts
-existingGuestAccountsComment = Review and validate list of guest users. Remove guest accounts according to departmental procedures and policies as needed.
+existingGuestAccountsComment = Review and validate the provided list of GUEST User Accounts. Remove GUEST User Accounts according to your departmental procedures and policies, as needed.
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
