@@ -5,6 +5,11 @@ on:
     workflows: [Azure CAC Release]
     types: 
       - completed
+
+concurrency:
+  group: Deploy-Azure-CAC-Dev
+  cancel-in-progress: false
+      
 permissions:
   id-token: write
 
