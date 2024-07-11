@@ -12,6 +12,10 @@ on:
       - main
       - idutta/main_deploy_clean_test
 
+concurrency:
+  group: Deploy-Azure-CAC-Test
+  cancel-in-progress: false
+
 permissions:
   id-token: write
 

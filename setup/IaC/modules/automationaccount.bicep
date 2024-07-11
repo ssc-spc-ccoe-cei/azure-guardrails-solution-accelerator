@@ -86,7 +86,7 @@ resource module5 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
-        version: '1.2.4'
+        version: '1.2.5'
       }
     }
   }
