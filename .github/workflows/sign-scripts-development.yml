@@ -10,7 +10,7 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/main_deploy_clean_test
+      - idutta/deploy_main_to_test
 
 concurrency:
   group: Deploy-Azure-CAC-Test
