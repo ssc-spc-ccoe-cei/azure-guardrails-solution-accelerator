@@ -46,18 +46,18 @@
 
         foreach ($sub in $subs) {
             $scope="/subscriptions/$($sub.Id)"
-            if ($debug) {Write-Host "Looking in subscription $($sub.Name)"}
+            if ($debug) {Write-Output "Looking in subscription $($sub.Name)"}
 
             # Get the role assignments for this subscription
             $subRoleAssignments = Get-AzRoleAssignment -Scope $scope
 
             if (!$null -eq $subRoleAssignments) {
-                if ($debug) {Write-Host "Found $($subRoleAssignments.Count) Role Assignments in that subscription"}
+                if ($debug) {Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"}
 
                 # Find each guest users having a role assignment
                 $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}
                 if (!$null -eq $matchedUser) {
-                    if ($debug) {Write-Host "Found $($matchedUser.Count) Guest users with role assignment"}
+                    if ($debug) {Write-Output "Found $($matchedUser.Count) Guest users with role assignment"}
 
                     foreach ($user in $matchedUser) {
                         # What should we do if the same user may has multiple role assignments ?
@@ -79,7 +79,7 @@
                     }
                 }
                 else{
-                    Write-Host "Found no Guest users with role assignment"
+                    Write-Output "Found no Guest users with role assignment"
                 }
                 
                 # Find any guest users without having a role assignment
