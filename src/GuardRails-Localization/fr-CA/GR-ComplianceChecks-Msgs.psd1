@@ -3,7 +3,7 @@ ConvertFrom-StringData @'
 # French strings
 
 CtrName1 = GUARDRAIL 1: PROTÉGER LE COMPTE RACINE / ADMINISTRATEURS GLOBAUX
-CtrName2 = GUARDRAIL 2: GESTION DES PRIVILÈGES ADMINISTRATIFS
+CtrName2 = GUARDRAIL 2: GÉRER L'ACCÈS
 CtrName3 = GUARDRAIL 3: ACCÈS À LA CONSOLE CLOUD
 CtrName4 = GUARDRAIL 4: COMPTES DE SURVEILLANCE D'ENTREPRISE
 CtrName5 = GUARDRAIL 5: EMPLACEMENT DES DONNÉES
@@ -16,29 +16,11 @@ CtrName11 = GUARDRAIL 11: ENREGISTREMENT ET SURVEILLANCE
 CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARKETPLACES
 CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 
-# Guardrail 1
+# Guardrail #1
 MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
-
 gaAccntsMFACheck = Vérification d'authentification multifacteur de comptes d'administrateur général
-
-# Guardrail 13
-bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
-bgProcedure = Procédure de compte de bris de verre
-bgCreation = Création de compte Brise Glace
-bgAccountResponsibility = Responsabilité BV suit la procédure du ministère
-bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
-bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
-bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
-bgAuthenticationMeth =  Méthodes d'authentification 
-firstBgAccount = Premier compte brise-glace
-secondBgAccount = Deuxième compte brise-glace
-bgNoValidLicenseAssigned = Aucune licence Microsoft Entra ID P2 assignée au 
-bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
-bgAccountHasManager = Le compte BG {0} a un responsable
-bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
-bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
@@ -50,17 +32,20 @@ apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
 gcPasswordGuidanceDoc = Document d'orientation sur les mots de passe du GC
-guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
-guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
-noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
 privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
-removeGuestAccounts = Supprimez les comptes invités.
-removeGuestAccountsComment = Supprimer les comptes d'invités de Microsoft Entra ID ou supprimer les permissions des abonnements Azure.
+
+noGuestAccounts = Il n'y a présentement aucun compte d'utilisateur invité dans votre environnement locataire.
+guestAccountsNoPermission = Il y a des comptes d'utilisateurs invités dans l'environnement locataire et ils n'ont aucune permission dans le(s) abonnement(s) Azure du locataire.
+guestAssigned = Ce compte d'utilisateur invité a une attribution de rôle dans le(s) abonnement(s) Azure du locataire.
+guestNotAssigned = Ce compte d'utilisateur invité n'a pas d'attribution de rôle dans les abonnement(s) Azure du locataire.
+existingGuestAccounts = Comptes d'utilisateurs invités existants
+existingGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités. Supprimez les comptes d'utilisateurs invités selon les procédures et les politiques ministérielles, au besoin.
+
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -127,7 +112,7 @@ subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because 
 networkDiagram = Diagramme d'architecture réseau 
 noSubnets = Aucun sous-réseau n'est présent.
 
-# GuardRail # 9
+# GuardRail #9
 authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
@@ -190,6 +175,23 @@ mktPlaceCreatedEnabled = Le marché privé a été créé et activé.
 mktPlaceCreatedNotEnabled = Le marché privé a été créé, mais n'est pas activé.
 mktPlaceNotCreated = Le marché privé n'a pas été créé.
 enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
+
+# Guardrail #13
+bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
+bgProcedure = Procédure de compte de bris de verre
+bgCreation = Création de compte Brise Glace
+bgAccountResponsibility = Responsabilité BV suit la procédure du ministère
+bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
+bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
+bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
+bgAuthenticationMeth =  Méthodes d'authentification 
+firstBgAccount = Premier compte brise-glace
+secondBgAccount = Deuxième compte brise-glace
+bgNoValidLicenseAssigned = Aucune licence Microsoft Entra ID P2 assignée au 
+bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
+bgAccountHasManager = Le compte BG {0} a un responsable
+bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
+bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
 procedureFileFound = Fichier {0} trouvé dans le conteneur.

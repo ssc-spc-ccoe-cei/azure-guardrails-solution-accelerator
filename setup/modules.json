@@ -60,8 +60,8 @@
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
-    "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Required": "True",
+    "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
         "Name": "itsgcode",
