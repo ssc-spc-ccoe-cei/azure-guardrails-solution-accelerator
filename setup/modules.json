@@ -5,6 +5,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [1, 2, 3],
     "Script": "Check-GAAuthenticationMethods -StorageAccountName $vars.storageAccountName -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.gaAccntsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -33,6 +34,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [1, 2, 3],
     "Script": "Get-ADLicenseType  -ControlName $msgTable.CtrName1 -ItemName $msgTable.MSEntIDLicense -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
@@ -47,6 +49,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [2, 3],
     "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
@@ -60,8 +63,9 @@
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "True",
-    "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Required": "False",
+    "Profiles": [2, 3],
+    "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -75,6 +79,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [2, 3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.gcPasswordGuidanceDoc -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -103,6 +108,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [2, 3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlan -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -131,6 +137,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
@@ -145,6 +152,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Check-MFARequired -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaRequiredForAllUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
@@ -159,6 +167,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.authorizedProcessedByCSO -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -187,6 +196,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-GAAuthenticationMethods -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.gaAccntsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -215,6 +225,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [1, 2, 3],
     "Script": "Check-DepartmentServicePrincipalName -SPNID $vars.SSCReadOnlyServicePrincipalNameAPPID -ControlName $msgTable.CtrName4 -ItemName $msgTable.monitorAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -235,6 +246,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [1, 2, 3],
     "Script": "Get-DepartmentServicePrincipalNameSecrets -SPNID $vars.SSCReadOnlyServicePrincipalNameAPPID -ControlName $msgTable.CtrName4 -ItemName $msgTable.SPNCredentialsCompliance -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -255,6 +267,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [1, 2, 3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName4 -ItemName $msgTable.CSPMEncryptedEmailConfirmation -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -283,6 +296,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Verify-PBMMPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.pbmmCompliance -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -307,6 +321,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -AllowedLocationsString $vars.AllowedLocationsString",
     "variables": [
       {
@@ -335,6 +350,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Verify-ProtectionDataAtRest -ControlName $msgTable.CtrName6 -ItemName $msgTable.dataAtRest -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -359,6 +375,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -383,6 +400,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName7 -ItemName $msgTable.enableTLS12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -411,6 +429,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [1, 2, 3],
     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation -ReservedSubnetList $vars.reservedSubnetList",
     "variables": [
       {
@@ -439,6 +458,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [1, 2, 3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -467,6 +487,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -487,6 +508,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Get-NetworkWatcherStatus -ControlName $msgTable.CtrName9 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -507,6 +529,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.NetworkBoundaryProtectionPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -535,6 +558,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.LimitPublicIPsPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -563,6 +587,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.AuthSourceIPPolicyConfirm -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -591,6 +616,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName 'CBS Subscription' -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -611,6 +637,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-DocumentsExistInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName10 -ItemName $msgTable.MOUwithCCCS -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -641,6 +668,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-DocumentsExistInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.SeverityNotificationToEmailConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -671,6 +699,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Get-DefenderForCloudConfig -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecdefender $vars.itsgcodedefender",
     "variables": [
       {
@@ -691,6 +720,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Get-HealthMonitoringStatus -HealthLAWResourceId $vars.HealthLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfohealthmon $vars.itsgcodehealthmon",
     "variables": [
       {
@@ -715,6 +745,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "get-SecurityMonitoringStatus -SecurityLAWResourceId $vars.SecurityLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -LAWRetention $vars.securityRetentionDays",
     "variables": [
       {
@@ -743,6 +774,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.passwordNotificationsConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -771,6 +803,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [1, 2, 3],
     "Script": "Check-PrivateMarketPlaceCreation -ControlName $msgTable.Ctrname12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
@@ -785,6 +818,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -813,6 +847,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountResponsibility -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
     "variables": [
       {
@@ -840,6 +875,7 @@
     "ModuleName": "Get-BreakGlassAccounts",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "Script": "Get-BreakGlassAccounts -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgCreation -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets": [
       {
@@ -863,6 +899,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "ModuleName": "Get-BreakGlassAccountLicense",
     "Script": "Get-BreakGlassAccountLicense  -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgMSEntID -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets": [
@@ -887,6 +924,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
+    "Profiles": [3],
     "ModuleName": "Get-BreakGlassOwnerinformation",
     "Script": "Get-BreakGlassOwnerinformation  -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountOwnerContact -FirstBreakGlassUPNOwner $vars.FirstBreakGlassUPN -SecondBreakGlassUPNOwner $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets": [

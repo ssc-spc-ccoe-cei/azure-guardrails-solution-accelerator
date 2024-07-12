@@ -1,6 +1,7 @@
 param (
     [switch]$localExecution,
-    [string]$keyVaultName
+    [string]$keyVaultName,
+    [int]$profile = 3  # Default profile
 )
 
 Disable-AzContextAutosave -Scope Process | Out-Null
@@ -113,6 +114,9 @@ catch {
     break
 }
 $modules = $modulesList | convertfrom-json
+
+# Filter modules based on the profile
+$modules = $modules | Where-Object { $_.Profiles -contains $profile }
 
 Write-Output "Found $($modules.Count) modules."
 
