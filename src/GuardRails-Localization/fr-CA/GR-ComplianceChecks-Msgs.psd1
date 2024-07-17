@@ -46,10 +46,10 @@ guestNotAssigned = Ce compte d'utilisateur invité n'a pas d'attribution de rôl
 existingGuestAccounts = Comptes d'utilisateurs invités existants
 existingGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités. Supprimez les comptes d'utilisateurs invités selon les procédures et les politiques ministérielles, au besoin.
 
-guestAccountsNoPrivilegedPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions that are considered "privileged" at the Subscription level.
+guestAccountsNoPrivilegedPermission =  Il existe des comptes d’utilisateurs invités dans l’environnement locataire et ils ne disposent d’aucune autorisation considérée comme « privilégiée » au niveau de l’abonnement.
 existingPrivilegedGuestAccounts = Comptes d'utilisateurs invités privilégiés
-existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
-guestHasPrivilegedRole = This Guest user account has one or more privileged role(s)
+existingPrivilegedGuestAccountsComment = Examinez et validez la liste fournie des comptes d’utilisateurs invités privilégiés. Supprimez les comptes d’utilisateurs invités privilégiés selon les procédures et les politiques de votre ministère, au besoin.
+guestHasPrivilegedRole = Ce compte d’utilisateur invité a un ou plusieurs rôles privilégiés.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
