@@ -20,7 +20,7 @@ ModuleVersion = '1.0.0'
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '1691d8ba-7b92-42aa-a3d6-d92b073f1dd9'
+GUID = '1691d8ba-7b92-42aa-a3d6-d92b073f1da9'
 
 # Author of this module
 Author = 'Cloud Security Compliance'
