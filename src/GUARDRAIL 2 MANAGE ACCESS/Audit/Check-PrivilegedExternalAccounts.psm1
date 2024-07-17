@@ -66,9 +66,7 @@
                 
                 # Create a single list with users and their role definitions
                 if(!$null -eq $matchedUser){
-                    $matchedUserSelected = $matchedUser 
-                        | Select-Object DisplayName, Id, UserPrincipalName 
-                        | Select-Object @{Name='SignInName';Expression={$_.UserPrincipalName}}, DisplayName, Id
+                    $matchedUserSelected = $matchedUser | Select-Object DisplayName, Id, UserPrincipalName | Select-Object @{Name='SignInName';Expression={$_.UserPrincipalName}}, DisplayName, Id
                 
                     # Install-Module -Name JoinModule   
                     $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
