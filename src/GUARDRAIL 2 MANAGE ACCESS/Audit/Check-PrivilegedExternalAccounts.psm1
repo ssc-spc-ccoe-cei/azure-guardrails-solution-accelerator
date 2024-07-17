@@ -65,7 +65,6 @@
     
                 
                 # Create a single list with users and their role definitions
-                $newMatchedUserList = @()
                 if(!$null -eq $matchedUser){
                     $matchedUserSelected = $matchedUser 
                         | Select-Object DisplayName, Id, UserPrincipalName 
@@ -73,18 +72,18 @@
                 
                     # Install-Module -Name JoinModule   
                     $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
+                }
+                
     
+    
+                if (!$null -eq  $matchedUserUpdated) {
                     # Find matched users with privileged roles
                     $newMatchedUserList = $matchedUserUpdated | ForEach-Object {
                         $hasPrivilegedRole = $privilegedRolesSubscriptionLevel -contains $_.RoleDefinitionName
                         $hasPrivilegedRoleString = if ($hasPrivilegedRole) {'True'} else {'False'}
                         $_ | Add-Member -MemberType NoteProperty -Name privilegedRole -Value $hasPrivilegedRoleString -PassThru
                     }
-                }
-                
-    
-    
-                if (!$null -eq $newMatchedUserList) {
+
                     if ($debug) {Write-Output "Found $($newMatchedUserList.Count) Guest users with role assignment"}
     
                     foreach ($user in $newMatchedUserList) {
