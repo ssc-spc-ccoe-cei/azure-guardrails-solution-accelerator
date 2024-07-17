@@ -70,6 +70,20 @@
     ]
   },
   {
+    "ModuleName": "Check-PrivilegedExternalUsers",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC6(6)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
