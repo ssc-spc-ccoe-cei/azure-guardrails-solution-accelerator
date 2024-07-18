@@ -238,7 +238,7 @@
                 $_.Subscription = ""
             }
             if ($_.PrivilegedRole -eq "True") {
-                $_.Comments += $msgTable.guestHasPrivilegedRole
+                $_.Comments += " " + $msgTable.guestHasPrivilegedRole
             }
             $_  # Output the modified object
         }
