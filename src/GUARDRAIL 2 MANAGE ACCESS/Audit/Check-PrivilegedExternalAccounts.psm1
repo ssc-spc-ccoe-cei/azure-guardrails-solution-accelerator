@@ -65,15 +65,56 @@
     
                 
                 # Create a single list with users and their role definitions
+                # Install-Module -Name JoinModule   
+                # $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
+
+                $matchedUserUpdated =@()
                 if(!$null -eq $matchedUser){
                     $matchedUserSelected = $matchedUser | Select-Object DisplayName, Id, UserPrincipalName | Select-Object @{Name='SignInName';Expression={$_.UserPrincipalName}}, DisplayName, Id
                 
                     # Install-Module -Name JoinModule   
-                    $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
+                    # $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
+                    foreach ($usr in $matchedUserSelected) {
+                        $matched = $subRoleAssignmentsUpdated | Where-Object { $_.SignInName -eq $usr.SignInName -and $_.DisplayName -eq $usr.DisplayName }
+
+                        if ($matched) {
+                            $joinedItem = [PSCustomObject]@{
+                                DisplayName = $usr.DisplayName
+                                SignInName = $usr.SignInName
+                                Id = $usr.Id
+                                RoleAssignmentName = $matched.RoleAssignmentName
+                                RoleAssignmentId = $matched.RoleAssignmentId
+                                Scope = $matched.Scope
+                                RoleDefinitionName = $matched.RoleDefinitionName
+                                RoleDefinitionId = $matched.RoleDefinitionId
+                                ObjectId = $matched.ObjectId
+                                ObjectType = $matched.ObjectType
+                                CanDelegate = $matched.CanDelegate
+                                Description = $matched.Description
+                            }
+                        }
+                        else {
+                            $joinedItem = [PSCustomObject]@{
+                                DisplayName = $usr.DisplayName
+                                SignInName = $usr.SignInName
+                                Id = $usr.Id
+                                RoleAssignmentName = $null
+                                RoleAssignmentId = $null
+                                Scope = $null
+                                RoleDefinitionName = $null
+                                RoleDefinitionId = $null
+                                ObjectId = $null
+                                ObjectType = $null
+                                CanDelegate = $null
+                                Description = $null
+                            }
+                        }
+                        $matchedUserUpdated += $joinedItem
+                    }
+                    
                 }
                 
-    
-    
+                
                 if (!$null -eq  $matchedUserUpdated) {
                     # Find matched users with privileged roles
                     $newMatchedUserList = $matchedUserUpdated | ForEach-Object {
