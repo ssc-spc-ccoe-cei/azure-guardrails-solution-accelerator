@@ -70,7 +70,7 @@
 
                 $matchedUserUpdated =@()
                 if(!$null -eq $matchedUser){
-                    $matchedUserSelected = $matchedUser | Select-Object DisplayName, Id, UserPrincipalName | Select-Object @{Name='SignInName';Expression={$_.UserPrincipalName}}, DisplayName, Id
+                    $matchedUserSelected = $matchedUser | Select-Object DisplayName, Id, UserPrincipalName, Mail | Select-Object @{Name='SignInName';Expression={$_.UserPrincipalName}}, DisplayName, Id, Mail
                 
                     # Install-Module -Name JoinModule   
                     # $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
@@ -82,6 +82,7 @@
                                 DisplayName = $usr.DisplayName
                                 SignInName = $usr.SignInName
                                 Id = $usr.Id
+                                Mail = $usr.Mail
                                 RoleAssignmentName = $matched.RoleAssignmentName
                                 RoleAssignmentId = $matched.RoleAssignmentId
                                 Scope = $matched.Scope
@@ -98,6 +99,7 @@
                                 DisplayName = $usr.DisplayName
                                 SignInName = $usr.SignInName
                                 Id = $usr.Id
+                                Mail = $usr.Mail
                                 RoleAssignmentName = $null
                                 RoleAssignmentId = $null
                                 Scope = $null
