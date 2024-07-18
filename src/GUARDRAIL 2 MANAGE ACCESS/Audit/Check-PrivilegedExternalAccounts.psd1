@@ -5,22 +5,22 @@
 #
 # Contact Information for module : cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca
 #
-# Generated on: 2023-12-04
+# Generated on: 2024-07-10
 #
 
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'Check-ExternalAccounts'
+RootModule = 'Check-PrivilegedExternalAccounts'
 
 # Version number of this module.
-ModuleVersion = '1.2.6'
+ModuleVersion = '1.0.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '1691d8ba-7b92-42aa-a3d6-d92b073f1dd9'
+GUID = '1691d8ba-7b92-42aa-a3d6-d92b073f1da9'
 
 # Author of this module
 Author = 'Cloud Security Compliance'

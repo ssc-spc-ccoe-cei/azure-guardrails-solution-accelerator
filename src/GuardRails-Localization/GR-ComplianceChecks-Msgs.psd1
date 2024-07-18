@@ -47,6 +47,11 @@ guestNotAssigned = This GUEST User Account does not have any role assignment in 
 existingGuestAccounts = Existing Guest User Accounts
 existingGuestAccountsComment = Review and validate the provided list of GUEST User Accounts. Remove GUEST User Accounts according to your departmental procedures and policies, as needed.
 
+guestAccountsNoPrivilegedPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions that are considered "privileged" at the Subscription level.
+existingPrivilegedGuestAccounts = Privileged Guest User Accounts
+existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
+guestHasPrivilegedRole = This Guest user account has one or more privileged roles
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
