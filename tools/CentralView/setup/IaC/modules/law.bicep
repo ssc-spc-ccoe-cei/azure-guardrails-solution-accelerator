@@ -144,7 +144,7 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     category: 'grcentral_functions'
     displayName: 'controlconfig'
     //query: 'let baseurl="${GRDocsBaseUrl}";\nlet Link=strcat(baseurl,control,"-", replace_string(replace_string(itsgcode,"(","-"),")",""),".md");\nLink\n'
-    query: 'let controlconfig = datatable(Control:string, mandatory:bool)\n[\n"GUARDRAIL 1: PROTECT ROOT / GLOBAL ADMINS ACCOUNT", false,\n"GUARDRAIL 8: NETWORK SEGMENTATION AND SEPARATION", true,\n"GUARDRAIL 11: LOGGING AND MONITORING", true,\n"GUARDRAIL 5: DATA LOCATION", true,\n"GUARDRAIL 2: MANAGE ACCESS", false,\n"GUARDRAIL 6: PROTECTION OF DATA-AT-REST",true,\n"GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT",   true,\n"GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES",false,\n"GUARDRAIL 10: CYBER DEFENSE SERVICES",true,\n"GUARDRAIL 3: CLOUD CONSOLE ACCESS",true,\n"GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS",true,\n"GUARDRAIL 9: NETWORK SECURITY SERVICES",true\n];\ncontrolconfig'
+    query: 'let controlconfig = datatable(Control:string, mandatory:bool)\n[\n"GUARDRAIL 1: PROTECT ROOT / GLOBAL ADMINS ACCOUNT", false,\n"GUARDRAIL 8: SEGMENT AND SEPARATE", true,\n"GUARDRAIL 11: LOGGING AND MONITORING", true,\n"GUARDRAIL 5: DATA LOCATION", true,\n"GUARDRAIL 2: MANAGE ACCESS", false,\n"GUARDRAIL 6: PROTECTION OF DATA-AT-REST",true,\n"GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT",   true,\n"GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES",false,\n"GUARDRAIL 10: CYBER DEFENSE SERVICES",true,\n"GUARDRAIL 3: SECURE ENDPOINTS",true,\n"GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS",true,\n"GUARDRAIL 9: NETWORK SECURITY SERVICES",true\n];\ncontrolconfig'
     functionAlias: 'controlconfig'
     version: 2
   }
