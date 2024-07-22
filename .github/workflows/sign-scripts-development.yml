@@ -212,7 +212,7 @@ jobs:
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
                   "PBMMPolicyID": "$PBMMPOLICY_ID",
                   "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-                  "AllowedInitiativeId": "INITIATIVEPOLICY_ID",
+                  "AllowedLocationInitiativeId": "INITIATIVEPOLICY_ID",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
                   "securityLAWResourceId": "$TESTSEC_RESRC_ID",
@@ -301,7 +301,7 @@ jobs:
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
                   "PBMMPolicyID": "$PBMMPOLICY_ID",
                   "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-                  "AllowedInitiativeId": "$INITIATIVEPOLICY_ID"
+                  "AllowedLocationInitiativeId": "$INITIATIVEPOLICY_ID"
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
                   "securityLAWResourceId": "$TESTSEC_RESRC_ID",
