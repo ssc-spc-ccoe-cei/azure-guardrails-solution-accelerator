@@ -10,6 +10,7 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/update_to_v2.0_control_names
 
 concurrency:
   group: Deploy-Azure-CAC-Test
