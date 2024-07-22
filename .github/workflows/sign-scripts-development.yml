@@ -11,6 +11,7 @@ on:
     branches:
       - main
       - policy_check_initiativesGR5-aalvi
+      
 
 concurrency:
   group: Deploy-Azure-CAC-Test
