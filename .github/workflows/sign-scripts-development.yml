@@ -10,7 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/update_document_storage_compliance_msgs
 
 concurrency:
   group: Deploy-Azure-CAC-Test
