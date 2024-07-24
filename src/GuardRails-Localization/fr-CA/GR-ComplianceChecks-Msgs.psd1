@@ -199,8 +199,9 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
-procedureFileFound = Fichier {0} trouvé dans le conteneur.
-procedureFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom '{1}' dans le conteneur '{2}' sur le compte de stockage '{3}' pour confirmer que vous avez terminé l'élément dans le contrôle.
+procedureFileFound = Conforme. Fichier « {0} » a été trouvé dans le conteneur de stockage.
+procedureFileNotFound = Non conforme. N'a pas trouvé le document pour « {0} », créez et téléchargez un fichier avec le nom « {1} » dans le conteneur de stockage « {2} » pour le compte de stockage « {3} » pour confirmer que vous avez complété ce contrôle.
+
 procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
 globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
 globalAdminFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom '{1}' dans le conteneur '{2}' sur le compte de stockage '{3}' pour confirmer que vous avez terminé l'élément dans le contrôle.
