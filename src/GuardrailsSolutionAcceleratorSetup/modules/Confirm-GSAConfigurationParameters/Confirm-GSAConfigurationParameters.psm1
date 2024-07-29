@@ -387,7 +387,10 @@ Function Confirm-GSAConfigurationParameters {
     $config['runtime']['tagsTable'] = $tagsTable
     $config['runtime']['deployLAW'] = $true
     $config['runtime']['deployKV'] = $true
-    
+
+    # add feature flag for multi cloud profile
+    $config['runtime']['enableMultiCloudProfiles'] = $config.enableMultiCloudProfiles
+
     # output the configuration as an object
     Write-Host "Validation of configuration parameters completed successfully!" -ForegroundColor Green
 
