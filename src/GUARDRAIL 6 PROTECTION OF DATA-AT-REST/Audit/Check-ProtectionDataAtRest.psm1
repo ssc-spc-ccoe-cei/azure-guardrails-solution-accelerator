@@ -15,9 +15,6 @@ function Test-ExemptionExists {
             if ($exemptionId -in $requiredPolicyExemptionIds){
                 $isExempt = $true 
             }
-            else{
-                $isExempt = $true
-            }
             $result = [PSCustomObject] @{
                 isExempt = $isExempt 
                 exemptionId = $exemptionId
