@@ -16,6 +16,10 @@ CtrName11 = GUARDRAIL 11: JOURNALISATION ET SURVEILLANCE
 CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARCHÉS DE L'INFORMATIQUE EN NUAGE
 CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 
+# Global
+isCompliant = Conforme.
+isNotCompliant = Non-compliant.
+
 # Guardrail #1
 MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
@@ -75,15 +79,13 @@ SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
 SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
 CSPMEncryptedEmailConfirmation= Confirmacion d'email encrypté envoyé
 
-# GuardRail #5-6
+# GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy
 policyNotAssigned = La politique ou l'initiative n'est pas affectée au {0}
 excludeFromScope = {0} est exclu de la portée de l'affectation
-isCompliant = Conforme
+
 policyNotAssignedRootMG = La politique ou l'initiative n'est pas affectée aux groupes de gestion racine
 rootMGExcluded = Ce groupe de gestion racine est exclu de la portée de l'affectation
-pbmmNotApplied = L'initiative PBMM n'est pas appliquée.
-grexemptionFound = excemption pour {0} {1} trouvée
 subscription  = abonnement
 managementGroup = Groupes de gestion
 notAllowedLocation =  L'emplacement est en dehors des emplacements autorisés. 
@@ -93,9 +95,16 @@ dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
 # GuardRail #6
 pbmmApplied = L'initiative PBMM a été appliquée.
-isCompliantResource = Conforme. {0} Définition(s) de politique comporte(nt) {1} ressource(s) conforme(s).
-isNotCompliantResource = Non conforme. {0} Définition(s) de politique ({1}) a {2} ressource(s) non conforme(s).
-isNullCompliantResource = Aucune des politiques PBMM requises n'est appliquée à la ressource {0}.
+pbmmNotApplied = Apply the PBMM initiative.
+reqPolicyApplied = All required policies are applied.
+reqPolicyNotApplied = The initiative is missing several of the selected policies for evaluation. Review the remediation playbook for more information.
+grexemptionFound = Remove the exemption found for {0}. 
+grexemptionNotFound = Required Policy Definitions are not exempt.
+noResource = No applicable resources for the selected PBMM Initiative's policies to evaluate.
+allCompliantResources = All resources are compliant.
+allNonCompliantResources = All resources are non-compliant.
+hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow MS remediation reccomendations.
+
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
