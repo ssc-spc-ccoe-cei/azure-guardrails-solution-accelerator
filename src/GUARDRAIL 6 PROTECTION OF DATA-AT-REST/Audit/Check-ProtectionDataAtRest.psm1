@@ -226,17 +226,17 @@ function Check-StatusDataAtRest {
                         $ComplianceStatus=$true
                         $Comment = $msgTable.isCompliant + ' ' + $Comment + ' '+ $msgTable.noResource
                     }
-                    elseif($totalResource -gt 0 && $countResourceCompliant -eq $totalResource){
+                    elseif($totalResource -gt 0 -and $countResourceCompliant -eq $totalResource){
                         # All resources are non-compliant
                         $ComplianceStatus=$true
                         $Comment = $msgTable.isCompliant + ' ' + $Comment + ' '+ $msgTable.allCompliantResources
                     }
-                    elseif($totalResource -gt 0 && $countResourceNonCompliant -eq $totalResource){
+                    elseif($totalResource -gt 0 -and $countResourceNonCompliant -eq $totalResource){
                         # All resources are non-compliant
                         $ComplianceStatus=$false
                         $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.allNonCompliantResources
                     }
-                    elseif($totalResource -gt 0 && $countResourceNonCompliant -gt 0 && $countResourceNonCompliant -lt $totalResource){
+                    elseif($totalResource -gt 0 -and $countResourceNonCompliant -gt 0 -and $countResourceNonCompliant -lt $totalResource){
                         # There are some resources that are non-compliant
                         $ComplianceStatus=$false
                         $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.hasNonComplianceResounce -f $countResourceNonCompliant, $totalResource
