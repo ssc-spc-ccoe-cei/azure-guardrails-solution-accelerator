@@ -2,14 +2,14 @@ ConvertFrom-StringData @'
 
 # English strings
 
-CtrName1 = GUARDRAIL 1: PROTECT ROOT / GLOBAL ADMINS ACCOUNT
+CtrName1 = GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES
 CtrName2 = GUARDRAIL 2: MANAGE ACCESS
-CtrName3 = GUARDRAIL 3: CLOUD CONSOLE ACCESS
+CtrName3 = GUARDRAIL 3: SECURE ENDPOINTS
 CtrName4 = GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS
 CtrName5 = GUARDRAIL 5: DATA LOCATION
 CtrName6 = GUARDRAIL 6: PROTECTION OF DATA-AT-REST
 CtrName7 = GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT
-CtrName8 = GUARDRAIL 8: NETWORK SEGMENTATION AND SEPARATION
+CtrName8 = GUARDRAIL 8: SEGMENT AND SEPARATE
 CtrName9 = GUARDRAIL 9: NETWORK SECURITY SERVICES
 CtrName10 = GUARDRAIL 10: CYBER DEFENSE SERVICES
 CtrName11 = GUARDRAIL 11: LOGGING AND MONITORING
@@ -46,6 +46,11 @@ guestAssigned = This GUEST User Account has a role assignment in the tenant's Az
 guestNotAssigned = This GUEST User Account does not have any role assignment in the tenant's Azure subscription(s).
 existingGuestAccounts = Existing Guest User Accounts
 existingGuestAccountsComment = Review and validate the provided list of GUEST User Accounts. Remove GUEST User Accounts according to your departmental procedures and policies, as needed.
+
+guestAccountsNoPrivilegedPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions that are considered "privileged" at the Subscription level.
+existingPrivilegedGuestAccounts = Privileged Guest User Accounts
+existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
+guestHasPrivilegedRole = This Guest user account has one or more privileged roles
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
@@ -195,8 +200,9 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GR-Common
-procedureFileFound = File {0} found in Container.
-procedureFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
+procedureFileFound = Compliant. File {0} has been found in the storage container.
+procedureFileNotFound = Non-Compliant. Could not find document for '{0}', create and upload a file with the name '{1}' in storage container '{2}' for Storage Account '{3}' to confirm you have completed this control.
+
 procedureFileDataInvalid = The global administrator file(s) contain(s) invalid User Principal Names (UPNs). Ensure that UPNs start with a hyphen, and type each of them on a new line.
 globalAdminFileFound = File {0} found in Container.
 globalAdminFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
