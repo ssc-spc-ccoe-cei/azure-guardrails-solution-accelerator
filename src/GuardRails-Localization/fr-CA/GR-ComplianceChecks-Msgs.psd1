@@ -2,18 +2,18 @@ ConvertFrom-StringData @'
 
 # French strings
 
-CtrName1 = GUARDRAIL 1: PROTÉGER LE COMPTE RACINE / ADMINISTRATEURS GLOBAUX
+CtrName1 = GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS
 CtrName2 = GUARDRAIL 2: GÉRER L'ACCÈS
-CtrName3 = GUARDRAIL 3: ACCÈS À LA CONSOLE CLOUD
-CtrName4 = GUARDRAIL 4: COMPTES DE SURVEILLANCE D'ENTREPRISE
+CtrName3 = GUARDRAIL 3: SÉCURISER LES POINTS D'EXTRÉMITÉ
+CtrName4 = GUARDRAIL 4: COMPTES DE SURVEILLANCE DE L'ORGANISATION
 CtrName5 = GUARDRAIL 5: EMPLACEMENT DES DONNÉES
-CtrName6 = GUARDRAIL 6: PROTECTION DES DONNÉES AU REPOS
+CtrName6 = GUARDRAIL 6: PROTECTION DES DONNÉES INACTIVES
 CtrName7 = GUARDRAIL 7: PROTECTION DES DONNÉES EN TRANSIT
-CtrName8 = GUARDRAIL 8: SEGMENTATION ET SÉPARATION DU RÉSEAU
-CtrName9 = GUARDRAIL 9: SERVICES DE SÉCURITÉ RÉSEAU
+CtrName8 = GUARDRAIL 8: SEGMENTER ET SÉPARER
+CtrName9 = GUARDRAIL 9: SERVICES DE SÉCURITÉ DES RÉSEAUX
 CtrName10 = GUARDRAIL 10: SERVICES DE CYBER DÉFENSE
-CtrName11 = GUARDRAIL 11: ENREGISTREMENT ET SURVEILLANCE
-CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARKETPLACES
+CtrName11 = GUARDRAIL 11: JOURNALISATION ET SURVEILLANCE
+CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARCHÉS DE L'INFORMATIQUE EN NUAGE
 CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 
 # Guardrail #1
@@ -45,6 +45,11 @@ guestAssigned = Ce compte d'utilisateur invité a une attribution de rôle dans 
 guestNotAssigned = Ce compte d'utilisateur invité n'a pas d'attribution de rôle dans les abonnement(s) Azure du locataire.
 existingGuestAccounts = Comptes d'utilisateurs invités existants
 existingGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités. Supprimez les comptes d'utilisateurs invités selon les procédures et les politiques ministérielles, au besoin.
+
+guestAccountsNoPrivilegedPermission =  Il existe des comptes d’utilisateurs invités dans l’environnement locataire et ils ne disposent d’aucune autorisation considérée comme « privilégiée » au niveau de l’abonnement.
+existingPrivilegedGuestAccounts = Comptes d'utilisateurs invités privilégiés
+existingPrivilegedGuestAccountsComment = Examinez et validez la liste fournie des comptes d’utilisateurs invités privilégiés. Supprimez les comptes d’utilisateurs invités privilégiés selon les procédures et les politiques de votre ministère, au besoin.
+guestHasPrivilegedRole = Ce compte d’utilisateur invité a un ou plusieurs rôles privilégiés.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
@@ -194,8 +199,9 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
-procedureFileFound = Fichier {0} trouvé dans le conteneur.
-procedureFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom '{1}' dans le conteneur '{2}' sur le compte de stockage '{3}' pour confirmer que vous avez terminé l'élément dans le contrôle.
+procedureFileFound = Conforme. Fichier « {0} » a été trouvé dans le conteneur de stockage.
+procedureFileNotFound = Non conforme. N'a pas trouvé le document pour « {0} », créez et téléchargez un fichier avec le nom « {1} » dans le conteneur de stockage « {2} » pour le compte de stockage « {3} » pour confirmer que vous avez complété ce contrôle.
+
 procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
 globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
 globalAdminFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom '{1}' dans le conteneur '{2}' sur le compte de stockage '{3}' pour confirmer que vous avez terminé l'élément dans le contrôle.
