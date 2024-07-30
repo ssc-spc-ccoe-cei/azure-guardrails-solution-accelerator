@@ -108,15 +108,6 @@ resource module7 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module8 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-PBMMPolicy'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-PBMMPolicy.zip'
-        version: '1.0.7'
-      }
-    }
-  }
 resource module9 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
     properties: {
