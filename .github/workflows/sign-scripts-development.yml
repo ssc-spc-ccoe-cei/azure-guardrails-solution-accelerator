@@ -10,6 +10,7 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/GR5_remove_PBMM_check
 
 concurrency:
   group: Deploy-Azure-CAC-Test
