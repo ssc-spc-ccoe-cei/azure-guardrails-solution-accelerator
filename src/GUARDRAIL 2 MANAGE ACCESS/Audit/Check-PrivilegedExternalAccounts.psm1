@@ -3,15 +3,15 @@
     # This query looks for accounts marked as GUEST
     # It does not list GUEST accounts from the list of deleted accounts.
     
-    function Check-PrivilegedExternalUsers  {
-        Param ( 
-            [string] $ControlName, 
-            [string] $ItemName, 
-            [string] $itsgcode,
-            [hashtable] $msgTable,
-            [Parameter(Mandatory=$true)]
-            [string] $ReportTime
-            )
+function Check-PrivilegedExternalUsers  {
+    Param ( 
+        [string] $ControlName, 
+        [string] $ItemName, 
+        [string] $itsgcode,
+        [hashtable] $msgTable,
+        [Parameter(Mandatory=$true)]
+        [string] $ReportTime
+        )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
