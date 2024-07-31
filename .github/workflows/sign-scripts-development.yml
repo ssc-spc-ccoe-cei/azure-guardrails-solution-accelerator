@@ -10,7 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/GR6_V1_PBMM_iteration2
 
 concurrency:
   group: Deploy-Azure-CAC-Test
