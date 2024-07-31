@@ -118,7 +118,10 @@ function Check-StatusDataAtRest {
             $Comment = $msgTable.pbmmApplied
 
             # List the policies within the PBMM initiative (policy set definition)
-            $policySetDefinition = Get-AzPolicySetDefinition -Id $PolicyDefinitionID
+            # # Az Portal:
+            $policySetDefinition = Get-AzPolicySetDefinition -Id $PolicyID
+            # # LocalExecution:
+            # $policySetDefinition = Get-AzPolicySetDefinition -Id $PolicyDefinitionID
             $listPolicies = $policySetDefinition.Properties.policyDefinitions
 
             # Check all 3 policies are applied for this scope
