@@ -195,16 +195,16 @@ function Check-StatusDataAtRest {
                         # # check the compliant & non-compliant resources only for $requiredPolicyExemptionIds policies
                         $totalResource = $complianceDetailsList.Count
     
-                        ##-------------##
-                        ## Compliant
-                        ##-------------##
+                        # #-------------# #
+                        # # Compliant
+                        # #-------------# #
                         # List compliant resource
                         $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}
                         $countResourceCompliant = $resourceCompliant.Count
     
-                        ##-------------##
-                        ## Non-compliant
-                        ##-------------##
+                        # #-------------##
+                        # # Non-compliant
+                        # #-------------##
                         # List non-compliant resources
                         $resourceNonCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "NonCompliant"}
                         if (-not ($resourceNonCompliant -is [System.Array])) {
@@ -223,23 +223,23 @@ function Check-StatusDataAtRest {
                         $ComplianceStatus=$true
                         $Comment = $msgTable.isCompliant + ' ' + $Comment + ' '+ $msgTable.noResource
                     }
-                    elseif($totalResource -gt 0 -and $countResourceCompliant -eq $totalResource){
+                    elseif($totalResource -gt 0 -and ($countResourceCompliant -eq $totalResource)){
                         # All resources are non-compliant
                         $ComplianceStatus=$true
                         $Comment = $msgTable.isCompliant + ' ' + $Comment + ' '+ $msgTable.allCompliantResources
                     }
-                    elseif($totalResource -gt 0 -and $countResourceNonCompliant -eq $totalResource){
+                    elseif($totalResource -gt 0 -and ($countResourceNonCompliant -eq $totalResource)){
                         # All resources are non-compliant
                         $ComplianceStatus=$false
                         $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.allNonCompliantResources
                     }
-                    elseif($totalResource -gt 0 -and $countResourceNonCompliant -gt 0 -and $countResourceNonCompliant -lt $totalResource){
+                    elseif($totalResource -gt 0 -and $countResourceNonCompliant -gt 0 -and ($countResourceNonCompliant -lt $totalResource)){
                         # There are some resources that are non-compliant
                         $ComplianceStatus=$false
                         $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.hasNonComplianceResounce -f $countResourceNonCompliant, $totalResource
                     }
                     else{
-                        # Is there a use case for this?
+                        # All use cases are covered by now. Anything else?
 
                         # Do nothing 
                     }                   
