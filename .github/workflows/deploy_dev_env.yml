@@ -249,7 +249,7 @@ jobs:
               "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
               "PBMMPolicyID": "$PBMMPOLICY_ID",
               "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-              "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID"
+              "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
               "DepartmentNumber": "163",
               "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
               "securityLAWResourceId": "$DEVLAW_SEC",
