@@ -149,12 +149,12 @@ function Check-StatusDataAtRest {
                     }
                     # boolean, exemption for gr6 required policies exists.
                     $ComplianceStatus=$false
-                    $Comment += ' '+ $msgTable.grexemptionFound -f $exemptListAllPolicies
+                    $Comment += ' '+ $msgTable.grExemptionFound -f $exemptListAllPolicies
 
                 }
                 else {
                      # Required Policy Definitions are not exempt. Find compliance details for the assigned PBMM policy
-                    $Comment += ' ' + $msgTable.grexemptionNotFound
+                    $Comment += ' ' + $msgTable.grExemptionNotFound
 
                     # Check the number of resources and compliance for the required policies in applied PBMM initiative
                     # ----------------#
