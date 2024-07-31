@@ -87,7 +87,16 @@ resource module5 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
-        version: '1.2.5'
+        version: '1.2.6'
+      }
+    }
+  }
+resource module6 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-PrivilegedExternalAccounts'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
+        version: '1.0.0'
       }
     }
   }
