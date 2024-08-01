@@ -18,7 +18,7 @@ CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 
 # Global
 isCompliant = Conforme.
-isNotCompliant = Non-compliant.
+isNotCompliant = Non conforme.
 
 # Guardrail #1
 MSEntIDLicense = Type de licence Microsoft Entra ID
@@ -95,15 +95,15 @@ dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
 # GuardRail #6
 pbmmApplied = L'initiative PBMM a été appliquée.
-pbmmNotApplied = Apply the PBMM initiative.
-reqPolicyApplied = All required policies are applied.
-reqPolicyNotApplied = The initiative is missing several of the selected policies for evaluation. Review the remediation playbook for more information.
-grExemptionFound = Remove the exemption found for {0}. 
-grExemptionNotFound = Required Policy Definitions are not exempt.
-noResource = No applicable resources for the selected PBMM Initiative's policies to evaluate.
-allCompliantResources = All resources are compliant.
-allNonCompliantResources = All resources are non-compliant.
-hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow MS remediation reccomendations.
+pbmmNotApplied = L'initiative PBMM n'a pas été appliquée. Appliquez l'initiative PBMM.
+reqPolicyApplied = Toutes les politiques requises sont appliquées.
+reqPolicyNotApplied = L'initiative PBMM manque une ou quelques-unes des politiques sélectionnées pour l'évaluation. Consultez le Livre de jeu de correction pour plus d'informations.
+grExemptionFound = Supprimez l'exemption trouvée pour {0}. 
+grExemptionNotFound = Les définitions des politiques requises ne sont pas exemptées.
+noResource = Aucune ressource applicable à l'évaluation des politiques de l'initiative PBMM sélectionnée.
+allCompliantResources = Toutes les ressources sont conformes.
+allNonCompliantResources = Toutes les ressources ne sont pas conformes.
+hasNonComplianceResounce = {0} des ressources {1} applicables ne sont pas conformes aux politiques sélectionnées. Suivez les recommandations de correction de Microsoft.
 
 
 # GuardRail #7

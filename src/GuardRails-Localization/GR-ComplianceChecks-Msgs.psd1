@@ -95,15 +95,15 @@ dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
 # GuardRail #6
 pbmmApplied = PBMM initiative has been applied.
-pbmmNotApplied = Apply the PBMM initiative.
+pbmmNotApplied = PBMM initiative has not been applied. Apply the PBMM initiative.
 reqPolicyApplied = All required policies are applied.
-reqPolicyNotApplied = The initiative is missing several of the selected policies for evaluation. Review the remediation playbook for more information.
+reqPolicyNotApplied = The PBMM initiative is missing one or a few of the selected policies for evaluation. Consult the remediation Playbook for more information.
 grExemptionFound = Remove the exemption found for {0}. 
 grExemptionNotFound = Required Policy Definitions are not exempt.
 noResource = No applicable resources for the selected PBMM Initiative's policies to evaluate.
 allCompliantResources = All resources are compliant.
 allNonCompliantResources = All resources are non-compliant.
-hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow MS remediation reccomendations.
+hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
 
 
 # GuardRail #7
