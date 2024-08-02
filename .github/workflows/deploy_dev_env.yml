@@ -1,16 +1,11 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  workflow_dispatch:
-  push:
-    paths-ignore:
-      - 'README.md'
-      - 'SECURITY.md'
-      - 'SUPPORT.md'
-      - 'psmodules/**'
-      - 'docs/**'
-    branches:
-      - policy_check_initiativesGR5-aalvi
+  workflow_run:
+    workflows: [Azure CAC Release]
+    types: 
+      - completed
+
 
 concurrency:
   group: Deploy-Azure-CAC-Dev
