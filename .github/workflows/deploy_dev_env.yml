@@ -1,10 +1,16 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  workflow_run:
-    workflows: [Azure CAC Release]
-    types: 
-      - completed
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'SECURITY.md'
+      - 'SUPPORT.md'
+      - 'psmodules/**'
+      - 'docs/**'
+    branches:
+      - policy_check_initiativesGR5-aalvi
 
 concurrency:
   group: Deploy-Azure-CAC-Dev
@@ -243,7 +249,7 @@ jobs:
               "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
               "PBMMPolicyID": "$PBMMPOLICY_ID",
               "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-              "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID"
+              "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
               "DepartmentNumber": "163",
               "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
               "securityLAWResourceId": "$DEVLAW_SEC",
