@@ -6,6 +6,7 @@ on:
     types: 
       - completed
 
+
 concurrency:
   group: Deploy-Azure-CAC-Dev
   cancel-in-progress: false
@@ -132,6 +133,7 @@ jobs:
             $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
             $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
             $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+            $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID_DEV
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
 
@@ -149,6 +151,7 @@ jobs:
               "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
               "PBMMPolicyID": "$PBMMPOLICY_ID",
               "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+              "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
               "DepartmentNumber": "163",
               "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
               "securityLAWResourceId": "$DEVLAW_SEC",
@@ -195,6 +198,7 @@ jobs:
           DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          INITIATIVELOCATION_ID_DEV: ${{ vars.INITIATIVELOCATION_ID_DEV}}
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}       
@@ -222,6 +226,7 @@ jobs:
             $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
             $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
             $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+            $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID_DEV
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
 
@@ -239,6 +244,7 @@ jobs:
               "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
               "PBMMPolicyID": "$PBMMPOLICY_ID",
               "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+              "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
               "DepartmentNumber": "163",
               "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
               "securityLAWResourceId": "$DEVLAW_SEC",
@@ -320,6 +326,7 @@ jobs:
           DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          INITIATIVELOCATION_ID_DEV: ${{ vars.INITIATIVELOCATION_ID_DEV}}
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}

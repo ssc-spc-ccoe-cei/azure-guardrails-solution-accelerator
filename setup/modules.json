@@ -297,7 +297,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -AllowedLocationsString $vars.AllowedLocationsString",
+    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -InitiativeID $vars.AllowedLocationInitiativeId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -AllowedLocationsString $vars.AllowedLocationsString",
     "variables": [
       {
         "Name": "cbssubscriptionName",
@@ -306,6 +306,10 @@
       {
         "Name": "AllowedLocationPolicyId",
         "Value": "AllowedLocationPolicyId"
+      },
+      {
+        "Name": "AllowedLocationInitiativeId",
+        "Value": "AllowedLocationInitiativeId"
       }
     ],
     "localVariables": [
