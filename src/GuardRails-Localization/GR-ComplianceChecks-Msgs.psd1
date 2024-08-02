@@ -16,12 +16,15 @@ CtrName11 = GUARDRAIL 11: LOGGING AND MONITORING
 CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 
+# Global
+isCompliant = Compliant.
+isNotCompliant = Non-compliant.
+
 # Guardrail #1
 MSEntIDLicense = Microsoft Entra ID License Type
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = Global Administrators Accounts MFA check
-
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
@@ -63,7 +66,6 @@ noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all user
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
-
 checkUserExistsError = API call returned Error {0}. Please Check if the user exists.
 checkUserExists = Please Check if the user exists.
 ServicePrincipalNameHasNoReaderRole = SPN doesnt have Reader Role on the ROOT Management Group.
@@ -77,15 +79,13 @@ SPNSingleValidCredential = SPN has a single valid credential. {0}
 SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
 SPNNoValidCredentials = SPN has no valid credentials. {0}
 
-# GuardRail #5-6
+# GuardRail #5
 pbmmCompliance = PBMMPolicy Compliance
 policyNotAssigned = The Policy or Initiative is not assigned to the {0}
 excludedFromScope = {0} is excluded from the scope of the assignment
-isCompliant = Compliant
-grexemptionFound = Exemption for {0} {1} found.
+
 policyNotAssignedRootMG = The Policy or Initiative is not assigned on the Root Management Groups
 rootMGExcluded =This Root Management Groups is excluded from the scope of the assignment
-pbmmNotApplied =PBMM Initiative is not applied.
 subscription = subscription
 managementGroup = Management Groups
 notAllowedLocation =  Location is outside of the allowed locations. 
@@ -95,9 +95,16 @@ dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
 # GuardRail #6
 pbmmApplied = PBMM initiative has been applied.
-isCompliantResource = Compliant. {0} Policy Definition(s) has {1} compliant resource(s).
-isNotCompliantResource = Non-compliant. {0} Policy Definition(s) ({1}) has {2} non-compliant resource(s).
-isNullCompliantResource = None of the required PBMM policies is applied to the resource {0}.
+pbmmNotApplied = PBMM initiative has not been applied. Apply the PBMM initiative.
+reqPolicyApplied = All required policies are applied.
+reqPolicyNotApplied = The PBMM initiative is missing one or a few of the selected policies for evaluation. Consult the remediation Playbook for more information.
+grExemptionFound = Remove the exemption found for {0}. 
+grExemptionNotFound = Required Policy Definitions are not exempt.
+noResource = No applicable resources for the selected PBMM Initiative's policies to evaluate.
+allCompliantResources = All resources are compliant.
+allNonCompliantResources = All resources are non-compliant.
+hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
+
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
