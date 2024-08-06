@@ -10,7 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      
 
 concurrency:
   group: Deploy-Azure-CAC-Test
