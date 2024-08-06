@@ -10,8 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/remove_unnessary_zip_psmodules
-      
 
 concurrency:
   group: Deploy-Azure-CAC-Test
