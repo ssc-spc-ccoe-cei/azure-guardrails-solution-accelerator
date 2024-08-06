@@ -10,6 +10,7 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/remove_unnessary_zip_psmodules
       
 
 concurrency:
