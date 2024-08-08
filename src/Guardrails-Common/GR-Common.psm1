@@ -832,5 +832,65 @@ function add-documentFileExtensions {
     return $DocumentName_new
 }
 
+
+function Get-EvaluationProfile {
+    param (
+        [Parameter(Mandatory = $true)]
+        [int[]] $CloudUsageProfile,  # Array of profiles
+        [Parameter(Mandatory = $true)]
+        [string] $SubscriptionId
+    )
+
+    try {
+        # Get the highest profile from the CloudUsageProfile array
+        $highestCloudProfile = $CloudUsageProfile | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+
+        # Get subscription tags
+        $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
+        $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
+
+        if ($null -eq $profileTag) {
+            # No tag, pick the highest profile from CloudUsageProfile
+            return $highestCloudProfile
+        }
+
+        # Convert profile tag value into an array of integers (handle both single and array cases)
+        $profileTagValues = if ($profileTag.TagValue -is [string] -and $profileTag.TagValue.StartsWith('[')) {
+            $profileTag.TagValue.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
+        } else {
+            @([int]$profileTag.TagValue)
+        }
+
+        # Find the matching profiles between tag values and CloudUsageProfile
+        $matchingProfiles = $profileTagValues | Where-Object { $CloudUsageProfile -contains $_ }
+
+        if ($matchingProfiles.Count -gt 0) {
+            # If multiple profiles match, pick the highest from tag side
+            $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+            return $highestMatchingProfile
+        } else {
+            # Handle case where tag doesn't match any profile in the CloudUsageProfile
+            $maxProfileTagValue = $profileTagValues | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+
+            if ($maxProfileTagValue -lt $highestCloudProfile) {
+                # Lower than highest profile, use the lower tag value
+                return $maxProfileTagValue
+            } else {
+                # Higher than highest profile in CloudUsageProfile, error out
+                throw "Subscription $SubscriptionId has invalid profile tag: $($profileTagValues) which is higher than any specified CloudUsageProfile."
+            }
+        }
+    } catch {
+        # Handle the error: log it, return an error object, or throw it further
+        Write-Error "Error in Get-EvaluationProfile: $_"
+        return @{
+            Status = "Error"
+            Message = "Failed to evaluate profile for subscription $SubscriptionId. Error: $_"
+            ErrorCode = 500
+        }
+    }
+}
+
+
 # endregion
 

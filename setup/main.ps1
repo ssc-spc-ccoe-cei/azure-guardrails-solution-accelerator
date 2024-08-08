@@ -1,7 +1,7 @@
 param (
     [switch]$localExecution,
     [string]$keyVaultName,
-    [int]$profile = 3  # Default profile
+    [int]$defaultProfile = 3  # Default profile
 )
 
 Disable-AzContextAutosave -Scope Process | Out-Null
@@ -117,7 +117,28 @@ $modules = $modulesList | convertfrom-json
 
 # Filter modules based on the profile
 if($RuntimeConfig.enableMultiCloudProfiles) {
-    $modules = $modules | Where-Object { $_.Profiles -contains $profile }
+
+    # Retrieve the cloudUsageProfiles and convert to an array
+    $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
+    if ($cloudUsageProfiles -is [string]) {
+        # Handle single profile case
+        if ($cloudUsageProfiles.StartsWith("[") -and $cloudUsageProfiles.EndsWith("]")) {
+            # Handle the case where the profiles are specified as a stringified array
+            $cloudUsageProfiles = $cloudUsageProfiles.Trim("[]").Split(",") | ForEach-Object { $_.Trim() }
+        }
+        else {
+            # Handle single profile string case
+            $cloudUsageProfiles = @($cloudUsageProfiles.Trim())
+        }
+    }
+
+    # Ensure all profiles are integers
+    $cloudUsageProfiles = $cloudUsageProfiles | ForEach-Object { [int]$_ }
+
+    $modules = $modules | Where-Object {
+        $moduleProfiles = $_.Profiles
+        $moduleProfiles -is [array] -and ($moduleProfiles | Where-Object { $cloudUsageProfiles -contains $_ })
+    }
 }
 
 Write-Output "Found $($modules.Count) modules."
@@ -169,7 +190,17 @@ Write-Output "Loaded $($msgTable.Count) messages."
 Write-Output "Starting modules loop."
 foreach ($module in $modules) {
     if ($module.Status -eq "Enabled") {
-        $NewScriptBlock = [scriptblock]::Create($module.Script)
+        $moduleScript =  $module.Script
+
+        if($RuntimeConfig.enableMultiCloudProfiles) {
+            # Extract the Profiles array directly from the module definition
+            $profilesArray = $module.Profiles
+            # Convert the array to a format that PowerShell recognizes as an array argument
+            # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
+            $moduleScript = $module.Script + " -Profiles @($profilesArray) -CloudUsageProfiles @($cloudUsageProfiles) -enableMultiCloudProfiles $true"
+        }
+
+        $NewScriptBlock = [scriptblock]::Create($moduleScript)
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
         $secrets = $module.secrets

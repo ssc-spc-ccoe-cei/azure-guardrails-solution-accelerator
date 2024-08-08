@@ -8,7 +8,14 @@ function Check-DeprecatedUsers {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [int[]] 
+        $moduleProfile,  # New parameter for module profiles
+        [int[]] 
+        $cloudUsageProfile,  # New parameter for cloud usage profiles
+        [bool] 
+        $enableMultiCloudProfiles = $true  # New feature flag, default to true
+
     )
     [bool] $IsCompliant = $false
     [string] $UComments = $msgTable.noncompliantUsers
@@ -42,6 +49,13 @@ function Check-DeprecatedUsers {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
     }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($enableMultiCloudProfiles) {
+        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfile $cloudUsageProfile -SubscriptionId (Get-AzContext).Subscription.Id
+        $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+    }
+
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $DeprecatedUserStatus
         Errors=$ErrorList

@@ -10,7 +10,13 @@
             [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
-            [string] $ReportTime
+            [string] $ReportTime,
+            [int[]] 
+            $moduleProfile,  # New parameter for module profiles
+            [int[]] 
+            $cloudUsageProfile,  # New parameter for cloud usage profiles
+            [bool] 
+            $enableMultiCloudProfiles = $true  # New feature flag, default to true    
             )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
@@ -192,6 +198,13 @@
         records = $unique_guestUsersArray
         logType = "GR2ExternalUsers"
     }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($enableMultiCloudProfiles) {
+        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfile $cloudUsageProfile -SubscriptionId (Get-AzContext).Subscription.Id
+        $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+    }
+    
 
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $GuestUserStatus
