@@ -12,7 +12,7 @@
             [Parameter(Mandatory=$true)]
             [string] $ReportTime,
             [int[]] 
-            $moduleProfile,  # New parameter for module profiles
+            $moduleProfile = @(),  # New parameter for module profiles
             [int[]] 
             $cloudUsageProfile = @(),  # New parameter for cloud usage profiles, default to empty array
             [bool] 

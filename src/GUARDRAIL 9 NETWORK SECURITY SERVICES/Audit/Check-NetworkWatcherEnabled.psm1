@@ -57,7 +57,7 @@ function Get-NetworkWatcherStatus {
             # check if network watcher is enabled in the region
             $comments = $null
             $ComplianceStatus = $false
-            ForEach ($region in ($nonExcludedVnetRegions | Get-Unique)) {
+            ForEach ($region in ($ | Get-Unique)) {
                 $nw = Get-AzNetworkWatcher -Location $region -ErrorAction SilentlyContinue
                 if ($nw) {
                     $ComplianceStatus = $true 

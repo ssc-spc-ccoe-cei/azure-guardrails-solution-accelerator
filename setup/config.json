@@ -20,6 +20,6 @@
   "lighthousePrincipalId": "",
   "lighthouseTargetManagementGroupID": "",
   "securityRetentionDays": "730",
-  "cloudUsageProfiles": "default",
-  "enableMultiCloudProfiles": "false"
+  "cloudUsageProfiles": "5",
+  "enableMultiCloudProfiles": false
 }
