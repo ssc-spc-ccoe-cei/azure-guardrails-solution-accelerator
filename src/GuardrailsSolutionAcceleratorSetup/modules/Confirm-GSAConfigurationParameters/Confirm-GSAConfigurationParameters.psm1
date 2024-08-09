@@ -390,7 +390,7 @@ Function Confirm-GSAConfigurationParameters {
 
     # add feature flag for multi cloud profile
     if ([string]::IsNullOrEmpty($config.enableMultiCloudProfiles) -or !($config.enableMultiCloudProfiles -as [bool])) {
-        Write-Error "enableMultiCloudProfiles has a value of '$config.enableMultiCloudProfiles' which is not a boolean"
+        Write-Error "enableMultiCloudProfiles has a value of '$config.enableMultiCloudProfiles' which is not a boolean value."
         break
     }
     $config['runtime']['enableMultiCloudProfiles'] = [bool]::Parse($config.enableMultiCloudProfiles)
