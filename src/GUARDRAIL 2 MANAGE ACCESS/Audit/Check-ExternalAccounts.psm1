@@ -11,13 +11,12 @@
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
             [string] $ReportTime,
-            [int[]] 
-            $moduleProfile = @(),  # New parameter for module profiles
-            [int[]] 
-            $cloudUsageProfile = @(),  # New parameter for cloud usage profiles, default to empty array
-            [bool] 
+            [string] 
+            $moduleProfiles,  # Passed as a string
+            [string] 
+            $CloudUsageProfiles = "3",  # Passed as a string
             $enableMultiCloudProfiles = $true  # New feature flag, default to true    
-            )
+        )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

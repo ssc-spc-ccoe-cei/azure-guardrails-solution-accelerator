@@ -15,10 +15,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -40,12 +36,6 @@
     "Required": "False",
     "Profiles": [1, 2, 3, 4, 5, 6],
     "Script": "Get-ADLicenseType  -ControlName $msgTable.CtrName1 -ItemName $msgTable.MSEntIDLicense -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
-      }
-    ],    
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -61,12 +51,6 @@
     "Required": "False",
     "Profiles": [1, 2, 3],
     "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
-      }
-    ],        
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -82,12 +66,6 @@
     "Required": "False",
     "Profiles": [1, 2, 3],
     "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
-      }
-    ],        
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -111,10 +89,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -144,10 +118,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -169,12 +139,6 @@
     "Required": "False",
     "Profiles": [1, 2, 3],
     "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
-      }
-    ],
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -190,12 +154,6 @@
     "Required": "False",
     "Profiles": [1, 2, 3],
     "Script": "Check-MFARequired -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaRequiredForAllUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
-      }
-    ],    
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -219,10 +177,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -252,10 +206,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -281,10 +231,6 @@
       {
         "Name":  "SSCReadOnlyServicePrincipalNameAPPID",
         "Value": "SSCReadOnlyServicePrincipalNameAPPID"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -306,10 +252,6 @@
       {
         "Name":  "SSCReadOnlyServicePrincipalNameAPPID",
         "Value": "SSCReadOnlyServicePrincipalNameAPPID"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -335,11 +277,7 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
-      } 
+      }
     ],
     "localVariables": [
       {
@@ -368,10 +306,6 @@
       {
         "Name": "pbmmpolicyID",
         "Value": "PBMMPolicyID"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -397,10 +331,6 @@
       {
         "Name": "AllowedLocationPolicyId",
         "Value": "AllowedLocationPolicyId"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -430,10 +360,6 @@
       {
         "Name": "pbmmpolicyID",
         "Value": "PBMMPolicyID"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -459,10 +385,6 @@
       {
         "Name": "pbmmpolicyID",
         "Value": "PBMMPolicyID"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -488,10 +410,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -521,10 +439,6 @@
       {
         "Name": "reservedSubnetList",
         "Value": "reservedSubnetList"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -554,10 +468,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -583,10 +493,6 @@
       {
         "Name": "cbssubscriptionName",
         "Value": "CBSSubscriptionName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -608,10 +514,6 @@
       {
         "Name": "cbssubscriptionName",
         "Value": "CBSSubscriptionName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -637,10 +539,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -670,10 +568,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -703,10 +597,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -732,10 +622,6 @@
       {
         "Name": "cbssubscriptionName",
         "Value": "CBSSubscriptionName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -761,10 +647,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -796,10 +678,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -827,10 +705,6 @@
       {
         "Name": "cbssubscriptionName",
         "Value": "CBSSubscriptionName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -856,10 +730,6 @@
       {
         "Name": "cbssubscriptionName",
         "Value": "CBSSubscriptionName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -889,10 +759,6 @@
       {
         "Name": "securityRetentionDays",
         "Value": "securityRetentionDays"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -918,10 +784,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -966,10 +828,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -999,10 +857,6 @@
       {
         "Name": "containerName",
         "Value": "ContainerName"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -1031,10 +885,6 @@
       {
         "Name": "SecondBreakGlassUPN",
         "Value": "BGA2"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -1060,10 +910,6 @@
       {
         "Name": "SecondBreakGlassUPN",
         "Value": "BGA2"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [
@@ -1089,10 +935,6 @@
       {
         "Name": "SecondBreakGlassUPN",
         "Value": "BGA2"
-      },
-      {
-        "Name": "cloudUsageProfiles",
-        "Value": "cloudUsageProfiles"
       }
     ],
     "localVariables": [

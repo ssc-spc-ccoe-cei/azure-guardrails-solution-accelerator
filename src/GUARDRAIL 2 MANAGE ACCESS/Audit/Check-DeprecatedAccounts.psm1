@@ -9,9 +9,10 @@ function Check-DeprecatedUsers {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
-        [int[]] 
-        $moduleProfile = @(),  # New parameter for module profiles
-        [int[]] $cloudUsageProfile = @(),  # New parameter for cloud usage profiles, default to empty array
+        [string] 
+        $moduleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
         [bool] 
         $enableMultiCloudProfiles = $false  # New feature flag, default to false
 
@@ -22,7 +23,11 @@ function Check-DeprecatedUsers {
 
     [PSCustomObject] $DeprecatedUsers = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    
+
+    # Convert strings back to arrays of integers
+    $moduleProfileArray = $Profiles.Split(',') | ForEach-Object { [int]$_.Trim() }
+    $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
+        
     # A Deprecated account is an account that is disabled and not synchronized to AD
     $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" -Select OnPremisesSyncEnabled,UserPrincipalName | Where-Object {$null -eq $_.onPremisesSyncEnabled}
 
@@ -51,7 +56,7 @@ function Check-DeprecatedUsers {
 
     # Conditionally add the Profile field based on the feature flag
     if ($enableMultiCloudProfiles) {
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfile $cloudUsageProfile -SubscriptionId (Get-AzContext).Subscription.Id
+        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfile $cloudUsageProfileArray -SubscriptionId (Get-AzContext).Subscription.Id
         $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }
 
