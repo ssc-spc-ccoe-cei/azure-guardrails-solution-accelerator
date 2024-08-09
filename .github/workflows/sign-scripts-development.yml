@@ -283,7 +283,6 @@ jobs:
               $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
-              $enableMultiCloudProfiles = $true
 
               $configContent = @"
               {
@@ -311,7 +310,7 @@ jobs:
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "3",
-                  "enableMultiCloudProfiles": $enableMultiCloudProfiles
+                  "enableMultiCloudProfiles": "true"
                 }
               "@
               Set-Content -Path $configFilePath -Value $configContent
