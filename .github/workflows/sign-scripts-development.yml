@@ -309,7 +309,8 @@ jobs:
                   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "3"
+                  "cloudUsageProfiles": "3",
+                  "enableMultiCloudProfiles": "true"
                 }
               "@
               Set-Content -Path $configFilePath -Value $configContent

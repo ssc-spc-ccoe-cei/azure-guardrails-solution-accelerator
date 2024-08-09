@@ -11,10 +11,9 @@ function Check-DeprecatedUsers {
         $ReportTime,
         [int[]] 
         $moduleProfile,  # New parameter for module profiles
-        [int[]] 
-        $cloudUsageProfile,  # New parameter for cloud usage profiles
+        [int[]] $cloudUsageProfile = @(),  # New parameter for cloud usage profiles, default to empty array
         [bool] 
-        $enableMultiCloudProfiles = $true  # New feature flag, default to true
+        $enableMultiCloudProfiles = $false  # New feature flag, default to false
 
     )
     [bool] $IsCompliant = $false
