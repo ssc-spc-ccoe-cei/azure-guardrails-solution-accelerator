@@ -193,12 +193,13 @@ foreach ($module in $modules) {
         $moduleScript =  $module.Script
 
         if($RuntimeConfig.enableMultiCloudProfiles) {
+            # Extract the Profiles array directly from the module definition
+            $profilesArray = $module.Profiles
 
             # Convert arrays into comma-separated strings
             $profilesArrayString = $profilesArray -join ','
             $cloudUsageProfilesString = $cloudUsageProfiles -join ','
-            # Extract the Profiles array directly from the module definition
-            $profilesArray = $module.Profiles
+
             # Convert the array to a format that PowerShell recognizes as an array argument
             # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
             $moduleScript = $module.Script + " -Profiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -enableMultiCloudProfiles $true"
