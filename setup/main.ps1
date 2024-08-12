@@ -232,7 +232,7 @@ foreach ($module in $modules) {
         #Write-host $module.Script
 
         try {
-            $results = $NewScriptBlock.Invoke( -EnableMultiCloudProfiles $true )
+            $results = $NewScriptBlock.Invoke()
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
             #Write-Output "required: $($module.Required)."
