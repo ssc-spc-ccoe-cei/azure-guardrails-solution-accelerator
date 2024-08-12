@@ -73,7 +73,13 @@ function Verify-PBMMPolicy {
         [parameter(mandatory=$true)][string] $itsgcode,
         [parameter(mandatory=$true)][hashtable] $msgTable,
         [Parameter(Mandatory=$true)][string]$ReportTime,
-        [Parameter(Mandatory=$false)][string]$CBSSubscriptionName
+        [Parameter(Mandatory=$false)][string]$CBSSubscriptionName,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

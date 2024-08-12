@@ -117,6 +117,7 @@ $modules = $modulesList | convertfrom-json
 
 # Filter modules based on the profile
 if($RuntimeConfig.enableMultiCloudProfiles) {
+    Write-Output "Running enableMultiCloudProfiles True."
 
     # Retrieve the cloudUsageProfiles and convert to an array
     $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
@@ -202,7 +203,7 @@ foreach ($module in $modules) {
 
             # Convert the array to a format that PowerShell recognizes as an array argument
             # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
-            $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString'"
+            $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -EnableMultiCloudProfiles \$EnableMultiCloudProfiles"
         }
 
         $NewScriptBlock = [scriptblock]::Create($moduleScript)
@@ -232,7 +233,7 @@ foreach ($module in $modules) {
         #Write-host $module.Script
 
         try {
-            $results = $NewScriptBlock.Invoke()
+            $results = $NewScriptBlock.Invoke($RuntimeConfig.enableMultiCloudProfiles)
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
             #Write-Output "required: $($module.Required)."

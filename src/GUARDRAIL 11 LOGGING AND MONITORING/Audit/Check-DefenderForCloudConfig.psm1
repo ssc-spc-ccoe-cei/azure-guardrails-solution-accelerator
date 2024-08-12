@@ -14,7 +14,12 @@ function Get-DefenderForCloudConfig {
         $ReportTime,
         [Parameter(Mandatory=$false)]
         [string]
-        $CBSSubscriptionName
+        $CBSSubscriptionName,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to true    
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

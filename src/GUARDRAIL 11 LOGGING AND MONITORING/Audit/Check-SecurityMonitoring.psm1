@@ -87,7 +87,12 @@ function get-SecurityMonitoringStatus {
         $CBSSubscriptionName,
         [Parameter(Mandatory=$false)]
         [int]
-        $LAWRetention=730
+        $LAWRetention=730,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to true
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

@@ -100,7 +100,13 @@ function Verify-AllowedLocationPolicy {
         $ReportTime,
         [Parameter(Mandatory=$false)]
         [string]
-        $CBSSubscriptionName
+        $CBSSubscriptionName,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false
     )
 
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
