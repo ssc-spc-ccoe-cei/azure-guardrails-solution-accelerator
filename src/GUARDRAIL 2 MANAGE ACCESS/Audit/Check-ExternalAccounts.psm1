@@ -12,10 +12,10 @@
             [Parameter(Mandatory=$true)]
             [string] $ReportTime,
             [string] 
-            $moduleProfiles,  # Passed as a string
+            $ModuleProfiles,  # Passed as a string
             [string] 
             $CloudUsageProfiles = "3",  # Passed as a string
-            $enableMultiCloudProfiles = $true  # New feature flag, default to true    
+            $EnableMultiCloudProfiles = $false  # New feature flag, default to true    
         )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
@@ -199,7 +199,7 @@
     }
 
     # Conditionally add the Profile field based on the feature flag
-    if ($enableMultiCloudProfiles) {
+    if ($EnableMultiCloudProfiles) {
         $evaluationProfile = Get-EvaluationProfile -CloudUsageProfile $cloudUsageProfile -SubscriptionId (Get-AzContext).Subscription.Id
         $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }

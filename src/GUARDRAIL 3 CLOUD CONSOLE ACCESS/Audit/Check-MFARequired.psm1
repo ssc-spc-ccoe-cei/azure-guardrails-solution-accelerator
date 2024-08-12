@@ -10,7 +10,13 @@ function Check-MFARequired {
         [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime
+        [string] $ReportTime,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
     )
     $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

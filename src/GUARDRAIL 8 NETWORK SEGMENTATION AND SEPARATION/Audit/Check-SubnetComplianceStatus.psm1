@@ -20,7 +20,13 @@ function Get-SubnetComplianceInformation {
         $CBSSubscriptionName,
         [Parameter(Mandatory = $false)]
         [switch]
-        $debuginfo
+        $debuginfo,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
     )
     #module for Tags handling
     #import-module '..\..\GUARDRAIL COMMON\Get-Tags.psm1'

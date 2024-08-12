@@ -19,7 +19,13 @@ function Get-NetworkWatcherStatus {
         $CBSSubscriptionName,
         [Parameter(Mandatory=$false)]
         [switch]
-        $debuginfo
+        $debuginfo,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
     )
     [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

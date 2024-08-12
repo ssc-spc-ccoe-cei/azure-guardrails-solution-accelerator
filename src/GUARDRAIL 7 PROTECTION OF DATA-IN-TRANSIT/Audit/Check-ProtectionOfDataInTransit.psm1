@@ -32,7 +32,13 @@ function Check-StatusDataInTransit {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)

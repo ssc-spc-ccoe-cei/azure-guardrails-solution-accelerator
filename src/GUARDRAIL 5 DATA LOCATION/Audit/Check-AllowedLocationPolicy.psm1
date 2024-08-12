@@ -13,7 +13,13 @@ function Check-PolicyStatus {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
-        [array] $AllowedLocations
+        [array] $AllowedLocations,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)

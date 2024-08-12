@@ -24,7 +24,13 @@ function Get-UserAuthenticationMethod {
         [string] $SecondBreakGlassEmail,
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [string] 
+        $ModuleProfiles,  # Passed as a string
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [bool] 
+        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
    )
 
    $IsCompliant = $true
