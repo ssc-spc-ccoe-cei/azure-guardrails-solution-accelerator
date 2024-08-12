@@ -203,7 +203,7 @@ foreach ($module in $modules) {
 
             # Convert the array to a format that PowerShell recognizes as an array argument
             # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
-            $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -EnableMultiCloudProfiles \$EnableMultiCloudProfiles"
+            $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -EnableMultiCloudProfiles 1"
         }
 
         $NewScriptBlock = [scriptblock]::Create($moduleScript)
@@ -233,7 +233,7 @@ foreach ($module in $modules) {
         #Write-host $module.Script
 
         try {
-            $results = $NewScriptBlock.Invoke($RuntimeConfig.enableMultiCloudProfiles)
+            $results = $NewScriptBlock.Invoke()
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
             #Write-Output "required: $($module.Required)."
