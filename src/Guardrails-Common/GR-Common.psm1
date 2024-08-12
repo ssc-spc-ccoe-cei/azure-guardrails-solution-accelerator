@@ -848,7 +848,7 @@ function add-documentFileExtensions {
 function Get-EvaluationProfile {
     param (
         [Parameter(Mandatory = $true)]
-        [int[]] $CloudUsageProfile,  # Array of profiles
+        [int[]] $CloudUsageProfiles,  # Array of profiles
         [Parameter(Mandatory = $true)]
         [string] $SubscriptionId
     )

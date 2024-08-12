@@ -17,13 +17,13 @@ function Get-NetworkWatcherStatus {
         [Parameter(Mandatory=$true)]
         [string]
         $CBSSubscriptionName,
-        [Parameter(Mandatory=$false)]
         [string] 
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
         [bool] 
         $EnableMultiCloudProfiles = $false,  # New feature flag, default to false
+        [Parameter(Mandatory=$false)]
         [switch]
         $debuginfo    
     )

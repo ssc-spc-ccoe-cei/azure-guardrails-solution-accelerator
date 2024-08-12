@@ -56,7 +56,7 @@ function Check-DeprecatedUsers {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfile $cloudUsageProfileArray -SubscriptionId (Get-AzContext).Subscription.Id
+        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfileArray -SubscriptionId (Get-AzContext).Subscription.Id
         $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }
 
