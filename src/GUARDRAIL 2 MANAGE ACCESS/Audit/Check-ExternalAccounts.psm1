@@ -201,7 +201,8 @@
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfile $cloudUsageProfile -SubscriptionId (Get-AzContext).Subscription.Id
+        $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
+        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfileArray -SubscriptionId (Get-AzContext).Subscription.Id
         $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }
     

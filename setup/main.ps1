@@ -189,6 +189,8 @@ catch {
 }
 Write-Output "Loaded $($msgTable.Count) messages." 
 Write-Output "Starting modules loop."
+$cloudUsageProfilesString = $cloudUsageProfiles -join ','
+
 foreach ($module in $modules) {
     if ($module.Status -eq "Enabled") {
         $moduleScript =  $module.Script
@@ -199,11 +201,10 @@ foreach ($module in $modules) {
 
             # Convert arrays into comma-separated strings
             $profilesArrayString = $profilesArray -join ','
-            $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 
             # Convert the array to a format that PowerShell recognizes as an array argument
             # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
-            $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -EnableMultiCloudProfiles 1"
+            $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -EnableMultiCloudProfiles 1 "
         }
 
         $NewScriptBlock = [scriptblock]::Create($moduleScript)
