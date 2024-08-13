@@ -235,7 +235,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource 1 'modules' = if (newDeployment || updatePSModules) {
+  resource module21 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudConsoleAccess'
     properties: {
       contentLink: {
