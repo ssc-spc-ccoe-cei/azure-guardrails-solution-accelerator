@@ -32,9 +32,11 @@ function Get-NetworkWatcherStatus {
     )
     [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $DebugMessage.Add("Starting Get-NetworkWatcherStatus function...")
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
-        $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
+        $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}
+        $DebugMessage.Add("Found $($subs.count) subscriptions." 
     }
     catch {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
@@ -46,6 +48,8 @@ function Get-NetworkWatcherStatus {
     }
     foreach ($sub in $subs)
     {
+        $DebugMessage.Add("Working on subscription '$($sub.Name)'...")
+
         Write-Verbose "Selecting subscription..."
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         
@@ -58,6 +62,7 @@ function Get-NetworkWatcherStatus {
         {
             foreach ($VNet in $includedVNETs)
             {
+                $DebugMessage.Add("Working on VNET '$($VNet.Name)'...")
                 Write-Debug "Working on VNET '$($VNet.Name)'..."
                 # add vnet region to regions list - used in checking for network watcher in that region
                 $nonExcludedVnetRegions += $VNet.Location  
@@ -110,6 +115,7 @@ function Get-NetworkWatcherStatus {
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $RegionList 
         Errors=$ErrorList
+        DebugMessage=$DebugMessage
         AdditionalResults = $AdditionalResults
     }
     return $moduleOutput

@@ -205,11 +205,12 @@ foreach ($module in $modules) {
 
             # Convert the array to a format that PowerShell recognizes as an array argument
             # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
-            $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -EnableMultiCloudProfiles true"
+            $moduleScript = $module.Script + " -ModuleProfiles `'$profilesArrayString'` -CloudUsageProfiles `'$cloudUsageProfilesString'` -EnableMultiCloudProfiles true"
             Write-Output "Running module with script: $moduleScript"
         }
 
         $NewScriptBlock = [scriptblock]::Create($moduleScript)
+        Write-Output "NewScriptBlock: $NewScriptBlock"
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
         $secrets = $module.secrets
