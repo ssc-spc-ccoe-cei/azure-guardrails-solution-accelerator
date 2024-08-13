@@ -210,7 +210,6 @@ foreach ($module in $modules) {
         }
 
         $NewScriptBlock = [scriptblock]::Create($moduleScript)
-        Write-Output "NewScriptBlock: $NewScriptBlock"
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
         $secrets = $module.secrets
@@ -260,11 +259,12 @@ foreach ($module in $modules) {
             }
         }
         catch {
-            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey', '***')))
+            Write-Output "Caught error while invoking for invoking is $($results)" 
+            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
             
-            Add-LogEntry 'Error' "Failed invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
                 with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-            Write-Error "Failed invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
+            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
         }
     }
     else {
