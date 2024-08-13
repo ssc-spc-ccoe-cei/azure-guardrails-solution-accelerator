@@ -32,6 +32,7 @@ function Get-NetworkWatcherStatus {
     )
     [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $DebugMessage = New-Object System.Collections.ArrayList
     $DebugMessage.Add("Starting Get-NetworkWatcherStatus function...")
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
