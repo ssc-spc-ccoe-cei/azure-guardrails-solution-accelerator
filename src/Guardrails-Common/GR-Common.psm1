@@ -854,15 +854,15 @@ function Get-EvaluationProfile {
     )
 
     try {
-        # Get the highest profile from the CloudUsageProfile array
-        $highestCloudProfile = $CloudUsageProfile | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+        # Get the highest profile from the CloudUsageProfiles array
+        $highestCloudProfile = $CloudUsageProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
 
         # Get subscription tags
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
         $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
 
         if ($null -eq $profileTag) {
-            # No tag, pick the highest profile from CloudUsageProfile
+            # No tag, pick the highest profile from CloudUsageProfiles
             return $highestCloudProfile
         }
 
@@ -873,8 +873,8 @@ function Get-EvaluationProfile {
             @([int]$profileTag.TagValue)
         }
 
-        # Find the matching profiles between tag values and CloudUsageProfile
-        $matchingProfiles = $profileTagValues | Where-Object { $CloudUsageProfile -contains $_ }
+        # Find the matching profiles between tag values and CloudUsageProfiles
+        $matchingProfiles = $profileTagValues | Where-Object { $CloudUsageProfiles -contains $_ }
 
         if ($matchingProfiles.Count -gt 0) {
             # If multiple profiles match, pick the highest from tag side
@@ -888,8 +888,8 @@ function Get-EvaluationProfile {
                 # Lower than highest profile, use the lower tag value
                 return $maxProfileTagValue
             } else {
-                # Higher than highest profile in CloudUsageProfile, error out
-                throw "Subscription $SubscriptionId has invalid profile tag: $($profileTagValues) which is higher than any specified CloudUsageProfile."
+                # Higher than highest profile in CloudUsageProfiles, error out
+                throw "Subscription $SubscriptionId has invalid profile tag: $($profileTagValues) which is higher than any specified CloudUsageProfiles."
             }
         }
     } catch {
