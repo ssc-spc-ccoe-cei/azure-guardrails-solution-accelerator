@@ -196,6 +196,7 @@ foreach ($module in $modules) {
         $moduleScript =  $module.Script
 
         if($RuntimeConfig.enableMultiCloudProfiles) {
+            Write-Output "Running enableMultiCloudProfiles True."
             # Extract the Profiles array directly from the module definition
             $profilesArray = $module.Profiles
 
@@ -205,6 +206,7 @@ foreach ($module in $modules) {
             # Convert the array to a format that PowerShell recognizes as an array argument
             # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
             $moduleScript = $module.Script + " -ModuleProfiles '$profilesArrayString' -CloudUsageProfiles '$cloudUsageProfilesString' -EnableMultiCloudProfiles true"
+            Write-Output "Running module with script: $moduleScript"
         }
 
         $NewScriptBlock = [scriptblock]::Create($moduleScript)
@@ -234,7 +236,11 @@ foreach ($module in $modules) {
         #Write-host $module.Script
 
         try {
+            Write-Output "Invoking Script for $($module.modulename)" 
+
             $results = $NewScriptBlock.Invoke()
+            Write-Output "Result for invoking is $($results.ComplianceResults)" 
+
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
             #Write-Output "required: $($module.Required)."
