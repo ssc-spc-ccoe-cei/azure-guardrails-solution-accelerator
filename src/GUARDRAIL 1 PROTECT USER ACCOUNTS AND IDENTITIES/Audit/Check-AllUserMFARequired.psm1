@@ -38,7 +38,7 @@ function Check-AllUserMFARequired {
 
     # Check all users for MFA
     $allUserUPNs = $users.userPrincipalName
-    # remove break glass account UPNs
+    # Excluding break glass account UPNs
     if ($allUserUPNs -contains $FirstBreakGlassUPN){
         $allUserUPNs = $allUserUPNs | Where-Object { $_ -ne $FirstBreakGlassUPN }
     }
@@ -46,10 +46,6 @@ function Check-AllUserMFARequired {
         $allUserUPNs = $allUserUPNs | Where-Object { $_ -ne $SecondBreakGlassUPN }
 
     }
-    # # Test
-    # $errorMsg = "Check allUserUPNs : $allUserUPNs"
-    # $ErrorList.Add($errorMsg)
-    # Write-Error "Error: $errorMsg"  
 
     $mfaCounter = 0
     $userUPNsMFA = @()
