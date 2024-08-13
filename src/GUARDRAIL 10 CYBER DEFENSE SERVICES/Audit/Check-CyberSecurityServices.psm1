@@ -13,9 +13,9 @@ function Check-CBSSensors {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [bool] 
-        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
-    ) 
+        [string] 
+        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        ) 
 
     $IsCompliant = $true 
     $Object = New-Object PSObject
