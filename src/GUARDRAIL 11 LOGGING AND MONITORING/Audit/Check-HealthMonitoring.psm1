@@ -61,8 +61,9 @@ function Get-HealthMonitoringStatus {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        $EnableMultiCloudProfiles = $false  # New feature flag, default to true
-    )
+        [string] 
+        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     #$LogType="GuardrailsCompliance"

@@ -15,8 +15,8 @@ function Check-MFARequired {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [bool] 
-        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
+        [string] 
+        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
     )
     $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

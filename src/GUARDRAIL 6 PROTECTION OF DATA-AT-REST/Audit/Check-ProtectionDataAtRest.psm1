@@ -78,8 +78,8 @@ function Check-StatusDataAtRest {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [bool] 
-        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
+        [string] 
+        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
 
@@ -313,9 +313,9 @@ function Verify-ProtectionDataAtRest {
             $ModuleProfiles,  # Passed as a string
             [string] 
             $CloudUsageProfiles = "3",  # Passed as a string
-            [bool] 
-            $EnableMultiCloudProfiles = $false  # New feature flag, default to false        
-    )
+            [string] 
+            $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        )
     [PSCustomObject] $ObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $grRequiredPolicies=@("TransparentDataEncryptionOnSqlDatabasesShouldBeEnabled","AdvancedDataSecurityShouldBeEnabledOnYourSqlServers","AdvancedDataSecurityShouldBeEnabledOnYourManagedInstances")

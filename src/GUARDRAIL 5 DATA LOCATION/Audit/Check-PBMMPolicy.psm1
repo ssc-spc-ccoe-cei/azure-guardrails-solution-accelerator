@@ -15,8 +15,8 @@ function Check-StatusPBMM {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [bool] 
-        $EnableMultiCloudProfiles = $false  # New feature flag, default to false    
+        [string] 
+        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)
@@ -78,8 +78,8 @@ function Verify-PBMMPolicy {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [bool] 
-        $EnableMultiCloudProfiles = $false  # New feature flag, default to false
+        [string] 
+        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
