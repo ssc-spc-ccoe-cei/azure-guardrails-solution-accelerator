@@ -27,6 +27,8 @@ mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = Global Administrators Accounts MFA check
 
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
+allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
+userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type

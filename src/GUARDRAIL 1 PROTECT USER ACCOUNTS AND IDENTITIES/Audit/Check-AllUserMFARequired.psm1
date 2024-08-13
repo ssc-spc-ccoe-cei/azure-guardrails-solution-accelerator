@@ -91,13 +91,13 @@ function Check-AllUserMFARequired {
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
                             
-                            # need to keep track of mfa count for each user
+                            # need to keep track of mfa auth count for each user
                             $authCounter += 1
                             if ($authCounter -ge 2){
-                                #need to keep track of user account mfa in counter and compare it with the user count
+                                #need to keep track of user account mfa in a counter and compare it with the total user count
                                 $mfaCounter += 1
                                 $authFound = $true
-                                # atleast one auth method is true - so we move to the next UPN 
+                                # atleast two auth method is true - so we move to the next UPN 
                                 break
                             }
                     }
@@ -137,7 +137,7 @@ function Check-AllUserMFARequired {
     # Condition: all users are MFA enabled
     if($mfaCounter -eq $allUserUPNs.Count) {
         # $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
-        $commentsArray += ' ' + 'Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.'
+        $commentsArray += ' ' + $msgTable.allUserHaveMFA
         $IsCompliant = $true
     }
     # Condition: GA UPN list has > 2 UPNs and not all UPNs are MFA enabled
@@ -147,9 +147,8 @@ function Check-AllUserMFARequired {
             Write-Host "Something is wrong as userUPNsMFA Count equals 0. This output should only execute if there is an error populating userUPNsMFA"
         }
         else {
-            # $upnString = ($userUPNsMFA | ForEach-Object { $_.UPN }) -join ', '
-            $upnString = ($userUPNsMFA | ForEach-Object { $_.MFAComments }) -join ', '
-            $commentsArray += ' ' + 'One or more Native User Accounts have not configured MFA properly: ' + $upnString
+            $upnString = ($userUPNsMFA | ForEach-Object { $_.UPN }) -join ', '
+            $commentsArray += ' ' + $msgTable.userMisconfiguredMFA -f $upnString
             $IsCompliant = $false
         }
     }
