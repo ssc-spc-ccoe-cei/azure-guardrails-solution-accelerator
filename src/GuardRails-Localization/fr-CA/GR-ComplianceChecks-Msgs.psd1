@@ -26,6 +26,8 @@ mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le comp
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 gaAccntsMFACheck = Vérification d'authentification multifacteur de comptes d'administrateur général
 
+allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
+
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
 MSEntIDLicenseTypeNotFound = Type de licence requis Microsoft Entra ID non trouvé

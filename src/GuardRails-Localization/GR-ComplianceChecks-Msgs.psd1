@@ -26,6 +26,8 @@ mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = Global Administrators Accounts MFA check
 
+allUserAccountsMFACheck = All Cloud User Accounts MFA Check
+
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
 MSEntIDLicenseTypeNotFound = Required Microsoft Entra ID license type not found
