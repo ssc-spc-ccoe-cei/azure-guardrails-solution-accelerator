@@ -6,7 +6,7 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-GAAuthenticationMethods -StorageAccountName $vars.storageAccountName -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.gaAccntsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-GAAuthenticationMethods -StorageAccountName $vars.storageAccountName -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.gaAccntsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -EnableMultiCloudProfiles $enableMultiCloudProfiles",
     "variables": [
       {
         "Name": "storageAccountName",

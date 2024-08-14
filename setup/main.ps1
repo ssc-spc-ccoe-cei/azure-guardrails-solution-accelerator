@@ -115,8 +115,9 @@ catch {
 }
 $modules = $modulesList | convertfrom-json
 
+$enableMultiCloudProfiles = $RuntimeConfig.enableMultiCloudProfiles
 # Filter modules based on the profile
-if($RuntimeConfig.enableMultiCloudProfiles) {
+if($enableMultiCloudProfiles) {
     Write-Output "Running enableMultiCloudProfiles True."
 
     # Retrieve the cloudUsageProfiles and convert to an array
@@ -193,23 +194,7 @@ $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 
 foreach ($module in $modules) {
     if ($module.Status -eq "Enabled") {
-        $moduleScript =  $module.Script
-
-        if($RuntimeConfig.enableMultiCloudProfiles) {
-            Write-Output "Running enableMultiCloudProfiles True."
-            # Extract the Profiles array directly from the module definition
-            $profilesArray = $module.Profiles
-
-            # Convert arrays into comma-separated strings
-            $profilesArrayString = $profilesArray -join ','
-
-            # Convert the array to a format that PowerShell recognizes as an array argument
-            # $profilesArrayString = $profilesArray -join ','  # Converts [1, 2, 3] to "1,2,3"
-            $moduleScript = $module.Script + " -ModuleProfiles `'$profilesArrayString'` -CloudUsageProfiles `'$cloudUsageProfilesString'` -EnableMultiCloudProfiles true"
-            Write-Output "Running module with script: $moduleScript"
-        }
-
-        $NewScriptBlock = [scriptblock]::Create($moduleScript)
+        $NewScriptBlock = [scriptblock]::Create($module.Script)
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
         $secrets = $module.secrets
@@ -234,10 +219,11 @@ foreach ($module in $modules) {
         }
         #$vars
         #Write-host $module.Script
+        Write-Output "Running module with script: $module.Script"
 
         try {
             Write-Output "Invoking Script for $($module.modulename)" 
-
+            Write-Output "NewScriptBlock: $NewScriptBlock"
             $results = $NewScriptBlock.Invoke()
             Write-Output "Result for invoking is $($results.ComplianceResults)" 
 
@@ -259,7 +245,7 @@ foreach ($module in $modules) {
             }
         }
         catch {
-            Write-Output "Caught error while invoking for invoking is $($results)" 
+            Write-Output "Caught error while invoking result is $($results)" 
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
             
             Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
