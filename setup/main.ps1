@@ -1,7 +1,6 @@
 param (
     [switch]$localExecution,
-    [string]$keyVaultName,
-    [int]$defaultProfile = 3  # Default profile
+    [string]$keyVaultName
 )
 
 Disable-AzContextAutosave -Scope Process | Out-Null
