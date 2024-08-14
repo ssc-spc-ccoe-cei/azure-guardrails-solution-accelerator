@@ -7,7 +7,8 @@ function Check-MonitorAccountCreation {
     [hashtable] $msgTable,
     [Parameter(Mandatory=$true)]
     [string]
-    $ReportTime)
+    $ReportTime
+  )
 
   [bool] $IsCompliant = $false
   [string] $Comments = $null

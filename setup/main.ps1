@@ -193,6 +193,9 @@ $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 
 foreach ($module in $modules) {
     if ($module.Status -eq "Enabled") {
+        if($enableMultiCloudProfiles) {
+            $module.Script += " -EnableMultiCloudProfiles"
+        }
         $NewScriptBlock = [scriptblock]::Create($module.Script)
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables

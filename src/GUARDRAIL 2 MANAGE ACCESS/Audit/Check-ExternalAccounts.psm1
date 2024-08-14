@@ -11,13 +11,9 @@
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
             [string] $ReportTime,
-            [string] 
-            $ModuleProfiles,  # Passed as a string
-            [string] 
-            $CloudUsageProfiles = "3",  # Passed as a string
-            [string] 
-            $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
-            )
+            [string] $CloudUsageProfiles = "3",  # Passed as a string
+            [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+        )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -26,14 +22,6 @@
     $guestUsers_wo_matchedUsers = @()
     $guestUsersArray_grouped = @()
     $unique_guestUsersArray = @()
-
-    # Cast the string to a boolean
-    try {
-        $EnableMultiCloudProfilesBoolean = [bool]::Parse($EnableMultiCloudProfiles)
-    } catch {
-        Write-Error "Invalid value for EnableMultiCloudProfiles. Please specify 'true' or 'false'."
-        return
-    }    
     
     $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
     $stopWatch.Start()
@@ -208,9 +196,8 @@
     }
 
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfilesBoolean) {
-        $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfileArray -SubscriptionId (Get-AzContext).Subscription.Id
+    if ($EnableMultiCloudProfiles) {
+        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -SubscriptionId (Get-AzContext).Subscription.Id
         $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }
     

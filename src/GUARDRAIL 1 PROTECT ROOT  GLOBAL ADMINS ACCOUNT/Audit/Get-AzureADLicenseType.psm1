@@ -28,11 +28,9 @@ function Get-ADLicenseType {
     [string]
     $ReportTime,
     [string] 
-    $ModuleProfiles,  # Passed as a string
-    [string] 
     $CloudUsageProfiles = "3",  # Passed as a string
-    [string] 
-    $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+    [switch] 
+    $EnableMultiCloudProfiles # New feature flag, default to false
 )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ADLicenseType  = "N/A"

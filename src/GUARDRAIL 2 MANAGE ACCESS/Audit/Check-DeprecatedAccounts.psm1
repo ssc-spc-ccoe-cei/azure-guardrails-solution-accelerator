@@ -7,15 +7,9 @@ function Check-DeprecatedUsers {
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime,
-        [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
-
+        [string] $ReportTime,
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [bool] $IsCompliant = $false
     [string] $UComments = $msgTable.noncompliantUsers
@@ -23,14 +17,6 @@ function Check-DeprecatedUsers {
 
     [PSCustomObject] $DeprecatedUsers = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-
-    # Cast the string to a boolean
-    try {
-        $EnableMultiCloudProfilesBoolean = [bool]::Parse($EnableMultiCloudProfiles)
-    } catch {
-        Write-Error "Invalid value for EnableMultiCloudProfiles. Please specify 'true' or 'false'."
-        return
-    }
         
     # A Deprecated account is an account that is disabled and not synchronized to AD
     $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" -Select OnPremisesSyncEnabled,UserPrincipalName | Where-Object {$null -eq $_.onPremisesSyncEnabled}
@@ -59,9 +45,8 @@ function Check-DeprecatedUsers {
     }
 
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfilesBoolean) {
-        $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfileArray -SubscriptionId (Get-AzContext).Subscription.Id
+    if ($EnableMultiCloudProfiles) {
+        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -SubscriptionId (Get-AzContext).Subscription.Id
         $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }
 

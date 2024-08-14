@@ -16,12 +16,9 @@ function Get-DefenderForCloudConfig {
         [string]
         $CBSSubscriptionName,
         [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
-        )
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+    )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     # Defender for cloud detection.

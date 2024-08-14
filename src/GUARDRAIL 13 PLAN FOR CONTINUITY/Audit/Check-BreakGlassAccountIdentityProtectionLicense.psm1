@@ -30,12 +30,9 @@ function Get-BreakGlassAccountLicense {
         [string]
         $ReportTime,
         [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
-        )
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+    )
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 

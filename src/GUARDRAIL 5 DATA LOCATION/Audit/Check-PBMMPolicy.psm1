@@ -15,8 +15,7 @@ function Check-StatusPBMM {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)
@@ -74,12 +73,8 @@ function Verify-PBMMPolicy {
         [parameter(mandatory=$true)][hashtable] $msgTable,
         [Parameter(Mandatory=$true)][string]$ReportTime,
         [Parameter(Mandatory=$false)][string]$CBSSubscriptionName,
-        [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        [Parameter(Mandatory=$false)][string] $CloudUsageProfiles = "3",  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

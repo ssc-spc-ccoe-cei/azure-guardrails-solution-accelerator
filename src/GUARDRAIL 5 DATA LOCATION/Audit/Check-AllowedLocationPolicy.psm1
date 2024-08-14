@@ -18,8 +18,7 @@ function Check-PolicyStatus {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)
@@ -96,17 +95,11 @@ function Verify-AllowedLocationPolicy {
         [string] $AllowedLocationsString,#locations, separated by comma.
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime,
+        [string] $ReportTime,
         [Parameter(Mandatory=$false)]
-        [string]
-        $CBSSubscriptionName,
-        [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        [string] $CBSSubscriptionName,
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
 
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList

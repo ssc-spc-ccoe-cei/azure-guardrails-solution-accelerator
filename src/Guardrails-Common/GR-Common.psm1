@@ -308,11 +308,8 @@ function Check-GAAuthenticationMethods {
         [string]
         $ReportTime,
         [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
@@ -532,11 +529,8 @@ function Check-DocumentExistsInStorage {
         [string]
         $ReportTime,
         [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
-        [string] 
-        $EnableMultiCloudProfiles = "false"  # New feature flag, default to false
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
@@ -848,14 +842,16 @@ function add-documentFileExtensions {
 function Get-EvaluationProfile {
     param (
         [Parameter(Mandatory = $true)]
-        [int[]] $CloudUsageProfiles,  # Array of profiles
+        [string] $CloudUsageProfiles,  # Array of profiles
         [Parameter(Mandatory = $true)]
         [string] $SubscriptionId
     )
 
     try {
+        $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
+
         # Get the highest profile from the CloudUsageProfiles array
-        $highestCloudProfile = $CloudUsageProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+        $highestCloudProfile = $cloudUsageProfileArray | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
 
         # Get subscription tags
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
@@ -874,7 +870,7 @@ function Get-EvaluationProfile {
         }
 
         # Find the matching profiles between tag values and CloudUsageProfiles
-        $matchingProfiles = $profileTagValues | Where-Object { $CloudUsageProfiles -contains $_ }
+        $matchingProfiles = $profileTagValues | Where-Object { $cloudUsageProfileArray -contains $_ }
 
         if ($matchingProfiles.Count -gt 0) {
             # If multiple profiles match, pick the highest from tag side
