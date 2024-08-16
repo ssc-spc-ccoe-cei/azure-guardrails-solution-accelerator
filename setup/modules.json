@@ -1,5 +1,29 @@
 [
   {
+    "ModuleName": "Check-AllUserMFARequired",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-GlobalAdministratorAccntsMFA",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",

@@ -6,7 +6,6 @@ on:
     types: 
       - completed
 
-
 concurrency:
   group: Deploy-Azure-CAC-Dev
   cancel-in-progress: false

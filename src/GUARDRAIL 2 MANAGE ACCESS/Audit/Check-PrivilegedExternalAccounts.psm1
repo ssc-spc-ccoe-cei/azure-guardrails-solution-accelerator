@@ -1,7 +1,7 @@
-    # Checking for GUEST accounts (Privileged)
-    # Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
-    # This query looks for accounts marked as GUEST
-    # It does not list GUEST accounts from the list of deleted accounts.
+# Checking for GUEST accounts (Privileged)
+# Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
+# This query looks for accounts marked as GUEST
+# It does not list GUEST accounts from the list of deleted accounts.
     
 function Check-PrivilegedExternalUsers  {
     Param ( 
@@ -283,5 +283,5 @@ function Check-PrivilegedExternalUsers  {
     
     $stopWatch.Stop()
     if ($debug) {Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}
-    }
+}
     
