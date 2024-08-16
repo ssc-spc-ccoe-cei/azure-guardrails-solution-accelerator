@@ -38,7 +38,7 @@ function Check-AllUserMFARequired {
 
     # Check all users for MFA
     $allUserUPNs = $users.userPrincipalName
-    # Excluding breakglass account UPNs
+    # Exclude the breakglass account UPNs from the list
     if ($allUserUPNs -contains $FirstBreakGlassUPN){
         $allUserUPNs = $allUserUPNs | Where-Object { $_ -ne $FirstBreakGlassUPN }
     }
@@ -97,7 +97,6 @@ function Check-AllUserMFARequired {
                                 break
                             }
                     }
-
                 }
                 if($authFound){
                     # This message is being used for debugging
