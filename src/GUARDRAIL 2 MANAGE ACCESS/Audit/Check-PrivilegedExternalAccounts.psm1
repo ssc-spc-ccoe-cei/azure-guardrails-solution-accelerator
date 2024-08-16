@@ -1,7 +1,7 @@
-    # Checking for GUEST accounts (Privileged)
-    # Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
-    # This query looks for accounts marked as GUEST
-    # It does not list GUEST accounts from the list of deleted accounts.
+# Checking for GUEST accounts (Privileged)
+# Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
+# This query looks for accounts marked as GUEST
+# It does not list GUEST accounts from the list of deleted accounts.
     
 function Check-PrivilegedExternalUsers  {
     Param ( 
@@ -119,10 +119,35 @@ function Check-PrivilegedExternalUsers  {
                 
                 if (!$null -eq  $matchedUserUpdated) {
                     # Find matched users with privileged roles
-                    $newMatchedUserList = $matchedUserUpdated | ForEach-Object {
-                        $hasPrivilegedRole = $privilegedRolesSubscriptionLevel -contains $_.RoleDefinitionName
+
+                    $newMatchedUserList = @()
+                    foreach ($user in $matchedUserUpdated) {
+                        $roleName = $user.RoleDefinitionName.Trim()
+                        
+                        # Output the role name and the list of privileged roles for debugging
+                        Write-Host "Checking role: '$roleName'"
+                        Write-Host "Privileged roles list: $($privilegedRolesSubscriptionLevel -join ', ')"
+                        
+                        # Check if the role name is in the list of privileged roles
+                        $hasPrivilegedRole = $false
+                        foreach($role in $roleName){
+                            $isPrivilegedRole = $privilegedRolesSubscriptionLevel | Where-Object { $_.Trim().ToLower() -eq $role.ToLower() }
+                            if($isPrivilegedRole){
+                                $hasPrivilegedRole = $true
+                                Write-Host "hasPrivilegedRole: $hasPrivilegedRole"
+                                break
+                            }
+                        }
+
+                        # Convert the result to 'True' or 'False' string
                         $hasPrivilegedRoleString = if ($hasPrivilegedRole) {'True'} else {'False'}
-                        $_ | Add-Member -MemberType NoteProperty -Name privilegedRole -Value $hasPrivilegedRoleString -PassThru
+                        
+                        # Create a new object with the existing properties and the new property
+                        $newUser = $user.PSObject.Copy()
+                        $newUser | Add-Member -MemberType NoteProperty -Name privilegedRole -Value $hasPrivilegedRoleString -PassThru
+                        
+                        # Add the updated object to the array
+                        $newMatchedUserList += $newUser
                     }
 
                     if ($debug) {Write-Output "Found $($newMatchedUserList.Count) Guest users with role assignment"}
@@ -283,5 +308,4 @@ function Check-PrivilegedExternalUsers  {
     
     $stopWatch.Stop()
     if ($debug) {Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}
-    }
-    
+}
