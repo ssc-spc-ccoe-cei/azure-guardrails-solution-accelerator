@@ -14,7 +14,7 @@ on:
       - 'psmodules/**'
       - 'docs/**'
     branches:
-      - idutta/GR1_V1_all_user_MFA
+      - idutta/GR1_V1_all_user_MFA_logic_update
 
 concurrency:
   group: Deploy-Azure-CAC-Dev
