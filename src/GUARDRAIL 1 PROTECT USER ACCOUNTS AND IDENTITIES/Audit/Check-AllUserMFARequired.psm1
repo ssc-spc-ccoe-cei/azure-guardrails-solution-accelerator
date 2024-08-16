@@ -80,27 +80,22 @@ function Check-AllUserMFARequired {
                 $authenticationmethods = $data.value
                 
                 $authFound = $false
-                $authCounter = 0
                 foreach ($authmeth in $authenticationmethods) {                        
                     if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
                             
-                            # need to keep track of mfa auth count for each user
-                            $authCounter += 1
-                            if ($authCounter -ge 2){
-                                #need to keep track of user account mfa in a counter and compare it with the total user count
-                                $mfaCounter += 1
-                                $authFound = $true
-                                # atleast two auth method is true - so we move to the next UPN 
-                                break
-                            }
+                            #need to keep track of user account mfa in a counter and compare it with the total user count
+                            $mfaCounter += 1
+                            $authFound = $true
+                            # MFA auth method is true - so we move to the next UPN 
+                            break
                     }
                 }
                 if($authFound){
                     # This message is being used for debugging
-                    Write-Host "Auth method found for $globalAdminAccount"
+                    Write-Host "Auth method found for $userAccount"
                 }
                 else{
                     # This message is being used for debugging
@@ -112,7 +107,7 @@ function Check-AllUserMFARequired {
                         MFAStatus   = $false
                         MFAComments = $hiddenUPN 
                     }
-                    # Add the list to GA MFA list
+                    # Add the list to user accounts MFA list
                     $userUPNsMFA += $userUPNtemplate
                 }
             }
@@ -131,11 +126,10 @@ function Check-AllUserMFARequired {
 
     # Condition: all users are MFA enabled
     if($mfaCounter -eq $allUserUPNs.Count) {
-        # $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
         $commentsArray += ' ' + $msgTable.allUserHaveMFA
         $IsCompliant = $true
     }
-    # Condition: GA UPN list has > 2 UPNs and not all UPNs are MFA enabled
+    # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
     else {
         # This will be used for debugging
         if($userUPNsMFA.Count -eq 0){
