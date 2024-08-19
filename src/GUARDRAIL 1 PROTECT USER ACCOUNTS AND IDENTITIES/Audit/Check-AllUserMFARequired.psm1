@@ -47,14 +47,11 @@ function Check-AllUserMFARequired {
 
     }
 
-    $mfaCounter = 0
-    $userUPNsMFA = @()
+    $userValidMFACounter = 0
+    $userUPNsBadMFA = @()
 
     ForEach ($userAccount in $allUserUPNs) {
         $urlPath = '/users/' + $userAccount + '/authentication/methods'
-        
-        # create hidden format UPN
-        $hiddenUPN = Hide-Email -email $userAccount
         
         try {
             $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
@@ -82,7 +79,9 @@ function Check-AllUserMFARequired {
                 $authenticationmethods = $data.value
                 
                 $authFound = $false
-                foreach ($authmeth in $authenticationmethods) {                        
+                $authCounter = 0
+                foreach ($authmeth in $authenticationmethods) {    
+                  
                     if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
@@ -90,58 +89,68 @@ function Check-AllUserMFARequired {
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" ) -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
                             
-                            #need to keep track of user account mfa in a counter and compare it with the total user count
-                            $mfaCounter += 1
-                            $authFound = $true
-                            # MFA auth method is true - so we move to the next UPN 
-                            break
+                            # need to keep track of user's mfa auth count
+                            $authCounter += 1
+                    }
+                    if ($authCounter -ge 1){
+                        $authFound = $true
                     }
                 }
+
                 if($authFound){
-                    # This message is being used for debugging
+                    #need to keep track of user account mfa in a counter and compare it with the total user count   
+                    $userValidMFACounter += 1
                     Write-Host "Auth method found for $userAccount"
                 }
                 else{
                     # This message is being used for debugging
                     Write-Host "$userAccount does not have MFA enabled"
 
+                    $authCounter = 0
                     # Create an instance of inner list object
                     $userUPNtemplate = [PSCustomObject]@{
                         UPN  = $userAccount
                         MFAStatus   = $false
-                        MFAComments = $hiddenUPN 
                     }
                     # Add the list to user accounts MFA list
-                    $userUPNsMFA += $userUPNtemplate
+                    $userUPNsBadMFA += $userUPNtemplate
                 }
             }
             else {
                 $errorMsg = "No authentication methods data found for $userAccount"                
                 $ErrorList.Add($errorMsg)
-                # Write-Error "Error: $errorMsg"    
+                # Write-Error "Error: $errorMsg"
+                
+                # Create an instance of inner list object
+                $userUPNtemplate = [PSCustomObject]@{
+                    UPN  = $userAccount
+                    MFAStatus   = $false
+                }
+                # Add the list to user accounts MFA list
+                $userUPNsBadMFA += $userUPNtemplate
             }
         }
         else {
             $errorMsg = "Failed to get response from Graph API for $userAccount"                
             $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"    
+            Write-Error "Error: $errorMsg"
         }    
     }
 
     # Condition: all users are MFA enabled
-    if($mfaCounter -eq $allUserUPNs.Count) {
-        $commentsArray += ' ' + $msgTable.allUserHaveMFA
+    if($userValidMFACounter -eq $allUserUPNs.Count) {
+        $commentsArray = $msgTable.allUserHaveMFA
         $IsCompliant = $true
     }
     # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
     else {
         # This will be used for debugging
-        if($userUPNsMFA.Count -eq 0){
-            Write-Host "Something is wrong as userUPNsMFA Count equals 0. This output should only execute if there is an error populating userUPNsMFA"
+        if($userUPNsBadMFA.Count -eq 0){
+            Write-Error "Something is wrong as userUPNsBadMFA Count equals 0. This output should only execute if there is an error populating userUPNsBadMFA"
         }
         else {
-            $upnString = ($userUPNsMFA | ForEach-Object { $_.UPN }) -join ', '
-            $commentsArray += ' ' + $msgTable.userMisconfiguredMFA -f $upnString
+            $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
+            $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
             $IsCompliant = $false
         }
     }
