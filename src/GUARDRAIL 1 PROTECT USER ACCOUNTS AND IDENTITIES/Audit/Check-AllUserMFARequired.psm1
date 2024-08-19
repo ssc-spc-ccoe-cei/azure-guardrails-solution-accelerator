@@ -73,6 +73,8 @@ function Check-AllUserMFARequired {
         # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
         # # 5. #microsoft.graph.fido2AuthenticationMethod
         # # 6. #microsoft.graph.softwareOathAuthenticationMethod
+        # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
+        # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
 
         if ($null -ne $response) {
             $data = $response.Content
@@ -84,6 +86,8 @@ function Check-AllUserMFARequired {
                     if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.temporaryAccessPassAuthenticationMethod" ) -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" ) -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
                             
                             #need to keep track of user account mfa in a counter and compare it with the total user count
