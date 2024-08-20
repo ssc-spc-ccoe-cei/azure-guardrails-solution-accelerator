@@ -10,7 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/GR1_V1_all_user_MFA_logic_update
 
 concurrency:
   group: Deploy-Azure-CAC-Test
