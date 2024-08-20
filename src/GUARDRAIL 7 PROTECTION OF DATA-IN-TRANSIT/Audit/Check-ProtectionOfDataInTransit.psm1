@@ -101,6 +101,7 @@ function Verify-ProtectionDataInTransit {
             [Parameter(Mandatory=$false)]
             [string] $CBSSubscriptionName,
             [string] $CloudUsageProfiles = "3",  # Passed as a string
+            [string] $ModuleProfiles,  # Passed as a string
             [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList

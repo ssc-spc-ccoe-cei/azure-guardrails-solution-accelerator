@@ -844,48 +844,64 @@ function Get-EvaluationProfile {
         [Parameter(Mandatory = $true)]
         [string] $CloudUsageProfiles,  # Array of profiles
         [Parameter(Mandatory = $true)]
-        [string] $SubscriptionId
+        [string] $ModuleProfiles,  # Array of module profiles
+        [string] $SubscriptionId   # Optional
     )
 
     try {
         $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
+        $moduleProfileArray = $ModuleProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
 
-        # Get the highest profile from the CloudUsageProfiles array
-        $highestCloudProfile = $cloudUsageProfileArray | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+        if (-not $SubscriptionId) {
+            # No SubscriptionId provided, find the highest matching profile from CloudUsageProfiles and ModuleProfiles
+            $matchingProfiles = $cloudUsageProfileArray | Where-Object { $moduleProfileArray -contains $_ }
 
-        # Get subscription tags
-        $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
-        $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
-
-        if ($null -eq $profileTag) {
-            # No tag, pick the highest profile from CloudUsageProfiles
-            return $highestCloudProfile
-        }
-
-        # Convert profile tag value into an array of integers (handle both single and array cases)
-        $profileTagValues = if ($profileTag.TagValue -is [string] -and $profileTag.TagValue.StartsWith('[')) {
-            $profileTag.TagValue.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
-        } else {
-            @([int]$profileTag.TagValue)
-        }
-
-        # Find the matching profiles between tag values and CloudUsageProfiles
-        $matchingProfiles = $profileTagValues | Where-Object { $cloudUsageProfileArray -contains $_ }
-
-        if ($matchingProfiles.Count -gt 0) {
-            # If multiple profiles match, pick the highest from tag side
-            $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
-            return $highestMatchingProfile
-        } else {
-            # Handle case where tag doesn't match any profile in the CloudUsageProfile
-            $maxProfileTagValue = $profileTagValues | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
-
-            if ($maxProfileTagValue -lt $highestCloudProfile) {
-                # Lower than highest profile, use the lower tag value
-                return $maxProfileTagValue
+            if ($matchingProfiles.Count -gt 0) {
+                # Return the highest matching profile
+                $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+                return $highestMatchingProfile
             } else {
-                # Higher than highest profile in CloudUsageProfiles, error out
-                throw "Subscription $SubscriptionId has invalid profile tag: $($profileTagValues) which is higher than any specified CloudUsageProfiles."
+                # No matching profiles found
+                throw "No matching profiles found between CloudUsageProfiles and ModuleProfiles."
+            }
+        } else {
+            # SubscriptionId is provided, follow the logic to find matching profiles
+            $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
+            $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
+
+            if ($null -eq $profileTag) {
+                # No tag, find the highest matching profile from CloudUsageProfiles and ModuleProfiles
+                $matchingProfiles = $cloudUsageProfileArray | Where-Object { $moduleProfileArray -contains $_ }
+
+                if ($matchingProfiles.Count -gt 0) {
+                    # Return the highest matching profile
+                    $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+                    return $highestMatchingProfile
+                } else {
+                    # No matching profiles found
+                    throw "No matching profiles found between CloudUsageProfiles and ModuleProfiles."
+                }
+            }
+
+            # Convert profile tag value into an array of integers (handle both single and array cases)
+            $profileTagValues = if ($profileTag.TagValue -is [string] -and $profileTag.TagValue.StartsWith('[')) {
+                $profileTag.TagValue.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
+            } else {
+                @([int]$profileTag.TagValue)
+            }
+
+            # Find the matching profiles between tag values, CloudUsageProfiles, and ModuleProfiles
+            $matchingProfiles = $profileTagValues | Where-Object {
+                $cloudUsageProfileArray -contains $_ -and $moduleProfileArray -contains $_
+            }
+
+            if ($matchingProfiles.Count -gt 0) {
+                # If multiple profiles match, pick the highest
+                $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+                return $highestMatchingProfile
+            } else {
+                # Handle case where no matching profile is found
+                throw "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
             }
         }
     } catch {

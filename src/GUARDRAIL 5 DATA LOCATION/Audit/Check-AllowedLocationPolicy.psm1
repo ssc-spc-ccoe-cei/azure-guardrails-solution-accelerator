@@ -18,6 +18,7 @@ function Check-PolicyStatus {
         $ModuleProfiles,  # Passed as a string
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
@@ -99,6 +100,7 @@ function Verify-AllowedLocationPolicy {
         [Parameter(Mandatory=$false)]
         [string] $CBSSubscriptionName,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
 

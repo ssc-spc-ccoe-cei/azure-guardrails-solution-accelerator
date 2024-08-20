@@ -9,6 +9,7 @@ function Check-DeprecatedUsers {
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [bool] $IsCompliant = $false
@@ -46,8 +47,16 @@ function Check-DeprecatedUsers {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -SubscriptionId (Get-AzContext).Subscription.Id
-        $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -is [int]) {
+            Write-Output "Valid profile returned: $result"
+            $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result.Status -eq "Error") {
+            Write-Error "Error occurred: $($result.Message)"
+            Errorslist.Add($result.Message)
+        } else {
+            Write-Error "Unexpected result: $result"
+        }        
     }
 
     $moduleOutput= [PSCustomObject]@{ 

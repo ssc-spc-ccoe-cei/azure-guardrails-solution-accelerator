@@ -23,7 +23,7 @@ function Get-VNetComplianceInformation {
         [string] 
         $ModuleProfiles,  # Passed as a string
         [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
+        $CloudUsageProfiles = "3",  # Passed as a string        
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
