@@ -16,7 +16,6 @@ on:
     branches:
       - idutta/GR2V9_bugfix_multiple_role
 
-
 concurrency:
   group: Deploy-Azure-CAC-Dev
   cancel-in-progress: false
