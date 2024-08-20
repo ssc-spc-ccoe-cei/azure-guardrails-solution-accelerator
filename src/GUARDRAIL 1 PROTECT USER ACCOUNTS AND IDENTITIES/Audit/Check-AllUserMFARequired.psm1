@@ -47,14 +47,11 @@ function Check-AllUserMFARequired {
 
     }
 
-    $mfaCounter = 0
-    $userUPNsMFA = @()
+    $userValidMFACounter = 0
+    $userUPNsBadMFA = @()
 
     ForEach ($userAccount in $allUserUPNs) {
         $urlPath = '/users/' + $userAccount + '/authentication/methods'
-        
-        # create hidden format UPN
-        $hiddenUPN = Hide-Email -email $userAccount
         
         try {
             $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
@@ -73,6 +70,8 @@ function Check-AllUserMFARequired {
         # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
         # # 5. #microsoft.graph.fido2AuthenticationMethod
         # # 6. #microsoft.graph.softwareOathAuthenticationMethod
+        # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
+        # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
 
         if ($null -ne $response) {
             $data = $response.Content
@@ -81,69 +80,77 @@ function Check-AllUserMFARequired {
                 
                 $authFound = $false
                 $authCounter = 0
-                foreach ($authmeth in $authenticationmethods) {                        
+                foreach ($authmeth in $authenticationmethods) {    
+                  
                     if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.temporaryAccessPassAuthenticationMethod" ) -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" ) -or`
                         ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
                             
-                            # need to keep track of mfa auth count for each user
+                            # need to keep track of user's mfa auth count
                             $authCounter += 1
-                            if ($authCounter -ge 2){
-                                #need to keep track of user account mfa in a counter and compare it with the total user count
-                                $mfaCounter += 1
-                                $authFound = $true
-                                # atleast two auth method is true - so we move to the next UPN 
-                                break
-                            }
+                    }
+                    if ($authCounter -ge 1){
+                        $authFound = $true
                     }
                 }
+
                 if($authFound){
-                    # This message is being used for debugging
-                    Write-Host "Auth method found for $globalAdminAccount"
+                    #need to keep track of user account mfa in a counter and compare it with the total user count   
+                    $userValidMFACounter += 1
+                    Write-Host "Auth method found for $userAccount"
                 }
                 else{
                     # This message is being used for debugging
                     Write-Host "$userAccount does not have MFA enabled"
 
+                    $authCounter = 0
                     # Create an instance of inner list object
                     $userUPNtemplate = [PSCustomObject]@{
                         UPN  = $userAccount
                         MFAStatus   = $false
-                        MFAComments = $hiddenUPN 
                     }
-                    # Add the list to GA MFA list
-                    $userUPNsMFA += $userUPNtemplate
+                    # Add the list to user accounts MFA list
+                    $userUPNsBadMFA += $userUPNtemplate
                 }
             }
             else {
                 $errorMsg = "No authentication methods data found for $userAccount"                
                 $ErrorList.Add($errorMsg)
-                # Write-Error "Error: $errorMsg"    
+                # Write-Error "Error: $errorMsg"
+                
+                # Create an instance of inner list object
+                $userUPNtemplate = [PSCustomObject]@{
+                    UPN  = $userAccount
+                    MFAStatus   = $false
+                }
+                # Add the list to user accounts MFA list
+                $userUPNsBadMFA += $userUPNtemplate
             }
         }
         else {
             $errorMsg = "Failed to get response from Graph API for $userAccount"                
             $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"    
+            Write-Error "Error: $errorMsg"
         }    
     }
 
     # Condition: all users are MFA enabled
-    if($mfaCounter -eq $allUserUPNs.Count) {
-        # $commentsArray += $msgTable.globalAdminMFAPassAndMin2Accnts
-        $commentsArray += ' ' + $msgTable.allUserHaveMFA
+    if($userValidMFACounter -eq $allUserUPNs.Count) {
+        $commentsArray = $msgTable.allUserHaveMFA
         $IsCompliant = $true
     }
-    # Condition: GA UPN list has > 2 UPNs and not all UPNs are MFA enabled
+    # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
     else {
         # This will be used for debugging
-        if($userUPNsMFA.Count -eq 0){
-            Write-Host "Something is wrong as userUPNsMFA Count equals 0. This output should only execute if there is an error populating userUPNsMFA"
+        if($userUPNsBadMFA.Count -eq 0){
+            Write-Error "Something is wrong as userUPNsBadMFA Count equals 0. This output should only execute if there is an error populating userUPNsBadMFA"
         }
         else {
-            $upnString = ($userUPNsMFA | ForEach-Object { $_.UPN }) -join ', '
-            $commentsArray += ' ' + $msgTable.userMisconfiguredMFA -f $upnString
+            $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
+            $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
             $IsCompliant = $false
         }
     }
