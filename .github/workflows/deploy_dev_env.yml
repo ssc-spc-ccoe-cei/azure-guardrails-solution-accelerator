@@ -1,20 +1,10 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  # workflow_run:
-  #   workflows: [Azure CAC Release]
-  #   types: 
-  #     - completed
-  workflow_dispatch:
-  push:
-    paths-ignore:
-      - 'README.md'
-      - 'SECURITY.md'
-      - 'SUPPORT.md'
-      - 'psmodules/**'
-      - 'docs/**'
-    branches:
-      - idutta/GR1_V1_all_user_MFA_logic_update
+  workflow_run:
+    workflows: [Azure CAC Release]
+    types: 
+      - completed
 
 concurrency:
   group: Deploy-Azure-CAC-Dev
