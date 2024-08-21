@@ -24,8 +24,8 @@ function Check-PrivilegedExternalUsers  {
     # Privileged Roles at Subscription level (requirement for GR2 validation 9)
     $privilegedRolesSubscriptionLevel = @("Owner","Contributor","Access Review Operator Service Role","Custom - Landing Zone Application Owner","Custom - Landing Zone Subscription Owner","Role Based Access Control Administrator","User Access Administrator")
     
-    $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
-    $stopWatch.Start()
+    # $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
+    # $stopWatch.Start()
     
     # Only get the Guests accounts
     if ($debug) {Write-Output "Getting guest users in the tenant"}
@@ -62,7 +62,7 @@ function Check-PrivilegedExternalUsers  {
     
                 # Filter for User type
                 $subRoleAssignmentsUpdated = $subRoleAssignments | Where-Object { @("User","Group") -contains $_.ObjectType }
-    
+                Write-Output "Found $($subRoleAssignmentsUpdated.Count) subRoleAssignmentsUpdated Role Assignments in that subscription"
                 
                 # Create a single list with users and their role definitions
                 # Install-Module -Name JoinModule   
@@ -71,13 +71,15 @@ function Check-PrivilegedExternalUsers  {
                 $matchedUserUpdated =@()
                 if(!$null -eq $matchedUser){
                     $matchedUserSelected = $matchedUser | Select-Object DisplayName, Id, UserPrincipalName, Mail | Select-Object @{Name='SignInName';Expression={$_.UserPrincipalName}}, DisplayName, Id, Mail
-                
+                    
                     # Install-Module -Name JoinModule   
                     # $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
                     foreach ($usr in $matchedUserSelected) {
+                        Write-Output "Found user in matchedUserSelected: $($usr.DisplayName)"
                         $matched = $subRoleAssignmentsUpdated | Where-Object { $_.SignInName -eq $usr.SignInName -and $_.DisplayName -eq $usr.DisplayName }
 
                         if ($matched) {
+                            Write-Output "Found matched user: $($usr.DisplayName)"
                             $joinedItem = [PSCustomObject]@{
                                 DisplayName = $usr.DisplayName
                                 SignInName = $usr.SignInName
@@ -95,6 +97,7 @@ function Check-PrivilegedExternalUsers  {
                             }
                         }
                         else {
+                            Write-Output "Found non matched user: $($usr.DisplayName)"
                             $joinedItem = [PSCustomObject]@{
                                 DisplayName = $usr.DisplayName
                                 SignInName = $usr.SignInName
@@ -115,9 +118,12 @@ function Check-PrivilegedExternalUsers  {
                     }
                     
                 }
+                Write-Output "Found $($matchedUserUpdated.Count) matchedUserUpdated users in subscription"
                 
-                
-                if (!$null -eq  $matchedUserUpdated) {
+                if ($null -eq  $matchedUserUpdated -or  $matchedUserUpdated.Count -eq 0){
+                    Write-Output "Found no Guest users with role assignment"
+                }
+                elseif (!$null -eq  $matchedUserUpdated) {
                     # Find matched users with privileged roles
 
                     $newMatchedUserList = @()
@@ -172,9 +178,7 @@ function Check-PrivilegedExternalUsers  {
                         $guestUsersArray.add($Customuser)
                     }
                 }
-                else{
-                    Write-Output "Found no Guest users with role assignment"
-                }
+                
                 
                 # Find any guest users without having a role assignment
                 $guestUsers_wo_matchedUsers = $guestUsers | Where-Object { $_ -notin $matchedUser }  
@@ -270,14 +274,7 @@ function Check-PrivilegedExternalUsers  {
             $_  # Output the modified object
         }
     }
-    
-    # Convert data to JSON format for input in Azure Log Analytics
-    # $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
-    # Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
-    
-    # Add the list of non-compliant users to Log Analytics (in a different table)
-    <#Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-    -body $JSONGuestUsers -logType "GR2ExternalUsers" -TimeStampField Get-Date#>
+    Write-Output "Found $($unique_guestUsersArray.Count) unique_guestUsersArray in that subscription"
     
     $GuestUserStatus = [PSCustomObject]@{
         ComplianceStatus= $IsCompliant
@@ -295,17 +292,11 @@ function Check-PrivilegedExternalUsers  {
     
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $GuestUserStatus
-        Errors=$ErrorList
+        Errors= $ErrorList
         AdditionalResults = $AdditionalResults
     }
-    return $moduleOutput 
-    <#
-    $logAnalyticsEntry = ConvertTo-Json -inputObject $GuestUserStatus
-        
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey -body $logAnalyticsEntry `
-                                -logType $LogType -TimeStampField Get-Date                 
-    #>
-    
-    $stopWatch.Stop()
-    if ($debug) {Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}
+    Write-Output "Found moduleOutput $moduleOutput  "
+
+
+    return $moduleOutput
 }
