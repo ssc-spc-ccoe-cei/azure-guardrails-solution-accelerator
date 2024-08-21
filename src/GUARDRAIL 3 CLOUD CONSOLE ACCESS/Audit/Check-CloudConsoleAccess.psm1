@@ -92,12 +92,12 @@ function Get-CloudConsoleAccess {
         if ($result -is [int]) {
             Write-Output "Valid profile returned: $result"
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result.Status -eq "Error") {
+        } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
             Errorslist.Add($result.Message)
         } else {
-            Write-Error "Unexpected result: $result"
-        }        
+            Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
+        }
     }
 
     $moduleOutput= [PSCustomObject]@{ 
