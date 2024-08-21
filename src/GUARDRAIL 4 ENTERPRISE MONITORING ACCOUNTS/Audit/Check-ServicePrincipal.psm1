@@ -125,6 +125,7 @@ function Check-DepartmentServicePrincipalName {
             $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         } elseif ($result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
+            $Results.ComplianceStatus = "Not Applicable"
             Errorslist.Add($result.Message)
         } else {
             Write-Error "Unexpected result: $result"

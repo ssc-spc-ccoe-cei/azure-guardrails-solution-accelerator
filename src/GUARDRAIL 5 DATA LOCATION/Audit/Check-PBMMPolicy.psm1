@@ -73,6 +73,7 @@ function Verify-PBMMPolicy {
         [parameter(mandatory=$true)][hashtable] $msgTable,
         [Parameter(Mandatory=$true)][string]$ReportTime,
         [Parameter(Mandatory=$false)][string]$CBSSubscriptionName,
+        [Parameter(Mandatory=$false)][string] $ModuleProfiles,  # Passed as a string
         [Parameter(Mandatory=$false)][string] $CloudUsageProfiles = "3",  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )

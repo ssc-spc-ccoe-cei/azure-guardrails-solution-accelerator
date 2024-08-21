@@ -13,6 +13,7 @@ function Check-PolicyStatus {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
+        [ref] $ErrorList # Passed as a reference
         [array] $AllowedLocations,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
@@ -76,6 +77,24 @@ function Check-PolicyStatus {
             ControlName = [string]$ControlName
             ReportTime = [string]$ReportTime
         }
+
+        if ($EnableMultiCloudProfiles) {
+            if ($objType -eq "subscription") {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
+            } else {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            }
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorslist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+            }        
+        }        
         
         $tempObjectList.add($c)| Out-Null
     }
@@ -123,7 +142,7 @@ function Verify-AllowedLocationPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "Management Group"
-        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ErrorList $ErrorList -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles $EnableMultiCloudProfiles
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_")
@@ -144,12 +163,13 @@ function Verify-AllowedLocationPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "subscription"
-        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ErrorList $ErrorList -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles $EnableMultiCloudProfiles
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_" )
         throw "Failed to execute the 'Check-PolicyStatus' function. Error message: $_"
     }
+    
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $FinalObjectList 
         Errors=$ErrorList

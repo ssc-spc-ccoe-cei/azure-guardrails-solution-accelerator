@@ -87,6 +87,7 @@ function Check-MFARequired {
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
+            $PsObject.ComplianceStatus = "Not Applicable"
             Errorslist.Add($result.Message)
         } else {
             Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
