@@ -309,6 +309,7 @@ function Check-GAAuthenticationMethods {
         $ReportTime,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -530,6 +531,7 @@ function Check-DocumentExistsInStorage {
         $ReportTime,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -858,7 +860,7 @@ function Get-EvaluationProfile {
 
             if ($matchingProfiles.Count -gt 0) {
                 # Return the highest matching profile
-                $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+                $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
                 return $highestMatchingProfile
             } else {
                 # No matching profiles found
@@ -875,7 +877,7 @@ function Get-EvaluationProfile {
 
                 if ($matchingProfiles.Count -gt 0) {
                     # Return the highest matching profile
-                    $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+                    $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
                     return $highestMatchingProfile
                 } else {
                     # No matching profiles found
@@ -897,7 +899,7 @@ function Get-EvaluationProfile {
 
             if ($matchingProfiles.Count -gt 0) {
                 # If multiple profiles match, pick the highest
-                $highestMatchingProfile = $matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+                $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
                 return $highestMatchingProfile
             } else {
                 # Handle case where no matching profile is found
