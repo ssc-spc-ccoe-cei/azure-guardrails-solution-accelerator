@@ -53,7 +53,7 @@ function Check-DeprecatedUsers {
             $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
-            Errorslist.Add($result.Message)
+            Errorlist.Add($result.Message)
             $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"            
         } else {
             Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"

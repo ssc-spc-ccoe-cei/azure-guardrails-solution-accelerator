@@ -126,7 +126,7 @@ function Check-DepartmentServicePrincipalName {
         } elseif ($result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
             $Results.ComplianceStatus = "Not Applicable"
-            Errorslist.Add($result.Message)
+            Errorlist.Add($result.Message)
         } else {
             Write-Error "Unexpected result: $result"
         }        
