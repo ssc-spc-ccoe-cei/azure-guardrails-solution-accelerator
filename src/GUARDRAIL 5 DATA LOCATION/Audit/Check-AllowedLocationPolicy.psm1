@@ -13,7 +13,6 @@ function Check-PolicyStatus {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
-        [ref] $ErrorList, # Passed as a reference
         [array] $AllowedLocations,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
