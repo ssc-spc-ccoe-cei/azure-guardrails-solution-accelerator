@@ -10,6 +10,7 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/GR2V9_bugfix_multiple_role
 
 concurrency:
   group: Deploy-Azure-CAC-Test
