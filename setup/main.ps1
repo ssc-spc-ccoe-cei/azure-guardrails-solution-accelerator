@@ -248,7 +248,7 @@ foreach ($module in $modules) {
             }
         }
         catch {
-            Write-Output "Caught error while invoking result is $($results)" 
+            Write-Output "Caught error while invoking result is $($results.Errors)" 
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
             
             Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
