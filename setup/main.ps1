@@ -195,12 +195,14 @@ foreach ($module in $modules) {
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
             Write-Output "required in module: $($module.Required)."
+            
             if($null -eq $results.ComplianceResults){
                 Write-Output "ComplianceResults is null."
             } else{
+                Write-Output "ComplianceResults in results is not null."
                 $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
             }
-            # "Results Required: $($results.ComplianceResults.Required)"
+            
             Write-Output "required in results: $($results.Required)."
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
             if ($null -ne $results.Errors) {
@@ -213,6 +215,8 @@ foreach ($module in $modules) {
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID `
                     -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
             }
+
+            Write-Output "Script running is done for $($module.modulename)"
         }
         catch {
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey', '***')))
