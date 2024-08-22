@@ -2,7 +2,7 @@
 
 function Check-PolicyStatus {
     param (
-        [System.Object] $objList,
+        [System.Object[]] $objList,
         [Parameter(Mandatory=$true)]
         [string] $objType, #subscription or management Group
         [string] $PolicyID, # full policy id, not just the GUID
