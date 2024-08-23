@@ -87,7 +87,7 @@
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
+    "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
     "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
@@ -103,21 +103,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingPrivilegedGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC6(6)"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-PrivilegedExternalUsers",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingPrivilegedGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingPrivilegedGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -374,7 +361,7 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [3, 4, 5, 6],
-    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -AllowedLocationsString $vars.AllowedLocationsString -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Verify-AllowedLocationPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.allowedLocationPolicy -PolicyID $vars.AllowedLocationPolicyId -InitiativeID $vars.AllowedLocationInitiativeId -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -AllowedLocationsString $vars.AllowedLocationsString -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "cbssubscriptionName",
