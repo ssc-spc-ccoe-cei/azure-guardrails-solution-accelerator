@@ -195,6 +195,7 @@ jobs:
               $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
               $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
               $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+              $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
 
@@ -210,6 +211,7 @@ jobs:
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
                   "PBMMPolicyID": "$PBMMPOLICY_ID",
                   "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+                  "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
                   "securityLAWResourceId": "$TESTSEC_RESRC_ID",
@@ -257,6 +259,7 @@ jobs:
           TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID }}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: ReLogin AZ (due to timeout issue)
@@ -282,6 +285,7 @@ jobs:
               $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
               $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
               $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+              $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
 
@@ -297,6 +301,7 @@ jobs:
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
                   "PBMMPolicyID": "$PBMMPOLICY_ID",
                   "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+                  "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
                   "DepartmentNumber": "163",
                   "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
                   "securityLAWResourceId": "$TESTSEC_RESRC_ID",
@@ -370,6 +375,7 @@ jobs:
           TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID}}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
       - name: Check for AA Job Errors

@@ -1,5 +1,29 @@
 [
   {
+    "ModuleName": "Check-AllUserMFARequired",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-GlobalAdministratorAccntsMFA",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
@@ -66,6 +90,34 @@
     "Required": "False",
     "Profiles": [1, 2, 3, 4, 5, 6],
     "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC6(6)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-PrivilegedExternalUsers",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingPrivilegedGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC6(6)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-PrivilegedExternalUsers",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingPrivilegedGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -331,6 +383,10 @@
       {
         "Name": "AllowedLocationPolicyId",
         "Value": "AllowedLocationPolicyId"
+      },
+      {
+        "Name": "AllowedLocationInitiativeId",
+        "Value": "AllowedLocationInitiativeId"
       }
     ],
     "localVariables": [

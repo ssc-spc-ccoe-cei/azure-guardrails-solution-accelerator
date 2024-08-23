@@ -2,19 +2,23 @@ ConvertFrom-StringData @'
 
 # English strings
 
-CtrName1 = GUARDRAIL 1: PROTECT ROOT / GLOBAL ADMINS ACCOUNT
+CtrName1 = GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES
 CtrName2 = GUARDRAIL 2: MANAGE ACCESS
-CtrName3 = GUARDRAIL 3: CLOUD CONSOLE ACCESS
+CtrName3 = GUARDRAIL 3: SECURE ENDPOINTS
 CtrName4 = GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS
 CtrName5 = GUARDRAIL 5: DATA LOCATION
 CtrName6 = GUARDRAIL 6: PROTECTION OF DATA-AT-REST
 CtrName7 = GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT
-CtrName8 = GUARDRAIL 8: NETWORK SEGMENTATION AND SEPARATION
+CtrName8 = GUARDRAIL 8: SEGMENT AND SEPARATE
 CtrName9 = GUARDRAIL 9: NETWORK SECURITY SERVICES
 CtrName10 = GUARDRAIL 10: CYBER DEFENSE SERVICES
 CtrName11 = GUARDRAIL 11: LOGGING AND MONITORING
 CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
+
+# Global
+isCompliant = Compliant.
+isNotCompliant = Non-compliant.
 
 # Guardrail #1
 MSEntIDLicense = Microsoft Entra ID License Type
@@ -22,6 +26,9 @@ mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = Global Administrators Accounts MFA check
 
+allUserAccountsMFACheck = All Cloud User Accounts MFA Check
+allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
+userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
@@ -47,6 +54,11 @@ guestNotAssigned = This GUEST User Account does not have any role assignment in 
 existingGuestAccounts = Existing Guest User Accounts
 existingGuestAccountsComment = Review and validate the provided list of GUEST User Accounts. Remove GUEST User Accounts according to your departmental procedures and policies, as needed.
 
+guestAccountsNoPrivilegedPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions that are considered "privileged" at the Subscription level.
+existingPrivilegedGuestAccounts = Privileged Guest User Accounts
+existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
+guestHasPrivilegedRole = This Guest user account has one or more privileged roles
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
@@ -58,7 +70,6 @@ noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all user
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
-
 checkUserExistsError = API call returned Error {0}. Please Check if the user exists.
 checkUserExists = Please Check if the user exists.
 ServicePrincipalNameHasNoReaderRole = SPN doesnt have Reader Role on the ROOT Management Group.
@@ -72,15 +83,13 @@ SPNSingleValidCredential = SPN has a single valid credential. {0}
 SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
 SPNNoValidCredentials = SPN has no valid credentials. {0}
 
-# GuardRail #5-6
+# GuardRail #5
 pbmmCompliance = PBMMPolicy Compliance
 policyNotAssigned = The Policy or Initiative is not assigned to the {0}
 excludedFromScope = {0} is excluded from the scope of the assignment
-isCompliant = Compliant
-grexemptionFound = Exemption for {0} {1} found.
+
 policyNotAssignedRootMG = The Policy or Initiative is not assigned on the Root Management Groups
 rootMGExcluded =This Root Management Groups is excluded from the scope of the assignment
-pbmmNotApplied =PBMM Initiative is not applied.
 subscription = subscription
 managementGroup = Management Groups
 notAllowedLocation =  Location is outside of the allowed locations. 
@@ -90,9 +99,16 @@ dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
 # GuardRail #6
 pbmmApplied = PBMM initiative has been applied.
-isCompliantResource = Compliant. {0} Policy Definition(s) has {1} compliant resource(s).
-isNotCompliantResource = Non-compliant. {0} Policy Definition(s) ({1}) has {2} non-compliant resource(s).
-isNullCompliantResource = None of the required PBMM policies is applied to the resource {0}.
+pbmmNotApplied = PBMM initiative has not been applied. Apply the PBMM initiative.
+reqPolicyApplied = All required policies are applied.
+reqPolicyNotApplied = The PBMM initiative is missing one or a few of the selected policies for evaluation. Consult the remediation Playbook for more information.
+grExemptionFound = Remove the exemption found for {0}. 
+grExemptionNotFound = Required Policy Definitions are not exempt.
+noResource = No applicable resources for the selected PBMM Initiative's policies to evaluate.
+allCompliantResources = All resources are compliant.
+allNonCompliantResources = All resources are non-compliant.
+hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
+
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
@@ -195,8 +211,9 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GR-Common
-procedureFileFound = File {0} found in Container.
-procedureFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
+procedureFileFound = Compliant. File {0} has been found in the storage container.
+procedureFileNotFound = Non-Compliant. Could not find document for '{0}', create and upload a file with the name '{1}' in storage container '{2}' for Storage Account '{3}' to confirm you have completed this control.
+
 procedureFileDataInvalid = The global administrator file(s) contain(s) invalid User Principal Names (UPNs). Ensure that UPNs start with a hyphen, and type each of them on a new line.
 globalAdminFileFound = File {0} found in Container.
 globalAdminFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.

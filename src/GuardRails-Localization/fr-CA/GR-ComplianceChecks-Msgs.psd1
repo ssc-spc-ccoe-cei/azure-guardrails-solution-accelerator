@@ -2,25 +2,33 @@ ConvertFrom-StringData @'
 
 # French strings
 
-CtrName1 = GUARDRAIL 1: PROTÉGER LE COMPTE RACINE / ADMINISTRATEURS GLOBAUX
+CtrName1 = GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS
 CtrName2 = GUARDRAIL 2: GÉRER L'ACCÈS
-CtrName3 = GUARDRAIL 3: ACCÈS À LA CONSOLE CLOUD
-CtrName4 = GUARDRAIL 4: COMPTES DE SURVEILLANCE D'ENTREPRISE
+CtrName3 = GUARDRAIL 3: SÉCURISER LES POINTS D'EXTRÉMITÉ
+CtrName4 = GUARDRAIL 4: COMPTES DE SURVEILLANCE DE L'ORGANISATION
 CtrName5 = GUARDRAIL 5: EMPLACEMENT DES DONNÉES
-CtrName6 = GUARDRAIL 6: PROTECTION DES DONNÉES AU REPOS
+CtrName6 = GUARDRAIL 6: PROTECTION DES DONNÉES INACTIVES
 CtrName7 = GUARDRAIL 7: PROTECTION DES DONNÉES EN TRANSIT
-CtrName8 = GUARDRAIL 8: SEGMENTATION ET SÉPARATION DU RÉSEAU
-CtrName9 = GUARDRAIL 9: SERVICES DE SÉCURITÉ RÉSEAU
+CtrName8 = GUARDRAIL 8: SEGMENTER ET SÉPARER
+CtrName9 = GUARDRAIL 9: SERVICES DE SÉCURITÉ DES RÉSEAUX
 CtrName10 = GUARDRAIL 10: SERVICES DE CYBER DÉFENSE
-CtrName11 = GUARDRAIL 11: ENREGISTREMENT ET SURVEILLANCE
-CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARKETPLACES
+CtrName11 = GUARDRAIL 11: JOURNALISATION ET SURVEILLANCE
+CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARCHÉS DE L'INFORMATIQUE EN NUAGE
 CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
+
+# Global
+isCompliant = Conforme.
+isNotCompliant = Non conforme.
 
 # Guardrail #1
 MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 gaAccntsMFACheck = Vérification d'authentification multifacteur de comptes d'administrateur général
+
+allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
+allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
+userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
@@ -46,6 +54,11 @@ guestNotAssigned = Ce compte d'utilisateur invité n'a pas d'attribution de rôl
 existingGuestAccounts = Comptes d'utilisateurs invités existants
 existingGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités. Supprimez les comptes d'utilisateurs invités selon les procédures et les politiques ministérielles, au besoin.
 
+guestAccountsNoPrivilegedPermission =  Il existe des comptes d’utilisateurs invités dans l’environnement locataire et ils ne disposent d’aucune autorisation considérée comme « privilégiée » au niveau de l’abonnement.
+existingPrivilegedGuestAccounts = Comptes d'utilisateurs invités privilégiés
+existingPrivilegedGuestAccountsComment = Examinez et validez la liste fournie des comptes d’utilisateurs invités privilégiés. Supprimez les comptes d’utilisateurs invités privilégiés selon les procédures et les politiques de votre ministère, au besoin.
+guestHasPrivilegedRole = Ce compte d’utilisateur invité a un ou plusieurs rôles privilégiés.
+
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -70,15 +83,13 @@ SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
 SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
 CSPMEncryptedEmailConfirmation= Confirmacion d'email encrypté envoyé
 
-# GuardRail #5-6
+# GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy
 policyNotAssigned = La politique ou l'initiative n'est pas affectée au {0}
 excludeFromScope = {0} est exclu de la portée de l'affectation
-isCompliant = Conforme
+
 policyNotAssignedRootMG = La politique ou l'initiative n'est pas affectée aux groupes de gestion racine
 rootMGExcluded = Ce groupe de gestion racine est exclu de la portée de l'affectation
-pbmmNotApplied = L'initiative PBMM n'est pas appliquée.
-grexemptionFound = excemption pour {0} {1} trouvée
 subscription  = abonnement
 managementGroup = Groupes de gestion
 notAllowedLocation =  L'emplacement est en dehors des emplacements autorisés. 
@@ -88,9 +99,16 @@ dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
 # GuardRail #6
 pbmmApplied = L'initiative PBMM a été appliquée.
-isCompliantResource = Conforme. {0} Définition(s) de politique comporte(nt) {1} ressource(s) conforme(s).
-isNotCompliantResource = Non conforme. {0} Définition(s) de politique ({1}) a {2} ressource(s) non conforme(s).
-isNullCompliantResource = Aucune des politiques PBMM requises n'est appliquée à la ressource {0}.
+pbmmNotApplied = L'initiative PBMM n'a pas été appliquée. Appliquez l'initiative PBMM.
+reqPolicyApplied = Toutes les politiques requises sont appliquées.
+reqPolicyNotApplied = L'initiative PBMM manque une ou quelques-unes des politiques sélectionnées pour l'évaluation. Consultez le Livre de jeu de correction pour plus d'informations.
+grExemptionFound = Supprimez l'exemption trouvée pour {0}. 
+grExemptionNotFound = Les définitions des politiques requises ne sont pas exemptées.
+noResource = Aucune ressource applicable à l'évaluation des politiques de l'initiative PBMM sélectionnée.
+allCompliantResources = Toutes les ressources sont conformes.
+allNonCompliantResources = Toutes les ressources ne sont pas conformes.
+hasNonComplianceResounce = {0} des ressources {1} applicables ne sont pas conformes aux politiques sélectionnées. Suivez les recommandations de correction de Microsoft.
+
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
@@ -194,8 +212,9 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
-procedureFileFound = Fichier {0} trouvé dans le conteneur.
-procedureFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom '{1}' dans le conteneur '{2}' sur le compte de stockage '{3}' pour confirmer que vous avez terminé l'élément dans le contrôle.
+procedureFileFound = Conforme. Fichier « {0} » a été trouvé dans le conteneur de stockage.
+procedureFileNotFound = Non conforme. N'a pas trouvé le document pour « {0} », créez et téléchargez un fichier avec le nom « {1} » dans le conteneur de stockage « {2} » pour le compte de stockage « {3} » pour confirmer que vous avez complété ce contrôle.
+
 procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
 globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
 globalAdminFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom '{1}' dans le conteneur '{2}' sur le compte de stockage '{3}' pour confirmer que vous avez terminé l'élément dans le contrôle.

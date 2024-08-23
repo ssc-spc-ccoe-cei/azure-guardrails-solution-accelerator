@@ -1,4 +1,5 @@
 param AllowedLocationPolicyId string
+param AllowedLocationInitiativeId string
 param automationAccountName string
 param CBSSubscriptionName string
 param containername string
@@ -72,7 +73,7 @@ resource module2 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module4 'modules' = if (newDeployment || updatePSModules) {
+resource module3 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DeprecatedAccounts'
     properties: {
       contentLink: {
@@ -81,16 +82,25 @@ resource module4 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module5 'modules' = if (newDeployment || updatePSModules) {
+resource module4 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ExternalAccounts'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
-        version: '1.2.5'
+        version: '1.2.6'
       }
     }
   }
-resource module7 'modules' = if (newDeployment || updatePSModules) {
+resource module5 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-PrivilegedExternalAccounts'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
+        version: '1.0.1'
+      }
+    }
+  }
+resource module6 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MonitorAccount'
     properties: {
       contentLink: {
@@ -99,16 +109,7 @@ resource module7 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module8 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-PBMMPolicy'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-PBMMPolicy.zip'
-        version: '1.0.7'
-      }
-    }
-  }
-resource module9 'modules' = if (newDeployment || updatePSModules) {
+resource module7 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
     properties: {
       contentLink: {
@@ -117,7 +118,7 @@ resource module9 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module10 'modules' = if (newDeployment || updatePSModules) {
+resource module8 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-VNetComplianceStatus'
     properties: {
       contentLink: {
@@ -126,7 +127,7 @@ resource module10 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module11 'modules' = if (newDeployment || updatePSModules) {
+resource module9 'modules' = if (newDeployment || updatePSModules) {
     name: 'Detect-UserBGAUsersAuthMethods'
     properties: {
       contentLink: {
@@ -135,7 +136,7 @@ resource module11 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module12 'modules' = if (newDeployment || updatePSModules) {
+resource module10 'modules' = if (newDeployment || updatePSModules) {
     name: 'Get-AzureADLicenseType'
     properties: {
       contentLink: {
@@ -144,7 +145,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module13 'modules' = if (newDeployment || updatePSModules) {
+resource module11 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-Common'
     properties: {
       contentLink: {
@@ -153,7 +154,7 @@ resource module13 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module14 'modules' = if (newDeployment || updatePSModules) {
+resource module12 'modules' = if (newDeployment || updatePSModules) {
     name: 'Validate-BreakGlassAccount'
     properties: {
       contentLink: {
@@ -162,7 +163,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module15 'modules' = if (newDeployment || updatePSModules) {
+  resource module13 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AllowedLocationPolicy'
     properties: {
       contentLink: {
@@ -171,7 +172,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module16 'modules' = if (newDeployment || updatePSModules) {
+  resource module14 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PrivateMarketPlace'
     properties: {
       contentLink: {
@@ -180,7 +181,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module17 'modules' = if (newDeployment || updatePSModules) {
+  resource module15 'modules' = if (newDeployment || updatePSModules) {
     name: 'Az.Marketplace'
     properties: {
       contentLink: {
@@ -189,7 +190,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module19 'modules' = if (newDeployment || updatePSModules) {
+  resource module16 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CyberSecurityServices'
     properties: {
       contentLink: {
@@ -198,7 +199,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module20 'modules' = if (newDeployment || updatePSModules) {
+  resource module17 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DefenderForCloudConfig'
     properties: {
       contentLink: {
@@ -207,7 +208,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module21 'modules' = if (newDeployment || updatePSModules) {
+  resource module18 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
     properties: {
       contentLink: {
@@ -216,7 +217,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module22 'modules' = if (newDeployment || updatePSModules) {
+  resource module19 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionDataAtRest'
     properties: {
       contentLink: {
@@ -225,7 +226,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module23 'modules' = if (newDeployment || updatePSModules) {
+  resource module20 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionOfDataInTransit'
     properties: {
       contentLink: {
@@ -234,7 +235,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module24 'modules' = if (newDeployment || updatePSModules) {
+  resource module21 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudConsoleAccess'
     properties: {
       contentLink: {
@@ -243,7 +244,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module25 'modules' = if (newDeployment || updatePSModules) {
+  resource module22 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-HealthMonitoring'
     properties: {
       contentLink: {
@@ -252,7 +253,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module26 'modules' = if (newDeployment || updatePSModules) {
+  resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
     properties: {
       contentLink: {
@@ -261,7 +262,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module27 'modules' = if (newDeployment || updatePSModules) {
+  resource module24 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SecurityMonitoring'
     properties: {
       contentLink: {
@@ -270,7 +271,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module28 'modules' = if (newDeployment || updatePSModules) {
+  resource module25 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MFARequired'
     properties: {
       contentLink: {
@@ -279,7 +280,7 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module29 'modules' = if (newDeployment || updatePSModules) {
+  resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
     properties: {
       contentLink: {
@@ -288,11 +289,20 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module30 'modules' = if (newDeployment || updatePSModules) {
+  resource module27 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipalSecrets'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module28 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AllUserMFARequired'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
         version: '1.0.0'
       }
     }
@@ -446,6 +456,13 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       'isEncrypted': true
       'value': '"${cloudUsageProfiles}"'
   }
+  }
+  resource variable22 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'AllowedLocationInitiativeId'
+    properties: {
+        isEncrypted: true
+        value: '"${AllowedLocationInitiativeId}"'
+    }
   }
 }
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

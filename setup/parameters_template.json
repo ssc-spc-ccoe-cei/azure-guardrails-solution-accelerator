@@ -26,6 +26,9 @@
     "AllowedLocationPolicyId": {
       "value": "%AllowedLocationPolicyId%"
     },
+    "AllowedLocationInitiativeId": {
+      "value": "%AllowedLocationInitiativeId%"
+    },
     "DepartmentNumber": {
       "value": "%DepartmentNumber%"
     },
