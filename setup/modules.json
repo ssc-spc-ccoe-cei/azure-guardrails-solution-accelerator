@@ -330,31 +330,6 @@
     ]
   },
   {
-    "ModuleName": "Verify-PBMMPolicy",
-    "Control": "Guardrails5",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [3, 4, 5, 6],
-    "Script": "Verify-PBMMPolicy -ControlName $msgTable.CtrName5 -ItemName $msgTable.pbmmCompliance -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "cbssubscriptionName",
-        "Value": "CBSSubscriptionName"
-      },
-      {
-        "Name": "pbmmpolicyID",
-        "Value": "PBMMPolicyID"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "SA9(5)"
-      }
-    ]
-  },
-  {
     "ModuleName": "Verify-AllowedLocationPolicy",
     "Control": "Guardrails5",
     "ModuleType": "Builtin",
