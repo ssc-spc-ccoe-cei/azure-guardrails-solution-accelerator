@@ -227,14 +227,14 @@ foreach ($module in $modules) {
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
-            Write-Output "Result for invoking is $($results.ComplianceResults)" 
+            #Write-Output "Result for invoking is $($results.ComplianceResults)" 
 
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
-            Write-Output "required in module: $($module.Required)."
+            #Write-Output "required in module: $($module.Required)."
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
             
-            Write-Output "required in results: $($results.Required)."
+            #Write-Output "required in results: $($results.Required)."
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
             if ($null -ne $results.Errors) {
                 "Module $($module.modulename) failed with $($results.Errors.count) errors."
