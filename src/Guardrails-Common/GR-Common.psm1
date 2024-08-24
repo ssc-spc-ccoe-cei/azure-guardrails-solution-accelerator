@@ -801,10 +801,10 @@ function Invoke-GraphQuery {
     @{
         Content    = $response.Content | ConvertFrom-Json
         StatusCode = $response.StatusCode
-
     }
-
 }
+
+
 
 # Function to add other possible file extension(s) to the module file names
 function add-documentFileExtensions {
@@ -830,6 +830,133 @@ function add-documentFileExtensions {
     }
 
     return $DocumentName_new
+}
+
+
+
+function Get-AllUserAuthInformation{
+    param (      
+        [Parameter(Mandatory = $true)]
+        [array]$allUserList
+    )
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $userValidMFACounter = 0
+    $userUPNsBadMFA = @()
+
+    ForEach ($user in $allUserList) {
+        $userAccount = $user.userPrincipalName
+            
+        if($userAccount -like "*#EXT#*"){
+            # for guest accounts
+            $userEmail = $user.mail
+            if(!$null -eq  $userEmail){
+                $urlPath = '/users/' + $userEmail + '/authentication/methods'
+            }else{
+                Write-Host "userEmail is null for $userAccount"
+                $extractedEmail = (($userAccount -split '#')[0]) -replace '_', '@'
+                $urlPath = '/users/' + $extractedEmail + '/authentication/methods'
+            }
+            
+        }else{
+            # for member accounts
+            $urlPath = '/users/' + $userAccount + '/authentication/methods'
+        }
+        
+        try {
+            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+
+        }
+        catch {
+            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg"
+        }
+
+        # # To check if MFA is setup for a user, we're checking various authentication methods:
+        # # 1. #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
+        # # 2. #microsoft.graph.phoneAuthenticationMethod
+        # # 3. #microsoft.graph.passwordAuthenticationMethod - not considered for MFA
+        # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
+        # # 5. #microsoft.graph.fido2AuthenticationMethod
+        # # 6. #microsoft.graph.softwareOathAuthenticationMethod
+        # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
+        # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
+
+        if ($null -ne $response) {
+            # portal
+            $data = $response.Content
+            # # localExecution
+            # $data = $response
+            if ($null -ne $data -and $null -ne $data.value) {
+                $authenticationmethods = $data.value
+                
+                $authFound = $false
+                $authCounter = 0
+                foreach ($authmeth in $authenticationmethods) {    
+                  
+                    if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.temporaryAccessPassAuthenticationMethod" ) -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" ) -or`
+                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
+                            
+                            # need to keep track of user's mfa auth count
+                            $authCounter += 1
+                    }
+                }
+                if ($authCounter -ge 1){
+                    $authFound = $true
+                }
+
+                if($authFound){
+                    #need to keep track of user account mfa in a counter and compare it with the total user count   
+                    $userValidMFACounter += 1
+                    Write-Host "Auth method found for $userAccount"
+                }
+                else{
+                    # This message is being used for debugging
+                    Write-Host "$userAccount does not have MFA enabled"
+
+                    $authCounter = 0
+                    # Create an instance of inner list object
+                    $userUPNtemplate = [PSCustomObject]@{
+                        UPN  = $userAccount
+                        MFAStatus   = $false
+                    }
+                    # Add the list to user accounts MFA list
+                    $userUPNsBadMFA += $userUPNtemplate
+                }
+            }
+            else {
+                $errorMsg = "No authentication methods data found for $userAccount"                
+                $ErrorList.Add($errorMsg)
+                # Write-Error "Error: $errorMsg"
+                
+                # Create an instance of inner list object
+                $userUPNtemplate = [PSCustomObject]@{
+                    UPN  = $userAccount
+                    MFAStatus   = $false
+                }
+                # Add the list to user accounts MFA list
+                $userUPNsBadMFA += $userUPNtemplate
+            }
+        }
+        else {
+            $errorMsg = "Failed to get response from Graph API for $userAccount"                
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg"
+        }    
+    }
+
+    $PsObject = [PSCustomObject]@{
+        userUPNsBadMFA = $userUPNsBadMFA
+        ErrorList      = $ErrorList
+        userValidMFACounter = $userValidMFACounter
+    }
+
+    return $PsObject
+
 }
 
 # endregion
