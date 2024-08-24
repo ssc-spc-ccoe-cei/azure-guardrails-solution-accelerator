@@ -62,22 +62,16 @@ function Check-PrivilegedExternalUsers  {
     
                 # Filter for User type
                 $subRoleAssignmentsUpdated = $subRoleAssignments | Where-Object { @("User","Group") -contains $_.ObjectType }
-    
-                
-                # Create a single list with users and their role definitions
-                # Install-Module -Name JoinModule   
-                # $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
 
+                # Create a single list with users and their role definitions
                 $matchedUserUpdated =@()
                 if(!$null -eq $matchedUser){
                     $matchedUserSelected = $matchedUser | Select-Object DisplayName, Id, UserPrincipalName, Mail | Select-Object @{Name='SignInName';Expression={$_.UserPrincipalName}}, DisplayName, Id, Mail
                 
-                    # Install-Module -Name JoinModule   
-                    # $matchedUserUpdated = $matchedUserSelected | LeftJoin $subRoleAssignmentsUpdated -On DisplayName, SignInName
                     foreach ($usr in $matchedUserSelected) {
                         $matched = $subRoleAssignmentsUpdated | Where-Object { $_.SignInName -eq $usr.SignInName -and $_.DisplayName -eq $usr.DisplayName }
 
-                        if ($matched) {
+                        if (!$null -eq $matched) {
                             $joinedItem = [PSCustomObject]@{
                                 DisplayName = $usr.DisplayName
                                 SignInName = $usr.SignInName
@@ -116,11 +110,11 @@ function Check-PrivilegedExternalUsers  {
                     
                 }
                 
-                
                 if (!$null -eq  $matchedUserUpdated) {
                     # Find matched users with privileged roles
                     $newMatchedUserList = $matchedUserUpdated | ForEach-Object {
-                        $hasPrivilegedRole = $privilegedRolesSubscriptionLevel -contains $_.RoleDefinitionName
+                        $roleDefinitions = @($_.RoleDefinitionName)
+                        $hasPrivilegedRole = $privilegedRolesSubscriptionLevel | Where-Object { $roleDefinitions -contains $_ }
                         $hasPrivilegedRoleString = if ($hasPrivilegedRole) {'True'} else {'False'}
                         $_ | Add-Member -MemberType NoteProperty -Name privilegedRole -Value $hasPrivilegedRoleString -PassThru
                     }
@@ -148,7 +142,8 @@ function Check-PrivilegedExternalUsers  {
                     }
                 }
                 else{
-                    Write-Output "Found no Guest users with role assignment"
+                    Write-Output "Found no Guest users with role assignment for $($sub.Name)"
+                    Write-Host "Found no Guest users with role assignment for $($sub.Name)"
                 }
                 
                 # Find any guest users without having a role assignment
@@ -282,6 +277,6 @@ function Check-PrivilegedExternalUsers  {
     #>
     
     $stopWatch.Stop()
-    if ($debug) {Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}
+    if ($debug) {Write-Output "Check-PriviligedExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}
 }
     

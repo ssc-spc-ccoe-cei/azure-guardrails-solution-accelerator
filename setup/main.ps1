@@ -190,12 +190,14 @@ foreach ($module in $modules) {
         #Write-host $module.Script
 
         try {
+            Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
-            #Write-Output "required: $($module.Required)."
-            $results.ComplianceResults | Add-Member -MemberType Noteproperty -Name "Required" -Value $module.Required
-            #"Results Required: $($results.ComplianceResults.Required)"
+            Write-Output "required in module: $($module.Required)."
+            $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
+            
+            Write-Output "required in results: $($results.Required)."
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
             if ($null -ne $results.Errors) {
                 "Module $($module.modulename) failed with $($results.Errors.count) errors."
@@ -207,6 +209,8 @@ foreach ($module in $modules) {
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID `
                     -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
             }
+
+            Write-Output "Script running is done for $($module.modulename)"
         }
         catch {
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey', '***')))
