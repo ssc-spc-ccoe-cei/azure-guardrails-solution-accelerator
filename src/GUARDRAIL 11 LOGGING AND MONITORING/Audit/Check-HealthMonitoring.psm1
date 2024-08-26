@@ -56,7 +56,11 @@ function Get-HealthMonitoringStatus {
         $RetentionDays=90,
         [Parameter(Mandatory=$false)]
         [string]
-        $CBSSubscriptionName
+        $CBSSubscriptionName,
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

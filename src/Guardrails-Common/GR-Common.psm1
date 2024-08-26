@@ -306,7 +306,11 @@ function Check-GAAuthenticationMethods {
         [string]$itsgcode,
         [Parameter(Mandatory = $true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
@@ -524,7 +528,11 @@ function Check-DocumentExistsInStorage {
         [string]$itsgcode,
         [Parameter(Mandatory = $true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
@@ -831,6 +839,84 @@ function add-documentFileExtensions {
 
     return $DocumentName_new
 }
+
+
+function Get-EvaluationProfile {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $CloudUsageProfiles,  # Array of profiles
+        [Parameter(Mandatory = $true)]
+        [string] $ModuleProfiles,  # Array of module profiles
+        [string] $SubscriptionId   # Optional
+    )
+
+    try {
+        $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
+        $moduleProfileArray = $ModuleProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
+
+        if (-not $SubscriptionId) {
+            # No SubscriptionId provided, find the highest matching profile from CloudUsageProfiles and ModuleProfiles
+            $matchingProfiles = $cloudUsageProfileArray | Where-Object { $moduleProfileArray -contains $_ }
+
+            if ($matchingProfiles.Count -gt 0) {
+                # Return the highest matching profile
+                $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
+                return $highestMatchingProfile
+            } else {
+                # No matching profiles found
+                throw "No matching profiles found between CloudUsageProfiles and ModuleProfiles."
+            }
+        } else {
+            # SubscriptionId is provided, follow the logic to find matching profiles
+            $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
+            $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
+
+            if ($null -eq $profileTag) {
+                # No tag, find the highest matching profile from CloudUsageProfiles and ModuleProfiles
+                $matchingProfiles = $cloudUsageProfileArray | Where-Object { $moduleProfileArray -contains $_ }
+
+                if ($matchingProfiles.Count -gt 0) {
+                    # Return the highest matching profile
+                    $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
+                    return $highestMatchingProfile
+                } else {
+                    # No matching profiles found
+                    throw "No matching profiles found between CloudUsageProfiles and ModuleProfiles."
+                }
+            }
+
+            # Convert profile tag value into an array of integers (handle both single and array cases)
+            $profileTagValues = if ($profileTag.TagValue -is [string] -and $profileTag.TagValue.StartsWith('[')) {
+                $profileTag.TagValue.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
+            } else {
+                @([int]$profileTag.TagValue)
+            }
+
+            # Find the matching profiles between tag values, CloudUsageProfiles, and ModuleProfiles
+            $matchingProfiles = $profileTagValues | Where-Object {
+                $cloudUsageProfileArray -contains $_ -and $moduleProfileArray -contains $_
+            }
+
+            if ($matchingProfiles.Count -gt 0) {
+                # If multiple profiles match, pick the highest
+                $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
+                return $highestMatchingProfile
+            } else {
+                # Handle case where no matching profile is found
+                throw "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
+            }
+        }
+    } catch {
+        # Handle the error: log it, return an error object, or throw it further
+        Write-Error "Error in Get-EvaluationProfile: $_"
+        return @{
+            Status = "Error"
+            Message = "Failed to evaluate profile for subscription $SubscriptionId. Error: $_"
+            ErrorCode = 500
+        }
+    }
+}
+
 
 # endregion
 

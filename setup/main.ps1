@@ -114,6 +114,34 @@ catch {
 }
 $modules = $modulesList | convertfrom-json
 
+$enableMultiCloudProfiles = $RuntimeConfig.enableMultiCloudProfiles
+# Filter modules based on the profile
+if($enableMultiCloudProfiles) {
+    Write-Output "Running enableMultiCloudProfiles True."
+
+    # Retrieve the cloudUsageProfiles and convert to an array
+    $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
+    if ($cloudUsageProfiles -is [string]) {
+        # Handle single profile case
+        if ($cloudUsageProfiles.StartsWith("[") -and $cloudUsageProfiles.EndsWith("]")) {
+            # Handle the case where the profiles are specified as a stringified array
+            $cloudUsageProfiles = $cloudUsageProfiles.Trim("[]").Split(",") | ForEach-Object { $_.Trim() }
+        }
+        else {
+            # Handle single profile string case
+            $cloudUsageProfiles = @($cloudUsageProfiles.Trim())
+        }
+    }
+
+    # Ensure all profiles are integers
+    $cloudUsageProfiles = $cloudUsageProfiles | ForEach-Object { [int]$_ }
+
+    $modules = $modules | Where-Object {
+        $moduleProfiles = $_.Profiles
+        $moduleProfiles -is [array] -and ($moduleProfiles | Where-Object { $cloudUsageProfiles -contains $_ })
+    }
+}
+
 Write-Output "Found $($modules.Count) modules."
 
 If ($localExecution.IsPresent -and $modulesToExecute.IsPresent) {
@@ -161,8 +189,14 @@ catch {
 }
 Write-Output "Loaded $($msgTable.Count) messages." 
 Write-Output "Starting modules loop."
+$cloudUsageProfilesString = $cloudUsageProfiles -join ','
+
 foreach ($module in $modules) {
     if ($module.Status -eq "Enabled") {
+        if($enableMultiCloudProfiles) {
+            $module.Script += " -EnableMultiCloudProfiles"
+            $ModuleProfilesString = $module.Profiles -join ','
+        }
         $NewScriptBlock = [scriptblock]::Create($module.Script)
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
@@ -188,16 +222,19 @@ foreach ($module in $modules) {
         }
         #$vars
         #Write-host $module.Script
+        Write-Output "Running module with script: $module.Script"
 
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
+            #Write-Output "Result for invoking is $($results.ComplianceResults)" 
+
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
-            Write-Output "required in module: $($module.Required)."
+            #Write-Output "required in module: $($module.Required)."
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
             
-            Write-Output "required in results: $($results.Required)."
+            #Write-Output "required in results: $($results.Required)."
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
             if ($null -ne $results.Errors) {
                 "Module $($module.modulename) failed with $($results.Errors.count) errors."
@@ -213,11 +250,12 @@ foreach ($module in $modules) {
             Write-Output "Script running is done for $($module.modulename)"
         }
         catch {
-            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey', '***')))
+            Write-Output "Caught error while invoking result is $($results.Errors)" 
+            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
             
-            Add-LogEntry 'Error' "Failed invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
                 with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-            Write-Error "Failed invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
+            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
         }
     }
     else {

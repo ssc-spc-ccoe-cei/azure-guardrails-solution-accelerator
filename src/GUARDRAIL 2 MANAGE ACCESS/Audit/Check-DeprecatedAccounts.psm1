@@ -7,8 +7,10 @@ function Check-DeprecatedUsers {
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime
+        [string] $ReportTime,
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [bool] $IsCompliant = $false
     [string] $UComments = $msgTable.noncompliantUsers
@@ -16,7 +18,7 @@ function Check-DeprecatedUsers {
 
     [PSCustomObject] $DeprecatedUsers = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    
+        
     # A Deprecated account is an account that is disabled and not synchronized to AD
     $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" -Select OnPremisesSyncEnabled,UserPrincipalName | Where-Object {$null -eq $_.onPremisesSyncEnabled}
 
@@ -42,6 +44,22 @@ function Check-DeprecatedUsers {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
     }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($EnableMultiCloudProfiles) {
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -is [int]) {
+            Write-Output "Valid profile returned: $result"
+            $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
+            Write-Error "Error occurred: $($result.Message)"
+            Errorlist.Add($result.Message)
+            $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"            
+        } else {
+            Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
+        }        
+    }
+
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $DeprecatedUserStatus
         Errors=$ErrorList

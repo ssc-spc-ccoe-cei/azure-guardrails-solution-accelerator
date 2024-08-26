@@ -25,7 +25,11 @@ function Get-BreakGlassAccounts {
     [string] $ItemName,
     [Parameter(Mandatory=$true)]
     [string]
-    $ReportTime
+    $ReportTime,
+    [string] 
+    $CloudUsageProfiles = "3",  # Passed as a string
+    [string] $ModuleProfiles,  # Passed as a string
+    [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
   )
 
   [bool] $IsCompliant = $false

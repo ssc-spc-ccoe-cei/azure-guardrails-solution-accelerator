@@ -391,7 +391,14 @@ Function Confirm-GSAConfigurationParameters {
     $config['runtime']['tagsTable'] = $tagsTable
     $config['runtime']['deployLAW'] = $true
     $config['runtime']['deployKV'] = $true
-    
+
+    # add feature flag for multi cloud profile
+    if ([string]::IsNullOrEmpty($config.enableMultiCloudProfiles) -or !($config.enableMultiCloudProfiles -as [bool])) {
+        Write-Error "enableMultiCloudProfiles has a value of '$config.enableMultiCloudProfiles' which is not a boolean value."
+        break
+    }
+    $config['runtime']['enableMultiCloudProfiles'] = [bool]::Parse($config.enableMultiCloudProfiles)
+
     # output the configuration as an object
     Write-Host "Validation of configuration parameters completed successfully!" -ForegroundColor Green
 

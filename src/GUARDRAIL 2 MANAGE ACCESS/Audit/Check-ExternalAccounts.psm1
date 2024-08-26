@@ -1,16 +1,19 @@
-# Checking for GUEST accounts  
-# Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
-# This query looks for accounts marked as GUEST
-# It does not list GUEST accounts from the list of deleted accounts.
-
-function Check-ExternalUsers  {
-    Param ( 
-        [string] $ControlName, 
-        [string] $ItemName, 
-        [string] $itsgcode,
-        [hashtable] $msgTable,
-        [Parameter(Mandatory=$true)]
-        [string] $ReportTime
+    # Checking for GUEST accounts  
+    # Note that this URL only reads from the All-Users (not the deleted accounts) in the directory, 
+    # This query looks for accounts marked as GUEST
+    # It does not list GUEST accounts from the list of deleted accounts.
+    
+    function Check-ExternalUsers  {
+        Param ( 
+            [string] $ControlName, 
+            [string] $ItemName, 
+            [string] $itsgcode,
+            [hashtable] $msgTable,
+            [Parameter(Mandatory=$true)]
+            [string] $ReportTime,
+            [string] $CloudUsageProfiles = "3",  # Passed as a string
+            [string] $ModuleProfiles,  # Passed as a string
+            [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
         )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
@@ -188,10 +191,26 @@ function Check-ExternalUsers  {
         ReportTime = $ReportTime
         MitigationCommands = $MitigationCommands
     }
-    # $AdditionalResults = [PSCustomObject]@{
-    #     records = $unique_guestUsersArray
-    #     logType = "GR2ExternalUsers"
-    # }
+    $AdditionalResults = [PSCustomObject]@{
+        records = $unique_guestUsersArray
+        logType = "GR2ExternalUsers"
+    }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($EnableMultiCloudProfiles) {
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -is [int]) {
+            Write-Output "Valid profile returned: $result"
+            $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
+            Write-Error "Error occurred: $($result.Message)"
+            $GuestUserStatus.ComplianceStatus = "Not Applicable"            
+            Errorlist.Add($result.Message)
+        } else {
+            Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
+        }        
+    }
+    
 
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $GuestUserStatus

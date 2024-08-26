@@ -12,7 +12,11 @@ function Check-PolicyStatus {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
-        [array] $AllowedLocations
+        [array] $AllowedLocations,
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)
@@ -43,7 +47,7 @@ function Check-PolicyStatus {
             }
         }
         catch {
-            $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+            $Errorlist.Value.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
             Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
         }
         If (($null -eq $AssignedPolicyList -and $null -eq $AssignedInitiatives) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
@@ -103,6 +107,24 @@ function Check-PolicyStatus {
             ControlName = [string]$ControlName
             ReportTime = [string]$ReportTime
         }
+
+        if ($EnableMultiCloudProfiles) {
+            if ($objType -eq "subscription") {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
+            } else {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            }
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorlist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+            }        
+        }        
         
         $tempObjectList.add($c)| Out-Null
     }
@@ -122,11 +144,12 @@ function Verify-AllowedLocationPolicy {
         [string] $AllowedLocationsString,#locations, separated by comma.
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime,
+        [string] $ReportTime,
         [Parameter(Mandatory=$false)]
-        [string]
-        $CBSSubscriptionName
+        [string] $CBSSubscriptionName,
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
 
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
@@ -150,7 +173,11 @@ function Verify-AllowedLocationPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "Management Group"
-        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        if ($EnableMultiCloudProfiles) {
+            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+        } else {
+            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        }
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_")
@@ -171,12 +198,17 @@ function Verify-AllowedLocationPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "subscription"
-        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        if ($EnableMultiCloudProfiles) {
+            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles 
+        } else {
+            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles 
+        }
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_" )
         throw "Failed to execute the 'Check-PolicyStatus' function. Error message: $_"
     }
+    
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $FinalObjectList 
         Errors=$ErrorList

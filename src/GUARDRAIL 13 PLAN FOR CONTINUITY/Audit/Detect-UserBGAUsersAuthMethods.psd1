@@ -14,7 +14,7 @@
 RootModule = 'Detect-UserBGAUsersAuthMethods'
 
 # Version number of this module.
-ModuleVersion = '1.2.3'
+ModuleVersion = '1.2.4'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

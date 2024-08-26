@@ -50,8 +50,11 @@ function Check-DepartmentServicePrincipalName {
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory = $true)]
-        [string]
-        $ReportTime)
+        [string] $ReportTime,
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+    )
         
     [bool] $IsCompliant = $false
 
@@ -113,6 +116,22 @@ function Check-DepartmentServicePrincipalName {
         Comments         = $servicePrincipalName.ComplianceComments
         ReportTime       = $ReportTime
     }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($EnableMultiCloudProfiles) {
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -is [int]) {
+            Write-Output "Valid profile returned: $result"
+            $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result.Status -eq "Error") {
+            Write-Error "Error occurred: $($result.Message)"
+            $Results.ComplianceStatus = "Not Applicable"
+            Errorlist.Add($result.Message)
+        } else {
+            Write-Error "Unexpected result: $result"
+        }        
+    }
+
     $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $Results 
         Errors            = $ErrorList
