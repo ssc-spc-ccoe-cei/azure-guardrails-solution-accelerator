@@ -84,7 +84,7 @@ function Get-ADLicenseType {
     }
 
 
-     $moduleOutput= [PSCustomObject]@{ 
+    $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $PsObject
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults

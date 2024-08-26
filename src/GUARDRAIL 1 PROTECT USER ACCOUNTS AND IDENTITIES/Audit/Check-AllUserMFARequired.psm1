@@ -14,7 +14,12 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
-        [string] $SecondBreakGlassUPN
+        [string] $SecondBreakGlassUPN,
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] 
+        $EnableMultiCloudProfiles # New feature flag, default to false
     )
 
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -25,7 +30,11 @@ function Check-AllUserMFARequired {
     $urlPath = "/users"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        # portal
         $data = $response.Content
+        # # localExecution
+        # $data = $response
+
         if ($null -ne $data -and $null -ne $data.value) {
             $users = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
         }
@@ -36,106 +45,46 @@ function Check-AllUserMFARequired {
         Write-Error "Error: $errorMsg"
     }
 
+    ## *************************##
+    ## ****** Member user ******##
+    ## *************************##
+    $memberUsers = $users | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
+
     # Check all users for MFA
     $allUserUPNs = $users.userPrincipalName
+
+    # Get member users UPNs
+    $memberUserList = $memberUsers | Select-Object userPrincipalName, mail
     # Exclude the breakglass account UPNs from the list
-    if ($allUserUPNs -contains $FirstBreakGlassUPN){
-        $allUserUPNs = $allUserUPNs | Where-Object { $_ -ne $FirstBreakGlassUPN }
+    if ($memberUserList.userPrincipalName -contains $FirstBreakGlassUPN){
+        $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $FirstBreakGlassUPN }
     }
-    if ($allUserUPNs -contains $SecondBreakGlassUPN){
-        $allUserUPNs = $allUserUPNs | Where-Object { $_ -ne $SecondBreakGlassUPN }
+    if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
+        $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
 
     }
-
-    $userValidMFACounter = 0
-    $userUPNsBadMFA = @()
-
-    ForEach ($userAccount in $allUserUPNs) {
-        $urlPath = '/users/' + $userAccount + '/authentication/methods'
-        
-        try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-
-        }
-        catch {
-            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-            $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"
-        }
-
-        # # To check if MFA is setup for a user, we're checking various authentication methods:
-        # # 1. #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
-        # # 2. #microsoft.graph.phoneAuthenticationMethod
-        # # 3. #microsoft.graph.passwordAuthenticationMethod - not considered for MFA
-        # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
-        # # 5. #microsoft.graph.fido2AuthenticationMethod
-        # # 6. #microsoft.graph.softwareOathAuthenticationMethod
-        # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
-        # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
-
-        if ($null -ne $response) {
-            $data = $response.Content
-            if ($null -ne $data -and $null -ne $data.value) {
-                $authenticationmethods = $data.value
-                
-                $authFound = $false
-                $authCounter = 0
-                foreach ($authmeth in $authenticationmethods) {    
-                  
-                    if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.temporaryAccessPassAuthenticationMethod" ) -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" ) -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
-                            
-                            # need to keep track of user's mfa auth count
-                            $authCounter += 1
-                    }
-                    if ($authCounter -ge 1){
-                        $authFound = $true
-                    }
-                }
-
-                if($authFound){
-                    #need to keep track of user account mfa in a counter and compare it with the total user count   
-                    $userValidMFACounter += 1
-                    Write-Host "Auth method found for $userAccount"
-                }
-                else{
-                    # This message is being used for debugging
-                    Write-Host "$userAccount does not have MFA enabled"
-
-                    $authCounter = 0
-                    # Create an instance of inner list object
-                    $userUPNtemplate = [PSCustomObject]@{
-                        UPN  = $userAccount
-                        MFAStatus   = $false
-                    }
-                    # Add the list to user accounts MFA list
-                    $userUPNsBadMFA += $userUPNtemplate
-                }
-            }
-            else {
-                $errorMsg = "No authentication methods data found for $userAccount"                
-                $ErrorList.Add($errorMsg)
-                # Write-Error "Error: $errorMsg"
-                
-                # Create an instance of inner list object
-                $userUPNtemplate = [PSCustomObject]@{
-                    UPN  = $userAccount
-                    MFAStatus   = $false
-                }
-                # Add the list to user accounts MFA list
-                $userUPNsBadMFA += $userUPNtemplate
-            }
-        }
-        else {
-            $errorMsg = "Failed to get response from Graph API for $userAccount"                
-            $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"
-        }    
+    $result = Get-AllUserAuthInformation -allUserList $memberUserList
+    $memberUserUPNsBadMFA = $result.userUPNsBadMFA
+    if( !$null -eq $result.ErrorList){
+        $ErrorList =  $ErrorList.Add($result.ErrorList)
     }
+    $userValidMFACounter = $result.userValidMFACounter
+
+    ## ***************************##
+    ## ****** External user ******##
+    ## ***************************##
+    $extUsers = $users | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
+
+    # Get external users UPNs and emails
+    $extUserList = $extUsers | Select-Object userPrincipalName, mail
+    $result2 = Get-AllUserAuthInformation -allUserList $extUserList
+    $extUserUPNsBadMFA = $result2.userUPNsBadMFA
+    if( !$null -eq $result2.ErrorList){
+        $ErrorList =  $ErrorList.Add($result2.ErrorList)
+    }
+    # combined list
+    $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
+    $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
 
     # Condition: all users are MFA enabled
     if($userValidMFACounter -eq $allUserUPNs.Count) {
@@ -165,6 +114,23 @@ function Check-AllUserMFARequired {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($EnableMultiCloudProfiles) {
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -is [int]) {
+            Write-Output "Valid profile returned: $result"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
+            Write-Error "Error occurred: $($result.Message)"
+            $PsObject.ComplianceStatus = "Not Applicable"
+            Errorslist.Add($result.Message)
+        } else {
+            Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
+        }        
+    }
+
+    
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $PsObject
         Errors=$ErrorList
