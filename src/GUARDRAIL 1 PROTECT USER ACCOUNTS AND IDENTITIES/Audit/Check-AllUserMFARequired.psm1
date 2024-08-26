@@ -14,7 +14,12 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
-        [string] $SecondBreakGlassUPN
+        [string] $SecondBreakGlassUPN,
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] 
+        $EnableMultiCloudProfiles # New feature flag, default to false
     )
 
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -109,6 +114,23 @@ function Check-AllUserMFARequired {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($EnableMultiCloudProfiles) {
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -is [int]) {
+            Write-Output "Valid profile returned: $result"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
+            Write-Error "Error occurred: $($result.Message)"
+            $PsObject.ComplianceStatus = "Not Applicable"
+            Errorslist.Add($result.Message)
+        } else {
+            Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
+        }        
+    }
+
+    
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $PsObject
         Errors=$ErrorList

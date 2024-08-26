@@ -198,6 +198,7 @@ jobs:
               $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
+              $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
 
               $configContent = @"
               {
@@ -225,7 +226,8 @@ jobs:
                   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "3"
+                  "cloudUsageProfiles": "3",
+                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
               }
               "@
               Set-Content -Path $configFilePath -Value $configContent
@@ -261,6 +263,7 @@ jobs:
           INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID }}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
+          ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
       - name: ReLogin AZ (due to timeout issue)
         uses: azure/login@v2
         with:
@@ -287,6 +290,7 @@ jobs:
               $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
+              $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
 
               $configContent = @"
               {
@@ -314,7 +318,8 @@ jobs:
                   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "3"
+                  "cloudUsageProfiles": "3",
+                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
                 }
               "@
               Set-Content -Path $configFilePath -Value $configContent
@@ -376,6 +381,7 @@ jobs:
           INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID}}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
+          ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
       - name: Check for AA Job Errors
         uses: azure/powershell@v2
         with:

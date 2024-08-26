@@ -31,8 +31,9 @@ function Check-StatusDataInTransit {
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime
+        [string] $ReportTime,
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     foreach ($obj in $objList)
@@ -96,11 +97,12 @@ function Verify-ProtectionDataInTransit {
             [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
-            [string]
-            $ReportTime,
+            [string] $ReportTime,
             [Parameter(Mandatory=$false)]
-            [string]
-            $CBSSubscriptionName
+            [string] $CBSSubscriptionName,
+            [string] $CloudUsageProfiles = "3",  # Passed as a string
+            [string] $ModuleProfiles,  # Passed as a string
+            [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList

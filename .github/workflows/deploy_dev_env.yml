@@ -135,6 +135,7 @@ jobs:
             $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID_DEV
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
+            $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
 
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
 
@@ -164,7 +165,8 @@ jobs:
               "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
-              "cloudUsageProfiles": "3"
+              "cloudUsageProfiles": "3",
+              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
             }
             "@
             Set-Content -Path $configFilePath -Value $configContent
@@ -200,7 +202,8 @@ jobs:
           INITIATIVELOCATION_ID_DEV: ${{ vars.INITIATIVELOCATION_ID_DEV}}
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
-          DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}       
+          DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
+          ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
         
       - name: Relogin AZ 
         uses: azure/login@v2
@@ -228,6 +231,7 @@ jobs:
             $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID_DEV
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
+            $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
 
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
 
@@ -257,7 +261,8 @@ jobs:
               "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
-              "cloudUsageProfiles": "3"
+              "cloudUsageProfiles": "3",
+              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
               }
             "@
             Set-Content -Path $configFilePath -Value $configContent
@@ -329,6 +334,7 @@ jobs:
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
+          ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
 
       - name: Check for AA Job Errors
         uses: azure/powershell@v2

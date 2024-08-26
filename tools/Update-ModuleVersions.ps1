@@ -2,7 +2,7 @@ param (
     # can be a tag, branch, or commit - this is what you will merge into
     [Parameter(Mandatory = $false)]
     [string]
-    $targetGitRef = 'upstream/main',
+    $targetGitRef = 'origin/main',
 
     # whatif
     [Parameter(Mandatory = $false)]
