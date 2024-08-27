@@ -36,7 +36,7 @@ function Get-SubnetComplianceInformation {
     $reservedSubnetNames = $ReservedSubnetList.Split(",")
     $ExcludedSubnets = $ExcludedSubnetsList.Split(",")
     $allexcluded = $ExcludedSubnets + $reservedSubnetNames
-
+    $result = $null
     try {
         $subs = Get-AzSubscription -ErrorAction Stop  | Where-Object { $_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName }  
     }
@@ -124,7 +124,7 @@ function Get-SubnetComplianceInformation {
                                 itsgcode         = $itsgcodesegmentation
                                 ReportTime       = $ReportTime
                             }
-                            if ($EnableMultiCloudProfiles && result -is [int]) {
+                            if ($EnableMultiCloudProfiles -and $result -is [int]) {
                                 $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
                             }
 
@@ -165,7 +165,7 @@ function Get-SubnetComplianceInformation {
                             ControlName      = $ControlName
                             ReportTime       = $ReportTime
                         }
-                        if ($EnableMultiCloudProfiles && result -is [int]) {
+                        if ($EnableMultiCloudProfiles -and $result -is [int]) {
                             $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
                         }
                         $SubnetList.add($SubnetObject) | Out-Null
@@ -190,7 +190,7 @@ function Get-SubnetComplianceInformation {
                             ControlName      = $ControlName
                             ReportTime       = $ReportTime
                         }
-                        if ($EnableMultiCloudProfiles && result -is [int]) {
+                        if ($EnableMultiCloudProfiles -and $result -is [int]) {
                             $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
                         }
                         $SubnetList.add($SubnetObject) | Out-Null
@@ -213,7 +213,7 @@ function Get-SubnetComplianceInformation {
                 itsgcode         = $itsgcodesegmentation
                 ReportTime       = $ReportTime
             }
-            if ($EnableMultiCloudProfiles && result -is [int]) {
+            if ($EnableMultiCloudProfiles -and $result -is [int]) {
                 $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
             }
             $SubnetList.add($SubnetObject) | Out-Null

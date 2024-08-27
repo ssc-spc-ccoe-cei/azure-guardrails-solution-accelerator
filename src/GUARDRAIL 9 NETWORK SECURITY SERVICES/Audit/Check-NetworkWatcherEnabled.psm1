@@ -27,6 +27,7 @@ function Get-NetworkWatcherStatus {
     )
     [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $result = $null
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
         $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
@@ -94,7 +95,7 @@ function Get-NetworkWatcherStatus {
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                 }
-                if ($EnableMultiCloudProfiles && result -is [int]) {
+                if ($EnableMultiCloudProfiles -and $result -is [int]) {
                     $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
                 }
                 $RegionList.add($RegionObject) | Out-Null                               
@@ -111,7 +112,7 @@ function Get-NetworkWatcherStatus {
                 ControlName = $ControlName
                 ReportTime = $ReportTime
             }
-            if ($EnableMultiCloudProfiles && result -is [int]) {
+            if ($EnableMultiCloudProfiles -and $result -is [int]) {
                 $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
             }
             $RegionList.add($RegionObject) | Out-Null   

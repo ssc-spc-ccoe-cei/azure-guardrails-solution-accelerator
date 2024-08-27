@@ -28,6 +28,7 @@ function Get-VNetComplianceInformation {
     )
     [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $result = $null
     $ExcludeVnetTag = "GR9-ExcludeVNetFromCompliance"
     try {
         $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName }  
@@ -82,7 +83,7 @@ function Get-VNetComplianceInformation {
                         ControlName      = $ControlName
                         ReportTime       = $ReportTime
                     }
-                    if ($EnableMultiCloudProfiles && result -is [int]) {
+                    if ($EnableMultiCloudProfiles -and $result -is [int]) {
                         $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
                     }    
                     $VNetList.add($VNetObject) | Out-Null                
@@ -109,7 +110,7 @@ function Get-VNetComplianceInformation {
                         ControlName      = $ControlName
                         ReportTime       = $ReportTime
                     }
-                    if ($EnableMultiCloudProfiles && result -is [int]) {
+                    if ($EnableMultiCloudProfiles -and $result -is [int]) {
                         $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
                     }
                     $VNetList.add($VNetObject) | Out-Null 
