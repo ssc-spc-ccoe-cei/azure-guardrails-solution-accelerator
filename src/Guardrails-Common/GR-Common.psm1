@@ -1,6 +1,9 @@
 function get-tagValue {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $true)]
         [string] $tagKey,
+        [Parameter(Mandatory = $true)]
         [System.Object] $object
     )
     $tagString = get-tagstring($object)
@@ -12,51 +15,56 @@ function get-tagValue {
     }
     return ""
 }
-function get-tagstring ($object) {
+function get-tagstring {
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Object] $object
+    )
     if ($object.Tag.Count -eq 0) {
         $tagstring = "None"
     }
     else {
-        $tagstring = ""
+        $tagstring = [System.Text.StringBuilder]::new()
         $tKeys = $object.tag | Select-Object -ExpandProperty keys
         $tValues = $object.Tag | Select-Object -ExpandProperty values
         $index = 0
-        if ($object.Tag.Count -eq 1) {
-            $tagstring = "$tKeys=$tValues"
+        foreach ($tkey in $tKeys) {
+            [void]$tagstring.Append("$tkey=$($tValues[$index]);")
+            $index++
         }
-        else {
-            foreach ($tkey in $tkeys) {
-                $tagstring += "$tkey=$($tValues[$index]);"
-                $index++
-            }
-        }
+        $tagstring = $tagstring.ToString().TrimEnd(';')
     }
-    return $tagstring.Trim(";")
+    return $tagstring
 }
-function get-rgtagstring ($object) {
+function get-rgtagstring {
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Object] $object
+    )
     if ($object.Tags.Count -eq 0) {
         $tagstring = "None"
     }
     else {
-        $tagstring = ""
+        $tagstring = [System.Text.StringBuilder]::new()
         $tKeys = $object.tags | Select-Object -ExpandProperty keys
         $tValues = $object.Tags | Select-Object -ExpandProperty values
         $index = 0
-        if ($object.Tags.Count -eq 1) {
-            $tagstring = "$tKeys=$tValues"
+        foreach ($tkey in $tKeys) {
+            [void]$tagstring.Append("$tkey=$($tValues[$index]);")
+            $index++
         }
-        else {
-            foreach ($tkey in $tkeys) {
-                $tagstring += "$tkey=$($tValues[$index]);"
-                $index++
-            }
-        }
+        $tagstring = $tagstring.ToString().TrimEnd(';')
     }
-    return $tagstring.Trim(";")
+    return $tagstring
 }
 function get-rgtagValue {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $true)]
         [string] $tagKey,
+        [Parameter(Mandatory = $true)]
         [System.Object] $object
     )
     $tagString = get-rgtagstring($object)
@@ -69,6 +77,7 @@ function get-rgtagValue {
     return ""
 }
 function copy-toBlob {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -107,6 +116,7 @@ function copy-toBlob {
     }
 }
 function get-blobs {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -132,6 +142,7 @@ function get-blobs {
 }
 
 function read-blob {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -218,6 +229,7 @@ Function Add-LogEntry {
 }
 
 Function Add-TenantInfo {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -269,6 +281,7 @@ Function Add-TenantInfo {
 }
 
 function Add-LogAnalyticsResults {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -294,22 +307,35 @@ function Add-LogAnalyticsResults {
 }
 
 function Check-GAAuthenticationMethods {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $true)]
         [string] $StorageAccountName,
+        [Parameter(Mandatory = $true)]
         [string] $ContainerName, 
+        [Parameter(Mandatory = $true)]
         [string] $ResourceGroupName,
+        [Parameter(Mandatory = $true)]
         [string] $SubscriptionID, 
+        [Parameter(Mandatory = $true)]
         [string[]] $DocumentName, 
+        [Parameter(Mandatory = $true)]
         [string] $ControlName, 
+        [Parameter(Mandatory = $true)]
         [string]$ItemName,
+        [Parameter(Mandatory = $true)]
         [hashtable] $msgTable, 
+        [Parameter(Mandatory = $true)]
         [string]$itsgcode,
         [Parameter(Mandatory = $true)]
         [string]
         $ReportTime,
+        [Parameter(Mandatory = $false)]
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
+        [Parameter(Mandatory = $false)]
         [string] $ModuleProfiles,  # Passed as a string
+        [Parameter(Mandatory = $false)]
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -429,6 +455,7 @@ function Check-GAAuthenticationMethods {
                     if($authFound){
                         # This message is being used for debugging
                         Write-Host "Auth method found for $globalAdminAccount"
+                        $mfaCounter += 1
                     }
                     else{
                         # This message is being used for debugging
@@ -530,22 +557,35 @@ function Check-GAAuthenticationMethods {
 
 function Check-DocumentExistsInStorage {
     [Alias('Check-DocumentsExistInStorage')]
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $true)]
         [string] $StorageAccountName,
+        [Parameter(Mandatory = $true)]
         [string] $ContainerName, 
+        [Parameter(Mandatory = $true)]
         [string] $ResourceGroupName,
+        [Parameter(Mandatory = $true)]
         [string] $SubscriptionID, 
+        [Parameter(Mandatory = $true)]
         [string[]] $DocumentName, 
+        [Parameter(Mandatory = $true)]
         [string] $ControlName, 
+        [Parameter(Mandatory = $true)]
         [string]$ItemName,
+        [Parameter(Mandatory = $true)]
         [hashtable] $msgTable, 
+        [Parameter(Mandatory = $true)]
         [string]$itsgcode,
         [Parameter(Mandatory = $true)]
         [string]
         $ReportTime,
+        [Parameter(Mandatory = $false)]
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
+        [Parameter(Mandatory = $false)]
         [string] $ModuleProfiles,  # Passed as a string
+        [Parameter(Mandatory = $false)]
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -643,6 +683,7 @@ function Check-DocumentExistsInStorage {
 }
 
 function Check-UpdateAvailable {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -709,12 +750,16 @@ function Check-UpdateAvailable {
 function get-itsgdata {
     [CmdletBinding()]
     param (
-        [Parameter()]
+        [Parameter(Mandatory = $true)]
         [string]
         $URL,
+        [Parameter(Mandatory = $true)]
         [string] $WorkSpaceID,
+        [Parameter(Mandatory = $true)]
         [string] $workspaceKey,
+        [Parameter(Mandatory = $false)]
         [string] $LogType = "GRITSGControls",
+        [Parameter(Mandatory = $false)]
         [switch] $DebugCode
     )
     (Invoke-WebRequest -UseBasicParsing $URL).Content | out-file tempitsg.csv
@@ -739,13 +784,13 @@ function New-LogAnalyticsData {
         [Parameter(Mandatory = $true)]
         [array] 
         $Data,
-        [Parameter()]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceID,
-        [Parameter()]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceKey,
-        [Parameter()]
+        [Parameter(Mandatory = $true)]
         [string]
         $LogType
     )
@@ -759,7 +804,9 @@ function New-LogAnalyticsData {
 }
 
 function Hide-Email {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $true)]
         [string]$email
     )
 
@@ -778,8 +825,86 @@ function Hide-Email {
     }
 }
 
-function Parse-BlobContent {
+function Get-EvaluationProfile {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $true)]
+        [string] $CloudUsageProfiles,
+        [Parameter(Mandatory = $true)]
+        [string] $ModuleProfiles,
+        [Parameter(Mandatory = $false)]
+        [string] $SubscriptionId
+    )
+
+    try {
+        # Convert input strings to integer arrays
+        $cloudUsageProfileArray = ConvertTo-IntArray $CloudUsageProfiles
+        $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
+
+        if (-not $SubscriptionId) {
+            return Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        }
+
+        $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
+        $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
+
+        if ($null -eq $profileTag) {
+            return Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        }
+
+        $profileTagValues = ConvertTo-IntArray $profileTag.TagValue
+
+        $matchingProfiles = $profileTagValues | Where-Object {
+            $cloudUsageProfileArray -contains $_ -and $moduleProfileArray -contains $_
+        }
+
+        if ($matchingProfiles.Count -gt 0) {
+            return ($matchingProfiles | Measure-Object -Maximum).Maximum
+        }
+
+        throw "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
+    }
+    catch {
+        Write-Error "Error in Get-EvaluationProfile: $_"
+        return @{
+            Status = "Error"
+            Message = "Failed to evaluate profile for subscription $SubscriptionId. Error: $_"
+            ErrorCode = 500
+        }
+    }
+}
+
+function ConvertTo-IntArray {
+    [OutputType([int[]])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$inputString
+    )
+    if ($inputString -match '^\[.*\]$') {
+        return $inputString.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
+    }
+    return @([int]$inputString)
+}
+
+function Get-HighestMatchingProfile {
+    [OutputType([int])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [int[]]$profile1,
+        [Parameter(Mandatory = $true)]
+        [int[]]$profile2
+    )
+    $matchingProfiles = $profile1 | Where-Object { $profile2 -contains $_ }
+    if ($matchingProfiles.Count -eq 0) {
+        throw "No matching profiles found."
+    }
+    return ($matchingProfiles | Measure-Object -Maximum).Maximum
+}
+
+function Parse-BlobContent {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
         [string]$blobContent
     )
 
@@ -817,6 +942,7 @@ function Parse-BlobContent {
 }
 
 function Invoke-GraphQuery {
+    [CmdletBinding()]
     param(
         # URL path (ex: /users)
         [Parameter(Mandatory = $true)]
@@ -845,8 +971,11 @@ function Invoke-GraphQuery {
 
 # Function to add other possible file extension(s) to the module file names
 function add-documentFileExtensions {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $true)]
         [string[]] $DocumentName,
+        [Parameter(Mandatory = $true)]
         [string]$ItemName
 
     )
@@ -872,6 +1001,7 @@ function add-documentFileExtensions {
 
 
 function Get-AllUserAuthInformation{
+    [CmdletBinding()]
     param (      
         [Parameter(Mandatory = $true)]
         [array]$allUserList
@@ -931,21 +1061,15 @@ function Get-AllUserAuthInformation{
                 $authCounter = 0
                 foreach ($authmeth in $authenticationmethods) {    
                   
-                    if (($($authmeth.'@odata.type') -eq "#microsoft.graph.phoneAuthenticationMethod") -or `
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod") -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.fido2AuthenticationMethod" ) -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.temporaryAccessPassAuthenticationMethod" ) -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" ) -or`
-                        ($($authmeth.'@odata.type') -eq "#microsoft.graph.softwareOathAuthenticationMethod" ) ) {
-                            
-                            # need to keep track of user's mfa auth count
-                            $authCounter += 1
+                    switch ($authmeth.'@odata.type') {
+                        "#microsoft.graph.phoneAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.fido2AuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.temporaryAccessPassAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.softwareOathAuthenticationMethod" { $authFound = $true; break }
                     }
                 }
-                if ($authCounter -ge 1){
-                    $authFound = $true
-                }
-
                 if($authFound){
                     #need to keep track of user account mfa in a counter and compare it with the total user count   
                     $userValidMFACounter += 1
@@ -997,82 +1121,6 @@ function Get-AllUserAuthInformation{
 }
 
 
-function Get-EvaluationProfile {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string] $CloudUsageProfiles,  # Array of profiles
-        [Parameter(Mandatory = $true)]
-        [string] $ModuleProfiles,  # Array of module profiles
-        [string] $SubscriptionId   # Optional
-    )
-
-    try {
-        $cloudUsageProfileArray = $CloudUsageProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
-        $moduleProfileArray = $ModuleProfiles.Split(',') | ForEach-Object { [int]$_.Trim() }
-
-        if (-not $SubscriptionId) {
-            # No SubscriptionId provided, find the highest matching profile from CloudUsageProfiles and ModuleProfiles
-            $matchingProfiles = $cloudUsageProfileArray | Where-Object { $moduleProfileArray -contains $_ }
-
-            if ($matchingProfiles.Count -gt 0) {
-                # Return the highest matching profile
-                $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
-                return $highestMatchingProfile
-            } else {
-                # No matching profiles found
-                throw "No matching profiles found between CloudUsageProfiles and ModuleProfiles."
-            }
-        } else {
-            # SubscriptionId is provided, follow the logic to find matching profiles
-            $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
-            $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
-
-            if ($null -eq $profileTag) {
-                # No tag, find the highest matching profile from CloudUsageProfiles and ModuleProfiles
-                $matchingProfiles = $cloudUsageProfileArray | Where-Object { $moduleProfileArray -contains $_ }
-
-                if ($matchingProfiles.Count -gt 0) {
-                    # Return the highest matching profile
-                    $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
-                    return $highestMatchingProfile
-                } else {
-                    # No matching profiles found
-                    throw "No matching profiles found between CloudUsageProfiles and ModuleProfiles."
-                }
-            }
-
-            # Convert profile tag value into an array of integers (handle both single and array cases)
-            $profileTagValues = if ($profileTag.TagValue -is [string] -and $profileTag.TagValue.StartsWith('[')) {
-                $profileTag.TagValue.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
-            } else {
-                @([int]$profileTag.TagValue)
-            }
-
-            # Find the matching profiles between tag values, CloudUsageProfiles, and ModuleProfiles
-            $matchingProfiles = $profileTagValues | Where-Object {
-                $cloudUsageProfileArray -contains $_ -and $moduleProfileArray -contains $_
-            }
-
-            if ($matchingProfiles.Count -gt 0) {
-                # If multiple profiles match, pick the highest
-                $highestMatchingProfile = [int]($matchingProfiles | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum)
-                return $highestMatchingProfile
-            } else {
-                # Handle case where no matching profile is found
-                throw "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
-            }
-        }
-    } catch {
-        # Handle the error: log it, return an error object, or throw it further
-        Write-Error "Error in Get-EvaluationProfile: $_"
-        return @{
-            Status = "Error"
-            Message = "Failed to evaluate profile for subscription $SubscriptionId. Error: $_"
-            ErrorCode = 500
-        }
-    }
-}
-
-
 # endregion
+
 
