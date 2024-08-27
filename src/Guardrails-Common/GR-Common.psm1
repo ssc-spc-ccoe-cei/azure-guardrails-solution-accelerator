@@ -837,7 +837,7 @@ function Get-EvaluationProfile {
     )
 
     try {
-        # Convert input strings to integer arrays
+        # Convert input strings to integer arrays  
         $cloudUsageProfileArray = ConvertTo-IntArray $CloudUsageProfiles
         $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
 
