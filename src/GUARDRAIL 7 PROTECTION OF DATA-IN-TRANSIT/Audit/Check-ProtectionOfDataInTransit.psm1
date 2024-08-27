@@ -85,6 +85,23 @@ function Check-StatusDataInTransit {
             ReportTime = [string]$ReportTime
         }
 
+        if ($EnableMultiCloudProfiles) {
+            if ($objType -eq "subscription") {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
+            } else {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            }
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorlist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+            }        
+        }        
         $tempObjectList.add($c)| Out-Null
     }
     return $tempObjectList
@@ -126,8 +143,13 @@ function Verify-ProtectionDataInTransit {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     [string]$type = "subscription"
-    $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
-    
+
+    if ($EnableMultiCloudProfiles) {   
+        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+    }
+    else {
+        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+    } 
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $FinalObjectList 
         Errors=$ErrorList

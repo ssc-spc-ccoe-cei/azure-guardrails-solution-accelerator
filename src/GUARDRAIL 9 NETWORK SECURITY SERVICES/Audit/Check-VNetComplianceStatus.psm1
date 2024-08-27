@@ -43,6 +43,18 @@ function Get-VNetComplianceInformation {
         Write-Verbose "Selecting subscription..."
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         
+        if ($EnableMultiCloudProfiles) {        
+            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorlist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+            }
+        }
         $allVNETs = Get-AzVirtualNetwork
         $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
@@ -70,6 +82,9 @@ function Get-VNetComplianceInformation {
                         ControlName      = $ControlName
                         ReportTime       = $ReportTime
                     }
+                    if ($EnableMultiCloudProfiles && result -is [int]) {
+                        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                    }    
                     $VNetList.add($VNetObject) | Out-Null                
                 }
                 else {
@@ -93,6 +108,9 @@ function Get-VNetComplianceInformation {
                         itsgcode         = $itsgcode
                         ControlName      = $ControlName
                         ReportTime       = $ReportTime
+                    }
+                    if ($EnableMultiCloudProfiles && result -is [int]) {
+                        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
                     }
                     $VNetList.add($VNetObject) | Out-Null 
                 }    

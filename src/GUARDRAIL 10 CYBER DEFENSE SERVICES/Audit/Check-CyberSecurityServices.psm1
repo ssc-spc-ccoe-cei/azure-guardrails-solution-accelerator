@@ -33,6 +33,19 @@ function Check-CBSSensors {
     {
         Set-AzContext -Subscription $sub
 
+        if ($EnableMultiCloudProfiles) {        
+            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+                $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorlist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+            }
+        }
         foreach ($CBSResourceName in $CBSResourceNames)
         {
             if ($debug) { Write-output "Searching for CBS Sensor: $CBSResourceName"}
@@ -44,7 +57,7 @@ function Check-CBSSensors {
         }
         if ($IsCompliant)
         {
-            $object | Add-Member -MemberType NoteProperty -Name Comments -Value "$($msgTable.cbssCompliant) $SubscriptionName)"| Out-Null
+            $Object | Add-Member -MemberType NoteProperty -Name Comments -Value "$($msgTable.cbssCompliant) $SubscriptionName)"| Out-Null
             $MitigationCommands = "N/A."
         }
         else {
@@ -57,11 +70,11 @@ function Check-CBSSensors {
         $Object | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.cbsSubDoesntExist
         $MitigationCommands = "$($msgTable.cbssMitigation)" -f $SubscriptionName
     }
-    $object | Add-Member -MemberType NoteProperty  -Name ReportTime -Value $ReportTime | Out-Null
-    $object | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $IsCompliant| Out-Null
-    $object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands| Out-Null
-    $object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName| Out-Null
-    $object | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode| Out-Null
+    $Object | Add-Member -MemberType NoteProperty  -Name ReportTime -Value $ReportTime | Out-Null
+    $Object | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $IsCompliant| Out-Null
+    $Object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands| Out-Null
+    $Object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName| Out-Null
+    $Object | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode| Out-Null
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $Object 
         Errors=$ErrorList

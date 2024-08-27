@@ -274,6 +274,24 @@ function Check-StatusDataAtRest {
             ReportTime = [string]$ReportTime
         }
 
+        if ($EnableMultiCloudProfiles) {
+            if ($objType -eq "subscription") {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
+            } else {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            }
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorlist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+            }        
+        }        
+
         $tempObjectList.add($c)| Out-Null
     }
     return $tempObjectList
@@ -327,7 +345,11 @@ function Verify-ProtectionDataAtRest {
     }
     [string]$type = "subscription"
     
-    $ObjectList += Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
+    if ($EnableMultiCloudProfiles) {
+        $ObjectList += Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+    } else {
+        $ObjectList += Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
+    }
     Write-Host "$type(s) compliance results are collected"
     
     # Filter out objects of type PSAzureContext

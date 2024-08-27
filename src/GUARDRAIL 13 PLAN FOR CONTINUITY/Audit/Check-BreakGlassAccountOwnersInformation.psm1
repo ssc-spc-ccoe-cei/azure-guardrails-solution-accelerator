@@ -100,6 +100,21 @@ function Get-BreakGlassOwnerinformation {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
+
+    if ($EnableMultiCloudProfiles) {        
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -is [int]) {
+            Write-Output "Valid profile returned: $result"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result.Status -eq "Error") {
+            Write-Error "Error occurred: $($result.Message)"
+            $c.ComplianceStatus = "Not Applicable"
+            Errorlist.Add($result.Message)
+        } else {
+            Write-Error "Unexpected result: $result"
+        }
+    }
+
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $PsObject
         Errors=$ErrorList

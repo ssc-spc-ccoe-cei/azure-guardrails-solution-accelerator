@@ -43,7 +43,20 @@ function Get-NetworkWatcherStatus {
     {
         Write-Verbose "Selecting subscription..."
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        
+
+        if ($EnableMultiCloudProfiles) {        
+            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorlist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+            }
+        }
+
         $allVNETs=Get-AzVirtualNetwork
         $includedVNETs=$allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' -and $_.Name -notin $ExcludedVNetsList }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag or -ExcludedVNets parameter."
@@ -81,6 +94,9 @@ function Get-NetworkWatcherStatus {
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                 }
+                if ($EnableMultiCloudProfiles && result -is [int]) {
+                    $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                }
                 $RegionList.add($RegionObject) | Out-Null                               
             }
         }
@@ -94,6 +110,9 @@ function Get-NetworkWatcherStatus {
                 itsgcode = $itsgcode
                 ControlName = $ControlName
                 ReportTime = $ReportTime
+            }
+            if ($EnableMultiCloudProfiles && result -is [int]) {
+                $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
             }
             $RegionList.add($RegionObject) | Out-Null   
         }

@@ -24,17 +24,16 @@ function Get-DefenderForCloudConfig {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     # Defender for cloud detection.
     #
-    $IsCompliant=$false
+    $IsCompliant=$true
     
     $Comments=""
     $sublist=Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}
     
     # This will look for specific Defender for Cloud, on a per subscription basis.
-    $nonCompliantSubs=0
     foreach ($sub in $sublist)
     {
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        
+
         try{
             $azContext = Get-AzContext
             $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId
@@ -54,7 +53,7 @@ function Get-DefenderForCloudConfig {
 
         if ([string]::IsNullOrEmpty($ContactInfo.emails) -or [string]::IsNullOrEmpty($null -eq $ContactInfo.phone))
         {
-            $nonCompliantSubs++
+            $IsCompliant=$false
             $Comments+= $msgTable.noSecurityContactInfo -f $sub.Name
         }
         # We need to exlude 
@@ -66,42 +65,40 @@ function Get-DefenderForCloudConfig {
 
         if ($defenderPlans.PricingTier -contains 'Free')
         {
-            $nonCompliantSubs++
+            $IsCompliant=$false
             if ($Comments -eq ""){
                 $Comments += $msgTable.notAllDfCStandard -f $sub.Name
             }
             else{
                 $Comments += " " + $msgTable.notAllDfCStandard -f $sub.Name
-            }
-            
+            }            
         }
-    
-    }
 
-    # compliance status
-    if ($nonCompliantSubs -eq 0)
-    {
-        $IsCompliant=$true
-        
-    }
-    else {
-        $IsCompliant=$false
-    }
-    if ($IsCompliant)
-    {
-        $Comments= $msgTable.logsAndMonitoringCompliantForDefender
-        $Comments += "All subscriptions have a security contact and Defender for Cloud is set to Standard."
-    }
+        $object = [PSCustomObject]@{ 
+            ComplianceStatus = $IsCompliant
+            Comments = $Comments
+            ItemName = $msgTable.defenderMonitoring
+            itsgcode = $itsginfosecdefender
+            ControlName = $ControlName
+            ReportTime = $ReportTime
+        }
 
-    $object = [PSCustomObject]@{ 
-        ComplianceStatus = $IsCompliant
-        Comments = $Comments
-        ItemName = $msgTable.defenderMonitoring
-        itsgcode = $itsginfosecdefender
-        ControlName = $ControlName
-        ReportTime = $ReportTime
+        if ($EnableMultiCloudProfiles) {        
+            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if ($result -is [int]) {
+                Write-Output "Valid profile returned: $result"
+                $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            } elseif ($result.Status -eq "Error") {
+                Write-Error "Error occurred: $($result.Message)"
+                $c.ComplianceStatus = "Not Applicable"
+                Errorlist.Add($result.Message)
+            } else {
+                Write-Error "Unexpected result: $result"
+                continue
+            }
+        }
+        $FinalObjectList+=$object        
     }
-    $FinalObjectList+=$object
 
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $FinalObjectList 
