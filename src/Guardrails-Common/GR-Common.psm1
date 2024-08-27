@@ -666,7 +666,7 @@ function Check-DocumentExistsInStorage {
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         } elseif ($result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
-            $c.ComplianceStatus = "Not Applicable"
+            $PsObject.ComplianceStatus = "Not Applicable"
             Errorlist.Add($result.Message)
         } else {
             Write-Error "Unexpected result: $result"
@@ -882,6 +882,9 @@ function ConvertTo-IntArray {
     )
     if ($inputString -match '^\[.*\]$') {
         return $inputString.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
+    }
+    if ($inputString -match ',') {
+        return $inputString.Split(',') | ForEach-Object { [int]$_.Trim() }
     }
     return @([int]$inputString)
 }
