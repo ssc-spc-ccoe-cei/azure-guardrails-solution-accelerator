@@ -33,6 +33,7 @@ function Check-StatusDataInTransit {
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
