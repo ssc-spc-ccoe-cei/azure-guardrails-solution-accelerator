@@ -308,7 +308,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
   resource module29 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-GAAuthenticationMethods'
+    name: 'Check-GAUserCountMFARequired'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GAAuthenticationMethods.zip'

@@ -1,5 +1,5 @@
 
-function Check-GAAuthenticationMethods {
+function Check-GAUserCountMFARequired {
     param (      
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
