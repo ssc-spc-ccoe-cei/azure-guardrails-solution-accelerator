@@ -11,7 +11,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'Check-GAAuthenticationMethods'
+RootModule = 'Check-GAUserCountMFARequired'
 
 # Version number of this module.
 ModuleVersion = '1.0.0'
