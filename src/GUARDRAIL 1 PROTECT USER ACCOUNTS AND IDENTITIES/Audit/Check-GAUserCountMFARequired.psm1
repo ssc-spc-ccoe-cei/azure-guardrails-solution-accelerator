@@ -26,25 +26,6 @@ function Check-GAUserCountMFARequired {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
-    # # list all users
-    # $urlPath = "/users"
-    # try {
-    #     $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-    #     # # portal
-    #     # $data = $response.Content
-    #     # localExecution
-    #     $data = $response
-
-    #     if ($null -ne $data -and $null -ne $data.value) {
-    #         $users = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
-    #     }
-    # }
-    # catch {
-    #     $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-    #     $ErrorList.Add($errorMsg)
-    #     Write-Error "Error: $errorMsg"
-    # }
-
     # Get the list of GA users
     $urlPath = "/directoryRoles"
     try {
