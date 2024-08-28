@@ -43,12 +43,12 @@ function Get-VNetComplianceInformation {
 
         if ($includedVNETs.count -gt 0) {
             foreach ($VNet in $allVNETs) {
-                $VNetObject = Get-VNetComplianceObject -VNet $VNet -sub $sub -ExcludedVNetsList $ExcludedVNetsList -includedVNETs $includedVNETs -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -profile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
+                $VNetObject = Get-VNetComplianceObject -VNet $VNet -sub $sub -ExcludedVNetsList $ExcludedVNetsList -includedVNETs $includedVNETs -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -evaluationProfile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
                 $VNetList.Add($VNetObject) | Out-Null
             }
         }
         else {
-            $VNetObject = Get-NoVNetsComplianceObject -sub $sub -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -profile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
+            $VNetObject = Get-NoVNetsComplianceObject -sub $sub -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -evaluationProfile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
             $VNetList.Add($VNetObject) | Out-Null
         }
     }
