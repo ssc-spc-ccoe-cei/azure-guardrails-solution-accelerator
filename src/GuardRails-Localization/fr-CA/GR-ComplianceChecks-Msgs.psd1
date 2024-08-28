@@ -24,7 +24,8 @@ isNotCompliant = Non conforme.
 MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
-gaAccntsMFACheck = Vérification d'authentification multifacteur de comptes d'administrateur général
+gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
+gaUserCount = There are {0} global administrator accounts
 
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.

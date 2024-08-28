@@ -126,56 +126,63 @@ function Check-GAUserCountMFARequired {
         
     }
 
-    ## *****************************************##
-    ## ****** Member user as Global Admin ******##
-    ## *****************************************##
-    $memberUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
-
-    # Check all GA users for MFA
-    $allUserUPNs = $globalAdminUserAccounts.userPrincipalName
-    
-
-    # Get GA member users UPNs
-    $memberUsersUPN= $memberUsers | Select-Object userPrincipalName, mail
-
-    $result = Get-AllUserAuthInformation -allUserList $memberUsersUPN
-    $memberUserUPNsBadMFA = $result.userUPNsBadMFA
-    if( !$null -eq $result.ErrorList){
-        $ErrorList =  $ErrorList.Add($result.ErrorList)
+    ## **********************************************##
+    ## ****All Global Admin Accounts except BG ******##
+    ## **********************************************##
+    $allGAUserUPNs = $globalAdminUserAccounts.userPrincipalName
+    if (($allGAUserUPNs.Count -gt 6) -or ($allGAUserUPNs.Count -lt 2)){
+        $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
     }
-    $userValidMFACounter = $result.userValidMFACounter
+    else{
+        ## Global Admin counts are within the range - proceed with MFA check
 
-    ## *******************************************##
-    ## ****** External user as Global Admin ******##
-    ## *******************************************##
-    $extUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
+        ## *****************************************##
+        ## ****** Member user as Global Admin ******##
+        ## *****************************************##
+        $memberUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
 
-    # Get external users UPNs and emails
-    $extUsersUPN = $extUsers | Select-Object userPrincipalName, mail
-    $result2 = Get-AllUserAuthInformation -allUserList $extUsersUPN
-    $extUserUPNsBadMFA = $result2.userUPNsBadMFA
-    if( !$null -eq $result2.ErrorList){
-        $ErrorList =  $ErrorList.Add($result2.ErrorList)
-    }
-    # combined list
-    $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
-    $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
+        # Get GA member users UPNs
+        $memberUsersUPN= $memberUsers | Select-Object userPrincipalName, mail
 
-    # Condition: all users are MFA enabled
-    if($userValidMFACounter -eq $allUserUPNs.Count) {
-        $commentsArray = $msgTable.allUserHaveMFA
-        $IsCompliant = $true
-    }
-    # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
-    else {
-        # This will be used for debugging
-        if($userUPNsBadMFA.Count -eq 0){
-            Write-Error "Something is wrong as userUPNsBadMFA Count equals 0. This output should only execute if there is an error populating userUPNsBadMFA"
+        $result = Get-AllUserAuthInformation -allUserList $memberUsersUPN
+        $memberUserUPNsBadMFA = $result.userUPNsBadMFA
+        if( !$null -eq $result.ErrorList){
+            $ErrorList =  $ErrorList.Add($result.ErrorList)
         }
+        $userValidMFACounter = $result.userValidMFACounter
+
+        ## *******************************************##
+        ## ****** External user as Global Admin ******##
+        ## *******************************************##
+        $extUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
+
+        # Get external users UPNs and emails
+        $extUsersUPN = $extUsers | Select-Object userPrincipalName, mail
+        $result2 = Get-AllUserAuthInformation -allUserList $extUsersUPN
+        $extUserUPNsBadMFA = $result2.userUPNsBadMFA
+        if( !$null -eq $result2.ErrorList){
+            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+        }
+        # combined list
+        $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
+        $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
+
+        # Condition: all users are MFA enabled
+        if($userValidMFACounter -eq $allGAUserUPNs.Count) {
+            $commentsArray += ' ' + $msgTable.allUserHaveMFA
+            $IsCompliant = $true
+        }
+        # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
         else {
-            $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
-            $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
-            $IsCompliant = $false
+            # This will be used for debugging
+            if($userUPNsBadMFA.Count -eq 0){
+                Write-Error "Something is wrong as userUPNsBadMFA Count equals 0. This output should only execute if there is an error populating userUPNsBadMFA"
+            }
+            else {
+                $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
+                $commentsArray += ' ' + $msgTable.userMisconfiguredMFA -f $upnString
+                $IsCompliant = $false
+            }
         }
     }
 
@@ -204,7 +211,6 @@ function Check-GAUserCountMFARequired {
             Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
         }        
     }
-
     
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $PsObject

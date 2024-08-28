@@ -24,7 +24,8 @@ isNotCompliant = Non-compliant.
 MSEntIDLicense = Microsoft Entra ID License Type
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
-gaAccntsMFACheck = Global Administrators Accounts MFA check
+gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
+globalAdminAccntsSurplus = There must be six or fewer global administrator accounts.
 
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
