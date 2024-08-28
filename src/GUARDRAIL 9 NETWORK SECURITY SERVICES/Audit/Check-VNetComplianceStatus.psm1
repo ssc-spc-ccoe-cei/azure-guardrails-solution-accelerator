@@ -80,7 +80,11 @@ function Get-EvaluationProfileForSubscription {
 function Get-VNetComplianceObject {
     param ($VNet, $sub, $ExcludedVNetsList, $includedVNETs, $msgTable, $ControlName, $itsgcode, $ReportTime, $evaluationProfile, $EnableMultiCloudProfiles)
 
-    if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
+    if ($EnableMultiCloudProfiles -and $evaluationProfile -isnot [int]) {
+        $ComplianceStatus = "Not Applicable"
+        $Comments = "Profile is not applicable for this subscription"
+    }
+    elseif ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
         $ComplianceStatus = $Vnet.EnableDdosProtection
         $Comments = if ($ComplianceStatus) { "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)" } else { $msgTable.ddosNotEnabled }
     }
@@ -123,11 +127,23 @@ function Get-NoVNetsComplianceObject {
         $EnableMultiCloudProfiles
     )
 
+    $ComplianceStatus = if ($EnableMultiCloudProfiles -and $evaluationProfile -isnot [int]) {
+        "Not Applicable"
+    } else {
+        $true
+    }
+
+    $Comments = if ($EnableMultiCloudProfiles -and $evaluationProfile -isnot [int]) {
+        "Profile is not applicable for this subscription"
+    } else {
+        "$($msgTable.noVNets) - $($sub.Name)"
+    }
+
     $VNETObject = [PSCustomObject]@{ 
         SubscriptionName = $sub.Name 
         SubnetName       = $msgTable.noVNets
-        ComplianceStatus = $true
-        Comments         = "$($msgTable.noVNets) - $($sub.Name)"
+        ComplianceStatus = $ComplianceStatus
+        Comments         = $Comments
         ItemName         = $msgTable.networkSegmentation
         ControlName      = $ControlName
         itsgcode         = $itsgcode
