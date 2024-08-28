@@ -307,6 +307,15 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
+  resource module29 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-GAAuthenticationMethods'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-GAAuthenticationMethods.zip'
+        version: '1.0.0'
+      }
+    }
+  }
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
