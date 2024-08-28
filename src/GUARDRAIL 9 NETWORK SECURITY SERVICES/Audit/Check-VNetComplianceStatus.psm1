@@ -71,18 +71,18 @@ function Get-EvaluationProfileForSubscription {
 
     $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
     switch ($result) {
-        { $_ -is [int] } { return $_ }
-        { $_.Status -eq "Error" } { Write-Error $_.Message; return "Not Applicable" }
-        default { Write-Error "Unexpected result: $_"; return $null }
+        { $_ -eq 0 } { return "Not Applicable" }
+        { $_ -gt 0 } { return $_ }
+        default { Write-Error "Unexpected result: $_"; return "Not Applicable" }
     }
 }
 
 function Get-VNetComplianceObject {
     param ($VNet, $sub, $ExcludedVNetsList, $includedVNETs, $msgTable, $ControlName, $itsgcode, $ReportTime, $evaluationProfile, $EnableMultiCloudProfiles)
 
-    if ($EnableMultiCloudProfiles -and $evaluationProfile -isnot [int]) {
+    if ($EnableMultiCloudProfiles -and $evaluationProfile -eq "Not Applicable") {
         $ComplianceStatus = "Not Applicable"
-        $Comments = "Profile is not applicable for this subscription"
+        $Comments = "No matching profile found for this subscription"
     }
     elseif ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
         $ComplianceStatus = $Vnet.EnableDdosProtection
@@ -109,7 +109,7 @@ function Get-VNetComplianceObject {
         ReportTime       = $ReportTime
     }
 
-    if ($EnableMultiCloudProfiles -and $evaluationProfile -is [int]) {
+    if ($EnableMultiCloudProfiles -and $evaluationProfile -ne "Not Applicable") {
         $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }
 
@@ -127,14 +127,14 @@ function Get-NoVNetsComplianceObject {
         $EnableMultiCloudProfiles
     )
 
-    $ComplianceStatus = if ($EnableMultiCloudProfiles -and $evaluationProfile -isnot [int]) {
+    $ComplianceStatus = if ($EnableMultiCloudProfiles -and $evaluationProfile -eq "Not Applicable") {
         "Not Applicable"
     } else {
         $true
     }
 
-    $Comments = if ($EnableMultiCloudProfiles -and $evaluationProfile -isnot [int]) {
-        "Profile is not applicable for this subscription"
+    $Comments = if ($EnableMultiCloudProfiles -and $evaluationProfile -eq "Not Applicable") {
+        "No matching profile found for this subscription"
     } else {
         "$($msgTable.noVNets) - $($sub.Name)"
     }
@@ -150,8 +150,8 @@ function Get-NoVNetsComplianceObject {
         ReportTime       = $ReportTime
     }
 
-    if ($EnableMultiCloudProfiles -and $evaluationProfile -is [int]) {
-        $VNETObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+    if ($EnableMultiCloudProfiles -and $evaluationProfile -ne "Not Applicable") {
+        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
     }
 
     return $VNETObject

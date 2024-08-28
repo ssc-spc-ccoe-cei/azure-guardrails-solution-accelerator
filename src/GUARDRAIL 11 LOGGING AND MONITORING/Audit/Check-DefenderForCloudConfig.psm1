@@ -116,19 +116,12 @@ function Add-ProfileToResult {
     try {
         $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionId
     
-        switch ($evaluationProfile) {
-            { $_ -is [int] } {
-                $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $profile
-                break
-            }
-            { $_.Status -eq "Error" } {
-                $Result.ComplianceStatus = "Not Applicable"
-                $Result.Errors.Add($profile.Message)
-                break
-            }
-            default {
-                $Result.Errors.Add("Unexpected profile result: $($profile | ConvertTo-Json -Compress)")
-            }
+        if ($evaluationProfile -eq 0) {
+            $Result.ComplianceStatus = "Not Applicable"
+            $Result.Comments += if ($Result.Comments) { " " } else { "" }
+            $Result.Comments += "No matching profile found."
+        } else {
+            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
         }
     }
     catch {

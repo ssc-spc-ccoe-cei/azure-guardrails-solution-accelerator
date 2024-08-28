@@ -1,4 +1,3 @@
-
 function Get-DepartmentServicePrincipalNameSecrets {
     param (
         [string] $SPNID = "0000000000",
@@ -79,16 +78,16 @@ function Get-DepartmentServicePrincipalNameSecrets {
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -is [int]) {
+        if ($result -eq 0) {
+            Write-Output "No matching profile found"
+            $Results.ComplianceStatus = "Not Applicable"
+        } elseif ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
             $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result.Status -eq "Error") {
-            Write-Error "Error occurred: $($result.Message)"
-            $Results.ComplianceStatus = "Not Applicable"
-            Errorlist.Add($result.Message)
         } else {
-            Write-Error "Unexpected result: $result"
-        }        
+            Write-Error "Unexpected result from Get-EvaluationProfile: $result"
+            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $result")
+        }
     }
 
     $moduleOutput = [PSCustomObject]@{ 

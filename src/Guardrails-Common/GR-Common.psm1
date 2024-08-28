@@ -534,15 +534,12 @@ function Check-GAAuthenticationMethods {
     }
     if ($EnableMultiCloudProfiles) {        
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
-        if ($result -is [int]) {
+        if ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result.Status -eq "Error") {
-            Write-Error "Error occurred: $($result.Message)"
-            $PsObject.ComplianceStatus = "Not Applicable"
-            Errorlist.Add($result.Message)
         } else {
-            Write-Error "Unexpected result: $result"
+            Write-Output "No matching profile found or error occurred"
+            $PsObject.ComplianceStatus = "Not Applicable"
         }
     }
 
@@ -661,15 +658,12 @@ function Check-DocumentExistsInStorage {
 
     if ($EnableMultiCloudProfiles) {        
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
-        if ($result -is [int]) {
+        if ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result.Status -eq "Error") {
-            Write-Error "Error occurred: $($result.Message)"
-            $PsObject.ComplianceStatus = "Not Applicable"
-            Errorlist.Add($result.Message)
         } else {
-            Write-Error "Unexpected result: $result"
+            Write-Output "No matching profile found or error occurred"
+            $PsObject.ComplianceStatus = "Not Applicable"
         }
     }
 
@@ -862,15 +856,12 @@ function Get-EvaluationProfile {
             return [int]($matchingProfiles | Measure-Object -Maximum).Maximum
         }
 
-        throw "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
+        Write-Error "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
+        return 0
     }
     catch {
         Write-Error "Error in Get-EvaluationProfile: $_"
-        return @{
-            Status = "Error"
-            Message = "Failed to evaluate profile for subscription $SubscriptionId. Error: $_"
-            ErrorCode = 500
-        }
+        return 0
     }
 }
 
@@ -899,7 +890,7 @@ function Get-HighestMatchingProfile {
     )
     $matchingProfiles = $profile1 | Where-Object { $profile2 -contains $_ }
     if ($matchingProfiles.Count -eq 0) {
-        throw "No matching profiles found."
+        return 0
     }
     return ($matchingProfiles | Measure-Object -Maximum).Maximum
 }

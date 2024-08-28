@@ -50,12 +50,11 @@ function Get-SubnetComplianceInformation {
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         if ($EnableMultiCloudProfiles) {        
             $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-            if ($result -is [int]) {
-                Write-Output "Valid profile returned: $result"
-            } else {
-                Write-Error "Unexpected result or error: $result"
+            if ($result -eq 0) {
+                Write-Output "No matching profile found or error occurred"
                 $result = "Not Applicable"
-                $ErrorList.Add("Unexpected result or error from Get-EvaluationProfile: $result")
+            } else {
+                Write-Output "Valid profile returned: $result"
             }
         }
 

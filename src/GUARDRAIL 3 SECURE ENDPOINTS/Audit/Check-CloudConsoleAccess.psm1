@@ -1,4 +1,3 @@
-
 function Get-CloudConsoleAccess {
     param (      
         [Parameter(Mandatory=$true)]
@@ -89,15 +88,14 @@ function Get-CloudConsoleAccess {
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -is [int]) {
+        if ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
-            Write-Error "Error occurred: $($result.Message)"
+        } elseif ($result -eq 0) {
+            Write-Output "No matching profile found or error occurred"
             $PsObject.ComplianceStatus = "Not Applicable"
-            Errorlist.Add($result.Message)
         } else {
-            Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
+            Write-Error "Unexpected result: $result"
         }
     }
 

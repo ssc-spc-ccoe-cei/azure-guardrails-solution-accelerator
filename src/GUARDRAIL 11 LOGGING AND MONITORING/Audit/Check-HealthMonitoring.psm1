@@ -158,13 +158,12 @@ function Get-HealthMonitoringStatus {
 
     if ($EnableMultiCloudProfiles) {        
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $Subscription
-        if ($result -is [int]) {
+        if ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
             $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result.Status -eq "Error") {
-            Write-Error "Error occurred: $($result.Message)"
-            $c.ComplianceStatus = "Not Applicable"
-            Errorlist.Add($result.Message)
+        } elseif ($result -eq 0) {
+            Write-Output "No matching profile found or error occurred"
+            $object.ComplianceStatus = "Not Applicable"
         } else {
             Write-Error "Unexpected result: $result"
         }

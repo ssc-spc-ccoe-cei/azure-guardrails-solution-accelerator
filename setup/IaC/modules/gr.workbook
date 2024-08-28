@@ -896,5 +896,4 @@
       "name": "information"
     }
   ],
-  "fallbackResourceIds": []
-}
+  "fallbackResourceIds": [

@@ -280,16 +280,13 @@ function Check-StatusDataAtRest {
             } else {
                 $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
             }
-            if ($result -is [int]) {
+            if ($result -eq 0) {
+                Write-Output "No matching profile found or error occurred"
+                $c.ComplianceStatus = "Not Applicable"
+            } else {
                 Write-Output "Valid profile returned: $result"
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-            } elseif ($result.Status -eq "Error") {
-                Write-Error "Error occurred: $($result.Message)"
-                $c.ComplianceStatus = "Not Applicable"
-                Errorlist.Add($result.Message)
-            } else {
-                Write-Error "Unexpected result: $result"
-            }        
+            }
         }        
 
         $tempObjectList.add($c)| Out-Null
