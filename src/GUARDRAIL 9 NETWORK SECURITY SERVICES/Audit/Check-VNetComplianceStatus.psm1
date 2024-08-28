@@ -1,150 +1,144 @@
 function Get-VNetComplianceInformation {
+    [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $false)]
-        [string]
-        $token,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $ControlName,
+        [Parameter(Mandatory = $false)][string] $token,
+        [Parameter(Mandatory = $true)][string] $ControlName,
         [string] $itsgcode,
-        [Parameter(Mandatory = $false)]
-        [string]
-        $ExcludedVNets,
+        [Parameter(Mandatory = $false)][string] $ExcludedVNets,
         [hashtable] $msgTable,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $ReportTime,
-        [Parameter(Mandatory = $false)]
-        [string]
-        $CBSSubscriptionName,
-        [Parameter(Mandatory = $false)]
-        [switch]
-        $debuginfo,
-        [string] 
-        $ModuleProfiles,  # Passed as a string
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string        
-        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+        [Parameter(Mandatory = $true)][string] $ReportTime,
+        [Parameter(Mandatory = $false)][string] $CBSSubscriptionName,
+        [Parameter(Mandatory = $false)][switch] $debuginfo,
+        [string] $ModuleProfiles,
+        [string] $CloudUsageProfiles = "3",
+        [switch] $EnableMultiCloudProfiles
     )
-    [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $result = $null
+
+    # Initialize result collections
+    $VNetList = [System.Collections.ArrayList]::new()
+    $ErrorList = [System.Collections.ArrayList]::new()
     $ExcludeVnetTag = "GR9-ExcludeVNetFromCompliance"
+
+    # Get subscriptions
     try {
-        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName }  
+        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName }
     }
     catch {
-        $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
-        throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
+        $errorMessage = "Failed to execute 'Get-AzSubscription'. Verify permissions and Az.Accounts module installation. Error: $_"
+        $ErrorList.Add($errorMessage)
+        throw $errorMessage
     }
-    if ($null -ne $ExcludedVNets) {
-        $ExcludedVNetsList = $ExcludedVNets.Split(",")
-    }
+
+    $ExcludedVNetsList = if ($ExcludedVNets) { $ExcludedVNets.Split(",") } else { @() }
+
     foreach ($sub in $subs) {
-        Write-Verbose "Selecting subscription..."
+        Write-Verbose "Processing subscription: $($sub.Name)"
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        
-        if ($EnableMultiCloudProfiles) {        
-            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-            if ($result -is [int]) {
-                Write-Output "Valid profile returned: $result"
-            } elseif ($result.Status -eq "Error") {
-                Write-Error "Error occurred: $($result.Message)"
-                $c.ComplianceStatus = "Not Applicable"
-                Errorlist.Add($result.Message)
-            } else {
-                Write-Error "Unexpected result: $result"
-            }
-        }
+
+        $evaluationProfile = Get-EvaluationProfileForSubscription -sub $sub -EnableMultiCloudProfiles $EnableMultiCloudProfiles -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+
         $allVNETs = Get-AzVirtualNetwork
         $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
 
         if ($includedVNETs.count -gt 0) {
             foreach ($VNet in $allVNETs) {
-                Write-Debug "Working on $($VNet.Name) VNet..."
-                if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
-                    if ($Vnet.EnableDdosProtection) {
-                        $ComplianceStatus = $true 
-                        $Comments = "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
-                    }
-                    else {
-                        $ComplianceStatus = $false
-                        $Comments = $msgTable.ddosNotEnabled
-                    }
-                    # Create PSOBject with Information.
-                    $VNetObject = [PSCustomObject]@{ 
-                        VNETName         = $VNet.Name
-                        SubscriptionName = $sub.Name 
-                        ComplianceStatus = $ComplianceStatus
-                        Comments         = $Comments
-                        ItemName         = $msgTable.vnetDDosConfig
-                        itsgcode         = $itsgcode
-                        ControlName      = $ControlName
-                        ReportTime       = $ReportTime
-                    }
-                    if ($EnableMultiCloudProfiles -and $result -is [int]) {
-                        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-                    }    
-                    $VNetList.add($VNetObject) | Out-Null                
-                }
-                else {
-                    Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
-                    $ComplianceStatus = $true
-                    
-                    If ($VNet.Name -in $ExcludedVNetsList) {
-                        $Comments = $msgTable.vnetExcludedByParameter -f $Vnet.name, $ExcludedVNets
-                    }
-                    ElseIf ($VNet.Name -notin $includedVNETs) {
-                        $Comments = $msgTable.vnetExcludedByTag -f $VNet.Name, $ExcludeVnetTag
-                    }
-
-                    # Create PSOBject with Information.
-                    $VNetObject = [PSCustomObject]@{ 
-                        VNETName         = $VNet.Name
-                        SubscriptionName = $sub.Name 
-                        ComplianceStatus = $ComplianceStatus
-                        Comments         = $Comments
-                        ItemName         = $msgTable.vnetDDosConfig
-                        itsgcode         = $itsgcode
-                        ControlName      = $ControlName
-                        ReportTime       = $ReportTime
-                    }
-                    if ($EnableMultiCloudProfiles -and $result -is [int]) {
-                        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-                    }
-                    $VNetList.add($VNetObject) | Out-Null 
-                }    
+                $VNetObject = Get-VNetComplianceObject -VNet $VNet -sub $sub -ExcludedVNetsList $ExcludedVNetsList -includedVNETs $includedVNETs -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -profile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
+                $VNetList.Add($VNetObject) | Out-Null
             }
         }
-        if ($includedVNETs.count -eq 0) {
-            #No vnets found or no subnets found in vnets
-            $ComplianceStatus = $true
-            $Comments = "$($msgTable.noVNets) - $($sub.Name)"
-            $VNETObject = [PSCustomObject]@{ 
-                SubscriptionName = $sub.Name 
-                SubnetName       = $msgTable.noVNets
-                ComplianceStatus = $ComplianceStatus
-                Comments         = $Comments
-                ItemName         = $msgTable.networkSegmentation
-                ControlName      = $ControlName
-                itsgcode         = $itsgcodesegmentation
-                ReportTime       = $ReportTime
-            }
-            $VNETList.add($VNETObject) | Out-Null
+        else {
+            $VNetObject = Get-NoVNetsComplianceObject -sub $sub -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -profile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
+            $VNetList.Add($VNetObject) | Out-Null
         }
     }
+
     if ($debuginfo) { 
         Write-Output "Listing $($VNetList.Count) List members."
-        $VNetList | Write-Output "VNet: $($_.VNETName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" 
+        $VNetList | ForEach-Object { Write-Output "VNet: $($_.VNETName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" }
     }
-    #Creates Results object:
-    $moduleOutput = [PSCustomObject]@{ 
+
+    return [PSCustomObject]@{ 
         ComplianceResults = $VNetList 
         Errors            = $ErrorList
-        AdditionalResults = $AdditionalResults
     }
-    return $moduleOutput
+}
+
+function Get-EvaluationProfileForSubscription {
+    param ($sub, $EnableMultiCloudProfiles, $CloudUsageProfiles, $ModuleProfiles)
+    
+    if (-not $EnableMultiCloudProfiles) { return $null }
+
+    $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+    switch ($result) {
+        { $_ -is [int] } { return $_ }
+        { $_.Status -eq "Error" } { Write-Error $_.Message; return "Not Applicable" }
+        default { Write-Error "Unexpected result: $_"; return $null }
+    }
+}
+
+function Get-VNetComplianceObject {
+    param ($VNet, $sub, $ExcludedVNetsList, $includedVNETs, $msgTable, $ControlName, $itsgcode, $ReportTime, $evaluationProfile, $EnableMultiCloudProfiles)
+
+    if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
+        $ComplianceStatus = $Vnet.EnableDdosProtection
+        $Comments = if ($ComplianceStatus) { "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)" } else { $msgTable.ddosNotEnabled }
+    }
+    else {
+        $ComplianceStatus = $true
+        $Comments = if ($VNet.Name -in $ExcludedVNetsList) {
+            $msgTable.vnetExcludedByParameter -f $Vnet.name, $ExcludedVNets
+        }
+        elseif ($VNet.Name -notin $includedVNETs.Name) {
+            $msgTable.vnetExcludedByTag -f $VNet.Name, $ExcludeVnetTag
+        }
+    }
+
+    $VNetObject = [PSCustomObject]@{ 
+        VNETName         = $VNet.Name
+        SubscriptionName = $sub.Name 
+        ComplianceStatus = $ComplianceStatus
+        Comments         = $Comments
+        ItemName         = $msgTable.vnetDDosConfig
+        itsgcode         = $itsgcode
+        ControlName      = $ControlName
+        ReportTime       = $ReportTime
+    }
+
+    if ($EnableMultiCloudProfiles -and $evaluationProfile -is [int]) {
+        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+    }
+
+    return $VNetObject
+}
+
+function Get-NoVNetsComplianceObject {
+    param (
+        $sub,
+        $msgTable,
+        $ControlName,
+        $itsgcode,
+        $ReportTime,
+        $evaluationProfile,  # Renamed from 'profile'
+        $EnableMultiCloudProfiles
+    )
+
+    $VNETObject = [PSCustomObject]@{ 
+        SubscriptionName = $sub.Name 
+        SubnetName       = $msgTable.noVNets
+        ComplianceStatus = $true
+        Comments         = "$($msgTable.noVNets) - $($sub.Name)"
+        ItemName         = $msgTable.networkSegmentation
+        ControlName      = $ControlName
+        itsgcode         = $itsgcode
+        ReportTime       = $ReportTime
+    }
+
+    if ($EnableMultiCloudProfiles -and $evaluationProfile -is [int]) {
+        $VNETObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+    }
+
+    return $VNETObject
 }
 
 

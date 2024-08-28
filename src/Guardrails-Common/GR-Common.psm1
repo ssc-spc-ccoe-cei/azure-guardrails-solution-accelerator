@@ -539,7 +539,7 @@ function Check-GAAuthenticationMethods {
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         } elseif ($result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
-            $c.ComplianceStatus = "Not Applicable"
+            $PsObject.ComplianceStatus = "Not Applicable"
             Errorlist.Add($result.Message)
         } else {
             Write-Error "Unexpected result: $result"
