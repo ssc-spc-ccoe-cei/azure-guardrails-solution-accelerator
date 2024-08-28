@@ -15,6 +15,7 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/GR1_V3_MFA
 
 concurrency:
   group: Deploy-Azure-CAC-Dev
