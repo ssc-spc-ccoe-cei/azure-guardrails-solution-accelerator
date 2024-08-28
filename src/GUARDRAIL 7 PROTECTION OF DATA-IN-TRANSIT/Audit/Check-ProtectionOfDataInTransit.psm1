@@ -1,25 +1,18 @@
 function Test-ExemptionExists {
+    [OutputType([bool])]
     param (
+        [Parameter(Mandatory=$true)]
         [string] $ScopeId,
+        [Parameter(Mandatory=$true)]
         [array]  $requiredPolicyExemptionIds
     )
-    $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds | Out-Null
-    if ($null -ne $exemptionsIds)
-    {
-        foreach ($exemptionId in $exemptionsIds)
-        {
-            if ($exemptionId -in $requiredPolicyExemptionIds)
-            {
-                return $true
-            }
-        }
-    }
-    else {
-        return $false
-    }
-    
+    $exemptionsIds = (Get-AzPolicyExemption -Scope $ScopeId -ErrorAction SilentlyContinue).Properties.PolicyDefinitionReferenceIds
+    return $null -ne $exemptionsIds -and ($exemptionsIds | Where-Object { $_ -in $requiredPolicyExemptionIds })
 }
+
 function Check-StatusDataInTransit {
+    [CmdletBinding()]
+    [OutputType([System.Collections.ArrayList])]
     param (
         [System.Object] $objList,
         [string] $objType, #subscription or management Group
@@ -36,7 +29,7 @@ function Check-StatusDataInTransit {
         [string] $ModuleProfiles,
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
-    [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+    $tempObjectList = [System.Collections.ArrayList]@()
     foreach ($obj in $objList)
     {
 
@@ -107,7 +100,10 @@ function Check-StatusDataInTransit {
     }
     return $tempObjectList
 }
+
 function Verify-ProtectionDataInTransit {
+    [CmdletBinding()]
+    [OutputType([PSCustomObject])]
     param (
             [string] $ControlName,
             [string] $ItemName,
@@ -122,8 +118,8 @@ function Verify-ProtectionDataInTransit {
             [string] $ModuleProfiles,  # Passed as a string
             [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
-    [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $FinalObjectList = [System.Collections.ArrayList]@()
+    $ErrorList = [System.Collections.ArrayList]@()
     $grRequiredPolicies=@("FunctionAppShouldOnlyBeAccessibleOverHttps","WebApplicationShouldOnlyBeAccessibleOverHttps", "ApiAppShouldOnlyBeAccessibleOverHttps", "OnlySecureConnectionsToYourRedisCacheShouldBeEnabled","SecureTransferToStorageAccountsShouldBeEnabled")
     #Check management groups
     try {

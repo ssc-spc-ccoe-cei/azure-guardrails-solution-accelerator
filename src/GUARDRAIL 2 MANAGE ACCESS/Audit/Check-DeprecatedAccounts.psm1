@@ -1,4 +1,5 @@
 function Check-DeprecatedUsers {
+    [CmdletBinding()]
     Param (
         
         [string] $token, 
@@ -16,17 +17,15 @@ function Check-DeprecatedUsers {
     [string] $UComments = $msgTable.noncompliantUsers
     [string] $CComments = $msgTable.compliantComment
 
-    [PSCustomObject] $DeprecatedUsers = New-Object System.Collections.ArrayList
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $ErrorList = [System.Collections.ArrayList]::new()
         
     # A Deprecated account is an account that is disabled and not synchronized to AD
-    $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" -Select OnPremisesSyncEnabled,UserPrincipalName | Where-Object {$null -eq $_.onPremisesSyncEnabled}
+    $DeprecatedUsers = Get-AzADUser -Filter "accountEnabled eq false" -Select OnPremisesSyncEnabled,UserPrincipalName | 
+                       Where-Object {$null -eq $_.onPremisesSyncEnabled}
 
-    if ($DeprecatedUsers.count -gt 0) {
-        foreach ($user in $DeprecatedUsers) {
-            $UComments =  $UComments + $user.userPrincipalName + "  "
-        }
-        $Comments = $msgTable.noncompliantComment -f $DeprecatedUsers.count +" "+ $UComments
+    if ($DeprecatedUsers.Count -gt 0) {
+        $UComments += ($DeprecatedUsers.UserPrincipalName -join "  ")
+        $Comments = $msgTable.noncompliantComment -f $DeprecatedUsers.Count, $UComments
         $MitigationCommands = $msgTable.mitigationCommands 
     }
     else {
@@ -35,7 +34,7 @@ function Check-DeprecatedUsers {
         $MitigationCommands = "N/A"
     }
 
-    $DeprecatedUserStatus = [PSCustomObject]@{
+    $DeprecatedUserStatusParams = @{
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
         Comments         = $Comments
@@ -44,6 +43,7 @@ function Check-DeprecatedUsers {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
     }
+    $DeprecatedUserStatus = [PSCustomObject]$DeprecatedUserStatusParams
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
@@ -53,25 +53,18 @@ function Check-DeprecatedUsers {
             $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
             Write-Error "Error occurred: $($result.Message)"
-            Errorlist.Add($result.Message)
+            $ErrorList.Add($result.Message)
             $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"            
         } else {
             Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
         }        
     }
 
-    $moduleOutput= [PSCustomObject]@{ 
+    $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $DeprecatedUserStatus
-        Errors=$ErrorList
-        AdditionalResults = $AdditionalResults
+        Errors = $ErrorList
     }
-    return $moduleOutput  
-    <#
-    $JasonDeprecatedUserStatus = ConvertTo-Json -inputObject $DeprecatedUserStatus
-        
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-        -body $JasonDeprecatedUserStatus   -logType $LogType -TimeStampField Get-Date  
-    #>
+    return $moduleOutput
 }
        
 
