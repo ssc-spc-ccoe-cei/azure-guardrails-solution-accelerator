@@ -842,14 +842,14 @@ function Get-EvaluationProfile {
         $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
 
         if (-not $SubscriptionId) {
-            return Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [int](Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray)
         }
 
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
         $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
 
         if ($null -eq $profileTag) {
-            return Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [int](Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray)
         }
 
         $profileTagValues = ConvertTo-IntArray $profileTag.TagValue
@@ -859,7 +859,7 @@ function Get-EvaluationProfile {
         }
 
         if ($matchingProfiles.Count -gt 0) {
-            return ($matchingProfiles | Measure-Object -Maximum).Maximum
+            return [int]($matchingProfiles | Measure-Object -Maximum).Maximum
         }
 
         throw "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
@@ -1061,7 +1061,6 @@ function Get-AllUserAuthInformation{
                 $authenticationmethods = $data.value
                 
                 $authFound = $false
-                $authCounter = 0
                 foreach ($authmeth in $authenticationmethods) {    
                   
                     switch ($authmeth.'@odata.type') {
@@ -1082,7 +1081,6 @@ function Get-AllUserAuthInformation{
                     # This message is being used for debugging
                     Write-Host "$userAccount does not have MFA enabled"
 
-                    $authCounter = 0
                     # Create an instance of inner list object
                     $userUPNtemplate = [PSCustomObject]@{
                         UPN  = $userAccount
