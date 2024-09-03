@@ -1,25 +1,18 @@
 function Test-ExemptionExists {
+    [OutputType([bool])]
     param (
+        [Parameter(Mandatory=$true)]
         [string] $ScopeId,
+        [Parameter(Mandatory=$true)]
         [array]  $requiredPolicyExemptionIds
     )
-    $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds | Out-Null
-    if ($null -ne $exemptionsIds)
-    {
-        foreach ($exemptionId in $exemptionsIds)
-        {
-            if ($exemptionId -in $requiredPolicyExemptionIds)
-            {
-                return $true
-            }
-        }
-    }
-    else {
-        return $false
-    }
-    
+    $exemptionsIds = (Get-AzPolicyExemption -Scope $ScopeId -ErrorAction SilentlyContinue).Properties.PolicyDefinitionReferenceIds
+    return $null -ne $exemptionsIds -and ($exemptionsIds | Where-Object { $_ -in $requiredPolicyExemptionIds })
 }
+
 function Check-StatusDataInTransit {
+    [CmdletBinding()]
+    [OutputType([System.Collections.ArrayList])]
     param (
         [System.Object] $objList,
         [string] $objType, #subscription or management Group
@@ -33,9 +26,10 @@ function Check-StatusDataInTransit {
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
-    [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+    $tempObjectList = [System.Collections.ArrayList]@()
     foreach ($obj in $objList)
     {
 
@@ -64,7 +58,7 @@ function Check-StatusDataInTransit {
                 #No exemption exists. All good.
             }
         }
-        if ($obj.DisplayName -eq $null)
+        if ($null -eq $obj.DisplayName)
         {
             $DisplayName=$obj.Name
         }
@@ -85,11 +79,28 @@ function Check-StatusDataInTransit {
             ReportTime = [string]$ReportTime
         }
 
+        if ($EnableMultiCloudProfiles) {
+            if ($objType -eq "subscription") {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
+            } else {
+                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            }
+            if ($result -eq 0) {
+                Write-Output "No matching profile found or error occurred"
+                $c.ComplianceStatus = "Not Applicable"
+            } else {
+                Write-Output "Valid profile returned: $result"
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            }
+        }        
         $tempObjectList.add($c)| Out-Null
     }
     return $tempObjectList
 }
+
 function Verify-ProtectionDataInTransit {
+    [CmdletBinding()]
+    [OutputType([PSCustomObject])]
     param (
             [string] $ControlName,
             [string] $ItemName,
@@ -104,8 +115,8 @@ function Verify-ProtectionDataInTransit {
             [string] $ModuleProfiles,  # Passed as a string
             [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
-    [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $FinalObjectList = [System.Collections.ArrayList]@()
+    $ErrorList = [System.Collections.ArrayList]@()
     $grRequiredPolicies=@("FunctionAppShouldOnlyBeAccessibleOverHttps","WebApplicationShouldOnlyBeAccessibleOverHttps", "ApiAppShouldOnlyBeAccessibleOverHttps", "OnlySecureConnectionsToYourRedisCacheShouldBeEnabled","SecureTransferToStorageAccountsShouldBeEnabled")
     #Check management groups
     try {
@@ -115,8 +126,13 @@ function Verify-ProtectionDataInTransit {
         $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
-    [string]$type = "Management Group"  
-    $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+    [string]$type = "Management Group"
+    if($EnableMultiCloudProfiles) {
+        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+    }
+    else {
+        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+    }
     #Check Subscriptions
     try {
         $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
@@ -126,8 +142,13 @@ function Verify-ProtectionDataInTransit {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     [string]$type = "subscription"
-    $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
-    
+
+    if ($EnableMultiCloudProfiles) {   
+        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+    }
+    else {
+        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+    } 
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $FinalObjectList 
         Errors=$ErrorList

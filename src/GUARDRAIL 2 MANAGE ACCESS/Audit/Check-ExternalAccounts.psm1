@@ -199,18 +199,19 @@
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -is [int]) {
+        if ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
             $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result -is [hashtable] -and $result.Status -eq "Error") {
-            Write-Error "Error occurred: $($result.Message)"
-            $GuestUserStatus.ComplianceStatus = "Not Applicable"            
-            Errorlist.Add($result.Message)
+        } elseif ($result -eq 0) {
+            Write-Output "No matching profile found or an error occurred"
+            $GuestUserStatus.ComplianceStatus = "Not Applicable"
+            $ErrorList.Add("No matching profile found or an error occurred in Get-EvaluationProfile")
         } else {
-            Write-Error "Unexpected result type: $($result.GetType().Name), Value: $result"
-        }        
+            Write-Error "Unexpected result from Get-EvaluationProfile: $result"
+            $GuestUserStatus.ComplianceStatus = "Not Applicable"
+            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $result")
+        }
     }
-    
 
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $GuestUserStatus

@@ -27,6 +27,7 @@ function Get-NetworkWatcherStatus {
     )
     [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $result = $null
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
         $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
@@ -43,7 +44,20 @@ function Get-NetworkWatcherStatus {
     {
         Write-Verbose "Selecting subscription..."
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        
+
+        if ($EnableMultiCloudProfiles) {        
+            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if ($result -eq 0) {
+                Write-Output "No matching profile found or error occurred."
+                $ComplianceStatus = "Not Applicable"
+            } else {
+                Write-Output "Valid profile returned: $result"
+                $ComplianceStatus = $null  # Will be set later based on Network Watcher status
+            }
+        } else {
+            $ComplianceStatus = $null  # Will be set later based on Network Watcher status
+        }
+
         $allVNETs=Get-AzVirtualNetwork
         $includedVNETs=$allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' -and $_.Name -notin $ExcludedVNetsList }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag or -ExcludedVNets parameter."
@@ -60,15 +74,15 @@ function Get-NetworkWatcherStatus {
 
             # check if network watcher is enabled in the region
             $comments = $null
-            $ComplianceStatus = $false
+            $ComplianceStatus = if ($null -eq $ComplianceStatus) { $true } else { $ComplianceStatus }
             ForEach ($region in ($nonExcludedVnetRegions | Get-Unique)) {
                 $nw = Get-AzNetworkWatcher -Location $region -ErrorAction SilentlyContinue
                 if ($nw) {
-                    $ComplianceStatus = $true 
-                    $Comments= $msgTable.networkWatcherEnabled -f $region
+                    $ComplianceStatus = if ($null -eq $ComplianceStatus) { $true } else { $ComplianceStatus }
+                    $Comments = $msgTable.networkWatcherEnabled -f $region
                 }
                 else {
-                    $ComplianceStatus = $false
+                    $ComplianceStatus = if ($null -eq $ComplianceStatus) { $false } else { $ComplianceStatus }
                     $Comments = $msgTable.networkWatcherNotEnabled -f $region
                 }
                 # Create PSOBject with Information.
@@ -81,11 +95,14 @@ function Get-NetworkWatcherStatus {
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                 }
+                if ($EnableMultiCloudProfiles -and $result -ne 0) {
+                    $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                }
                 $RegionList.add($RegionObject) | Out-Null                               
             }
         }
         else {
-            $ComplianceStatus = $true
+            $ComplianceStatus = if ($null -eq $ComplianceStatus) { $true } else { $ComplianceStatus }
             $RegionObject = [PSCustomObject]@{ 
                 SubscriptionName  = $sub.Name 
                 ComplianceStatus = $ComplianceStatus
@@ -94,6 +111,9 @@ function Get-NetworkWatcherStatus {
                 itsgcode = $itsgcode
                 ControlName = $ControlName
                 ReportTime = $ReportTime
+            }
+            if ($EnableMultiCloudProfiles -and $result -ne 0) {
+                $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
             }
             $RegionList.add($RegionObject) | Out-Null   
         }

@@ -119,17 +119,17 @@ function Check-DepartmentServicePrincipalName {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -is [int]) {
-            Write-Output "Valid profile returned: $result"
-            $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result.Status -eq "Error") {
-            Write-Error "Error occurred: $($result.Message)"
+        $profileResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($profileResult -eq 0) {
+            Write-Output "No matching profile found or an error occurred."
             $Results.ComplianceStatus = "Not Applicable"
-            Errorlist.Add($result.Message)
+        } elseif ($profileResult -is [int] -and $profileResult -gt 0) {
+            Write-Output "Valid profile returned: $profileResult"
+            $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $profileResult
         } else {
-            Write-Error "Unexpected result: $result"
-        }        
+            Write-Error "Unexpected result from Get-EvaluationProfile: $profileResult"
+            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $profileResult")
+        }
     }
 
     $moduleOutput = [PSCustomObject]@{ 
