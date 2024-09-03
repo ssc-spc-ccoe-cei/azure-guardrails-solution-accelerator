@@ -107,6 +107,8 @@ function Check-GAUserCountMFARequired {
         
     }
 
+    $userValidMFACounter = @()
+
     ## **********************************************##
     ## ****All Global Admin Accounts except BG ******##
     ## **********************************************##
@@ -124,30 +126,50 @@ function Check-GAUserCountMFARequired {
 
         # Get GA member users UPNs
         $memberUsersUPN= $memberUsers | Select-Object userPrincipalName, mail
+        Write-Error "memberUsersUPN count is $($memberUsersUPN.Count)"
 
-        $result = Get-AllUserAuthInformation -allUserList $memberUsersUPN
-        $memberUserUPNsBadMFA = $result.userUPNsBadMFA
-        if( !$null -eq $result.ErrorList){
-            $ErrorList =  $ErrorList.Add($result.ErrorList)
+        if(!$null -eq $memberUsersUPN){
+            $result = Get-AllUserAuthInformation -allUserList $memberUsersUPN
+            $memberUserUPNsBadMFA = $result.userUPNsBadMFA
+            if( !$null -eq $result.ErrorList){
+                $ErrorList =  $ErrorList.Add($result.ErrorList)
+            }
+            $userValidMFACounter = $result.userValidMFACounter
         }
-        $userValidMFACounter = $result.userValidMFACounter
+        
 
         ## *******************************************##
         ## ****** External user as Global Admin ******##
         ## *******************************************##
         $extUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-
-        # Get external users UPNs and emails
-        $extUsersUPN = $extUsers | Select-Object userPrincipalName, mail
-        $result2 = Get-AllUserAuthInformation -allUserList $extUsersUPN
-        $extUserUPNsBadMFA = $result2.userUPNsBadMFA
-        if( !$null -eq $result2.ErrorList){
-            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+        Write-Error "extUsers count is $($extUsers.Count)"
+        if(!$null -eq $extUsers){
+             # Get external users UPNs and emails
+            $extUsersUPN = $extUsers | Select-Object userPrincipalName, mail
+            $result2 = Get-AllUserAuthInformation -allUserList $extUsersUPN
+            $extUserUPNsBadMFA = $result2.userUPNsBadMFA
+            if( !$null -eq $result2.ErrorList){
+                $ErrorList =  $ErrorList.Add($result2.ErrorList)
+            }
+            
+            # combined list
+            $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
         }
-        # combined list
-        $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
-        $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
 
+        Write-Error "userValidMFACounter count is $userValidMFACounter"
+        Write-Error "allGAUserUPNs count is $($allGAUserUPNs.Count)"
+
+        if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
+            $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
+        }elseif($null -eq $extUserUPNsBadMFA){
+            $userUPNsBadMFA =  $memberUserUPNsBadMFA 
+        }elseif($null -eq $memberUserUPNsBadMFA){
+            $userUPNsBadMFA =  $extUserUPNsBadMFA
+        }
+
+        Write-Error "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+        Write-Error "userUPNsBadMFA $($userUPNsBadMFA.userPrincipalName) "
+       
         # Condition: all users are MFA enabled
         if($userValidMFACounter -eq $allGAUserUPNs.Count) {
             $commentsArray += ' ' + $msgTable.allUserHaveMFA
