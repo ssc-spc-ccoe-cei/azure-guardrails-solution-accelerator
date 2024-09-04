@@ -54,6 +54,20 @@ $Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $Mi
 $Object| Add-Member -MemberType NoteProperty -Name ItemName -Value $msgTable.mktPlaceCreation -Force | Out-Null
 $Object| Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode -Force | Out-Null
 
+if ($EnableMultiCloudProfiles) {        
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -eq 0) {
+            Write-Output "No matching profile found"
+            $Object.ComplianceStatus = "Not Applicable"
+        } elseif ($result -gt 0) {
+            Write-Output "Valid profile returned: $result"
+            $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } else {
+            Write-Error "Unexpected result from Get-EvaluationProfile: $result"
+            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $result")
+        }
+}    
+
 $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $Object
         Errors=$ErrorList

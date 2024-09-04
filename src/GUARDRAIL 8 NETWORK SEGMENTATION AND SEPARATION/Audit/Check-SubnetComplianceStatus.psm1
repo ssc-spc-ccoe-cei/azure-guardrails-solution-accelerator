@@ -36,7 +36,7 @@ function Get-SubnetComplianceInformation {
     $reservedSubnetNames = $ReservedSubnetList.Split(",")
     $ExcludedSubnets = $ExcludedSubnetsList.Split(",")
     $allexcluded = $ExcludedSubnets + $reservedSubnetNames
-
+    $result = $null
     try {
         $subs = Get-AzSubscription -ErrorAction Stop  | Where-Object { $_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName }  
     }
@@ -48,7 +48,16 @@ function Get-SubnetComplianceInformation {
     foreach ($sub in $subs) {
         Write-Verbose "Selecting subscription: $($sub.Name)"
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        
+        if ($EnableMultiCloudProfiles) {        
+            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if ($result -eq 0) {
+                Write-Output "No matching profile found or error occurred"
+                $result = "Not Applicable"
+            } else {
+                Write-Output "Valid profile returned: $result"
+            }
+        }
+
         $allVNETs = Get-AzVirtualNetwork
         $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
@@ -112,13 +121,20 @@ function Get-SubnetComplianceInformation {
                                 itsgcode         = $itsgcodesegmentation
                                 ReportTime       = $ReportTime
                             }
+                            if ($EnableMultiCloudProfiles) {
+                                $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                                if ($result -eq "Not Applicable") {
+                                    $SubnetObject.ComplianceStatus = "Not Applicable"
+                                }
+                            }
+
                             $SubnetList.add($SubnetObject) | Out-Null
                             #Checks Routes
                             if ($subnet.RouteTable) {
                                 $UDR = $subnet.RouteTable.Id.Split("/")[8]
                                 Write-Debug "Found $UDR UDR"
                                 $routeTable = Get-AzRouteTable -ResourceGroupName $subnet.RouteTable.Id.Split("/")[4] -name $UDR
-                                $ComplianceStatus = $false # I still don´t know if it has a UDR with 0.0.0.0 being sent to a Virtual Appliance.
+                                $ComplianceStatus = $false # I still don't know if it has a UDR with 0.0.0.0 being sent to a Virtual Appliance.
                                 $Comments = $msgTable.routeNVA
                                 foreach ($route in $routeTable.Routes) {
                                     if ($route.NextHopType -eq "VirtualAppliance" -and $route.AddressPrefix -eq "0.0.0.0/0") { # Found the required UDR
@@ -149,6 +165,12 @@ function Get-SubnetComplianceInformation {
                             ControlName      = $ControlName
                             ReportTime       = $ReportTime
                         }
+                        if ($EnableMultiCloudProfiles) {
+                            $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                            if ($result -eq "Not Applicable") {
+                                $SubnetObject.ComplianceStatus = "Not Applicable"
+                            }
+                        }
                         $SubnetList.add($SubnetObject) | Out-Null
                     }
                
@@ -171,6 +193,12 @@ function Get-SubnetComplianceInformation {
                             ControlName      = $ControlName
                             ReportTime       = $ReportTime
                         }
+                        if ($EnableMultiCloudProfiles) {
+                            $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                            if ($result -eq "Not Applicable") {
+                                $SubnetObject.ComplianceStatus = "Not Applicable"
+                            }
+                        }
                         $SubnetList.add($SubnetObject) | Out-Null
                     }
                 }
@@ -190,6 +218,12 @@ function Get-SubnetComplianceInformation {
                 ControlName      = $ControlName
                 itsgcode         = $itsgcodesegmentation
                 ReportTime       = $ReportTime
+            }
+            if ($EnableMultiCloudProfiles) {
+                $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                if ($result -eq "Not Applicable") {
+                    $SubnetObject.ComplianceStatus = "Not Applicable"
+                }
             }
             $SubnetList.add($SubnetObject) | Out-Null
         }

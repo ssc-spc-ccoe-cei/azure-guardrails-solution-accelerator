@@ -111,6 +111,19 @@ function Get-BreakGlassAccountLicense {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
+    if ($EnableMultiCloudProfiles) {        
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -eq 0) {
+            Write-Output "No matching profile found or error occurred"
+            $PsObject.ComplianceStatus = "Not Applicable"
+        } elseif ($result -gt 0) {
+            Write-Output "Valid profile returned: $result"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } else {
+            Write-Error "Unexpected result: $result"
+        }
+    }
+
     $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject
         Errors            = $ErrorList
