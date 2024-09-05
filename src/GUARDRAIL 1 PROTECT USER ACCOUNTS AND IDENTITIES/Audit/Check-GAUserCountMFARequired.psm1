@@ -26,7 +26,7 @@ function Check-GAUserCountMFARequired {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
-    # Get the list of GA users
+    # Get the list of GA users (ACTIVE assignments)
     $urlPath = "/directoryRoles"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
@@ -47,66 +47,58 @@ function Check-GAUserCountMFARequired {
         Write-Error "Error: $errorMsg"
     }
 
-    # # Filter the Global Administrator role ID
-    # $globalAdminRole = $rolesResponse | Where-Object { $_.displayName -eq "Global Administrator" }
+    # Filter the Global Administrator role ID
+    $globalAdminRole = $rolesResponse | Where-Object { $_.displayName -eq "Global Administrator" }
 
-    # Get directory roles for each user and filter the global admin users
+    # Get directory roles for each user with the global admin access
     $globalAdminUserAccounts = @()
     $roleAssignments = @()
 
-    foreach ($role in $rolesResponse) {
-        $roleId = $role.id
-        $roleName = $role.displayName
-        if ($roleName -eq "Global Administrator"){
-            Write-Host "The role name is $roleName"
+    $roleId = $globalAdminRole.id
+    $roleName = $globalAdminRole.displayName
+    Write-Host "The role name is $roleName"
+    # Endpoint to get members of the role
+    $urlPath = "/directoryRoles/$roleId/members"
+    try{
+        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        # portal
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
 
-            # Endpoint to get members of the role
-            $urlPath = "/directoryRoles/$roleId/members"
-            try{
-                $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-                # portal
-                $data = $response.Content
-                # # localExecution
-                # $data = $response
-
-                if ($null -ne $data -and $null -ne $data.value) {
-                    $membersResponse  = $data.value
-                }
-            }
-            catch {
-                $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-                $ErrorList.Add($errorMsg)
-                Write-Error "Error: $errorMsg"
-            }
-            # Get member users UPNs
-            $memberUserList = $membersResponse 
-            # Exclude the breakglass account UPNs from the list
-            if ($memberUserList.userPrincipalName -contains $FirstBreakGlassUPN){
-                $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $FirstBreakGlassUPN }
-            }
-            if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
-                $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
-
-            }
-
-            foreach ($member in $memberUserList) {
-                $roleAssignments = [PSCustomObject]@{
-                    roleId              = $roleId
-                    roleName            = $roleName
-                    userId              = $member.id
-                    displayName         = $member.displayName
-                    mail                = $member.mail
-                    userPrincipalName   = $member.userPrincipalName
-                }
-                $globalAdminUserAccounts +=  $roleAssignments
-            }
-        } else {
-            Write-Host "Skipping the role name is $roleName"
-
+        if ($null -ne $data -and $null -ne $data.value) {
+            $gaRoleResponse  = $data.value
         }
-        
+    }
+    catch {
+        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+        $ErrorList.Add($errorMsg)
+        Write-Error "Error: $errorMsg"
+    }
+    # Get member users UPNs
+    $gaUserList = $gaRoleResponse 
+    # Exclude the breakglass account UPNs from the list
+    if ($gaUserList.userPrincipalName -contains $FirstBreakGlassUPN){
+        $gaUserList = $gaUserList | Where-Object { $_.userPrincipalName -ne $FirstBreakGlassUPN }
+    }
+    if ($gaUserList.userPrincipalName -contains $SecondBreakGlassUPN){
+        $gaUserList = $gaUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
+
     }
 
+    foreach ($gaUser in $gaUserList) {
+        $roleAssignments = [PSCustomObject]@{
+            roleId              = $roleId
+            roleName            = $roleName
+            userId              = $gaUser.id
+            displayName         = $gaUser.displayName
+            mail                = $gaUser.mail
+            userPrincipalName   = $gaUser.userPrincipalName
+        }
+        $globalAdminUserAccounts +=  $roleAssignments
+    }
+
+    # Count Users with active GA 
     $userValidMFACounter = @()
 
     ## **********************************************##
@@ -114,8 +106,8 @@ function Check-GAUserCountMFARequired {
     ## **********************************************##
     $allGAUserUPNs = $globalAdminUserAccounts.userPrincipalName
     Write-Host "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
-    Write-Error "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
-    Write-Error "DEBUG: allGAUserUPNs user UPNs are $allGAUserUPNs"
+    Write-Output "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
+    Write-Output "DEBUG: allGAUserUPNs user UPNs are $allGAUserUPNs"
     if (($allGAUserUPNs.Count -gt 6) -or ($allGAUserUPNs.Count -lt 2)){
         $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
     }
@@ -128,33 +120,35 @@ function Check-GAUserCountMFARequired {
         $memberUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
 
         # Get GA member users UPNs
-        $memberUsersUPN= $memberUsers | Select-Object userPrincipalName, mail
-        Write-Error "DEBUG: GA memberUsersUPN count is $($memberUsersUPN.Count)"
-        Write-Error "DEBUG: GA memberUsersUPN count is $($memberUsersUPN.userPrincipalName)"
-        Write-Host "DEBUG: GA memberUsersUPN count is $($memberUsersUPN.Count)"
+        $memberUsersUPNs= $memberUsers | Select-Object userPrincipalName, mail
+        Write-Output "DEBUG: GA memberUsersUPNs count is $($memberUsersUPNs.Count)"
+        Write-Output "DEBUG: GA memberUsersUPNs are $($memberUsersUPNs.userPrincipalName)"
+        Write-Host "DEBUG: GA memberUsersUPNs count is $($memberUsersUPNs.Count)"
 
-        if(!$null -eq $memberUsersUPN){
-            $result = Get-AllUserAuthInformation -allUserList $memberUsersUPN
+        if(!$null -eq $memberUsersUPNs){
+            $result = Get-AllUserAuthInformation -allUserList $memberUsersUPNs
             $memberUserUPNsBadMFA = $result.userUPNsBadMFA
+            $memberUserUPNsValidMFA = $result.userUPNsValidMFA
             if( !$null -eq $result.ErrorList){
                 $ErrorList =  $ErrorList.Add($result.ErrorList)
             }
             $userValidMFACounter = $result.userValidMFACounter
         }
-        Write-Host "DEBUG: userValidMFACounter count from memberUsersUPN count is $userValidMFACounter"
+        Write-Host "DEBUG: userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
         
 
         ## *******************************************##
         ## ****** External user as Global Admin ******##
         ## *******************************************##
         $extUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-        Write-Error "DEBUG: extUsers count is $($extUsers.Count)"
-        Write-Error "DEBUG: extUsers UPNs are $($extUsers.userPrincipalName)"
+        Write-Output "DEBUG: extUsers count is $($extUsers.Count)"
+        Write-Output "DEBUG: extUsers UPNs are $($extUsers.userPrincipalName)"
         if(!$null -eq $extUsers){
              # Get external users UPNs and emails
             $extUsersUPN = $extUsers | Select-Object userPrincipalName, mail
             $result2 = Get-AllUserAuthInformation -allUserList $extUsersUPN
             $extUserUPNsBadMFA = $result2.userUPNsBadMFA
+            $extUserUPNsValidMFA = $result2.userUPNsValidMFA
             if( !$null -eq $result2.ErrorList){
                 $ErrorList =  $ErrorList.Add($result2.ErrorList)
             }
@@ -162,11 +156,10 @@ function Check-GAUserCountMFARequired {
             # combined list
             $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
         }
-        Write-Host "DEBUG: userValidMFACounter count from all GA user is $userValidMFACounter"
-        Write-Host "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
-        Write-Error "DEBUG: userValidMFACounter count from all GA user is $userValidMFACounter"
-        Write-Error "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
-        Write-Error "DEBUG: allGAUserUPNs UPNs are $($allGAUserUPNs)"
+        Write-Output "DEBUG: GA accounts auth method check done"
+        Write-Host "DEBUG: userValidMFACounter count is $userValidMFACounter"
+        Write-Output "DEBUG: userValidMFACounter count is $userValidMFACounter"
+        Write-Output "DEBUG: userValidMFA member UPNs are $($memberUserUPNsValidMFA.UPN) and external UPNs are $($extUserUPNsValidMFA.UPN)"
         
 
         if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
@@ -177,8 +170,8 @@ function Check-GAUserCountMFARequired {
             $userUPNsBadMFA =  $extUserUPNsBadMFA
         }
 
-        Write-Error "DEBUG: userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
-        Write-Error "DEBUG: userUPNsBadMFA $($userUPNsBadMFA.userPrincipalName) "
+        Write-Output "DEBUG: userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+        Write-Output "DEBUG: userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
        
         # Condition: all users are MFA enabled
         if($userValidMFACounter -eq $allGAUserUPNs.Count) {

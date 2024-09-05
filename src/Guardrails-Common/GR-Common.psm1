@@ -757,6 +757,7 @@ function Get-AllUserAuthInformation{
     )
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $userValidMFACounter = 0
+    $userUPNsValidMFA = @()
     $userUPNsBadMFA = @()
 
     ForEach ($user in $allUserList) {
@@ -822,6 +823,12 @@ function Get-AllUserAuthInformation{
                     #need to keep track of user account mfa in a counter and compare it with the total user count   
                     $userValidMFACounter += 1
                     Write-Host "Auth method found for $userAccount"
+                    # Create an instance of valid MFA inner list object
+                    $userValidUPNtemplate = [PSCustomObject]@{
+                        UPN  = $userAccount
+                        MFAStatus   = $true
+                    }
+                    $userUPNsValidMFA +=  $userValidUPNtemplate
                 }
                 else{
                     # This message is being used for debugging
@@ -861,6 +868,7 @@ function Get-AllUserAuthInformation{
         userUPNsBadMFA = $userUPNsBadMFA
         ErrorList      = $ErrorList
         userValidMFACounter = $userValidMFACounter
+        userUPNsValidMFA = $userUPNsValidMFA
     }
 
     return $PsObject
