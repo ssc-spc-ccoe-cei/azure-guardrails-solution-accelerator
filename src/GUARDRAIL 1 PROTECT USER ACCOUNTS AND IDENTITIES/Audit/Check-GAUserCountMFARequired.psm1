@@ -127,6 +127,7 @@ function Check-GAUserCountMFARequired {
         # Get GA member users UPNs
         $memberUsersUPN= $memberUsers | Select-Object userPrincipalName, mail
         Write-Error "memberUsersUPN count is $($memberUsersUPN.Count)"
+        Write-Host "memberUsersUPN count is $($memberUsersUPN.Count)"
 
         if(!$null -eq $memberUsersUPN){
             $result = Get-AllUserAuthInformation -allUserList $memberUsersUPN
@@ -136,6 +137,8 @@ function Check-GAUserCountMFARequired {
             }
             $userValidMFACounter = $result.userValidMFACounter
         }
+        Write-Host "userValidMFACounter count from memberUsersUPN count is $userValidMFACounter"
+        Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
         
 
         ## *******************************************##
@@ -155,9 +158,11 @@ function Check-GAUserCountMFARequired {
             # combined list
             $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
         }
-
+        Write-Host "userValidMFACounter count is $userValidMFACounter"
+        Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
         Write-Error "userValidMFACounter count is $userValidMFACounter"
         Write-Error "allGAUserUPNs count is $($allGAUserUPNs.Count)"
+        
 
         if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
             $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
@@ -172,7 +177,7 @@ function Check-GAUserCountMFARequired {
        
         # Condition: all users are MFA enabled
         if($userValidMFACounter -eq $allGAUserUPNs.Count) {
-            $commentsArray += ' ' + $msgTable.allUserHaveMFA
+            $commentsArray += ' ' + $msgTable.allGAUserHaveMFA
             $IsCompliant = $true
         }
         # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
@@ -183,7 +188,7 @@ function Check-GAUserCountMFARequired {
             }
             else {
                 $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
-                $commentsArray += ' ' + $msgTable.userMisconfiguredMFA -f $upnString
+                $commentsArray += ' ' + $msgTable.gaUserMisconfiguredMFA -f $upnString
                 $IsCompliant = $false
             }
         }

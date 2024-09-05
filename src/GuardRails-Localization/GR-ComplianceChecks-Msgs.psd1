@@ -26,10 +26,13 @@ mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 globalAdminAccntsSurplus = There must be six or fewer global administrator accounts.
+allGAUserHaveMFA = Native user accounts with global administrator access have been identified, and all global administrator users accounts have 2+ methods of authentication enabled.
+gaUserMisconfiguredMFA = One or more Native User Accounts with global administrator access have not configured MFA properly: {0}
 
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
+
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
