@@ -113,6 +113,9 @@ function Check-GAUserCountMFARequired {
     ## ****All Global Admin Accounts except BG ******##
     ## **********************************************##
     $allGAUserUPNs = $globalAdminUserAccounts.userPrincipalName
+    Write-Host "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
+    Write-Error "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
+    Write-Error "DEBUG: allGAUserUPNs user UPNs are $allGAUserUPNs"
     if (($allGAUserUPNs.Count -gt 6) -or ($allGAUserUPNs.Count -lt 2)){
         $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
     }
@@ -126,8 +129,9 @@ function Check-GAUserCountMFARequired {
 
         # Get GA member users UPNs
         $memberUsersUPN= $memberUsers | Select-Object userPrincipalName, mail
-        Write-Error "memberUsersUPN count is $($memberUsersUPN.Count)"
-        Write-Host "memberUsersUPN count is $($memberUsersUPN.Count)"
+        Write-Error "DEBUG: GA memberUsersUPN count is $($memberUsersUPN.Count)"
+        Write-Error "DEBUG: GA memberUsersUPN count is $($memberUsersUPN.userPrincipalName)"
+        Write-Host "DEBUG: GA memberUsersUPN count is $($memberUsersUPN.Count)"
 
         if(!$null -eq $memberUsersUPN){
             $result = Get-AllUserAuthInformation -allUserList $memberUsersUPN
@@ -137,15 +141,15 @@ function Check-GAUserCountMFARequired {
             }
             $userValidMFACounter = $result.userValidMFACounter
         }
-        Write-Host "userValidMFACounter count from memberUsersUPN count is $userValidMFACounter"
-        Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
+        Write-Host "DEBUG: userValidMFACounter count from memberUsersUPN count is $userValidMFACounter"
         
 
         ## *******************************************##
         ## ****** External user as Global Admin ******##
         ## *******************************************##
         $extUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-        Write-Error "extUsers count is $($extUsers.Count)"
+        Write-Error "DEBUG: extUsers count is $($extUsers.Count)"
+        Write-Error "DEBUG: extUsers UPNs are $($extUsers.userPrincipalName)"
         if(!$null -eq $extUsers){
              # Get external users UPNs and emails
             $extUsersUPN = $extUsers | Select-Object userPrincipalName, mail
@@ -158,10 +162,11 @@ function Check-GAUserCountMFARequired {
             # combined list
             $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
         }
-        Write-Host "userValidMFACounter count is $userValidMFACounter"
-        Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
-        Write-Error "userValidMFACounter count is $userValidMFACounter"
-        Write-Error "allGAUserUPNs count is $($allGAUserUPNs.Count)"
+        Write-Host "DEBUG: userValidMFACounter count from all GA user is $userValidMFACounter"
+        Write-Host "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
+        Write-Error "DEBUG: userValidMFACounter count from all GA user is $userValidMFACounter"
+        Write-Error "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
+        Write-Error "DEBUG: allGAUserUPNs UPNs are $($allGAUserUPNs)"
         
 
         if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
@@ -172,8 +177,8 @@ function Check-GAUserCountMFARequired {
             $userUPNsBadMFA =  $extUserUPNsBadMFA
         }
 
-        Write-Error "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
-        Write-Error "userUPNsBadMFA $($userUPNsBadMFA.userPrincipalName) "
+        Write-Error "DEBUG: userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+        Write-Error "DEBUG: userUPNsBadMFA $($userUPNsBadMFA.userPrincipalName) "
        
         # Condition: all users are MFA enabled
         if($userValidMFACounter -eq $allGAUserUPNs.Count) {
