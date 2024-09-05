@@ -15,7 +15,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/GR1_V3_MFA
 
 concurrency:
   group: Deploy-Azure-CAC-Dev
@@ -97,7 +96,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v3
       - name: Download zipped modules and replace old ones
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ${{env.ARTIFACT_NAME}}
           path: ./psmodules
