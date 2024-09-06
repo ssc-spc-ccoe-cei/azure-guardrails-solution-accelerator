@@ -25,9 +25,10 @@ MSEntIDLicense = Type de licence Microsoft Entra ID
 mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
-globalAdminAccntsSurplus = Il doit y avoir six comptes d’administrateur général ou moins.
-allGAUserHaveMFA = Native user accounts with global administrator access have been identified, and all global administrator users accounts have 2+ methods of authentication enabled.
-gaUserMisconfiguredMFA = One or more Native User Accounts with global administrator access have not configured MFA properly: {0}
+
+globalAdminAccntsSurplus = Il doit y avoir six comptes d'administrateur général ou moins.
+allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
+gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
