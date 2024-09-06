@@ -127,7 +127,7 @@ jobs:
               }
           }
       - name: Publish artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ github.workspace }}
@@ -139,7 +139,7 @@ jobs:
       contents: write
     steps:
       - name: Download signed ps scripts and zipped modules
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name:  ${{ env.ARTIFACT_NAME }}
           path: .        
