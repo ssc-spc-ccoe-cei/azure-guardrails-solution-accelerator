@@ -24,11 +24,16 @@ isNotCompliant = Non-compliant.
 MSEntIDLicense = Microsoft Entra ID License Type
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
-gaAccntsMFACheck = Global Administrators Accounts MFA check
+gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
+
+globalAdminAccntsSurplus = There must be six or fewer global administrator accounts.
+allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
+gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
+
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type

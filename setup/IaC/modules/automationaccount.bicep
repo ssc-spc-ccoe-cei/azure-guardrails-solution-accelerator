@@ -60,7 +60,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
-        version: '1.1.4'        
+        version: '1.1.6'        
       }
     }
   }
@@ -69,7 +69,7 @@ resource module2 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
-        version: '1.1.5'
+        version: '1.1.7'
       }
     }
   }
@@ -78,7 +78,7 @@ resource module3 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DeprecatedAccounts.zip'
-        version: '1.2.2'
+        version: '1.2.4'
       }
     }
   }
@@ -87,7 +87,7 @@ resource module4 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
-        version: '1.2.6'
+        version: '1.2.8'
       }
     }
   }
@@ -96,7 +96,7 @@ resource module5 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
-        version: '1.0.1'
+        version: '1.0.3'
       }
     }
   }
@@ -105,7 +105,7 @@ resource module6 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-MonitorAccount.zip'
-        version: '1.1.3'
+        version: '1.1.4'
       }
     }
   }
@@ -114,7 +114,7 @@ resource module7 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SubnetComplianceStatus.zip'
-        version: '1.1.6'
+        version: '1.1.8'
       }
     }
   }
@@ -123,7 +123,7 @@ resource module8 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
-        version: '1.1.6'
+        version: '1.1.8'
       }
     }
   }
@@ -132,7 +132,7 @@ resource module9 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
-        version: '1.2.3'
+        version: '1.2.5'
       }
     }
   }
@@ -141,7 +141,7 @@ resource module10 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Get-AzureADLicenseType.zip'
-        version: '1.1.6'
+        version: '1.1.8'
       }
     }
   }
@@ -150,7 +150,7 @@ resource module11 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.1.19'
+        version: '1.1.20'
       }
     }
   }
@@ -159,7 +159,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
-        version: '1.0.6'
+        version: '1.0.8'
       }
     }
   }
@@ -168,7 +168,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
-        version: '1.0.5'
+        version: '1.0.8'
       }
     }
   }
@@ -177,7 +177,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivateMarketPlace.zip'
-        version: '1.1.4'
+        version: '1.1.6'
       }
     }
   }
@@ -195,7 +195,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CyberSecurityServices.zip'
-        version: '1.1.2'
+        version: '1.1.4'
       }
     }
   }
@@ -204,7 +204,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudConfig.zip'
-        version: '1.1.10'
+        version: '1.1.12'
       }
     }
   }
@@ -222,7 +222,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
-        version: '1.3.1'
+        version: '1.3.4'
       }
     }
   }
@@ -231,7 +231,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionOfDataInTransit.zip'
-        version: '1.2.3'
+        version: '1.2.5'
       }
     }
   }
@@ -240,7 +240,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudConsoleAccess.zip'
-        version: '1.0.5'
+        version: '1.0.7'
       }
     }
   }
@@ -249,7 +249,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-HealthMonitoring.zip'
-        version: '1.1.8'
+        version: '1.1.10'
       }
     }
   }
@@ -258,7 +258,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
-        version: '1.0.2'
+        version: '1.0.4'
       }
     }
   }
@@ -267,7 +267,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
-        version: '1.1.8'
+        version: '1.1.10'
       }
     }
   }
@@ -276,7 +276,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-MFARequired.zip'
-        version: '1.0.0'
+        version: '1.0.2'
       }
     }
   }
@@ -285,7 +285,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
-        version: '1.3.0'
+        version: '1.3.2'
       }
     }
   }
@@ -294,7 +294,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip'
-        version: '1.0.0'
+        version: '1.0.2'
       }
     }
   }
@@ -303,7 +303,16 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.0.1'
+        version: '1.0.2'
+      }
+    }
+  }
+  resource module29 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-GAUserCountMFARequired'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
+        version: '1.0.0'
       }
     }
   }
