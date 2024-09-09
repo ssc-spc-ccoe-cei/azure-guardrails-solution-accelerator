@@ -303,7 +303,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.0.2'
+        version: '1.0.3'
       }
     }
   }
@@ -312,6 +312,15 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module30 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-UserGroups'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-UserGroups.zip'
         version: '1.0.0'
       }
     }
