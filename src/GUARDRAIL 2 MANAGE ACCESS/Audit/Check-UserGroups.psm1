@@ -1,4 +1,4 @@
-function Check-AllUserMFARequired {
+function Check-UserGroups {
     param (      
         [Parameter(Mandatory=$true)]
         [string] $ControlName,

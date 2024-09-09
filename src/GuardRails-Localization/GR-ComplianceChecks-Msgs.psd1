@@ -64,6 +64,9 @@ existingPrivilegedGuestAccounts = Privileged Guest User Accounts
 existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
 guestHasPrivilegedRole = This Guest user account has one or more privileged roles
 
+
+accManagementUserGroupsCheck = Account Management: User Groups
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
