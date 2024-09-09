@@ -29,7 +29,7 @@ function Check-AllUserMFARequired {
     $urlPath = "/users"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
+        #portal
         $data = $response.Content
         # # localExecution
         # $data = $response
@@ -44,13 +44,14 @@ function Check-AllUserMFARequired {
         Write-Error "Error: $errorMsg"
     }
 
+    # Check all users for MFA
+    $allUserUPNs = $users.userPrincipalName
+    Write-Host "DEBUG: allUserUPNs count is $($allUserUPNs.Count)"
+
     ## *************************##
     ## ****** Member user ******##
     ## *************************##
     $memberUsers = $users | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
-
-    # Check all users for MFA
-    $allUserUPNs = $users.userPrincipalName
 
     # Get member users UPNs
     $memberUserList = $memberUsers | Select-Object userPrincipalName, mail
@@ -62,28 +63,50 @@ function Check-AllUserMFARequired {
         $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
 
     }
-    $result = Get-AllUserAuthInformation -allUserList $memberUserList
-    $memberUserUPNsBadMFA = $result.userUPNsBadMFA
-    if( !$null -eq $result.ErrorList){
-        $ErrorList =  $ErrorList.Add($result.ErrorList)
+    Write-Host "DEBUG: memberUserList count is $($memberUserList.Count)"
+
+    if(!$null -eq $memberUserList){
+        $result = Get-AllUserAuthInformation -allUserList $memberUserList
+        $memberUserUPNsBadMFA = $result.userUPNsBadMFA
+        if( !$null -eq $result.ErrorList){
+            $ErrorList =  $ErrorList.Add($result.ErrorList)
+        }
+        $userValidMFACounter = $result.userValidMFACounter
     }
-    $userValidMFACounter = $result.userValidMFACounter
+    Write-Host "DEBUG: userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
+
 
     ## ***************************##
     ## ****** External user ******##
     ## ***************************##
     $extUsers = $users | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-
-    # Get external users UPNs and emails
-    $extUserList = $extUsers | Select-Object userPrincipalName, mail
-    $result2 = Get-AllUserAuthInformation -allUserList $extUserList
-    $extUserUPNsBadMFA = $result2.userUPNsBadMFA
-    if( !$null -eq $result2.ErrorList){
-        $ErrorList =  $ErrorList.Add($result2.ErrorList)
+    Write-Output "DEBUG: extUsers count is $($extUsers.Count)"
+    Write-Output "DEBUG: extUsers UPNs are $($extUsers.userPrincipalName)"
+    if(!$null -eq $extUsers){
+        # Get external users UPNs and emails
+        $extUserList = $extUsers | Select-Object userPrincipalName, mail
+        $result2 = Get-AllUserAuthInformation -allUserList $extUserList
+        $extUserUPNsBadMFA = $result2.userUPNsBadMFA
+        if( !$null -eq $result2.ErrorList){
+            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+        }
+        # combined list
+        $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
     }
-    # combined list
-    $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
-    $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
+    
+    Write-Output "DEBUG: accounts auth method check done"
+    Write-Host "DEBUG: userValidMFACounter count is $userValidMFACounter"
+    
+    if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
+        $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
+    }elseif($null -eq $extUserUPNsBadMFA){
+        $userUPNsBadMFA =  $memberUserUPNsBadMFA 
+    }elseif($null -eq $memberUserUPNsBadMFA){
+        $userUPNsBadMFA =  $extUserUPNsBadMFA
+    }
+    Write-Output "DEBUG: userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+    Write-Output "DEBUG: userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
+       
 
     # Condition: all users are MFA enabled
     if($userValidMFACounter -eq $allUserUPNs.Count) {
@@ -125,7 +148,6 @@ function Check-AllUserMFARequired {
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         }
     }
-
     
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $PsObject
