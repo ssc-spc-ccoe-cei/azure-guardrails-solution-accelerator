@@ -65,31 +65,6 @@
     ]
   },
   {
-    "ModuleName": "Check-UserGroups",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-UserGroups -ControlName $msgTable.CtrName1 -ItemName $msgTable.accManagementUserGroupsCheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "secrets": [
-      {
-        "Name": "FirstBreakGlassUPN",
-        "Value": "BGA1"
-      },
-      {
-        "Name": "SecondBreakGlassUPN",
-        "Value": "BGA2"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "IA2(1)"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-DeprecatedAccounts",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
