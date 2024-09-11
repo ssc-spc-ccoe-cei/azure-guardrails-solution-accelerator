@@ -37,6 +37,7 @@ function Get-AdminAccess {
     $devicePolicies = $caps | Where-Object { 
         $null -ne $_.conditions.devices.deviceFilter -and 
         $null -ne $_.conditions.applications.includeApplications -and
+        $_.state -eq 'enabled' -and
         ($adminUserIds -contains $_.conditions.users.includeRoles)
     }
     if (-not $devicePolicies) {
