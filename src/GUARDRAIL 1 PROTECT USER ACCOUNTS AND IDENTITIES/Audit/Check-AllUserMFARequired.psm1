@@ -29,7 +29,7 @@ function Check-AllUserMFARequired {
     $urlPath = "/users"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        #portal
+        # portal
         $data = $response.Content
         # # localExecution
         # $data = $response
@@ -61,7 +61,6 @@ function Check-AllUserMFARequired {
     }
     if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
         $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
-
     }
     Write-Host "DEBUG: memberUserList count is $($memberUserList.Count)"
 
@@ -99,9 +98,9 @@ function Check-AllUserMFARequired {
     
     if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
         $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
-    }elseif($null -eq $extUserUPNsBadMFA){
+    }elseif($null -eq $extUserUPNsBadMFA -or $extUserUPNsBadMFA.Count -eq 0){
         $userUPNsBadMFA =  $memberUserUPNsBadMFA 
-    }elseif($null -eq $memberUserUPNsBadMFA){
+    }elseif($null -eq $memberUserUPNsBadMFA -or $memberUserUPNsBadMFA.Count -eq 0){
         $userUPNsBadMFA =  $extUserUPNsBadMFA
     }
     Write-Output "DEBUG: userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
