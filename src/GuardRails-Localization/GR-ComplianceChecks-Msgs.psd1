@@ -66,6 +66,8 @@ guestHasPrivilegedRole = This Guest user account has one or more privileged role
 
 
 accManagementUserGroupsCheck = Account Management: User Groups
+userCountGroupNoMatch = all users have been assigned to a privileged or non-privileged user group.
+noCAPforAllGroups = None of the conditional access policies refer to one of your user groups (privileged or non-privileged).
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
