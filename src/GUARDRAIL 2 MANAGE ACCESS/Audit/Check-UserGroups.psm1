@@ -138,17 +138,17 @@ function Check-UserGroups {
             Write-Error "Error: $errorMsg"
         }
     }
-    # find unique users from all user groups
+    # Find unique users from all user groups
     # Get unique users based on userPrincipalName
     $uniqueUsers = $groupMemberList | Sort-Object userPrincipalName -Unique
     
-    # Condition: There is only 1 user in the tenant
+    # Condition: if only 1 user in the tenant
     if($allUserCount -le 1) {
         $commentsArray = "Compliant. There is only one user in the tenant."
         $IsCompliant = $true
     }
     else{
-        # Condition: There is more than 1 user in the tenant
+        # Condition: if more than 1 user in the tenant
         $commentsArray += " " + "There are more than one user in the tenant"
         if($userGroupCount -lt 2){
             # Condition: There is less than 2 user group in the tenant
@@ -183,7 +183,7 @@ function Check-UserGroups {
 
                             if ($validPolicies.count -ne 0) {
                                 if ($groupsInValidPolicy.Count -eq $groups.Count ){
-                                    # Condition: total group countin the tenant and in the CAP policy should match
+                                    # Condition: total group count in the tenant and in the CAP policy should match
                                     $IsCompliant = $true
                                     $Comments = $msgTable.isCompliant  
                                 } else{
@@ -193,7 +193,7 @@ function Check-UserGroups {
                                 }
                             }
                             else {
-                                # Failed. Reason: No policies meet the requirements
+                                # Fail. No policy meets the requirements
                                 $IsCompliant = $false
                                 $Comments = $msgTable.noCAPforAllGroups
                             }
