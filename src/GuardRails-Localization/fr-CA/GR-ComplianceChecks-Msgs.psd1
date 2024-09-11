@@ -66,7 +66,7 @@ guestHasPrivilegedRole = Ce compte d'utilisateur invité a un ou plusieurs rôle
 
 accManagementUserGroupsCheck = Gestion des comptes : Groupes d'utilisateurs
 userCountGroupNoMatch = Tous les utilisateurs n'ont pas été assignés à un groupe d'utilisateurs privilégiés ou non privilégiés.
-noCAPforAllGroups = Aucune des politiques d'accès conditionnel ne fait référence à l'un de vos groupes d'utilisateurs (privilégiés ou non privilégiés).
+noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référence à l'un de vos groupes d'utilisateurs (privilégiés ou non privilégiés).
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

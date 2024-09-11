@@ -178,24 +178,14 @@ function Check-UserGroups {
                                 [string]::IsNullOrEmpty($_.conditions.users.excludeGroups) 
                             }
 
-                            $groupsInValidPolicy = $validPolicies.conditions.users.includeGroups
-                            Write-Host "The groups in the policies are $($validPolicies.displayName -join ", ")"
-
                             if ($validPolicies.count -ne 0) {
-                                if ($groupsInValidPolicy.Count -eq $groups.Count ){
-                                    # Condition: total group count in the tenant and in the CAP policy should match
-                                    $IsCompliant = $true
-                                    $Comments = $msgTable.isCompliant  
-                                } else{
-                                    # group count doesn't match 
-                                    $IsCompliant = $false
-                                    $Comments += " " + "All groups must be assigned to CAP"
-                                }
+                                $IsCompliant = $true
+                                $Comments = $msgTable.isCompliant
                             }
                             else {
                                 # Fail. No policy meets the requirements
                                 $IsCompliant = $false
-                                $Comments = $msgTable.noCAPforAllGroups
+                                $Comments = $msgTable.noCAPforAnyGroups
                             }
                         }
                     }
