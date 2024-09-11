@@ -30,29 +30,29 @@ function Get-AdminAccess {
         $IsCompliant = $false
     }
 
-    # Administrative users roles to be checked
-    $adminUserIds = @('owner', 'contributor', 'administrator')
+    # Administrative users roles to be checked -> App Admin, Global Admin, Security Admin, User Admin
+    $adminUserIds = @('9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3', '62e90394-69f5-4237-9190-012177145e10', '194ae4cb-b126-40b2-bd5b-6091b380977d', 'fe930be7-5e62-47db-91af-98c3a49a38b1')
 
-    # Check for device-based policies with admin users
+    # Check for device-based policies with admin users that include target resources
     $devicePolicies = $caps | Where-Object { 
-        $null -ne $_.conditions.devices.includeDeviceStates -and 
-        $_.state -eq 'enabled' -and
-        ($_.assignments.includeUsers -contains $adminUserIds)
+        $null -ne $_.conditions.devices.deviceFilter -and 
+        $null -ne $_.conditions.applications.includeApplications -and
+        ($adminUserIds -contains $_.conditions.users.includeRoles)
     }
     if (-not $devicePolicies) {
         $IsCompliant = $false
-        #$Comments = $msgTable.noDeviceFilterPolicies
+        $Comments = $msgTable.noDeviceFilterPolicies
     }
 
     # Check for location-based policies with admin users
     $locationPolicies = $caps | Where-Object { 
         $null -ne $_.conditions.locations.includeLocations -and 
         $_.state -eq 'enabled' -and
-        ($_.assignments.includeUsers -contains $adminUserIds)
+        ($adminUserIds -contains $_.conditions.users.includeRoles)
     }
     if (-not $locationPolicies) {
         $IsCompliant = $false
-        #$Comments += " " + $msgTable.noLocationFilterPolicies
+        $Comments += " " + $msgTable.noLocationFilterPolicies
     }
     
     $PsObject = [PSCustomObject]@{
