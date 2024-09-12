@@ -116,5 +116,9 @@ PrivateData = @{
 } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
-# HelpInfoUri = ''
+# HelpInfoURI = ''
 
+# Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
+# DefaultCommandPrefix = ''
+
+}
