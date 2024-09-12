@@ -143,12 +143,12 @@ function Check-UserGroups {
                         # Condition: at least one CAP refer to at least one user group
                         if ($validPolicies.count -ne 0) {
                             $IsCompliant = $true
-                            $Comments = $msgTable.isCompliant
+                            $commentsArray = $msgTable.isCompliant + " " +  $commentsArray + " " + $msgTable.reqPolicyUserGroupExists
                         }
                         else {
                             # Fail. No policy meets the requirements
                             $IsCompliant = $false
-                            $Comments = $msgTable.noCAPforAnyGroups
+                            $commentsArray = $msgTable.isNotCompliant + " " +  $commentsArray  + " " +$msgTable.noCAPforAnyGroups
                         }
                     }
                 }

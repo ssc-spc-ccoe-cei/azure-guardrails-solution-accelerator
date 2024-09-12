@@ -70,6 +70,7 @@ noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référe
 userCountOne = There is one user in the tenant.
 userCountMany = There are more than one user in the tenant.
 userGroupsMany = There should be at least 2 different user groups in the tenant.
+reqPolicyUserGroupExists = At least one conditional access policy refer to at least one user group.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

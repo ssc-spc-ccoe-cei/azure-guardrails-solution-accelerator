@@ -71,6 +71,7 @@ noCAPforAnyGroups = None of the conditional access policies refer to one of your
 userCountOne = There is one user in the tenant.
 userCountMany = There are more than one user in the tenant.
 userGroupsMany = There should be at least 2 different user groups in the tenant.
+reqPolicyUserGroupExists = At least one conditional access policy refer to at least one user group.
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
