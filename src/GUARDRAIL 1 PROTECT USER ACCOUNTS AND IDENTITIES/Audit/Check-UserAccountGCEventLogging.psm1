@@ -1,3 +1,12 @@
+function get-AADDiagnosticSettings {
+    $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
+    $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
+    if ($response.StatusCode -eq 200) {
+        return ($response.Content | ConvertFrom-Json).value
+    }
+    throw "Failed to retrieve diagnostic settings. Status code: $($response.StatusCode)"
+}
+
 function Check-UserAccountGCEventLogging {
     [CmdletBinding()]
     param (
@@ -32,6 +41,20 @@ function Check-UserAccountGCEventLogging {
     $resourceGroupName = $lawParts[4]
     $lawName = $lawParts[-1]
 
+    try{
+        Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
+    }
+    catch {
+        $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+            ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+            error message: $_")
+        #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+        #    error message: $_"
+        throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
+            you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
+    }
+
+
     try {
         # Get the Log Analytics Workspace
         $law = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $lawName -ErrorAction Stop
@@ -51,11 +74,11 @@ function Check-UserAccountGCEventLogging {
             'ServicePrincipalRiskEvents', 'EnrichedOffice365AuditLogs', 'MicrosoftGraphActivityLogs',
             'RemoteNetworkHealthLogs'
         )
-        $diagnosticSettings = Get-AzDiagnosticSetting -ResourceId $LAWResourceId
+        $diagnosticSettings = Get-AADDiagnosticSettings
 
         $missingLogs = @()
         foreach ($log in $requiredLogs) {
-            $logEnabled = $diagnosticSettings.Logs | Where-Object {$_.Category -eq $log -and $_.Enabled -eq $true}
+            $logEnabled = $diagnosticSettings.properties.logs | Where-Object {$_.category -eq $log -and $_.enabled -eq $true}
             if (-not $logEnabled) {
                 $missingLogs += $log
             }
@@ -76,9 +99,13 @@ function Check-UserAccountGCEventLogging {
         }
 
     }
-    catch {
+    catch [Microsoft.Azure.Commands.OperationalInsights.Models.PSResourceNotFoundException] {
         $IsCompliant = $false
         $Comments += $msgTable.lawNotFound
+        $ErrorList += "Log Analytics Workspace not found: $_"
+    }
+    catch {
+        $IsCompliant = $false
         $ErrorList += "Error accessing Log Analytics Workspace: $_"
     }
 
