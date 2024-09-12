@@ -65,6 +65,31 @@
     ]
   },
   {
+    "ModuleName": "Check-UserAccountGCEventLogging",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-UserAccountGCEventLogging -LAWResourceId $vars.LAWResourceId -RequiredRetentionDays $vars.RequiredRetentionDays -ControlName $msgTable.CtrName1 -ItemName $msgTable.gcEventLogging -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
+      },
+      {
+        "Name": "RequiredRetentionDays",
+        "Value": "securityRetentionDays"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(7)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DeprecatedAccounts",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",

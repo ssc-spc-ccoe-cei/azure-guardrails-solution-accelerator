@@ -14,7 +14,12 @@ function Check-UserAccountGCEventLogging {
         [Parameter(Mandatory=$true)]
         [hashtable]$msgTable,
         [Parameter(Mandatory=$true)]
-        [string]$ReportTime
+        [string]$ReportTime,
+        [string] 
+        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $ModuleProfiles,  # Passed as a string
+        [switch] 
+        $EnableMultiCloudProfiles # New feature flag, default to false
     )
 
     $IsCompliant = $true
@@ -77,6 +82,18 @@ function Check-UserAccountGCEventLogging {
         ItemName = $ItemName
         ReportTime = $ReportTime
         itsgcode = $itsgcode
+    }
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($EnableMultiCloudProfiles) {
+        $profileResult = Get-EvaluationProfile -SubscriptionId $subscriptionId -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($profileResult -eq 0) {
+            Write-Output "No matching profile found"
+            $result.ComplianceStatus = "Not Applicable"
+        } else {
+            Write-Output "Valid profile returned: $profileResult"
+            $result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $profileResult
+        }
     }
 
     $moduleOutput = [PSCustomObject]@{
