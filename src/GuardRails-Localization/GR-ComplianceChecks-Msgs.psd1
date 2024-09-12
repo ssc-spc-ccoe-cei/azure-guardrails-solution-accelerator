@@ -73,8 +73,10 @@ noLocationsCompliant=No locations have only Canada in them.
 authorizedProcessedByCSO = Authorized Access
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
 noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
-noDeviceFilterPolicies = No compliant policies found. At least one policy needs to have device filters enabled with target resources, admin roles included and enabled
-noLocationFilterPolicies = No compliant policies found. At least one policy needs to check for named/trusted locations with admin roles included and enabled
+noDeviceFilterPolicies = No compliant policies found. At least one policy needs to have device filters enabled with target resources, admin roles included and enabled.
+noLocationFilterPolicies = No compliant policies found. At least one policy needs to check for named/trusted locations with admin roles included and enabled.
+hasDeviceFilterPolicies = Found at least one compliant policy for device filter and target resource. 
+hasLocationFilterPolicies = Found at least one compliant policy for named/trusted locations.
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation

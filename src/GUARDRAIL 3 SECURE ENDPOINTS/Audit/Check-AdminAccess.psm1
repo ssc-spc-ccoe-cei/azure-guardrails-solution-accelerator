@@ -15,7 +15,7 @@ function Get-AdminAccess {
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false  
     )
 
-    $IsCompliant = $true
+    $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     
     # Get conditional access policies
@@ -40,10 +40,6 @@ function Get-AdminAccess {
         $_.state -eq 'enabled' -and
         ($adminUserIds -contains $_.conditions.users.includeRoles)
     }
-    if (-not $devicePolicies) {
-        $IsCompliant = $false
-        $Comments = $msgTable.noDeviceFilterPolicies
-    }
 
     # Check for location-based policies with admin users
     $locationPolicies = $caps | Where-Object { 
@@ -51,9 +47,15 @@ function Get-AdminAccess {
         $_.state -eq 'enabled' -and
         ($adminUserIds -contains $_.conditions.users.includeRoles)
     }
-    if (-not $locationPolicies) {
-        $IsCompliant = $false
-        $Comments += " " + $msgTable.noLocationFilterPolicies
+
+    if ($locationPolicies.Count -gt 0 -and $devicePolicies.Count -gt 0) {
+        $Comments = $msgTable.hasDeviceFilterPolicies
+        $Comments += " " + $msgTable.hasLocationFilterPolicies
+        $IsCompliant = $true
+    }
+    else {
+        $Comments = $msgTable.noDeviceFilterPolicies
+        $Comments = " " + $msgTable.noLocationFilterPolicies
     }
     
     $PsObject = [PSCustomObject]@{
