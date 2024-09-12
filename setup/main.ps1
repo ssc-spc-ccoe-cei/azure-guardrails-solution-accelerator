@@ -237,7 +237,7 @@ foreach ($module in $modules) {
             #Write-Output "required in results: $($results.Required)."
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
             if ($null -ne $results.Errors) {
-                "Module $($module.modulename) failed with $($results.Errors.count) errors."
+                "Module $($module.modulename) failed with $($results.Errors.count) errors. $($results.Errors)"
                 New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
             }
             if ($null -ne $results.AdditionalResults) {
