@@ -44,16 +44,27 @@ function Check-UserAccountGCEventLogging {
         }
 
         # Check if required logs are enabled
-        $requiredLogs = @('AuditLogs', 'SignInLogs', 'MicrosoftGraphActivityLogs')
+        $requiredLogs = @(
+            'AuditLogs', 'SignInLogs', 'NonInteractiveUserSignInLogs', 'ServicePrincipalSignInLogs',
+            'ManagedIdentitySignInLogs', 'ProvisioningLogs', 'ADFSSignInLogs', 'RiskyUsers',
+            'UserRiskEvents', 'NetworkAccessTrafficLogs', 'RiskyServicePrincipals',
+            'ServicePrincipalRiskEvents', 'EnrichedOffice365AuditLogs', 'MicrosoftGraphActivityLogs',
+            'RemoteNetworkHealthLogs'
+        )
         $diagnosticSettings = Get-AzDiagnosticSetting -ResourceId $LAWResourceId
 
+        $missingLogs = @()
         foreach ($log in $requiredLogs) {
             $logEnabled = $diagnosticSettings.Logs | Where-Object {$_.Category -eq $log -and $_.Enabled -eq $true}
             if (-not $logEnabled) {
-                $IsCompliant = $false
-                $Comments += $msgTable.logsNotCollected
-                $ErrorList += "Required log '$log' is not enabled"
+                $missingLogs += $log
             }
+        }
+
+        if ($missingLogs.Count -gt 0) {
+            $IsCompliant = $false
+            $Comments += $msgTable.logsNotCollected
+            $ErrorList += "Required logs not enabled: $($missingLogs -join ', ')"
         }
 
         # Check if Read-only lock is in place
@@ -72,7 +83,11 @@ function Check-UserAccountGCEventLogging {
     }
 
     if ($IsCompliant) {
-        $Comments = $msgTable.compliantComment
+        $Comments = if ($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent) {
+            $msgTable.compliantCommentVerbose
+        } else {
+            $msgTable.compliantComment
+        }
     }
 
     $result = [PSCustomObject]@{
@@ -103,5 +118,3 @@ function Check-UserAccountGCEventLogging {
 
     return $moduleOutput
 }
-
-Export-ModuleMember -Function Check-UserAccountGCEventLogging
