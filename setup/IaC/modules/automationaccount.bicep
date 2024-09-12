@@ -316,6 +316,15 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
+  resource module30 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AdminAccess.zip'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
