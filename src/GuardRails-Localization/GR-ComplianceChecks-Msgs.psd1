@@ -34,6 +34,11 @@ allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
 
+retentionNotMet = The LAW {0} does not meet data retention requirements
+noReadOnlyLock = No Read-only lock found on the Log Analytics Workspace.
+nonCompliantLaw = The LAW {0} does not match the config.json file.
+logsNotCollected = Not all of the required logs are being collected.
+gcEventLogging = User Account GC Event Logging Check (M)
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
