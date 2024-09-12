@@ -317,7 +317,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
   resource module30 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-AdminAccess.zip'
+    name: 'Check-AdminAccess'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
