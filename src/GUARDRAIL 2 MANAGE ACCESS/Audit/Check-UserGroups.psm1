@@ -10,10 +10,6 @@ function Check-UserGroups {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
-        [Parameter(Mandatory=$true)]
-        [string] $FirstBreakGlassUPN,
-        [Parameter(Mandatory=$true)] 
-        [string] $SecondBreakGlassUPN,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
@@ -25,7 +21,6 @@ function Check-UserGroups {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
-    # Find how many users there are in the environment
     # list all users in the tenant
     $urlPath = "/users"
     try {
@@ -45,39 +40,12 @@ function Check-UserGroups {
         Write-Error "Error: $errorMsg"
     }
     Write-Host "DEBUG: users count is $($users.Count)"
-
-    # ## *************************##
-    # ## ****** Member user ******##
-    # ## *************************##
-    # $memberUsers = $users | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
-
-    # # Get member users UPNs
-    # $memberUserList = $memberUsers | Select-Object userPrincipalName, mail
-    # # Exclude the breakglass account UPNs from the list
-    # if ($memberUserList.userPrincipalName -contains $FirstBreakGlassUPN){
-    #     $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $FirstBreakGlassUPN }
-    # }
-    # if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
-    #     $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
-
-    # }
-    # Write-Host "DEBUG: memberUserList with BG accounts count is $($memberUsers.Count)"
-
-    # Write-Host "DEBUG: memberUserList without BG accounts count is $($memberUserList.Count)"
-
     
-    # ## ***************************##
-    # ## ****** External user ******##
-    # ## ***************************##
-    # $extUsers = $users | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-    # Write-Output "DEBUG: extUsers count is $($extUsers.Count)"
-    # Write-Output "DEBUG: extUsers UPNs are $($extUsers.userPrincipalName)"
-
-
-    
+    # Find total user count in the environment
     $allUserCount = $users.Count
     Write-Output "DEBUG: userCount is $allUserCount"
-    # Find how many user groups there are in the environment
+
+    # List of all user groups in the environment
     $urlPath = "/groups"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
@@ -95,12 +63,9 @@ function Check-UserGroups {
         $ErrorList.Add($errorMsg)
         Write-Error "Error: $errorMsg"
     }
-
+    # Find total user groups count are in the environment
     $userGroupCount = $groups.Count
     Write-Output "DEBUG: number of user groups in the tenant are $userGroupCount"
-    Write-Output "DEBUG: the user groups in the tenant are $($groups.displayName)"
-    Write-Output "DEBUG: ***************************************************************"
-
 
     # Find members in each group
     $groupMemberList = @()
@@ -135,70 +100,68 @@ function Check-UserGroups {
         catch {
             $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
             $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"
+            Write-Error "Error: $errorMsg" 
         }
     }
-    # Find unique users from all user groups
-    # Get unique users based on userPrincipalName
+    # Find unique users from all user groups by unique userPrincipalName
     $uniqueUsers = $groupMemberList | Sort-Object userPrincipalName -Unique
     
     # Condition: if only 1 user in the tenant
     if($allUserCount -le 1) {
-        $commentsArray = "Compliant. There is only one user in the tenant."
+        $commentsArray = $msgTable.isCompliant + " " + $msgTable.userCountOne    
         $IsCompliant = $true
     }
     else{
         # Condition: if more than 1 user in the tenant
-        $commentsArray += " " + "There are more than one user in the tenant"
+        $commentsArray = $msgTable.userCountMany   
         if($userGroupCount -lt 2){
             # Condition: There is less than 2 user group in the tenant
             $IsCompliant = $false
-            $commentsArray += " " + "There should be at least 2 user group in the tenant"
-        } else {
-                # Contdition: User group >= 2
-                # Condition: no. of all users == no. of unique users in all groups
-                if( $uniqueUsers.Count -eq $allUserCount){
-                    # Condition: CAP
-                    # get conditional access policies
-                    $CABaseAPIUrl = '/identity/conditionalAccess/policies'
-                    try {
-                        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
-                        # portal
-                        $data = $response.Content
-                        # # localExecution
-                        # $data = $response
-                        if ($null -ne $data -and $null -ne $data.value) {
-                            $caps = $data.value
-                            # Check for a conditional access policy which meets the requirements:
-                            # 1. includedGroups = not null
-                            # 2. excludeGroups = null
-                            $validPolicies = $caps | Where-Object {
-                                $_.state -eq 'enabled' -and
-                                $null -ne $_.conditions.users.includeGroups -and
-                                [string]::IsNullOrEmpty($_.conditions.users.excludeGroups) 
-                            }
-
-                            if ($validPolicies.count -ne 0) {
-                                $IsCompliant = $true
-                                $Comments = $msgTable.isCompliant
-                            }
-                            else {
-                                # Fail. No policy meets the requirements
-                                $IsCompliant = $false
-                                $Comments = $msgTable.noCAPforAnyGroups
-                            }
+            $commentsArray = $msgTable.isNotCompliant + " " +  $commentsArray  + " " + $msgTable.userGroupsMany
+        } 
+        else {
+            # User groups >= 2
+            # Condition: all users count == unique users in all groups count
+            if( $uniqueUsers.Count -eq $allUserCount){
+                # get conditional access policies
+                $CABaseAPIUrl = '/identity/conditionalAccess/policies'
+                try {
+                    $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+                    # portal
+                    $data = $response.Content
+                    # # localExecution
+                    # $data = $response
+                    if ($null -ne $data -and $null -ne $data.value) {
+                        $caps = $data.value
+                        # Check for a conditional access policy which meets the requirements:
+                        # 1. state = 'enabled'
+                        # 2. includedGroups = not null
+                        $validPolicies = $caps | Where-Object {
+                            $_.state -eq 'enabled' -and
+                            $null -ne $_.conditions.users.includeGroups
+                        }
+                        # Condition: at least one CAP refer to at least one user group
+                        if ($validPolicies.count -ne 0) {
+                            $IsCompliant = $true
+                            $Comments = $msgTable.isCompliant
+                        }
+                        else {
+                            # Fail. No policy meets the requirements
+                            $IsCompliant = $false
+                            $Comments = $msgTable.noCAPforAnyGroups
                         }
                     }
-                    catch {
-                        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
-                        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
-                    }
-
-                } else {
-                    $IsCompliant = $false
-                    $commentsArray += " " + $msgTable.userCountGroupNoMatch
                 }
+                catch {
+                    $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
+                    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
+                }
+
+            } else {
+                $IsCompliant = $false
+                $commentsArray += " " + $msgTable.userCountGroupNoMatch
             }
+        }
         
     }
 
