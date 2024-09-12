@@ -140,7 +140,7 @@ function Check-UserGroups {
                             $_.state -eq 'enabled' -and
                             $null -ne $_.conditions.users.includeGroups
                         }
-                        # Condition: at least one CAP refer to at least one user group
+                        # Condition: at least one CAP refers to at least one user group
                         if ($validPolicies.count -ne 0) {
                             $IsCompliant = $true
                             $commentsArray = $msgTable.isCompliant + " " +  $commentsArray + " " + $msgTable.reqPolicyUserGroupExists
