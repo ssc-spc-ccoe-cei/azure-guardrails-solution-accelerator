@@ -27,7 +27,6 @@ function Get-AdminAccess {
     catch {
         $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
-        $IsCompliant = $false
     }
 
     # Administrative users roles to be checked -> App Admin, Global Admin, Security Admin, User Admin
@@ -49,13 +48,17 @@ function Get-AdminAccess {
     }
 
     if ($locationPolicies.Count -gt 0 -and $devicePolicies.Count -gt 0) {
-        $Comments = $msgTable.hasDeviceFilterPolicies
-        $Comments += " " + $msgTable.hasLocationFilterPolicies
+        $Comments = $msgTable.hasRequiredPolicies
         $IsCompliant = $true
     }
-    else {
+    elseif ($locationPolicies.Count -eq 0) {
+        $Comments = $msgTable.noLocationFilterPolicies
+    }
+    elseif ($devicePolicies.Count -eq 0){
         $Comments = $msgTable.noDeviceFilterPolicies
-        $Comments = " " + $msgTable.noLocationFilterPolicies
+    }
+    else {
+        $Comments = $msgTable.noCompliantPoliciesAdmin
     }
     
     $PsObject = [PSCustomObject]@{
