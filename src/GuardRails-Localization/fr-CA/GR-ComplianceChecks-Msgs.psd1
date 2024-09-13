@@ -67,8 +67,7 @@ guestHasPrivilegedRole = Ce compte d’utilisateur invité a un ou plusieurs rô
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
-adminAccessConditionalPolicy = Restrictions d’accès administrateur appliquées – gestion des appareils/emplacements 
-approuvés
+adminAccessConditionalPolicy = Restrictions d’accès administrateur appliquées – gestion des appareils/emplacements approuvés
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
 authorizedProcessedByCSO = Accès Autorisé
