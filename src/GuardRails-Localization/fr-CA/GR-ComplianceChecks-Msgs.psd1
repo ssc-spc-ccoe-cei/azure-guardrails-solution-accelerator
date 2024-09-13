@@ -35,10 +35,10 @@ allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authe
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
 
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
-noReadOnlyLock = Aucun verrou en lecture seule trouvé sur l'espace de travail Log Analytics.
 nonCompliantLaw = Le LAW {0} identifié ne correspond pas au fichier config.json.
 logsNotCollected = Tous les journaux requis ne sont pas collectés.
 gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur (M)
+gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
 
 
 # GuardRail #2

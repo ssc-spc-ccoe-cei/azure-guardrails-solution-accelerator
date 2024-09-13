@@ -63,7 +63,6 @@ function Check-UserAccountGCEventLogging {
         if ($law.RetentionInDays -lt $RequiredRetentionDays) {
             $IsCompliant = $false
             $Comments += $msgTable.retentionNotMet -f $lawName
-            $ErrorList += "Retention period is set to $($law.RetentionInDays) days, required: $RequiredRetentionDays days"
         }
 
         # Check if required logs are enabled
@@ -87,7 +86,6 @@ function Check-UserAccountGCEventLogging {
         if ($missingLogs.Count -gt 0) {
             $IsCompliant = $false
             $Comments += $msgTable.logsNotCollected
-            $ErrorList += "Required logs not enabled: $($missingLogs -join ', ')"
         }
 
         # Check if Read-only lock is in place
@@ -95,7 +93,6 @@ function Check-UserAccountGCEventLogging {
         if (-not $lock -or $lock.Properties.level -ne "ReadOnly") {
             $IsCompliant = $false
             $Comments += $msgTable.nonCompliantLaw -f $lawName
-            $ErrorList += "No Read-only lock found on the Log Analytics Workspace"
         }
 
     }
@@ -110,11 +107,7 @@ function Check-UserAccountGCEventLogging {
     }
 
     if ($IsCompliant) {
-        $Comments = if ($PSCmdlet.MyInvocation.BoundParameters["Verbose"].IsPresent) {
-            $msgTable.compliantCommentVerbose
-        } else {
-            $msgTable.compliantComment
-        }
+        $Comments = $msgTable.gcEventLoggingCompliantComment
     }
 
     $result = [PSCustomObject]@{
