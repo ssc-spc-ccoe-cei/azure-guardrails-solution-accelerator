@@ -73,19 +73,21 @@ function Check-UserAccountGCEventLogging {
             'ServicePrincipalRiskEvents', 'EnrichedOffice365AuditLogs', 'MicrosoftGraphActivityLogs',
             'RemoteNetworkHealthLogs'
         )
-        $diagnosticSettings = Get-AADDiagnosticSettings
+        $diagnosticSettings = get-AADDiagnosticSettings
 
         $missingLogs = @()
-        foreach ($log in $requiredLogs) {
-            $logEnabled = $diagnosticSettings.properties.logs | Where-Object {$_.category -eq $log -and $_.enabled -eq $true}
-            if (-not $logEnabled) {
-                $missingLogs += $log
-            }
+        $matchingSetting = $diagnosticSettings | Where-Object { $_.properties.workspaceId -eq $LAWResourceId } | Select-Object -First 1
+
+        if ($matchingSetting) {
+            $enabledLogs = $matchingSetting.properties.logs | Where-Object { $_.enabled -eq $true } | Select-Object -ExpandProperty category
+            $missingLogs = $requiredLogs | Where-Object { $_ -notin $enabledLogs }
+        } else {
+            $missingLogs = $requiredLogs
         }
 
         if ($missingLogs.Count -gt 0) {
             $IsCompliant = $false
-            $Comments += $msgTable.logsNotCollected
+            $Comments += $msgTable.logsNotCollected + " Missing logs: $($missingLogs -join ', ')"
         }
 
         # Check if Read-only lock is in place
