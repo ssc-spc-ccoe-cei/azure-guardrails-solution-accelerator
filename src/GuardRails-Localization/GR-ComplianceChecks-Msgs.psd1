@@ -66,12 +66,17 @@ guestHasPrivilegedRole = This Guest user account has one or more privileged role
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
+adminAccessConditionalPolicy = Administrator Access Restrictions Applied – device management/trusted locations
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
 authorizedProcessedByCSO = Authorized Access
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
 noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
+noDeviceFilterPolicies = Missing a required conditional access policy. At least one policy needs to have device filters enabled with target resources, administrator roles included and enabled.
+noLocationFilterPolicies = Missing a required conditional access policy. At least one policy needs to check for named/trusted locations with administrator roles included and enabled.
+hasRequiredPolicies = Required conditional access policies for administrator access exist. 
+noCompliantPoliciesAdmin = No compliant policies found for device filters and named/trusted locations. Please ensure that there is at least one policy of each. One for device filters with a target resource and another for named/trusted locations.
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
