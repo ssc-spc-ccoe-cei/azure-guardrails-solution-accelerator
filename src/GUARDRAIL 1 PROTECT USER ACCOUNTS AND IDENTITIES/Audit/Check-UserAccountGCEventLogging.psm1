@@ -62,7 +62,7 @@ function Check-UserAccountGCEventLogging {
         # Check retention period
         if ($law.RetentionInDays -lt $RequiredRetentionDays) {
             $IsCompliant = $false
-            $Comments += $msgTable.retentionNotMet
+            $Comments += $msgTable.retentionNotMet -f $lawName
             $ErrorList += "Retention period is set to $($law.RetentionInDays) days, required: $RequiredRetentionDays days"
         }
 
@@ -94,14 +94,14 @@ function Check-UserAccountGCEventLogging {
         $lock = Get-AzResourceLock -ResourceGroupName $resourceGroupName -ResourceName $lawName -ResourceType "Microsoft.OperationalInsights/workspaces"
         if (-not $lock -or $lock.Properties.level -ne "ReadOnly") {
             $IsCompliant = $false
-            $Comments += $msgTable.noReadOnlyLock
+            $Comments += $msgTable.nonCompliantLaw -f $lawName
             $ErrorList += "No Read-only lock found on the Log Analytics Workspace"
         }
 
     }
     catch [Microsoft.Azure.Commands.OperationalInsights.Models.PSResourceNotFoundException] {
         $IsCompliant = $false
-        $Comments += $msgTable.lawNotFound
+        $Comments += $msgTable.nonCompliantLaw -f $lawName
         $ErrorList += "Log Analytics Workspace not found: $_"
     }
     catch {
