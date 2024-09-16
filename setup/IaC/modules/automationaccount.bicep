@@ -325,7 +325,17 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource variable1 'variables' = if (newDeployment || updateCoreResources) {
+  resource module31 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-UserAccountGCEventLogging'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-UserAccountGCEventLogging.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
