@@ -39,11 +39,11 @@ function Check-UserGroups {
         $ErrorList.Add($errorMsg)
         Write-Error "Error: $errorMsg"
     }
-    Write-Host "DEBUG: users count is $($users.Count)"
+    Write-Host "users count is $($users.Count)"
     
     # Find total user count in the environment
     $allUserCount = $users.Count
-    Write-Output "DEBUG: userCount is $allUserCount"
+    Write-Output "userCount is $allUserCount"
 
     # List of all user groups in the environment
     $urlPath = "/groups"
@@ -65,7 +65,7 @@ function Check-UserGroups {
     }
     # Find total user groups count are in the environment
     $userGroupCount = $groups.Count
-    Write-Output "DEBUG: number of user groups in the tenant are $userGroupCount"
+    Write-Output "number of user groups in the tenant are $userGroupCount"
 
     # Find members in each group
     $groupMemberList = @()
