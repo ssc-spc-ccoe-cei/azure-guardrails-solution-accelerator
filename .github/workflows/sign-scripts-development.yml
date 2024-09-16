@@ -10,6 +10,7 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/GR2V1_user_groups
 
 concurrency:
   group: Deploy-Azure-CAC-Test
