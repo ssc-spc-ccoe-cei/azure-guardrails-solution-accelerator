@@ -207,6 +207,21 @@
       }
     ]
   },
+	{
+    "ModuleName": "Check-AdminAccess",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Get-AdminAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.adminAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+  },
   {
     "ModuleName": "Check-MFARequired",
     "Control": "Guardrails3",
