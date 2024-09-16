@@ -317,6 +317,15 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
   resource module30 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AdminAccess'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module32 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserGroups'
     properties: {
       contentLink: {
