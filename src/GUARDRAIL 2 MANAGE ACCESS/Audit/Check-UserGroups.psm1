@@ -113,7 +113,6 @@ function Check-UserGroups {
     }
     else{
         # Condition: if more than 1 user in the tenant
-        $commentsArray = $msgTable.userCountMany   
         if($userGroupCount -lt 2){
             # Condition: There is less than 2 user group in the tenant
             $IsCompliant = $false
