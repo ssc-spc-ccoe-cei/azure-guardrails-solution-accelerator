@@ -335,6 +335,17 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
+  resource module32 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-OnlineAttackCountermeasures'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+
 resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
