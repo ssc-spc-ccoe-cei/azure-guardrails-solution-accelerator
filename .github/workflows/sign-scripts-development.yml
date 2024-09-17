@@ -248,6 +248,8 @@ jobs:
                 Pop-Location
               }
           azPSVersion: "latest"
+          timeoutInMinutes: 20 
+
         env:
           TESTTENANT_DOMAIN: ${{ vars.TESTTENANT_DOMAIN }}
           TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
@@ -365,6 +367,7 @@ jobs:
                 Pop-Location
               }
           azPSVersion: "latest"
+          timeoutInMinutes: 20
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
@@ -438,4 +441,7 @@ jobs:
           azPSVersion: "latest"
         env:
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+
+
+
 
