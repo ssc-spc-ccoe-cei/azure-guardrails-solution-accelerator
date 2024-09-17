@@ -23,6 +23,7 @@ function Check-OnlineAttackCountermeasures {
     try {
         $authenticationMethodsPolicy = Invoke-GraphQuery -urlPath "/policies/authenticationMethodsPolicy" -ErrorAction Stop
         $lockoutThreshold = $authenticationMethodsPolicy.Content.lockoutThreshold
+        Write-Output "Lockout Threshold: $lockoutThreshold"
 
         if ($lockoutThreshold -gt 10) {
             $IsCompliant = $false
@@ -38,6 +39,8 @@ function Check-OnlineAttackCountermeasures {
     try {
         $bannedPasswordList = Invoke-GraphQuery -urlPath "/policies/authenticationMethodsPolicy/authenticationMethodConfigurations/passwordConfiguration" -ErrorAction Stop
         $bannedPasswords = $bannedPasswordList.Content.bannedPasswords
+        Write-Output "Banned Passwords: $bannedPasswords"
+        Write-Output "Banned Password List: $bannedPasswordList"
 
         if ($null -eq $bannedPasswords -or $bannedPasswords.Count -eq 0) {
             $IsCompliant = $false
