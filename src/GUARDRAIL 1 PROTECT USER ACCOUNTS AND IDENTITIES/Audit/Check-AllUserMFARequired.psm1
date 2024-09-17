@@ -44,13 +44,14 @@ function Check-AllUserMFARequired {
         Write-Error "Error: $errorMsg"
     }
 
+    # Check all users for MFA
+    $allUserUPNs = $users.userPrincipalName
+    Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
+
     ## *************************##
     ## ****** Member user ******##
     ## *************************##
     $memberUsers = $users | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
-
-    # Check all users for MFA
-    $allUserUPNs = $users.userPrincipalName
 
     # Get member users UPNs
     $memberUserList = $memberUsers | Select-Object userPrincipalName, mail
@@ -60,30 +61,51 @@ function Check-AllUserMFARequired {
     }
     if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
         $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
+    }
+    Write-Host "memberUserList count is $($memberUserList.Count)"
 
+    if(!$null -eq $memberUserList){
+        $result = Get-AllUserAuthInformation -allUserList $memberUserList
+        $memberUserUPNsBadMFA = $result.userUPNsBadMFA
+        if( !$null -eq $result.ErrorList){
+            $ErrorList =  $ErrorList.Add($result.ErrorList)
+        }
+        $userValidMFACounter = $result.userValidMFACounter
     }
-    $result = Get-AllUserAuthInformation -allUserList $memberUserList
-    $memberUserUPNsBadMFA = $result.userUPNsBadMFA
-    if( !$null -eq $result.ErrorList){
-        $ErrorList =  $ErrorList.Add($result.ErrorList)
-    }
-    $userValidMFACounter = $result.userValidMFACounter
+    Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
+
 
     ## ***************************##
     ## ****** External user ******##
     ## ***************************##
     $extUsers = $users | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-
-    # Get external users UPNs and emails
-    $extUserList = $extUsers | Select-Object userPrincipalName, mail
-    $result2 = Get-AllUserAuthInformation -allUserList $extUserList
-    $extUserUPNsBadMFA = $result2.userUPNsBadMFA
-    if( !$null -eq $result2.ErrorList){
-        $ErrorList =  $ErrorList.Add($result2.ErrorList)
+    Write-Output "extUsers count is $($extUsers.Count)"
+    Write-Output "extUsers UPNs are $($extUsers.userPrincipalName)"
+    if(!$null -eq $extUsers){
+        # Get external users UPNs and emails
+        $extUserList = $extUsers | Select-Object userPrincipalName, mail
+        $result2 = Get-AllUserAuthInformation -allUserList $extUserList
+        $extUserUPNsBadMFA = $result2.userUPNsBadMFA
+        if( !$null -eq $result2.ErrorList){
+            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+        }
+        # combined list
+        $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
     }
-    # combined list
-    $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
-    $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
+    
+    Write-Output "accounts auth method check done"
+    Write-Host "userValidMFACounter count is $userValidMFACounter"
+    
+    if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
+        $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
+    }elseif($null -eq $extUserUPNsBadMFA -or $extUserUPNsBadMFA.Count -eq 0){
+        $userUPNsBadMFA =  $memberUserUPNsBadMFA 
+    }elseif($null -eq $memberUserUPNsBadMFA -or $memberUserUPNsBadMFA.Count -eq 0){
+        $userUPNsBadMFA =  $extUserUPNsBadMFA
+    }
+    Write-Output "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+    Write-Output "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
+       
 
     # Condition: all users are MFA enabled
     if($userValidMFACounter -eq $allUserUPNs.Count) {
@@ -125,7 +147,6 @@ function Check-AllUserMFARequired {
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         }
     }
-
     
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $PsObject

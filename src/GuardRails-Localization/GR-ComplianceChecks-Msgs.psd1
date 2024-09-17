@@ -69,9 +69,17 @@ existingPrivilegedGuestAccounts = Privileged Guest User Accounts
 existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
 guestHasPrivilegedRole = This Guest user account has one or more privileged roles
 
+
+accManagementUserGroupsCheck = Account Management: User Groups
+userCountGroupNoMatch = Not all users have been assigned to a privileged or non-privileged user group.
+noCAPforAnyGroups = None of the conditional access policies refer to one of your user groups (privileged or non-privileged).
+userCountOne = There is only one user in the environment. User groups are not required. 
+userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
+reqPolicyUserGroupExists = Compliant. All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
-adminAccessConditionalPolicy = Administrator Access Restrictions Applied – device management/trusted locations
+adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.

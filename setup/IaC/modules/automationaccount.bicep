@@ -213,7 +213,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.9'
+        version: '1.4.10'
       }
     }
   }
@@ -335,6 +335,15 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
+  resource module32 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-UserGroups'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-UserGroups.zip'
+        version: '1.0.0'
+      }
+    }
+  }
 resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
