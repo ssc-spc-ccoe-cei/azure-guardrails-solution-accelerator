@@ -105,6 +105,21 @@
     ]
   },
   {
+    "ModuleName": "Check-OnlineAttackCountermeasures",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-OnlineAttackCountermeasures -ControlName $msgTable.CtrName2 -ItemName $msgTable.onlineAttackCountermeasures -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-ExternalUsers",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
