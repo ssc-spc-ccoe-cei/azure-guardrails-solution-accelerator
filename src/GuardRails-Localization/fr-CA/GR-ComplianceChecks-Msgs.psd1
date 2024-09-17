@@ -75,7 +75,7 @@ userCountGroupNoMatch = Tous les utilisateurs n'ont pas été assignés à un gr
 noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référence à l'un de vos groupes d'utilisateurs (privilégiés ou non privilégiés).
 userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des groupes d'utilisateurs ne sont pas nécessaires.
 userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
-reqPolicyUserGroupExists = Conforme. Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d’utilisateurs pour le contrôle d’accès.
+reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d’utilisateurs pour le contrôle d’accès.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

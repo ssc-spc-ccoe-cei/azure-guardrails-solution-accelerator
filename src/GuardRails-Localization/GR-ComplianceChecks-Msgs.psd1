@@ -75,7 +75,7 @@ userCountGroupNoMatch = Not all users have been assigned to a privileged or non-
 noCAPforAnyGroups = None of the conditional access policies refer to one of your user groups (privileged or non-privileged).
 userCountOne = There is only one user in the environment. User groups are not required. 
 userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
-reqPolicyUserGroupExists = Compliant. All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
+reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
