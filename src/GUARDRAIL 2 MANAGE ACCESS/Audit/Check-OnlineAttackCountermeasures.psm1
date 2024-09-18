@@ -23,6 +23,7 @@ function Check-OnlineAttackCountermeasures {
     try {
         $authenticationMethodsPolicy = Invoke-GraphQuery -urlPath "/policies/authenticationMethodsPolicy" -ErrorAction Stop
         $lockoutThreshold = $authenticationMethodsPolicy.Content.lockoutThreshold
+        Write-Output "Authentication Methods Policy: $authenticationMethodsPolicy"
         Write-Output "Lockout Threshold: $lockoutThreshold"
 
         if ($lockoutThreshold -gt 10) {
