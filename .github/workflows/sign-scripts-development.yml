@@ -10,6 +10,8 @@ on:
       - 'docs/**'
     branches:
       - main
+      - idutta/GR8V1_design_doc
+
 
 concurrency:
   group: Deploy-Azure-CAC-Test
