@@ -23,41 +23,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install AzureSignTool
-        run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
-
-      - name: AZ Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.ENT_AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.ENT_AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.ENT_AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: true 
-
-      - name: Azure token
-        run: |
-          $az_token=$(az account get-access-token --scope https://vault.azure.net/.default --query accessToken --output tsv)
-          echo "::add-mask::$az_token"
-          echo "AZ_TOKEN=$az_token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Sign pwsh scripts and modules
-        shell: powershell
-        run: |
-          $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
-          $vaultName = $env:VAULTNAME
-
-          foreach ($script in $scripts) {
-              try {
-                    azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
-              }
-              catch {
-                  Write-Error $_
-              }
-          }
-        env:
-          CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
-          VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
-
       - name: Validate Signature
         shell: powershell
         run: |
@@ -103,7 +68,8 @@ jobs:
           $releaseName = $env:GITHUB_REF -replace 'refs/tags/', ''
           mkdir release_assets
           tar -czvf release_assets/azure-cac-solution-$releaseName.tar.gz --exclude='release_assets' --exclude='.git' --exclude='.github' .
-          zip -r release_assets/azure-cac-solution-$releaseName.zip . -x "release_assets/*" -x ".git/*" -x ".github/*"
+          $excludedItems = @('release_assets', '.git', '.github')
+          Get-ChildItem -Path . -Exclude $excludedItems | Compress-Archive -DestinationPath release_assets/azure-cac-solution-$releaseName.zip
           echo "RELEASE_NAME=$releaseName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Create Release
