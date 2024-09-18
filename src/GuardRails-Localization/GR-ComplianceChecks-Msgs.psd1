@@ -34,6 +34,11 @@ allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
 
+retentionNotMet = The LAW {0} does not meet data retention requirements
+nonCompliantLaw = The LAW {0} does not match the config.json file.
+logsNotCollected = Not all of the required logs are being collected.
+gcEventLogging = User Account GC Event Logging Check (M)
+gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet this control’s requirements.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
@@ -64,14 +69,27 @@ existingPrivilegedGuestAccounts = Privileged Guest User Accounts
 existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
 guestHasPrivilegedRole = This Guest user account has one or more privileged roles
 
+
+accManagementUserGroupsCheck = Account Management: User Groups
+userCountGroupNoMatch = Not all users have been assigned to a privileged or non-privileged user group.
+noCAPforAnyGroups = None of the conditional access policies refer to one of your user groups (privileged or non-privileged).
+userCountOne = There is only one user in the environment. User groups are not required. 
+userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
+reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
+adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
 authorizedProcessedByCSO = Authorized Access
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
 noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
+noDeviceFilterPolicies = Missing a required conditional access policy. At least one policy needs to have device filters enabled with target resources, administrator roles included and enabled.
+noLocationFilterPolicies = Missing a required conditional access policy. At least one policy needs to check for named/trusted locations with administrator roles included and enabled.
+hasRequiredPolicies = Required conditional access policies for administrator access exist. 
+noCompliantPoliciesAdmin = No compliant policies found for device filters and named/trusted locations. Please ensure that there is at least one policy of each. One for device filters with a target resource and another for named/trusted locations.
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
