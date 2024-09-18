@@ -152,6 +152,7 @@ subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because 
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
 networkDiagram = Network architecture diagram 
 noSubnets = No subnets found in the subscription.
+cloudInfrastructureDeployGuide = Cloud Infrastructure Deployment Guide or Applicable Landing Zone Details
 
 # GuardRail #9
 authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
