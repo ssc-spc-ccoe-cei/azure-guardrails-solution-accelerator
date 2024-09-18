@@ -514,7 +514,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "ConfirmNetworkDiagramExists"
+        "Value": "NetworkArchitectureDiagram"
       },
       {
         "Name": "itsgcode",
@@ -543,7 +543,7 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "ConfirmHighLevelDesignExists"
+        "Value": "HighLevelDesign"
       },
       {
         "Name": "itsgcode",
