@@ -103,7 +103,7 @@ jobs:
           $releaseName = $env:GITHUB_REF -replace 'refs/tags/', ''
           mkdir release_assets
           tar -czvf release_assets/azure-cac-solution-$releaseName.tar.gz --exclude='release_assets' --exclude='.git' --exclude='.github' .
-          Compress-Archive -Path . -DestinationPath release_assets/azure-cac-solution-$releaseName.zip -Exclude 'release_assets/*','.git/*','.github/*'
+          zip -r release_assets/azure-cac-solution-$releaseName.zip . -x "release_assets/*" -x ".git/*" -x ".github/*"
           echo "RELEASE_NAME=$releaseName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Create Release
