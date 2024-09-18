@@ -132,7 +132,8 @@ noUDRMitigation = Veuillez appliquer une route personnalisée à ce sous-réseau
 subnetExcludedByTag = Subnet '{0}' is excluded from compliance because VNET '{1}' has tag '{2}' with a value of 'true'
 subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because its name is in the reserved subnet list '{1}'
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
-networkDiagram = Diagramme d'architecture réseau et documentation de conception de haut niveau 
+networkDiagram = Diagramme d'architecture réseau
+highLevelDesign = High level design documentation
 noSubnets = Aucun sous-réseau n'est présent.
 
 # GuardRail #9

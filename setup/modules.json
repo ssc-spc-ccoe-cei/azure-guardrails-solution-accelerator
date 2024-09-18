@@ -65,6 +65,46 @@
     ]
   },
   {
+    "ModuleName": "Check-UserAccountGCEventLogging",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-UserAccountGCEventLogging -LAWResourceId $vars.LAWResourceId -RequiredRetentionDays $vars.RequiredRetentionDays -ControlName $msgTable.CtrName1 -ItemName $msgTable.gcEventLogging -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
+      },
+      {
+        "Name": "RequiredRetentionDays",
+        "Value": "securityRetentionDays"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(11)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-UserGroups",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-UserGroups -ControlName $msgTable.CtrName2 -ItemName $msgTable.accManagementUserGroupsCheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DeprecatedAccounts",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
@@ -175,6 +215,21 @@
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+  },
+	{
+    "ModuleName": "Check-AdminAccess",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Get-AdminAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.adminAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -445,7 +500,7 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagramHLDesign -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -459,10 +514,36 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": [
-          "ConfirmNetworkDiagramExists",
-          "ConfirmHighLevelDesignExists"
-        ]
+        "Value": "ConfirmNetworkDiagramExists"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC7"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails8",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.highLevelDesign -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "ConfirmHighLevelDesignExists"
       },
       {
         "Name": "itsgcode",
