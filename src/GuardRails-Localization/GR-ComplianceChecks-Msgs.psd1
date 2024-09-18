@@ -217,8 +217,8 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GR-Common
-procedureFileFound = Compliant. File {0} has been found in the storage container.
-procedureFileNotFound = Non-Compliant. Could not find document for '{0}', create and upload a file with the name '{1}' in storage container '{2}' for Storage Account '{3}' to confirm you have completed this control.
+procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
+procedureFileNotFound = Non-compliant. Could not find '{0}' create and upload the appropriate file in Container '{1}' in Storage Account '{2}' to become compliant.
 
 procedureFileDataInvalid = The global administrator file(s) contain(s) invalid User Principal Names (UPNs). Ensure that UPNs start with a hyphen, and type each of them on a new line.
 globalAdminFileFound = File {0} found in Container.
