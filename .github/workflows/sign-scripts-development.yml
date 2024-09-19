@@ -10,7 +10,6 @@ on:
       - 'docs/**'
     branches:
       - main
-      - idutta/GR8V2_cloud_infrs_dply_guide
 
 concurrency:
   group: Deploy-Azure-CAC-Test
