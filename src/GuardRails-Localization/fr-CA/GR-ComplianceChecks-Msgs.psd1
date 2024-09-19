@@ -152,6 +152,7 @@ subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because 
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
 networkDiagram = Diagramme d'architecture réseau 
 noSubnets = Aucun sous-réseau n'est présent.
+cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
 
 # GuardRail #9
 authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
@@ -235,8 +236,8 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
-procedureFileFound = Conforme. Fichier « {0} » a été trouvé dans le conteneur de stockage.
-procedureFileNotFound = Non conforme. N'a pas trouvé le document pour « {0} », créez et téléchargez un fichier avec le nom « {1} » dans le conteneur de stockage « {2} » pour le compte de stockage « {3} » pour confirmer que vous avez complété ce contrôle.
+procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
+procedureFileNotFound = Non conforme. N'a pas trouvé '{0}' créer et télécharger le fichier approprié dans le conteneur '{1}' dans le compte de stockage '{2}' pour devenir conforme.
 
 procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
 globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
