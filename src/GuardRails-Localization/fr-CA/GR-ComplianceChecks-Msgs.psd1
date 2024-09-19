@@ -153,6 +153,7 @@ subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because 
 networkDiagram = Diagramme d'architecture réseau
 highLevelDesign = Documentation de Conception de haut niveau
 noSubnets = Aucun sous-réseau n'est présent.
+cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
 
 # GuardRail #9
 authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
@@ -236,7 +237,7 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
-procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
+procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.
 procedureFileNotFound = Non conforme. N'a pas trouvé « {0} » créer et télécharger le fichier approprié dans le conteneur « {1} » dans le compte de stockage « {2} » pour devenir conforme.
 
 
