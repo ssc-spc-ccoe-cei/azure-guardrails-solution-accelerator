@@ -11,7 +11,6 @@ on:
     branches:
       - main
 
-
 concurrency:
   group: Deploy-Azure-CAC-Test
   cancel-in-progress: false
