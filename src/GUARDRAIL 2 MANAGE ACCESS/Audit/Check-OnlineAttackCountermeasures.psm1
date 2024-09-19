@@ -22,7 +22,8 @@ function Check-OnlineAttackCountermeasures {
     # Fetch group settings
     try {
         $groupSettings = Invoke-GraphQuery -urlPath "/groupSettings" -ErrorAction Stop
-        $passwordRuleSettings = $groupSettings.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
+        $groupSettingsJsonObject = $groupSettings.Content | ConvertFrom-Json
+        $passwordRuleSettings = $groupSettingsJsonObject.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
         
         if ($null -eq $passwordRuleSettings) {
             throw "Password Rule Settings not found in group settings"
