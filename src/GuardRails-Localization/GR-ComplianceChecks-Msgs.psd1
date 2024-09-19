@@ -150,7 +150,8 @@ noUDRMitigation = Please apply a custom route to this subnet, pointing to a virt
 subnetExcludedByTag = Subnet '{0}' is excluded from compliance because VNET '{1}' has tag '{2}' with a value of 'true'
 subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because its name is in the reserved subnet list '{1}'
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
-networkDiagram = Network architecture diagram 
+networkDiagram = Network architecture diagram
+highLevelDesign = High level design documentation
 noSubnets = No subnets found in the subscription.
 cloudInfrastructureDeployGuide = Cloud Infrastructure Deployment Guide or Applicable Landing Zone Details
 

@@ -514,7 +514,36 @@
     "localVariables": [
       {
         "Name": "DocumentName",
-        "Value": "ConfirmNetworkDiagramExists"
+        "Value": "NetworkArchitectureDiagram"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC7"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails8",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.highLevelDesign -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "HighLevelDesign"
       },
       {
         "Name": "itsgcode",

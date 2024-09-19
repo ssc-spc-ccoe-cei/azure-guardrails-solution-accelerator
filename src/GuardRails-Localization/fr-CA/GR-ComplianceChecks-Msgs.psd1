@@ -150,7 +150,8 @@ noUDRMitigation = Veuillez appliquer une route personnalisée à ce sous-réseau
 subnetExcludedByTag = Subnet '{0}' is excluded from compliance because VNET '{1}' has tag '{2}' with a value of 'true'
 subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because its name is in the reserved subnet list '{1}'
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
-networkDiagram = Diagramme d'architecture réseau 
+networkDiagram = Diagramme d'architecture réseau
+highLevelDesign = Documentation de Conception de haut niveau
 noSubnets = Aucun sous-réseau n'est présent.
 cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
 
@@ -236,8 +237,9 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
-procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
-procedureFileNotFound = Non conforme. N'a pas trouvé '{0}' créer et télécharger le fichier approprié dans le conteneur '{1}' dans le compte de stockage '{2}' pour devenir conforme.
+procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.
+procedureFileNotFound = Non conforme. N'a pas trouvé « {0} » créer et télécharger le fichier approprié dans le conteneur « {1} » dans le compte de stockage « {2} » pour devenir conforme.
+
 
 procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
 globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
