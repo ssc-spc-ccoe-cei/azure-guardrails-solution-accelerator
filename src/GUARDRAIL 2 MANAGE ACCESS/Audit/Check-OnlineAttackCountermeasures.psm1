@@ -19,29 +19,28 @@ function Check-OnlineAttackCountermeasures {
     [string] $Comments = ""
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
-    # Check 1: Lockout Threshold
+    # Fetch group settings
     try {
-        $authenticationMethodsPolicy = Invoke-GraphQuery -urlPath "/policies/authenticationMethodsPolicy" -ErrorAction Stop
-        $lockoutThreshold = $authenticationMethodsPolicy.Content.lockoutThreshold
-        Write-Output "Authentication Methods Policy: $authenticationMethodsPolicy"
+        $groupSettings = Invoke-GraphQuery -urlPath "/groupSettings" -ErrorAction Stop
+        $passwordRuleSettings = $groupSettings.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
+        
+        if ($null -eq $passwordRuleSettings) {
+            throw "Password Rule Settings not found in group settings"
+        }
+
+        # Check 1: Lockout Threshold
+        $lockoutThreshold = ($passwordRuleSettings.values | Where-Object { $_.name -eq "LockoutThreshold" }).value
         Write-Output "Lockout Threshold: $lockoutThreshold"
 
-        if ($lockoutThreshold -gt 10) {
+        if ([int]$lockoutThreshold -gt 10) {
             $IsCompliant = $false
             $Comments += $msgTable.onlineAttackNonCompliantC1 + " "
         }
-    }
-    catch {
-        $ErrorList.Add("Failed to retrieve authentication methods policy: $_")
-        $IsCompliant = $false
-    }
 
-    # Check 2: Banned Password List
-    try {
-        $bannedPasswordList = Invoke-GraphQuery -urlPath "/policies/authenticationMethodsPolicy/authenticationMethodConfigurations/passwordConfiguration" -ErrorAction Stop
-        $bannedPasswords = $bannedPasswordList.Content.bannedPasswords
-        Write-Output "Banned Passwords: $bannedPasswords"
-        Write-Output "Banned Password List: $bannedPasswordList"
+        # Check 2: Banned Password List
+        $bannedPasswordListSetting = ($passwordRuleSettings.values | Where-Object { $_.name -eq "BannedPasswordList" }).value
+        $bannedPasswords = $bannedPasswordListSetting -split '\t'
+        Write-Output "Banned Passwords: $($bannedPasswords -join ', ')"
 
         if ($null -eq $bannedPasswords -or $bannedPasswords.Count -eq 0) {
             $IsCompliant = $false
@@ -58,7 +57,7 @@ function Check-OnlineAttackCountermeasures {
         }
     }
     catch {
-        $ErrorList.Add("Failed to retrieve banned password list: $_")
+        $ErrorList.Add("Failed to retrieve or process group settings: $_")
         $IsCompliant = $false
     }
 
