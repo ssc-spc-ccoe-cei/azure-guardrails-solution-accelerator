@@ -159,6 +159,34 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
+      - name: 'Run Azure operations with token refresh'
+        run: |
+          #!/bin/bash
+          
+          # Function to refresh token
+          refresh_token() {
+            echo "Refreshing Azure token..."
+            az account get-access-token --output none
+          }
+          
+          # Set the duration for which you want to run operations (e.g., 2 hours)
+          end_time=$((SECONDS + 7200))
+          
+          while [ $SECONDS -lt $end_time ]; do
+            # Refresh token every 10 minutes (600 seconds)
+            if [ $((SECONDS % 600)) -eq 0 ]; then
+              refresh_token
+            fi
+            
+            # Your Azure operations here
+            echo "Running Azure operation..."
+            az account show
+            
+            # Add more Azure CLI commands as needed
+            
+            # Sleep for a short interval (e.g., 30 seconds) before the next iteration
+            sleep 30
+          done    
       - name: Stage zipped/signed modules in Storage Account
         uses: azure/powershell@v2
         with:
