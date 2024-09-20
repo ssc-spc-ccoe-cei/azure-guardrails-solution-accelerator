@@ -47,19 +47,37 @@ jobs:
       - name: Sign pwsh scripts and modules
         shell: powershell
         run: |
-          Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
+          Get-ChildItem -Path "." -Filter ".git*" -Force | Remove-Item -Recurse -Force
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
           $vaultName = $env:VAULTNAME
 
-          foreach ($script in $scripts) {
-              try {
-                    # sign script
-                    azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
-              }
-              catch {
-                  Write-Error $_
-              }
+          $filePaths = $scripts.FullName -join "`n"
+          $tempFilePath = [System.IO.Path]::GetTempFileName()
+          Set-Content -Path $tempFilePath -Value $filePaths
+
+          $signCommand = @(
+            "azuresigntool.exe", "sign",
+            "-kvu", "https://$vaultName.vault.azure.net/",
+            "-kvc", "$env:CERTNAME",
+            "-kva", "${{ env.AZ_TOKEN }}",
+            "-tr", "http://timestamp.comodoca.com/rfc3161",
+            "-td", "sha384",
+            "-fd", "sha384",
+            "-v",
+            "-ifl", $tempFilePath,
+            "-mdop", "16",
+            "-coe"
+          )
+
+          & $signCommand
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Signing process completed with errors. Check the verbose output for details."
+          } else {
+            Write-Host "Successfully signed all files"
           }
+
+          Remove-Item -Path $tempFilePath -Force
         env:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
@@ -159,51 +177,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
-      - name: 'Run Azure operations with token refresh'
-        run: |
-          #!/bin/bash
-          
-          # Function to refresh token
-          refresh_token() {
-            echo "Refreshing Azure token..."
-            az account get-access-token --output none
-          }
-          
-          # Set the duration for which you want to run operations (e.g., 2 hours)
-          end_time=$((SECONDS + 7200))
-          
-          while [ $SECONDS -lt $end_time ]; do
-            # Refresh token every 10 minutes (600 seconds)
-            if [ $((SECONDS % 600)) -eq 0 ]; then
-              refresh_token
-            fi
-            
-            # Your Azure operations here
-            echo "Running Azure operation..."
-            az account show
-            
-            # Add more Azure CLI commands as needed
-            
-            # Sleep for a short interval (e.g., 30 seconds) before the next iteration
-            sleep 30
-          done    
-      - name: Stage zipped/signed modules in Storage Account
-        uses: azure/powershell@v2
-        with:
-          inlineScript: |
-            Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
-            $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
-
-            $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
-            ForEach ($moduleZip in $zippedModules) {
-              Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
-            }
-          azPSVersion: "latest"
-        env:
-          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
-          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
-          SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
       - name: Pre-Clean Test environment
         uses: azure/powershell@v2
         continue-on-error: true
@@ -277,7 +250,6 @@ jobs:
               }
           azPSVersion: "latest"
           timeoutInMinutes: 20 
-
         env:
           TESTTENANT_DOMAIN: ${{ vars.TESTTENANT_DOMAIN }}
           TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
