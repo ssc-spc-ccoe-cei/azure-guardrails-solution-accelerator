@@ -22,13 +22,14 @@ function Check-OnlineAttackCountermeasures {
     # Fetch group settings
     try {
         $groupSettings = Invoke-GraphQuery -urlPath "/groupSettings" -ErrorAction Stop
+        Write-Output "groupSettings: $groupSettings"
         $groupSettingsJsonObject = $groupSettings.Content | ConvertFrom-Json
         $passwordRuleSettings = $groupSettingsJsonObject.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
         
         if ($null -eq $passwordRuleSettings) {
             throw "Password Rule Settings not found in group settings"
         }
-
+        Write-Output "passwordRuleSettings: $passwordRuleSettings"
         # Check 1: Lockout Threshold
         $lockoutThreshold = ($passwordRuleSettings.values | Where-Object { $_.name -eq "LockoutThreshold" }).value
         Write-Output "Lockout Threshold: $lockoutThreshold"
@@ -78,8 +79,10 @@ function Check-OnlineAttackCountermeasures {
         itsgcode         = $itsgcode
     }
 
+    Write-Output "PsObject: $PsObject"
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
+        Write-Ouput "Enabling MultiCloudProfiles"
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
