@@ -25,6 +25,21 @@
     ]
   },
   {
+    "ModuleName": "Check-CloudAccountsMFA",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-CloudAccountsMFA -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaRequiredForAllUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-GAUserCountMFARequired",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
