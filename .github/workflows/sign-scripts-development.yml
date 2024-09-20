@@ -266,6 +266,9 @@ jobs:
             # Sleep for 4 minutes
             sleep 240
           done &
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       - name: Deploy Test environment
         uses: azure/powershell@v2
         with:
