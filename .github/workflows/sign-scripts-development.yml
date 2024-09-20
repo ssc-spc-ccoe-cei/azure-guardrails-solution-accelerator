@@ -47,41 +47,23 @@ jobs:
       - name: Sign pwsh scripts and modules
         shell: powershell
         run: |
-          Get-ChildItem -Path "." -Filter ".git*" -Force | Remove-Item -Recurse -Force
+          Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
           $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
           $vaultName = $env:VAULTNAME
 
-          $filePaths = $scripts.FullName -join "`n"
-          $tempFilePath = [System.IO.Path]::GetTempFileName()
-          Set-Content -Path $tempFilePath -Value $filePaths
-
-          $signCommand = @(
-            "azuresigntool.exe", "sign",
-            "-kvu", "https://$vaultName.vault.azure.net/",
-            "-kvc", "$env:CERTNAME",
-            "-kva", "${{ env.AZ_TOKEN }}",
-            "-tr", "http://timestamp.comodoca.com/rfc3161",
-            "-td", "sha384",
-            "-fd", "sha384",
-            "-v",
-            "-ifl", $tempFilePath,
-            "-mdop", "16",
-            "-coe"
-          )
-
-          & $signCommand
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Signing process completed with errors. Check the verbose output for details."
-          } else {
-            Write-Host "Successfully signed all files"
+          foreach ($script in $scripts) {
+              try {
+                    # sign script
+                    azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
+              }
+              catch {
+                  Write-Error $_
+              }
           }
-
-          Remove-Item -Path $tempFilePath -Force
         env:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
-
+    
       - name: Validate Signature
         shell: powershell
         run: |
