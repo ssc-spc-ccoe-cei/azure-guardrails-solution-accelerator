@@ -259,6 +259,7 @@ jobs:
         uses: azure/powershell@v2
         with:
           inlineScript: |
+              Connect-AzAccount -Identity
               Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
               $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
               $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
