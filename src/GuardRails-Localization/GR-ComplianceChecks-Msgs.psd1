@@ -75,9 +75,17 @@ existingPrivilegedGuestAccounts = Privileged Guest User Accounts
 existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
 guestHasPrivilegedRole = This Guest user account has one or more privileged roles
 
+
+accManagementUserGroupsCheck = Account Management: User Groups
+userCountGroupNoMatch = Not all users have been assigned to a privileged or non-privileged user group.
+noCAPforAnyGroups = None of the conditional access policies refer to one of your user groups (privileged or non-privileged).
+userCountOne = There is only one user in the environment. User groups are not required. 
+userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
+reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
-adminAccessConditionalPolicy = Administrator Access Restrictions Applied – device management/trusted locations
+adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
@@ -148,8 +156,10 @@ noUDRMitigation = Please apply a custom route to this subnet, pointing to a virt
 subnetExcludedByTag = Subnet '{0}' is excluded from compliance because VNET '{1}' has tag '{2}' with a value of 'true'
 subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because its name is in the reserved subnet list '{1}'
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
-networkDiagram = Network architecture diagram 
+networkDiagram = Network architecture diagram
+highLevelDesign = High level design documentation
 noSubnets = No subnets found in the subscription.
+cloudInfrastructureDeployGuide = Cloud Infrastructure Deployment Guide or Applicable Landing Zone Details
 
 # GuardRail #9
 authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
@@ -232,8 +242,8 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GR-Common
-procedureFileFound = Compliant. File {0} has been found in the storage container.
-procedureFileNotFound = Non-Compliant. Could not find document for '{0}', create and upload a file with the name '{1}' in storage container '{2}' for Storage Account '{3}' to confirm you have completed this control.
+procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
+procedureFileNotFound = Non-compliant. Could not find '{0}'. Create and upload the appropriate file in Container '{1}' in Storage Account '{2}' to become compliant.
 
 procedureFileDataInvalid = The global administrator file(s) contain(s) invalid User Principal Names (UPNs). Ensure that UPNs start with a hyphen, and type each of them on a new line.
 globalAdminFileFound = File {0} found in Container.

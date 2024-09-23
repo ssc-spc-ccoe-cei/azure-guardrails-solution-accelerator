@@ -67,24 +67,31 @@ guestNotAssigned = Ce compte d'utilisateur invité n'a pas d'attribution de rôl
 existingGuestAccounts = Comptes d'utilisateurs invités existants
 existingGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités. Supprimez les comptes d'utilisateurs invités selon les procédures et les politiques ministérielles, au besoin.
 
-guestAccountsNoPrivilegedPermission =  Il existe des comptes d’utilisateurs invités dans l’environnement locataire et ils ne disposent d’aucune autorisation considérée comme « privilégiée » au niveau de l’abonnement.
+guestAccountsNoPrivilegedPermission =  Il existe des comptes d'utilisateurs invités dans l'environnement locataire et ils ne disposent d'aucune autorisation considérée comme « privilégiée » au niveau de l'abonnement.
 existingPrivilegedGuestAccounts = Comptes d'utilisateurs invités privilégiés
-existingPrivilegedGuestAccountsComment = Examinez et validez la liste fournie des comptes d’utilisateurs invités privilégiés. Supprimez les comptes d’utilisateurs invités privilégiés selon les procédures et les politiques de votre ministère, au besoin.
-guestHasPrivilegedRole = Ce compte d’utilisateur invité a un ou plusieurs rôles privilégiés.
+existingPrivilegedGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités privilégiés. Supprimez les comptes d'utilisateurs invités privilégiés selon les procédures et les politiques de votre ministère, au besoin.
+guestHasPrivilegedRole = Ce compte d'utilisateur invité a un ou plusieurs rôles privilégiés.
+
+accManagementUserGroupsCheck = Gestion des comptes : Groupes d'utilisateurs
+userCountGroupNoMatch = Tous les utilisateurs n'ont pas été assignés à un groupe d'utilisateurs privilégiés ou non privilégiés.
+noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référence à l'un de vos groupes d'utilisateurs (privilégiés ou non privilégiés).
+userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des groupes d'utilisateurs ne sont pas nécessaires.
+userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
+reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d’utilisateurs pour le contrôle d’accès.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
-adminAccessConditionalPolicy = Restrictions d’accès administrateur appliquées – gestion des appareils/emplacements approuvés
+adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
 authorizedProcessedByCSO = Accès Autorisé
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
 noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
-noDeviceFilterPolicies = Une politique d’accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d’appareil activés avec des ressources cibles, des rôles d’administrateur inclus et activés.
-noLocationFilterPolicies = Une politique d’accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d’administrateur inclus et activés.
-hasRequiredPolicies = Les politiques d’accès conditionnel requises pour l’accès administrateur existent.
-noCompliantPoliciesAdmin = Aucune politique conforme n’a été trouvée pour les filtres d’appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu’il existe au moins une politique pour chacun. Une pour les filtres d’appareil avec une ressource cible et l’autre pour les emplacements nommés/approuvés.
+noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d’appareil activés avec des ressources cibles, des rôles d’administrateur inclus et activés.
+noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d’administrateur inclus et activés.
+hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
+noCompliantPoliciesAdmin = Aucune politique conforme n'a été trouvée pour les filtres d'appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu’il existe au moins une politique pour chacun. Une pour les filtres d’appareil avec une ressource cible et l’autre pour les emplacements nommés/approuvés.
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
@@ -145,8 +152,10 @@ noUDRMitigation = Veuillez appliquer une route personnalisée à ce sous-réseau
 subnetExcludedByTag = Subnet '{0}' is excluded from compliance because VNET '{1}' has tag '{2}' with a value of 'true'
 subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because its name is in the reserved subnet list '{1}'
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
-networkDiagram = Diagramme d'architecture réseau 
+networkDiagram = Diagramme d'architecture réseau
+highLevelDesign = Documentation de Conception de haut niveau
 noSubnets = Aucun sous-réseau n'est présent.
+cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
 
 # GuardRail #9
 authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
@@ -230,8 +239,9 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GR-Common
-procedureFileFound = Conforme. Fichier « {0} » a été trouvé dans le conteneur de stockage.
-procedureFileNotFound = Non conforme. N'a pas trouvé le document pour « {0} », créez et téléchargez un fichier avec le nom « {1} » dans le conteneur de stockage « {2} » pour le compte de stockage « {3} » pour confirmer que vous avez complété ce contrôle.
+procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.
+procedureFileNotFound = Non conforme. N'a pas trouvé « {0} » créer et télécharger le fichier approprié dans le conteneur « {1} » dans le compte de stockage « {2} » pour devenir conforme.
+
 
 procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
 globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
