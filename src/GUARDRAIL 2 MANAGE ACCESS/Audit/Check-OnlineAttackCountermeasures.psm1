@@ -69,7 +69,7 @@ function Check-OnlineAttackCountermeasures {
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
-        Comments         = $Comments.Trim()
+        Comments         = $Comments
         ItemName         = $ItemName
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
