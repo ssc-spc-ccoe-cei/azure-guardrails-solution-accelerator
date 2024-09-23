@@ -30,6 +30,7 @@ globalAdminAccntsSurplus = Il doit y avoir six comptes d'administrateur généra
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
+allCloudUserAccountsMFACheck = Tous les comptes d’utilisateurs infonuagiques stratégie d’accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}

@@ -29,9 +29,9 @@
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
+    "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-CloudAccountsMFA -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaRequiredForAllUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Check-CloudAccountsMFA -ControlName $msgTable.CtrName1 -ItemName $msgTable.allCloudUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
       {
         "Name": "itsgcode",
