@@ -1,12 +1,8 @@
 function Check-OnlineAttackCountermeasures {
     param (
-        [Parameter(Mandatory=$true)]
         [string] $ControlName,
-        [Parameter(Mandatory=$true)]
         [string] $ItemName,
-        [Parameter(Mandatory=$true)]
         [string] $itsgcode,
-        [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
