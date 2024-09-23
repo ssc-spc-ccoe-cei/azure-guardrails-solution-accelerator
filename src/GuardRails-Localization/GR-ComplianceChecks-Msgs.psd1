@@ -57,7 +57,7 @@ privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 
-onlineAttackCountermeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists (M).
+onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists (M).
 onlineAttackNonCompliantC1 = The account lockout threshold does not meet the GC Password Guidance.
 onlineAttackNonCompliantC2 = The banned password list does not meet the GC Password Guidance.
 onlineAttackIsCompliant = The account lockout threshold and banned password list meets the GC Password Guidance. 

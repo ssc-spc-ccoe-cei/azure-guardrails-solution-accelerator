@@ -58,7 +58,7 @@ privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 
-onlineAttackCountermeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists (M).
+onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists (M).
 
 noGuestAccounts = Il n'y a présentement aucun compte d'utilisateur invité dans votre environnement locataire.
 guestAccountsNoPermission = Il y a des comptes d'utilisateurs invités dans l'environnement locataire et ils n'ont aucune permission dans le(s) abonnement(s) Azure du locataire.
