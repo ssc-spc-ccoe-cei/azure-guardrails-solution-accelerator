@@ -344,7 +344,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module32 'modules' = if (newDeployment || updatePSModules) {
+  resource module33 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-OnlineAttackCountermeasures'
     properties: {
       contentLink: {
