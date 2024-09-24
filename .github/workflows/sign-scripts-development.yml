@@ -30,7 +30,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
       - name: Install AzureSignTool
-        run: dotnet tool install --no-cache --global AzureSignTool --version 5.0.0
+        run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
       - name: AZ Login
         uses: azure/login@v2
         with:
@@ -63,7 +63,7 @@ jobs:
         env:
           CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
           VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
-    
+
       - name: Validate Signature
         shell: powershell
         run: |
@@ -158,7 +158,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: true
+          enable-AzPSSession: true 
       - name: Stage zipped/signed modules in Storage Account
         uses: azure/powershell@v2
         with:
@@ -248,7 +248,6 @@ jobs:
                 Pop-Location
               }
           azPSVersion: "latest"
-          timeoutInMinutes: 20 
         env:
           TESTTENANT_DOMAIN: ${{ vars.TESTTENANT_DOMAIN }}
           TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
@@ -272,22 +271,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
-      - name: Fetch OID token every 4 mins
-        shell: pwsh
-        run: |
-          Start-Job -ScriptBlock {
-            while ($true) {
-              $token_request = $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN
-              $token_uri = $env:ACTIONS_ID_TOKEN_REQUEST_URL
-              $token = (Invoke-RestMethod -Headers @{Authorization = "Bearer $token_request"} -Uri "$token_uri&audience=api://AzureADTokenExchange").value
-              az login --service-principal -u $env:AZURE_CLIENT_ID -t $env:AZURE_TENANT_ID --federated-token $token --output none
-              # Sleep for 4 minutes
-              Start-Sleep -Seconds 240
-            }
-          }
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       - name: Deploy Test environment
         uses: azure/powershell@v2
         with:
@@ -382,7 +365,6 @@ jobs:
                 Pop-Location
               }
           azPSVersion: "latest"
-          timeoutInMinutes: 20
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
@@ -456,7 +438,3 @@ jobs:
           azPSVersion: "latest"
         env:
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
-
-
-
-

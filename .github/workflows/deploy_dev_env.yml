@@ -100,19 +100,19 @@ jobs:
       - name: Stage zipped/signed modules in Storage Account
         uses: azure/powershell@v2
         with:
-            inlineScript: |
-              Set-AzContext -SubscriptionId $env:SUBSCRIPTIONID
-              $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
-  
-              $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
-              ForEach ($moduleZip in $zippedModules) {
-                Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
-              }
-            azPSVersion: "latest"
+          inlineScript: |
+            Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
+            $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).Context
+            $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
+            ForEach ($moduleZip in $zippedModules) {
+              Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
+            }
+          azPSVersion: "latest"
         env:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
-          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
-          SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
+          DEVSUBSCRIPTION_ID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
+
       - name: Pre-Clean Dev environment
         if: ${{ env.DEV_UPGRADE_VAR != 'true'}}
         uses: azure/powershell@v2
