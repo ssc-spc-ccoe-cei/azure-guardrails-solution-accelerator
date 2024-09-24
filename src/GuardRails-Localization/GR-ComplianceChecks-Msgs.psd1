@@ -38,7 +38,9 @@ retentionNotMet = The LAW {0} does not meet data retention requirements
 nonCompliantLaw = The LAW {0} does not match the config.json file.
 logsNotCollected = Not all of the required logs are being collected.
 gcEventLogging = User Account GC Event Logging Check (M)
-gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet this control’s requirements.
+gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet this control's requirements.
+
+dedicatedAdminAccountsCheck = Dedicated user accounts for administration
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type

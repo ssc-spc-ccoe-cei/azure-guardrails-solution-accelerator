@@ -334,12 +334,20 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-
   resource module32 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserGroups'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module33 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-DedicatedAdminAccounts'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
         version: '1.0.0'
       }
     }

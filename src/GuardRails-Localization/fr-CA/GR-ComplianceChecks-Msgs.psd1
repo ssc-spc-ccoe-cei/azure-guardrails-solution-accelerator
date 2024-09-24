@@ -40,6 +40,7 @@ logsNotCollected = Tous les journaux requis ne sont pas collectés.
 gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur (M)
 gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
 
+dedicatedAdminAccountsCheck = Comptes d'utilisateurs dédiés sont utilisés pour l'administration
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
