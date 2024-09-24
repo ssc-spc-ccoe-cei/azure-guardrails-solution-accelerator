@@ -273,16 +273,18 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
       - name: Fetch OID token every 4 mins
-        shell: bash
+        shell: pwsh
         run: |
-          while true; do
-            token_request=$ACTIONS_ID_TOKEN_REQUEST_TOKEN
-            token_uri=$ACTIONS_ID_TOKEN_REQUEST_URL
-            token=$(curl -H "Authorization: bearer $token_request" "${token_uri}&audience=api://AzureADTokenExchange" | jq .value -r)
-            az login --service-principal -u ${{ env.AZURE_CLIENT_ID }} -t ${{ env.AZURE_TENANT_ID }} --federated-token $token --output none
-            # Sleep for 4 minutes
-            sleep 240
-          done &
+          Start-Job -ScriptBlock {
+            while ($true) {
+              $token_request = $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN
+              $token_uri = $env:ACTIONS_ID_TOKEN_REQUEST_URL
+              $token = (Invoke-RestMethod -Headers @{Authorization = "Bearer $token_request"} -Uri "$token_uri&audience=api://AzureADTokenExchange").value
+              az login --service-principal -u $env:AZURE_CLIENT_ID -t $env:AZURE_TENANT_ID --federated-token $token --output none
+              # Sleep for 4 minutes
+              Start-Sleep -Seconds 240
+            }
+          }
         env:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
