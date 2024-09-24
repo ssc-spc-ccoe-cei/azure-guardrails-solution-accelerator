@@ -19,7 +19,7 @@ function Check-OnlineAttackCountermeasures {
     try {
         $groupSettings = Invoke-GraphQuery -urlPath "/groupSettings" -ErrorAction Stop
         Write-Output "groupSettings: $groupSettings"
-        $groupSettingsJsonObject = $groupSettings.Content | ConvertFrom-Json
+        $groupSettingsJsonObject = $groupSettings.Content
         $passwordRuleSettings = $groupSettingsJsonObject.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
         
         if ($null -eq $passwordRuleSettings) {
