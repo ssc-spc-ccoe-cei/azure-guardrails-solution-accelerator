@@ -1,7 +1,7 @@
 function Check-OnlineAttackCountermeasures {
     param (
         [string] $ControlName,
-        [string] $ItemName,
+        [string] $ItemName = "Measures to Counter Online Attacks Check",
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
@@ -19,52 +19,52 @@ function Check-OnlineAttackCountermeasures {
     try {
         $groupSettings = Invoke-GraphQuery -urlPath "/groupSettings" -ErrorAction Stop
         Write-Output "groupSettings: $groupSettings"
-        # $groupSettingsJsonObject = $groupSettings.Content | ConvertFrom-Json
-        # $passwordRuleSettings = $groupSettingsJsonObject.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
+        $groupSettingsJsonObject = $groupSettings.Content | ConvertFrom-Json
+        $passwordRuleSettings = $groupSettingsJsonObject.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
         
-        # if ($null -eq $passwordRuleSettings) {
-        #     throw "Password Rule Settings not found in group settings"
-        # }
-        # Write-Output "passwordRuleSettings: $passwordRuleSettings"
-        # # Check 1: Lockout Threshold
-        # $lockoutThreshold = ($passwordRuleSettings.values | Where-Object { $_.name -eq "LockoutThreshold" }).value
-        # Write-Output "Lockout Threshold: $lockoutThreshold"
+        if ($null -eq $passwordRuleSettings) {
+            throw "Password Rule Settings not found in group settings"
+        }
+        Write-Output "passwordRuleSettings: $passwordRuleSettings"
+        # Check 1: Lockout Threshold
+        $lockoutThreshold = ($passwordRuleSettings.values | Where-Object { $_.name -eq "LockoutThreshold" }).value
+        Write-Output "Lockout Threshold: $lockoutThreshold"
 
-        # if ([int]$lockoutThreshold -gt 10) {
-        #     $IsCompliant = $false
-        #     $Comments += $msgTable.onlineAttackNonCompliantC1 + " "
-        # }
+        if ([int]$lockoutThreshold -gt 10) {
+            $IsCompliant = $false
+            $Comments += $msgTable.onlineAttackNonCompliantC1 + " "
+        }
 
-        # # Check 2: Banned Password List
-        # $bannedPasswordListSetting = ($passwordRuleSettings.values | Where-Object { $_.name -eq "BannedPasswordList" }).value
-        # $bannedPasswords = $bannedPasswordListSetting -split '\t'
-        # Write-Output "Banned Passwords: $($bannedPasswords -join ', ')"
+        # Check 2: Banned Password List
+        $bannedPasswordListSetting = ($passwordRuleSettings.values | Where-Object { $_.name -eq "BannedPasswordList" }).value
+        $bannedPasswords = $bannedPasswordListSetting -split '\t'
+        Write-Output "Banned Passwords: $($bannedPasswords -join ', ')"
 
-        # if ($null -eq $bannedPasswords -or $bannedPasswords.Count -eq 0) {
-        #     $IsCompliant = $false
-        #     $Comments += $msgTable.onlineAttackNonCompliantC2 + " "
-        # }
-        # else {
-        #     $requiredBannedPasswords = @("password", "Password!", "Summer2018")
-        #     $missingPasswords = $requiredBannedPasswords | Where-Object { $_ -notin $bannedPasswords }
+        if ($null -eq $bannedPasswords -or $bannedPasswords.Count -eq 0) {
+            $IsCompliant = $false
+            $Comments += $msgTable.onlineAttackNonCompliantC2 + " "
+        }
+        else {
+            $requiredBannedPasswords = @("password", "Password!", "Summer2018")
+            $missingPasswords = $requiredBannedPasswords | Where-Object { $_ -notin $bannedPasswords }
 
-        #     if ($missingPasswords.Count -gt 0) {
-        #         $IsCompliant = $false
-        #         $Comments += $msgTable.onlineAttackNonCompliantC2 + " "
-        #     }
-        # }
+            if ($missingPasswords.Count -gt 0) {
+                $IsCompliant = $false
+                $Comments += $msgTable.onlineAttackNonCompliantC2 + " "
+            }
+        }
     }
     catch {
         $ErrorList.Add("Failed to retrieve or process group settings: $_")
         $IsCompliant = $false
     }
 
-    # if (-not $IsCompliant -and $Comments -eq "") {
-    #     $Comments = $msgTable.onlineAttackNonCompliantC1C2
-    # }
-    # elseif ($IsCompliant) {
-    #     $Comments = $msgTable.onlineAttackIsCompliant
-    # }
+    if (-not $IsCompliant -and $Comments -eq "") {
+        $Comments = $msgTable.onlineAttackNonCompliantC1C2
+    }
+    elseif ($IsCompliant) {
+        $Comments = $msgTable.onlineAttackIsCompliant
+    }
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
