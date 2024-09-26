@@ -58,7 +58,7 @@ privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 
-onlineAttackCounterMeasures = Vérification de mesures pour contrer les attaques en ligne: Verrouillage et listes de mots de passe interdits (M).
+onlineAttackCounterMeasures = Vérification de mesures pour contrer les attaques en ligne: Verrouillage et listes de mots de passe interdits
 onlineAttackNonCompliantC1 = Le seuil de verrouillage de compte ne respecte pas l’Orientation sur les mots de passe du GC.
 onlineAttackNonCompliantC2 = La liste des mots de passe interdits n’a pas été configurée dans cet environnement. Examinez l’Orientation sur les mots de passe du GC.
 onlineAttackIsCompliant = Le seuil de verrouillage de compte et la liste des mots de passe interdits répondent à l’Orientation sur les mots de passe du GC.

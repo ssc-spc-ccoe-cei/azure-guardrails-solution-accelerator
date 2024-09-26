@@ -54,7 +54,7 @@
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
+    "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
     "Script": "Get-ADLicenseType  -ControlName $msgTable.CtrName1 -ItemName $msgTable.MSEntIDLicense -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [

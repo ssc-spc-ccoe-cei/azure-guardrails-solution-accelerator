@@ -1,7 +1,7 @@
 function Check-OnlineAttackCountermeasures {
     param (
         [string] $ControlName,
-        [string] $ItemName = "Measures to Counter Online Attacks Check",
+        [string] $ItemName,
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
@@ -14,6 +14,8 @@ function Check-OnlineAttackCountermeasures {
     [bool] $IsCompliant = $true
     [string] $Comments = ""
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [bool] $LockoutThresholdNonCompliant = $false
+    [bool] $BannedPasswordListNonCompliant = $false
 
     # Fetch group settings
     try {
@@ -29,7 +31,7 @@ function Check-OnlineAttackCountermeasures {
 
         if ([int]$lockoutThreshold -gt 10) {
             $IsCompliant = $false
-            $Comments += $msgTable.onlineAttackNonCompliantC1 + " "
+            $LockoutThresholdNonCompliant = $true
         }
 
         # Check 2: Banned Password List
@@ -38,7 +40,7 @@ function Check-OnlineAttackCountermeasures {
 
         if ($null -eq $bannedPasswords -or $bannedPasswords.Count -eq 0) {
             $IsCompliant = $false
-            $Comments += $msgTable.onlineAttackNonCompliantC2 + " "
+            $BannedPasswordListNonCompliant = $true
         }
         else {
             $requiredBannedPasswords = @("password", "Password!", "Summer2018")
@@ -46,7 +48,7 @@ function Check-OnlineAttackCountermeasures {
 
             if ($missingPasswords.Count -gt 0) {
                 $IsCompliant = $false
-                $Comments += $msgTable.onlineAttackNonCompliantC2 + " "
+                $BannedPasswordListNonCompliant = $true
             }
         }
     }
@@ -55,8 +57,17 @@ function Check-OnlineAttackCountermeasures {
         $IsCompliant = $false
     }
 
-    if (-not $IsCompliant -and $Comments -eq "") {
-        $Comments = $msgTable.onlineAttackNonCompliantC1C2
+    if (-not $IsCompliant) {
+        if ($LockoutThresholdNonCompliant -and $BannedPasswordListNonCompliant) {
+            $Comments = $msgTable.onlineAttackNonCompliantC1C2
+        } else {
+            if ($LockoutThresholdNonCompliant) {
+                $Comments += $msgTable.onlineAttackNonCompliantC1 + " "
+            }
+            if ($BannedPasswordListNonCompliant) {
+                $Comments += $msgTable.onlineAttackNonCompliantC2 + " "
+            }
+        }
     }
     elseif ($IsCompliant) {
         $Comments = $msgTable.onlineAttackIsCompliant

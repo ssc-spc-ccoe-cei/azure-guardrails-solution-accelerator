@@ -227,7 +227,6 @@ foreach ($module in $modules) {
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
-            Write-Output "Result for invoking is $($results)" 
             #Write-Output "Result for invoking is $($results.ComplianceResults)" 
 
             #$results.ComplianceResults
