@@ -271,15 +271,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module25 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-MFARequired'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-MFARequired.zip'
-        version: '1.0.2'
-      }
-    }
-  }
   resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
     properties: {
