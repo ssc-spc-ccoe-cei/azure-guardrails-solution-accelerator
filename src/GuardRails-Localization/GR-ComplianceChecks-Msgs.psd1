@@ -58,6 +58,12 @@ privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 
+onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists
+onlineAttackNonCompliantC1 = The account lockout threshold does not meet the GC Password Guidance.
+onlineAttackNonCompliantC2 = The banned password list does not meet the GC Password Guidance.
+onlineAttackIsCompliant = The account lockout threshold and banned password list meets the GC Password Guidance. 
+onlineAttackNonCompliantC1C2 = Neither the accounts lockouts or the banned password list meets the GC Password Guidance. Review and remediate.
+
 noGuestAccounts = There are currently no GUEST User Accounts in your tenant environment.
 guestAccountsNoPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions in the tenant's Azure subscription(s).
 guestAssigned = This GUEST User Account has a role assignment in the tenant's Azure subscriptions.

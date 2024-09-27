@@ -213,7 +213,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.10'
+        version: '1.4.11'
       }
     }
   }
@@ -336,7 +336,17 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
-  resource module33 'modules' = if (newDeployment || updatePSModules) {
+ resource module33 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-OnlineAttackCountermeasures'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+        
+  resource module34 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudAccountsMFA'
     properties: {
       contentLink: {
@@ -345,7 +355,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  
+
 resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
