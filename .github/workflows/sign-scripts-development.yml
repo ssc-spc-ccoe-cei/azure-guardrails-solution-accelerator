@@ -296,6 +296,7 @@ jobs:
                 }
               }
               $job = Start-Job -ScriptBlock $jobScript
+          azPSVersion: "latest"
       - name: Deploy Test environment
         uses: azure/powershell@v2
         with:
