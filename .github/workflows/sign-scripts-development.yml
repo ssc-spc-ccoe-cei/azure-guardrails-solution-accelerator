@@ -271,6 +271,33 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
+      - name: Fetch OID token every 4 mins using PowerShell in Background
+        uses: azure/powershell@v2
+        with:
+            inlineScript: |
+              $jobScript = {
+                  while ($true) {
+                      try {
+                          $tokenRequest = $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN
+                          $tokenUri = $env:ACTIONS_ID_TOKEN_REQUEST_URL
+                          $response = Invoke-RestMethod -Headers @{Authorization = "Bearer $tokenRequest"} -Uri "$tokenUri&audience=api://AzureADTokenExchange" -Method Get
+                          $token = $response.value
+         
+                          # Login to Azure using federated token
+                          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -t ${{ secrets.AZURE_TENANT_ID }} --federated-token $token --output none
+         
+                          Write-Host "Successfully logged in to Azure with OIDC token."
+         
+                          # Sleep for 4 minutes
+                          Start-Sleep -Seconds 240
+                      } catch {
+                          Write-Error "An error occurred while fetching or using the OIDC token: $_"
+                      }
+                  }
+              }
+         
+              # Start the job to run the script block in the background
+              $job = Start-Job -ScriptBlock $jobScript
       - name: Deploy Test environment
         uses: azure/powershell@v2
         with:

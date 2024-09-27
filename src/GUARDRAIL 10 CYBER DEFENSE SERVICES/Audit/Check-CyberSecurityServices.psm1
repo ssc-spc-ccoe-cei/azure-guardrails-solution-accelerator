@@ -36,8 +36,20 @@ function Check-CBSSensors {
     $sub = Get-AzSubscription -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Enabled' -and $_.Name -eq $SubscriptionName }
     if ($null -eq $sub) {
         $IsCompliant = $false
-        $Object.Comments = $msgTable.cbsSubDoesntExist
+        $Object | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.cbsSubDoesntExist
         $MitigationCommands = $msgTable.cbssMitigation -f $SubscriptionName
+        if ($EnableMultiCloudProfiles) {
+            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            if ($result -eq 0) {
+                Write-Output "No matching profile found or an error occurred."
+                $Object.ComplianceStatus = "Not Applicable"
+            } elseif ($result -gt 0) {
+                Write-Output "Valid profile returned: $result"
+                $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            } else {
+                Write-Error "Unexpected result: $result"
+            }
+        }
     } else {
         Set-AzContext -Subscription $sub
 
