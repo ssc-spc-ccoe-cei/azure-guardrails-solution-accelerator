@@ -271,15 +271,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module25 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-MFARequired'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-MFARequired.zip'
-        version: '1.0.2'
-      }
-    }
-  }
   resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
     properties: {
@@ -344,7 +335,8 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module33 'modules' = if (newDeployment || updatePSModules) {
+
+ resource module33 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-OnlineAttackCountermeasures'
     properties: {
       contentLink: {
@@ -353,7 +345,16 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-
+        
+  resource module34 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-CloudAccountsMFA'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-CloudAccountsMFA.zip'
+        version: '1.0.0'
+      }
+    }
+  }
 
 resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'

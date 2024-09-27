@@ -1,4 +1,4 @@
-function Check-MFARequired {
+function Check-CloudAccountsMFA {
     param (      
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
@@ -46,7 +46,8 @@ function Check-MFARequired {
     $validPolicies = $caps | Where-Object {
         $_.state -eq 'enabled' -and
         $_.conditions.users.includeUsers -contains 'All' -and
-        $_.conditions.applications.includeApplications -contains 'All' -and
+        ($_.conditions.applications.includeApplications -contains 'All' -or
+         $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
         $_.grantControls.builtInControls -contains 'mfa' -and
         $_.conditions.clientAppTypes -contains 'all' -and
         [string]::IsNullOrEmpty($_.conditions.userRiskLevels) -and

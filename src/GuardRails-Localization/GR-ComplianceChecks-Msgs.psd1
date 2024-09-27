@@ -30,6 +30,7 @@ globalAdminAccntsSurplus = There must be six or fewer global administrator accou
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
 gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
+allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
