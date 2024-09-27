@@ -334,6 +334,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
+<<<<<<< HEAD
 
  resource module33 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-OnlineAttackCountermeasures'
@@ -360,6 +361,13 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
+=======
+  resource module34 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-ApplicationGatewayCertificateValidity'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
+>>>>>>> d60c002 (update)
         version: '1.0.0'
       }
     }
