@@ -25,6 +25,21 @@
     ]
   },
   {
+    "ModuleName": "Check-CloudAccountsMFA",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-CloudAccountsMFA -ControlName $msgTable.CtrName1 -ItemName $msgTable.allCloudUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-GAUserCountMFARequired",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
@@ -230,21 +245,6 @@
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Get-AdminAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.adminAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC4(7)"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-MFARequired",
-    "Control": "Guardrails3",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-MFARequired -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaRequiredForAllUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
       {
         "Name": "itsgcode",
