@@ -41,6 +41,8 @@ gcEventLogging = Vérification de la journalisation des événements du GC du co
 gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
 
 dedicatedAdminAccountsCheck = Comptes d'utilisateurs dédiés sont utilisés pour l'administration
+userFileEmpty = Empty file {0} found in Container.
+userAccountNotExist = Highly privileged administrator accounts not found or declared in file {0}.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 

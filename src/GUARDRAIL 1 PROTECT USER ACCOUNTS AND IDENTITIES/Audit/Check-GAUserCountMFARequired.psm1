@@ -37,8 +37,6 @@ function Check-GAUserCountMFARequired {
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
-            # # Find the Global Administrator role ID
-            # $globalAdminRoleId = ($roles.value | Where-Object { $_.displayName -eq "Global Administrator" }).id
         }
     }
     catch {

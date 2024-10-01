@@ -41,6 +41,8 @@ gcEventLogging = User Account GC Event Logging Check (M)
 gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet this control's requirements.
 
 dedicatedAdminAccountsCheck = Dedicated user accounts for administration
+userFileEmpty = Empty file {0} found in Container.
+userAccountNotExist = Highly privileged administrator accounts not found or declared in file {0}.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type

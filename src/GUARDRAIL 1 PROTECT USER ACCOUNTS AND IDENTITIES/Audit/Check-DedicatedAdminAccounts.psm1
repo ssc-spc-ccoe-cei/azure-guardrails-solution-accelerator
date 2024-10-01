@@ -8,7 +8,6 @@ function Check-DedicatedAdminAccounts {
         [string] $ResourceGroupName,
         [Parameter(Mandatory = $true)]
         [string] $SubscriptionID, 
-        [Parameter(Mandatory = $true)]
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
@@ -24,9 +23,7 @@ function Check-DedicatedAdminAccounts {
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
         [Parameter(Mandatory = $true)]
-        [string[]] $DocumentName1, 
-        [Parameter(Mandatory = $true)]
-        [string[]] $DocumentName2, 
+        [string[]] $DocumentName,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
@@ -38,8 +35,9 @@ function Check-DedicatedAdminAccounts {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
-    # list all users
-    $urlPath = "/users"
+
+    # Get the list of GA users (ACTIVE assignments)
+    $urlPath = "/directoryRoles"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         # portal
@@ -48,7 +46,7 @@ function Check-DedicatedAdminAccounts {
         # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
-            $users = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+            $rolesResponse  = $data.value
         }
     }
     catch {
@@ -57,10 +55,53 @@ function Check-DedicatedAdminAccounts {
         Write-Error "Error: $errorMsg"
     }
 
-    # Read from the blob
+    $hpAdminUserAccounts = @()
+
+    # # Filter the highly privileged Administrator role ID
+    $highlyPrivilegedAdminRole = $rolesResponse | Where-Object { $_.displayName -eq "Global Administrator" -or $_.displayName -eq "Privileged Role Administrator" }
+    # $highlyPrivilegedAdminRoleIds = @('62e90394-69f5-4237-9190-012177145e10', 'e8611ab8-c189-46e8-94e1-60213ab1f814')
+    foreach ($role in  $highlyPrivilegedAdminRole){
+        # Get directory roles for each user with the highly privileged admin access
+
+        $roleAssignments = @()
+
+        $roleId = $role.id
+        $roleName = $role.displayName
+        # Endpoint to get members of the role
+        $urlPath = "/directoryRoles/$roleId/members"
+        try{
+            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+            # portal
+            $data = $response.Content
+            # # localExecution
+            # $data = $response
+
+            if ($null -ne $data -and $null -ne $data.value) {
+                $hpAdminRoleResponse  = $data.value
+            }
+        }
+        catch {
+            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg"
+        }
+
+        foreach ($hpAdminUser in $hpAdminRoleResponse) {
+            $roleAssignments = [PSCustomObject]@{
+                roleId              = $roleId
+                roleName            = $roleName
+                userId              = $hpAdminUser.id
+                displayName         = $hpAdminUser.displayName
+                mail                = $hpAdminUser.mail
+                userPrincipalName   = $hpAdminUser.userPrincipalName
+            }
+            $hpAdminUserAccounts +=  $roleAssignments
+        }
+    }
+
+    # # Read UPN files from storage with .csv extensions
     # Add possible file extensions
-    $DocumentName_privilegedUserAdminAccountUPN = add-documentFileExtensions -DocumentName1 $DocumentName1 -ItemName $ItemName
-    $DocumentName_PrivilegedUserRegularAccountUPN = add-documentFileExtensions -DocumentName2 $DocumentName2 -ItemName $ItemName
+    $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
 
     try {
         Set-AzContext -Subscription $SubscriptionID | out-null
@@ -69,6 +110,7 @@ function Check-DedicatedAdminAccounts {
         $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
         throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
     }
+
     try {
         $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
     }
@@ -80,42 +122,87 @@ function Check-DedicatedAdminAccounts {
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
-    ForEach ($docName in $DocumentName_privilegedUserAdminAccountUPN) {
-        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+    $commentsArray = @()
 
-        If ($null -eq $blob) {            
-            # a blob with the name $DocumentName was not located in the specified storage account
-            $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
-            $ErrorList.Add($errorMsg) 
-            #Write-Error "Error: $errorMsg"                 
-            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
-        }
-        else {
-            try {
-                $blobContent = $blob.ICloudBlob.DownloadText()
-                # Further processing of $blobContent...
-            } catch {
-                $errorMsg = "Error downloading content from blob '$docName': $_"
-                $ErrorList.Add($errorMsg)
-                Write-Error "Error: $errorMsg"                    
-            }
-            if ([string]::IsNullOrWhiteSpace($blobContent)) {
-                $commentsArray += $msgTable.globalAdminFileEmpty -f $docName
-            }
-            elseif ($blobContent -ieq 'N/A' -or`
-                    $blobContent -ieq 'NA') {
-                $commentsArray += $msgTable.globalAdminNotExist -f $docName
-            }
-            else {
-                # Blob content is present and needs to be parsed
-                # Parses the UPNs and sanitizes them
-                $result = Parse-BlobContent -blobContent $blobContent
-                $privilegedUserAdminAccountUPN = $result.UserUPNs
-            }
-        }   
+    # get UPN from the file
+    $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new -ErrorAction SilentlyContinue
+    
+    if ($null -eq $blob) {            
+        # a blob with the name $DocumentName was not located in the specified storage account
+        $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add($errorMsg) 
+        #Write-Error "Error: $errorMsg"                 
+        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $DocumentName_new, $ContainerName, $StorageAccountName
     }
+    else {
+        try {
+            $blobContent = $blob.ICloudBlob.DownloadText()| ConvertFrom-Csv
+            # Further processing of $blobContent...
+        } catch {
+            $errorMsg = "Error downloading content from blob '$DocumentName_new': $_"
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg"                    
+        }
 
+        if ($null -eq $blobContent) {
+            $commentsArray += $msgTable.userFileEmpty -f $DocumentName_new
+        } elseif ($blobContent -ieq 'N/A' -or $blobContent -ieq 'NA') {
+            $commentsArray += $msgTable.userAccountNotExist -f $DocumentName_new
+        } else {
+            # Blob content is present
+            $UserAccountUPNs = $blobContent   
+        }
+
+        # if BG accounts present in the UPN list
+        $BGfound = $false
+        foreach ($user in $UserAccountUPNs) {
+            if ($user.admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
+                $user.admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
+                $BGfound = $true
+                break
+            }
+            
+            if ($BGfound) { 
+                $IsCompliant = $false
+                $commentsArray = $msgTable.isNotCompliant
+                break 
+            }
+        }
+
+        # validate
+        $hpAdminCount = 0
+        if(!$BGfound){
+            # match total count
+            foreach ($hpAdmin in $UserAccountUPNs.admin_account_UPN){
+                if ( $hpAdminUserAccounts -contains $hpAdmin){
+                    $hpAdminCount += 1
+                }
+            }
+            
+            $regUPNFound = $false
+            if($hpAdminCount -eq $hpAdminUserAccounts.Count){
+                # List contains all hp accounts
+                # validate regular account
+                foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
+                    if ( $hpAdminUserAccounts -contains $regUPN){
+                        $regUPNFound = $true
+                        break 
+                    }
+                    
+                }
+                if($regUPNFound){
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + "Review Global Administrator role assignments and ensure there are dedicated accounts being used."
+                }
+                else{
+                    $IsCompliant = $true
+                    $commentsArray = $msgTable.isCompliant + " " + "All Cloud Administrators are using dedicated accounts."
+                }
+            }
+        }
+        
+    }
 
 
     $Comments = $commentsArray -join ";"
@@ -149,3 +236,62 @@ function Check-DedicatedAdminAccounts {
     return $moduleOutput   
 }
 
+
+function Read-DocumentFromStorage {
+    param (
+        [array] $StorageAccount,
+        [string] $StorageAccountName,
+        [string] $ContainerName, 
+        [string] $ResourceGroupName,
+        [string] $SubscriptionID,
+        [string] $ItemName,
+        [hashtable] $msgTable,
+        [string[]] $DocumentName
+    )
+
+    $commentsArray = @()
+    $UserAccountUPNs = @()
+    
+    ForEach ($docName in $DocumentName) {
+        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+        
+        If ($null -eq $blob) {            
+            # a blob with the name $DocumentName was not located in the specified storage account
+            $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
+            $ErrorList.Add($errorMsg) 
+            #Write-Error "Error: $errorMsg"                 
+            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
+        }
+        else {
+            try {
+                $blobContent = $blob.ICloudBlob.DownloadText()
+                # Further processing of $blobContent...
+            } catch {
+                $errorMsg = "Error downloading content from blob '$docName': $_"
+                $ErrorList.Add($errorMsg)
+                Write-Error "Error: $errorMsg"                    
+            }
+            if ([string]::IsNullOrWhiteSpace($blobContent)) {
+                $commentsArray += $msgTable.userFileEmpty -f $docName
+            }
+            elseif ($blobContent -ieq 'N/A' -or`
+                    $blobContent -ieq 'NA') {
+                $commentsArray += $msgTable.userAccountNotExist -f $docName
+            }
+            else {
+                # Blob content is present and needs to be parsed
+                # Parses the UPNs and sanitizes them
+                $result = Parse-BlobContent -blobContent $blobContent
+                $UserAccountUPNs = $result.UserUPNs
+            }
+        }
+
+    }
+
+    $psObject= [PSCustomObject]@{ 
+        UserAccountUPNs = $UserAccountUPNs
+        commentsArray = $commentsArray
+    }
+    return  $psObject 
+}
