@@ -89,14 +89,14 @@
       }
     ]
   },
-  {
+	{
     "ModuleName": "Check-DedicatedAdminAccounts",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-DedicatedAdminAccounts -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -ControlName $msgTable.CtrName1 -ItemName $msgTable.dedicatedAdminAccountsCheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -DocumentName1 $vars.DocumentName1 -DocumentName2 $vars.DocumentName2 -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Check-DedicatedAdminAccounts -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -ControlName $msgTable.CtrName1 -ItemName $msgTable.dedicatedAdminAccountsCheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -DocumentName $vars.DocumentName-CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -119,12 +119,8 @@
     ],
     "localVariables": [
       {
-        "Name": "DocumentName1",
-        "Value": "PrivilegedUserAdminAccountUPN"
-      },
-      {
-        "Name": "DocumentName2",
-        "Value": "PrivilegedUserRegularAccountUPN"
+        "Name": "DocumentName",
+        "Value": "UserAccountsPrivilegedAndRegularUPN"
       },
       {
         "Name": "itsgcode",
@@ -478,6 +474,21 @@
       }
     ]
   },
+  // {
+  //   "ModuleName": "Check-ApplicationGatewayCertificateValidity",
+  //   "Control": "Guardrails7",
+  //   "ModuleType": "Builtin",
+  //   "Status": "Enabled",
+  //   "Required": "True",
+  //   "Profiles": [2, 3, 4, 5, 6],
+  //   "Script": "Check-ApplicationGatewayCertificateValidity -ControlName $msgTable.CtrName7 -ItemName $msgTable.appGatewayCertValidity -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+  //   "localVariables": [
+  //     {
+  //       "Name": "itsgcode",
+  //       "Value": "SC8"
+  //     }
+  //   ]
+  // },
   {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails7",
