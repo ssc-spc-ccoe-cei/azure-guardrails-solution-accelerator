@@ -489,21 +489,6 @@
       }
     ]
   },
-  // {
-  //   "ModuleName": "Check-ApplicationGatewayCertificateValidity",
-  //   "Control": "Guardrails7",
-  //   "ModuleType": "Builtin",
-  //   "Status": "Enabled",
-  //   "Required": "True",
-  //   "Profiles": [2, 3, 4, 5, 6],
-  //   "Script": "Check-ApplicationGatewayCertificateValidity -ControlName $msgTable.CtrName7 -ItemName $msgTable.appGatewayCertValidity -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-  //   "localVariables": [
-  //     {
-  //       "Name": "itsgcode",
-  //       "Value": "SC8"
-  //     }
-  //   ]
-  // },
   {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails7",
