@@ -106,7 +106,7 @@ function Check-GAUserCountMFARequired {
     Write-Host "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
     Write-Output "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
     Write-Output "DEBUG: allGAUserUPNs user UPNs are $allGAUserUPNs"
-    if (($allGAUserUPNs.Count -gt 6) -or ($allGAUserUPNs.Count -lt 2)){
+    if (($allGAUserUPNs.Count -ge 6) -or ($allGAUserUPNs.Count -lt 2)){
         $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
     }
     else{
