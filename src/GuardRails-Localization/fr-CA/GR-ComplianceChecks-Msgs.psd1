@@ -30,6 +30,7 @@ globalAdminAccntsSurplus = Il doit y avoir six comptes d'administrateur généra
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
+allCloudUserAccountsMFACheck = Tous les comptes d’utilisateurs infonuagiques stratégie d’accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
@@ -60,6 +61,12 @@ noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas s
 privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
+
+onlineAttackCounterMeasures = Vérification de mesures pour contrer les attaques en ligne: Verrouillage et listes de mots de passe interdits
+onlineAttackNonCompliantC1 = Le seuil de verrouillage de compte ne respecte pas l’Orientation sur les mots de passe du GC.
+onlineAttackNonCompliantC2 = La liste des mots de passe interdits n’a pas été configurée dans cet environnement. Examinez l’Orientation sur les mots de passe du GC.
+onlineAttackIsCompliant = Le seuil de verrouillage de compte et la liste des mots de passe interdits répondent à l’Orientation sur les mots de passe du GC.
+onlineAttackNonCompliantC1C2 = Ni le verrouillage de compte ni la liste des mots de passe interdits ne répondent à l’Orientation sur les mots de passe du GC. Examinez et corrigez.
 
 noGuestAccounts = Il n'y a présentement aucun compte d'utilisateur invité dans votre environnement locataire.
 guestAccountsNoPermission = Il y a des comptes d'utilisateurs invités dans l'environnement locataire et ils n'ont aucune permission dans le(s) abonnement(s) Azure du locataire.

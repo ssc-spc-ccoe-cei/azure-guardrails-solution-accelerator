@@ -30,6 +30,7 @@ globalAdminAccntsSurplus = There must be six or fewer global administrator accou
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
 gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
+allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
@@ -60,6 +61,12 @@ noncompliantUsers = The following Users are disabled and not synchronized with M
 privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
+
+onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists
+onlineAttackNonCompliantC1 = The account lockout threshold does not meet the GC Password Guidance.
+onlineAttackNonCompliantC2 = The banned password list does not meet the GC Password Guidance.
+onlineAttackIsCompliant = The account lockout threshold and banned password list meets the GC Password Guidance. 
+onlineAttackNonCompliantC1C2 = Neither the accounts lockouts or the banned password list meets the GC Password Guidance. Review and remediate.
 
 noGuestAccounts = There are currently no GUEST User Accounts in your tenant environment.
 guestAccountsNoPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions in the tenant's Azure subscription(s).

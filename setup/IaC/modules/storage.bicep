@@ -32,7 +32,8 @@ resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2021-06-01
 }
  
 resource container1 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-06-01' = {
-  name: '${guardrailsStorage.name}/default/${containername}'
+  parent: blobServices
+  name: containername
   properties: {
     immutableStorageWithVersioning: {
       enabled: false
@@ -41,13 +42,11 @@ resource container1 'Microsoft.Storage/storageAccounts/blobServices/containers@2
     defaultEncryptionScope: '$account-encryption-key'
     publicAccess: 'None'
   }
-  dependsOn: [
-    blobServices
-  ]
 }
  
 resource container2 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-06-01' = {
-  name: '${guardrailsStorage.name}/default/configuration'
+  parent: blobServices
+  name: 'configuration'
   properties: {
     immutableStorageWithVersioning: {
       enabled: false
@@ -56,7 +55,4 @@ resource container2 'Microsoft.Storage/storageAccounts/blobServices/containers@2
     defaultEncryptionScope: '$account-encryption-key'
     publicAccess: 'None'
   }
-  dependsOn: [
-    blobServices
-  ]
 }

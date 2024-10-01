@@ -213,7 +213,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.10'
+        version: '1.4.11'
       }
     }
   }
@@ -268,15 +268,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
         version: '1.1.10'
-      }
-    }
-  }
-  resource module25 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-MFARequired'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-MFARequired.zip'
-        version: '1.0.2'
       }
     }
   }
@@ -343,7 +334,28 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-  resource module33 'modules' = if (newDeployment || updatePSModules) {
+
+ resource module33 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-OnlineAttackCountermeasures'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+        
+  resource module34 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-CloudAccountsMFA'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-CloudAccountsMFA.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module35 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DedicatedAdminAccounts'
     properties: {
       contentLink: {
