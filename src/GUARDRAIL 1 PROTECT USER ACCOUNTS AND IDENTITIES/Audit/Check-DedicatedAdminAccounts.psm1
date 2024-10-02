@@ -118,7 +118,7 @@ function Check-DedicatedAdminAccounts {
     }
 
     # Filter and List non-privileged users from all user list
-    nonHPAUsers = $allUsers | Where-Object { $_.userPrincipalName -notin $hpAdminUserAccounts.userPrincipalName }
+    $nonHPAUsers = $allUsers | Where-Object { $_.userPrincipalName -notin $hpAdminUserAccounts.userPrincipalName }
 
 
     # # Read UPN files from storage with .csv extensions
