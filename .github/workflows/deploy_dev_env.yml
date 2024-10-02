@@ -203,13 +203,13 @@ jobs:
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
         
-      - name: Relogin AZ 
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
-          tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
-          subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
-          enable-AzPSSession: true
+      # - name: Relogin AZ 
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ secrets.DEV_AZURE_CLIENT_ID}}
+      #     tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
+      #     subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
+      #     enable-AzPSSession: true
       - name: Deploy Dev Environment
         uses: azure/powershell@v2
         with:
