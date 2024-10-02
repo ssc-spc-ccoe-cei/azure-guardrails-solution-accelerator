@@ -44,6 +44,8 @@ gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet
 dedicatedAdminAccountsCheck = Dedicated user accounts for administration
 userFileEmpty = Empty file {0} found in Container.
 userAccountNotExist = Highly privileged administrator accounts not found or declared in file {0}.
+dedicatedAccNotExist = Review 'Global Administrator' and 'Privileged Administrator' role assignments and ensure there are dedicated accounts being used.
+dedicatedAccExist = All Cloud Administrators are using dedicated accounts.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type

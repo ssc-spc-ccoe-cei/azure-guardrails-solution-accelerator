@@ -44,6 +44,8 @@ gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conse
 dedicatedAdminAccountsCheck = Comptes d'utilisateurs dédiés sont utilisés pour l'administration
 userFileEmpty = Empty file {0} found in Container.
 userAccountNotExist = Highly privileged administrator accounts not found or declared in file {0}.
+dedicatedAccNotExist = Review 'Global Administrator' and 'Privileged administrator' role assignments and ensure there are dedicated accounts being used.
+dedicatedAccExist = All Cloud Administrators are using dedicated accounts.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 

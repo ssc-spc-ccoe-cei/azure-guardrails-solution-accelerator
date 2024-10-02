@@ -193,35 +193,38 @@ function Check-DedicatedAdminAccounts {
         }
 
         # validate
-        $hpAdminCount = 0
         if(!$BGfound){
-            # match total count
+            # check with AllUsers list and if users from blob attestion file are in PA user list and not in non-PA user list from AllUsers list
             foreach ($hpAdmin in $UserAccountUPNs.admin_account_UPN){
-                if ( $hpAdminUserAccounts -contains $hpAdmin){
-                    $hpAdminCount += 1
+                if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin -and (-not ($nonHPAUsers -contains $hpAdmin))){
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant
+                    break
                 }
             }
-            
-            $regUPNFound = $false
-            if($hpAdminCount -eq $hpAdminUserAccounts.Count){
+
+            if (!$IsCompliant){
+                
+                $regUPNinPAFound = $false
                 # List contains all hp accounts
                 # validate regular account
                 foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
                     if ( $hpAdminUserAccounts -contains $regUPN){
-                        $regUPNFound = $true
+                        $regUPNinPAFound = $true
                         break 
                     }
-                    
                 }
-                if($regUPNFound){
+                if($regUPNinPAFound){
                     $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + "Review Global Administrator role assignments and ensure there are dedicated accounts being used."
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAccNotExist
                 }
                 else{
                     $IsCompliant = $true
-                    $commentsArray = $msgTable.isCompliant + " " + "All Cloud Administrators are using dedicated accounts."
+                    $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
                 }
+                
             }
+            
         }
         
     }
@@ -294,6 +297,7 @@ function Read-DocumentFromStorage {
                 $ErrorList.Add($errorMsg)
                 Write-Error "Error: $errorMsg"                    
             }
+
             if ([string]::IsNullOrWhiteSpace($blobContent)) {
                 $commentsArray += $msgTable.userFileEmpty -f $docName
             }
