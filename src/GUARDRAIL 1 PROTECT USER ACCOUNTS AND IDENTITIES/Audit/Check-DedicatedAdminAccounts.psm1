@@ -35,7 +35,6 @@ function Check-DedicatedAdminAccounts {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
-
     # Get the list of GA users (ACTIVE assignments)
     $urlPath = "/directoryRoles"
     try {
@@ -98,6 +97,29 @@ function Check-DedicatedAdminAccounts {
             $hpAdminUserAccounts +=  $roleAssignments
         }
     }
+
+    # list all users
+    $urlPath = "/users"
+    try {
+        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        # # portal
+        # $data = $response.Content
+        # localExecution
+        $data = $response
+
+        if ($null -ne $data -and $null -ne $data.value) {
+            $allUsers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+        }
+    }
+    catch {
+        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+        $ErrorList.Add($errorMsg)
+        Write-Error "Error: $errorMsg"
+    }
+
+    # Filter and List non-privileged users from all user list
+    nonHPAUsers = $allUsers | Where-Object { $_.userPrincipalName -notin $hpAdminUserAccounts.userPrincipalName }
+
 
     # # Read UPN files from storage with .csv extensions
     # Add possible file extensions
