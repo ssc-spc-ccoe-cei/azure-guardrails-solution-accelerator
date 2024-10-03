@@ -46,7 +46,7 @@ invalidUserFile = Update the {0} file and list the highly privileged role UPNs a
 dedicatedAdminAccNotExist = There are privileged users identified without a highly privileged role. Review 'Global Administrator' and 'Privileged Role Administrator' role assignments in the environment and ensure that there are dedicated user accounts for highly privileged roles. 
 regAccHasHProle = There are non-privileged users identified with a highly privileged role. Review 'Global Administrator' and 'Privileged Role Administrator' role assignments in the environment and ensure that there are dedicated user accounts for highly privileged roles.
 dedicatedAccExist = All Cloud Administrators are using dedicated accounts for highly privileged roles.
-bgAccExistInUPNlist = Break Glass UPN’s exist in the uploaded .csv file. Review the user accounts .csv file and remove the BG account UPNs.
+bgAccExistInUPNlist = Break Glass UPN's exist in the uploaded .csv file. Review the user accounts .csv file and remove the BG account UPNs.
 hpAccNotGA = One or more highly privileged admins identified in the .csv are not actively using their Global Administrator role assignments at this time. Confirm that these users have an Eligible Global Administrator Assignment.
 
 # GuardRail #2
