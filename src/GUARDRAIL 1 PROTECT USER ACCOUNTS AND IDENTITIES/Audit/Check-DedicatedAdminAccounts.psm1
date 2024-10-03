@@ -39,10 +39,10 @@ function Check-DedicatedAdminAccounts {
     $urlPath = "/directoryRoles"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
+        # # portal
+        # $data = $response.Content
+        # localExecution
+        $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
@@ -70,10 +70,10 @@ function Check-DedicatedAdminAccounts {
         $urlPath = "/directoryRoles/$roleId/members"
         try{
             $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-            # portal
-            $data = $response.Content
-            # # localExecution
-            # $data = $response
+            # # portal
+            # $data = $response.Content
+            # localExecution
+            $data = $response
 
             if ($null -ne $data -and $null -ne $data.value) {
                 $hpAdminRoleResponse  = $data.value
@@ -102,10 +102,10 @@ function Check-DedicatedAdminAccounts {
     $urlPath = "/users"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
+        # # portal
+        # $data = $response.Content
+        # localExecution
+        $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $allUsers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
@@ -155,7 +155,7 @@ function Check-DedicatedAdminAccounts {
         subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
         $ErrorList.Add($errorMsg) 
         #Write-Error "Error: $errorMsg"                 
-        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $DocumentName_new, $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $ContainerName, $StorageAccountName
     }
     else {
         try {
@@ -173,70 +173,69 @@ function Check-DedicatedAdminAccounts {
             $commentsArray += $msgTable.userAccountNotExist -f $DocumentName_new
         } else {
             # Blob content is present
-            $UserAccountUPNs = $blobContent   
-        }
-
-        # if BG accounts present in the UPN list
-        $BGfound = $false
-        foreach ($user in $UserAccountUPNs) {
-            if ($user.admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
-                $user.admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
-                $BGfound = $true
-                break
-            } 
-        }
-        ## BG account in attestation file list
-        if ($BGfound) { 
-            $IsCompliant = $false
-            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
-        }
-        else{
-            $hpUPNinRegFound = $false
-            $regUPNinPAFound = $false
-            $hpUPNnotGA = $false
-            # validate: check HP users ONLY have HP admin role assignments
-            foreach ($hpAdmin in $UserAccountUPNs.admin_account_UPN){
-                
-                if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                    # each HP admin has active GA or PA role assignment
-                    if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                        # not dedicated user UPN for admin
-                        $hpUPNinRegFound = $true
-                        break
-                    }
-                    else{
-                        # validate: regular accounts are non-GA/PA role assignments
-                        foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
-                            if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
-                                $regUPNinPAFound = $true
-                                break 
+            $UserAccountUPNs = $blobContent 
+            
+            # if BG accounts present in the UPN list
+            $BGfound = $false
+            foreach ($user in $UserAccountUPNs) {
+                if ($user.admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
+                    $user.admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
+                    $BGfound = $true
+                    break
+                } 
+            }
+            ## BG account in attestation file list
+            if ($BGfound) { 
+                $IsCompliant = $false
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
+            }
+            else{
+                $hpUPNinRegFound = $false
+                $regUPNinPAFound = $false
+                $hpUPNnotGA = $false
+                # validate: check HP users ONLY have HP admin role assignments
+                foreach ($hpAdmin in $UserAccountUPNs.admin_account_UPN){
+                    
+                    if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                        # each HP admin has active GA or PA role assignment
+                        if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                            # not dedicated user UPN for admin
+                            $hpUPNinRegFound = $true
+                            break
+                        }
+                        else{
+                            # validate: regular accounts are non-GA/PA role assignments
+                            foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
+                                if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
+                                    $regUPNinPAFound = $true
+                                    break 
+                                }
                             }
                         }
                     }
+                    else{
+                        # listed admin UPN doesn't have active GA
+                        $hpUPNnotGA = $true
+                        break
+                    }
+                }
+                
+                if( $hpUPNnotGA ){
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.hpAccNotGA
+                        
+                }
+                elseif($regUPNinPAFound -or  $hpUPNinRegFound){
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAccNotExist
                 }
                 else{
-                    # listed admin UPN doesn't have active GA
-                    $hpUPNnotGA = $true
-                    break
+                    $IsCompliant = $true
+                    $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
                 }
-            }
-            
-            if( $hpUPNnotGA ){
-                $IsCompliant = $false
-                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.hpAccNotGA
-                    
-            }
-            elseif($regUPNinPAFound -or  $hpUPNinRegFound){
-                $IsCompliant = $false
-                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAccNotExist
-            }
-            else{
-                $IsCompliant = $true
-                $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
             }
         }
     }
-
 
     $Comments = $commentsArray -join ";"
     
