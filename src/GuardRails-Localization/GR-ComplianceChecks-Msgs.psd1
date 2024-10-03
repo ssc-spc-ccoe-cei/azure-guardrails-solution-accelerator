@@ -46,6 +46,7 @@ userFileEmpty = Empty file {0} found in Container.
 userAccountNotExist = Highly privileged administrator accounts not found or declared in file {0}.
 dedicatedAccNotExist = Review 'Global Administrator' and 'Privileged Administrator' role assignments and ensure there are dedicated accounts being used.
 dedicatedAccExist = All Cloud Administrators are using dedicated accounts.
+bgAccExistInUPNlist = Break glass accounts exists in file. Review the user accounts list. 
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type

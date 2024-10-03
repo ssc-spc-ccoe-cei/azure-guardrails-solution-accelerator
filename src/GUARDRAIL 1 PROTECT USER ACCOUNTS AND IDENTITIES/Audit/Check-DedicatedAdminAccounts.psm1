@@ -102,10 +102,10 @@ function Check-DedicatedAdminAccounts {
     $urlPath = "/users"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # # portal
-        # $data = $response.Content
-        # localExecution
-        $data = $response
+        # portal
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $allUsers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
@@ -183,17 +183,14 @@ function Check-DedicatedAdminAccounts {
                 $user.admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
                 $BGfound = $true
                 break
-            }
-            
-            if ($BGfound) { 
-                $IsCompliant = $false
-                $commentsArray = $msgTable.isNotCompliant
-                break 
-            }
+            } 
         }
-
-        # validate
-        if(!$BGfound){
+        ## BG account in attestation file list
+        if ($BGfound) { 
+            $IsCompliant = $false
+            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
+        }
+        else{
             # check with AllUsers list and if users from blob attestion file are in PA user list and not in non-PA user list from AllUsers list
             foreach ($hpAdmin in $UserAccountUPNs.admin_account_UPN){
                 if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin -and (-not ($nonHPAUsers -contains $hpAdmin))){
