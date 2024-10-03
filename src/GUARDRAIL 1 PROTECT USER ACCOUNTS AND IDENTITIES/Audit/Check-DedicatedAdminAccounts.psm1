@@ -167,10 +167,8 @@ function Check-DedicatedAdminAccounts {
             Write-Error "Error: $errorMsg"                    
         }
 
-        if ($null -eq $blobContent) {
-            $commentsArray += $msgTable.userFileEmpty -f $DocumentName_new
-        } elseif ($blobContent -ieq 'N/A' -or $blobContent -ieq 'NA') {
-            $commentsArray += $msgTable.userAccountNotExist -f $DocumentName_new
+        if ($null -eq $blobContent -or $blobContent -ieq 'N/A' -or $blobContent -ieq 'NA') {
+            $commentsArray += $msgTable.invalidUserFile -f $DocumentName_new
         } else {
             # Blob content is present
             $UserAccountUPNs = $blobContent 
@@ -178,8 +176,8 @@ function Check-DedicatedAdminAccounts {
             # if BG accounts present in the UPN list
             $BGfound = $false
             foreach ($user in $UserAccountUPNs) {
-                if ($user.admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
-                    $user.admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
+                if ($user.HP_admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
+                    $user.HP_admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
                     $BGfound = $true
                     break
                 } 
@@ -194,7 +192,7 @@ function Check-DedicatedAdminAccounts {
                 $regUPNinPAFound = $false
                 $hpUPNnotGA = $false
                 # validate: check HP users ONLY have HP admin role assignments
-                foreach ($hpAdmin in $UserAccountUPNs.admin_account_UPN){
+                foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
                     
                     if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
                         # each HP admin has active GA or PA role assignment
@@ -220,18 +218,20 @@ function Check-DedicatedAdminAccounts {
                     }
                 }
                 
-                if( $hpUPNnotGA ){
+                if($hpUPNinRegFound){
                     $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.hpAccNotGA
-                        
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
                 }
-                elseif($regUPNinPAFound -or  $hpUPNinRegFound){
+                elseif($regUPNinPAFound){
                     $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAccNotExist
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
                 }
                 else{
                     $IsCompliant = $true
                     $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
+                }
+                if( $hpUPNnotGA){
+                    $commentsArray += $msgTable.hpAccNotGA
                 }
             }
         }
