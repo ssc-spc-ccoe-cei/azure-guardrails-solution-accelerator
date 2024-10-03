@@ -118,7 +118,7 @@ function Check-DedicatedAdminAccounts {
     }
 
     # Filter and List non-privileged users from all user list
-    $nonHPAUsers = $allUsers | Where-Object { $_.userPrincipalName -notin $hpAdminUserAccounts.userPrincipalName }
+    $nonHPAdminUserAccounts = $allUsers | Where-Object { $_.userPrincipalName -notin $hpAdminUserAccounts.userPrincipalName }
 
 
     # # Read UPN files from storage with .csv extensions
@@ -191,39 +191,50 @@ function Check-DedicatedAdminAccounts {
             $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
         }
         else{
-            # check with AllUsers list and if users from blob attestion file are in PA user list and not in non-PA user list from AllUsers list
+            $hpUPNinRegFound = $false
+            $regUPNinPAFound = $false
+            $hpUPNnotGA = $false
+            # validate: check HP users ONLY have HP admin role assignments
             foreach ($hpAdmin in $UserAccountUPNs.admin_account_UPN){
-                if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin -and (-not ($nonHPAUsers -contains $hpAdmin))){
-                    $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant
+                
+                if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                    # each HP admin has active GA or PA role assignment
+                    if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                        # not dedicated user UPN for admin
+                        $hpUPNinRegFound = $true
+                        break
+                    }
+                    else{
+                        # validate: regular accounts are non-GA/PA role assignments
+                        foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
+                            if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
+                                $regUPNinPAFound = $true
+                                break 
+                            }
+                        }
+                    }
+                }
+                else{
+                    # listed admin UPN doesn't have active GA
+                    $hpUPNnotGA = $true
                     break
                 }
             }
-
-            if (!$IsCompliant){
-                
-                $regUPNinPAFound = $false
-                # List contains all hp accounts
-                # validate regular account
-                foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
-                    if ( $hpAdminUserAccounts -contains $regUPN){
-                        $regUPNinPAFound = $true
-                        break 
-                    }
-                }
-                if($regUPNinPAFound){
-                    $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAccNotExist
-                }
-                else{
-                    $IsCompliant = $true
-                    $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
-                }
-                
-            }
             
+            if( $hpUPNnotGA ){
+                $IsCompliant = $false
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.hpAccNotGA
+                    
+            }
+            elseif($regUPNinPAFound -or  $hpUPNinRegFound){
+                $IsCompliant = $false
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAccNotExist
+            }
+            else{
+                $IsCompliant = $true
+                $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
+            }
         }
-        
     }
 
 
@@ -256,65 +267,4 @@ function Check-DedicatedAdminAccounts {
         AdditionalResults = $AdditionalResults
     }
     return $moduleOutput   
-}
-
-
-function Read-DocumentFromStorage {
-    param (
-        [array] $StorageAccount,
-        [string] $StorageAccountName,
-        [string] $ContainerName, 
-        [string] $ResourceGroupName,
-        [string] $SubscriptionID,
-        [string] $ItemName,
-        [hashtable] $msgTable,
-        [string[]] $DocumentName
-    )
-
-    $commentsArray = @()
-    $UserAccountUPNs = @()
-    
-    ForEach ($docName in $DocumentName) {
-        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
-        
-        If ($null -eq $blob) {            
-            # a blob with the name $DocumentName was not located in the specified storage account
-            $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
-            $ErrorList.Add($errorMsg) 
-            #Write-Error "Error: $errorMsg"                 
-            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
-        }
-        else {
-            try {
-                $blobContent = $blob.ICloudBlob.DownloadText()
-                # Further processing of $blobContent...
-            } catch {
-                $errorMsg = "Error downloading content from blob '$docName': $_"
-                $ErrorList.Add($errorMsg)
-                Write-Error "Error: $errorMsg"                    
-            }
-
-            if ([string]::IsNullOrWhiteSpace($blobContent)) {
-                $commentsArray += $msgTable.userFileEmpty -f $docName
-            }
-            elseif ($blobContent -ieq 'N/A' -or`
-                    $blobContent -ieq 'NA') {
-                $commentsArray += $msgTable.userAccountNotExist -f $docName
-            }
-            else {
-                # Blob content is present and needs to be parsed
-                # Parses the UPNs and sanitizes them
-                $result = Parse-BlobContent -blobContent $blobContent
-                $UserAccountUPNs = $result.UserUPNs
-            }
-        }
-
-    }
-
-    $psObject= [PSCustomObject]@{ 
-        UserAccountUPNs = $UserAccountUPNs
-        commentsArray = $commentsArray
-    }
-    return  $psObject 
 }

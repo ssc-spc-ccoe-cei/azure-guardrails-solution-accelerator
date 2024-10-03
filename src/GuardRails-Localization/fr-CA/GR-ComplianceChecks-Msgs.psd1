@@ -47,6 +47,7 @@ userAccountNotExist = Highly privileged administrator accounts not found or decl
 dedicatedAccNotExist = Review 'Global Administrator' and 'Privileged administrator' role assignments and ensure there are dedicated accounts being used.
 dedicatedAccExist = All Cloud Administrators are using dedicated accounts.
 bgAccExistInUPNlist = Break glass accounts exists in file. Review the user accounts list. 
+hpAccNotGA = One or more UPN from admin UPN list doesn't have GA role assignments.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
