@@ -14,7 +14,7 @@
 RootModule = 'Check-CyberSecurityServices'
 
 # Version number of this module.
-ModuleVersion = '1.1.4'
+ModuleVersion = '1.1.5'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
