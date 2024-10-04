@@ -195,7 +195,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CyberSecurityServices.zip'
-        version: '1.1.4'
+        version: '1.1.5'
       }
     }
   }
