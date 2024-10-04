@@ -41,6 +41,13 @@ logsNotCollected = Tous les journaux requis ne sont pas collectés.
 gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur
 gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
 
+dedicatedAdminAccountsCheck = Comptes d'utilisateurs dédiés pour l'administration
+invalidUserFile = Mettez à jour le fichier {0} et répertoriez les noms principaux d'utilisateurs (UPN) de rôles à privilèges élevés et leurs UPN de rôle régulier.
+dedicatedAdminAccNotExist = Il y a des utilisateurs privilégiés identifiés sans rôle hautement privilégié. Examinez les attributions de rôles « Administrateur général » et « Administrateur de rôle privilégié » dans l'environnement et assurez-vous qu'il existe des comptes d'utilisateurs dédiés pour les rôles hautement privilégiés.
+regAccHasHProle = Il y a des utilisateurs non privilégiés identifiés avec un rôle hautement privilégié. Examinez les attributions de rôles « Administrateur général » et « Administrateur de rôle privilégié » dans l'environnement et assurez-vous qu'il existe des comptes d'utilisateurs dédiés pour les rôles hautement privilégiés.
+dedicatedAccExist = Tous les administrateurs infonuagiques utilisent des comptes dédiés pour des rôles hautement privilégiés.
+bgAccExistInUPNlist = Des noms principaux d'utilisateurs (UPN) de bris de verre existent dans le fichier de .csv téléchargé. Examinez les comptes d'utilisateurs .csv fichier et supprimez les UPN du compte bris de verre.
+hpAccNotGA = Un ou plusieurs administrateurs hautement privilégiés identifiés dans le fichier .csv n'utilisent pas activement leurs attributions de rôle d'administrateur général pour le moment. Confirmez que ces utilisateurs disposent d'une attribution d'administrateur général éligible.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 

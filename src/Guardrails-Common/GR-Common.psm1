@@ -732,8 +732,8 @@ function add-documentFileExtensions {
     if ($ItemName.ToLower() -eq 'network architecture diagram'){
         $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
     }
-    elseif ($ItemName.ToLower() -eq 'global administrators accounts mfa check') {
-        $fileExtensions = @(".txt")
+    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration') {
+        $fileExtensions = @(".csv")
     }
     else {
         $fileExtensions = @(".txt",".docx", ".doc")

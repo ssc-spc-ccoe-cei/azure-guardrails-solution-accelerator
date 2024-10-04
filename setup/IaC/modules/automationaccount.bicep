@@ -303,7 +303,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }
     }
   }
@@ -325,7 +325,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-
   resource module32 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserGroups'
     properties: {
@@ -356,6 +355,15 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
+  resource module35 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-DedicatedAdminAccounts'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
+        version: '1.0.0'
+      }
+    }
+  }
 resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {

@@ -37,8 +37,6 @@ function Check-GAUserCountMFARequired {
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
-            # # Find the Global Administrator role ID
-            # $globalAdminRoleId = ($roles.value | Where-Object { $_.displayName -eq "Global Administrator" }).id
         }
     }
     catch {
@@ -105,10 +103,10 @@ function Check-GAUserCountMFARequired {
     ## ****All Global Admin Accounts except BG ******##
     ## **********************************************##
     $allGAUserUPNs = $globalAdminUserAccounts.userPrincipalName
-    Write-Host "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
-    Write-Output "DEBUG: allGAUserUPNs count is $($allGAUserUPNs.Count)"
-    Write-Output "DEBUG: allGAUserUPNs user UPNs are $allGAUserUPNs"
-    if (($allGAUserUPNs.Count -gt 6) -or ($allGAUserUPNs.Count -lt 2)){
+    Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
+    Write-Output "allGAUserUPNs count is $($allGAUserUPNs.Count)"
+    Write-Output "allGAUserUPNs user UPNs are $allGAUserUPNs"
+    if (($allGAUserUPNs.Count -ge 6) -or ($allGAUserUPNs.Count -lt 2)){
         $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
     }
     else{
@@ -121,9 +119,9 @@ function Check-GAUserCountMFARequired {
 
         # Get GA member users UPNs
         $memberUsersUPNs= $memberUsers | Select-Object userPrincipalName, mail
-        Write-Output "DEBUG: GA memberUsersUPNs count is $($memberUsersUPNs.Count)"
-        Write-Output "DEBUG: GA memberUsersUPNs are $($memberUsersUPNs.userPrincipalName)"
-        Write-Host "DEBUG: GA memberUsersUPNs count is $($memberUsersUPNs.Count)"
+        Write-Output "GA memberUsersUPNs count is $($memberUsersUPNs.Count)"
+        Write-Output "GA memberUsersUPNs are $($memberUsersUPNs.userPrincipalName)"
+        Write-Host "GA memberUsersUPNs count is $($memberUsersUPNs.Count)"
 
         if(!$null -eq $memberUsersUPNs){
             $result = Get-AllUserAuthInformation -allUserList $memberUsersUPNs
@@ -134,15 +132,15 @@ function Check-GAUserCountMFARequired {
             }
             $userValidMFACounter = $result.userValidMFACounter
         }
-        Write-Host "DEBUG: userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
+        Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
         
 
         ## *******************************************##
         ## ****** External user as Global Admin ******##
         ## *******************************************##
         $extUsers = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-        Write-Output "DEBUG: extUsers count is $($extUsers.Count)"
-        Write-Output "DEBUG: extUsers UPNs are $($extUsers.userPrincipalName)"
+        Write-Output "extUsers count is $($extUsers.Count)"
+        Write-Output "extUsers UPNs are $($extUsers.userPrincipalName)"
         if(!$null -eq $extUsers){
              # Get external users UPNs and emails
             $extUsersUPN = $extUsers | Select-Object userPrincipalName, mail
@@ -156,10 +154,10 @@ function Check-GAUserCountMFARequired {
             # combined list
             $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
         }
-        Write-Output "DEBUG: GA accounts auth method check done"
-        Write-Host "DEBUG: userValidMFACounter count is $userValidMFACounter"
-        Write-Output "DEBUG: userValidMFACounter count is $userValidMFACounter"
-        Write-Output "DEBUG: userValidMFA member UPNs are $($memberUserUPNsValidMFA.UPN) and external UPNs are $($extUserUPNsValidMFA.UPN)"
+        Write-Output "GA accounts auth method check done"
+        Write-Host "userValidMFACounter count is $userValidMFACounter"
+        Write-Output "userValidMFACounter count is $userValidMFACounter"
+        Write-Output "userValidMFA member UPNs are $($memberUserUPNsValidMFA.UPN) and external UPNs are $($extUserUPNsValidMFA.UPN)"
         
 
         if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
@@ -170,8 +168,8 @@ function Check-GAUserCountMFARequired {
             $userUPNsBadMFA =  $extUserUPNsBadMFA
         }
 
-        Write-Output "DEBUG: userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
-        Write-Output "DEBUG: userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
+        Write-Output "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+        Write-Output "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
        
         # Condition: all users are MFA enabled
         if($userValidMFACounter -eq $allGAUserUPNs.Count) {
