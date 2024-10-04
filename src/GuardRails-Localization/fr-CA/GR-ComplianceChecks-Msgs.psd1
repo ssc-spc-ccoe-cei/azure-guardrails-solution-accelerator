@@ -30,7 +30,7 @@ globalAdminAccntsSurplus = Il doit y avoir six comptes d'administrateur généra
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
-allCloudUserAccountsMFACheck = Tous les comptes d’utilisateurs infonuagiques stratégie d’accès conditionnel AMF
+allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
@@ -38,7 +38,7 @@ userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas �
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
 nonCompliantLaw = Le LAW {0} identifié ne correspond pas au fichier config.json.
 logsNotCollected = Tous les journaux requis ne sont pas collectés.
-gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur (M)
+gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur
 gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
 
 
@@ -60,10 +60,10 @@ removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 
 onlineAttackCounterMeasures = Vérification de mesures pour contrer les attaques en ligne: Verrouillage et listes de mots de passe interdits
-onlineAttackNonCompliantC1 = Le seuil de verrouillage de compte ne respecte pas l’Orientation sur les mots de passe du GC.
-onlineAttackNonCompliantC2 = La liste des mots de passe interdits n’a pas été configurée dans cet environnement. Examinez l’Orientation sur les mots de passe du GC.
-onlineAttackIsCompliant = Le seuil de verrouillage de compte et la liste des mots de passe interdits répondent à l’Orientation sur les mots de passe du GC.
-onlineAttackNonCompliantC1C2 = Ni le verrouillage de compte ni la liste des mots de passe interdits ne répondent à l’Orientation sur les mots de passe du GC. Examinez et corrigez.
+onlineAttackNonCompliantC1 = Le seuil de verrouillage de compte ne respecte pas l'Orientation sur les mots de passe du GC.
+onlineAttackNonCompliantC2 = La liste des mots de passe interdits n'a pas été configurée dans cet environnement. Examinez l'Orientation sur les mots de passe du GC.
+onlineAttackIsCompliant = Le seuil de verrouillage de compte et la liste des mots de passe interdits répondent à l'Orientation sur les mots de passe du GC.
+onlineAttackNonCompliantC1C2 = Ni le verrouillage de compte ni la liste des mots de passe interdits ne répondent à l'Orientation sur les mots de passe du GC. Examinez et corrigez.
 
 noGuestAccounts = Il n'y a présentement aucun compte d'utilisateur invité dans votre environnement locataire.
 guestAccountsNoPermission = Il y a des comptes d'utilisateurs invités dans l'environnement locataire et ils n'ont aucune permission dans le(s) abonnement(s) Azure du locataire.
@@ -82,7 +82,7 @@ userCountGroupNoMatch = Tous les utilisateurs n'ont pas été assignés à un gr
 noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référence à l'un de vos groupes d'utilisateurs (privilégiés ou non privilégiés).
 userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des groupes d'utilisateurs ne sont pas nécessaires.
 userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
-reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d’utilisateurs pour le contrôle d’accès.
+reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
@@ -93,10 +93,10 @@ consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès 
 authorizedProcessedByCSO = Accès Autorisé
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
 noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
-noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d’appareil activés avec des ressources cibles, des rôles d’administrateur inclus et activés.
-noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d’administrateur inclus et activés.
+noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d'appareil activés avec des ressources cibles, des rôles d'administrateur inclus et activés.
+noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d'administrateur inclus et activés.
 hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
-noCompliantPoliciesAdmin = Aucune politique conforme n'a été trouvée pour les filtres d'appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu’il existe au moins une politique pour chacun. Une pour les filtres d’appareil avec une ressource cible et l’autre pour les emplacements nommés/approuvés.
+noCompliantPoliciesAdmin = Aucune politique conforme n'a été trouvée pour les filtres d'appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu'il existe au moins une politique pour chacun. Une pour les filtres d'appareil avec une ressource cible et l'autre pour les emplacements nommés/approuvés.
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
