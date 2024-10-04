@@ -38,7 +38,7 @@ userMisconfiguredMFA = One or more Native User Accounts have not configured MFA 
 retentionNotMet = The LAW {0} does not meet data retention requirements
 nonCompliantLaw = The LAW {0} does not match the config.json file.
 logsNotCollected = Not all of the required logs are being collected.
-gcEventLogging = User Account GC Event Logging Check (M)
+gcEventLogging = User Account GC Event Logging Check
 gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet this control's requirements.
 
 dedicatedAdminAccountsCheck = Dedicated user accounts for administration

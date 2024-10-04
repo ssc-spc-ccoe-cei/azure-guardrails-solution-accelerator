@@ -38,7 +38,7 @@ userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas �
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
 nonCompliantLaw = Le LAW {0} identifié ne correspond pas au fichier config.json.
 logsNotCollected = Tous les journaux requis ne sont pas collectés.
-gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur (M)
+gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur
 gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
 
 dedicatedAdminAccountsCheck = Comptes d'utilisateurs dédiés pour l'administration
