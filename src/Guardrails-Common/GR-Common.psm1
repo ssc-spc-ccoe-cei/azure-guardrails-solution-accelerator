@@ -668,8 +668,7 @@ function Parse-BlobContent {
     $filteredLines = $lines | Where-Object { $_ -match '\S' -and $_ -like "*@*" } | ForEach-Object { $_ -replace '\s' }
 
     # Initialize an empty array
-    # $globalAdminUPNs = @()
-    $userUPNs = @()
+    $globalAdminUPNs = @()
 
     # Check each line, remove the hyphen (if any), and add to array
     foreach ($line in $filteredLines) {
@@ -681,13 +680,11 @@ function Parse-BlobContent {
             $trimmedLine = $line
         }
         $trimmedLine = $trimmedLine.Trim()
-        # $globalAdminUPNs += $trimmedLine
-        $userUPNs += $trimmedLine
+        $globalAdminUPNs += $trimmedLine
     }
 
     $result = New-Object PSObject -Property @{
-        # GlobalAdminUPNs = $globalAdminUPNs
-        UserUPNs = $userUPNs
+        GlobalAdminUPNs = $globalAdminUPNs
     }
 
     return $result
