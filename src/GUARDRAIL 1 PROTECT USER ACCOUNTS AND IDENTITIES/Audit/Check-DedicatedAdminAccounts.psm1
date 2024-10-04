@@ -58,7 +58,6 @@ function Check-DedicatedAdminAccounts {
 
     # # Filter the highly privileged Administrator role ID
     $highlyPrivilegedAdminRole = $rolesResponse | Where-Object { $_.displayName -eq "Global Administrator" -or $_.displayName -eq "Privileged Role Administrator" }
-    # $highlyPrivilegedAdminRoleIds = @('62e90394-69f5-4237-9190-012177145e10', 'e8611ab8-c189-46e8-94e1-60213ab1f814')
     foreach ($role in  $highlyPrivilegedAdminRole){
         # Get directory roles for each user with the highly privileged admin access
 
@@ -121,8 +120,7 @@ function Check-DedicatedAdminAccounts {
     $nonHPAdminUserAccounts = $allUsers | Where-Object { $_.userPrincipalName -notin $hpAdminUserAccounts.userPrincipalName }
 
 
-    # # Read UPN files from storage with .csv extensions
-    # Add possible file extensions
+    # Read UPN files from storage with .csv extensions, add possible file extensions
     $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
 
     try {
@@ -154,13 +152,12 @@ function Check-DedicatedAdminAccounts {
         $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
         subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
         $ErrorList.Add($errorMsg) 
-        #Write-Error "Error: $errorMsg"                 
+              
         $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $ContainerName, $StorageAccountName
     }
     else {
         try {
             $blobContent = $blob.ICloudBlob.DownloadText()| ConvertFrom-Csv
-            # Further processing of $blobContent...
         } catch {
             $errorMsg = "Error downloading content from blob '$DocumentName_new': $_"
             $ErrorList.Add($errorMsg)
