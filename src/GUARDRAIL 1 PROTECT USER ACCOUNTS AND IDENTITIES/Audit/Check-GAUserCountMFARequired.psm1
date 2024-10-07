@@ -30,10 +30,10 @@ function Check-GAUserCountMFARequired {
     $urlPath = "/directoryRoles"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # # portal
-        # $data = $response.Content
-        # localExecution
-        $data = $response
+        # portal
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
@@ -59,10 +59,10 @@ function Check-GAUserCountMFARequired {
     $urlPath = "/directoryRoles/$roleId/members"
     try{
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # # portal
-        # $data = $response.Content
-        # localExecution
-        $data = $response
+        # portal
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $gaRoleResponse  = $data.value
@@ -164,13 +164,12 @@ function Check-GAUserCountMFARequired {
         Write-Output "userValidMFACounter count is $userValidMFACounter"
         Write-Output "userValidMFA member UPNs are $($memberUserUPNsValidMFA.UPN) and external UPNs are $($extUserUPNsValidMFA.UPN)"
         
-
-        if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
-            $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
-        }elseif($null -eq $extUserUPNsBadMFA -and (!$null -eq $memberUserUPNsBadMFA)){
+        if($null -eq $extUserUPNsBadMFA -or $extUserUPNsBadMFA.Count -eq 0 -and (!$null -eq $memberUserUPNsBadMFA)){
             $userUPNsBadMFA =  $memberUserUPNsBadMFA 
-        }elseif($null -eq $memberUserUPNsBadMFA -and (!$null -eq $extUserUPNsBadMFA)){
+        }elseif(($null -eq $memberUserUPNsBadMFA -or $memberUserUPNsBadMFA.Count -eq 0) -and (!$null -eq $extUserUPNsBadMFA)){
             $userUPNsBadMFA =  $extUserUPNsBadMFA
+        }elseif(!$null -eq $extUserUPNsBadMFA -and (!$null -eq $memberUserUPNsBadMFA)){
+            $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
         }
 
         Write-Output "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
