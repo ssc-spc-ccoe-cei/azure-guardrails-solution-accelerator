@@ -19,76 +19,105 @@ function Check-ApplicationGatewayCertificateValidity {
     $Comments = ""
     $ErrorList = New-Object System.Collections.ArrayList
 
-    # 1. Check if Application Gateway is used
-    $appGateways = Get-AzApplicationGateway
-    if ($appGateways.Count -eq 0) {
-        $Comments = $msgTable.noAppGatewayFound
-        $IsCompliant = $false
-    }
-    else {
-        $allCompliant = $true
-        foreach ($appGateway in $appGateways) {
-            # 2. Check for SSL Certificates in listeners
-            $listeners = Get-AzApplicationGatewayHttpListener -ApplicationGateway $appGateway
-            $sslListeners = $listeners | Where-Object { $_.SslCertificate -ne $null }
-            
-            if ($sslListeners.Count -eq 0) {
-                $Comments += $msgTable.noSslListenersFound -f $appGateway.Name
-                $allCompliant = $false
-                continue
-            }
+    # Get all subscriptions
+    $subscriptions = Get-AzSubscription
 
-            foreach ($listener in $sslListeners) {
-                # 3. Check certificate validity
-                $cert = Get-AzApplicationGatewaySslCertificate -ApplicationGateway $appGateway -Name $listener.SslCertificate.Id
-                if ($cert.PublicCertData) {
-                    $x509cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
-                    $x509cert.Import([System.Convert]::FromBase64String($cert.PublicCertData))
-                    
-                    if ($x509cert.NotAfter -le (Get-Date)) {
-                        $Comments += $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
+    $allCompliant = $true
+    $appGatewaysFound = $false
+
+    foreach ($subscription in $subscriptions) {
+        # Set the context to the current subscription
+        Set-AzContext -Subscription $subscription.Id | Out-Null
+
+        # Get Application Gateways in the current subscription
+        $appGateways = Get-AzApplicationGateway
+
+        if ($appGateways.Count -gt 0) {
+            $appGatewaysFound = $true
+            foreach ($appGateway in $appGateways) {
+                # 2. Check for SSL Certificates in listeners
+                $listeners = Get-AzApplicationGatewayHttpListener -ApplicationGateway $appGateway
+                $sslListeners = $listeners | Where-Object { $_.SslCertificate -ne $null }
+                
+                if ($sslListeners.Count -eq 0) {
+                    $Comments += $msgTable.noSslListenersFound -f $appGateway.Name
+                    $allCompliant = $false
+                    continue
+                }
+
+                foreach ($listener in $sslListeners) {
+                    # Extract the certificate name from the Id
+                    $certName = $listener.SslCertificate.Id.Split('/')[-1]
+
+                    # 3. Check certificate validity
+                    $cert = Get-AzApplicationGatewaySslCertificate -ApplicationGateway $appGateway -Name $certName
+                    if ($cert.PublicCertData) {
+                        try {
+                            $certBytes = [System.Convert]::FromBase64String($cert.PublicCertData)
+                            $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+                            $certCollection.Import($certBytes)
+                            $x509cert = $certCollection[0]
+                        
+                            if ($.NotAfter -le (Get-Date)) {
+                                $Comments += $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
+                                $allCompliant = $false
+                            }
+
+                            # 4. Check if certificate is from an approved CA
+                            $isApprovedCA = $false
+                            
+                            # Get the Key Vault name from the Application Gateway configuration
+                            $keyVaultName = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName } | Select-Object -ExpandProperty KeyVaultSecretId -ErrorAction SilentlyContinue
+                            if ($keyVaultName) {
+                                $keyVaultName = ($keyVaultName -split '/')[8]
+                                $isApprovedCA = $true
+                            }
+
+                            if (-not $isApprovedCA) {
+                                $Comments += $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                                $allCompliant = $false
+                            }
+                        }
+                        catch {
+                            $Comments += $msgTable.unableToProcessCertData -f $listener.Name, $appGateway.Name, $_.Exception.Message
+                            $allCompliant = $false
+                        }
+                    }
+                    else {
+                        $Comments += $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                         $allCompliant = $false
                     }
+                }
 
-                    # 4. Check if certificate is from an approved CA
-                    $isApprovedCA = $false
-                    
-                    # Get the Key Vault and HSM names from the Application Gateway configuration
-                    $keyVaultName = $appGateway.SslCertificates | Where-Object { $_.Id -eq $listener.SslCertificate.Id } | Select-Object -ExpandProperty KeyVaultSecretId -ErrorAction SilentlyContinue
-                    if ($keyVaultName) {
-                        $keyVaultName = ($keyVaultName -split '/')[8]
-                        $hsmName = Get-AzKeyVault -VaultName $keyVaultName | Select-Object -ExpandProperty HsmName -ErrorAction SilentlyContinue
-                    }
+                # 3. Check HTTPS backend settings for well-known CA certificates
+                $httpsBackendSettings = $appGateway.BackendHttpSettingsCollection | 
+                    Where-Object { $_.Protocol -eq 'Https' }
 
-                    if ($keyVaultName -and $hsmName) {
-                        # Check if "well-known" toggle is on
-                        $wellKnownToggle = Get-AzKeyVaultManagedHsm -Name $hsmName -ResourceGroupName (Get-AzKeyVault -VaultName $keyVaultName).ResourceGroupName | 
-                            Select-Object -ExpandProperty Properties | 
-                            Select-Object -ExpandProperty EnableSoftDelete
-                        
-                        # Check if Certificate Allow-List exists
-                        $allowList = Get-AzKeyVaultCertificate -VaultName $keyVaultName -Name "CertificateAllowList" -ErrorAction SilentlyContinue
-                        
-                        # Check if Certificate management in key vault is enabled
-                        $certManagementEnabled = Get-AzKeyVault -VaultName $keyVaultName | Select-Object -ExpandProperty EnabledForCertificateManagement
-
-                        if ($wellKnownToggle -and $allowList -and $certManagementEnabled) {
-                            $isApprovedCA = $true
+                if ($httpsBackendSettings.Count -eq 0) {
+                    $Comments += $msgTable.noHttpsBackendSettingsFound -f $appGateway.Name
+                } else {
+                    $allWellKnownCA = $true
+                    foreach ($backendSetting in $httpsBackendSettings) {
+                        if ($backendSetting.TrustedRootCertificates.Count -gt 0) {
+                            $Comments += $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                            $allWellKnownCA = $false
                         }
                     }
 
-                    if (-not $isApprovedCA) {
-                        $Comments += $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                    if ($allWellKnownCA) {
+                        $Comments += $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
+                    } else {
                         $allCompliant = $false
                     }
                 }
-                else {
-                    $Comments += $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
-                    $allCompliant = $false
-                }
             }
         }
-        
+    }
+
+    if (-not $appGatewaysFound) {
+        $Comments = $msgTable.noAppGatewayFound
+        $IsCompliant = $false
+    } else {
         $IsCompliant = $allCompliant
         if ($IsCompliant) {
             $Comments = $msgTable.allCertificatesValid
