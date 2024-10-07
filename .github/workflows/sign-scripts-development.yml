@@ -155,7 +155,9 @@ jobs:
       - name: AZ Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true 
       - name: Stage zipped/signed modules in Storage Account
         uses: azure/powershell@v2
@@ -262,15 +264,6 @@ jobs:
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
-<<<<<<< HEAD
-      # - name: ReLogin AZ (due to timeout issue)
-      #   uses: azure/login@v2
-      #   with:
-      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
-      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      #     enable-AzPSSession: true 
-=======
       - name: ReLogin AZ (due to timeout issue)
         uses: azure/login@v2
         with:
@@ -303,7 +296,7 @@ jobs:
                 }
               }
               $job = Start-Job -ScriptBlock $jobScript
->>>>>>> d60c002 (update)
+          azPSVersion: "latest"
       - name: Deploy Test environment
         uses: azure/powershell@v2
         with:
@@ -471,3 +464,4 @@ jobs:
           azPSVersion: "latest"
         env:
           UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+
