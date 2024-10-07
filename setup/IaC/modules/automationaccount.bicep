@@ -334,7 +334,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-<<<<<<< HEAD
 
  resource module33 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-OnlineAttackCountermeasures'
@@ -345,8 +344,18 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-        
+
   resource module34 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-ApplicationGatewayCertificateValidity'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+        
+  resource module35 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudAccountsMFA'
     properties: {
       contentLink: {
@@ -356,23 +365,17 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
-  resource module35 'modules' = if (newDeployment || updatePSModules) {
+  resource module36 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DedicatedAdminAccounts'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
-=======
-  resource module34 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ApplicationGatewayCertificateValidity'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
->>>>>>> d60c002 (update)
         version: '1.0.0'
       }
     }
   }
-resource variable1 'variables' = if (newDeployment || updateCoreResources) {
+
+  resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
