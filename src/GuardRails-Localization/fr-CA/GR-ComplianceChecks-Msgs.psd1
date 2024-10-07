@@ -149,6 +149,16 @@ hasNonComplianceResounce = {0} des ressources {1} applicables ne sont pas confor
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
+noSslListenersFound = Aucun écouteur SSL trouvé pour la passerelle d'application : {0}
+expiredCertificateFound = Certificat expiré trouvé pour l'écouteur '{0}' dans la passerelle d'application '{1}'
+unapprovedCAFound = AC non approuvée trouvée pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Émetteur : {2}
+unableToProcessCertData = Impossible de traiter les données du certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Erreur : {2}
+unableToRetrieveCertData = Impossible de récupérer les données du certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'
+noHttpsBackendSettings = Aucun paramètre backend HTTPS trouvé pour la passerelle d'application : {0}
+manualTrustedRootCerts = Certificats racine de confiance manuels trouvés pour la passerelle d'application '{0}', paramètre backend '{1}'
+allBackendSettingsUseWellKnownCA = Tous les paramètres backend de la passerelle d'application '{0}' utilisent des certificats d'AC bien connues
+noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonnement
+allCertificatesValid = Tous les certificats sont valides et proviennent d'AC approuvées
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
