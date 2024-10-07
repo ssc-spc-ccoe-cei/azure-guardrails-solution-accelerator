@@ -30,10 +30,10 @@ function Check-GAUserCountMFARequired {
     $urlPath = "/directoryRoles"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
+        # # portal
+        # $data = $response.Content
+        # localExecution
+        $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
@@ -59,10 +59,10 @@ function Check-GAUserCountMFARequired {
     $urlPath = "/directoryRoles/$roleId/members"
     try{
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
+        # # portal
+        # $data = $response.Content
+        # localExecution
+        $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $gaRoleResponse  = $data.value
@@ -106,8 +106,13 @@ function Check-GAUserCountMFARequired {
     Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
     Write-Output "allGAUserUPNs count is $($allGAUserUPNs.Count)"
     Write-Output "allGAUserUPNs user UPNs are $allGAUserUPNs"
-    if (($allGAUserUPNs.Count -ge 6) -or ($allGAUserUPNs.Count -lt 2)){
-        $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
+    if (($allGAUserUPNs.Count -ge 5) -or ($allGAUserUPNs.Count -lt 2)){
+        if($allGAUserUPNs.Count -lt 2){
+            $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsMinimum
+        }else{
+            $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
+        
+        }
     }
     else{
         ## Global Admin counts are within the range - proceed with MFA check
@@ -162,9 +167,9 @@ function Check-GAUserCountMFARequired {
 
         if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
             $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
-        }elseif($null -eq $extUserUPNsBadMFA){
+        }elseif($null -eq $extUserUPNsBadMFA -and (!$null -eq $memberUserUPNsBadMFA)){
             $userUPNsBadMFA =  $memberUserUPNsBadMFA 
-        }elseif($null -eq $memberUserUPNsBadMFA){
+        }elseif($null -eq $memberUserUPNsBadMFA -and (!$null -eq $extUserUPNsBadMFA)){
             $userUPNsBadMFA =  $extUserUPNsBadMFA
         }
 

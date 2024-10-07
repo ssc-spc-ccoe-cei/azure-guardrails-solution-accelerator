@@ -26,7 +26,7 @@ mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le comp
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
 
-globalAdminAccntsSurplus = Il doit y avoir six comptes d'administrateur général ou moins.
+globalAdminAccntsSurplus = Il doit y avoir cinq comptes d'administrateur général ou moins.
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
