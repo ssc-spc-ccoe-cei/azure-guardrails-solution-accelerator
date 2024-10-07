@@ -58,7 +58,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             $certCollection.Import($certBytes)
                             $x509cert = $certCollection[0]
                         
-                            if ($.NotAfter -le (Get-Date)) {
+                            if ($x509cert.NotAfter -le (Get-Date)) {
                                 $Comments += $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
                                 $allCompliant = $false
                             }
