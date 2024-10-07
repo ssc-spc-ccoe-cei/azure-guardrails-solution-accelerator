@@ -27,7 +27,7 @@ mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 
 globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
-globalAdminAccntsMinimum = There must be at least two global administrator accounts.
+globalAdminAccntsMinimum = There are not enough Global Administrator Accounts. There must be at least two but no more than five Active Global Administrator Accounts.
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
 gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
