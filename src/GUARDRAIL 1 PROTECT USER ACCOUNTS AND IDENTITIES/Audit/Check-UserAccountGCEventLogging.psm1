@@ -98,14 +98,16 @@ function Check-UserAccountGCEventLogging {
         }
 
     }
-    catch [Microsoft.Azure.Commands.OperationalInsights.Models.PSResourceNotFoundException] {
-        $IsCompliant = $false
-        $Comments += $msgTable.nonCompliantLaw -f $lawName
-        $ErrorList += "Log Analytics Workspace not found: $_"
-    }
     catch {
-        $IsCompliant = $false
-        $ErrorList += "Error accessing Log Analytics Workspace: $_"
+        if ($_.Exception.Message -like "*ResourceNotFound*") {
+            $IsCompliant = $false
+            $Comments += $msgTable.nonCompliantLaw -f $lawName
+            $ErrorList += "Log Analytics Workspace not found: $_"
+        }
+        else {
+            $IsCompliant = $false
+            $ErrorList += "Error accessing Log Analytics Workspace: $_"
+        }
     }
 
     if ($IsCompliant) {
