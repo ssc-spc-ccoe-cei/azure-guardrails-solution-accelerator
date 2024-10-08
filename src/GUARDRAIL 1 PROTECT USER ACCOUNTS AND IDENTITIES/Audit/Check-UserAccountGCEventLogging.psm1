@@ -94,7 +94,7 @@ function Check-UserAccountGCEventLogging {
         $lock = Get-AzResourceLock -ResourceGroupName $resourceGroupName -ResourceName $lawName -ResourceType "Microsoft.OperationalInsights/workspaces"
         if (-not $lock -or $lock.Properties.level -ne "ReadOnly") {
             $IsCompliant = $false
-            $Comments += $msgTable.nonCompliantLaw -f $lawName
+            $Comments += $msgTable.readOnlyLaw -f $lawName
         }
 
     }

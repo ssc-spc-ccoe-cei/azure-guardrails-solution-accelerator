@@ -36,6 +36,7 @@ allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authe
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
 
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
+readOnlyLaw = Il manque un verrou en lecture seule pour l'espace de travail {0} [Log Analytics Workspace (LAW)] identifié. Ajoutez le verrou en lecture seule pour éviter des suppressions accidentelles.
 nonCompliantLaw = Le LAW {0} identifié ne correspond pas au fichier config.json.
 logsNotCollected = Tous les journaux requis ne sont pas collectés.
 gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur
