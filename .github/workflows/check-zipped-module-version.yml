@@ -14,7 +14,7 @@ jobs:
     - name: Check Zipped Module Versions Against Source
       run: |
         $moduleVersionRegex = [regex]"(?:ModuleVersion\s?=\s?')([\d\.]*)'" 
-        $zippedModules = Get-ChildItem -path psmodules
+        $zippedModules = Get-ChildItem -path psmodules -Filter *.zip
         $allManifestFiles = Get-ChildItem -path src -Filter *.psd1 -Recurse -File
 
         ForEach ($zippedModule in $zippedModules) {
@@ -34,7 +34,9 @@ jobs:
                         $zippedModuleVersion = $zippedModuleVersionMatches[0].Groups[1].Value
                         Write-Host "    Zipped version: $zippedModuleVersion" -ForegroundColor Yellow
 
-                        $manifestFile = $allManifestFiles | Where-Object { $_.PSChildName -eq $zippedManifest.Name }
+                        # Find the corresponding manifest file based on the zip file name
+                        $manifestFileName = $zippedModule.BaseName + ".psd1"
+                        $manifestFile = $allManifestFiles | Where-Object { $_.Name -eq $manifestFileName }
 
                         If ($manifestFile) {
                             Write-Host "    Corresponding manifest file found: $($manifestFile.FullName)" -ForegroundColor Yellow
@@ -50,7 +52,7 @@ jobs:
                                         Write-Host "  Manifest file: $($manifestFile.FullName)" -ForegroundColor Red
                                         Write-Host "  Zipped file: $($zippedModule.FullName)" -ForegroundColor Red
                                         
-                                        throw "Module zip '$($zippedManifest.Name)' mismatch!"
+                                        throw "Module zip '$($zippedModule.Name)' mismatch!"
                                     }
                                     Write-Host "    Versions match: $zippedModuleVersion" -ForegroundColor Green
                                 }
@@ -63,7 +65,7 @@ jobs:
                             }
                         }
                         else {
-                            Write-Host "    No corresponding manifest file found" -ForegroundColor Red
+                            Write-Host "    No corresponding manifest file found for $manifestFileName" -ForegroundColor Red
                         }
                     }
                     else {
