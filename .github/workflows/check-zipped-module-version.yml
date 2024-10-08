@@ -18,10 +18,12 @@ jobs:
         $allManifestFiles = Get-ChildItem -path src -Filter *.psd1 -Recurse -File
 
         ForEach ($zippedModule in $zippedModules) {
+            Write-Host "Checking zipped module: $($zippedModule.Name)" -ForegroundColor Cyan
             $zipFile = [System.IO.Compression.zipfile]::OpenRead($zippedModule.FullName)
             $zippedManifests = $zipFile.Entries | Where-Object { $_.Name -like "*.psd1" } 
             
             Foreach ($zippedManifest in $zippedManifests) {
+                Write-Host "  Checking manifest: $($zippedManifest.Name)" -ForegroundColor Cyan
                 $stream = $zippedManifest.Open()
 
                 $streamReader = New-Object System.IO.StreamReader($stream)
@@ -30,26 +32,48 @@ jobs:
                 If ($zippedModuleVersionMatches = $moduleVersionRegex.matches($content)) {
                     If ($zippedModuleVersionMatches.count -eq 1) {
                         $zippedModuleVersion = $zippedModuleVersionMatches[0].Groups[1].Value
+                        Write-Host "    Zipped version: $zippedModuleVersion" -ForegroundColor Yellow
 
                         $manifestFile = $allManifestFiles | Where-Object { $_.PSChildName -eq $zippedManifest.Name }
 
                         If ($manifestFile) {
+                            Write-Host "    Corresponding manifest file found: $($manifestFile.FullName)" -ForegroundColor Yellow
                             $manifestContent = Get-Content $manifestFile.FullName
                             If ($manifestVersionMatches = $moduleVersionRegex.matches($manifestContent)) {
                                 If ($manifestVersionMatches.count -eq 1) {
                                     $manifestVersion = $manifestVersionMatches[0].Groups[1].Value
+                                    Write-Host "    Manifest version: $manifestVersion" -ForegroundColor Yellow
                                     If ($manifestVersion -ne $zippedModuleVersion) {
                                         Write-Host "Module version mismatch for $($zippedManifest.Name):" -ForegroundColor Red
                                         Write-Host "  Manifest version: $manifestVersion" -ForegroundColor Red
                                         Write-Host "  Zipped version: $zippedModuleVersion" -ForegroundColor Red
+                                        Write-Host "  Manifest file: $($manifestFile.FullName)" -ForegroundColor Red
+                                        Write-Host "  Zipped file: $($zippedModule.FullName)" -ForegroundColor Red
                                         
                                         throw "Module zip '$($zippedManifest.Name)' mismatch!"
                                     }
-                                    Write-Verbose "zip: $zippedModuleVersion src: $manifestVersion"
+                                    Write-Host "    Versions match: $zippedModuleVersion" -ForegroundColor Green
+                                }
+                                else {
+                                    Write-Host "    Multiple or no version matches found in manifest" -ForegroundColor Red
                                 }
                             }
+                            else {
+                                Write-Host "    No version found in manifest" -ForegroundColor Red
+                            }
+                        }
+                        else {
+                            Write-Host "    No corresponding manifest file found" -ForegroundColor Red
                         }
                     }
+                    else {
+                        Write-Host "    Multiple or no version matches found in zipped manifest" -ForegroundColor Red
+                    }
                 }
+                else {
+                    Write-Host "    No version found in zipped manifest" -ForegroundColor Red
+                }
+                $stream.Close()
             }
+            $zipFile.Dispose()
         }
