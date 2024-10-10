@@ -576,6 +576,7 @@ function Hide-Email {
 
 function Get-EvaluationProfile {
     [CmdletBinding()]
+    [OutputType([int])]
     param (
         [Parameter(Mandatory = $true)]
         [string] $CloudUsageProfiles,
