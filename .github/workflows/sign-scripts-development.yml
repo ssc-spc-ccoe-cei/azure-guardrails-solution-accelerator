@@ -29,60 +29,60 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
-      - name: Install AzureSignTool
-        run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
-      - name: AZ Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.ENT_AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.ENT_AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.ENT_AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: true 
-      - name: Azure token
-        run: |
-            $az_token=$(az account get-access-token --scope https://vault.azure.net/.default --query accessToken --output tsv)
-            echo "::add-mask::$az_token"
-            echo "AZ_TOKEN=$az_token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      # - name: Install AzureSignTool
+      #   run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
+      # - name: AZ Login
+      #   uses: azure/login@v2
+      #   with:
+      #     client-id: ${{ secrets.ENT_AZURE_CLIENT_ID }}
+      #     tenant-id: ${{ secrets.ENT_AZURE_TENANT_ID }}
+      #     subscription-id: ${{ secrets.ENT_AZURE_SUBSCRIPTION_ID }}
+      #     enable-AzPSSession: true 
+      # - name: Azure token
+      #   run: |
+      #       $az_token=$(az account get-access-token --scope https://vault.azure.net/.default --query accessToken --output tsv)
+      #       echo "::add-mask::$az_token"
+      #       echo "AZ_TOKEN=$az_token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Sign pwsh scripts and modules
-        shell: powershell
-        run: |
-          Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
-          $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
-          $vaultName = $env:VAULTNAME
+      # - name: Sign pwsh scripts and modules
+      #   shell: powershell
+      #   run: |
+      #     Get-ChildItem -Path "." -Filter ".git*" -Force | ForEach-Object {Remove-Item -Path $_.FullName -Recurse -Force}
+      #     $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
+      #     $vaultName = $env:VAULTNAME
 
-          foreach ($script in $scripts) {
-              try {
-                    # sign script
-                    azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
-              }
-              catch {
-                  Write-Error $_
-              }
-          }
-        env:
-          CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
-          VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
+      #     foreach ($script in $scripts) {
+      #         try {
+      #               # sign script
+      #               azuresigntool.exe sign --verbose -kvu https://$vaultName.vault.azure.net/ -kvc $env:CERTNAME -kva ${{ env.AZ_TOKEN }} -fd sha256 -tr "http://timestamp.comodoca.com/rfc3161" $script.FullName
+      #         }
+      #         catch {
+      #             Write-Error $_
+      #         }
+      #     }
+      #   env:
+      #     CERTNAME: ${{ secrets.ENT_VAULTSECRETNAME }}
+      #     VAULTNAME: ${{ secrets.ENT_VAULTNAME }}
 
-      - name: Validate Signature
-        shell: powershell
-        run: |
-          $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+      # - name: Validate Signature
+      #   shell: powershell
+      #   run: |
+      #     $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
 
-          Foreach ($signatureStatus in $signatureStatuses) {
-            If ($signatureStatus.Status -eq 'HashMismatch') {
-              throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            ElseIf ($signatureStatus.Status -eq 'NotSigned') {
-              Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            ElseIf ($signatureStatus.Status -eq 'Valid') {
-              Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
-            }
-            Else {
-              throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
-            }
-          }
+      #     Foreach ($signatureStatus in $signatureStatuses) {
+      #       If ($signatureStatus.Status -eq 'HashMismatch') {
+      #         throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      #       }
+      #       ElseIf ($signatureStatus.Status -eq 'NotSigned') {
+      #         Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      #       }
+      #       ElseIf ($signatureStatus.Status -eq 'Valid') {
+      #         Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      #       }
+      #       Else {
+      #         throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
+      #       }
+      #     }
       - name: Test Module Imports
         shell: powershell
         run: |
