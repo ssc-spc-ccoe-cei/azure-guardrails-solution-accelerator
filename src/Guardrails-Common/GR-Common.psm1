@@ -575,6 +575,7 @@ function Hide-Email {
 }
 
 function Get-EvaluationProfile {
+    [OutputType([int])]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
