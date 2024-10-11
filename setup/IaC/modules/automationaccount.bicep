@@ -364,7 +364,16 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource variable1 'variables' = if (newDeployment || updateCoreResources) {
+  resource module36 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-RiskBasedAccess'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-RishBasedAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
