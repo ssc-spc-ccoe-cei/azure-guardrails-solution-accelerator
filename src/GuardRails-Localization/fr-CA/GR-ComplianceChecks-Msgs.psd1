@@ -107,6 +107,9 @@ noLocationFilterPolicies = Une politique d'accès conditionnel requise est manqu
 hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
 noCompliantPoliciesAdmin = Aucune politique conforme n'a été trouvée pour les filtres d'appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu'il existe au moins une politique pour chacun. Une pour les filtres d'appareil avec une ressource cible et l'autre pour les emplacements nommés/approuvés.
 
+
+riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
+
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
 checkUserExistsError = L'appel API a retourné l'erreur {0}. Veuillez vérifier si l'utilisateur existe.
