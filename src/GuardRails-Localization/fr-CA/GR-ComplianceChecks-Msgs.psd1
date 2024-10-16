@@ -228,6 +228,8 @@ setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Sta
 passwordNotificationsConfigured = Notifications activées
 severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
 
+monitoringChecklist = Liste de contrôle de surveillance: cas d'utilisation
+
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
 mktPlaceCreatedEnabled = Le marché privé a été créé et activé.
