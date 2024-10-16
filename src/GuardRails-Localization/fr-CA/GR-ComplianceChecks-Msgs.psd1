@@ -26,7 +26,8 @@ mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le comp
 mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
 gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
 
-globalAdminAccntsSurplus = Il doit y avoir six comptes d'administrateur général ou moins.
+globalAdminAccntsSurplus = Il doit y avoir cinq comptes d'administrateur général ou moins.
+globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général. Il doit y avoir au moins deux, mais pas plus de cinq comptes d'administrateur général actifs.
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
@@ -36,6 +37,7 @@ allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authe
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
 
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
+readOnlyLaw = Il manque un verrou en lecture seule pour l'espace de travail {0} [Log Analytics Workspace (LAW)] identifié. Ajoutez le verrou en lecture seule pour éviter des suppressions accidentelles.
 nonCompliantLaw = Le LAW {0} identifié ne correspond pas au fichier config.json.
 logsNotCollected = Tous les journaux requis ne sont pas collectés.
 gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur
@@ -239,6 +241,8 @@ setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Sta
 passwordNotificationsConfigured = Notifications activées
 severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
 
+monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
+
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
 mktPlaceCreatedEnabled = Le marché privé a été créé et activé.
@@ -262,6 +266,8 @@ bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
 bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
+
+bgValidSignature = Signatures et approbations valides pour la procédure de compte de bris de verre
 
 # GR-Common
 procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.

@@ -980,6 +980,60 @@
     ]
   },
   {
+    "ModuleName": "Check-UserAccountGCEventLogging",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-UserAccountGCEventLogging -LAWResourceId $vars.LAWResourceId -RequiredRetentionDays $vars.RequiredRetentionDays -ControlName $msgTable.CtrName11 -ItemName $msgTable.gcEventLogging -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
+      },
+      {
+        "Name": "RequiredRetentionDays",
+        "Value": "securityRetentionDays"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(11)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.monitoringChecklist -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "MonitoringUseCases"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AU2"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-PrivateMarketPlaceCreation",
     "Control": "Guardrails12",
     "ModuleType": "Builtin",
@@ -1045,6 +1099,35 @@
       {
         "Name": "DocumentName",
         "Value": "BGFollowProcedureResponsibility"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails13",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgValidSignature -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "BGAccountSignaturesandApprovalsThread"
       },
       {
         "Name": "itsgcode",
