@@ -10,6 +10,16 @@ function Check-ApplicationGatewayCertificateValidity {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountName,
+        [Parameter(Mandatory = $true)]
+        [string] $ContainerName, 
+        [Parameter(Mandatory = $true)]
+        [string] $ResourceGroupName,
+        [Parameter(Mandatory = $true)]
+        [string] $SubscriptionID, 
+        [Parameter(Mandatory = $true)]
+        [string[]] $DocumentName, 
         [string] $CloudUsageProfiles = "3",
         [string] $ModuleProfiles,
         [switch] $EnableMultiCloudProfiles
@@ -18,6 +28,67 @@ function Check-ApplicationGatewayCertificateValidity {
     $IsCompliant = $false
     $Comments = ""
     $ErrorList = New-Object System.Collections.ArrayList
+    $ApprovedCAList = @()
+
+    # Add possible file extensions
+    $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
+
+    try {
+        Select-AzSubscription -Subscription $SubscriptionID | out-null
+    }
+    catch {
+        $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
+        throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
+    }
+    try {
+        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+    }
+    catch {
+        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
+        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
+    }
+
+
+    $blobFound = $false
+   
+    ForEach ($docName in $DocumentName_new) {
+        # check for procedure doc in blob storage account
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+
+        If ($blobs) {
+            $blobFound = $true
+            # Read the content of the blob and save CA names into array
+            $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -Force
+            $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
+            Remove-Item $blobContent.Name -Force
+            break
+        }
+    }
+
+    if ($blobFound){
+        $Comments += $msgTable.approvedCAFileFound -f $docName
+    }
+    else {
+        $Comments += $msgTable.approvedCAFileNotFound -f $docName, $ContainerName, $StorageAccountName
+        $IsCompliant = $false
+        
+        $PsObject = [PSCustomObject]@{
+            ComplianceStatus = $IsCompliant
+            ControlName      = $ControlName
+            Comments         = $Comments
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+        }
+
+        $moduleOutput = [PSCustomObject]@{ 
+            ComplianceResults = $PsObject
+            Errors            = $ErrorList
+        }
+        return $moduleOutput
+    }
 
     # Get all subscriptions
     $subscriptions = Get-AzSubscription
@@ -72,6 +143,10 @@ function Check-ApplicationGatewayCertificateValidity {
                                 $keyVaultName = ($keyVaultName -split '/')[8]
                                 $isApprovedCA = $true
                             }
+                            else {
+                                # Check if the certificate issuer is in the ApprovedCAList
+                                $isApprovedCA = $ApprovedCAList -contains $x509cert.Issuer
+                            }
 
                             if (-not $isApprovedCA) {
                                 $Comments += $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
@@ -116,7 +191,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
     if (-not $appGatewaysFound) {
         $Comments = $msgTable.noAppGatewayFound
-        $IsCompliant = $false
+        $IsCompliant = "Not Applicable"
     } else {
         $IsCompliant = $allCompliant
         if ($IsCompliant) {
