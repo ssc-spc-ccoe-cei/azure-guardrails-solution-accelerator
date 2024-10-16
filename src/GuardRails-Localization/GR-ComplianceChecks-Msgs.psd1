@@ -228,6 +228,8 @@ setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Notifications Enabled
 severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
 
+monitoringChecklist = Monitoring Checklist: Use Cases
+
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
 mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
