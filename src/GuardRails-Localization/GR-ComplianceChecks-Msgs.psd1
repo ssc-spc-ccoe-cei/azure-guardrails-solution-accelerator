@@ -26,7 +26,8 @@ mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 
-globalAdminAccntsSurplus = There must be six or fewer global administrator accounts.
+globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
+globalAdminAccntsMinimum = There are not enough Global Administrator Accounts. There must be at least two but no more than five Active Global Administrator Accounts.
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
 gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
@@ -36,6 +37,7 @@ allUserHaveMFA = Native user accounts have been identified, and all users accoun
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
 
 retentionNotMet = The LAW {0} does not meet data retention requirements
+readOnlyLaw = The {0} LAW identified is missing a read-only lock. Add the read-only lock to prevent accidental deletions.
 nonCompliantLaw = The LAW {0} does not match the config.json file.
 logsNotCollected = Not all of the required logs are being collected.
 gcEventLogging = User Account GC Event Logging Check
@@ -238,6 +240,8 @@ setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Notifications Enabled
 severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
 
+monitoringChecklist = Monitoring Checklist: Use Cases
+
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
 mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
@@ -261,6 +265,8 @@ bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
 bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
+
+bgValidSignature = Valid Signatures and Approvals for Break Glass Account Procedure
 
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.

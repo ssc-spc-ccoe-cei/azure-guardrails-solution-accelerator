@@ -94,18 +94,20 @@ function Check-UserAccountGCEventLogging {
         $lock = Get-AzResourceLock -ResourceGroupName $resourceGroupName -ResourceName $lawName -ResourceType "Microsoft.OperationalInsights/workspaces"
         if (-not $lock -or $lock.Properties.level -ne "ReadOnly") {
             $IsCompliant = $false
-            $Comments += $msgTable.nonCompliantLaw -f $lawName
+            $Comments += $msgTable.readOnlyLaw -f $lawName
         }
 
     }
-    catch [Microsoft.Azure.Commands.OperationalInsights.Models.PSResourceNotFoundException] {
-        $IsCompliant = $false
-        $Comments += $msgTable.nonCompliantLaw -f $lawName
-        $ErrorList += "Log Analytics Workspace not found: $_"
-    }
     catch {
-        $IsCompliant = $false
-        $ErrorList += "Error accessing Log Analytics Workspace: $_"
+        if ($_.Exception.Message -like "*ResourceNotFound*") {
+            $IsCompliant = $false
+            $Comments += $msgTable.nonCompliantLaw -f $lawName
+            $ErrorList += "Log Analytics Workspace not found: $_"
+        }
+        else {
+            $IsCompliant = $false
+            $ErrorList += "Error accessing Log Analytics Workspace: $_"
+        }
     }
 
     if ($IsCompliant) {

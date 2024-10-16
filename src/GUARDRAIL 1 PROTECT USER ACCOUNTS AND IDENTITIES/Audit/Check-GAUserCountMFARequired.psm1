@@ -106,8 +106,13 @@ function Check-GAUserCountMFARequired {
     Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
     Write-Output "allGAUserUPNs count is $($allGAUserUPNs.Count)"
     Write-Output "allGAUserUPNs user UPNs are $allGAUserUPNs"
-    if (($allGAUserUPNs.Count -ge 6) -or ($allGAUserUPNs.Count -lt 2)){
-        $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
+    if (($allGAUserUPNs.Count -ge 5) -or ($allGAUserUPNs.Count -lt 2)){
+        if($allGAUserUPNs.Count -lt 2){
+            $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsMinimum
+        }else{
+            $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
+        
+        }
     }
     else{
         ## Global Admin counts are within the range - proceed with MFA check
@@ -159,13 +164,12 @@ function Check-GAUserCountMFARequired {
         Write-Output "userValidMFACounter count is $userValidMFACounter"
         Write-Output "userValidMFA member UPNs are $($memberUserUPNsValidMFA.UPN) and external UPNs are $($extUserUPNsValidMFA.UPN)"
         
-
-        if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
-            $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
-        }elseif($null -eq $extUserUPNsBadMFA){
+        if($null -eq $extUserUPNsBadMFA -or $extUserUPNsBadMFA.Count -eq 0 -and (!$null -eq $memberUserUPNsBadMFA)){
             $userUPNsBadMFA =  $memberUserUPNsBadMFA 
-        }elseif($null -eq $memberUserUPNsBadMFA){
+        }elseif(($null -eq $memberUserUPNsBadMFA -or $memberUserUPNsBadMFA.Count -eq 0) -and (!$null -eq $extUserUPNsBadMFA)){
             $userUPNsBadMFA =  $extUserUPNsBadMFA
+        }elseif(!$null -eq $extUserUPNsBadMFA -and (!$null -eq $memberUserUPNsBadMFA)){
+            $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
         }
 
         Write-Output "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
