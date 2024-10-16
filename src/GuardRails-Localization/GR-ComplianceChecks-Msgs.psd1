@@ -254,6 +254,8 @@ bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
 
+bgValidSignature = Valid Signatures and Approvals for Break Glass Account Procedure
+
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
 procedureFileNotFound = Non-compliant. Could not find '{0}'. Create and upload the appropriate file in Container '{1}' in Storage Account '{2}' to become compliant.
