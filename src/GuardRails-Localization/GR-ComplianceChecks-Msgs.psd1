@@ -230,6 +230,8 @@ setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Notifications Enabled
 severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
 
+monitoringChecklist = Monitoring Checklist: Use Cases
+
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
 mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
@@ -253,6 +255,8 @@ bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
 bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
+
+bgValidSignature = Valid Signatures and Approvals for Break Glass Account Procedure
 
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
