@@ -252,6 +252,8 @@ bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
+bgValidSignature = Signatures et approbations valides pour la procédure de compte de verre de frein
+
 # GR-Common
 procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.
 procedureFileNotFound = Non conforme. N'a pas trouvé « {0} » créer et télécharger le fichier approprié dans le conteneur « {1} » dans le compte de stockage « {2} » pour devenir conforme.
