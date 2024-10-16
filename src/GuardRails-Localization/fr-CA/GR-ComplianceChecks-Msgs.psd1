@@ -160,8 +160,8 @@ manualTrustedRootCertsFound = Certificats racines de confiance manuels trouvés 
 allBackendSettingsUseWellKnownCA = Tous les paramètres principaux de la passerelle d'application '{0}' utilisent des certificats d'autorité de certification (AC) bien connus. 
 noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonnement.
 allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
-approvedCAFileFound = Fichier de liste de certificats racines approuvés '{0}' trouvé et traité
-approvedCAFileNotFound = Fichier de liste de certificats racines approuvés '{0}' non trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Impossible de vérifier les autorités de certification.
+approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
+approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
