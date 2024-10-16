@@ -85,7 +85,7 @@ function Check-OnlineAttackCountermeasures {
     Write-Output "PsObject: $PsObject"
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        Write-Ouput "Enabling MultiCloudProfiles"
+        Write-Output "Enabling MultiCloudProfiles"
         $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if ($result -gt 0) {
             Write-Output "Valid profile returned: $result"
