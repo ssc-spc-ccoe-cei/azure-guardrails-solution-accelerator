@@ -108,6 +108,8 @@ noLocationFilterPolicies = Missing a required conditional access policy. At leas
 hasRequiredPolicies = Required conditional access policies for administrator access exist. 
 noCompliantPoliciesAdmin = No compliant policies found for device filters and named/trusted locations. Please ensure that there is at least one policy of each. One for device filters with a target resource and another for named/trusted locations.
 
+riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
+
 # GuardRail #4
 monitorAccount = Monitor Account Creation
 checkUserExistsError = API call returned Error {0}. Please Check if the user exists.
