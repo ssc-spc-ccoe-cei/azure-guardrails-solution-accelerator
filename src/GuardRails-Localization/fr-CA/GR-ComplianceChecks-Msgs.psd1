@@ -151,6 +151,19 @@ hasNonComplianceResounce = {0} des ressources {1} applicables ne sont pas confor
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
+appGatewayCertValidity = Validité du certificat : Passerelle d'application
+noSslListenersFound = Aucun écouteur Secure Socket Layer (SSL) trouvé/configuré pour la passerelle d'application : {0}. 
+expiredCertificateFound = Certificat expiré trouvé pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
+unapprovedCAFound = Autorité de certification (AC) non approuvée trouvée pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Émetteur : {2}. 
+unableToProcessCertData = Incapable de traiter les données de certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Erreur : {2}. 
+unableToRetrieveCertData = Incapable de récupérer les données de certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
+noHttpsBackendSettingsFound = Aucun paramètre principal HTTPS n'a été trouvé/configuré pour la passerelle d'application : {0}. 
+manualTrustedRootCertsFound = Certificats racines de confiance manuels trouvés pour la passerelle d'application '{0}', paramètre principal '{1}'. 
+allBackendSettingsUseWellKnownCA = Tous les paramètres principaux de la passerelle d'application '{0}' utilisent des certificats d'autorité de certification (AC) bien connus. 
+noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonnement.
+allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
+approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
+approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.

@@ -152,6 +152,18 @@ hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compl
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
+appGatewayCertValidity = Application Gateway Certificate Validity
+expiredCertificateFound = Expired certificate found for listener '{0}' in Application Gateway '{1}'.
+unapprovedCAFound = Unapproved Certificate Authority (CA) found for listener '{0}' in Application Gateway '{1}'. Issuer: {2}.
+unableToProcessCertData = Unable to process certificate data for listener '{0}' in Application Gateway '{1}'. Error: {2}.
+unableToRetrieveCertData = Unable to retrieve certificate data for listener '{0}' in Application Gateway '{1}'.
+noHttpsBackendSettingsFound = No HTTPS backend settings found/configured for Application Gateway: {0}.
+manualTrustedRootCertsFound = Manual trusted root certificates found for Application Gateway '{0}', backend setting '{1}'.
+allBackendSettingsUseWellKnownCA = All backend settings for Application Gateway '{0}' use well‑known Certificate Authority (CA) certificates.
+noAppGatewayFound = No Application Gateways found in any subscription.
+allCertificatesValid = All certificates are valid and from approved Certificate Authorities (CAs).
+approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
+approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
 
 # GuardRail #8
 noNSG=No NSG is present.

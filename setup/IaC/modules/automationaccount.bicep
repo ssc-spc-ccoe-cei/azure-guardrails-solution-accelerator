@@ -340,12 +340,22 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
+        version: '1.0.1'
+      }
+    }
+  }
+
+  resource module34 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-ApplicationGatewayCertificateValidity'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
         version: '1.0.0'
       }
     }
   }
         
-  resource module34 'modules' = if (newDeployment || updatePSModules) {
+  resource module35 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-CloudAccountsMFA'
     properties: {
       contentLink: {
@@ -355,7 +365,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
-  resource module35 'modules' = if (newDeployment || updatePSModules) {
+  resource module36 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DedicatedAdminAccounts'
     properties: {
       contentLink: {
@@ -364,7 +374,8 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource variable1 'variables' = if (newDeployment || updateCoreResources) {
+
+  resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
