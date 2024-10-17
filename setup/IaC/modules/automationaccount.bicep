@@ -340,7 +340,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }
     }
   }
