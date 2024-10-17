@@ -19,6 +19,37 @@ function Get-RiskBasedAccess {
     
     # Check #2 Allowed Location – Conditional Access Policy
     
+    $locationCAPResult = Get-allowedLocationCAPCompliance -ErrorList $ErrorList
+    $PsObject = $locationCAPResult.PsObject
+    $ErrorList = $locationCAPResult.Errors
+
+    # Conditionally add the Profile field based on the feature flag
+    if ($EnableMultiCloudProfiles) {
+        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if ($result -gt 0) {
+            Write-Output "Valid profile returned: $result"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        } elseif ($result -eq 0) {
+            Write-Output "No matching profile found or error occurred"
+            $PsObject.ComplianceStatus = "Not Applicable"
+        } else {
+            Write-Error "Unexpected result: $result"
+        }
+    }
+
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput
+}
+
+function Get-allowedLocationCAPCompliance {
+    param (
+        [array]$ErrorList
+    )
+
     # get named locations
     $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
     try {
@@ -86,26 +117,8 @@ function Get-RiskBasedAccess {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-
-    # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result -eq 0) {
-            Write-Output "No matching profile found or error occurred"
-            $PsObject.ComplianceStatus = "Not Applicable"
-        } else {
-            Write-Error "Unexpected result: $result"
-        }
-    }
-
-    $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $PsObject
+    return  @{
+        PsObject = $PsObject
         Errors=$ErrorList
-        AdditionalResults = $AdditionalResults
     }
-    return $moduleOutput
 }
-
