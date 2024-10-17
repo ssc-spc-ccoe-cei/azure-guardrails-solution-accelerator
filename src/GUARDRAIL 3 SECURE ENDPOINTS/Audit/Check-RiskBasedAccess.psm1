@@ -19,7 +19,7 @@ function Get-RiskBasedAccess {
     
     # Check #2 Allowed Location – Conditional Access Policy
     
-    $locationCAPResult = Get-allowedLocationCAPCompliance -ErrorList $ErrorList
+    $locationCAPResult = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant
     $PsObject = $locationCAPResult.PsObject
     $ErrorList = $locationCAPResult.Errors
 
