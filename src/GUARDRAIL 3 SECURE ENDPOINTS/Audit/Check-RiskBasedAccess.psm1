@@ -47,7 +47,8 @@ function Get-RiskBasedAccess {
 
 function Get-allowedLocationCAPCompliance {
     param (
-        [array]$ErrorList
+        [array]$ErrorList,
+        [string] $IsCompliant
     )
 
     # get named locations
