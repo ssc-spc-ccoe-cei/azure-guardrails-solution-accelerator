@@ -122,6 +122,11 @@ CSPMEncryptedEmailConfirmation= CSPM encrypted email with credentials sent
 SPNSingleValidCredential = SPN has a single valid credential. {0}
 SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
 SPNNoValidCredentials = SPN has no valid credentials. {0}
+spnNotExist = Service Principal 'CloudabilityUtilizationDataCollector' does not exist
+spnIncorrectPermissions = Service Principal 'CloudabilityUtilizationDataCollector' does not have the required Reader role
+spnIncorrectRoles = Service Principal does not have the required Cloud Application Administrator and Reports Reader roles.
+finOpsToolCompliant = The FinOps tool is compliant with all requirements.
+finOpsToolNonCompliant = The FinOps tool is not compliant. Reasons: {0}
 
 # GuardRail #5
 pbmmCompliance = PBMMPolicy Compliance

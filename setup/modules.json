@@ -407,6 +407,21 @@
     ]
   },
   {
+    "ModuleName": "Check-FinOpsToolStatus",
+    "Control": "Guardrails4",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-FinOpsToolStatus -ControlName $msgTable.CtrName4 -ItemName $msgTable.FinOpsToolStatus -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
     "ModuleName": "Verify-AllowedLocationPolicy",
     "Control": "Guardrails5",
     "ModuleType": "Builtin",
