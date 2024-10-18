@@ -248,6 +248,21 @@
     ]
   },
   {
+    "ModuleName": "Check-RiskBasedAccess",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Get-RiskBasedAccess -ControlName $msgTable.CtrName2 -ItemName $msgTable.riskBasedConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
@@ -299,21 +314,6 @@
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Get-AdminAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.adminAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC4(7)"
-      }
-    ]
-  },
-	{
-    "ModuleName": "Check-RiskBasedAccess",
-    "Control": "Guardrails3",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Get-RiskBasedAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.riskBasedConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
       {
         "Name": "itsgcode",
@@ -1097,7 +1097,7 @@
     "Control": "Guardrails13",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
+    "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgValidSignature -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
