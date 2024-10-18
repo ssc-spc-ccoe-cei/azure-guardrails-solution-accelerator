@@ -98,7 +98,7 @@ riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional A
 nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
 nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
-compliantC1C2 = Compliant. Both conditional access policies have been configured.
+compliantC1C2 = Both conditional access policies have been configured.
 
 
 # GuardRail #3
