@@ -22,12 +22,12 @@ function Get-CloudConsoleAccess {
     $ErrorList = $PsObjectLocation.Errors
 
     $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsCompliant
-        ControlName      = $ControlName
-        Comments         = $Comments
-        ItemName         = $ItemName
-        ReportTime       = $ReportTime
-        itsgcode         = $itsgcode
+        ComplianceStatus = $PsObjectLocation.ComplianceStatus
+        ControlName      = $PsObjectLocation.ControlName
+        Comments         = $PsObjectLocation.Comments
+        ItemName         = $PsObjectLocation.ItemName
+        ReportTime       = $PsObjectLocation.ReportTime
+        itsgcode         = $PsObjectLocation.itsgcode
     }
 
     # Conditionally add the Profile field based on the feature flag
