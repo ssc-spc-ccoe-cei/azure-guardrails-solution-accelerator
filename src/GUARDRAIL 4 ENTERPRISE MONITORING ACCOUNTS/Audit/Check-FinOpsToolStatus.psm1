@@ -23,27 +23,27 @@ function Check-FinOpsToolStatus {
     $spnExists = Check-ServicePrincipalExists "CloudabilityUtilizationDataCollector"
     if (-not $spnExists) {
         $IsCompliant = $false
-        $Comments += $msgTable.spnNotExist + " "
+        $Comments += $msgTable.SPNNotExist + " "
     }
 
     # Check 2: Verify Permissions
     $hasCorrectPermissions = Check-ServicePrincipalPermissions "CloudabilityUtilizationDataCollector"
     if (-not $hasCorrectPermissions) {
         $IsCompliant = $false
-        $Comments += $msgTable.spnIncorrectPermissions + " "
+        $Comments += $msgTable.SPNIncorrectPermissions + " "
     }
 
     # Check 3: Verify Roles
     $hasCorrectRoles = Check-ServicePrincipalRoles "CloudabilityUtilizationDataCollector"
     if (-not $hasCorrectRoles) {
         $IsCompliant = $false
-        $Comments += $msgTable.spnIncorrectRoles + " "
+        $Comments += $msgTable.SPNIncorrectRoles + " "
     }
 
     if ($IsCompliant) {
-        $Comments = $msgTable.finOpsToolCompliant
+        $Comments = $msgTable.FinOpsToolCompliant
     } else {
-        $Comments = $msgTable.finOpsToolNonCompliant -f $Comments.Trim()
+        $Comments = $msgTable.FinOpsToolNonCompliant -f $Comments.Trim()
     }
 
     $PsObject = [PSCustomObject]@{
