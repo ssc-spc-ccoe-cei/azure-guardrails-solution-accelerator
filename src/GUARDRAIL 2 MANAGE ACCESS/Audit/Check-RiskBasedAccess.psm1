@@ -46,12 +46,20 @@ function Get-RiskBasedAccess {
     # 12. signInFrequency.frequencyInterval = 'everyTime'
     # 13. signInFrequency.isEnabled = true
     # 14. signInFrequency.authenticationType = 'primaryAndSecondaryAuthentication'
+    # 15. includeGroups = null
+    # 16. excludeApplications = null
+    # 17. includeRoles = null
+    # 18. excludeRoles = null
+    # 19. includeGuestsOrExternalUsers = null
+    # 20. excludeGuestsOrExternalUsers = null
 
     $validPolicies = $caps | Where-Object {
         $_.state -eq 'enabled' -and
         $_.conditions.users.includeUsers -contains 'All' -and
+        # $_.conditions.users.excludeUsers -contains '' -and
+        # $_.conditions.users.excludeGroups -contains '' -and
         ($_.conditions.applications.includeApplications -contains 'All' -or
-         $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
+        $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
         $_.grantControls.builtInControls -contains 'mfa' -and
         $_.grantControls.builtInControls -contains 'passwordChange' -and
         $_.conditions.clientAppTypes -contains 'all' -and
@@ -63,8 +71,23 @@ function Get-RiskBasedAccess {
         [string]::IsNullOrEmpty($_.conditions.platforms) -and
         [string]::IsNullOrEmpty($_.conditions.locations) -and
         [string]::IsNullOrEmpty($_.conditions.devices)  -and
-        [string]::IsNullOrEmpty($_.conditions.clientApplications) 
+        [string]::IsNullOrEmpty($_.conditions.clientApplications) -and
+        [string]::IsNullOrEmpty($_.conditions.users.includedGroups) -and
+        [string]::IsNullOrEmpty($_.conditions.applications.excludeApplications) -and
+        [string]::IsNullOrEmpty($_.conditions.users.includeRoles) -and
+        [string]::IsNullOrEmpty($_.conditions.users.excludeRoles) -and
+        [string]::IsNullOrEmpty($_.conditions.users.includeGuestsOrExternalUsers) -and
+        [string]::IsNullOrEmpty($_.conditions.users.excludeGuestsOrExternalUsers)
+
     }
+
+    # # Check that $_.conditions.users.excludeUsers only contain BG accounts and $_.conditions.users.excludeGroups only contain BG account groups
+    # Possible Steps:
+    # 1. Get the BG accounts from params and find their ID
+    # 2. put excludeUsers condition in the where-Object query for BG users
+    # 3. Find the user group for BG account (graph query)
+    # 4. put excludeGroups condition in the wher-Object query for BG groups
+
     if ($validPolicies.count -ne 0) {
         $IsCompliantPasswordCAP = $true
     }
