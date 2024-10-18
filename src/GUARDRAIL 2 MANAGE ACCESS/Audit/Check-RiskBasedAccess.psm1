@@ -74,9 +74,8 @@ function Get-RiskBasedAccess {
     }
 
     # Check 2: Allowed Location – Conditional Access Policy
-    $locationCAPResult = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant
-    $PsObjectLocation = $locationCAPResult.PsObject
-    $ErrorList = $locationCAPResult.Errors
+    $PsObjectLocation = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant
+    $ErrorList = $PsObjectLocation.Errors
 
     # Combine status
     if ($IsCompliantPasswordCAP -eq $true -and $PsObjectLocation.ComplianceStatus -eq $true){
@@ -199,9 +198,8 @@ function Get-allowedLocationCAPCompliance {
         ItemName         = $ItemName
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
+        Errors           = $ErrorList
     }
-    return  @{
-        PsObject = $PsObject
-        Errors=$ErrorList
-    }
+    return  $PsObject
+
 }
