@@ -82,7 +82,6 @@ function Check-OnlineAttackCountermeasures {
         itsgcode         = $itsgcode
     }
 
-    Write-Output "PsObject: $PsObject"
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
         Write-Output "Enabling MultiCloudProfiles"
