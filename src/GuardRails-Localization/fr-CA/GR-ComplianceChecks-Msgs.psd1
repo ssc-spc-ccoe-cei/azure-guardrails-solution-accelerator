@@ -94,10 +94,10 @@ userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rappor
 reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
 
 riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
-nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
-nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
-nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
-compliantC1C2 = Compliant. Both conditional access policies have been configured.
+nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
+nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés.
+nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
+compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
 
 # GuardRail #3
