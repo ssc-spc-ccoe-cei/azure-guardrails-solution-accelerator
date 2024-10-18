@@ -249,7 +249,7 @@
   },
   {
     "ModuleName": "Check-RiskBasedAccess",
-    "Control": "Guardrails3",
+    "Control": "Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
