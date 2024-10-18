@@ -121,6 +121,11 @@ SPNSingleValidCredential = SPN a une seule clé valide. {0}
 SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
 SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
 CSPMEncryptedEmailConfirmation= Confirmacion d'email encrypté envoyé
+SPNNotExists = Le principal de service 'CloudabilityUtilizationDataCollector' n'existe pas.
+SPNIncorrectPermissions = Le principal de service n'a pas le rôle de Lecteur requis.
+SPNIncorrectRoles = Le principal de service n'a pas les rôles requis d'Administrateur d'application cloud et de Lecteur de rapports.
+finOpsToolCompliant = L'outil FinOps est conforme à toutes les exigences.
+finOpsToolNonCompliant = L'outil FinOps n'est pas conforme. Raisons: {0}
 
 # GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy
