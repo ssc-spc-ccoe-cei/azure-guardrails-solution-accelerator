@@ -126,7 +126,7 @@ SPNNotExist = Le principal de service 'CloudabilityUtilizationDataCollector' n'e
 SPNIncorrectPermissions = Le principal de service n'a pas le rôle de Lecteur requis.
 SPNIncorrectRoles = Le principal de service n'a pas les rôles requis d'Administrateur d'application cloud et de Lecteur de rapports.
 FinOpsToolCompliant = L'outil FinOps est conforme à toutes les exigences.
-finOpsToolNonCompliant = L'outil FinOps n'est pas conforme. Raisons: {0}
+FinOpsToolNonCompliant = L'outil FinOps n'est pas conforme. Raisons: {0}
 
 # GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy

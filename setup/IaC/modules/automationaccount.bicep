@@ -375,6 +375,17 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
+  resource module37 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-FinOpsToolStatus'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
