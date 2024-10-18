@@ -93,6 +93,13 @@ userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des group
 userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
 reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
 
+riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
+nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
+nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés.
+nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
+compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
+
+
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -106,6 +113,7 @@ noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquan
 noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d'administrateur inclus et activés.
 hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
 noCompliantPoliciesAdmin = Aucune politique conforme n'a été trouvée pour les filtres d'appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu'il existe au moins une politique pour chacun. Une pour les filtres d'appareil avec une ressource cible et l'autre pour les emplacements nommés/approuvés.
+
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
