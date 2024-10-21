@@ -35,6 +35,22 @@ function Get-RiskBasedAccess {
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_"
     }
 
+    # list all users in the tenant
+    $urlPath = "/users"
+    try {
+        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        $users = $response.Content.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+        
+    }
+    catch {
+        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+        $ErrorList.Add($errorMsg)
+        Write-Error "Error: $errorMsg"
+    }
+    # get ID for BG UPNs
+    $FirstBreakGlassID = $users| Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}| Select-Object id
+    $SecondBreakGlassID = $users| Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object id
+
     # List of all user groups in the environment
     $groupsUrlPath = "/groups"
     try {
@@ -45,6 +61,41 @@ function Get-RiskBasedAccess {
         $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
         $ErrorList.Add($errorMsg)
         Write-Error "Error: $errorMsg"
+    }
+    # Find any group (if any) for BG accounts
+    $groupMemberList = @()
+    foreach ($group in $userGroups){
+        $groupId = $group.id
+        $urlPath = "/groups/$groupId/members"
+        try {
+            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+            $data = $response.Content
+            if ($null -ne $data -and $null -ne $data.value) {
+                $grMembers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+
+                foreach ($grMember in $grMembers) {
+                    $groupMembers = [PSCustomObject]@{
+                        groupName           = $group.displayName
+                        groupId             = $group.id
+                        userId              = $grMember.id
+                        displayName         = $grMember.displayName
+                        givenName           = $grMember.givenName
+                        surname             = $grMember.surname
+                        mail                = $grMember.mail
+                        userPrincipalName   = $grMember.userPrincipalName
+                    }
+                    $groupMemberList +=  $groupMembers
+                }
+            }
+        }
+        catch {
+            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg" 
+        }
+    }
+    if ($null -ne $groupMemberList){
+        $breakGlassUserGroup = $groupMemberList | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN -or $_.userPrincipalName -eq $SecondBreakGlassUPN}
     }
 
     # check for a conditional access policy which meets these requirements:
@@ -68,42 +119,71 @@ function Get-RiskBasedAccess {
     # 18. excludeRoles = null
     # 19. includeGuestsOrExternalUsers = null
     # 20. excludeGuestsOrExternalUsers = null
+    # 21. excludeUsers/excludeGroups
 
-    $validPolicies = $caps | Where-Object {
-        $_.state -eq 'enabled' -and
-        $_.conditions.users.includeUsers -contains 'All' -and
-        $_.conditions.users.excludeUsers -contains $FirstBreakGlassUPN -and
-        $_.conditions.users.excludeUsers -contains $SecondBreakGlassUPN -and
-        # $_.conditions.users.excludeGroups -contains '' -and
-        ($_.conditions.applications.includeApplications -contains 'All' -or
-        $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
-        $_.grantControls.builtInControls -contains 'mfa' -and
-        $_.grantControls.builtInControls -contains 'passwordChange' -and
-        $_.conditions.clientAppTypes -contains 'all' -and
-        $_.conditions.userRiskLevels -contains 'high' -and
-        $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
-        $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
-        $_.sessionControls.signInFrequency.isEnabled -eq $true -and
-        [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
-        [string]::IsNullOrEmpty($_.conditions.platforms) -and
-        [string]::IsNullOrEmpty($_.conditions.locations) -and
-        [string]::IsNullOrEmpty($_.conditions.devices)  -and
-        [string]::IsNullOrEmpty($_.conditions.clientApplications) -and
-        [string]::IsNullOrEmpty($_.conditions.users.includedGroups) -and
-        [string]::IsNullOrEmpty($_.conditions.applications.excludeApplications) -and
-        [string]::IsNullOrEmpty($_.conditions.users.includeRoles) -and
-        [string]::IsNullOrEmpty($_.conditions.users.excludeRoles) -and
-        [string]::IsNullOrEmpty($_.conditions.users.includeGuestsOrExternalUsers) -and
-        [string]::IsNullOrEmpty($_.conditions.users.excludeGuestsOrExternalUsers)
-
+    if ($null -ne $breakGlassUserGroup){
+        $validPolicies = $caps | Where-Object {
+            $_.state -eq 'enabled' -and
+            $_.conditions.users.includeUsers -contains 'All' -and
+            $_.conditions.users.excludeUsers.Count -le 2 -and
+            $_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
+            $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
+            $_.conditions.users.excludeGroups.Count -eq 1 -and
+            $_.conditions.users.excludeGroups -contains $breakGlassUserGroup.groupId -and
+            ($_.conditions.applications.includeApplications -contains 'All' -or
+            $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
+            $_.grantControls.builtInControls -contains 'mfa' -and
+            $_.grantControls.builtInControls -contains 'passwordChange' -and
+            $_.conditions.clientAppTypes -contains 'all' -and
+            $_.conditions.userRiskLevels -contains 'high' -and
+            $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
+            $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
+            $_.sessionControls.signInFrequency.isEnabled -eq $true -and
+            [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
+            [string]::IsNullOrEmpty($_.conditions.platforms) -and
+            [string]::IsNullOrEmpty($_.conditions.locations) -and
+            [string]::IsNullOrEmpty($_.conditions.devices)  -and
+            [string]::IsNullOrEmpty($_.conditions.clientApplications) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includedGroups) -and
+            [string]::IsNullOrEmpty($_.conditions.applications.excludeApplications) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includeRoles) -and
+            [string]::IsNullOrEmpty($_.conditions.users.excludeRoles) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includeGuestsOrExternalUsers) -and
+            [string]::IsNullOrEmpty($_.conditions.users.excludeGuestsOrExternalUsers)
+    
+        }
     }
-
-    # # Check that $_.conditions.users.excludeUsers only contain BG accounts and $_.conditions.users.excludeGroups only contain BG account groups
-    # Possible Steps:
-    # 1. Get the BG accounts from params and find their ID
-    # 2. put excludeUsers condition in the where-Object query for BG users
-    # 3. Find the user group for BG account (graph query)
-    # 4. put excludeGroups condition in the wher-Object query for BG groups
+    else{
+        $validPolicies = $caps | Where-Object {
+            $_.state -eq 'enabled' -and
+            $_.conditions.users.includeUsers -contains 'All' -and
+            $_.conditions.users.excludeUsers.Count -le 2 -and
+            $_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
+            $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
+            ($_.conditions.applications.includeApplications -contains 'All' -or
+            $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
+            $_.grantControls.builtInControls -contains 'mfa' -and
+            $_.grantControls.builtInControls -contains 'passwordChange' -and
+            $_.conditions.clientAppTypes -contains 'all' -and
+            $_.conditions.userRiskLevels -contains 'high' -and
+            $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
+            $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
+            $_.sessionControls.signInFrequency.isEnabled -eq $true -and
+            [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
+            [string]::IsNullOrEmpty($_.conditions.platforms) -and
+            [string]::IsNullOrEmpty($_.conditions.locations) -and
+            [string]::IsNullOrEmpty($_.conditions.devices)  -and
+            [string]::IsNullOrEmpty($_.conditions.clientApplications) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includedGroups) -and
+            [string]::IsNullOrEmpty($_.conditions.applications.excludeApplications) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includeRoles) -and
+            [string]::IsNullOrEmpty($_.conditions.users.excludeRoles) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includeGuestsOrExternalUsers) -and
+            [string]::IsNullOrEmpty($_.conditions.users.excludeGuestsOrExternalUsers) -and
+            [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
+    
+        }
+    }
 
     if ($validPolicies.count -ne 0) {
         $IsCompliantPasswordCAP = $true
@@ -122,11 +202,11 @@ function Get-RiskBasedAccess {
         $IsCompliant = $true
         $Comments = $msgTable.isCompliant + " " + $msgTable.compliantC1C2
     }
-    elseif ($IsCompliantPasswordCAP -eq $true -and $PsObjectLocation.ComplianceStatus -eq $false){
+    elseif($PsObjectLocation.ComplianceStatus -eq $true -and $IsCompliantPasswordCAP -eq $false){
         $IsCompliant = $false
         $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC1
     }
-    elseif($PsObjectLocation.ComplianceStatus -eq $true -and $IsCompliantPasswordCAP -eq $false){
+    elseif ($IsCompliantPasswordCAP -eq $true -and $PsObjectLocation.ComplianceStatus -eq $false){
         $IsCompliant = $false
         $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC2
     }
