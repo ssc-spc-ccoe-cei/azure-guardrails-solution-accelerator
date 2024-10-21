@@ -157,7 +157,7 @@ function Get-RiskBasedAccess {
     }
     else{
         $validPolicies = $caps | Where-Object {
-            & $commonFilters -and -and
+            & $commonFilters -and
             [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
     
         }
