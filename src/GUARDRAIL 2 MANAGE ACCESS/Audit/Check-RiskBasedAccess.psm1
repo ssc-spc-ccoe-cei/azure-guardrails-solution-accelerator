@@ -10,6 +10,10 @@ function Get-RiskBasedAccess {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string] $FirstBreakGlassUPN,
+        [Parameter(Mandatory=$true)] 
+        [string] $SecondBreakGlassUPN,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
@@ -29,6 +33,18 @@ function Get-RiskBasedAccess {
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_"
+    }
+
+    # List of all user groups in the environment
+    $groupsUrlPath = "/groups"
+    try {
+        $response = Invoke-GraphQuery -urlPath $groupsUrlPath -ErrorAction Stop
+        $userGroups = $response.Content.value
+    }
+    catch {
+        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+        $ErrorList.Add($errorMsg)
+        Write-Error "Error: $errorMsg"
     }
 
     # check for a conditional access policy which meets these requirements:
@@ -56,7 +72,8 @@ function Get-RiskBasedAccess {
     $validPolicies = $caps | Where-Object {
         $_.state -eq 'enabled' -and
         $_.conditions.users.includeUsers -contains 'All' -and
-        # $_.conditions.users.excludeUsers -contains '' -and
+        $_.conditions.users.excludeUsers -contains $FirstBreakGlassUPN -and
+        $_.conditions.users.excludeUsers -contains $SecondBreakGlassUPN -and
         # $_.conditions.users.excludeGroups -contains '' -and
         ($_.conditions.applications.includeApplications -contains 'All' -or
         $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
