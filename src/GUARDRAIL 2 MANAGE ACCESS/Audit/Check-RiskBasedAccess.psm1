@@ -29,6 +29,7 @@ function Get-RiskBasedAccess {
         $response = Invoke-GraphQuery -urlPath $CAPUrl -ErrorAction Stop
 
         $caps = $response.Content.value
+        Write-Output $caps
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_")
@@ -94,9 +95,16 @@ function Get-RiskBasedAccess {
             Write-Error "Error: $errorMsg" 
         }
     }
-    if ($null -ne $groupMemberList){
-        $breakGlassUserGroup = $groupMemberList | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN -or $_.userPrincipalName -eq $SecondBreakGlassUPN}
+
+    # validate BG account user group
+    $BGAccountUserGroup = $groupMemberList | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN -or $_.userPrincipalName -eq $SecondBreakGlassUPN}
+    if($BGAccountUserGroup.Count -eq 2){
+        $breakGlassUserGroup = $BGAccountUserGroup
     }
+    else{
+        $breakGlassUserGroup = $null
+    }
+
 
     # check for a conditional access policy which meets these requirements:
     # 1. state =  'enabled'
