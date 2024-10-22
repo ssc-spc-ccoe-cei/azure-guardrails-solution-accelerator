@@ -29,7 +29,6 @@ function Get-RiskBasedAccess {
         $response = Invoke-GraphQuery -urlPath $CAPUrl -ErrorAction Stop
 
         $caps = $response.Content.value
-        Write-Output $caps
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_")
@@ -49,8 +48,8 @@ function Get-RiskBasedAccess {
         Write-Error "Error: $errorMsg"
     }
     # get ID for BG UPNs
-    $FirstBreakGlassID = $users| Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}| Select-Object id
-    $SecondBreakGlassID = $users| Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object id
+    $FirstBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}| Select-Object id).id
+    $SecondBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object id).id
 
     # List of all user groups in the environment
     $groupsUrlPath = "/groups"
@@ -104,6 +103,7 @@ function Get-RiskBasedAccess {
     else{
         $breakGlassUserGroup = $null
     }
+    $uniqueGroupIdBG = $breakGlassUserGroup.groupId | select-object -unique
 
 
     # check for a conditional access policy which meets these requirements:
@@ -160,8 +160,8 @@ function Get-RiskBasedAccess {
         $validPolicies = $caps | Where-Object {
             & $commonFilters -and
             $_.conditions.users.excludeGroups.Count -eq 1 -and
-            $_.conditions.users.excludeGroups -contains $breakGlassUserGroup.groupId 
-        }
+            $_.conditions.users.excludeGroups -contains $uniqueGroupIdBG
+        } 
     }
     else{
         $validPolicies = $caps | Where-Object {
