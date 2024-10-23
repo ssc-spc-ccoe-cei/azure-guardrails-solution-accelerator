@@ -94,6 +94,13 @@ userCountOne = There is only one user in the environment. User groups are not re
 userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
 reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
 
+riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
+nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
+nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
+nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
+compliantC1C2 = Both conditional access policies have been configured.
+
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
