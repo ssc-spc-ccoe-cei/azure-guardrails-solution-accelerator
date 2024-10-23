@@ -34,6 +34,7 @@ function Get-RiskBasedAccess {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_"
     }
+    Write-Host "Existing CAP count $($caps.count)"
 
     # list all users in the tenant
     $urlPath = "/users"
@@ -158,18 +159,18 @@ function Get-RiskBasedAccess {
 
     if ($null -ne $breakGlassUserGroup){
         $validPolicies = $caps | Where-Object {
-            & $commonFilters -and
-            $_.conditions.users.excludeGroups.Count -eq 1 -and
-            $_.conditions.users.excludeGroups -contains $uniqueGroupIdBG
+            $commonFilters -and
+            ($_.conditions.users.excludeGroups.Count -eq 1 -and
+            $_.conditions.users.excludeGroups -contains $uniqueGroupIdBG)
         } 
     }
     else{
         $validPolicies = $caps | Where-Object {
-            & $commonFilters -and
+            $commonFilters -and
             [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
-    
         }
     }
+    Write-Host "validPolicies.count: $($validPolicies.count)"
 
     if ($validPolicies.count -ne 0) {
         $IsCompliantPasswordCAP = $true
