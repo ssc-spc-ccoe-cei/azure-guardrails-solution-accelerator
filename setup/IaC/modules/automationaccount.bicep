@@ -150,7 +150,7 @@ resource module11 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.1.21'
+        version: '1.1.22'
       }
     }
   }
@@ -240,7 +240,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudConsoleAccess.zip'
-        version: '1.0.7'
+        version: '1.0.8'
       }
     }
   }
@@ -375,6 +375,15 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
+    resource module37 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-RiskBasedAccess'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-RiskBasedAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
