@@ -388,7 +388,7 @@ function Check-DocumentExistsInStorage {
     else {
         # no blob with the name $attestationFileName was found in the specified storage account
         $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFound -f $docName, $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName, $ContainerName, $StorageAccountName
     }
 
     $Comments = $commentsArray -join ";"
