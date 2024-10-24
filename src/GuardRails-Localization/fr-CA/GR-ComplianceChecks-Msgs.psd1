@@ -64,9 +64,12 @@ gcPasswordGuidanceDoc = Document d'orientation sur les mots de passe du GC
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
-privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés 
+
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
+
+privilegedAccountManagementPlanLifecycle = Plan de gestion des comptes privilégiés (cycle de vie de la gestion de compte)
+privilegedAccountManagementPlanLPRoleAssignment = Plan de gestion des comptes privilégiés (attribution de rôle de moindre privilège)
 
 onlineAttackCounterMeasures = Vérification de mesures pour contrer les attaques en ligne: Verrouillage et listes de mots de passe interdits
 onlineAttackNonCompliantC1 = Le seuil de verrouillage de compte ne respecte pas l'Orientation sur les mots de passe du GC.

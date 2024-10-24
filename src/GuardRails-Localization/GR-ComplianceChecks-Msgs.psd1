@@ -64,9 +64,12 @@ gcPasswordGuidanceDoc = GC Password Guidance Doc
 mitigationCommands = Verify is the users reported are deprecated.
 noncompliantComment = Total Number of non-compliant users {0}. 
 noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
-privilegedAccountManagementPlan = Privileged Account Management plan
+
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
+
+privilegedAccountManagementPlanLifecycle = Privileged Account Management Plan (Lifecycle of Account Management)
+privilegedAccountManagementPlanLPRoleAssignment = Privileged Account Management Plan (Least Privilege Role Assignment)
 
 onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists
 onlineAttackNonCompliantC1 = The account lockout threshold does not meet the GC Password Guidance.
