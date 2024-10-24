@@ -279,7 +279,36 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlan -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlanLifecycle -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "PrivilegedAccountManagementPlan"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlanLPRoleAssignment -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "storageAccountName",
