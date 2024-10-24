@@ -737,7 +737,7 @@ function add-documentFileExtensions {
         $fileExtensions = @(".csv")
     }
     else {
-        $fileExtensions = @(".txt",".docx", ".doc")
+        $fileExtensions = @(".txt",".docx", ".doc", "pdf")
     }
     
     $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
