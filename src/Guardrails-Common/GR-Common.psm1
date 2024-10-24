@@ -738,7 +738,7 @@ function add-documentFileExtensions {
             $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
     }
     elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
-            $ItemName.ToLower() -eq"Comptes d'utilisateurs dédiés pour l'administration") {
+            $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
                 
                 $fileExtensions = @(".csv")
     }
