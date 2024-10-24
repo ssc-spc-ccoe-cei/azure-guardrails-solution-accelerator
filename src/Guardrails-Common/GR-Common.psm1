@@ -388,7 +388,7 @@ function Check-DocumentExistsInStorage {
     else {
         # no blob with the name $attestationFileName was found in the specified storage account
         $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFound -f $docName, $ContainerName, $StorageAccountName
     }
 
     $Comments = $commentsArray -join ";"
@@ -737,7 +737,7 @@ function add-documentFileExtensions {
         $fileExtensions = @(".csv")
     }
     else {
-        $fileExtensions = @(".txt",".docx", ".doc", "pdf")
+        $fileExtensions = @(".txt",".docx", ".doc", ".pdf")
     }
     
     $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
