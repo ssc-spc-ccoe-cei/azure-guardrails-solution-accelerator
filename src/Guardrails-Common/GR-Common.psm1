@@ -730,7 +730,7 @@ function add-documentFileExtensions {
 
     )
 
-    if ($ItemName.ToLower() -eq 'network architecture diagram'){
+    if ($ItemName.ToLower() -eq 'network architecture diagram and high level design documentation '){
         $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
     }
     elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration') {
