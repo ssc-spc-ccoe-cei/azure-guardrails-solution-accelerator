@@ -388,7 +388,7 @@ function Check-DocumentExistsInStorage {
     else {
         # no blob with the name $attestationFileName was found in the specified storage account
         $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
     }
 
     $Comments = $commentsArray -join ";"
@@ -730,14 +730,20 @@ function add-documentFileExtensions {
 
     )
 
-    if ($ItemName.ToLower() -eq 'network architecture diagram'){
-        $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
+    if ($ItemName.ToLower() -eq 'network architecture diagram' -or 
+        $ItemName.ToLower() -eq 'high level design documentation' -or
+        $ItemName.ToLower() -eq "diagramme d'architecture réseau" -or 
+        $ItemName.ToLower() -eq 'documentation de Conception de haut niveau'){
+
+            $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
     }
-    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration') {
-        $fileExtensions = @(".csv")
+    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
+            $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
+                
+                $fileExtensions = @(".csv")
     }
     else {
-        $fileExtensions = @(".txt",".docx", ".doc")
+        $fileExtensions = @(".txt",".docx", ".doc", ".pdf")
     }
     
     $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
