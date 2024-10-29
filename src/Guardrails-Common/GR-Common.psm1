@@ -609,14 +609,14 @@ function Get-EvaluationProfile {
         $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
         $highestTagProfile = ($profileTagValues | Measure-Object -Maximum).Maximum
 
-        # Use the highest profile if it's present in the tag and doesn't exceed module profile
-        if ($highestTagProfile -in $profileTagValues -and $highestTagProfile -le $highestModuleProfile) {
-            return $highestTagProfile
+        # Use the highest profile if it's present in the module profiles
+        if ($highestTagProfile -in $moduleProfileArray) {
+            return [int] $highestTagProfile
         }
 
         # Otherwise, use the highest matching profile that doesn't exceed the module profile
         $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-        return [Math]::Min($highestMatchingProfile, $highestModuleProfile)
+        return [int] $highestMatchingProfile
     }
     catch {
         Write-Error "Error in Get-EvaluationProfile: $_"
