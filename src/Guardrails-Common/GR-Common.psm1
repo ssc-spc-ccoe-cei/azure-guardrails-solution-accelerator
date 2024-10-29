@@ -730,10 +730,16 @@ function add-documentFileExtensions {
 
     )
 
-    if ($ItemName.ToLower() -eq 'network architecture diagram'){
-        $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
+    if ($ItemName.ToLower() -eq 'network architecture diagram' -or 
+        $ItemName.ToLower() -eq 'high level design documentation' -or
+        $ItemName.ToLower() -eq "diagramme d'architecture réseau" -or 
+        $ItemName.ToLower() -eq 'documentation de Conception de haut niveau'){
+
+            $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
     }
-    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration') {
+    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
+            $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
+
         $fileExtensions = @(".csv")
     }
     else {
