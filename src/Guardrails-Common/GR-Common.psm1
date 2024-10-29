@@ -604,21 +604,40 @@ function Get-EvaluationProfile {
 
         $profileTagValues = ConvertTo-IntArray $profileTag.TagValue
 
-        $matchingProfiles = $profileTagValues | Where-Object {
-            $cloudUsageProfileArray -contains $_ -and $moduleProfileArray -contains $_
+        # Get the highest profile from all sources
+        $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
+        $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
+        $highestTagProfile = ($profileTagValues | Measure-Object -Maximum).Maximum
+
+        # Use the highest profile if it's present in the tag and doesn't exceed module profile
+        if ($highestTagProfile -in $profileTagValues -and $highestTagProfile -le $highestModuleProfile) {
+            return $highestTagProfile
         }
 
-        if ($matchingProfiles.Count -gt 0) {
-            return [int]($matchingProfiles | Measure-Object -Maximum).Maximum
-        }
-
-        Write-Error "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
-        return 0
+        # Otherwise, use the highest matching profile that doesn't exceed the module profile
+        $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        return [Math]::Min($highestMatchingProfile, $highestModuleProfile)
     }
     catch {
         Write-Error "Error in Get-EvaluationProfile: $_"
         return 0
     }
+}
+
+# Helper function to get the highest matching profile
+function Get-HighestMatchingProfile {
+    [OutputType([int])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [int[]]$profile1,
+        [Parameter(Mandatory = $true)]
+        [int[]]$profile2
+    )
+    $matchingProfiles = $profile1 | Where-Object { $profile2 -contains $_ }
+    if ($matchingProfiles.Count -eq 0) {
+        return 0
+    }
+    return ($matchingProfiles | Measure-Object -Maximum).Maximum
 }
 
 function ConvertTo-IntArray {
@@ -634,21 +653,6 @@ function ConvertTo-IntArray {
         return $inputString.Split(',') | ForEach-Object { [int]$_.Trim() }
     }
     return @([int]$inputString)
-}
-
-function Get-HighestMatchingProfile {
-    [OutputType([int])]
-    param (
-        [Parameter(Mandatory = $true)]
-        [int[]]$profile1,
-        [Parameter(Mandatory = $true)]
-        [int[]]$profile2
-    )
-    $matchingProfiles = $profile1 | Where-Object { $profile2 -contains $_ }
-    if ($matchingProfiles.Count -eq 0) {
-        return 0
-    }
-    return ($matchingProfiles | Measure-Object -Maximum).Maximum
 }
 
 function Parse-BlobContent {
@@ -878,5 +882,6 @@ function Get-AllUserAuthInformation{
 
 
 # endregion
+
 
 
