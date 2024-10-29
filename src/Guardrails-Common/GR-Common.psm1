@@ -587,60 +587,60 @@ function Get-EvaluationProfile {
     )
 
     try {
-        Write-Output "Converting input profiles to arrays..."
-        Write-Output "CloudUsageProfiles: $CloudUsageProfiles"
-        Write-Output "ModuleProfiles: $ModuleProfiles"
+        # Write-Output "Converting input profiles to arrays..."
+        # Write-Output "CloudUsageProfiles: $CloudUsageProfiles"
+        # Write-Output "ModuleProfiles: $ModuleProfiles"
         
         # Convert input strings to integer arrays  
         $cloudUsageProfileArray = ConvertTo-IntArray $CloudUsageProfiles
         $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
 
-        Write-Output "Converted arrays:"
-        Write-Output "CloudUsageProfileArray: $($cloudUsageProfileArray -join ',')"
-        Write-Output "ModuleProfileArray: $($moduleProfileArray -join ',')"
+        # Write-Output "Converted arrays:"
+        # Write-Output "CloudUsageProfileArray: $($cloudUsageProfileArray -join ',')"
+        # Write-Output "ModuleProfileArray: $($moduleProfileArray -join ',')"
 
         if (-not $SubscriptionId) {
-            Write-Output "No SubscriptionId provided, using highest matching profile..."
+            # Write-Output "No SubscriptionId provided, using highest matching profile..."
             $result = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-            Write-Output "Returning result: $result"
+            # Write-Output "Returning result: $result"
             return [int]$result
         }
 
-        Write-Output "Getting subscription tags for subscription: $SubscriptionId"
+        # Write-Output "Getting subscription tags for subscription: $SubscriptionId"
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
-        $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
+        $profileTagValues = $subscriptionTags.Properties.TagsProperty['profile']
 
-        if ($null -eq $profileTag) {
-            Write-Output "No profile tag found on subscription, using highest matching profile..."
+        if ($null -eq $profileTagValues) {
+            # Write-Output "No profile tag found on subscription, using highest matching profile..."
             $result = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-            Write-Output "Returning result: $result"
+            # Write-Output "Returning result: $result"
             return [int]$result
         }
 
-        Write-Output "Found profile tag value: $($profileTag.TagValue)"
-        $profileTagValues = ConvertTo-IntArray $profileTag.TagValue
-        Write-Output "Converted profile tag values: $($profileTagValues -join ',')"
+        # Write-Output "Found profile tag value: $($profileTag.TagValue)"
+        $profileTagValuesArray = ConvertTo-IntArray $profileTagValues
+        # Write-Output "Converted profile tag values: $($profileTagValues -join ',')"
 
         # Get the highest profile from all sources
         $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
         $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
-        $highestTagProfile = ($profileTagValues | Measure-Object -Maximum).Maximum
+        $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
-        Write-Output "Highest profiles:"
-        Write-Output "- Cloud Usage: $highestCloudUsageProfile"
-        Write-Output "- Module: $highestModuleProfile"
-        Write-Output "- Tag: $highestTagProfile"
+        # Write-Output "Highest profiles:"
+        # Write-Output "- Cloud Usage: $highestCloudUsageProfile"
+        # Write-Output "- Module: $highestModuleProfile"
+        # Write-Output "- Tag: $highestTagProfile"
 
         # Use the highest profile if it's present in the module profiles
         if ($highestTagProfile -in $moduleProfileArray) {
-            Write-Output "Highest tag profile ($highestTagProfile) is in module profiles, using it"
+            # Write-Output "Highest tag profile ($highestTagProfile) is in module profiles, using it"
             return [int]$highestTagProfile
         }
 
         # Otherwise, use the highest matching profile that doesn't exceed the module profile
-        Write-Output "Finding highest matching profile..."
+        # Write-Output "Finding highest matching profile..."
         $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-        Write-Output "Returning highest matching profile: $highestMatchingProfile"
+        # Write-Output "Returning highest matching profile: $highestMatchingProfile"
         return [int]$highestMatchingProfile
     }
     catch {
