@@ -72,15 +72,13 @@ function Get-AdminAccess {
 
 
     if ($EnableMultiCloudProfiles) {        
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result -eq 0) {
-            Write-Output "No matching profile found or error occurred"
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            Write-Output "No matching profile found"
             $PsObject.ComplianceStatus = "Not Applicable"
         } else {
-            Write-Error "Unexpected result: $result"
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 

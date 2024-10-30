@@ -575,7 +575,7 @@ function Hide-Email {
 }
 
 function Get-EvaluationProfile {
-    [OutputType([int])]
+    [OutputType([PSCustomObject])]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -587,65 +587,57 @@ function Get-EvaluationProfile {
     )
 
     try {
-        # Write-Output "Converting input profiles to arrays..."
-        # Write-Output "CloudUsageProfiles: $CloudUsageProfiles"
-        # Write-Output "ModuleProfiles: $ModuleProfiles"
-        
         # Convert input strings to integer arrays  
         $cloudUsageProfileArray = ConvertTo-IntArray $CloudUsageProfiles
         $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
 
-        # Write-Output "Converted arrays:"
-        # Write-Output "CloudUsageProfileArray: $($cloudUsageProfileArray -join ',')"
-        # Write-Output "ModuleProfileArray: $($moduleProfileArray -join ',')"
-
         if (-not $SubscriptionId) {
-            # Write-Output "No SubscriptionId provided, using highest matching profile..."
-            $result = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-            # Write-Output "Returning result: $result"
-            return [int]$result
+            $profile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [PSCustomObject]@{
+                Profile = $profile
+                ShouldEvaluate = ($profile -in $cloudUsageProfileArray)
+            }
         }
 
-        # Write-Output "Getting subscription tags for subscription: $SubscriptionId"
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
         $profileTagValues = $subscriptionTags.Properties.TagsProperty['profile']
 
         if ($null -eq $profileTagValues) {
-            # Write-Output "No profile tag found on subscription, using highest matching profile..."
-            $result = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-            # Write-Output "Returning result: $result"
-            return [int]$result
+            $profile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [PSCustomObject]@{
+                Profile = $profile
+                ShouldEvaluate = ($profile -in $cloudUsageProfileArray)
+            }
         }
 
-        # Write-Output "Found profile tag value: $($profileTag.TagValue)"
         $profileTagValuesArray = ConvertTo-IntArray $profileTagValues
-        # Write-Output "Converted profile tag values: $($profileTagValues -join ',')"
 
         # Get the highest profile from all sources
         $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
         $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
         $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
-        # Write-Output "Highest profiles:"
-        # Write-Output "- Cloud Usage: $highestCloudUsageProfile"
-        # Write-Output "- Module: $highestModuleProfile"
-        # Write-Output "- Tag: $highestTagProfile"
-
         # Use the highest profile if it's present in the module profiles
         if ($highestTagProfile -in $moduleProfileArray) {
-            # Write-Output "Highest tag profile ($highestTagProfile) is in module profiles, using it"
-            return [int]$highestTagProfile
+            return [PSCustomObject]@{
+                Profile = $highestTagProfile
+                ShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
+            }
         }
 
         # Otherwise, use the highest matching profile that doesn't exceed the module profile
-        # Write-Output "Finding highest matching profile..."
         $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-        # Write-Output "Returning highest matching profile: $highestMatchingProfile"
-        return [int]$highestMatchingProfile
+        return [PSCustomObject]@{
+            Profile = $highestMatchingProfile
+            ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
+        }
     }
     catch {
         Write-Error "Error in Get-EvaluationProfile: $_"
-        return 0
+        return [PSCustomObject]@{
+            Profile = 0
+            ShouldEvaluate = $false
+        }
     }
 }
 

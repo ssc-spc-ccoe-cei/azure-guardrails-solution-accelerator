@@ -1,4 +1,3 @@
-
 function Get-SubnetComplianceInformation {
     param (
         [Parameter(Mandatory = $true)]
@@ -49,12 +48,18 @@ function Get-SubnetComplianceInformation {
         Write-Verbose "Selecting subscription: $($sub.Name)"
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         if ($EnableMultiCloudProfiles) {        
-            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-            if ($result -eq 0) {
-                Write-Output "No matching profile found or error occurred"
+            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if (!$evalResult.ShouldEvaluate) {
+                Write-Output "No matching profile found"
                 $result = "Not Applicable"
             } else {
-                Write-Output "Valid profile returned: $result"
+                Write-Output "Valid profile returned: $($evalResult.Profile)"
+                if ($SubnetObject) {
+                    $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    if ($result -eq "Not Applicable") {
+                        $SubnetObject.ComplianceStatus = "Not Applicable"
+                    }
+                }
             }
         }
 

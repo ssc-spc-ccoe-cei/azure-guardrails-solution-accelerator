@@ -114,14 +114,15 @@ function Add-ProfileToResult {
     )
 
     try {
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionId
-    
-        if ($evaluationProfile -eq 0) {
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionId
+        if (!$evalResult.ShouldEvaluate) {
+            Write-Output "No matching profile found"
             $Result.ComplianceStatus = "Not Applicable"
             $Result.Comments += if ($Result.Comments) { " " } else { "" }
             $Result.Comments += "No matching profile found."
         } else {
-            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
     catch {

@@ -27,7 +27,7 @@ function Get-NetworkWatcherStatus {
     )
     [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $result = $null
+    $evalResult = $null
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
         $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
@@ -46,12 +46,12 @@ function Get-NetworkWatcherStatus {
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
 
         if ($EnableMultiCloudProfiles) {        
-            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-            if ($result -eq 0) {
-                Write-Output "No matching profile found or error occurred."
+            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+            if (!$evalResult.ShouldEvaluate) {
+                Write-Output "No matching profile found"
                 $ComplianceStatus = "Not Applicable"
             } else {
-                Write-Output "Valid profile returned: $result"
+                Write-Output "Valid profile returned: $($evalResult.Profile)"
                 $ComplianceStatus = $null  # Will be set later based on Network Watcher status
             }
         } else {
@@ -95,8 +95,8 @@ function Get-NetworkWatcherStatus {
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                 }
-                if ($EnableMultiCloudProfiles -and $result -ne 0) {
-                    $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                if ($EnableMultiCloudProfiles -and $evalResult -ne 0) {
+                    $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                 }
                 $RegionList.add($RegionObject) | Out-Null                               
             }
@@ -112,8 +112,8 @@ function Get-NetworkWatcherStatus {
                 ControlName = $ControlName
                 ReportTime = $ReportTime
             }
-            if ($EnableMultiCloudProfiles -and $result -ne 0) {
-                $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            if ($EnableMultiCloudProfiles -and $evalResult -ne 0) {
+                $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
             $RegionList.add($RegionObject) | Out-Null   
         }

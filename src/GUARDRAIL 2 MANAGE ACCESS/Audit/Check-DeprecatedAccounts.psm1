@@ -46,18 +46,14 @@ function Check-DeprecatedUsers {
     $DeprecatedUserStatus = [PSCustomObject]$DeprecatedUserStatusParams
 
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result -eq 0) {
-            Write-Output "No matching profile found or an error occurred."
+    if ($EnableMultiCloudProfiles) {        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            Write-Output "No matching profile found"
             $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"
         } else {
-            Write-Error "Unexpected result: $result"
-            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $result")
-            $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 

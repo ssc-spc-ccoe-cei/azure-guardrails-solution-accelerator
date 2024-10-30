@@ -69,11 +69,11 @@ function Get-EvaluationProfileForSubscription {
     
     if (-not $EnableMultiCloudProfiles) { return $null }
 
-    $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-    switch ($result) {
-        { $_ -eq 0 } { return "Not Applicable" }
-        { $_ -gt 0 } { return $_ }
-        default { Write-Error "Unexpected result: $_"; return "Not Applicable" }
+    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+    if (!$evalResult.ShouldEvaluate) {
+        return "Not Applicable"
+    } else {
+        return $evalResult.Profile
     }
 }
 
@@ -109,8 +109,15 @@ function Get-VNetComplianceObject {
         ReportTime       = $ReportTime
     }
 
-    if ($EnableMultiCloudProfiles -and $evaluationProfile -ne "Not Applicable") {
-        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+    if ($EnableMultiCloudProfiles) {        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+        if (!$evalResult.ShouldEvaluate) {
+            Write-Output "No matching profile found"
+            $VNetObject.ComplianceStatus = "Not Applicable"
+        } else {
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+        }
     }
 
     return $VNetObject

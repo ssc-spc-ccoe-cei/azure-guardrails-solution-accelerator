@@ -276,16 +276,17 @@ function Check-StatusDataAtRest {
 
         if ($EnableMultiCloudProfiles) {
             if ($objType -eq "subscription") {
-                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
+                $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
             } else {
-                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
             }
-            if ($result -eq 0) {
-                Write-Output "No matching profile found or error occurred"
+            
+            if (!$evalResult.ShouldEvaluate) {
+                Write-Output "No matching profile found"
                 $c.ComplianceStatus = "Not Applicable"
             } else {
-                Write-Output "Valid profile returned: $result"
-                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                Write-Output "Valid profile returned: $($evalResult.Profile)"
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }        
 

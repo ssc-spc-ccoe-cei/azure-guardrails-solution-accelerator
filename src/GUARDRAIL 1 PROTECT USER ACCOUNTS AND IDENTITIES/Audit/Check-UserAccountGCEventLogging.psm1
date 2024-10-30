@@ -125,13 +125,13 @@ function Check-UserAccountGCEventLogging {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $profileResult = Get-EvaluationProfile -SubscriptionId $subscriptionId -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($profileResult -eq 0) {
+        $evalResult = Get-EvaluationProfile -SubscriptionId $subscriptionId -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
             Write-Output "No matching profile found"
             $result.ComplianceStatus = "Not Applicable"
         } else {
-            Write-Output "Valid profile returned: $profileResult"
-            $result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $profileResult
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 

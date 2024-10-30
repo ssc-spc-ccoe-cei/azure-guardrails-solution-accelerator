@@ -70,16 +70,13 @@ function Get-ADLicenseType {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -eq 0) {
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
             Write-Output "No matching profile found"
             $PsObject.ComplianceStatus = "Not Applicable"
-        } elseif ($result -is [int] -and $result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
         } else {
-            Write-Error "Unexpected result from Get-EvaluationProfile: $result"
-            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $result")
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 

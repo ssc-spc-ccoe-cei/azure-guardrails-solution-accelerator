@@ -212,13 +212,13 @@ function get-SecurityMonitoringStatus {
             ReportTime = $ReportTime
         }
         if ($EnableMultiCloudProfiles) {        
-            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $Subscription
-            if ($result -eq 0) {
-                Write-Output "No matching profile found or error occurred"
+            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $Subscription
+            if (!$evalResult.ShouldEvaluate) {
+                Write-Output "No matching profile found"
                 $object.ComplianceStatus = "Not Applicable"
             } else {
-                Write-Output "Valid profile returned: $result"
-                $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                Write-Output "Valid profile returned: $($evalResult.Profile)"
+                $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }    
 
