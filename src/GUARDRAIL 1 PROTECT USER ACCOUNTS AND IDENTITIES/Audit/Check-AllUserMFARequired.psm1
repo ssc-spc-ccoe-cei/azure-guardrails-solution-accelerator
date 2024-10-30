@@ -46,7 +46,7 @@ function Check-AllUserMFARequired {
 
     # Check all users for MFA
     $allUserUPNs = $users.userPrincipalName
-    Write-Output "allUserUPNs count is $($allUserUPNs.Count)"
+    Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
 
     ## *************************##
     ## ****** Member user ******##
@@ -62,7 +62,7 @@ function Check-AllUserMFARequired {
     if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
         $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
     }
-    Write-Output "memberUserList count is $($memberUserList.Count)"
+    Write-Host "memberUserList count is $($memberUserList.Count)"
 
     if(!$null -eq $memberUserList){
         $result = Get-AllUserAuthInformation -allUserList $memberUserList
@@ -72,16 +72,16 @@ function Check-AllUserMFARequired {
         }
         $userValidMFACounter = $result.userValidMFACounter
     }
-    Write-Output "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
-    Write-Output "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
+    Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
+    Write-Host "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
 
 
     ## ***************************##
     ## ****** External user ******##
     ## ***************************##
     $extUsers = $users | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-    Write-Output "extUsers count is $($extUsers.Count)"
-    Write-Output "extUsers UPNs are $($extUsers.userPrincipalName)"
+    Write-Host "extUsers count is $($extUsers.Count)"
+    Write-Host "extUsers UPNs are $($extUsers.userPrincipalName)"
     if(!$null -eq $extUsers){
         # Get external users UPNs and emails
         $extUserList = $extUsers | Select-Object userPrincipalName, mail
@@ -93,9 +93,9 @@ function Check-AllUserMFARequired {
         # combined list
         $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
     }
-    Write-Output "extUserUPNsBadMFA count is $($extUserUPNsBadMFA.Count)"
-    Write-Output "accounts auth method check done"
-    Write-Output "userValidMFACounter count is $userValidMFACounter"
+    Write-Host "extUserUPNsBadMFA count is $($extUserUPNsBadMFA.Count)"
+    Write-Host "accounts auth method check done"
+    Write-Host "userValidMFACounter count is $userValidMFACounter"
 
 
     
@@ -106,8 +106,8 @@ function Check-AllUserMFARequired {
     }elseif($null -eq $memberUserUPNsBadMFA -or $memberUserUPNsBadMFA.Count -eq 0){
         $userUPNsBadMFA =  $extUserUPNsBadMFA
     }
-    Write-Output "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
-    Write-Output "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
+    Write-Host "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+    Write-Host "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
        
 
     # Condition: all users are MFA enabled
