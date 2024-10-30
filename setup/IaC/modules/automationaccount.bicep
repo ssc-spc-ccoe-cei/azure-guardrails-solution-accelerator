@@ -375,11 +375,21 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
-    resource module37 'modules' = if (newDeployment || updatePSModules) {
+  resource module37 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-RiskBasedAccess'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-RiskBasedAccess.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module38 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Monitor-BreakGlassAccount'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
         version: '1.0.0'
       }
     }

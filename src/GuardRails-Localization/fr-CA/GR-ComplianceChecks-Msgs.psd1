@@ -279,6 +279,7 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 bgValidSignature = Signatures et approbations valides pour la procédure de compte de bris de verre
+bgAccountTesting = Cadence des tests des comptes de bris de verre
 
 # GR-Common
 procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.

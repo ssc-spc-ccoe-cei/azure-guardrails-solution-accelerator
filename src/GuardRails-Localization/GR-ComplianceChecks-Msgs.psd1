@@ -277,6 +277,7 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 bgValidSignature = Valid Signatures and Approvals for Break Glass Account Procedure
+bgAccountTesting = Break Glass Account Testing Cadence
 
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
