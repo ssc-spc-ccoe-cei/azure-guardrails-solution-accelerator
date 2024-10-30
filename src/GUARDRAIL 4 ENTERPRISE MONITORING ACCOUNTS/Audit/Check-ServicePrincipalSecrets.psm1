@@ -79,8 +79,13 @@ function Get-DepartmentServicePrincipalNameSecrets {
     if ($EnableMultiCloudProfiles) {
         $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if (!$evalResult.ShouldEvaluate) {
-            Write-Output "No matching profile found"
-            $Results.ComplianceStatus = "Not Applicable"
+            if ($evalResult.Profile -gt 0) {
+                $Results.ComplianceStatus = "Not Applicable"
+                $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $Results.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
             Write-Output "Valid profile returned: $($evalResult.Profile)"
             $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile

@@ -50,16 +50,16 @@ function Get-SubnetComplianceInformation {
         if ($EnableMultiCloudProfiles) {        
             $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
             if (!$evalResult.ShouldEvaluate) {
-                Write-Output "No matching profile found"
-                $result = "Not Applicable"
+                if ($evalResult.Profile -gt 0) {
+                    $SubnetObject.ComplianceStatus = "Not Applicable"
+                    $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $SubnetObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             } else {
                 Write-Output "Valid profile returned: $($evalResult.Profile)"
-                if ($SubnetObject) {
-                    $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    if ($result -eq "Not Applicable") {
-                        $SubnetObject.ComplianceStatus = "Not Applicable"
-                    }
-                }
+                $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }
 

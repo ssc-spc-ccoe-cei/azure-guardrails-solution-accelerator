@@ -48,11 +48,16 @@ function Get-NetworkWatcherStatus {
         if ($EnableMultiCloudProfiles) {        
             $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
             if (!$evalResult.ShouldEvaluate) {
-                Write-Output "No matching profile found"
-                $ComplianceStatus = "Not Applicable"
+                if ($evalResult.Profile -gt 0) {
+                    $RegionObject.ComplianceStatus = "Not Applicable"
+                    $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $RegionObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             } else {
                 Write-Output "Valid profile returned: $($evalResult.Profile)"
-                $ComplianceStatus = $null  # Will be set later based on Network Watcher status
+                $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         } else {
             $ComplianceStatus = $null  # Will be set later based on Network Watcher status

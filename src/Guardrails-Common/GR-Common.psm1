@@ -411,13 +411,25 @@ function Check-DocumentExistsInStorage {
     }
 
     if ($EnableMultiCloudProfiles) {        
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                
+                $moduleOutput = [PSCustomObject]@{ 
+                    ComplianceResults = $PsObject
+                    Errors            = $ErrorList
+                    AdditionalResults = $AdditionalResults
+                }
+                return $moduleOutput
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Output "No matching profile found or error occurred"
-            $PsObject.ComplianceStatus = "Not Applicable"
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 
@@ -592,10 +604,10 @@ function Get-EvaluationProfile {
         $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
 
         if (-not $SubscriptionId) {
-            $profile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            $matchedProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
             return [PSCustomObject]@{
-                Profile = $profile
-                ShouldEvaluate = ($profile -in $cloudUsageProfileArray)
+                Profile = $matchedProfile
+                ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
             }
         }
 
@@ -603,10 +615,10 @@ function Get-EvaluationProfile {
         $profileTagValues = $subscriptionTags.Properties.TagsProperty['profile']
 
         if ($null -eq $profileTagValues) {
-            $profile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            $matchedProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
             return [PSCustomObject]@{
-                Profile = $profile
-                ShouldEvaluate = ($profile -in $cloudUsageProfileArray)
+                Profile = $matchedProfile
+                ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
             }
         }
 

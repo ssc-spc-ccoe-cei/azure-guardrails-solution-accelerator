@@ -72,8 +72,13 @@ function Get-ADLicenseType {
     if ($EnableMultiCloudProfiles) {
         $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if (!$evalResult.ShouldEvaluate) {
-            Write-Output "No matching profile found"
-            $PsObject.ComplianceStatus = "Not Applicable"
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
             Write-Output "Valid profile returned: $($evalResult.Profile)"
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile

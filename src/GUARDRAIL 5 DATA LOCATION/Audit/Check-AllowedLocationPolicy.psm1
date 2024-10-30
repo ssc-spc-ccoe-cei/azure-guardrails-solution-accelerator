@@ -116,8 +116,13 @@ function Check-PolicyStatus {
             }
             
             if (!$evalResult.ShouldEvaluate) {
-                Write-Output "No matching profile found"
-                $c.ComplianceStatus = "Not Applicable"
+                if ($evalResult.Profile -gt 0) {
+                    $c.ComplianceStatus = "Not Applicable"
+                    $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             } else {
                 Write-Output "Valid profile returned: $($evalResult.Profile)"
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile

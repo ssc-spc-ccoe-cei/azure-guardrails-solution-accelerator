@@ -127,8 +127,13 @@ function Check-UserAccountGCEventLogging {
     if ($EnableMultiCloudProfiles) {
         $evalResult = Get-EvaluationProfile -SubscriptionId $subscriptionId -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if (!$evalResult.ShouldEvaluate) {
-            Write-Output "No matching profile found"
-            $result.ComplianceStatus = "Not Applicable"
+            if ($evalResult.Profile -gt 0) {
+                $result.ComplianceStatus = "Not Applicable"
+                $result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
             Write-Output "Valid profile returned: $($evalResult.Profile)"
             $result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile

@@ -267,12 +267,16 @@ function Check-PrivilegedExternalUsers  {
     }
 
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
+    if ($EnableMultiCloudProfiles) {        
         $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if (!$evalResult.ShouldEvaluate) {
-            Write-Output "No matching profile found"
-            $GuestUserStatus.ComplianceStatus = "Not Applicable"
-            $ErrorList.Add("No matching profile found")
+            if ($evalResult.Profile -gt 0) {
+                $GuestUserStatus.ComplianceStatus = "Not Applicable"
+                $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $GuestUserStatus.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
             Write-Output "Valid profile returned: $($evalResult.Profile)"
             $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile

@@ -35,20 +35,18 @@ function Get-VNetComplianceInformation {
         Write-Verbose "Processing subscription: $($sub.Name)"
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
 
-        $evaluationProfile = Get-EvaluationProfileForSubscription -sub $sub -EnableMultiCloudProfiles $EnableMultiCloudProfiles -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-
         $allVNETs = Get-AzVirtualNetwork
         $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
 
         if ($includedVNETs.count -gt 0) {
             foreach ($VNet in $allVNETs) {
-                $VNetObject = Get-VNetComplianceObject -VNet $VNet -sub $sub -ExcludedVNetsList $ExcludedVNetsList -includedVNETs $includedVNETs -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -evaluationProfile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
+                $VNetObject = Get-VNetComplianceObject -VNet $VNet -sub $sub -ExcludedVNetsList $ExcludedVNetsList -includedVNETs $includedVNETs -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -EnableMultiCloudProfiles $EnableMultiCloudProfiles
                 $VNetList.Add($VNetObject) | Out-Null
             }
         }
         else {
-            $VNetObject = Get-NoVNetsComplianceObject -sub $sub -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -evaluationProfile $evaluationProfile -EnableMultiCloudProfiles $EnableMultiCloudProfiles
+            $VNetObject = Get-NoVNetsComplianceObject -sub $sub -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -EnableMultiCloudProfiles $EnableMultiCloudProfiles
             $VNetList.Add($VNetObject) | Out-Null
         }
     }
@@ -64,27 +62,10 @@ function Get-VNetComplianceInformation {
     }
 }
 
-function Get-EvaluationProfileForSubscription {
-    param ($sub, $EnableMultiCloudProfiles, $CloudUsageProfiles, $ModuleProfiles)
-    
-    if (-not $EnableMultiCloudProfiles) { return $null }
-
-    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-    if (!$evalResult.ShouldEvaluate) {
-        return "Not Applicable"
-    } else {
-        return $evalResult.Profile
-    }
-}
-
 function Get-VNetComplianceObject {
-    param ($VNet, $sub, $ExcludedVNetsList, $includedVNETs, $msgTable, $ControlName, $itsgcode, $ReportTime, $evaluationProfile, $EnableMultiCloudProfiles)
+    param ($VNet, $sub, $ExcludedVNetsList, $includedVNETs, $msgTable, $ControlName, $itsgcode, $ReportTime, $EnableMultiCloudProfiles)
 
-    if ($EnableMultiCloudProfiles -and $evaluationProfile -eq "Not Applicable") {
-        $ComplianceStatus = "Not Applicable"
-        $Comments = "No matching profile found for this subscription"
-    }
-    elseif ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
+    if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
         $ComplianceStatus = $Vnet.EnableDdosProtection
         $Comments = if ($ComplianceStatus) { "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)" } else { $msgTable.ddosNotEnabled }
     }
@@ -112,8 +93,13 @@ function Get-VNetComplianceObject {
     if ($EnableMultiCloudProfiles) {        
         $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
         if (!$evalResult.ShouldEvaluate) {
-            Write-Output "No matching profile found"
-            $VNetObject.ComplianceStatus = "Not Applicable"
+            if ($evalResult.Profile -gt 0) {
+                $VNetObject.ComplianceStatus = "Not Applicable"
+                $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $VNetObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
             Write-Output "Valid profile returned: $($evalResult.Profile)"
             $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
@@ -130,21 +116,12 @@ function Get-NoVNetsComplianceObject {
         $ControlName,
         $itsgcode,
         $ReportTime,
-        $evaluationProfile,  # Renamed from 'profile'
         $EnableMultiCloudProfiles
     )
 
-    $ComplianceStatus = if ($EnableMultiCloudProfiles -and $evaluationProfile -eq "Not Applicable") {
-        "Not Applicable"
-    } else {
-        $true
-    }
+    $ComplianceStatus = $true
 
-    $Comments = if ($EnableMultiCloudProfiles -and $evaluationProfile -eq "Not Applicable") {
-        "No matching profile found for this subscription"
-    } else {
-        "$($msgTable.noVNets) - $($sub.Name)"
-    }
+    $Comments = "$($msgTable.noVNets) - $($sub.Name)"
 
     $VNETObject = [PSCustomObject]@{ 
         SubscriptionName = $sub.Name 
@@ -157,10 +134,21 @@ function Get-NoVNetsComplianceObject {
         ReportTime       = $ReportTime
     }
 
-    if ($EnableMultiCloudProfiles -and $evaluationProfile -ne "Not Applicable") {
-        $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+    if ($EnableMultiCloudProfiles) {        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $VNetObject.ComplianceStatus = "Not Applicable"
+                $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $VNetObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
+        } else {
+            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+        }
     }
-
     return $VNETObject
 }
 

@@ -49,8 +49,13 @@ function Check-DeprecatedUsers {
     if ($EnableMultiCloudProfiles) {        
         $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if (!$evalResult.ShouldEvaluate) {
-            Write-Output "No matching profile found"
-            $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"
+            if ($evalResult.Profile -gt 0) {
+                $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"
+                $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $DeprecatedUserStatus.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
             Write-Output "Valid profile returned: $($evalResult.Profile)"
             $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
