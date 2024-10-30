@@ -759,80 +759,75 @@
       "name": "Gr13"
     },
     {
-      "type": 12,
+      "type": 3,
       "content": {
-        "version": "NotebookGroup/1.0",
-        "groupType": "editable",
-        "items": [
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=iif(tostring(ComplianceStatus_b)==\"True\", 'Compliant Items', 'Non-compliant Items'), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
-              "size": 4,
-              "timeContext": {
-                "durationMs": 86400000
-              },
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "visualization": "tiles",
-              "tileSettings": {
-                "showBorder": false,
-                "titleContent": {
-                  "columnMatch": "Status",
-                  "formatter": 1
-                },
-                "leftContent": {
-                  "columnMatch": "Total",
-                  "formatter": 12,
-                  "formatOptions": {
-                    "palette": "auto"
-                  },
-                  "numberFormat": {
-                    "unit": 17,
-                    "options": {
-                      "maximumSignificantDigits": 3,
-                      "maximumFractionDigits": 2
-                    }
-                  }
-                }
-              }
-            },
-            "name": "query - 16"
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=case(\n    isnotnull(column_ifexists('ComplianceStatus_s', '')) and ComplianceStatus_s == 'Not Applicable', 'Not Applicable Items',\n    tostring(ComplianceStatus_b)==\"True\", 'Compliant Items',\n    'Non-compliant Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Status",
+            "formatter": 1
           },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "GuardrailsCompliance_CL\n| where ReportTime_s == '{RunTime}'\n| summarize by ControlName_s\n| count \n| extend Title=\"Total # of Controls\"",
-              "size": 4,
-              "timeContext": {
-                "durationMs": 86400000
-              },
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "visualization": "tiles",
-              "tileSettings": {
-                "titleContent": {
-                  "columnMatch": "Title",
-                  "formatter": 1
-                },
-                "leftContent": {
-                  "columnMatch": "Count",
-                  "numberFormat": {
-                    "unit": 17,
-                    "options": {
-                      "style": "decimal"
-                    }
-                  }
-                },
-                "showBorder": true,
-                "size": "auto"
-              }
+          "leftContent": {
+            "columnMatch": "Total",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
             },
-            "name": "query - 15"
-          }
-        ]
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal",
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "showBorder": true
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
+      "name": "query - 16"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL\n| where ReportTime_s == '{RunTime}'\n| summarize by ControlName_s\n| count \n| extend Title=\"Total # of Controls\"",
+        "size": 4,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Title",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal"
+              }
+            }
+          },
+          "showBorder": true,
+          "size": "auto"
+        }
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
