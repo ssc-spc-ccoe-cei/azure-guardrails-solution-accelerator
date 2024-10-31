@@ -49,7 +49,7 @@ function Check-CBSSensors {
                     $ErrorList.Add("Error occurred while evaluating profile configuration")
                 }
             } else {
-                Write-Output "Valid profile returned: $($evalResult.Profile)"
+                
                 $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }
@@ -67,7 +67,7 @@ function Check-CBSSensors {
                     $ErrorList.Add("Error occurred while evaluating profile configuration")
                 }
             } else {
-                Write-Output "Valid profile returned: $($evalResult.Profile)"
+                
                 $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }

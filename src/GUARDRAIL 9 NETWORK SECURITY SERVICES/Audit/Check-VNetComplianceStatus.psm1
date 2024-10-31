@@ -101,7 +101,7 @@ function Get-VNetComplianceObject {
                 $ErrorList.Add("Error occurred while evaluating profile configuration")
             }
         } else {
-            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            
             $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
@@ -145,7 +145,7 @@ function Get-NoVNetsComplianceObject {
                 $ErrorList.Add("Error occurred while evaluating profile configuration")
             }
         } else {
-            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            
             $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }

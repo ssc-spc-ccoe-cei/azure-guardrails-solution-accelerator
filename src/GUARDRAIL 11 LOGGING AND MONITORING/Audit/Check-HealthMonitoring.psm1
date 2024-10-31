@@ -167,7 +167,7 @@ function Get-HealthMonitoringStatus {
                 $ErrorList.Add("Error occurred while evaluating profile configuration")
             }
         } else {
-            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            
             $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }

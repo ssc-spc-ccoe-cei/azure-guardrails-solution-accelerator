@@ -17,7 +17,6 @@ function Update-SubnetObjectWithProfile {
             $ErrorList.Add("Error occurred while evaluating profile configuration")
         }
     } else {
-        Write-Output "Valid profile returned: $($EvalResult.Profile)"
         $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $EvalResult.Profile -Force
     }
 }

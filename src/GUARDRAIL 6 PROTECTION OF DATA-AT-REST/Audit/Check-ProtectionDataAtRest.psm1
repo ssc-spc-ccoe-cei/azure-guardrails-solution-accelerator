@@ -290,7 +290,7 @@ function Check-StatusDataAtRest {
                     $ErrorList.Add("Error occurred while evaluating profile configuration")
                 }
             } else {
-                Write-Output "Valid profile returned: $($evalResult.Profile)"
+                
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }        

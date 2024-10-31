@@ -208,7 +208,7 @@
                 $ErrorList.Add("Error occurred while evaluating profile configuration")
             }
         } else {
-            Write-Output "Valid profile returned: $($evalResult.Profile)"
+            
             $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
