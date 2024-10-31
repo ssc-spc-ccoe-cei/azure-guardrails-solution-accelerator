@@ -83,6 +83,10 @@ function Check-ApplicationGatewayCertificateValidity {
             itsgcode         = $itsgcode
         }
 
+        if ($EnableMultiCloudProfiles) {
+            Set-ProfileEvaluation -PsObject $PsObject -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        }
+    
         $moduleOutput = [PSCustomObject]@{ 
             ComplianceResults = $PsObject
             Errors            = $ErrorList
@@ -208,20 +212,8 @@ function Check-ApplicationGatewayCertificateValidity {
         itsgcode         = $itsgcode
     }
 
-    if ($EnableMultiCloudProfiles) {        
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $PsObject.ComplianceStatus = "Not Applicable"
-                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
-            }
-        } else {
-            Write-Output "Valid profile returned: $($evalResult.Profile)"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
+    if ($EnableMultiCloudProfiles) {
+        Set-ProfileEvaluation -PsObject $PsObject -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
     }
 
     $moduleOutput = [PSCustomObject]@{ 
@@ -229,4 +221,31 @@ function Check-ApplicationGatewayCertificateValidity {
         Errors            = $ErrorList
     }
     return $moduleOutput
+}
+
+function Set-ProfileEvaluation {
+    param (
+        [Parameter(Mandatory=$true)]
+        [PSCustomObject]$PsObject,
+        [Parameter(Mandatory=$true)]
+        [System.Collections.ArrayList]$ErrorList,
+        [Parameter(Mandatory=$true)]
+        [string]$CloudUsageProfiles,
+        [Parameter(Mandatory=$true)]
+        [string]$ModuleProfiles
+    )
+
+    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    if (!$evalResult.ShouldEvaluate) {
+        if ($evalResult.Profile -gt 0) {
+            $PsObject.ComplianceStatus = "Not Applicable"
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
+            $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+        } else {
+            $ErrorList.Add("Error occurred while evaluating profile configuration")
+        }
+    } else {
+        Write-Output "Valid profile returned: $($evalResult.Profile)"
+        $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
+    }
 }
