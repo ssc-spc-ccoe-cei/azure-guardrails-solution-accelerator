@@ -191,7 +191,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
     if (-not $appGatewaysFound) {
         $Comments = $msgTable.noAppGatewayFound
-        $IsCompliant = "Not Applicable"
+        $IsCompliant = $true
     } else {
         $IsCompliant = $allCompliant
         if ($IsCompliant) {
