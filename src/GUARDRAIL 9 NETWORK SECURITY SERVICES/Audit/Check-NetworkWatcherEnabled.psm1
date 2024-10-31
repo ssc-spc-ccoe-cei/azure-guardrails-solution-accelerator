@@ -47,20 +47,6 @@ function Get-NetworkWatcherStatus {
 
         if ($EnableMultiCloudProfiles) {        
             $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-            if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $RegionObject.ComplianceStatus = "Not Applicable"
-                    $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $RegionObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-                } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
-                }
-            } else {
-                
-                $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-            }
-        } else {
-            $ComplianceStatus = $null  # Will be set later based on Network Watcher status
         }
 
         $allVNETs=Get-AzVirtualNetwork
@@ -79,15 +65,14 @@ function Get-NetworkWatcherStatus {
 
             # check if network watcher is enabled in the region
             $comments = $null
-            $ComplianceStatus = if ($null -eq $ComplianceStatus) { $true } else { $ComplianceStatus }
+            $ComplianceStatus = $true
             ForEach ($region in ($nonExcludedVnetRegions | Get-Unique)) {
                 $nw = Get-AzNetworkWatcher -Location $region -ErrorAction SilentlyContinue
                 if ($nw) {
-                    $ComplianceStatus = if ($null -eq $ComplianceStatus) { $true } else { $ComplianceStatus }
                     $Comments = $msgTable.networkWatcherEnabled -f $region
                 }
                 else {
-                    $ComplianceStatus = if ($null -eq $ComplianceStatus) { $false } else { $ComplianceStatus }
+                    $ComplianceStatus = $false
                     $Comments = $msgTable.networkWatcherNotEnabled -f $region
                 }
                 # Create PSOBject with Information.
@@ -100,14 +85,13 @@ function Get-NetworkWatcherStatus {
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                 }
-                if ($EnableMultiCloudProfiles -and $evalResult -ne 0) {
-                    $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                if ($EnableMultiCloudProfiles -and $null -ne $evalResult) {
+                    Add-ProfileEvaluationResult -RegionObject $RegionObject -RegionList $RegionList -evalResult $evalResult -ErrorList $ErrorList
                 }
-                $RegionList.add($RegionObject) | Out-Null                               
             }
         }
         else {
-            $ComplianceStatus = if ($null -eq $ComplianceStatus) { $true } else { $ComplianceStatus }
+            $ComplianceStatus = $true
             $RegionObject = [PSCustomObject]@{ 
                 SubscriptionName  = $sub.Name 
                 ComplianceStatus = $ComplianceStatus
@@ -117,10 +101,9 @@ function Get-NetworkWatcherStatus {
                 ControlName = $ControlName
                 ReportTime = $ReportTime
             }
-            if ($EnableMultiCloudProfiles -and $evalResult -ne 0) {
-                $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+            if ($EnableMultiCloudProfiles -and $null -ne $evalResult) {
+                Add-ProfileEvaluationResult -RegionObject $RegionObject -RegionList $RegionList -evalResult $evalResult -ErrorList $ErrorList
             }
-            $RegionList.add($RegionObject) | Out-Null   
         }
     }
     if ($debuginfo){ 
@@ -133,5 +116,35 @@ function Get-NetworkWatcherStatus {
         AdditionalResults = $AdditionalResults
     }
     return $moduleOutput
+}
+
+function Add-ProfileEvaluationResult {
+    param (
+        [Parameter(Mandatory=$true)]
+        [PSCustomObject]$RegionObject,
+        
+        [Parameter(Mandatory=$true)]
+        [System.Collections.ArrayList]$RegionList,
+        
+        [Parameter(Mandatory=$true)]
+        [PSCustomObject]$evalResult,
+        
+        [Parameter(Mandatory=$true)]
+        [System.Collections.ArrayList]$ErrorList
+    )
+    
+    if (!$evalResult.ShouldEvaluate) {
+        if ($evalResult.Profile -gt 0) {
+            $RegionObject.ComplianceStatus = "Not Applicable"
+            $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+            $RegionObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+        } else {
+            $ErrorList.Add("Error occurred while evaluating profile configuration")
+        }
+    }
+    else {
+        $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+    }
+    $RegionList.add($RegionObject) | Out-Null
 }
 

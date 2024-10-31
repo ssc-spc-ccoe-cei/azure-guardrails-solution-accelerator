@@ -27,7 +27,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
     $IsCompliant = $false
     $Comments = ""
-    $ErrorList = New-Object System.Collections.ArrayList
+    $ErrorList = [System.Collections.ArrayList]@()
     $ApprovedCAList = @()
 
     # Add possible file extensions
@@ -235,6 +235,11 @@ function Set-ProfileEvaluation {
         [string]$ModuleProfiles
     )
 
+    # Add null check for ErrorList
+    if ($null -eq $ErrorList) {
+        $ErrorList = [System.Collections.ArrayList]@()
+    }
+
     $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
     if (!$evalResult.ShouldEvaluate) {
         if ($evalResult.Profile -gt 0) {
@@ -242,10 +247,9 @@ function Set-ProfileEvaluation {
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
             $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
         } else {
-            $ErrorList.Add("Error occurred while evaluating profile configuration")
+            [void]$ErrorList.Add("Error occurred while evaluating profile configuration")
         }
     } else {
-        
         $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
     }
 }
