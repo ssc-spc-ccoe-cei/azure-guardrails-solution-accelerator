@@ -25,10 +25,12 @@ function Get-NetworkWatcherStatus {
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
-    [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $evalResult = $null
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
+    [System.Collections.ArrayList]$RegionList = @()
+    [System.Collections.ArrayList]$ErrorList = @()
+
+
     try {
         $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
     }
@@ -86,8 +88,9 @@ function Get-NetworkWatcherStatus {
                     ReportTime = $ReportTime
                 }
                 if ($EnableMultiCloudProfiles -and $null -ne $evalResult) {
-                    Add-ProfileEvaluationResult -RegionObject $RegionObject -RegionList $RegionList -evalResult $evalResult -ErrorList $ErrorList
+                    Add-ProfileEvaluationResult -RegionObject $RegionObject -evalResult $evalResult -ErrorList $ErrorList
                 }
+                $RegionList.Add($RegionObject) | Out-Null
             }
         }
         else {
@@ -102,8 +105,9 @@ function Get-NetworkWatcherStatus {
                 ReportTime = $ReportTime
             }
             if ($EnableMultiCloudProfiles -and $null -ne $evalResult) {
-                Add-ProfileEvaluationResult -RegionObject $RegionObject -RegionList $RegionList -evalResult $evalResult -ErrorList $ErrorList
+                Add-ProfileEvaluationResult -RegionObject $RegionObject -evalResult $evalResult -ErrorList $ErrorList
             }
+            $RegionList.Add($RegionObject) | Out-Null
         }
     }
     if ($debuginfo){ 
@@ -122,14 +126,12 @@ function Add-ProfileEvaluationResult {
     param (
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$RegionObject,
-        
-        [Parameter(Mandatory=$true)]
-        [System.Collections.ArrayList]$RegionList,
-        
+                
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$evalResult,
         
         [Parameter(Mandatory=$true)]
+        [AllowEmptyCollection()]
         [System.Collections.ArrayList]$ErrorList
     )
     
@@ -145,6 +147,5 @@ function Add-ProfileEvaluationResult {
     else {
         $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
     }
-    $RegionList.add($RegionObject) | Out-Null
 }
 

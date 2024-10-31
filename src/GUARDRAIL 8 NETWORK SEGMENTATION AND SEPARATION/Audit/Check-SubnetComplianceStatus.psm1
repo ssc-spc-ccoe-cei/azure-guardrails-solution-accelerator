@@ -5,6 +5,7 @@ function Update-SubnetObjectWithProfile {
         [Parameter(Mandatory = $true)]
         [PSCustomObject]$EvalResult,
         [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
         [System.Collections.ArrayList]$ErrorList
     )
 
@@ -72,7 +73,6 @@ function Get-SubnetComplianceInformation {
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         if ($EnableMultiCloudProfiles) {        
             $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-            Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
         }
 
         $allVNETs = Get-AzVirtualNetwork
@@ -138,7 +138,7 @@ function Get-SubnetComplianceInformation {
                                 itsgcode         = $itsgcodesegmentation
                                 ReportTime       = $ReportTime
                             }
-                            if ($EnableMultiCloudProfiles) {
+                            if ($EnableMultiCloudProfiles -and $null -ne $evalResult) {
                                 Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
                             }
 
@@ -179,7 +179,7 @@ function Get-SubnetComplianceInformation {
                             ControlName      = $ControlName
                             ReportTime       = $ReportTime
                         }
-                        if ($EnableMultiCloudProfiles) {
+                        if ($EnableMultiCloudProfiles -and $null -ne $evalResult) {
                             Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
                         }
                         $SubnetList.add($SubnetObject) | Out-Null

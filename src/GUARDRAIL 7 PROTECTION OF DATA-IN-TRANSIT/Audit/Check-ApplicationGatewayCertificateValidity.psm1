@@ -228,17 +228,13 @@ function Set-ProfileEvaluation {
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$PsObject,
         [Parameter(Mandatory=$true)]
+        [AllowEmptyCollection()]
         [System.Collections.ArrayList]$ErrorList,
         [Parameter(Mandatory=$true)]
         [string]$CloudUsageProfiles,
         [Parameter(Mandatory=$true)]
         [string]$ModuleProfiles
     )
-
-    # Add null check for ErrorList
-    if ($null -eq $ErrorList) {
-        $ErrorList = [System.Collections.ArrayList]@()
-    }
 
     $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
     if (!$evalResult.ShouldEvaluate) {
@@ -247,6 +243,7 @@ function Set-ProfileEvaluation {
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
             $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
         } else {
+            # Add error to ErrorList instead of throwing
             [void]$ErrorList.Add("Error occurred while evaluating profile configuration")
         }
     } else {
