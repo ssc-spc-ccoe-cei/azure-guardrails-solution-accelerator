@@ -51,11 +51,11 @@ function Get-AdminAccess {
         $Comments = $msgTable.hasRequiredPolicies
         $IsCompliant = $true
     }
-    elseif ($locationPolicies.Count -eq 0 -and $devicePolicies.Count -gt 0) {
+    elseif ($locationPolicies.Count -eq 0 -and $devicePolicies.Count.Count -gt 0) {
         $Comments = $msgTable.noLocationFilterPolicies
     }
     elseif ($devicePolicies.Count -eq 0 -and $locationPolicies.Count -gt 0){
-        $Comments = $msgTable.noCompliantPoliciesAdmin
+        $Comments = $msgTable.noDeviceFilterPolicies
     }
     else {
         $Comments = $msgTable.noCompliantPoliciesAdmin

@@ -388,7 +388,7 @@ function Check-DocumentExistsInStorage {
     else {
         # no blob with the name $attestationFileName was found in the specified storage account
         $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
     }
 
     $Comments = $commentsArray -join ";"
@@ -763,14 +763,20 @@ function add-documentFileExtensions {
 
     )
 
-    if ($ItemName.ToLower() -eq 'network architecture diagram'){
-        $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
+    if ($ItemName.ToLower() -eq 'network architecture diagram' -or 
+        $ItemName.ToLower() -eq 'high level design documentation' -or
+        $ItemName.ToLower() -eq "diagramme d'architecture réseau" -or 
+        $ItemName.ToLower() -eq 'documentation de Conception de haut niveau'){
+
+            $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
     }
-    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration') {
-        $fileExtensions = @(".csv")
+    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
+            $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
+                
+                $fileExtensions = @(".csv")
     }
     else {
-        $fileExtensions = @(".txt",".docx", ".doc")
+        $fileExtensions = @(".txt",".docx", ".doc", ".pdf")
     }
     
     $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
@@ -909,6 +915,87 @@ function Get-AllUserAuthInformation{
 
 }
 
+
+
+# Function used for V2.0 GR2V7(M) andV1.0  GR3(R) cloud console access
+function Get-allowedLocationCAPCompliance {
+    param (
+        [array]$ErrorList,
+        [string] $IsCompliant
+    )
+
+    # get named locations
+    $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
+    try {
+        $response = Invoke-GraphQuery -urlPath $locationsBaseAPIUrl -ErrorAction Stop
+        $data = $response.Content
+        $locations = $data.value
+    }
+    catch {
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
+    }
+
+    # get conditional access policies
+    $CABaseAPIUrl = '/identity/conditionalAccess/policies'
+    try {
+        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+
+        $caps = $response.Content.value
+    }
+    catch {
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
+    }
+    
+    # check that a named location for Canada exists and that a policy exists that uses it
+    $validLocations = @()
+
+    foreach ($location in $locations) {
+        #Determine location conditions
+        #get all valid locations: needs to have Canada Only
+        if ($location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions[0] -eq "CA") {
+            $validLocations += $location
+        }
+    }
+
+    $locationBasedPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $_.state -eq 'enabled' }
+
+    if ($validLocations.count -ne 0) {
+        #if there is at least one location with Canada only, we are good. If no Canada Only policy, not compliant.
+        # Conditional access Policies
+        # Need a location based policy, for admins (owners, contributors) that uses one of the valid locations above.
+        # If there is no policy or the policy doesn't use one of the locations above, not compliant.
+
+        if (!$locationBasedPolicies) {
+            #failed. No policies have valid locations.
+            $Comments = $msgTable.noCompliantPoliciesfound
+            $IsCompliant = $false
+        }
+        else {
+            #"Compliant Policies."
+            $IsCompliant = $true
+            $Comments = $msgTable.allPoliciesAreCompliant
+        }      
+    }
+    else {
+        # Failed. Reason: No locations have only Canada.
+        $Comments = $msgTable.noLocationsCompliant
+        $IsCompliant = $false
+    }
+    
+    $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
+        ControlName      = $ControlName
+        Comments         = $Comments
+        ItemName         = $ItemName
+        ReportTime       = $ReportTime
+        itsgcode         = $itsgcode
+        Errors           = $ErrorList
+    }
+    return  $PsObject
+
+}
 
 # endregion
 
