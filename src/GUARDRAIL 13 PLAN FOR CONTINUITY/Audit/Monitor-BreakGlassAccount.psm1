@@ -132,10 +132,10 @@ function Test-BreakGlassAccounts {
         $urlPath = $FirstBreakGlassUPNSigninUrl.apiUrl
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         
-        $data = $response.Content.value | ForEach-Object{
+        $dataSignInFirstBG = $response.Content.value | ForEach-Object{
           $_ | Select-Object id, userDisplayName, userPrincipalName, createdDateTime,
           @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
-          @{Name='IsWithinLastYear'; Expression={$createdDate -ge $oneYearAgo}}
+          @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
         }
       }
       catch {
@@ -149,30 +149,43 @@ function Test-BreakGlassAccounts {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
   
         
-        $data = $response.Content.value | ForEach-Object{
+        $dataSignInSecondBG = $response.Content.value | ForEach-Object{
           $_ | Select-Object id, userDisplayName, userPrincipalName, createdDateTime,
           @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
-          @{Name='IsWithinLastYear'; Expression={$createdDate -ge $oneYearAgo}}
+          @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
         } 
       }
       catch {
         $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
       }
-    
-  
-      $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsCompliant
-        ControlName      = $ControlName
-        ItemName         = $ItemName
-        Comments         = $msgTable.bgAccountsCompliance -f $FirstBreakGlassAcct.ComplianceStatus, $SecondBreakGlassAcct.ComplianceStatus
-        ReportTime       = $ReportTime
-        itsgcode = $itsgcode
+
+      $IsSigninCompliant = $dataSignInFirstBG.IsWithinLastYear -and $dataSignInSecondBG.IsWithinLastYear
+      if(-not $IsSigninCompliant){
+        $PsObject = [PSCustomObject]@{
+          ComplianceStatus = $IsSigninCompliant
+          ControlName      = $ControlName
+          ItemName         = $ItemName
+          Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
+          ReportTime       = $ReportTime
+          itsgcode = $itsgcode
+        }
       }
+      else{
+        $PsObject = [PSCustomObject]@{
+          ComplianceStatus = $IsCompliant
+          ControlName      = $ControlName
+          ItemName         = $ItemName
+          Comments         = $msgTable.isCompliant
+          ReportTime       = $ReportTime
+          itsgcode = $itsgcode
+        }
+      }
+  
+      
     }
     
   }
-  
 
   if ($EnableMultiCloudProfiles) {        
     $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
