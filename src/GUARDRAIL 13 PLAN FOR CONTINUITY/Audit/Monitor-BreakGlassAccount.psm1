@@ -130,7 +130,6 @@ function Test-BreakGlassAccounts {
       # check 1st break glass account signin
       try {
         $urlPath = $FirstBreakGlassUPNSigninUrl
-        $urlPath = "/auditLogs/signIns"
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         
         $dataSignInFirstBG = $response.Content.value | ForEach-Object{
