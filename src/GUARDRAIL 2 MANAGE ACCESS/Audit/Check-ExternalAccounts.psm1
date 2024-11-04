@@ -197,19 +197,19 @@
     }
 
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result -eq 0) {
-            Write-Output "No matching profile found or an error occurred"
-            $GuestUserStatus.ComplianceStatus = "Not Applicable"
-            $ErrorList.Add("No matching profile found or an error occurred in Get-EvaluationProfile")
+    if ($EnableMultiCloudProfiles) {        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $GuestUserStatus.ComplianceStatus = "Not Applicable"
+                $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $GuestUserStatus.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Error "Unexpected result from Get-EvaluationProfile: $result"
-            $GuestUserStatus.ComplianceStatus = "Not Applicable"
-            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $result")
+            
+            $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 

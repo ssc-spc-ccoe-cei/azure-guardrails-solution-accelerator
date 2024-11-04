@@ -212,13 +212,18 @@ function get-SecurityMonitoringStatus {
             ReportTime = $ReportTime
         }
         if ($EnableMultiCloudProfiles) {        
-            $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $Subscription
-            if ($result -eq 0) {
-                Write-Output "No matching profile found or error occurred"
-                $object.ComplianceStatus = "Not Applicable"
+            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $Subscription
+            if (!$evalResult.ShouldEvaluate) {
+                if ($evalResult.Profile -gt 0) {
+                    $object.ComplianceStatus = "Not Applicable"
+                    $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $object.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             } else {
-                Write-Output "Valid profile returned: $result"
-                $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                
+                $object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }    
 

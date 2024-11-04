@@ -14,7 +14,7 @@
 RootModule = 'Check-ExternalAccounts'
 
 # Version number of this module.
-ModuleVersion = '1.2.8'
+ModuleVersion = '1.2.9'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
