@@ -120,16 +120,17 @@ function Test-BreakGlassAccounts {
       }
     }
     else{
+      # Validate BG account Sign-in activity
       $IsSigninCompliant = $false
       $oneYear = (Get-Date).AddYears(-1)
 
-      # Validate BG account Sign-in activity
-      [String] $FirstBreakGlassUPNSigninUrl = "/users/auditLogs/signIns?$filter=userPrincipalName eq '$FirstBreakGlassUPN'"
-      [String] $SecondBreakGlassUPNSigninUrl = "/users/auditLogs/signIns?$filter=userPrincipalName eq '$SecondBreakGlassUPN'"
+      [String] $FirstBreakGlassUPNSigninUrl = "/auditLogs/signIns?$filter=userPrincipalName eq '$FirstBreakGlassUPN'"
+      [String] $SecondBreakGlassUPNSigninUrl = "/auditLogs/signIns?$filter=userPrincipalName eq '$SecondBreakGlassUPN'"
 
       # check 1st break glass account signin
       try {
-        $urlPath = $FirstBreakGlassUPNSigninUrl.apiUrl
+        $urlPath = $FirstBreakGlassUPNSigninUrl
+        $urlPath = "/auditLogs/signIns"
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         
         $dataSignInFirstBG = $response.Content.value | ForEach-Object{
@@ -145,7 +146,7 @@ function Test-BreakGlassAccounts {
 
       # check 2nd break glass account signin
       try {
-        $urlPath = $SecondBreakGlassUPNSigninUrl.apiUrl
+        $urlPath = $SecondBreakGlassUPNSigninUrl
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
   
         
@@ -161,7 +162,17 @@ function Test-BreakGlassAccounts {
       }
 
       $IsSigninCompliant = $dataSignInFirstBG.IsWithinLastYear -and $dataSignInSecondBG.IsWithinLastYear
-      if(-not $IsSigninCompliant){
+      if($IsSigninCompliant){
+        PsObject = [PSCustomObject]@{
+          ComplianceStatus = $IsCompliant
+          ControlName      = $ControlName
+          ItemName         = $ItemName
+          Comments         = $msgTable.isCompliant
+          ReportTime       = $ReportTime
+          itsgcode = $itsgcode
+        }
+      }
+      else{
         $PsObject = [PSCustomObject]@{
           ComplianceStatus = $IsSigninCompliant
           ControlName      = $ControlName
@@ -171,20 +182,7 @@ function Test-BreakGlassAccounts {
           itsgcode = $itsgcode
         }
       }
-      else{
-        $PsObject = [PSCustomObject]@{
-          ComplianceStatus = $IsCompliant
-          ControlName      = $ControlName
-          ItemName         = $ItemName
-          Comments         = $msgTable.isCompliant
-          ReportTime       = $ReportTime
-          itsgcode = $itsgcode
-        }
-      }
-  
-      
     }
-    
   }
 
   if ($EnableMultiCloudProfiles) {        
