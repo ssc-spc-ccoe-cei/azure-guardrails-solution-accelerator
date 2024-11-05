@@ -108,7 +108,7 @@ function Test-BreakGlassAccounts {
 
     # compliance status
     $IsCompliant = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
-    Write-Error "step 1 compliance status  $IsCompliant"
+    Write-Host "step 1 validate listed BG accounts compliance status:  $IsCompliant"
     # if not compliant
     if(-not $IsCompliant){
       $PsObject = [PSCustomObject]@{
@@ -128,7 +128,7 @@ function Test-BreakGlassAccounts {
       $urlPath = "/auditLogs/signIns"
       try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        Write-Error "step 2 FirstBreakGlassUPNSigninUrl $($response.Content.Value.Count)"
+        Write-Host "step 2 validate BG account Sign-in $($response.Content.Value.Count)"
 
         # check 1st break glass account signin
         $firstBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}
@@ -137,7 +137,7 @@ function Test-BreakGlassAccounts {
           @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
           @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
         }
-        Write-Error "step 2 dataSignInFirstBG:  $dataSignInFirstBG"
+        Write-Host "step 2 dataSignInFirstBG:  $dataSignInFirstBG"
         
         # check 2nd break glass account signin
         $secondBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN}
@@ -146,7 +146,7 @@ function Test-BreakGlassAccounts {
           @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
           @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
         } 
-        Write-Error "step 2 dataSignInSecondBG:  $dataSignInSecondBG"
+        Write-Host "step 2 dataSignInSecondBG:  $dataSignInSecondBG"
       }
       catch {
         $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
