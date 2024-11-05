@@ -13,7 +13,7 @@
     RootModule = 'Check-OnlineAttackCountermeasures'
     
     # Version number of this module.
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '1.0.2'
     
     # Supported PSEditions
     # CompatiblePSEditions = @()

@@ -73,14 +73,15 @@ function Check-AllUserMFARequired {
         $userValidMFACounter = $result.userValidMFACounter
     }
     Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
+    Write-Host "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
 
 
     ## ***************************##
     ## ****** External user ******##
     ## ***************************##
     $extUsers = $users | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-    Write-Output "extUsers count is $($extUsers.Count)"
-    Write-Output "extUsers UPNs are $($extUsers.userPrincipalName)"
+    Write-Host "extUsers count is $($extUsers.Count)"
+    Write-Host "extUsers UPNs are $($extUsers.userPrincipalName)"
     if(!$null -eq $extUsers){
         # Get external users UPNs and emails
         $extUserList = $extUsers | Select-Object userPrincipalName, mail
@@ -92,9 +93,11 @@ function Check-AllUserMFARequired {
         # combined list
         $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
     }
-    
-    Write-Output "accounts auth method check done"
+    Write-Host "extUserUPNsBadMFA count is $($extUserUPNsBadMFA.Count)"
+    Write-Host "accounts auth method check done"
     Write-Host "userValidMFACounter count is $userValidMFACounter"
+
+
     
     if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
         $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
@@ -103,12 +106,12 @@ function Check-AllUserMFARequired {
     }elseif($null -eq $memberUserUPNsBadMFA -or $memberUserUPNsBadMFA.Count -eq 0){
         $userUPNsBadMFA =  $extUserUPNsBadMFA
     }
-    Write-Output "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
-    Write-Output "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
+    Write-Host "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
+    Write-Host "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
        
 
     # Condition: all users are MFA enabled
-    if($userValidMFACounter -eq $allUserUPNs.Count) {
+    if(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
         $commentsArray = $msgTable.allUserHaveMFA
         $IsCompliant = $true
     }
@@ -138,13 +141,18 @@ function Check-AllUserMFARequired {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -eq 0) {
-            Write-Output "No matching profile found"
-            $PsObject.ComplianceStatus = "Not Applicable"
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
     

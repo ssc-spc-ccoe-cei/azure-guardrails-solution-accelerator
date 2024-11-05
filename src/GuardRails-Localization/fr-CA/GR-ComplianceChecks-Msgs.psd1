@@ -64,9 +64,12 @@ gcPasswordGuidanceDoc = Document d'orientation sur les mots de passe du GC
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
-privilegedAccountManagementPlan = Plan de gestion des comptes privilégiés 
+
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
+
+privilegedAccountManagementPlanLifecycle = Plan de gestion des comptes privilégiés (Cycle de vie de la gestion des comptes)
+privilegedAccountManagementPlanLPRoleAssignment = Plan de gestion des comptes privilégiés (Attribution de rôle aux privilèges minimum)
 
 onlineAttackCounterMeasures = Vérification de mesures pour contrer les attaques en ligne: Verrouillage et listes de mots de passe interdits
 onlineAttackNonCompliantC1 = Le seuil de verrouillage de compte ne respecte pas l'Orientation sur les mots de passe du GC.
@@ -93,6 +96,13 @@ userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des group
 userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
 reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
 
+riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
+nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
+nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés.
+nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
+compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
+
+
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -106,6 +116,7 @@ noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquan
 noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d'administrateur inclus et activés.
 hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
 noCompliantPoliciesAdmin = Aucune politique conforme n'a été trouvée pour les filtres d'appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu'il existe au moins une politique pour chacun. Une pour les filtres d'appareil avec une ressource cible et l'autre pour les emplacements nommés/approuvés.
+
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
@@ -151,6 +162,19 @@ hasNonComplianceResounce = {0} des ressources {1} applicables ne sont pas confor
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
+appGatewayCertValidity = Validité du certificat : Passerelle d'application
+noSslListenersFound = Aucun écouteur Secure Socket Layer (SSL) trouvé/configuré pour la passerelle d'application : {0}. 
+expiredCertificateFound = Certificat expiré trouvé pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
+unapprovedCAFound = Autorité de certification (AC) non approuvée trouvée pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Émetteur : {2}. 
+unableToProcessCertData = Incapable de traiter les données de certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Erreur : {2}. 
+unableToRetrieveCertData = Incapable de récupérer les données de certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
+noHttpsBackendSettingsFound = Aucun paramètre principal HTTPS n'a été trouvé/configuré pour la passerelle d'application : {0}. 
+manualTrustedRootCertsFound = Certificats racines de confiance manuels trouvés pour la passerelle d'application '{0}', paramètre principal '{1}'. 
+allBackendSettingsUseWellKnownCA = Tous les paramètres principaux de la passerelle d'application '{0}' utilisent des certificats d'autorité de certification (AC) bien connus. 
+noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonnement.
+allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
+approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
+approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
@@ -228,6 +252,8 @@ setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Sta
 passwordNotificationsConfigured = Notifications activées
 severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
 
+monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
+
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
 mktPlaceCreatedEnabled = Le marché privé a été créé et activé.
@@ -251,6 +277,11 @@ bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
 bgAccountHasManager = Le compte BG {0} a un responsable
 bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
+
+bgValidSignature = Signatures et approbations valides pour la procédure de compte de bris de verre
+bgAccountTesting = Cadence des tests des comptes de bris de verre
+bgAccountNotExist = Un ou les deux noms d'utilisateur principal (UPN) du compte de bris de verre fournis n'existent pas dans l'environnement. Vérifiez l'exactitude des UPN du compte de bris de verre fournis.
+bgAccountLoginNotValid = La dernière connexion aux comptes de bris de verre fournis est plus qu'un an. Assurez-vous d'effectuer des tests réguliers de la procédure du compte de bris de verre et du processus de connexion.
 
 # GR-Common
 procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.

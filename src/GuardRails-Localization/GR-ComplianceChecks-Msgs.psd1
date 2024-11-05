@@ -64,9 +64,12 @@ gcPasswordGuidanceDoc = GC Password Guidance Doc
 mitigationCommands = Verify is the users reported are deprecated.
 noncompliantComment = Total Number of non-compliant users {0}. 
 noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
-privilegedAccountManagementPlan = Privileged Account Management plan
+
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
+
+privilegedAccountManagementPlanLifecycle = Privileged Account Management Plan (Lifecycle of Account Management)
+privilegedAccountManagementPlanLPRoleAssignment = Privileged Account Management Plan (Least Privilege Role Assignment)
 
 onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists
 onlineAttackNonCompliantC1 = The account lockout threshold does not meet the GC Password Guidance.
@@ -93,6 +96,13 @@ noCAPforAnyGroups = None of the conditional access policies refer to one of your
 userCountOne = There is only one user in the environment. User groups are not required. 
 userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
 reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
+
+riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
+nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
+nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
+nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
+compliantC1C2 = Both conditional access policies have been configured.
+
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
@@ -152,6 +162,18 @@ hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compl
 
 # GuardRail #7
 enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
+appGatewayCertValidity = Application Gateway Certificate Validity
+expiredCertificateFound = Expired certificate found for listener '{0}' in Application Gateway '{1}'.
+unapprovedCAFound = Unapproved Certificate Authority (CA) found for listener '{0}' in Application Gateway '{1}'. Issuer: {2}.
+unableToProcessCertData = Unable to process certificate data for listener '{0}' in Application Gateway '{1}'. Error: {2}.
+unableToRetrieveCertData = Unable to retrieve certificate data for listener '{0}' in Application Gateway '{1}'.
+noHttpsBackendSettingsFound = No HTTPS backend settings found/configured for Application Gateway: {0}.
+manualTrustedRootCertsFound = Manual trusted root certificates found for Application Gateway '{0}', backend setting '{1}'.
+allBackendSettingsUseWellKnownCA = All backend settings for Application Gateway '{0}' use well‑known Certificate Authority (CA) certificates.
+noAppGatewayFound = No Application Gateways found in any subscription.
+allCertificatesValid = All certificates are valid and from approved Certificate Authorities (CAs).
+approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
+approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
 
 # GuardRail #8
 noNSG=No NSG is present.
@@ -228,6 +250,8 @@ setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Notifications Enabled
 severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
 
+monitoringChecklist = Monitoring Checklist: Use Cases
+
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
 mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
@@ -251,6 +275,11 @@ bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
 bgAccountHasManager = BG Account {0} has a Manager
 bgAccountNoManager = BG Account {0} doesn't have a Manager 
 bgBothHaveManager = Both BreakGlass accounts have manager
+
+bgValidSignature = Valid Signatures and Approvals for Break Glass Account Procedure
+bgAccountTesting = Break Glass Account Testing Cadence
+bgAccountNotExist = One or both of the Break Glass Account User Principal Names (UPNs) provided do not exist in the environment. Review the provided Break Glass Account UPNs for accuracy.
+bgAccountLoginNotValid = Last login for the provided Break Glass Accounts is greater than a year. Ensure regular testing of the Break Glass Account procedure and login process.
 
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
