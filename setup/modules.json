@@ -1262,5 +1262,29 @@
         "Value": "AC2"
       }
     ]
+  },
+  {
+    "Control": "Guardrails13",
+    "ModuleName": "Test-BreakGlassAccounts",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Test-BreakGlassAccounts -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountTesting -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
   }
 ]
