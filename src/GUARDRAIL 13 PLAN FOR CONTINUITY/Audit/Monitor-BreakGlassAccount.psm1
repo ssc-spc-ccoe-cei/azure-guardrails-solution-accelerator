@@ -108,6 +108,7 @@ function Test-BreakGlassAccounts {
 
     # compliance status
     $IsCompliant = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
+    Write-Error "step 1 compliance status  $IsCompliant"
     # if not compliant
     if(-not $IsCompliant){
       $PsObject = [PSCustomObject]@{
@@ -124,36 +125,28 @@ function Test-BreakGlassAccounts {
       $IsSigninCompliant = $false
       $oneYear = (Get-Date).AddYears(-1)
 
-      [String] $FirstBreakGlassUPNSigninUrl = "/auditLogs/signIns?$filter=userPrincipalName eq '$FirstBreakGlassUPN'"
-      [String] $SecondBreakGlassUPNSigninUrl = "/auditLogs/signIns?$filter=userPrincipalName eq '$SecondBreakGlassUPN'"
-
-      # check 1st break glass account signin
+      $urlPath = "/auditLogs/signIns"
       try {
-        $urlPath = $FirstBreakGlassUPNSigninUrl
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        
-        $dataSignInFirstBG = $response.Content.value | ForEach-Object{
-          $_ | Select-Object id, userDisplayName, userPrincipalName, createdDateTime,
+        Write-Error "step 2 FirstBreakGlassUPNSigninUrl $($response.Content.Value.Count)"
+
+        # check 1st break glass account signin
+        $firstBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}
+        $dataSignInFirstBG = $firstBGdata | ForEach-Object{
+          $_ | Select-Object id, userDisplayName, userPrincipalName, createdDateTime, userId,
           @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
           @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
         }
-      }
-      catch {
-        $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
-        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
-      }
-
-      # check 2nd break glass account signin
-      try {
-        $urlPath = $SecondBreakGlassUPNSigninUrl
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-  
+        Write-Error "step 2 dataSignInFirstBG:  $dataSignInFirstBG"
         
-        $dataSignInSecondBG = $response.Content.value | ForEach-Object{
+        # check 2nd break glass account signin
+        $secondBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN}
+        $dataSignInSecondBG = $secondBGdata | ForEach-Object{
           $_ | Select-Object id, userDisplayName, userPrincipalName, createdDateTime,
           @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
           @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
         } 
+        Write-Error "step 2 dataSignInSecondBG:  $dataSignInSecondBG"
       }
       catch {
         $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
