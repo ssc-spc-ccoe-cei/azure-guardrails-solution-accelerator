@@ -123,7 +123,7 @@ function Test-BreakGlassAccounts {
     else{
       # Validate BG account Sign-in activity
       $IsSigninCompliant = $false
-      $oneYear = (Get-Date).AddYears(-1)
+      $oneYearAgo = (Get-Date).AddYears(-1)
 
       $urlPath = "/auditLogs/signIns"
       try {
@@ -132,30 +132,29 @@ function Test-BreakGlassAccounts {
 
         # check 1st break glass account signin
         $firstBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}
-        $dataSignInFirstBG = $firstBGdata | ForEach-Object{
-          $_ | Select-Object id, userDisplayName, userPrincipalName, createdDateTime, userId,
-          @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
-          @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
-        }
-        Write-Host "step 2 dataSignInFirstBG:  $dataSignInFirstBG"
+        $dataMostRecentSignInFirstBG = $firstBGdata | Sort-Object createdDateTime -Descending | Select-Object -First 1
+        
+        $dataSignInFirstBG = $dataMostRecentSignInFirstBG | Select-Object id, userDisplayName, userPrincipalName, createdDateTime, userId
+        $firstBGisWithinLastYear =  $dataSignInFirstBG.createdDateTime -ge $oneYearAgo
+
+        Write-Host "step 2 firstBGisWithinLastYear:  $firstBGisWithinLastYear"
         
         # check 2nd break glass account signin
         $secondBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN}
-        $dataSignInSecondBG = $secondBGdata | ForEach-Object{
-          $_ | Select-Object id, userDisplayName, userPrincipalName, createdDateTime,
-          @{Name='signInDate'; Expression={($_.createdDateTime).ToString("yyyy-MM-dd")}},
-          @{Name='IsWithinLastYear'; Expression={$signInDate -ge $oneYear}}
-        } 
-        Write-Host "step 2 dataSignInSecondBG:  $dataSignInSecondBG"
+        $dataMostRecentSignInSecondBG = $secondBGdata | Sort-Object createdDateTime -Descending | Select-Object -First 1
+        
+        $dataSignInSecondBG = $dataMostRecentSignInSecondBG | Select-Object id, userDisplayName, userPrincipalName, createdDateTime, userId
+        $secondBGisWithinLastYear =  $dataSignInSecondBG.createdDateTime -ge $oneYearAgo
+        Write-Host "step 2 secondBGisWithinLastYear:  $secondBGisWithinLastYear"
       }
       catch {
         $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
       }
 
-      $IsSigninCompliant = $dataSignInFirstBG.IsWithinLastYear -and $dataSignInSecondBG.IsWithinLastYear
+      $IsSigninCompliant = $firstBGisWithinLastYear -and $secondBGisWithinLastYear
       if($IsSigninCompliant){
-        PsObject = [PSCustomObject]@{
+        $PsObject = [PSCustomObject]@{
           ComplianceStatus = $IsCompliant
           ControlName      = $ControlName
           ItemName         = $ItemName
