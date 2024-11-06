@@ -150,7 +150,7 @@ resource module11 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.1.24'
+        version: '1.1.25'
       }
     }
   }
@@ -213,7 +213,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.14'
+        version: '1.4.15'
       }
     }
   }
