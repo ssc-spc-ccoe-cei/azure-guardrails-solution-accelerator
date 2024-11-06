@@ -62,6 +62,7 @@ function Check-UserRoleReviews {
                 $anyReviewWithinOneYear = $accessReviewHistory | Where-Object { $_.isWithinLastOneYear -eq $true }
                 if ($anyReviewWithinOneYear.Count -ge 1){
                     Write-Host "Compliant. Tenant has scheduled access review(s)."
+                    $IsCompliant = $true
                 }
                 else{
                     Write-Host "Non-compliant. Tenant has not scheduled at least one access review."
@@ -76,9 +77,6 @@ function Check-UserRoleReviews {
         Write-Error "Error: $errorMsg"
     }
     
-
-
-
     $Comments = $commentsArray -join ";"
     
     $PsObject = [PSCustomObject]@{
