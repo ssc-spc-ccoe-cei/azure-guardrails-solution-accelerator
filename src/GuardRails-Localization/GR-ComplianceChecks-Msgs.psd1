@@ -103,8 +103,10 @@ nonCompliantC2= Configure the conditional access policy to prevent sign-in's fro
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
 compliantC1C2 = Both conditional access policies have been configured.
 
-automatedRoleForUsers = Role Assignments for Users and Global Administrators 
-
+automatedRoleForUsers = Role Assignments for Users and Global Administrators
+noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access Reviews.
+noScheduledAccessReview = Tenant has not scheduled any access review.
+hasScheduledAccessReview = Tenant has scheduled at least one access review.
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.

@@ -40,7 +40,7 @@ function Check-UserRoleReviews {
 
             # Check if any policies exist
             if ($accessReviewsSorted.Count -lt 1) {
-                Write-Host "Non-compliant. Tenant has not been onboarded to automated MS Access Reviews."
+                $Comments = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReview
             }
             else{
                 Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
@@ -61,11 +61,11 @@ function Check-UserRoleReviews {
                 # validation: any of the access review is within last one year
                 $anyReviewWithinOneYear = $accessReviewHistory | Where-Object { $_.isWithinLastOneYear -eq $true }
                 if ($anyReviewWithinOneYear.Count -ge 1){
-                    Write-Host "Compliant. Tenant has scheduled access review(s)."
                     $IsCompliant = $true
+                    $Comments = $msgTable.isCompliant + " " + $msgTable.hasScheduledAccessReview
                 }
                 else{
-                    Write-Host "Non-compliant. Tenant has not scheduled at least one access review."
+                    $Comments = $msgTable.isNotCompliant + " " + $msgTable.noScheduledAccessReview
                 }
 
             }

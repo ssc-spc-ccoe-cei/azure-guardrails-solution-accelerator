@@ -102,7 +102,10 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
-automatedRoleForUsers = Role Assignments for Users and Global Administrators 
+automatedRoleForUsers = Role Assignments for Users and Global Administrators
+noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access Reviews.
+noScheduledAccessReview = Tenant has not scheduled any access review.
+hasScheduledAccessReview = Tenant has scheduled at least one access review.
 
 
 # GuardRail #3
