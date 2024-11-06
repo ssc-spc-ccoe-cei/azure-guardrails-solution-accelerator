@@ -332,35 +332,6 @@
     ]
   },
   {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails3",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.authorizedProcessedByCSO -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "AuthorizedProcessApprovedByCSO"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-ServicePrincipalName",
     "Control": "Guardrails4",
     "ModuleType": "Builtin",
