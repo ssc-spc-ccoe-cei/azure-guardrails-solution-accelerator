@@ -199,7 +199,6 @@ cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
 
-networkBoundaryProtectionPolicy = Attestation que la politique de protection des limites du réseau est respectée.
 networkWatcherEnabled=Network Watcher existe pour la région '{0}'
 networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
