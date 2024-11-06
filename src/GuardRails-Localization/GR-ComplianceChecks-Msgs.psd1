@@ -103,6 +103,8 @@ nonCompliantC2= Configure the conditional access policy to prevent sign-in's fro
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
 compliantC1C2 = Both conditional access policies have been configured.
 
+automatedRoleForUsers = Role Assignments for Users and Global Administrators 
+
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.

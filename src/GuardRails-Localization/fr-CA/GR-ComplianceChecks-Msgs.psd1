@@ -102,6 +102,8 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
+automatedRoleForUsers = Role Assignments for Users and Global Administrators 
+
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
