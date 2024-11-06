@@ -60,7 +60,7 @@ MSEntIDDisabledUsers = Utilisateur Microsoft Entra ID désactivé
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
-gcPasswordGuidanceDoc = Document d'orientation sur les mots de passe du GC
+
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 

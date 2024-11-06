@@ -60,7 +60,7 @@ MSEntIDDisabledUsers = Microsoft Entra ID Disabled Users
 apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
 compliantComment = Didnt find any unsynced deprecated users
-gcPasswordGuidanceDoc = GC Password Guidance Doc
+
 mitigationCommands = Verify is the users reported are deprecated.
 noncompliantComment = Total Number of non-compliant users {0}. 
 noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
