@@ -30,21 +30,43 @@ function Check-UserRoleReviews {
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         # # portal
-        # $data = $response.Content
-        # localExecution
-        $data = $response
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
-            $accessReviews = $data.value #| Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+            $accessReviewsAll = $data.value 
+            $accessReviewsSorted = $accessReviewsAll | Sort-Object -Property displayName, createdDateTime -Descending 
 
             # Check if any policies exist
-            if ($accessReviews.Count -gt 0) {
+            if ($accessReviewsSorted.Count -lt 1) {
+                Write-Host "Non-compliant. Tenant has not been onboarded to automated MS Access Reviews."
+            }
+            else{
                 Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
-                $accessReviews | ForEach-Object {
-                    Write-Host "Policy ID: $($_.id), Display Name: $($_.displayName)"
+                $accessReviewHistory = $accessReviewsSorted | Group-Object -Property displayName | ForEach-Object {
+                    $_.Group | Select-Object -First 1  # Get the most recent review for each ReviewName
                 }
-            } else {
-                Write-Host "Tenant has not been onboarded to automated MS Access Reviews."
+
+                # check if the access review is within the last year
+                $oneYearAgo = (Get-Date).AddYears(-1)
+                $accessReviewHistory | ForEach-Object {
+                    $review = $_
+                    $reviewAge = [datetime]::Parse($review.lastModifiedDateTime)
+                    $isWithinLastOneYear = if ($reviewAge -ge $oneYearAgo){$true} else {$false}
+                    $review | Add-Member -MemberType NoteProperty -Name "isWithinLastOneYear" -Value $isWithinLastOneYear
+                    $review
+                }
+                
+                # validation: any of the access review is within last one year
+                $anyReviewWithinOneYear = $accessReviewHistory | Where-Object { $_.isWithinLastOneYear -eq $true }
+                if ($anyReviewWithinOneYear.Count -ge 1){
+                    Write-Host "Compliant. Tenant has scheduled access review(s)."
+                }
+                else{
+                    Write-Host "Non-compliant. Tenant has not scheduled at least one access review."
+                }
+
             }
         }
     }
@@ -67,16 +89,21 @@ function Check-UserRoleReviews {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-
+    
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -eq 0) {
-            Write-Output "No matching profile found"
-            $PsObject.ComplianceStatus = "Not Applicable"
+    if ($EnableMultiCloudProfiles) {        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
     
