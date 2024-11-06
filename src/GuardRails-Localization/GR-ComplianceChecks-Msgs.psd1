@@ -263,7 +263,7 @@ enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft
 bgMSEntID = Break Glass Microsoft Entra ID P2
 bgProcedure = Break Glass Account Procedure
 bgCreation = Break Glass account Creation
-bgAccountResponsibility = BG Responsibility Follows Department Procedure
+
 bgAccountOwnerContact = Break Glass Account Owners Contact information
 bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
 bgAccountsCompliance2 = Both accounts are identical, please check the config.json file

@@ -265,7 +265,7 @@ enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft
 bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
 bgProcedure = Procédure de compte de bris de verre
 bgCreation = Création de compte Brise Glace
-bgAccountResponsibility = Responsabilité BV suit la procédure du ministère
+
 bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
 bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
 bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
