@@ -196,7 +196,6 @@ noSubnets = Aucun sous-réseau n'est présent.
 cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
 
 # GuardRail #9
-authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
 
