@@ -199,7 +199,7 @@ cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud
 authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
-limitPublicIPsPolicy = Attestation que la politique de limitation des IPs publiques est respectée.
+
 networkBoundaryProtectionPolicy = Attestation que la politique de protection des limites du réseau est respectée.
 networkWatcherEnabled=Network Watcher existe pour la région '{0}'
 networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
