@@ -128,7 +128,7 @@ ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN doesnt have Marketplace Admi
 ServicePrincipalNameHasMarketPlaceAdminRole = SPN has Marketplace Admin Role on the Marketplace.
 NoSPN = SPN doesnt exist.
 SPNCredentialsCompliance = SPN Credentials Compliance
-CSPMEncryptedEmailConfirmation= CSPM encrypted email with credentials sent
+
 SPNSingleValidCredential = SPN has a single valid credential. {0}
 SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
 SPNNoValidCredentials = SPN has no valid credentials. {0}

@@ -131,7 +131,7 @@ SPNCredentialsCompliance = Statut de conformité des clés SPN
 SPNSingleValidCredential = SPN a une seule clé valide. {0}
 SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
 SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
-CSPMEncryptedEmailConfirmation= Confirmacion d'email encrypté envoyé
+
 
 # GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy
