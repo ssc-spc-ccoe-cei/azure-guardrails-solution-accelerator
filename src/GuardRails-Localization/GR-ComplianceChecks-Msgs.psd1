@@ -60,7 +60,7 @@ MSEntIDDisabledUsers = Microsoft Entra ID Disabled Users
 apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
 compliantComment = Didnt find any unsynced deprecated users
-gcPasswordGuidanceDoc = GC Password Guidance Doc
+
 mitigationCommands = Verify is the users reported are deprecated.
 noncompliantComment = Total Number of non-compliant users {0}. 
 noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
@@ -110,7 +110,7 @@ adminAccessConditionalPolicy = Administrator Access Restrictions Applied - devic
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
-authorizedProcessedByCSO = Authorized Access
+
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
 noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 noDeviceFilterPolicies = Missing a required conditional access policy. At least one policy needs to have device filters enabled with target resources, administrator roles included and enabled.
@@ -128,7 +128,7 @@ ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN doesnt have Marketplace Admi
 ServicePrincipalNameHasMarketPlaceAdminRole = SPN has Marketplace Admin Role on the Marketplace.
 NoSPN = SPN doesnt exist.
 SPNCredentialsCompliance = SPN Credentials Compliance
-CSPMEncryptedEmailConfirmation= CSPM encrypted email with credentials sent
+
 SPNSingleValidCredential = SPN has a single valid credential. {0}
 SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
 SPNNoValidCredentials = SPN has no valid credentials. {0}
@@ -195,11 +195,9 @@ noSubnets = No subnets found in the subscription.
 cloudInfrastructureDeployGuide = Cloud Infrastructure Deployment Guide or Applicable Landing Zone Details
 
 # GuardRail #9
-authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
 ddosEnabled=DDos Protection Enabled. 
 ddosNotEnabled=DDos Protection not enabled.
-limitPublicIPsPolicy = Attestation that the limit public IPs policy is adhered to.
-networkBoundaryProtectionPolicy = Attestation that the network boundary protection policy is adhered to.
+
 networkWatcherEnabled=Network Watcher exists for region '{0}'
 networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
 noVNets = No VNet found in the subscription.
@@ -263,7 +261,7 @@ enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft
 bgMSEntID = Break Glass Microsoft Entra ID P2
 bgProcedure = Break Glass Account Procedure
 bgCreation = Break Glass account Creation
-bgAccountResponsibility = BG Responsibility Follows Department Procedure
+
 bgAccountOwnerContact = Break Glass Account Owners Contact information
 bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
 bgAccountsCompliance2 = Both accounts are identical, please check the config.json file
