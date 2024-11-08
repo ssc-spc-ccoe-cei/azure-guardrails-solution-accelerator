@@ -26,6 +26,15 @@ mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 
+alertsMonitor = Alerts to Flag Misuse and Suspicious Activities
+signInlogsNotCollected = The SignInLogs are not enabled.
+auditlogsNotCollected = The AuditLogs are not enabled.
+noAlertRules = No alert rules for SignInLogs or AuditLogs were found. Please make sure alert rules exist for both type of logs.
+noActionGroupsForBGaccts = No Action groups were found for BreakGlass accounts sign-in activity.
+noActionGroupsForAuditLogs = No Action groups were found for AuditLogs.
+noActionGroups = No Action groups were configured for the resource group {0} .
+compliantAlerts = Alerts for BG accounts and audit logs were found compliant with appropriate action groups configured for each alert.
+
 globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
 globalAdminAccntsMinimum = There are not enough Global Administrator Accounts. There must be at least two but no more than five Active Global Administrator Accounts.
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.

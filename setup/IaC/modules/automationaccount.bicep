@@ -384,6 +384,17 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
+
+  resource module38 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AlertsMonitor'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
