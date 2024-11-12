@@ -24,9 +24,6 @@ function Check-UserRoleReviews {
     # list all acces reviews in identity governance
     $urlPath = "/identityGovernance/accessReviews/definitions"
 
-    # $urlPath = "/beta/accessReviews?$filter=businessFlowTemplateId+eq+'6e4f3d20-c5c3-407f-9695-8460952bcc68'&$top=100&$skip=0"
-    # $urlPath = "/beta/accessReviews?$filter=businessFlowTemplateId+eq+'6e4f3d20-c5c3-407f-9695-8460952bcc68'"
-
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         # # portal
