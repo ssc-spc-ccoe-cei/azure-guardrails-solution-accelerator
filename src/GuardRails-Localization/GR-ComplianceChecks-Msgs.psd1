@@ -32,17 +32,8 @@ auditlogsNotCollected = The AuditLogs are currently not enabled. AuditLogs must 
 noAlertRules = No alert rules were found for either SignInLogs or AuditLogs. Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
 noActionGroupsForBGaccts = No action groups were identified for Break Glass account sign-in activities. Action groups must be configured to receive alerts for Break Glass account sign-in attempts.
 noActionGroupsForAuditLogs = No action groups were found for AuditLogs. Action groups must be created to receive alerts for important auditable events.
-noActionGroups = No action groups were configured for the resource group “{0}”. Ensure that action groups are set up to receive alerts for the corresponding resource group’s monitored activities.
+noActionGroups = No action groups were configured for the resource group “{0}”. Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
 compliantAlerts = The alerts for Break Glass accounts and audit logs are compliant. Appropriate action groups have been configured and are correctly receiving alerts for each monitored activity.
-
-alertsMonitor = Alerts to Flag Misuse and Suspicious Activities
-signInlogsNotCollected = The SignInLogs are not enabled.
-auditlogsNotCollected = The AuditLogs are not enabled.
-noAlertRules = No alert rules for SignInLogs or AuditLogs were found. Please make sure alert rules exist for both type of logs.
-noActionGroupsForBGaccts = No Action groups were found for BreakGlass accounts sign-in activity.
-noActionGroupsForAuditLogs = No Action groups were found for AuditLogs.
-noActionGroups = No Action groups were configured for the resource group {0} .
-compliantAlerts = Alerts for BG accounts and audit logs were found compliant with appropriate action groups configured for each alert.
 
 globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
 globalAdminAccntsMinimum = There are not enough Global Administrator Accounts. There must be at least two but no more than five Active Global Administrator Accounts.
