@@ -411,13 +411,25 @@ function Check-DocumentExistsInStorage {
     }
 
     if ($EnableMultiCloudProfiles) {        
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                
+                $moduleOutput = [PSCustomObject]@{ 
+                    ComplianceResults = $PsObject
+                    Errors            = $ErrorList
+                    AdditionalResults = $AdditionalResults
+                }
+                return $moduleOutput
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Output "No matching profile found or error occurred"
-            $PsObject.ComplianceStatus = "Not Applicable"
+            
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 
@@ -575,7 +587,7 @@ function Hide-Email {
 }
 
 function Get-EvaluationProfile {
-    [OutputType([int])]
+    [OutputType([PSCustomObject])]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -592,33 +604,69 @@ function Get-EvaluationProfile {
         $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
 
         if (-not $SubscriptionId) {
-            return [int](Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray)
+            $matchedProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [PSCustomObject]@{
+                Profile = $matchedProfile
+                ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
+            }
         }
 
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
-        $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
+        $profileTagValues = $subscriptionTags.Properties.TagsProperty['profile']
 
-        if ($null -eq $profileTag) {
-            return [int](Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray)
+        if ($null -eq $profileTagValues) {
+            $matchedProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [PSCustomObject]@{
+                Profile = $matchedProfile
+                ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
+            }
         }
 
-        $profileTagValues = ConvertTo-IntArray $profileTag.TagValue
+        $profileTagValuesArray = ConvertTo-IntArray $profileTagValues
 
-        $matchingProfiles = $profileTagValues | Where-Object {
-            $cloudUsageProfileArray -contains $_ -and $moduleProfileArray -contains $_
+        # Get the highest profile from all sources
+        $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
+        $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
+        $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
+
+        # Use the highest profile if it's present in the module profiles
+        if ($highestTagProfile -in $moduleProfileArray) {
+            return [PSCustomObject]@{
+                Profile = $highestTagProfile
+                ShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
+            }
         }
 
-        if ($matchingProfiles.Count -gt 0) {
-            return [int]($matchingProfiles | Measure-Object -Maximum).Maximum
+        # Otherwise, use the highest matching profile that doesn't exceed the module profile
+        $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        return [PSCustomObject]@{
+            Profile = $highestMatchingProfile
+            ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
         }
-
-        Write-Error "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
-        return 0
     }
     catch {
         Write-Error "Error in Get-EvaluationProfile: $_"
+        return [PSCustomObject]@{
+            Profile = 0
+            ShouldEvaluate = $false
+        }
+    }
+}
+
+# Helper function to get the highest matching profile
+function Get-HighestMatchingProfile {
+    [OutputType([int])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [int[]]$profile1,
+        [Parameter(Mandatory = $true)]
+        [int[]]$profile2
+    )
+    $matchingProfiles = $profile1 | Where-Object { $profile2 -contains $_ }
+    if ($matchingProfiles.Count -eq 0) {
         return 0
     }
+    return ($matchingProfiles | Measure-Object -Maximum).Maximum
 }
 
 function ConvertTo-IntArray {
@@ -634,21 +682,6 @@ function ConvertTo-IntArray {
         return $inputString.Split(',') | ForEach-Object { [int]$_.Trim() }
     }
     return @([int]$inputString)
-}
-
-function Get-HighestMatchingProfile {
-    [OutputType([int])]
-    param (
-        [Parameter(Mandatory = $true)]
-        [int[]]$profile1,
-        [Parameter(Mandatory = $true)]
-        [int[]]$profile2
-    )
-    $matchingProfiles = $profile1 | Where-Object { $profile2 -contains $_ }
-    if ($matchingProfiles.Count -eq 0) {
-        return 0
-    }
-    return ($matchingProfiles | Measure-Object -Maximum).Maximum
 }
 
 function Parse-BlobContent {
@@ -740,7 +773,12 @@ function add-documentFileExtensions {
     elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
             $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
                 
-                $fileExtensions = @(".csv")
+            $fileExtensions = @(".csv")
+    }
+    elseif ($ItemName.ToLower() -eq 'application gateway certificate validity' -or 
+            $ItemName.ToLower() -eq "validité du certificat : passerelle d'application") {
+        
+            $fileExtensions = @(".txt")
     }
     else {
         $fileExtensions = @(".txt",".docx", ".doc", ".pdf")
@@ -978,5 +1016,6 @@ function Get-allowedLocationCAPCompliance {
 }
 
 # endregion
+
 
 

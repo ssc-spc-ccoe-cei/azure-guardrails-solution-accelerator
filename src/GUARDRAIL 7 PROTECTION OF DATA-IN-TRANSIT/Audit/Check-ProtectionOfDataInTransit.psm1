@@ -81,16 +81,22 @@ function Check-StatusDataInTransit {
 
         if ($EnableMultiCloudProfiles) {
             if ($objType -eq "subscription") {
-                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
+                $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $obj.Id
             } else {
-                $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
             }
-            if ($result -eq 0) {
-                Write-Output "No matching profile found or error occurred"
-                $c.ComplianceStatus = "Not Applicable"
+            
+            if (!$evalResult.ShouldEvaluate) {
+                if ($evalResult.Profile -gt 0) {
+                    $c.ComplianceStatus = "Not Applicable"
+                    $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             } else {
-                Write-Output "Valid profile returned: $result"
-                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+                
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }        
         $tempObjectList.add($c)| Out-Null

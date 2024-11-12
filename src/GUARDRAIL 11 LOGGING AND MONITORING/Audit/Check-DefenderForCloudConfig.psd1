@@ -14,7 +14,7 @@
 RootModule = '.\Check-DefenderForCloudConfig.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.12'
+ModuleVersion = '1.1.13'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

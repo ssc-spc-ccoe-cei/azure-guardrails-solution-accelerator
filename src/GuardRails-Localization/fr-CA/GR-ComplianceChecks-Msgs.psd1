@@ -60,7 +60,7 @@ MSEntIDDisabledUsers = Utilisateur Microsoft Entra ID désactivé
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
-gcPasswordGuidanceDoc = Document d'orientation sur les mots de passe du GC
+
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
@@ -109,7 +109,7 @@ allPoliciesAreCompliant=Toutes les politiques sont conformes.
 adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
-authorizedProcessedByCSO = Accès Autorisé
+
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
 noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d'appareil activés avec des ressources cibles, des rôles d'administrateur inclus et activés.
@@ -131,7 +131,7 @@ SPNCredentialsCompliance = Statut de conformité des clés SPN
 SPNSingleValidCredential = SPN a une seule clé valide. {0}
 SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
 SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
-CSPMEncryptedEmailConfirmation= Confirmacion d'email encrypté envoyé
+
 
 # GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy
@@ -196,11 +196,9 @@ noSubnets = Aucun sous-réseau n'est présent.
 cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
 
 # GuardRail #9
-authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
-limitPublicIPsPolicy = Attestation que la politique de limitation des IPs publiques est respectée.
-networkBoundaryProtectionPolicy = Attestation que la politique de protection des limites du réseau est respectée.
+
 networkWatcherEnabled=Network Watcher existe pour la région '{0}'
 networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
@@ -265,7 +263,7 @@ enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft
 bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
 bgProcedure = Procédure de compte de bris de verre
 bgCreation = Création de compte Brise Glace
-bgAccountResponsibility = Responsabilité BV suit la procédure du ministère
+
 bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
 bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
 bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
@@ -279,6 +277,9 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 bgValidSignature = Signatures et approbations valides pour la procédure de compte de bris de verre
+bgAccountTesting = Cadence des tests des comptes de bris de verre
+bgAccountNotExist = Un ou les deux noms d'utilisateur principal (UPN) du compte de bris de verre fournis n'existent pas dans l'environnement. Vérifiez l'exactitude des UPN du compte de bris de verre fournis.
+bgAccountLoginNotValid = La dernière connexion aux comptes de bris de verre fournis est plus qu'un an. Assurez-vous d'effectuer des tests réguliers de la procédure du compte de bris de verre et du processus de connexion.
 
 # GR-Common
 procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.
