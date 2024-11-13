@@ -208,6 +208,11 @@ vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{
 vnetDDosConfig = VNet DDos configuration
 networkWatcherConfig = VNet Network Watcher configuration
 networkWatcherConfigNoRegions = Either due to no VNETs or all VNETs being excluded, there are no regions to check for Network Watcher configuration
+noFirewallOrGateway = This subscription does not have a firewall or an application gateway in use.
+noWAFEnabled = The application gateway assigned does not have configured Web Application Firewalls (WAFs). Enable a WAF on the application gateway.
+firewallFound = There is a {0} associated to this subscription.
+wAFEnabled = There is an application gateway associated to this subscription with the appropriate configurations.
+networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP Addresses
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
