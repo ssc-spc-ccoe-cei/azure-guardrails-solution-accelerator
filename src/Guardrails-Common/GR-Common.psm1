@@ -773,7 +773,12 @@ function add-documentFileExtensions {
     elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
             $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
                 
-                $fileExtensions = @(".csv")
+            $fileExtensions = @(".csv")
+    }
+    elseif ($ItemName.ToLower() -eq 'application gateway certificate validity' -or 
+            $ItemName.ToLower() -eq "validité du certificat : passerelle d'application") {
+        
+            $fileExtensions = @(".txt")
     }
     else {
         $fileExtensions = @(".txt",".docx", ".doc", ".pdf")
