@@ -137,7 +137,6 @@ function Check-AlertsMonitor {
 
         if($logType -contains $null){
             $IsCompliant = $false
-            $Comments += $msgTable.noAlertRules -f $resourceGroupName
             throw "Could not find alert rules for the resource group: $_"
         }
 
