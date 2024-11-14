@@ -394,7 +394,19 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
+
   resource module39 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-NetworkSecurityTools'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-NetworkSecurityTools.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+        
+
+  resource module40 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AlertsMonitor'
     properties: {
       contentLink: {

@@ -216,6 +216,11 @@ vnetExcludedByParameter = VNet '{0}' is excluded from compliance because it is i
 vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{1}' with a value of 'true'
 networkWatcherConfig = Configuration de Network Watcher
 networkWatcherConfigNoRegions = En raison d'aucun VNETs ou de tous les VNETs étant exclus, il n'y a aucune région pour vérifier la configuration de Network Watcher
+noFirewallOrGateway = Cet abonnement n'a pas de pare-feu ni de passerelle d'application en utilisation.
+wAFNotEnabled = La passerelle d'application attribuée n'a pas de pares-feux d'application Web (WAF) configuré. Activez un WAF sur la passerelle d'application.
+firewallFound = Il y a un {0} associé à cet abonnement.
+wAFEnabled = Il y a une passerelle d'application associée à cet abonnement avec les configurations appropriées.
+networkSecurityTools = Outils utilisés pour limiter l'accès aux adresses IP sources autorisées
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas

@@ -704,6 +704,21 @@
     ]
   },
   {
+    "ModuleName": "Check-NetworkSecurityTools",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-NetworkSecurityTools -ControlName $msgTable.CtrName9 -ItemName $msgTable.networkSecurityTools -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-CBSSensors",
     "Control": "Guardrails10",
     "ModuleType": "Builtin",
