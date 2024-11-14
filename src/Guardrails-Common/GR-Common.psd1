@@ -14,7 +14,7 @@
 RootModule = 'GR-Common'
 
 # Version number of this module.
-ModuleVersion = '1.1.25'
+ModuleVersion = '1.1.26'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
