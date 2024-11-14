@@ -920,7 +920,19 @@ function Get-AllUserAuthInformation{
 
 }
 
+function CompareKQLQueries{
+    param (
+        [string] $query,
+        [string] $targetQuery
+        )
 
+    #Fix the formatting of KQL query
+    $normalizedTargetQuery = $targetQuery -replace '\s+', ' ' -replace '\|', ' | ' 
+    $removeSpacesQuery = $query -replace '\s', ''
+    $removeSpacesTargetQuery = $normalizedTargetQuery -replace '\s', ''
+
+    return $removeSpacesQuery -eq $removeSpacesTargetQuery
+}
 
 # Function used for V2.0 GR2V7(M) andV1.0  GR3(R) cloud console access
 function Get-allowedLocationCAPCompliance {

@@ -150,7 +150,7 @@ resource module11 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.1.25'
+        version: '1.1.26'
       }
     }
   }
@@ -213,7 +213,7 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.15'
+        version: '1.4.16'
       }
     }
   }
@@ -400,6 +400,17 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkSecurityTools.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+        
+
+  resource module40 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AlertsMonitor'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
         version: '1.0.0'
       }
     }
