@@ -210,7 +210,7 @@ function Check-AlertsMonitor {
         $Comments = $msgTable.compliantAlerts
     }
 
-    $result = [PSCustomObject]@{
+    $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
         ControlName = $ControlName
         Comments = $Comments
@@ -237,7 +237,7 @@ function Check-AlertsMonitor {
     }
 
     $moduleOutput = [PSCustomObject]@{
-        ComplianceResults = $result
+        ComplianceResults = $PsObject
         Errors = $ErrorList
     }
 
