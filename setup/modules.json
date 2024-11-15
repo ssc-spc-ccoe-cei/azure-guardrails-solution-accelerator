@@ -1,5 +1,36 @@
 [
   {
+    "ModuleName": "Check-AlertsMonitor",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-AlertsMonitor -LAWResourceId $vars.LAWResourceId -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -ControlName $msgTable.CtrName1 -ItemName $msgTable.alertsMonitor -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(11)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-AllUserMFARequired",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
@@ -219,35 +250,6 @@
     ]
   },
   {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.gcPasswordGuidanceDoc -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "GCPasswordGuidanceDoc"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-RiskBasedAccess",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
@@ -376,35 +378,6 @@
     ]
   },
   {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails3",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.authorizedProcessedByCSO -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "AuthorizedProcessApprovedByCSO"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-ServicePrincipalName",
     "Control": "Guardrails4",
     "ModuleType": "Builtin",
@@ -443,35 +416,6 @@
       {
         "Name": "itsgcode",
         "Value": "AC2(4)"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails4",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName4 -ItemName $msgTable.CSPMEncryptedEmailConfirmation -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "SPNEncryptedEmailToCSPMSentAttestation"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
       }
     ]
   },
@@ -775,86 +719,14 @@
     ]
   },
   {
-    "ModuleName": "Check-DocumentExistsInStorage",
+    "ModuleName": "Check-NetworkSecurityTools",
     "Control": "Guardrails9",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.NetworkBoundaryProtectionPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Check-NetworkSecurityTools -ControlName $msgTable.CtrName9 -ItemName $msgTable.networkSecurityTools -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "NetworkBoundaryProtectionPolicy"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "SC5"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails9",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.LimitPublicIPsPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "LimitPublicIPsPolicy"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "SC5"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails9",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.AuthSourceIPPolicyConfirm -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "AuthSourceIPPolicyConfirm"
-      },
       {
         "Name": "itsgcode",
         "Value": "SC5"
@@ -1139,35 +1011,6 @@
       {
         "Name": "DocumentName",
         "Value": "BreakGlassAccountProcedure"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails13",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountResponsibility -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "BGFollowProcedureResponsibility"
       },
       {
         "Name": "itsgcode",

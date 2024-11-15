@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.1.24'
+        version: '1.1.26'
       }
     }
   }
@@ -213,7 +213,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.14'
+        version: '1.4.16'
       }
     }
   }
@@ -393,7 +393,29 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
+
   resource module39 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-NetworkSecurityTools'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-NetworkSecurityTools.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+        
+
+  resource module40 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AlertsMonitor'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module41 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserRoleReviews'
     properties: {
       contentLink: {

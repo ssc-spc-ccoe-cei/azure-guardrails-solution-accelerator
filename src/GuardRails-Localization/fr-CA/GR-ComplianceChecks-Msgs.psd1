@@ -31,6 +31,15 @@ globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur géné
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
+alertsMonitor = Alertes pour signaler l'utilisation abusive et les activités suspectes
+signInlogsNotCollected = Les journaux de connexion « SignInLogs » ne sont actuellement pas activés. Les « SignInLogs » doivent être activés pour surveiller et enregistrer les activités de connexion des utilisateurs dans l'environnement.
+auditlogsNotCollected = Les journaux d'audit « AuditLogs » ne sont actuellement pas activés. Les « AuditLogs » doivent être activés pour capturer et enregistrer tous les événements d'audit significatifs dans l'environnement.
+noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
+noActionGroupsForBGaccts = Aucun groupe d'action n'a été identifié pour les activités de connexion au compte de bris de verre. Les groupes d'action doivent être configurés pour recevoir des alertes en cas de tentatives de connexion au compte de bris de verre.
+noActionGroupsForAuditLogs = Aucun groupe d'action n'a été trouvé pour les journaux d'audit « AuditLogs ». Des groupes d'action doivent être créés pour recevoir des alertes pour les événements auditables importants.
+noActionGroups = Aucun groupe d'action n'a été configuré pour le groupe de ressources « {0} ». Assurez-vous que les groupes d'action sont configurés pour recevoir des alertes pour les activités surveillées du groupe de ressources correspondant.
+compliantAlerts = Les alertes pour les comptes de bris de verre et les journaux d'audit « AuditLogs » sont conformes. Les groupes d'action appropriés ont été configurés et reçoivent correctement des alertes pour chaque activité surveillée.
+
 allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
@@ -60,7 +69,7 @@ MSEntIDDisabledUsers = Utilisateur Microsoft Entra ID désactivé
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
-gcPasswordGuidanceDoc = Document d'orientation sur les mots de passe du GC
+
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
@@ -114,7 +123,7 @@ allPoliciesAreCompliant=Toutes les politiques sont conformes.
 adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
-authorizedProcessedByCSO = Accès Autorisé
+
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
 noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d'appareil activés avec des ressources cibles, des rôles d'administrateur inclus et activés.
@@ -136,7 +145,7 @@ SPNCredentialsCompliance = Statut de conformité des clés SPN
 SPNSingleValidCredential = SPN a une seule clé valide. {0}
 SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
 SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
-CSPMEncryptedEmailConfirmation= Confirmacion d'email encrypté envoyé
+
 
 # GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy
@@ -201,11 +210,9 @@ noSubnets = Aucun sous-réseau n'est présent.
 cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
 
 # GuardRail #9
-authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
-limitPublicIPsPolicy = Attestation que la politique de limitation des IPs publiques est respectée.
-networkBoundaryProtectionPolicy = Attestation que la politique de protection des limites du réseau est respectée.
+
 networkWatcherEnabled=Network Watcher existe pour la région '{0}'
 networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
@@ -214,6 +221,11 @@ vnetExcludedByParameter = VNet '{0}' is excluded from compliance because it is i
 vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{1}' with a value of 'true'
 networkWatcherConfig = Configuration de Network Watcher
 networkWatcherConfigNoRegions = En raison d'aucun VNETs ou de tous les VNETs étant exclus, il n'y a aucune région pour vérifier la configuration de Network Watcher
+noFirewallOrGateway = Cet abonnement n'a pas de pare-feu ni de passerelle d'application en utilisation.
+wAFNotEnabled = La passerelle d'application attribuée n'a pas de pares-feux d'application Web (WAF) configuré. Activez un WAF sur la passerelle d'application.
+firewallFound = Il y a un {0} associé à cet abonnement.
+wAFEnabled = Il y a une passerelle d'application associée à cet abonnement avec les configurations appropriées.
+networkSecurityTools = Outils utilisés pour limiter l'accès aux adresses IP sources autorisées
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
@@ -270,7 +282,7 @@ enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft
 bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
 bgProcedure = Procédure de compte de bris de verre
 bgCreation = Création de compte Brise Glace
-bgAccountResponsibility = Responsabilité BV suit la procédure du ministère
+
 bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
 bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
 bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
