@@ -779,7 +779,12 @@ function add-documentFileExtensions {
     elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
             $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
                 
-                $fileExtensions = @(".csv")
+            $fileExtensions = @(".csv")
+    }
+    elseif ($ItemName.ToLower() -eq 'application gateway certificate validity' -or 
+            $ItemName.ToLower() -eq "validité du certificat : passerelle d'application") {
+        
+            $fileExtensions = @(".txt")
     }
     else {
         $fileExtensions = @(".txt",".docx", ".doc", ".pdf")
@@ -921,7 +926,19 @@ function Get-AllUserAuthInformation{
 
 }
 
+function CompareKQLQueries{
+    param (
+        [string] $query,
+        [string] $targetQuery
+        )
 
+    #Fix the formatting of KQL query
+    $normalizedTargetQuery = $targetQuery -replace '\s+', ' ' -replace '\|', ' | ' 
+    $removeSpacesQuery = $query -replace '\s', ''
+    $removeSpacesTargetQuery = $normalizedTargetQuery -replace '\s', ''
+
+    return $removeSpacesQuery -eq $removeSpacesTargetQuery
+}
 
 # Function used for V2.0 GR2V7(M) andV1.0  GR3(R) cloud console access
 function Get-allowedLocationCAPCompliance {
