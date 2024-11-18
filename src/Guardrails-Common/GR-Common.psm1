@@ -612,7 +612,13 @@ function Get-EvaluationProfile {
         }
 
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
-        $profileTagValues = $subscriptionTags.Properties.TagsProperty['profile']
+        $profileTagValues = if ($subscriptionTags.Properties -and 
+                              $subscriptionTags.Properties.TagsProperty -and 
+                              $subscriptionTags.Properties.TagsProperty['profile']) {
+            $subscriptionTags.Properties.TagsProperty['profile']
+        } else {
+            $null
+        }
 
         if ($null -eq $profileTagValues) {
             $matchedProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
