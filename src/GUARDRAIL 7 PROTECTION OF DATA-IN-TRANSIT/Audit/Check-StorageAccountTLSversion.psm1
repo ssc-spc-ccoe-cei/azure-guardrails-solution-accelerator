@@ -11,9 +11,19 @@ function Check-TLSversion {
     )
 
     $storageAccountList = @()
-    foreach ($subscription in $objList)
+    foreach ($obj in $objList)
     {
-        Set-AzContext -SubscriptionId $subscription.Id
+        Write-Host "Find compliance details for Subscription : $($obj.Name)"
+        $subscription = @()
+        $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
+        
+        $currentSubscription = Get-AzContext
+        if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
+            # Set Az context to the this subscription
+            Set-AzContext -SubscriptionId $subscription.SubscriptionID
+            Write-Host "AzContext set to $($subscription.DisplayName)"
+        }
+
         $resourceGroups = Get-AzResourceGroup
 
         # Loop through each resource group
@@ -23,7 +33,7 @@ function Check-TLSversion {
                 foreach ($storageAccount in $storageAccounts) {
                     $TLSversionNumeric = $storageAccount.MinimumTlsVersion -replace "TLS", "" -replace "_", "." 
                     $storageAccInfo = [PSCustomObject]@{
-                        SubscriptionName   = $subscription.Name
+                        SubscriptionName   = $obj.Name
                         ResourceGroupName  = $resourceGroup.ResourceGroupName
                         StorageAccountName = $storageAccount.StorageAccountName
                         MinimumTlsVersion  = $storageAccount.MinimumTlsVersion
@@ -35,7 +45,7 @@ function Check-TLSversion {
         }
     }
 
-    return $storageAccountList | Format-Table
+    return $storageAccountList
 }
 
 function Verify-TLSForStorageAccount {
@@ -69,7 +79,7 @@ function Verify-TLSForStorageAccount {
     $PSObjectList = Check-TLSversion -objList $objs -ControlName $ControlName -ItemName $ItemName -LogType $LogType -itsgcode $itsgcode -msgTable $msgTable -ReportTime $ReportTime 
 
     # Filter to keep only objects that have the 'subscriptionName' property
-    $PSObjectListCleaned = $PSObjectList | Where-Object { $_.PSObject.Properties["SubscriptionName"] }
+    $PSObjectListCleaned = $PSObjectList | Where-Object { $_.PSObject.Properties["MinimumTlsVersion"] }
 
     # find TLS version not equal to TLS1.2
     $filteredPSObjectList = $PSObjectListCleaned | Where-Object { $_.MinimumTlsVersion -ne "TLS1_2" }
@@ -81,9 +91,6 @@ function Verify-TLSForStorageAccount {
     }
     else{
         # Condition: isTLSLessThan1_2 = true if the TLSversionNumeric < 1.2
-        $filteredPSObjectList | Add-Member -MemberType NoteProperty -Name isTLSLessThan1_2 -Value (
-            $filteredPSObjectList.TLSversionNumeric -lt 1.2
-        )
         $filteredPSObjectList | ForEach-Object {
             $_ | Add-Member -MemberType NoteProperty -Name isTLSLessThan1_2 -Value ($_.TLSversionNumeric -lt 1.2)
             $_  
@@ -91,7 +98,7 @@ function Verify-TLSForStorageAccount {
         $storageAccWithTLSLessThan1_2 = $filteredPSObjectList | Where-Object { $_.IsTLSLessThan1_2 -eq $true }
 
         # condition: storage accounts are all using TLS version 1.2 or higher
-        if ($storageAccWithTLSLessThan1_2.Count = 0){
+        if ($storageAccWithTLSLessThan1_2.Count -eq 0){
             $IsCompliant = $true
             $Comments = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
         }
