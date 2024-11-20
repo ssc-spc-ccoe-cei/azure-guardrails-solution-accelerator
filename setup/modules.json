@@ -463,6 +463,27 @@
     ]
   },
   {
+    "ModuleName": "Check-StorageAccountTLSversion",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-TLSForStorageAccount -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-ProtectionOfDataInTransit",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
