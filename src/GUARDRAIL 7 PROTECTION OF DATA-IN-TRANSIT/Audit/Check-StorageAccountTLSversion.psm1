@@ -33,9 +33,7 @@ function Check-TLSversion {
                         MinimumTlsVersion  = $storageAccount.MinimumTlsVersion
                         TLSversionNumeric  = $TLSversionNumeric
                     }
-                    # $storageAccInfo | Add-Member -MemberType NoteProperty -Name [double]TLSversionNumeric -Value (
-                    #     $storageAccInfo.MinimumTlsVersion -replace "TLS", "" -replace "_", "." 
-                    # )
+
                     $storageAccountList +=  $storageAccInfo
                 }
             }
