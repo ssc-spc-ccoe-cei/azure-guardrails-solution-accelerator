@@ -1,7 +1,6 @@
 function Check-TLSversion {
     param (
         [System.Object] $objList,
-        [string] $objType, #subscription or management Group
         [string] $ControlName,
         [string] $ItemName,
         [string] $LogType,
@@ -70,13 +69,12 @@ function Verify-TLSForStorageAccount {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
-    [string]$type = "subscription"
 
     if ($EnableMultiCloudProfiles) {   
-        $PSObjectList = Check-TLSversion -objList $objs -objType $type -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+        $PSObjectList = Check-TLSversion -objList $objs -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
     }
     else {
-        $PSObjectList = Check-TLSversion -objList $objs -objType $type -itsgcode $itsgcode  -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+        $PSObjectList = Check-TLSversion -objList $objs -itsgcode $itsgcode  -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
     }
 
     # Filter to keep only objects that have the 'subscriptionName' property
