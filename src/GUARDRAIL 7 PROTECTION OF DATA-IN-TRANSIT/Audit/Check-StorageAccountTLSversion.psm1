@@ -7,10 +7,7 @@ function Check-TLSversion {
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime,
-        [string] $CloudUsageProfiles = "3",  # Passed as a string
-        [string] $ModuleProfiles,
-        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+        [string] $ReportTime 
     )
 
     $storageAccountList = @()
@@ -69,12 +66,7 @@ function Verify-TLSForStorageAccount {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
 
-    if ($EnableMultiCloudProfiles) {   
-        $PSObjectList = Check-TLSversion -objList $objs -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
-    }
-    else {
-        $PSObjectList = Check-TLSversion -objList $objs -itsgcode $itsgcode  -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
-    }
+    $PSObjectList = Check-TLSversion -objList $objs -ControlName $ControlName -ItemName $ItemName -LogType $LogType -itsgcode $itsgcode -msgTable $msgTable -ReportTime $ReportTime 
 
     # Filter to keep only objects that have the 'subscriptionName' property
     $PSObjectListCleaned = $PSObjectList | Where-Object { $_.PSObject.Properties["SubscriptionName"] }
