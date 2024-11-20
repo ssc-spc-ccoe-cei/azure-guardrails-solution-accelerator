@@ -32,7 +32,6 @@ function Check-TLSversion {
                         MinimumTlsVersion  = $storageAccount.MinimumTlsVersion
                         TLSversionNumeric  = $TLSversionNumeric
                     }
-
                     $storageAccountList +=  $storageAccInfo
                 }
             }
@@ -83,10 +82,10 @@ function Verify-TLSForStorageAccount {
     # find TLS version not equal to TLS1.2
     $filteredPSObjectList = $PSObjectListCleaned | Where-Object { $_.MinimumTlsVersion -ne "TLS1_2" }
 
-    # Condition: all storage account is using TLS1.2
+    # Condition: all storage accounts are using TLS1.2
     if ($filteredPSObjectList.Count -eq 0){
         $IsCompliant = $true
-        $Comments = $msgTable.isCompliant
+        $Comments = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
     }
     else{
         # Condition: isTLSLessThan1_2 = true if the TLSversionNumeric < 1.2
@@ -95,19 +94,21 @@ function Verify-TLSForStorageAccount {
         )
         $filteredPSObjectList | ForEach-Object {
             $_ | Add-Member -MemberType NoteProperty -Name isTLSLessThan1_2 -Value ($_.TLSversionNumeric -lt 1.2)
-            $_  # Output the modified object
+            $_  
         }
         $storageAccWithTLSLessThan1_2 = $filteredPSObjectList | Where-Object { $_.IsTLSLessThan1_2 -eq $true }
 
         # condition: storage accounts are all using TLS version 1.2 or higher
         if ($storageAccWithTLSLessThan1_2.Count = 0){
             $IsCompliant = $true
-            $Comments = $msgTable.isCompliant
+            $Comments = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
         }
         else{
+            ## keep a record for non-compliant storage acc names for reference
             $nonCompliantstorageAccountNames = ($storageAccWithTLSLessThan1_2 | Select-Object -ExpandProperty StorageAccountName | ForEach-Object { $_ } ) -join ', '
+            Write-Host "Storage accounts which are using TLS1.1 or less: $nonCompliantstorageAccountNames"
             $IsCompliant = $false
-            $Comments = $msgTable.isNotCompliant + " " + "Update the storage accounts to TLS1.2 or higher " + $nonCompliantstorageAccountNames
+            $Comments = $msgTable.isNotCompliant + " " + $msgTable.storageAccNotValidTLS
         }
     }
 
