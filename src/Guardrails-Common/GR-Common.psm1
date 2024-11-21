@@ -681,13 +681,8 @@ function ConvertTo-IntArray {
         [Parameter(Mandatory = $true)]
         [string]$inputString
     )
-    if ($inputString -match '^\[.*\]$') {
-        return $inputString.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
-    }
-    if ($inputString -match ',') {
-        return $inputString.Split(',') | ForEach-Object { [int]$_.Trim() }
-    }
-    return @([int]$inputString)
+    # Remove any brackets and split on comma, then convert each element to int
+    return $inputString.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
 }
 
 function Parse-BlobContent {
