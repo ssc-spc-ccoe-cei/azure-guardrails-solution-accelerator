@@ -226,7 +226,7 @@ Function Confirm-GSAConfigurationParameters {
         }
         cloudUsageProfiles                = @{
             IsRequired        = $false
-            ValidationPattern = '^default|([0-9](,[0-9]){0,9})$'
+            ValidationPattern = '^default|\[?\d+(?:,\d+)*\]?$'
         }
     }
 

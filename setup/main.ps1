@@ -124,7 +124,7 @@ if($enableMultiCloudProfiles) {
     if ($cloudUsageProfiles -is [string]) {
         if ($cloudUsageProfiles.Contains(",")) {
             # Handle comma-separated string case (e.g., "1,2,3")
-            $cloudUsageProfiles = $cloudUsageProfiles.Split(",") | ForEach-Object { $_.Trim() }
+            $cloudUsageProfiles = $cloudUsageProfiles.Trim('[]').Split(",") | ForEach-Object { $_.Trim() }
         }
         else {
             # Handle single profile string case (e.g., "3")
