@@ -3,7 +3,6 @@ function Check-TLSversion {
         [System.Object] $objList,
         [string] $ControlName,
         [string] $ItemName,
-        [string] $LogType,
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
@@ -76,7 +75,7 @@ function Verify-TLSForStorageAccount {
     }
 
     try{
-        $PSObjectList = Check-TLSversion -objList $objs -ControlName $ControlName -ItemName $ItemName -LogType $LogType -itsgcode $itsgcode -msgTable $msgTable -ReportTime $ReportTime
+        $PSObjectList = Check-TLSversion -objList $objs -ControlName $ControlName -ItemName $ItemName -itsgcode $itsgcode -msgTable $msgTable -ReportTime $ReportTime
         Write-Host "DEBUG: PSObjectList:  $($PSObjectList.count)"
 
         # Filter to keep only objects that have the 'subscriptionName' property
