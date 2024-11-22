@@ -122,13 +122,12 @@ if($enableMultiCloudProfiles) {
     # Retrieve the cloudUsageProfiles and convert to an array
     $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
     if ($cloudUsageProfiles -is [string]) {
-        # Handle single profile case
-        if ($cloudUsageProfiles.StartsWith("[") -and $cloudUsageProfiles.EndsWith("]")) {
-            # Handle the case where the profiles are specified as a stringified array
-            $cloudUsageProfiles = $cloudUsageProfiles.Trim("[]").Split(",") | ForEach-Object { $_.Trim() }
+        if ($cloudUsageProfiles.Contains(",")) {
+            # Handle comma-separated string case (e.g., "1,2,3")
+            $cloudUsageProfiles = $cloudUsageProfiles.Trim('[]').Split(",") | ForEach-Object { $_.Trim() }
         }
         else {
-            # Handle single profile string case
+            # Handle single profile string case (e.g., "3")
             $cloudUsageProfiles = @($cloudUsageProfiles.Trim())
         }
     }
