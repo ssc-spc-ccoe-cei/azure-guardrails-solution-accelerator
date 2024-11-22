@@ -1,12 +1,6 @@
 function Check-TLSversion {
     param (
-        [System.Object] $objList,
-        [string] $ControlName,
-        [string] $ItemName,
-        [string] $itsgcode,
-        [hashtable] $msgTable,
-        [Parameter(Mandatory=$true)]
-        [string] $ReportTime 
+        [System.Object] $objList
     )
 
     $storageAccountList = @()
@@ -43,6 +37,7 @@ function Check-TLSversion {
             }
         }
     }
+    Write-Host "DEBUG: storageAccountList: $storageAccountList"
 
     return $storageAccountList
 }
@@ -74,8 +69,9 @@ function Verify-TLSForStorageAccount {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
 
+    $PSObjectList = @()
     try{
-        $PSObjectList = Check-TLSversion -objList $objs -ControlName $ControlName -ItemName $ItemName -itsgcode $itsgcode -msgTable $msgTable -ReportTime $ReportTime
+        $PSObjectList = Check-TLSversion -objList $objs 
         Write-Host "DEBUG: PSObjectList:  $($PSObjectList.count)"
 
         # Filter to keep only objects that have the 'subscriptionName' property
@@ -95,7 +91,6 @@ function Verify-TLSForStorageAccount {
             # Condition: isTLSLessThan1_2 = true if the TLSversionNumeric < 1.2
             $filteredPSObjectList | ForEach-Object {
                 $_ | Add-Member -MemberType NoteProperty -Name isTLSLessThan1_2 -Value ($_.TLSversionNumeric -lt 1.2)
-                $_  
             }
             Write-Host "DEBUG: filteredPSObjectList:  $filteredPSObjectList"
 
