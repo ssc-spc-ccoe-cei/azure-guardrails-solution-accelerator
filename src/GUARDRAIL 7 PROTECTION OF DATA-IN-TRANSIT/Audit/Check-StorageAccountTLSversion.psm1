@@ -37,7 +37,6 @@ function Check-TLSversion {
             }
         }
     }
-    Write-Host "DEBUG: storageAccountList: $storageAccountList"
 
     return $storageAccountList
 }
@@ -72,15 +71,12 @@ function Verify-TLSForStorageAccount {
     $PSObjectList = @()
     try{
         $PSObjectList = Check-TLSversion -objList $objs 
-        Write-Host "DEBUG: PSObjectList:  $($PSObjectList.count)"
 
         # Filter to keep only objects that have the 'subscriptionName' property
         $PSObjectListCleaned = $PSObjectList | Where-Object { $_.PSObject.Properties["MinimumTlsVersion"] }
-        Write-Host "DEBUG: PSObjectListCleaned:  $($PSObjectListCleaned.count)"
 
         # find TLS version not equal to TLS1.2
         $filteredPSObjectList = $PSObjectListCleaned | Where-Object { $_.MinimumTlsVersion -ne "TLS1_2" }
-        Write-Host "DEBUG: filteredPSObjectList:  $($filteredPSObjectList.count)"
 
         # Condition: all storage accounts are using TLS1.2
         if ($filteredPSObjectList.Count -eq 0){
@@ -92,10 +88,8 @@ function Verify-TLSForStorageAccount {
             $filteredPSObjectList | ForEach-Object {
                 $_ | Add-Member -MemberType NoteProperty -Name isTLSLessThan1_2 -Value ($_.TLSversionNumeric -lt 1.2)
             }
-            Write-Host "DEBUG: filteredPSObjectList:  $filteredPSObjectList"
 
             $storageAccWithTLSLessThan1_2 = $filteredPSObjectList | Where-Object { $_.IsTLSLessThan1_2 -eq $true }
-            Write-Host "DEBUG: storageAccWithTLSLessThan1_2:  $storageAccWithTLSLessThan1_2"
 
             # condition: storage accounts are all using TLS version 1.2 or higher
             if ($storageAccWithTLSLessThan1_2.Count -eq 0){
@@ -103,18 +97,16 @@ function Verify-TLSForStorageAccount {
                 $commentsArray = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
             }
             else{
-                Write-Host "DEBUG: at this point the compliance status is false"
                 ## keep a record for non-compliant storage acc names for reference
                 $nonCompliantstorageAccountNames = ($storageAccWithTLSLessThan1_2 | Select-Object -ExpandProperty StorageAccountName | ForEach-Object { $_ } ) -join ', '
                 Write-Host "Storage accounts which are using TLS1.1 or less: $nonCompliantstorageAccountNames"
                 $IsCompliant = $false
                 $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.storageAccNotValidTLS
-                Write-Host "DEBUG: commentsArray:  $commentsArray"
             }
         }
     }
     catch{
-        $Errorlist.Add("exception: $_")
+        $Errorlist.Add("Error creating compliance result: $_")
         throw "Error: $_"
     }
     
@@ -129,7 +121,6 @@ function Verify-TLSForStorageAccount {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    Write-Host "DEBUG: PsObject:  $PsObject"
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
@@ -145,14 +136,13 @@ function Verify-TLSForStorageAccount {
         } else {
             
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-            Write-Host "DEBUG 2: PsObject:  $PsObject"
         }
     }
 
     $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject
         Errors = $ErrorList
-        AdditionalResults = @()
+        AdditionalResults = $AdditionalResults
     }
     
     Write-Host "moduleOutput: $($moduleOutput | ConvertTo-Json)"
