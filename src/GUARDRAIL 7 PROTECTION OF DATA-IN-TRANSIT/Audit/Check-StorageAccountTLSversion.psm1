@@ -64,6 +64,8 @@ function Verify-TLSForStorageAccount {
     [PSCustomObject] $PSObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
+    $commentsArray = @()
+
     #Check Subscriptions
     try {
         $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
@@ -84,7 +86,7 @@ function Verify-TLSForStorageAccount {
     # Condition: all storage accounts are using TLS1.2
     if ($filteredPSObjectList.Count -eq 0){
         $IsCompliant = $true
-        $Comments = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
+        $commentsArray = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
     }
     else{
         # Condition: isTLSLessThan1_2 = true if the TLSversionNumeric < 1.2
@@ -97,22 +99,24 @@ function Verify-TLSForStorageAccount {
         # condition: storage accounts are all using TLS version 1.2 or higher
         if ($storageAccWithTLSLessThan1_2.Count -eq 0){
             $IsCompliant = $true
-            $Comments = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
+            $commentsArray = $msgTable.isCompliant + " " + $msgTable.storageAccValidTLS
         }
         else{
             ## keep a record for non-compliant storage acc names for reference
             $nonCompliantstorageAccountNames = ($storageAccWithTLSLessThan1_2 | Select-Object -ExpandProperty StorageAccountName | ForEach-Object { $_ } ) -join ', '
             Write-Host "Storage accounts which are using TLS1.1 or less: $nonCompliantstorageAccountNames"
             $IsCompliant = $false
-            $Comments = $msgTable.isNotCompliant + " " + $msgTable.storageAccNotValidTLS
+            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.storageAccNotValidTLS
         }
     }
 
+    $Comments = $commentsArray -join ";"
+    
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
-        Comments         = $Comments
         ItemName         = $ItemName
+        Comments         = $Comments
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
@@ -139,6 +143,7 @@ function Verify-TLSForStorageAccount {
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
     }
+    Write-Error "moduleOutput:  $moduleOutput"
 
     return $moduleOutput  
 }
