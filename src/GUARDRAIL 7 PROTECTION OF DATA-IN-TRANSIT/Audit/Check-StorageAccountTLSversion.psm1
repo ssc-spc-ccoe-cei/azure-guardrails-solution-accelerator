@@ -144,13 +144,14 @@ function Verify-TLSForStorageAccount {
         }
     }
 
-    $moduleOutput= [PSCustomObject]@{ 
+    $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject
-        Errors=$ErrorList
-        AdditionalResults = $AdditionalResults
+        Errors = $ErrorList
+        AdditionalResults = @()
     }
-    Write-Error "moduleOutput:  $moduleOutput"
+    
+    Write-Host "moduleOutput: $($moduleOutput | ConvertTo-Json)"
 
-    return $moduleOutput  
+    return $moduleOutput
 }
 
