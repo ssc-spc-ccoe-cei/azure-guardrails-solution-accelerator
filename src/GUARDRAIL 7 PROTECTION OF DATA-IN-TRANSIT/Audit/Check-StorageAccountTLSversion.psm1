@@ -52,11 +52,10 @@ function Verify-TLSForStorageAccount {
     param (
             [string] $ControlName,
             [string] $ItemName,
-            [string] $PolicyID, 
-            [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
             [string] $ReportTime,
+            [string] $itsgcode,
             [string] $CloudUsageProfiles = "3",  # Passed as a string
             [string] $ModuleProfiles,  # Passed as a string
             [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
