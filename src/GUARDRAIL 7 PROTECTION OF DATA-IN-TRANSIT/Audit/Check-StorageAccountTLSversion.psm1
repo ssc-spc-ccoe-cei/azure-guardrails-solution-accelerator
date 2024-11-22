@@ -115,6 +115,7 @@ function Verify-TLSForStorageAccount {
     }
     catch{
         $Errorlist.Add("exception: $_")
+        throw "Error: $_"
     }
     
 
