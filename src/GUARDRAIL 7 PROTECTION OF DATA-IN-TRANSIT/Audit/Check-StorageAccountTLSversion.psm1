@@ -150,6 +150,7 @@ function Verify-TLSForStorageAccount {
         } else {
             
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+            Write-Host "DEBUG 2: PsObject:  $PsObject"
         }
     }
 
