@@ -416,6 +416,16 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
+  resource module43 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-FunctionAppHTTPSConfiguration'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-FunctionAppHTTPSConfiguration.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
