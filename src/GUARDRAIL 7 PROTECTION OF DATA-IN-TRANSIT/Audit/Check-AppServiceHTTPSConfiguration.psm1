@@ -13,7 +13,7 @@ function Verify-AppServiceHTTPSConfiguration {
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
-    
+
     [PSCustomObject] $ObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $grRequiredPolicies=@("webapplicationshouldonlybeaccessibleoverhttps")
@@ -31,9 +31,9 @@ function Verify-AppServiceHTTPSConfiguration {
     [string]$type = "subscription"
     
     if ($EnableMultiCloudProfiles) {
-        $ObjectList += Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+        $ObjectList += Check-PBMMPolicies -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
     } else {
-        $ObjectList += Check-StatusDataAtRest -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
+        $ObjectList += Check-PBMMPolicies -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
     }
     Write-Host "$type(s) compliance results are collected"
     
