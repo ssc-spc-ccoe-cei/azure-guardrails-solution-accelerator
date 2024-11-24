@@ -417,10 +417,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
   }
 
   resource module42 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-AppServiceGTTPSConfiguration'
+    name: 'Check-AppServiceHTTPSConfiguration'
     properties: {
       contentLink: {
-        uri: '${ModuleBaseURL}/Check-AppServiceGTTPSConfiguration.zip'
+        uri: '${ModuleBaseURL}/Check-AppServiceHTTPSConfiguration.zip'
         version: '1.0.0'
       }
     }
