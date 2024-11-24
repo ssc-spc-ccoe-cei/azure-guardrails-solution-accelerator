@@ -463,7 +463,7 @@
     ]
   },
   {
-    "ModuleName": "Check-ProtectionDataAtRest",
+    "ModuleName": "Check-AppServiceHTTPSConfiguration",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
     "Status": "Enabled",
