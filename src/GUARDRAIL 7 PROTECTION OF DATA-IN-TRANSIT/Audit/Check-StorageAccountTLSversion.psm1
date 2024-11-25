@@ -144,8 +144,6 @@ function Verify-TLSForStorageAccount {
         Errors = $ErrorList
         AdditionalResults = $AdditionalResults
     }
-    
-    Write-Host "moduleOutput: $($moduleOutput | ConvertTo-Json)"
 
     return $moduleOutput
 }
