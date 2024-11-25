@@ -183,7 +183,7 @@ noAppGatewayFound = No Application Gateways found in any subscription.
 allCertificatesValid = All certificates are valid and from approved Certificate Authorities (CAs).
 approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
 approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
-appServiceHttpsConfig = App Service HTTPS Configuration
+appServiceHttpsConfig = Azure App Service: HTTPS Application Configuration
 dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
 # GuardRail #8
