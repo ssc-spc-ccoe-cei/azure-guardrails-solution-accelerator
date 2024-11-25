@@ -33,12 +33,12 @@ function Check-FinOpsToolStatus {
         $Comments += $msgTable.SPNIncorrectPermissions + " "
     }
 
-    # Check 3: Verify Roles
-    $hasCorrectRoles = Check-ServicePrincipalRoles "CloudabilityUtilizationDataCollector"
-    if (-not $hasCorrectRoles) {
-        $IsCompliant = $false
-        $Comments += $msgTable.SPNIncorrectRoles + " "
-    }
+    # # Check 3: Verify Roles
+    # $hasCorrectRoles = Check-ServicePrincipalRoles "CloudabilityUtilizationDataCollector"
+    # if (-not $hasCorrectRoles) {
+    #     $IsCompliant = $false
+    #     $Comments += $msgTable.SPNIncorrectRoles + " "
+    # }
 
     if ($IsCompliant) {
         $Comments = $msgTable.FinOpsToolCompliant
@@ -56,15 +56,19 @@ function Check-FinOpsToolStatus {
     }
 
     if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -eq 0) {
-            Write-Output "No matching profile found or error occurred"
-            $PsObject.ComplianceStatus = "Not Applicable"
-        } elseif ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } else {
-            Write-Error "Unexpected result: $result"
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            }
+            else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
+        }
+        else {
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 
@@ -80,7 +84,7 @@ function Check-ServicePrincipalExists {
         [string] $spnName
     )
     try {
-        $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
+        $urlPath = "/servicePrincipals?$filter=displayName eq '$spnName'"
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         $data = $response.Content
         
@@ -101,20 +105,43 @@ function Check-ServicePrincipalPermissions {
         [string] $spnName
     )
     try {
-        # First, get the Service Principal's Object ID
+        # First, get the Service Principal
         $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        $spnObjectId = $response.Content.value[0].id
+        
+        if ($null -eq $response.Content.value -or $response.Content.value.Count -eq 0) {
+            Write-Warning "Service Principal '$spnName' not found"
+            return $false
+        }
+        
+        $spn = $response.Content.value[0]
 
-        # Now, check for the Reader role assignment
-        $urlPath = "/roleManagement/directory/roleAssignments?`$filter=principalId eq '$spnObjectId'"
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        $roleAssignments = $response.Content.value
+        # Get the oauth2PermissionGrants
+        $urlPath = "/servicePrincipals/{0}/oauth2PermissionGrants" -f $spn.id
+        $permissionResponse = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        
+        # Check delegated permissions (oauth2PermissionGrants)
+        $delegatedPermissions = @()
+        foreach ($grant in $permissionResponse.Content.value) {
+            $delegatedPermissions += $grant.scope -split ' '
+        }
 
-        $readerRoleId = "acdd72a7-3385-48ef-bd42-f606fba81ae7" # Object ID for Reader role
-        $hasReaderRole = $roleAssignments | Where-Object { $_.roleDefinitionId -eq $readerRoleId }
+        Write-Verbose "Found delegated permissions: $($delegatedPermissions -join ', ')"
 
-        return $null -ne $hasReaderRole
+        # Define required permissions to check
+        $requiredPermissions = @(
+            "User.Read",              # for Microsoft Graph
+            "user_impersonation"      # for Azure Resource Manager and Partner Center
+        )
+
+        foreach ($required in $requiredPermissions) {
+            if ($delegatedPermissions -notcontains $required) {
+                Write-Warning "Missing required permission: $required"
+                return $false
+            }
+        }
+
+        return $true
     }
     catch {
         Write-Error "Error checking Service Principal permissions: $_"
@@ -122,31 +149,31 @@ function Check-ServicePrincipalPermissions {
     }
 }
 
-function Check-ServicePrincipalRoles {
-    param (
-        [string] $spnName
-    )
-    try {
-        # First, get the Service Principal's Object ID
-        $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        $spnObjectId = $response.Content.value[0].id
+# function Check-ServicePrincipalRoles {
+#     param (
+#         [string] $spnName
+#     )
+#     try {
+#         # First, get the Service Principal's Object ID
+#         $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
+#         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+#         $spnObjectId = $response.Content.value[0].id
 
-        # Now, check for the required role assignments
-        $urlPath = "/roleManagement/directory/roleAssignments?`$filter=principalId eq '$spnObjectId'"
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        $roleAssignments = $response.Content.value
+#         # Now, check for the required role assignments
+#         $urlPath = "/roleManagement/directory/roleAssignments?`$filter=principalId eq '$spnObjectId'"
+#         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+#         $roleAssignments = $response.Content.value
 
-        $cloudAppAdminRoleId = "158c047a-c907-4556-b7ef-446551a6b5f7" # Object ID for Cloud Application Administrator role
-        $reportsReaderRoleId = "4a5d8f65-41da-4de4-8968-e035b65339cf" # Object ID for Reports Reader role
+#         $cloudAppAdminRoleId = "158c047a-c907-4556-b7ef-446551a6b5f7" # Object ID for Cloud Application Administrator role
+#         $reportsReaderRoleId = "4a5d8f65-41da-4de4-8968-e035b65339cf" # Object ID for Reports Reader role
 
-        $hasCloudAppAdminRole = $roleAssignments | Where-Object { $_.roleDefinitionId -eq $cloudAppAdminRoleId }
-        $hasReportsReaderRole = $roleAssignments | Where-Object { $_.roleDefinitionId -eq $reportsReaderRoleId }
+#         $hasCloudAppAdminRole = $roleAssignments | Where-Object { $_.roleDefinitionId -eq $cloudAppAdminRoleId }
+#         $hasReportsReaderRole = $roleAssignments | Where-Object { $_.roleDefinitionId -eq $reportsReaderRoleId }
 
-        return ($null -ne $hasCloudAppAdminRole) -and ($null -ne $hasReportsReaderRole)
-    }
-    catch {
-        Write-Error "Error checking Service Principal roles: $_"
-        return $false
-    }
-}
+#         return ($null -ne $hasCloudAppAdminRole) -and ($null -ne $hasReportsReaderRole)
+#     }
+#     catch {
+#         Write-Error "Error checking Service Principal roles: $_"
+#         return $false
+#     }
+# }
