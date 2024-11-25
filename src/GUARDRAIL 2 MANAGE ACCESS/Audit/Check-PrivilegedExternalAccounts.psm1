@@ -16,7 +16,7 @@ function Check-PrivilegedExternalUsers  {
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
         )
     
-    [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
+    [PSCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant= $false
     
@@ -33,12 +33,12 @@ function Check-PrivilegedExternalUsers  {
     # Only get the Guests accounts
     if ($debug) {Write-Output "Getting guest users in the tenant"}
     $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'"
-    
+
     # Default pass (v2.0) for no guest account OR if Guest accounts whether or not have any permissions on the Azure subscriptions
     $IsCompliant= $true
     
     # Find the number of guest accounts
-    if ($null -eq $guestUsers) {
+    if ($null -eq $guestUsers -or $guestUsers.Count -eq 0) {
         # There are no Guest users in the tenant
         Write-Output "No Guest Users found in the tenant"
         $comment = $msgTable.noGuestAccounts
@@ -190,7 +190,7 @@ function Check-PrivilegedExternalUsers  {
             $comment = $msgTable.guestAccountsNoPrivilegedPermission
         }
         
-        $Customuser = [PSCustomObject] @{
+        $CustomUser = [PSCustomObject] @{
             DisplayName = "N/A"
             Subscription = "N/A"
             Mail = "N/A"
@@ -204,7 +204,6 @@ function Check-PrivilegedExternalUsers  {
             ReportTime = $ReportTime
             itsgcode = $itsgcode
         }
-        $guestUsersArray.add($Customuser)
     }
     else {
         $comment = $msgTable.existingPrivilegedGuestAccountsComment
@@ -261,33 +260,39 @@ function Check-PrivilegedExternalUsers  {
         ReportTime = $ReportTime
         MitigationCommands = $MitigationCommands
     }
+    #condition: no guest user in the tenant
+    if($guestUsersArray.Count -eq 0){
+        $unique_guestUsersArray = $CustomUser
+    }
+
     $AdditionalResults = [PSCustomObject]@{
         records = $unique_guestUsersArray
         logType = "GR2ExternalUsers"
     }
 
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
-        } elseif ($result -eq 0) {
-            Write-Output "No matching profile found or an error occurred"
-            $GuestUserStatus.ComplianceStatus = "Not Applicable"
-            $ErrorList.Add("No matching profile found or an error occurred in Get-EvaluationProfile")
+    if ($EnableMultiCloudProfiles) {        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $GuestUserStatus.ComplianceStatus = "Not Applicable"
+                $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $GuestUserStatus.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Error "Unexpected result from Get-EvaluationProfile: $result"
-            $GuestUserStatus.ComplianceStatus = "Not Applicable"
-            $ErrorList.Add("Unexpected result from Get-EvaluationProfile: $result")
+            
+            $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
     
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $GuestUserStatus
-        Errors=$ErrorList
+        Errors            = $ErrorList
         AdditionalResults = $AdditionalResults
     }
+
     return $moduleOutput 
     <#
     $logAnalyticsEntry = ConvertTo-Json -inputObject $GuestUserStatus

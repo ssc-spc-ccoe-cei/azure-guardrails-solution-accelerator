@@ -114,14 +114,18 @@ function Add-ProfileToResult {
     )
 
     try {
-        $evaluationProfile = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionId
-    
-        if ($evaluationProfile -eq 0) {
-            $Result.ComplianceStatus = "Not Applicable"
-            $Result.Comments += if ($Result.Comments) { " " } else { "" }
-            $Result.Comments += "No matching profile found."
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionId
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $Result.ComplianceStatus = "Not Applicable"
+                $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $Result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $Result.Errors.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evaluationProfile
+            
+            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
     catch {

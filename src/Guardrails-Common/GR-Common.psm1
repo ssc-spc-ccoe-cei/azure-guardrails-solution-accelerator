@@ -388,7 +388,7 @@ function Check-DocumentExistsInStorage {
     else {
         # no blob with the name $attestationFileName was found in the specified storage account
         $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
     }
 
     $Comments = $commentsArray -join ";"
@@ -411,13 +411,25 @@ function Check-DocumentExistsInStorage {
     }
 
     if ($EnableMultiCloudProfiles) {        
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
-        if ($result -gt 0) {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                
+                $moduleOutput = [PSCustomObject]@{ 
+                    ComplianceResults = $PsObject
+                    Errors            = $ErrorList
+                    AdditionalResults = $AdditionalResults
+                }
+                return $moduleOutput
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Output "No matching profile found or error occurred"
-            $PsObject.ComplianceStatus = "Not Applicable"
+            
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
 
@@ -575,7 +587,7 @@ function Hide-Email {
 }
 
 function Get-EvaluationProfile {
-    [OutputType([int])]
+    [OutputType([PSCustomObject])]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -592,50 +604,62 @@ function Get-EvaluationProfile {
         $moduleProfileArray = ConvertTo-IntArray $ModuleProfiles
 
         if (-not $SubscriptionId) {
-            return [int](Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray)
+            $matchedProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [PSCustomObject]@{
+                Profile = $matchedProfile
+                ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
+            }
         }
 
         $subscriptionTags = Get-AzTag -ResourceId "subscriptions/$SubscriptionId" -ErrorAction Stop
-        $profileTag = $subscriptionTags.Properties | Where-Object { $_.TagName -eq 'profile' }
-
-        if ($null -eq $profileTag) {
-            return [int](Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray)
+        $profileTagValues = if ($subscriptionTags.Properties -and 
+                              $subscriptionTags.Properties.TagsProperty -and 
+                              $subscriptionTags.Properties.TagsProperty['profile']) {
+            $subscriptionTags.Properties.TagsProperty['profile']
+        } else {
+            $null
         }
 
-        $profileTagValues = ConvertTo-IntArray $profileTag.TagValue
-
-        $matchingProfiles = $profileTagValues | Where-Object {
-            $cloudUsageProfileArray -contains $_ -and $moduleProfileArray -contains $_
+        if ($null -eq $profileTagValues) {
+            $matchedProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+            return [PSCustomObject]@{
+                Profile = $matchedProfile
+                ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
+            }
         }
 
-        if ($matchingProfiles.Count -gt 0) {
-            return [int]($matchingProfiles | Measure-Object -Maximum).Maximum
+        $profileTagValuesArray = ConvertTo-IntArray $profileTagValues
+
+        # Get the highest profile from all sources
+        $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
+        $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
+        $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
+
+        # Use the highest profile if it's present in the module profiles
+        if ($highestTagProfile -in $moduleProfileArray) {
+            return [PSCustomObject]@{
+                Profile = $highestTagProfile
+                ShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
+            }
         }
 
-        Write-Error "No matching profiles found between profile tag, CloudUsageProfiles, and ModuleProfiles."
-        return 0
+        # Otherwise, use the highest matching profile that doesn't exceed the module profile
+        $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        return [PSCustomObject]@{
+            Profile = $highestMatchingProfile
+            ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
+        }
     }
     catch {
         Write-Error "Error in Get-EvaluationProfile: $_"
-        return 0
+        return [PSCustomObject]@{
+            Profile = 0
+            ShouldEvaluate = $false
+        }
     }
 }
 
-function ConvertTo-IntArray {
-    [OutputType([int[]])]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$inputString
-    )
-    if ($inputString -match '^\[.*\]$') {
-        return $inputString.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
-    }
-    if ($inputString -match ',') {
-        return $inputString.Split(',') | ForEach-Object { [int]$_.Trim() }
-    }
-    return @([int]$inputString)
-}
-
+# Helper function to get the highest matching profile
 function Get-HighestMatchingProfile {
     [OutputType([int])]
     param (
@@ -649,6 +673,16 @@ function Get-HighestMatchingProfile {
         return 0
     }
     return ($matchingProfiles | Measure-Object -Maximum).Maximum
+}
+
+function ConvertTo-IntArray {
+    [OutputType([int[]])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$inputString
+    )
+    # Remove any brackets and split on comma, then convert each element to int
+    return $inputString.Trim('[]').Split(',') | ForEach-Object { [int]$_.Trim() }
 }
 
 function Parse-BlobContent {
@@ -730,14 +764,25 @@ function add-documentFileExtensions {
 
     )
 
-    if ($ItemName.ToLower() -eq 'network architecture diagram'){
-        $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
+    if ($ItemName.ToLower() -eq 'network architecture diagram' -or 
+        $ItemName.ToLower() -eq 'high level design documentation' -or
+        $ItemName.ToLower() -eq "diagramme d'architecture réseau" -or 
+        $ItemName.ToLower() -eq 'documentation de Conception de haut niveau'){
+
+            $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
     }
-    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration') {
-        $fileExtensions = @(".csv")
+    elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
+            $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
+                
+            $fileExtensions = @(".csv")
+    }
+    elseif ($ItemName.ToLower() -eq 'application gateway certificate validity' -or 
+            $ItemName.ToLower() -eq "validité du certificat : passerelle d'application") {
+        
+            $fileExtensions = @(".txt")
     }
     else {
-        $fileExtensions = @(".txt",".docx", ".doc")
+        $fileExtensions = @(".txt",".docx", ".doc", ".pdf")
     }
     
     $DocumentName_new = New-Object System.Collections.Generic.List[System.Object]
@@ -876,7 +921,101 @@ function Get-AllUserAuthInformation{
 
 }
 
+function CompareKQLQueries{
+    param (
+        [string] $query,
+        [string] $targetQuery
+        )
+
+    #Fix the formatting of KQL query
+    $normalizedTargetQuery = $targetQuery -replace '\s+', ' ' -replace '\|', ' | ' 
+    $removeSpacesQuery = $query -replace '\s', ''
+    $removeSpacesTargetQuery = $normalizedTargetQuery -replace '\s', ''
+
+    return $removeSpacesQuery -eq $removeSpacesTargetQuery
+}
+
+# Function used for V2.0 GR2V7(M) andV1.0  GR3(R) cloud console access
+function Get-allowedLocationCAPCompliance {
+    param (
+        [array]$ErrorList,
+        [string] $IsCompliant
+    )
+
+    # get named locations
+    $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
+    try {
+        $response = Invoke-GraphQuery -urlPath $locationsBaseAPIUrl -ErrorAction Stop
+        $data = $response.Content
+        $locations = $data.value
+    }
+    catch {
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
+    }
+
+    # get conditional access policies
+    $CABaseAPIUrl = '/identity/conditionalAccess/policies'
+    try {
+        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+
+        $caps = $response.Content.value
+    }
+    catch {
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
+    }
+    
+    # check that a named location for Canada exists and that a policy exists that uses it
+    $validLocations = @()
+
+    foreach ($location in $locations) {
+        #Determine location conditions
+        #get all valid locations: needs to have Canada Only
+        if ($location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions[0] -eq "CA") {
+            $validLocations += $location
+        }
+    }
+
+    $locationBasedPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $_.state -eq 'enabled' }
+
+    if ($validLocations.count -ne 0) {
+        #if there is at least one location with Canada only, we are good. If no Canada Only policy, not compliant.
+        # Conditional access Policies
+        # Need a location based policy, for admins (owners, contributors) that uses one of the valid locations above.
+        # If there is no policy or the policy doesn't use one of the locations above, not compliant.
+
+        if (!$locationBasedPolicies) {
+            #failed. No policies have valid locations.
+            $Comments = $msgTable.noCompliantPoliciesfound
+            $IsCompliant = $false
+        }
+        else {
+            #"Compliant Policies."
+            $IsCompliant = $true
+            $Comments = $msgTable.allPoliciesAreCompliant
+        }      
+    }
+    else {
+        # Failed. Reason: No locations have only Canada.
+        $Comments = $msgTable.noLocationsCompliant
+        $IsCompliant = $false
+    }
+    
+    $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
+        ControlName      = $ControlName
+        Comments         = $Comments
+        ItemName         = $ItemName
+        ReportTime       = $ReportTime
+        itsgcode         = $itsgcode
+        Errors           = $ErrorList
+    }
+    return  $PsObject
+
+}
 
 # endregion
+
 
 

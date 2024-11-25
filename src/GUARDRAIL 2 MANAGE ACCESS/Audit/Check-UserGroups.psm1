@@ -43,7 +43,7 @@ function Check-UserGroups {
     
     # Find total user count in the environment
     $allUserCount = $users.Count
-    Write-Output "userCount is $allUserCount"
+    Write-Host "userCount is $allUserCount"
 
     # List of all user groups in the environment
     $urlPath = "/groups"
@@ -65,7 +65,7 @@ function Check-UserGroups {
     }
     # Find total user groups count are in the environment
     $userGroupCount = $groups.Count
-    Write-Output "number of user groups in the tenant are $userGroupCount"
+    Write-Host "number of user groups in the tenant are $userGroupCount"
 
     # Find members in each group
     $groupMemberList = @()
@@ -105,6 +105,9 @@ function Check-UserGroups {
     }
     # Find unique users from all user groups by unique userPrincipalName
     $uniqueUsers = $groupMemberList | Sort-Object userPrincipalName -Unique
+    Write-Host "number of unique users calculated from user groups are $($uniqueUsers.Count)"
+    # filter unique users which have UPN only (e.g exclude mailbox email etc.)
+    $uniqueUsers = $uniqueUsers | Where-Object { $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' }
     
     # Condition: if only 1 user in the tenant
     if($allUserCount -le 1) {
@@ -176,14 +179,19 @@ function Check-UserGroups {
     }
 
     # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $result = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if ($result -eq 0) {
-            Write-Output "No matching profile found"
-            $PsObject.ComplianceStatus = "Not Applicable"
+    if ($EnableMultiCloudProfiles) {        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         } else {
-            Write-Output "Valid profile returned: $result"
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $result
+            
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
     

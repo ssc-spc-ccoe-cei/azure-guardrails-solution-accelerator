@@ -26,6 +26,15 @@ mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account
 mfaDisabledFor =  MFA Authentication is not enabled for {0}
 gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 
+alertsMonitor = Alerts to Flag Misuse and Suspicious Activities
+signInlogsNotCollected = The SignInLogs are currently not enabled. SignInLogs must be enabled to monitor and log user sign-in activities in the environment.
+auditlogsNotCollected = The AuditLogs are currently not enabled. AuditLogs must be enabled to capture and log all significant audit events within the environment.
+noAlertRules = No alert rules were found for either SignInLogs or AuditLogs. Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
+noActionGroupsForBGaccts = No action groups were identified for Break Glass account sign-in activities. Action groups must be configured to receive alerts for Break Glass account sign-in attempts.
+noActionGroupsForAuditLogs = No action groups were found for AuditLogs. Action groups must be created to receive alerts for important auditable events.
+noActionGroups = No action groups were configured for the resource group “{0}”. Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
+compliantAlerts = The alerts for Break Glass accounts and audit logs are compliant. Appropriate action groups have been configured and are correctly receiving alerts for each monitored activity.
+
 globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
 globalAdminAccntsMinimum = There are not enough Global Administrator Accounts. There must be at least two but no more than five Active Global Administrator Accounts.
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
@@ -60,13 +69,16 @@ MSEntIDDisabledUsers = Microsoft Entra ID Disabled Users
 apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
 compliantComment = Didnt find any unsynced deprecated users
-gcPasswordGuidanceDoc = GC Password Guidance Doc
+
 mitigationCommands = Verify is the users reported are deprecated.
 noncompliantComment = Total Number of non-compliant users {0}. 
 noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
-privilegedAccountManagementPlan = Privileged Account Management plan
+
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
+
+privilegedAccountManagementPlanLifecycle = Privileged Account Management Plan (Lifecycle of Account Management)
+privilegedAccountManagementPlanLPRoleAssignment = Privileged Account Management Plan (Least Privilege Role Assignment)
 
 onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists
 onlineAttackNonCompliantC1 = The account lockout threshold does not meet the GC Password Guidance.
@@ -94,13 +106,20 @@ userCountOne = There is only one user in the environment. User groups are not re
 userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
 reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
 
+riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
+nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
+nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
+nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
+compliantC1C2 = Both conditional access policies have been configured.
+
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
-authorizedProcessedByCSO = Authorized Access
+
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
 noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 noDeviceFilterPolicies = Missing a required conditional access policy. At least one policy needs to have device filters enabled with target resources, administrator roles included and enabled.
@@ -118,7 +137,7 @@ ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN doesnt have Marketplace Admi
 ServicePrincipalNameHasMarketPlaceAdminRole = SPN has Marketplace Admin Role on the Marketplace.
 NoSPN = SPN doesnt exist.
 SPNCredentialsCompliance = SPN Credentials Compliance
-CSPMEncryptedEmailConfirmation= CSPM encrypted email with credentials sent
+
 SPNSingleValidCredential = SPN has a single valid credential. {0}
 SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
 SPNNoValidCredentials = SPN has no valid credentials. {0}
@@ -191,11 +210,9 @@ noSubnets = No subnets found in the subscription.
 cloudInfrastructureDeployGuide = Cloud Infrastructure Deployment Guide or Applicable Landing Zone Details
 
 # GuardRail #9
-authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
 ddosEnabled=DDos Protection Enabled. 
 ddosNotEnabled=DDos Protection not enabled.
-limitPublicIPsPolicy = Attestation that the limit public IPs policy is adhered to.
-networkBoundaryProtectionPolicy = Attestation that the network boundary protection policy is adhered to.
+
 networkWatcherEnabled=Network Watcher exists for region '{0}'
 networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
 noVNets = No VNet found in the subscription.
@@ -204,6 +221,11 @@ vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{
 vnetDDosConfig = VNet DDos configuration
 networkWatcherConfig = VNet Network Watcher configuration
 networkWatcherConfigNoRegions = Either due to no VNETs or all VNETs being excluded, there are no regions to check for Network Watcher configuration
+noFirewallOrGateway = This subscription does not have a firewall or an application gateway in use.
+noWAFEnabled = The application gateway assigned does not have configured Web Application Firewalls (WAFs). Enable a WAF on the application gateway.
+firewallFound = There is a {0} associated to this subscription.
+wAFEnabled = There is an application gateway associated to this subscription with the appropriate configurations.
+networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP Addresses
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
@@ -259,7 +281,7 @@ enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft
 bgMSEntID = Break Glass Microsoft Entra ID P2
 bgProcedure = Break Glass Account Procedure
 bgCreation = Break Glass account Creation
-bgAccountResponsibility = BG Responsibility Follows Department Procedure
+
 bgAccountOwnerContact = Break Glass Account Owners Contact information
 bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
 bgAccountsCompliance2 = Both accounts are identical, please check the config.json file
@@ -273,6 +295,9 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 bgValidSignature = Valid Signatures and Approvals for Break Glass Account Procedure
+bgAccountTesting = Break Glass Account Testing Cadence
+bgAccountNotExist = One or both of the Break Glass Account User Principal Names (UPNs) provided do not exist in the environment. Review the provided Break Glass Account UPNs for accuracy.
+bgAccountLoginNotValid = Last login for the provided Break Glass Accounts is greater than a year. Ensure regular testing of the Break Glass Account procedure and login process.
 
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
