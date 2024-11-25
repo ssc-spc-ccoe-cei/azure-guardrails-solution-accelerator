@@ -186,6 +186,10 @@ approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not foun
 appServiceHttpsConfig = Azure App Service: HTTPS Application Configuration
 dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
+storageAccTLS12 = Storage Accounts TLS 1.2
+storageAccValidTLS = All storage accounts are using TLS1.2 or higher. 
+storageAccNotValidTLS= One or more storage accounts are using TLS1.1 or less. Update the storage accounts to TLS1.2 or higher.
+
 # GuardRail #8
 noNSG=No NSG is present.
 subnetCompliant = Subnet is compliant.
