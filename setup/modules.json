@@ -477,6 +477,71 @@
       }
     ]
   },
+	{
+    "ModuleName": "Check-StorageAccountTLSversion",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-TLSForStorageAccount -ControlName $msgTable.CtrName7 -ItemName $msgTable.storageAccTLS12 -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-AppServiceHTTPSConfiguration",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-AppServiceHTTPSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.appServiceHttpsConfig -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC28"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-FunctionAppHTTPSConfiguration",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-FunctionAppHTTPSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.functionAppHttpsConfig -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC28"
+      }
+    ]
+  },
   {
     "ModuleName": "Check-ProtectionOfDataInTransit",
     "Control": "Guardrails7",
@@ -730,6 +795,21 @@
       {
         "Name": "itsgcode",
         "Value": "SC5"
+      }
+    ]
+  },
+	{
+    "ModuleName": "Check-StorageAccountTLSversion",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-TLSForStorageAccount -ControlName $msgTable.CtrName9 -ItemName $msgTable.storageAccTLS12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
       }
     ]
   },

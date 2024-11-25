@@ -64,7 +64,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-resource module2 'modules' = if (newDeployment || updatePSModules) {
+  resource module2 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountIdentityProtectionLicense'
     properties: {
       contentLink: {
@@ -73,7 +73,7 @@ resource module2 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module3 'modules' = if (newDeployment || updatePSModules) {
+  resource module3 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DeprecatedAccounts'
     properties: {
       contentLink: {
@@ -82,7 +82,7 @@ resource module3 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module4 'modules' = if (newDeployment || updatePSModules) {
+  resource module4 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ExternalAccounts'
     properties: {
       contentLink: {
@@ -91,7 +91,7 @@ resource module4 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module5 'modules' = if (newDeployment || updatePSModules) {
+  resource module5 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PrivilegedExternalAccounts'
     properties: {
       contentLink: {
@@ -100,7 +100,7 @@ resource module5 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module6 'modules' = if (newDeployment || updatePSModules) {
+  resource module6 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-MonitorAccount'
     properties: {
       contentLink: {
@@ -109,7 +109,7 @@ resource module6 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module7 'modules' = if (newDeployment || updatePSModules) {
+  resource module7 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
     properties: {
       contentLink: {
@@ -118,7 +118,7 @@ resource module7 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module8 'modules' = if (newDeployment || updatePSModules) {
+  resource module8 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-VNetComplianceStatus'
     properties: {
       contentLink: {
@@ -127,7 +127,7 @@ resource module8 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module9 'modules' = if (newDeployment || updatePSModules) {
+  resource module9 'modules' = if (newDeployment || updatePSModules) {
     name: 'Detect-UserBGAUsersAuthMethods'
     properties: {
       contentLink: {
@@ -136,7 +136,7 @@ resource module9 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module10 'modules' = if (newDeployment || updatePSModules) {
+  resource module10 'modules' = if (newDeployment || updatePSModules) {
     name: 'Get-AzureADLicenseType'
     properties: {
       contentLink: {
@@ -145,7 +145,7 @@ resource module10 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module11 'modules' = if (newDeployment || updatePSModules) {
+  resource module11 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-Common'
     properties: {
       contentLink: {
@@ -154,7 +154,7 @@ resource module11 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-resource module12 'modules' = if (newDeployment || updatePSModules) {
+  resource module12 'modules' = if (newDeployment || updatePSModules) {
     name: 'Validate-BreakGlassAccount'
     properties: {
       contentLink: {
@@ -405,7 +405,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
         
-
   resource module40 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AlertsMonitor'
     properties: {
@@ -417,6 +416,36 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
   }
 
   resource module41 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-StorageAccountTLSversion'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module42 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AppServiceHTTPSConfiguration'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AppServiceHTTPSConfiguration.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module43 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-FunctionAppHTTPSConfiguration'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-FunctionAppHTTPSConfiguration.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module44 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-FinOpsToolStatus'
     properties: {
       contentLink: {
@@ -425,7 +454,6 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
-
 
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'

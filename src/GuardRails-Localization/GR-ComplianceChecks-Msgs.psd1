@@ -160,7 +160,7 @@ managementGroup = Management Groups
 notAllowedLocation =  Location is outside of the allowed locations. 
 allowedLocationPolicy = AllowedLocationPolicy
 dataAtRest = PROTECTION OF DATA-AT-REST
-dataInTransit = PROTECTION OF DATA-IN-TRANSIT
+
 
 # GuardRail #6
 pbmmApplied = PBMM initiative has been applied.
@@ -189,6 +189,14 @@ noAppGatewayFound = No Application Gateways found in any subscription.
 allCertificatesValid = All certificates are valid and from approved Certificate Authorities (CAs).
 approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
 approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
+appServiceHttpsConfig = Azure App Service: HTTPS Application Configuration
+dataInTransit = PROTECTION OF DATA-IN-TRANSIT
+
+storageAccTLS12 = Storage Accounts TLS 1.2
+storageAccValidTLS = All storage accounts are using TLS1.2 or higher. 
+storageAccNotValidTLS= One or more storage accounts are using TLS1.1 or less. Update the storage accounts to TLS1.2 or higher.
+
+functionAppHttpsConfig = Azure Functions: HTTPS Application Configuration
 
 # GuardRail #8
 noNSG=No NSG is present.

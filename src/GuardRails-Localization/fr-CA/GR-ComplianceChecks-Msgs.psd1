@@ -111,7 +111,6 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
-
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -190,6 +189,13 @@ noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonneme
 allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
 approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
 approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification
+appServiceHttpsConfig = « Azure App Service » : Configuration d'application HTTPS
+
+storageAccTLS12 = Comptes de stockage TLS 1.2
+storageAccValidTLS = Tous les comptes de stockage utilisent TLS1.2 ou version ultérieure. 
+storageAccNotValidTLS = Un ou plusieurs comptes de stockage utilisent TLS1.1 ou une version antérieure. Mettez à jour les comptes de stockage vers TLS1.2 ou version ultérieure.
+
+functionAppHttpsConfig = « Azure Functions » : Configuration d'application HTTPS
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
