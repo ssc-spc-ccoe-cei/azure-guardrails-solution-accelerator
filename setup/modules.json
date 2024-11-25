@@ -478,6 +478,31 @@
     ]
   },
   {
+    "ModuleName": "Check-AppServiceHTTPSConfiguration",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-AppServiceHTTPSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.appServiceHttpsConfig -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC28"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-ProtectionOfDataInTransit",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
