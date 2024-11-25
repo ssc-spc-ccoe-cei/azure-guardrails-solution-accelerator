@@ -405,13 +405,22 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
         
-
   resource module40 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AlertsMonitor'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
         version: '1.0.1'
+      }
+    }
+  }
+
+  resource module41 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-StorageAccountTLSversion'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
+        version: '1.0.0'
       }
     }
   }

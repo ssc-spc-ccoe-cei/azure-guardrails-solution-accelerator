@@ -462,6 +462,21 @@
       }
     ]
   },
+	{
+    "ModuleName": "Check-StorageAccountTLSversion",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-TLSForStorageAccount -ControlName $msgTable.CtrName7 -ItemName $msgTable.storageAccTLS12 -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
+      }
+    ]
+  },
   {
     "ModuleName": "Check-ProtectionOfDataInTransit",
     "Control": "Guardrails7",
@@ -715,6 +730,21 @@
       {
         "Name": "itsgcode",
         "Value": "SC5"
+      }
+    ]
+  },
+	{
+    "ModuleName": "Check-StorageAccountTLSversion",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-TLSForStorageAccount -ControlName $msgTable.CtrName9 -ItemName $msgTable.storageAccTLS12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
       }
     ]
   },
