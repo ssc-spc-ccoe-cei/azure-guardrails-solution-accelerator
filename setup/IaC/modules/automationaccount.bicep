@@ -454,7 +454,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
-  resource module41 'modules' = if (newDeployment || updatePSModules) {
+  resource module45 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserRoleReviews'
     properties: {
       contentLink: {
