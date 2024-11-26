@@ -116,7 +116,6 @@ noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access R
 noScheduledAccessReview = Tenant has not scheduled any access review.
 hasScheduledAccessReview = Tenant has scheduled at least one access review.
 
-
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -146,6 +145,12 @@ SPNSingleValidCredential = SPN a une seule clé valide. {0}
 SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
 SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
 
+FinOpsToolStatus = Statut de l'outil FinOps
+SPNNotExist = Le principal de service 'CloudabilityUtilizationDataCollector' n'existe pas.
+SPNIncorrectPermissions = Le principal de service n'a pas le rôle de Lecteur requis.
+SPNIncorrectRoles = Le principal de service n'a pas les rôles requis d'Administrateur d'application cloud et de Lecteur de rapports.
+FinOpsToolCompliant = L'outil FinOps est conforme à toutes les exigences.
+FinOpsToolNonCompliant = L'outil FinOps n'est pas conforme. Raisons: {0}
 
 # GuardRail #5
 pbmmCompliance = Conformité PBMMPolicy
@@ -189,6 +194,13 @@ noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonneme
 allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
 approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
 approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification
+appServiceHttpsConfig = « Azure App Service » : Configuration d'application HTTPS
+
+storageAccTLS12 = Comptes de stockage TLS 1.2
+storageAccValidTLS = Tous les comptes de stockage utilisent TLS1.2 ou version ultérieure. 
+storageAccNotValidTLS = Un ou plusieurs comptes de stockage utilisent TLS1.1 ou une version antérieure. Mettez à jour les comptes de stockage vers TLS1.2 ou version ultérieure.
+
+functionAppHttpsConfig = « Azure Functions » : Configuration d'application HTTPS
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.

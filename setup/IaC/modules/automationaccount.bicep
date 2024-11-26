@@ -96,7 +96,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
-        version: '1.0.4'
+        version: '1.0.5'
       }
     }
   }
@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.1.26'
+        version: '1.1.27'
       }
     }
   }
@@ -404,12 +404,51 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
         
-
   resource module40 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AlertsMonitor'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
+        version: '1.0.1'
+      }
+    }
+  }
+
+  resource module41 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-StorageAccountTLSversion'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module42 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-AppServiceHTTPSConfiguration'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-AppServiceHTTPSConfiguration.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module43 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-FunctionAppHTTPSConfiguration'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-FunctionAppHTTPSConfiguration.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module44 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-FinOpsToolStatus'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
         version: '1.0.0'
       }
     }

@@ -1,36 +1,5 @@
 [
   {
-    "ModuleName": "Check-AlertsMonitor",
-    "Control": "Guardrails1",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-AlertsMonitor -LAWResourceId $vars.LAWResourceId -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -ControlName $msgTable.CtrName1 -ItemName $msgTable.alertsMonitor -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "secrets": [
-      {
-        "Name": "FirstBreakGlassUPN",
-        "Value": "BGA1"
-      },
-      {
-        "Name": "SecondBreakGlassUPN",
-        "Value": "BGA2"
-      }
-    ],
-    "variables": [
-      {
-        "Name": "LAWResourceId",
-        "Value": "SecurityLAWResourceId"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC2(11)"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-AllUserMFARequired",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
@@ -96,21 +65,6 @@
     ]
   },
   {
-    "ModuleName": "Get-ADLicenseType",
-    "Control": "Guardrails1",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Get-ADLicenseType  -ControlName $msgTable.CtrName1 -ItemName $msgTable.MSEntIDLicense -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC2(7)"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-UserAccountGCEventLogging",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
@@ -126,6 +80,37 @@
       {
         "Name": "RequiredRetentionDays",
         "Value": "securityRetentionDays"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(11)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-AlertsMonitor",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-AlertsMonitor -LAWResourceId $vars.LAWResourceId -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -ControlName $msgTable.CtrName1 -ItemName $msgTable.alertsMonitor -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
       }
     ],
     "localVariables": [
@@ -171,6 +156,21 @@
       {
         "Name": "itsgcode",
         "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Get-ADLicenseType",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Get-ADLicenseType  -ControlName $msgTable.CtrName1 -ItemName $msgTable.MSEntIDLicense -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(7)"
       }
     ]
   },
@@ -420,6 +420,21 @@
     ]
   },
   {
+    "ModuleName": "Check-FinOpsToolStatus",
+    "Control": "Guardrails4",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-FinOpsToolStatus -ControlName $msgTable.CtrName4 -ItemName $msgTable.FinOpsToolStatus -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
     "ModuleName": "Verify-AllowedLocationPolicy",
     "Control": "Guardrails5",
     "ModuleType": "Builtin",
@@ -460,6 +475,71 @@
     "Required": "True",
     "Profiles": [3, 4, 5, 6],
     "Script": "Verify-ProtectionDataAtRest -ControlName $msgTable.CtrName6 -ItemName $msgTable.dataAtRest -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC28"
+      }
+    ]
+  },
+	{
+    "ModuleName": "Check-StorageAccountTLSversion",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-TLSForStorageAccount -ControlName $msgTable.CtrName7 -ItemName $msgTable.storageAccTLS12 -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-AppServiceHTTPSConfiguration",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-AppServiceHTTPSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.appServiceHttpsConfig -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      },
+      {
+        "Name": "pbmmpolicyID",
+        "Value": "PBMMPolicyID"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC28"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-FunctionAppHTTPSConfiguration",
+    "Control": "Guardrails7",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-FunctionAppHTTPSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.functionAppHttpsConfig -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "cbssubscriptionName",
@@ -730,6 +810,21 @@
       {
         "Name": "itsgcode",
         "Value": "SC5"
+      }
+    ]
+  },
+	{
+    "ModuleName": "Check-StorageAccountTLSversion",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Verify-TLSForStorageAccount -ControlName $msgTable.CtrName9 -ItemName $msgTable.storageAccTLS12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC8"
       }
     ]
   },
@@ -1019,6 +1114,61 @@
     ]
   },
   {
+    "ModuleName": "Check-AlertsMonitor",
+    "Control": "Guardrails13",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-AlertsMonitor -LAWResourceId $vars.LAWResourceId -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -ControlName $msgTable.CtrName13 -ItemName $msgTable.alertsMonitor -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(11)"
+      }
+    ]
+  },
+  {
+    "Control": "Guardrails13",
+    "ModuleName": "Test-BreakGlassAccounts",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Test-BreakGlassAccounts -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountTesting -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails13",
     "ModuleType": "Builtin",
@@ -1104,30 +1254,6 @@
     "Profiles": [2, 3, 4, 5, 6],
     "ModuleName": "Get-BreakGlassOwnerinformation",
     "Script": "Get-BreakGlassOwnerinformation  -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountOwnerContact -FirstBreakGlassUPNOwner $vars.FirstBreakGlassUPN -SecondBreakGlassUPNOwner $vars.SecondBreakGlassUPN -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "secrets": [
-      {
-        "Name": "FirstBreakGlassUPN",
-        "Value": "BGA1"
-      },
-      {
-        "Name": "SecondBreakGlassUPN",
-        "Value": "BGA2"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
-    "Control": "Guardrails13",
-    "ModuleName": "Test-BreakGlassAccounts",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Test-BreakGlassAccounts -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountTesting -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
