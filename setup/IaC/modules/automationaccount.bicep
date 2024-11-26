@@ -445,6 +445,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
+  resource module44 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-FinOpsToolStatus'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
