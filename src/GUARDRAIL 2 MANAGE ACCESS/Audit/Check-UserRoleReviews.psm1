@@ -20,6 +20,8 @@ function Check-UserRoleReviews {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
+    
+    $accessReviewList = @()
 
     # list all acces reviews in identity governance
     $urlPath = "/identityGovernance/accessReviews/definitions"
@@ -37,7 +39,7 @@ function Check-UserRoleReviews {
 
             # Check if any policies exist
             if ($accessReviewsSorted.Count -lt 1) {
-                $Comments = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReview
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReview
             }
             else{
                 Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
@@ -45,26 +47,65 @@ function Check-UserRoleReviews {
                     $_.Group | Select-Object -First 1  # Get the most recent review for each ReviewName
                 }
 
+                foreach($review in $accessReviewHistory){
+                    # the query for each
+                    $queryURI = $review.'instances@odata.context'
+                    $cleanQueryURI = $queryURI -replace '\$metadata#', '' -replace '\(' , '/' -replace '\)', '' -replace "'", ''
+                    $cleanQueryURI = $cleanQueryURI -replace 'https://graph.microsoft.com/v1.0', ''
+                    try{
+                        $queryResponse = Invoke-GraphQuery -urlPath $cleanQueryURI -ErrorAction Stop
+                        # # portal
+                        $queryResponseData =  $queryResponse.Content
+                        # # localExecution
+                        # $queryResponseData = $queryResponse
+                        if($queryResponse.'@odata.count' -ne 0){
+                            if ($null -ne $queryResponseData -and $null -ne $queryResponseData.value) {
+                                $queryData = $ $queryResponseData.value
+                                $queryDataSorted = $queryData 
+                                    # query data status can be 'Completed','InProgress', 'Applied', 'NotStarted'
+                                    | Where-Object { $_.status -ne 'NotStarted'}
+                                    | Sort-Object -Property startDateTime, endDateTime -Descending
+                                $mostRecentQueryData =  $queryDataSorted[0]
+        
+                                $accessReviewInfo = [PSCustomObject]@{
+                                    AccessReviewName                            = $review.displayName
+                                    AccessReviewInstanceId                      = $review.id
+                                    DescriptionForAdmins                        = $review.descriptionForAdmins
+                                    DescriptionForReviewers                     = $review.descriptionForReviewers
+                                    startDateTimeMostRecentAccessReview         = $mostRecentQueryData.startDateTime
+                                    endDateTimeMostRecentAccessReview           = $mostRecentQueryData.endDateTime
+                                    AccessReviewStatus                          = $mostRecentQueryData.status
+                                }
+                        
+                                $accessReviewList +=  $accessReviewInfo 
+                            }
+                        }
+                    }
+                    catch {
+                        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$cleanQueryURI'; returned error message: $_"                
+                        $ErrorList.Add($errorMsg)
+                        Write-Error "Error: $errorMsg"
+                    }
+                }
+                
                 # check if the access review is within the last year
                 $oneYearAgo = (Get-Date).AddYears(-1)
-                $accessReviewHistory | ForEach-Object {
+                $accessReviewList | ForEach-Object {
                     $review = $_
-                    $reviewAge = [datetime]::Parse($review.lastModifiedDateTime)
+                    $reviewAge = [datetime]::Parse($review.endDateTimeMostRecentAccessReview)
                     $isWithinLastOneYear = if ($reviewAge -ge $oneYearAgo){$true} else {$false}
                     $review | Add-Member -MemberType NoteProperty -Name "isWithinLastOneYear" -Value $isWithinLastOneYear
-                    $review
                 }
                 
                 # validation: any of the access review is within last one year
-                $anyReviewWithinOneYear = $accessReviewHistory | Where-Object { $_.isWithinLastOneYear -eq $true }
+                $anyReviewWithinOneYear = $accessReviewList | Where-Object { $_.isWithinLastOneYear -eq $true }
                 if ($anyReviewWithinOneYear.Count -ge 1){
                     $IsCompliant = $true
-                    $Comments = $msgTable.isCompliant + " " + $msgTable.hasScheduledAccessReview
+                    $commentsArray = $msgTable.isCompliant + " " + $msgTable.hasScheduledAccessReview
                 }
                 else{
-                    $Comments = $msgTable.isNotCompliant + " " + $msgTable.noScheduledAccessReview
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noScheduledAccessReview
                 }
-
             }
         }
     }
