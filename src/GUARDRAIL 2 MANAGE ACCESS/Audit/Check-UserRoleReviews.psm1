@@ -28,39 +28,44 @@ function Check-UserRoleReviews {
 
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # # portal
+        # portal
         $data = $response.Content
         # # localExecution
         # $data = $response
-
+        
         if ($null -ne $data -and $null -ne $data.value) {
             $accessReviewsAll = $data.value 
             $accessReviewsSorted = $accessReviewsAll | Sort-Object -Property displayName, createdDateTime -Descending 
-
+            
             # Check if any policies exist
-            if ($accessReviewsSorted.Count -lt 1) {
+            if ($accessReviewsSorted.Count -eq 0) {
                 $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReview
             }
             else{
                 Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
+                # Get the most recent review for each ReviewName
                 $accessReviewHistory = $accessReviewsSorted | Group-Object -Property displayName | ForEach-Object {
-                    $_.Group | Select-Object -First 1  # Get the most recent review for each ReviewName
+                    $_.Group | Select-Object -First 1  
                 }
-
+                Write-Host "Number of most recent access review per displayName:  $($accessReviewHistory.count)"
                 foreach($review in $accessReviewHistory){
-                    # the query for each
+                    # get the query for each instance
                     $queryURI = $review.'instances@odata.context'
+                    Write-Host "Query: $queryURI "
+                    
                     $cleanQueryURI = $queryURI -replace '\$metadata#', '' -replace '\(' , '/' -replace '\)', '' -replace "'", ''
                     $cleanQueryURI = $cleanQueryURI -replace 'https://graph.microsoft.com/v1.0', ''
                     try{
                         $queryResponse = Invoke-GraphQuery -urlPath $cleanQueryURI -ErrorAction Stop
-                        # # portal
+                        # portal
                         $queryResponseData =  $queryResponse.Content
                         # # localExecution
                         # $queryResponseData = $queryResponse
-                        if($queryResponse.'@odata.count' -ne 0){
+                        
+                        if($queryResponseData.'@odata.count' -ne 0){
                             if ($null -ne $queryResponseData -and $null -ne $queryResponseData.value) {
-                                $queryData = $ $queryResponseData.value
+                                $queryData = $queryResponseData.value
+                                Write-Host "Number of queryData:  $($queryData.count)"
                                 # query data status can be 'Completed','InProgress', 'Applied', 'NotStarted'
                                 $queryDataSorted = $queryData | Where-Object { $_.status -ne 'NotStarted'} | Sort-Object -Property startDateTime, endDateTime -Descending
                                 $mostRecentQueryData =  $queryDataSorted[0]
@@ -77,6 +82,9 @@ function Check-UserRoleReviews {
                         
                                 $accessReviewList +=  $accessReviewInfo 
                             }
+                        }
+                        else{
+                            Write-Host "Query response data count is: $($queryResponseData.'@odata.count')"
                         }
                     }
                     catch {
@@ -106,13 +114,16 @@ function Check-UserRoleReviews {
                 }
             }
         }
+        else{
+            Write-Host "Graph query response data is null: $data"
+        }
     }
     catch {
         $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
         $ErrorList.Add($errorMsg)
         Write-Error "Error: $errorMsg"
     }
-    
+
     $Comments = $commentsArray -join ";"
     
     $PsObject = [PSCustomObject]@{
@@ -136,15 +147,14 @@ function Check-UserRoleReviews {
                 $ErrorList.Add("Error occurred while evaluating profile configuration")
             }
         } else {
-            
             $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
     }
     
     $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $PsObject
-        Errors=$ErrorList
-        AdditionalResults = $AdditionalResults
+        ComplianceResults   = $PsObject
+        Errors              = $ErrorList
+        AdditionalResults   = $AdditionalResults
     }
     return $moduleOutput   
 }
