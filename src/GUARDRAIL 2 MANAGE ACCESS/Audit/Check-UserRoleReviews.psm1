@@ -61,10 +61,8 @@ function Check-UserRoleReviews {
                         if($queryResponse.'@odata.count' -ne 0){
                             if ($null -ne $queryResponseData -and $null -ne $queryResponseData.value) {
                                 $queryData = $ $queryResponseData.value
-                                $queryDataSorted = $queryData 
-                                    # query data status can be 'Completed','InProgress', 'Applied', 'NotStarted'
-                                    | Where-Object { $_.status -ne 'NotStarted'}
-                                    | Sort-Object -Property startDateTime, endDateTime -Descending
+                                # query data status can be 'Completed','InProgress', 'Applied', 'NotStarted'
+                                $queryDataSorted = $queryData | Where-Object { $_.status -ne 'NotStarted'} | Sort-Object -Property startDateTime, endDateTime -Descending
                                 $mostRecentQueryData =  $queryDataSorted[0]
         
                                 $accessReviewInfo = [PSCustomObject]@{
