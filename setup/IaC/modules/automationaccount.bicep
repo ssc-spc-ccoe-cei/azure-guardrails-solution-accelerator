@@ -416,6 +416,16 @@ resource module12 'modules' = if (newDeployment || updatePSModules) {
     }
   }
 
+  resource module41 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-TimeZoneConsistency'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-TimeZoneConsistency.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
