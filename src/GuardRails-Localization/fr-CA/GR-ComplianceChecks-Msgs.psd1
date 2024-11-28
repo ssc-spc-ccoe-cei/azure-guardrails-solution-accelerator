@@ -111,10 +111,10 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
-automatedRoleForUsers = Role Assignments for Users and Global Administrators
-noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access Reviews.
-noScheduledAccessReview = Tenant has no scheduled access review.
-hasScheduledAccessReview = Tenant has at least one scheduled access review.
+automatedRoleForUsers = Attributions de rôles pour les utilisateurs et les administrateurs généraux
+noAutomatedAccessReview = Le locataire n'a pas été intégré aux révisions automatisés de « MS Access Reviews ».
+noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
+hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
