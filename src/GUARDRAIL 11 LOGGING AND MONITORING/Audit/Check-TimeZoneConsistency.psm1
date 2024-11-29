@@ -153,31 +153,31 @@ function Check-TimeZoneConsistency {
 
             if ($totalResources -eq 0) {
                 $IsCompliant = $true
-                $Comments = $msgTable.noResourcesFound
+                $Comments = "$($sub.Name): $($msgTable.noResourcesFound)"
                 if ($resourcesWithoutTZ -gt 0) {
-                    $Comments += $msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ
+                    $Comments += " $($msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ)"
                 }
             }
             elseif ($tzGroups.Count -eq 1) {
                 $IsCompliant = $true
-                $Comments = $msgTable.allResourcesSameTimezone -f $tzGroups[0].Name
+                $Comments = "$($sub.Name): $($msgTable.allResourcesSameTimezone -f $tzGroups[0].Name)"
                 if ($resourcesWithoutTZ -gt 0) {
-                    $Comments += $msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ
+                    $Comments += " $($msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ)"
                 }
             }
             elseif ($tzGroups.Count -eq 2) {
                 $IsCompliant = $true
                 $majorityTZ = ($tzGroups | Sort-Object Count -Descending)[0]
-                $Comments = $msgTable.twoTimezonesFound -f $majorityTZ.Name, ($majorityTZ.Count / $totalResources * 100)
+                $Comments = "$($sub.Name): $($msgTable.twoTimezonesFound -f $majorityTZ.Name, ($majorityTZ.Count / $totalResources * 100))"
                 if ($resourcesWithoutTZ -gt 0) {
-                    $Comments += $msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ
+                    $Comments += " $($msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ)"
                 }
             }
             else {
                 $IsCompliant = $false
-                $Comments = $msgTable.multipleTimezonesFound -f $tzGroups.Count
+                $Comments = "$($sub.Name): $($msgTable.multipleTimezonesFound -f $tzGroups.Count)"
                 if ($resourcesWithoutTZ -gt 0) {
-                    $Comments += $msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ
+                    $Comments += " $($msgTable.resourcesWithoutTimezone -f $resourcesWithoutTZ)"
                 }
             }
 
@@ -198,7 +198,7 @@ function Check-TimeZoneConsistency {
                     if ($evalResult.Profile -gt 0) {
                         $PsObject.ComplianceStatus = "Not Applicable"
                         $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                        $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                        $PsObject.Comments = "$($sub.Name): Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
                     } else {
                         $ErrorList.Add("Error occurred while evaluating profile configuration for subscription $($sub.Id)")
                     }
