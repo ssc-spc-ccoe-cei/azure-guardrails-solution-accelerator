@@ -333,6 +333,21 @@
     ]
   },
   {
+    "ModuleName": "Check-UserRoleReviews",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-UserRoleReviews -ControlName $msgTable.CtrName2 -ItemName $msgTable.automatedRoleForUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-CloudConsoleAccess",
     "Control": "Guardrails3",
     "ModuleType": "Builtin",

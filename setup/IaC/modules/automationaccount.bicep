@@ -334,8 +334,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-
- resource module33 'modules' = if (newDeployment || updatePSModules) {
+  resource module33 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-OnlineAttackCountermeasures'
     properties: {
       contentLink: {
@@ -455,7 +454,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
-  resource variable1 'variables' = if (newDeployment || updateCoreResources) {
+  resource module45 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-UserRoleReviews'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-UserRoleReviews.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+    resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
