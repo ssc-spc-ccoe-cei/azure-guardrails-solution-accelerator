@@ -117,6 +117,8 @@ noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access R
 noScheduledAccessReview = Tenant has no scheduled access review.
 hasScheduledAccessReview = Tenant has at least one scheduled access review.
 
+automatedRoleForGuests = Automated Guest User Reviews: Role Assignments and Access Requirements
+
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
 adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
