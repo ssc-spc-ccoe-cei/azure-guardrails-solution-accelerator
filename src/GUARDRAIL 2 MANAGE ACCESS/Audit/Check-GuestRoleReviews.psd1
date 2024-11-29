@@ -5,7 +5,7 @@
 #
 # Contact Information for module : cloudsecuritycompliance-conformiteinfonuagiquesecurise@ssc-spc.gc.ca
 #
-# Generated on: 2024-10-09
+# Generated on: 2024-11-29
 #
 
 @{
