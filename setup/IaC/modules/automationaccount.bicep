@@ -453,7 +453,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-
+  
   resource module45 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserRoleReviews'
     properties: {
@@ -463,13 +463,25 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-    resource variable1 'variables' = if (newDeployment || updateCoreResources) {
+
+  resource module46 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-TimeZoneConsistency'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-TimeZoneConsistency.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: true
         value: '"${guardrailsKVname}"'
     }
   }
+  
   resource variable2 'variables' = if (newDeployment || updateCoreResources) {
     name: 'WorkSpaceID'
     properties: {
