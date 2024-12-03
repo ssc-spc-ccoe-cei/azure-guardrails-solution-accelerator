@@ -279,7 +279,7 @@ severityNotificationToEmailConfigured = Severity Notifications to a Primary Emai
 noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}
 NotAllSubsHaveAlerts = Not all subscriptions have Service Health Alerts enabled.
 EventTypeMissingForAlert = Missing a required event type (Service Issue, Health Advisory, or Security Advisory) for the subscription: {0}
-noServiceHealthAlerts = Could not retrieve any log alerts for the subscription: {0}
+noServiceHealthAlerts = Could not retrieve any configured alerts for the subscription: "{0}". Ensure all subscriptions have Service Health Alerts configured and the action group associated to the alert  has at least two different contacts.
 nonCompliantActionGroups = All subscriptions have Service Health Alerts, but not all action groups are correctly configured. A minimum of two email addresses or subscription owners are required for the action group.
 compliantServiceHealthAlerts = All subscriptions have Service Health Alerts, and the action group has at least two different contacts.
 
