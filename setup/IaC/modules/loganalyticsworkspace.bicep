@@ -33,7 +33,6 @@ resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   name: 'gr_data'
   parent: guardrailsLogAnalytics
   properties: {
-    etag: '*'
     category: 'gr_functions'
     displayName: 'gr_data'
     query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime and Required_s != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project ItemName=strcat(ItemName_s, iff(Required_s=="False"," (R)", " (M)")), Comments=Comments_s, Status=case(ComplianceStatus_b == true, \'✔️\', ComplianceStatus_b == false, \'❌\', \'➖\'),["ITSG Control"]=itsgcode_s, Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
@@ -46,7 +45,6 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   name: 'gr_geturl'
   parent: guardrailsLogAnalytics
   properties: {
-    etag: '*'
     category: 'gr_functions'
     displayName: 'gr_geturl'
     //query: 'let baseurl="${GRDocsBaseUrl}";\nlet Link=strcat(baseurl,control,"-", replace_string(replace_string(itsgcode,"(","-"),")",""),".md");\nLink\n'
@@ -60,7 +58,6 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   name: 'gr_data567'
   parent: guardrailsLogAnalytics
   properties: {
-    etag: '*'
     category: 'gr_functions'
     displayName: 'gr_data567'
     query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime and Required_s != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project Type=Type_s, Name=DisplayName_s, ItemName=strcat(ItemName_s, iff(Required_s=="False"," (R)", " (M)")), Comments=Comments_s, Status=case(ComplianceStatus_b == true, \'✔️\', ComplianceStatus_b == false, \'❌\', \'➖\'),["ITSG Control"]=itsgcode_s, Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'

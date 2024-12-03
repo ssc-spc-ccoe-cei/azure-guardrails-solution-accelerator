@@ -112,6 +112,10 @@ nonCompliantC2= Configure the conditional access policy to prevent sign-in's fro
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
 compliantC1C2 = Both conditional access policies have been configured.
 
+automatedRoleForUsers = Role Assignments for Users and Global Administrators
+noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access Reviews.
+noScheduledAccessReview = Tenant has no scheduled access review.
+hasScheduledAccessReview = Tenant has at least one scheduled access review.
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
@@ -284,6 +288,14 @@ nonCompliantActionGroups = All subscriptions have Service Health Alerts, but not
 compliantServiceHealthAlerts = All subscriptions have Service Health Alerts, and the action group has at least two different contacts.
 
 monitoringChecklist = Monitoring Checklist: Use Cases
+
+timezoneConsistency = Time Zone Configuration Consistency Check
+resourcesWithoutTimezone = There are {0} resources without time zone information.
+noResourcesFound = No resources with time zone information found.
+allResourcesSameTimezone = All resources are in the same time zone: {0}.
+twoTimezonesFound = Two time zones found. Majority of resources are in {0} ({1}% of total).
+multipleTimezonesFound = Multiple time zones found: {0} different time zones.
+errorCheckingTimezones = An error occurred while checking time zone configurations.
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
