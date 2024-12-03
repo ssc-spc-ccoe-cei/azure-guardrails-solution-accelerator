@@ -76,8 +76,6 @@ function Get-ServiceHealthAlerts {
         #Get All the Subscriptions
         $subs = Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"}
 
-        $actionGroupsCompliance = @()
-
         foreach($subscription in $subs){
             $subId = $subscription.Id
             Set-AzContext -SubscriptionId $subId
@@ -130,11 +128,14 @@ function Get-ServiceHealthAlerts {
             $actionGroupsCompliance += Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
         }
 
-        if ($actionGroupsCompliance -contains $false -or $null -eq $actionGroupsCompliance){
-            $Comments += $msgTable.nonCompliantActionGroups
-        }
-        else{
+        #All action groups are compliant
+        if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
             $isCompliant = $true
+        }
+        #Even if one is non compliant
+        elseif ($actionGroupsCompliance -contains $false) {
+            $isCompliant = $false
+            $Comments += $msgTable.nonCompliantActionGroups
         }
     }
     catch{
