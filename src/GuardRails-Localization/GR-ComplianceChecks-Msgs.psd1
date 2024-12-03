@@ -275,6 +275,12 @@ notAllDfCStandard = Not all pricing plan options are set to Standard for subscri
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Notifications Enabled
 severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
+noServiceHealthActionGroups = No action groups for service health alerts found associated with the subscription: {0}
+NotAllSubsHaveAlerts = Not all the subscriptions have service health alerts enabled
+EventTypeMissingForAlert = Alert is missing a required event type for the subscription: {0}
+noServiceHealthAlerts = Could not retrieve any log alerts for the subscription: {0}
+nonCompliantActionGroups = Not all action groups are configured correctly with emails and sub owners
+compliantServiceHealthAlerts = All the service health alerts are compliant
 
 monitoringChecklist = Monitoring Checklist: Use Cases
 
