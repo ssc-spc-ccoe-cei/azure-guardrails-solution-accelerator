@@ -275,6 +275,12 @@ notAllDfCStandard = Toutes les options de plan de tarification ne sont pas défi
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
 passwordNotificationsConfigured = Notifications activées
 severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
+noServiceHealthActionGroups = Il manque un groupe d'action pour les alertes de santé du service « Service Health Alerts » associées à l'abonnement : {0}
+NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour tous les abonnements. Assurez-vous que les alertes d'état du service sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
+EventTypeMissingForAlert = L'alerte manque un type d'événement requis (problème de service, avis de santé ou avis de sécurité) « Service Issue, Health Advisory or Security Advisory » pour l'abonnement : {0}
+noServiceHealthAlerts = Ne peut pas récupérer les alertes configurées pour l'abonnement : "{0}". Assurez-vous que les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
+nonCompliantActionGroups = Toutes les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements. Par contre, tous les groupes d'action associés ne sont pas configurés correctement. Au moins deux adresses de courriel ou propriétaires d'abonnement sont requis pour le groupe d'action.
+compliantServiceHealthAlerts = Les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et le groupe d'action associé à l'alerte a au moins deux contacts différents.
 
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 
