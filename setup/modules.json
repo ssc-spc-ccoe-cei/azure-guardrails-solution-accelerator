@@ -1041,6 +1041,21 @@
     ]
   },
   {
+    "ModuleName": "Check-ServiceHealthAlerts",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Get-ServiceHealthAlerts -ControlName $msgTable.CtrName11 -ItemName $msgTable.serviceHealthAlerts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(11)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",
