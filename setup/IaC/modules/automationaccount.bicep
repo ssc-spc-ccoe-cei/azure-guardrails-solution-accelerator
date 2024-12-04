@@ -334,8 +334,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-
- resource module33 'modules' = if (newDeployment || updatePSModules) {
+  resource module33 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-OnlineAttackCountermeasures'
     properties: {
       contentLink: {
@@ -454,6 +453,26 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
+  
+  resource module45 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-UserRoleReviews'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-UserRoleReviews.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module46 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-TimeZoneConsistency'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-TimeZoneConsistency.zip'
+        version: '1.0.0'
+      }
+    }
+  }
 
   resource module45 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServiceHealthAlerts'
@@ -473,6 +492,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         value: '"${guardrailsKVname}"'
     }
   }
+  
   resource variable2 'variables' = if (newDeployment || updateCoreResources) {
     name: 'WorkSpaceID'
     properties: {

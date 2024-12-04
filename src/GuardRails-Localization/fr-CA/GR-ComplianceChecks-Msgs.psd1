@@ -111,6 +111,11 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
+automatedRoleForUsers = Attributions de rôles pour les utilisateurs et les administrateurs généraux
+noAutomatedAccessReview = Le locataire n'a pas été intégré aux révisions automatisés de « MS Access Reviews ».
+noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
+hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
+
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
@@ -283,6 +288,14 @@ nonCompliantActionGroups = Toutes les alertes de santé du service « Service He
 compliantServiceHealthAlerts = Les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et le groupe d'action associé à l'alerte a au moins deux contacts différents.
 
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
+
+timezoneConsistency = Vérification de la cohérence de la configuration du fuseau horaire
+noResourcesFound = Aucune ressource avec des informations de fuseau horaire trouvée.
+resourcesWithoutTimezone = Il y a {0} ressources sans informations de fuseau horaire.
+allResourcesSameTimezone = Toutes les ressources sont dans le même fuseau horaire : {0}.
+twoTimezonesFound = Deux fuseaux horaires trouvés. La majorité des ressources sont dans {0} ({1}% du total).
+multipleTimezonesFound = Plusieurs fuseaux horaires trouvés : {0} fuseaux horaires différents.
+errorCheckingTimezones = Une erreur s'est produite lors de la vérification des configurations de fuseau horaire.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
