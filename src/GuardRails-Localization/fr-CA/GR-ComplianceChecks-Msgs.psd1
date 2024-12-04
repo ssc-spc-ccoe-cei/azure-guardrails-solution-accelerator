@@ -250,6 +250,7 @@ MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 securityMonitoring = Surveillance de la sécurité
 HealthMonitoring = Surveillance Santé
 defenderMonitoring =Surveillance Defender
+serviceHealthAlerts = Alertes de santé du service et vérification des événements
 securityLAWNotFound = L'espace de travail Log Analytics spécifié pour la surveillance de la sécurité est introuvable.
 lawRetentionSecDays = La rétention n'est pas définie sur {0} jours.
 lawNoActivityLogs = WorkSpace n'est pas configuré pour ingérer les journaux d'activité.
