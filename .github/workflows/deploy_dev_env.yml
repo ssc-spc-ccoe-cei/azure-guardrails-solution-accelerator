@@ -2,10 +2,10 @@ name: Deploy to Dev environment upon Release
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Azure CAC Release]
-    types: 
-      - completed
+  # workflow_run:
+  #   workflows: [Azure CAC Release]
+  #   types: 
+  #     - completed
 
 concurrency:
   group: Deploy-Azure-CAC-Dev
