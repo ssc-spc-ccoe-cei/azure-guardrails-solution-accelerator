@@ -474,7 +474,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
-  resource module45 'modules' = if (newDeployment || updatePSModules) {
+  resource module47 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServiceHealthAlerts'
     properties: {
       contentLink: {
