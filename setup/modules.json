@@ -190,6 +190,91 @@
     ]
   },
   {
+    "ModuleName": "Check-DeprecatedAccounts",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(3)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-OnlineAttackCountermeasures",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-OnlineAttackCountermeasures -ControlName $msgTable.CtrName2 -ItemName $msgTable.onlineAttackCounterMeasures -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-ExternalUsers",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC6(6)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-PrivilegedExternalUsers",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingPrivilegedGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC6(6)"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-RiskBasedAccess",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Get-RiskBasedAccess -ControlName $msgTable.CtrName2 -ItemName $msgTable.riskBasedConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "secrets": [
+      {
+        "Name": "FirstBreakGlassUPN",
+        "Value": "BGA1"
+      },
+      {
+        "Name": "SecondBreakGlassUPN",
+        "Value": "BGA2"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
@@ -197,6 +282,35 @@
     "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlanLifecycle -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "PrivilegedAccountManagementPlan"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails2",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlanLPRoleAssignment -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "storageAccountName",
@@ -234,105 +348,6 @@
     ]
   },
   {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlanLPRoleAssignment -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "PrivilegedAccountManagementPlan"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-OnlineAttackCountermeasures",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-OnlineAttackCountermeasures -ControlName $msgTable.CtrName2 -ItemName $msgTable.onlineAttackCounterMeasures -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-RiskBasedAccess",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Get-RiskBasedAccess -ControlName $msgTable.CtrName2 -ItemName $msgTable.riskBasedConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "secrets": [
-      {
-        "Name": "FirstBreakGlassUPN",
-        "Value": "BGA1"
-      },
-      {
-        "Name": "SecondBreakGlassUPN",
-        "Value": "BGA2"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC4(7)"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-ExternalUsers",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC6(6)"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-PrivilegedExternalUsers",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-PrivilegedExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.existingPrivilegedGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC6(6)"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-GuestRoleReviews",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
@@ -344,21 +359,6 @@
       {
         "Name": "itsgcode",
         "Value": "IA2(1)"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-DeprecatedAccounts",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "AC2(3)"
       }
     ]
   },

@@ -463,7 +463,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  
+
   resource module46 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-TimeZoneConsistency'
     properties: {
@@ -483,7 +483,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-
+  
   resource module48 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-GuestRoleReviews'
     properties: {
@@ -493,7 +493,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
