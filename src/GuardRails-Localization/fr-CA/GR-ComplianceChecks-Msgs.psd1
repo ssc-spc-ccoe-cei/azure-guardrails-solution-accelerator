@@ -290,6 +290,14 @@ compliantServiceHealthAlerts = Les alertes de santé du service « Service Healt
 
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 
+msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
+NotAllSubsHaveDefenderPlans =
+errorRetrievingNotifications =
+EmailsOrOwnerNotConfigured =
+AlertNotificationNotConfigured = 
+AttackPathNotifictionNotConfigured = 
+DefenderCompliant = 
+
 timezoneConsistency = Vérification de la cohérence de la configuration du fuseau horaire
 noResourcesFound = Aucune ressource avec des informations de fuseau horaire trouvée.
 resourcesWithoutTimezone = Il y a {0} ressources sans informations de fuseau horaire.
