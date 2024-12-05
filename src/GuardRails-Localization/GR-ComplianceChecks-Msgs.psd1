@@ -287,6 +287,14 @@ noServiceHealthAlerts = Could not retrieve any configured alerts for the subscri
 nonCompliantActionGroups = All subscriptions have Service Health Alerts, but not all action groups are correctly configured. A minimum of two email addresses or subscription owners are required for the action group.
 compliantServiceHealthAlerts = All subscriptions have Service Health Alerts, and the action group has at least two different contacts.
 
+msDefenderChecks = Microsoft Defender for Cloud Alerts and Events Check
+NotAllSubsHaveDefenderPlans = The following subscription(s) lack a defender plan: {0}. Enable Defender monitoring for all subscriptions.
+errorRetrievingNotifications = Defender alert notifications for the subscription(s) are not configured. Ensure they match the Remediation Guidance requirements.
+EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription do not include at least two email addresses or subscription owners. Configure this to ensure alerts are sent correctly.
+AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set the severity to Medium or Low and review the Remediation Guidance.
+AttackPathNotifictionNotConfigured = Defender alerts must include attack path notifications. Ensure this is configured for each subscription's alerts per the Remediation Guidance.
+DefenderCompliant = MS Defender for Cloud is enabled for all subscriptions, and email notifications are properly configured.
+
 monitoringChecklist = Monitoring Checklist: Use Cases
 
 timezoneConsistency = Time Zone Configuration Consistency Check
