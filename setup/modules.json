@@ -1056,6 +1056,21 @@
     ]
   },
   {
+    "ModuleName": "Check-ServiceHealthAlerts",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Get-ServiceHealthAlerts -ControlName $msgTable.CtrName11 -ItemName $msgTable.serviceHealthAlerts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC2(11)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",
@@ -1283,6 +1298,21 @@
       {
         "Name": "itsgcode",
         "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-TimeZoneConsistency",
+    "Control": "Guardrails11",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-TimeZoneConsistency -ControlName $msgTable.CtrName11 -ItemName $msgTable.timeZoneConsistency -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AU2"
       }
     ]
   }

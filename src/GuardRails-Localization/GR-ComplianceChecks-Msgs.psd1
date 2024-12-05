@@ -252,6 +252,7 @@ MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 securityMonitoring =SecurityMonitoring
 healthMonitoring = HealthMonitoring
 defenderMonitoring =DefenderMonitoring
+serviceHealthAlerts = Service Health Alerts and Events Check
 securityLAWNotFound = The specified Log Analytics Workspace for Security monitoring has not been found.
 lawRetentionSecDays = Retention not set to {0} days.
 lawNoActivityLogs = WorkSpace not configured to ingest activity Logs.
@@ -281,8 +282,22 @@ notAllDfCStandard = Not all pricing plan options are set to Standard for subscri
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Notifications Enabled
 severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
+noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}
+NotAllSubsHaveAlerts = Not all subscriptions have Service Health Alerts enabled.
+EventTypeMissingForAlert = Missing a required event type (Service Issue, Health Advisory, or Security Advisory) for the subscription: {0}
+noServiceHealthAlerts = Could not retrieve any configured alerts for the subscription: "{0}". Ensure all subscriptions have Service Health Alerts configured and the action group associated to the alert  has at least two different contacts.
+nonCompliantActionGroups = All subscriptions have Service Health Alerts, but not all action groups are correctly configured. A minimum of two email addresses or subscription owners are required for the action group.
+compliantServiceHealthAlerts = All subscriptions have Service Health Alerts, and the action group has at least two different contacts.
 
 monitoringChecklist = Monitoring Checklist: Use Cases
+
+timezoneConsistency = Time Zone Configuration Consistency Check
+resourcesWithoutTimezone = There are {0} resources without time zone information.
+noResourcesFound = No resources with time zone information found.
+allResourcesSameTimezone = All resources are in the same time zone: {0}.
+twoTimezonesFound = Two time zones found. Majority of resources are in {0} ({1}% of total).
+multipleTimezonesFound = Multiple time zones found: {0} different time zones.
+errorCheckingTimezones = An error occurred while checking time zone configurations.
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
