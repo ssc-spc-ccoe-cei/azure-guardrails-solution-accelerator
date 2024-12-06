@@ -114,8 +114,11 @@ compliantC1C2 = Both conditional access policies have been configured.
 
 automatedRoleForUsers = Role Assignments for Users and Global Administrators
 noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access Reviews.
+noInProgressAccessReview = Tenant Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
 noScheduledAccessReview = Tenant has no scheduled access review.
 hasScheduledAccessReview = Tenant has at least one scheduled access review.
+
+automatedRoleForGuests = Automated Guest User Reviews: Role Assignments and Access Requirements
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
