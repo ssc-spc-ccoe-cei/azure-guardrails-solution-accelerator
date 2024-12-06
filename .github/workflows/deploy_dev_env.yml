@@ -140,7 +140,7 @@ jobs:
             $configContent = @"
             {
               "keyVaultName": "kvcac",
-              "resourcegroup": "rgcac",
+              "resourcegroup": "guardrailscac",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
@@ -210,129 +210,129 @@ jobs:
       #     tenant-id: ${{ secrets.DEV_AZURE_TENANT_ID}}
       #     subscription-id: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
       #     enable-AzPSSession: true
-      # - name: Deploy Dev Environment
-      #   uses: azure/powershell@v2
-      #   with:
-      #     inlineScript: |
-      #       Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
-      #       $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
-      #       $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
-      #       $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
-      #       $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
-      #       $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
-      #       $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
-      #       $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
-      #       $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
-      #       $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
-      #       $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
-      #       $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
-      #       $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID_DEV
-      #       $DEVLAW_SEC = $env:DEVLAW_SEC
-      #       $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
-      #       $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+      - name: Deploy Dev Environment
+        uses: azure/powershell@v2
+        with:
+          inlineScript: |
+            Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
+            $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+            $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
+            $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
+            $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
+            $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
+            $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
+            $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
+            $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
+            $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
+            $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+            $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+            $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID_DEV
+            $DEVLAW_SEC = $env:DEVLAW_SEC
+            $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
+            $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
 
-      #       $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
+            $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
 
-      #       $configContent = @"
-      #       {  
-      #         "keyVaultName": "kvcac",
-      #         "resourcegroup": "guardrailscac",
-      #         "region": "CanadaCentral",
-      #         "storageaccountName": "stcac",
-      #         "logAnalyticsworkspaceName": "logcac",
-      #         "autoMationAccountName": "aacac",
-      #         "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
-      #         "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
-      #         "PBMMPolicyID": "$PBMMPOLICY_ID",
-      #         "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-      #         "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
-      #         "DepartmentNumber": "163",
-      #         "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
-      #         "securityLAWResourceId": "$DEVLAW_SEC",
-      #         "healthLAWResourceId": "$DEVLAW_HEALTH",
-      #         "Locale": "en-CA",
-      #         "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-      #         "lighthousePrincipalDisplayName": "Ss-CSPM-Global-Guardrails-RO",
-      #         "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
-      #         "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
-      #         "subscriptionId": "$DEVSUBSCRIPTION_ID",
-      #         "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-      #         "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
-      #         "securityRetentionDays": "730",
-      #         "cloudUsageProfiles": "3",
-      #         "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
-      #         }
-      #       "@
-      #       Set-Content -Path $configFilePath -Value $configContent
+            $configContent = @"
+            {  
+              "keyVaultName": "kvcac",
+              "resourcegroup": "guardrailscac",
+              "region": "CanadaCentral",
+              "storageaccountName": "stcac",
+              "logAnalyticsworkspaceName": "logcac",
+              "autoMationAccountName": "aacac",
+              "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
+              "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
+              "PBMMPolicyID": "$PBMMPOLICY_ID",
+              "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+              "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
+              "DepartmentNumber": "163",
+              "CBSSubscriptionName": "$CBSSUBSCRIPTION_DEV_NAME",
+              "securityLAWResourceId": "$DEVLAW_SEC",
+              "healthLAWResourceId": "$DEVLAW_HEALTH",
+              "Locale": "en-CA",
+              "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
+              "lighthousePrincipalDisplayName": "Ss-CSPM-Global-Guardrails-RO",
+              "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
+              "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
+              "subscriptionId": "$DEVSUBSCRIPTION_ID",
+              "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+              "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
+              "securityRetentionDays": "730",
+              "cloudUsageProfiles": "3",
+              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
+              }
+            "@
+            Set-Content -Path $configFilePath -Value $configContent
 
-      #       # Load tags JSON content into a variable
-      #       $setupFileRelativePath = "setup/tags.json"
-      #       $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
+            # Load tags JSON content into a variable
+            $setupFileRelativePath = "setup/tags.json"
+            $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
             
-      #       $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
+            $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
             
-      #       # Add additional tags for dev tenant
-      #       $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
-      #       $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
-      #       $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
-      #       $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
-      #       $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
-      #       $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
+            # Add additional tags for dev tenant
+            $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
             
-      #       # Save the modified content back to the tags JSON file
-      #       $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
+            # Save the modified content back to the tags JSON file
+            $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
             
-      #       $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
-      #       $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
+            $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
+            $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
             
-      #       $alternatePSModulesURL = $modulesStagingURI
-      #       Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
+            $alternatePSModulesURL = $modulesStagingURI
+            Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
             
-      #       $optionalParams = @{}
-      #       if ($alternatePSModulesURL) {
-      #           $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
-      #       }
+            $optionalParams = @{}
+            if ($alternatePSModulesURL) {
+                $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+            }
             
-      #       try {
-      #           $ErrorActionPreference = 'Stop'
-      #           ipmo ./src/GuardrailsSolutionAcceleratorSetup
-      #           if ($DEV_UPGRADE_VAR -eq "true"){
-      #             Write-Output "Upgrade workflow flag is set to '$DEV_UPGRADE_VAR'"
-      #             Write-Output "Upgrading the CaC solution"
-      #             Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -update -Yes @optionalParams -verbose
-      #           }
-      #           else {
-      #             Write-Output "Upgrade workflow flag is set to '$DEV_UPGRADE_VAR'"
-      #             Write-Output "Deploying a new installation of the CaC solution"
-      #             Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
-      #           }   
-      #       }
-      #       catch {
-      #           throw "Failed test deploy of solution with error: $_"
-      #       }
-      #       finally {
-      #         If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
-      #         Pop-Location
-      #       }
-      #     azPSVersion: "latest"
-      #   env:
-      #     PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
-      #     PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
-      #     DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
-      #     CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
-      #     LIGHTHOUSEPROVIDER_TENANTID: '252afaf3-eb71-4f05-8da2-279c8b2466b7'
-      #     LIGHTHOUSEPROVIDER_PRINCIPALID: '0c1b527f-e226-46e9-ac92-2ed9ab8da4b5'
-      #     LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: '55478155-7956-45c8-9f3e-97f15f0ef871'
-      #     UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-      #     DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
-      #     DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
-      #     PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
-      #     LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
-      #     INITIATIVELOCATION_ID_DEV: ${{ vars.INITIATIVELOCATION_ID_DEV}}
-      #     DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
-      #     DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
-      #     DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
-      #     ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
+            try {
+                $ErrorActionPreference = 'Stop'
+                ipmo ./src/GuardrailsSolutionAcceleratorSetup
+                if ($DEV_UPGRADE_VAR -eq "true"){
+                  Write-Output "Upgrade workflow flag is set to '$DEV_UPGRADE_VAR'"
+                  Write-Output "Upgrading the CaC solution"
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -update -Yes @optionalParams -verbose
+                }
+                else {
+                  Write-Output "Upgrade workflow flag is set to '$DEV_UPGRADE_VAR'"
+                  Write-Output "Deploying a new installation of the CaC solution"
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+                }   
+            }
+            catch {
+                throw "Failed test deploy of solution with error: $_"
+            }
+            finally {
+              If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+              Pop-Location
+            }
+          azPSVersion: "latest"
+        env:
+          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
+          DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
+          CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
+          LIGHTHOUSEPROVIDER_TENANTID: '252afaf3-eb71-4f05-8da2-279c8b2466b7'
+          LIGHTHOUSEPROVIDER_PRINCIPALID: '0c1b527f-e226-46e9-ac92-2ed9ab8da4b5'
+          LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: '55478155-7956-45c8-9f3e-97f15f0ef871'
+          UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
+          DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
+          DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
+          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+          INITIATIVELOCATION_ID_DEV: ${{ vars.INITIATIVELOCATION_ID_DEV}}
+          DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
+          DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
+          DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
+          ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
 
       - name: Check for AA Job Errors
         uses: azure/powershell@v2
