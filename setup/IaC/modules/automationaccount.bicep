@@ -484,6 +484,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
+  resource module48 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-DefenderForCloudAlerts'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
 
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
