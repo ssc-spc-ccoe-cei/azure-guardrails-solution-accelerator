@@ -18,7 +18,7 @@ function Get-DefenderForCloudAlerts {
     )
 
     $isCompliant = $false
-    $Comments = @()
+    $Comments = ""
     $ErrorList = @()
     $subCompliance = @()
 
