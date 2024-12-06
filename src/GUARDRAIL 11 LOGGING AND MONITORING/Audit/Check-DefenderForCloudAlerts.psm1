@@ -95,7 +95,7 @@ function Get-DefenderForCloudAlerts {
     }
 
     $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsCompliant
+        ComplianceStatus = $isCompliant
         ControlName = $ControlName
         Comments = $Comments
         ItemName = $ItemName
