@@ -291,12 +291,12 @@ compliantServiceHealthAlerts = Les alertes de santé du service « Service Healt
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 
 msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
-NotAllSubsHaveDefenderPlans =
-errorRetrievingNotifications =
-EmailsOrOwnerNotConfigured =
-AlertNotificationNotConfigured = 
-AttackPathNotifictionNotConfigured = 
-DefenderCompliant = 
+NotAllSubsHaveDefenderPlans = Le(s) abonnement(s) suivant(s) n'a/n'ont pas de plan MS Defender : {0} . Activez la surveillance MS Defender pour tous les abonnements.
+errorRetrievingNotifications = Les notifications d'alerte MS Defender pour le ou les abonnements ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
+EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
+AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
+AttackPathNotifictionNotConfigured = Les alertes MS Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous qu'elles sont configurées pour les alertes de chaque abonnement conformément aux instructions du Guide de Remédiation
+DefenderCompliant = MS Defender pour l'infonuagique est activé pour tous les abonnements et les notifications par courriel sont correctement configurées.
 
 timezoneConsistency = Vérification de la cohérence de la configuration du fuseau horaire
 noResourcesFound = Aucune ressource avec des informations de fuseau horaire trouvée.
