@@ -483,7 +483,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-
+  
   resource module48 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DefenderForCloudAlerts'
     properties: {
@@ -494,6 +494,15 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
+  resource module49 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-GuestRoleReviews'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-GuestRoleReviews.zip'
+        version: '1.0.0'
+      }
+    }
+  }
 
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
