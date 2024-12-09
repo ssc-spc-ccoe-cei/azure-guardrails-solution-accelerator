@@ -36,7 +36,7 @@ function Check-UserRoleReviews {
             $accessReviewsAll = $data.value 
             $accessReviewsSorted = $accessReviewsAll | Sort-Object -Property displayName, createdDateTime -Descending 
             
-            # Condition: any access review exist. if not, non-compliant
+            # Condition: access review onboarding - any access review exist.
             if ($accessReviewsSorted.Count -eq 0) {
                 $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReview
             }
