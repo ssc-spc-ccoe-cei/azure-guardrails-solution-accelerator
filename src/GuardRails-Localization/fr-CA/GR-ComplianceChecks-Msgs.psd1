@@ -113,8 +113,11 @@ compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées
 
 automatedRoleForUsers = Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReview = Le locataire n'a pas été intégré aux révisions automatisés de « MS Access Reviews ».
-noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
-hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
+noInProgressAccessReview = Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
+# noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
+# hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
+nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence review requirements for the control.
+compliantRecurrenceReviews = Existing guest access reviews meet the requirements for the control.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
