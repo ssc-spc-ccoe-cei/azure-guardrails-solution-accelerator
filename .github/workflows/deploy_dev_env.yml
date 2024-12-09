@@ -1,6 +1,6 @@
 name: Deploy to Dev environment upon Release
+
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: [Azure CAC Release]
     types: 
@@ -140,7 +140,7 @@ jobs:
             $configContent = @"
             {
               "keyVaultName": "kvcac",
-              "resourcegroup": "guardrailscac",
+              "resourcegroup": "rgcac",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
@@ -236,7 +236,7 @@ jobs:
             $configContent = @"
             {  
               "keyVaultName": "kvcac",
-              "resourcegroup": "guardrailscac",
+              "resourcegroup": "rgcac",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
@@ -252,7 +252,7 @@ jobs:
               "healthLAWResourceId": "$DEVLAW_HEALTH",
               "Locale": "en-CA",
               "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-              "lighthousePrincipalDisplayName": "Ss-CSPM-Global-Guardrails-RO",
+              "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
               "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
               "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
               "subscriptionId": "$DEVSUBSCRIPTION_ID",
@@ -320,9 +320,9 @@ jobs:
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
           DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
           CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
-          LIGHTHOUSEPROVIDER_TENANTID: '252afaf3-eb71-4f05-8da2-279c8b2466b7'
-          LIGHTHOUSEPROVIDER_PRINCIPALID: '0c1b527f-e226-46e9-ac92-2ed9ab8da4b5'
-          LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: '55478155-7956-45c8-9f3e-97f15f0ef871'
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
           UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
           DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
           DEVTENANT_BGA2: ${{ vars.DEVTENANT_BGA2 }}
