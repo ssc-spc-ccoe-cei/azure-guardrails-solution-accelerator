@@ -119,8 +119,8 @@ hasScheduledAccessReview = Le locataire a au moins une révision d'accès planif
 
 automatedRoleForGuests = Évaluations automatisées des utilisateurs invités : attributions de rôles et conditions d'accès
 noScheduledGuestAccessReview = Tenant has no scheduled guest access review.
-nonCompliantRecurrenceGuestReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control.
-compliantRecurrenceGuestReviews = Existing guest Access Reviews meet the requirements for the control.
+nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control.
+compliantRecurrenceReviews = Existing guest Access Reviews meet the requirements for the control.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

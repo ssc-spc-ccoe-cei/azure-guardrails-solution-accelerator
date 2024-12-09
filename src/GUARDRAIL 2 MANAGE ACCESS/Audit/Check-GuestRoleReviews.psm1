@@ -155,6 +155,7 @@ function Check-GuestRoleReviews {
                     }
                     else{
                         # scheduled guest access review exists
+                        # Get scheduled recurrence time and type
                         $guestAccessReviewList | ForEach-Object {
                             $review = $_
                             $today = Get-Date
@@ -167,13 +168,13 @@ function Check-GuestRoleReviews {
                             $recurrence = if ($review.AccesReviewRecurrenceType -eq 'noEnd' -or $isPassedToday -eq $true) {'pass'} else {'fail'}
                             $review | Add-Member -MemberType NoteProperty -Name "recurrence" -Value $recurrence
                         }
-
-                        # condition: Check if any object in the list has 'recurrence' containing 'fail'
-                        if ( $guestAccessReviewList  | Where-Object { $_.recurrence -match 'fail' }) {
-                            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceGuestReviews
-                        } else {
+                        
+                        # condition: Check if at-least one object in the guest access review list has 'recurrence' containing 'pass'
+                        if ($guestAccessReviewList.recurrence -contains 'pass') {
                             $IsCompliant = $true
-                            $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceGuestReviews
+                            $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceReviews
+                        } else {
+                            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
                         }
                     }
                 }               
