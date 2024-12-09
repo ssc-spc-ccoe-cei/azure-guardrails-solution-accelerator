@@ -119,6 +119,10 @@ noScheduledAccessReview = Tenant has no scheduled access review.
 hasScheduledAccessReview = Tenant has at least one scheduled access review.
 
 automatedRoleForGuests = Automated Guest User Reviews: Role Assignments and Access Requirements
+noScheduledGuestAccessReview = Tenant has no scheduled guest access review.
+nonCompliantRecurrenceGuestReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control.
+compliantRecurrenceGuestReviews = Existing guest access reviews meet the requirements for the control.
+
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.

@@ -28,9 +28,9 @@ function Expand-ListColumns {
                 AccessReviewStatus                          = $reviewInfo.AccessReviewStatus
                 AccesReviewRecurrenceType                   = $reviewInfo.AccesReviewRecurrenceType
                 AccesReviewRecurrencePattern                = $reviewInfo.AccesReviewRecurrencePattern
-                AccessReviewScope                           = if ($reviewInfo.AccessReviewScopeList.Count -gt $i) { $reviewInfo.AccessReviewScopeList[$i] } else { $null }
-                AccessReviewReviewer                        = if ($reviewInfo.AccessReviewReviewerList.Count -gt $i) { $reviewInfo.AccessReviewReviewerList[$i] } else { $null }
-                AccessReviewResourceScope                   = if ($reviewInfo.AccessReviewResourceScopeList.Count -gt $i) { $reviewInfo.AccessReviewResourceScopeList[$i] } else { $null }
+                AccessReviewScope                           = if ($reviewInfo.AccessReviewScopeList.Count -eq 1) { $reviewInfo.AccessReviewScopeList} else { if ($reviewInfo.AccessReviewScopeList.Count -gt $i) { $reviewInfo.AccessReviewScopeList[$i] } else {$null}}
+                AccessReviewReviewer                        = if ($reviewInfo.AccessReviewReviewerList.Count -eq 1) { $reviewInfo.AccessReviewReviewerList} else { if ($reviewInfo.AccessReviewReviewerList.Count -gt $i) { $reviewInfo.AccessReviewReviewerList[$i] } else { $null }}
+                AccessReviewResourceScope                   = if ($reviewInfo.AccessReviewResourceScopeList.Count -eq 1) { $reviewInfo.AccessReviewResourceScopeList} else { if ($reviewInfo.AccessReviewResourceScopeList.Count -gt $i) { $reviewInfo.AccessReviewResourceScopeList[$i] } else { $null }}
             }
 
             # Add the expanded row to the new list
@@ -98,9 +98,7 @@ function Check-GuestRoleReviews {
                     $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noInProgressAccessReview
                 }
                 else{
-                    # Get roles and user data
-                    $allRoleDefinitions = Get-AzRoleDefinition | Select-Object Name, Id, Description, IsCustom, Actions
-                    # $allGroupDefinitions =  Get-AzADGroup
+                    # get user info
                     $allUserInfo = Get-AzADUser
 
                     # loop through the access reviews to get metadata
@@ -117,7 +115,7 @@ function Check-GuestRoleReviews {
                             AccessReviewStatus              = $review.status
                             AccesReviewRecurrenceType       = $review.settings.recurrence.range.type
                             AccesReviewRecurrencePattern    = $review.settings.recurrence.pattern.type
-                            AccessReviewScopeList           = $review.scope.principalScopes.query
+                            AccessReviewScopeList           = if($null -eq $review.scope.principalScopes) {$review.scope.query} else {$review.scope.principalScopes.query}
                             AccessReviewResourceScopeList   = $review.scope.resourceScopes
                             AccessReviewReviewerList        = $review.reviewers.query    # For iteration2, get the UPN of these reviewers 
                         }
@@ -130,18 +128,55 @@ function Check-GuestRoleReviews {
 
                     foreach ($review in $expandedList){
                         $reviewerUPN = ""
-                        foreach ($reviewer in $review.AccessReviewReviewerList) {
-                            $user = $allUserInfo | Where-Object { $_.Id -eq $reviewer }
+                        foreach ($reviewer in $review.AccessReviewReviewer) {
+                            $id = $reviewer -replace '/v1.0/users/', ''
+                            $user = $allUserInfo | Where-Object { $_.Id -eq $id }
                             if ($user) {
                                 $reviewerUPN = $user.UserPrincipalName
                             }
+                            Write-Host " reviewerUPN:  $reviewerUPN"
                         }
                         $review | Add-Member -MemberType NoteProperty -Name "reviewerUPN" -Value $reviewerUPN
-
                     }
-                }
 
-                
+                    # Get Access review Scope
+                    $expandedList | ForEach-Object {
+                        $review = $_
+                        $scope = if ($null -eq $review.AccessReviewScope) {$null} else { if ($review.AccessReviewScope.ToLower() -like '*guest*') { 'Guest' } else { if($review.AccessReviewScope.ToLower() -like '*groups*') {'Groups'} else {if ($review.AccessReviewScope.ToLower() -like '*users*') {'Users' } else {'Custom'}}}}
+                        $review | Add-Member -MemberType NoteProperty -Name "Scope" -Value $scope
+                    }
+
+                    # Filter for guest scoped only
+                    $guestAccessReviewList = $expandedList | Where-Object { $_.Scope -like '*Guest*' }
+                    # Condition: if any access reviews scoped to guest user
+                    if( $guestAccessReviewList.Count -eq 0){
+                        # No scheduled guest access review
+                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noScheduledGuestAccessReview
+                    }
+                    else{
+                        # scheduled guest access review exists
+                        $guestAccessReviewList | ForEach-Object {
+                            $review = $_
+                            $today = Get-Date
+                            $isPassedToday = if ([datetime]::Parse($_.AccessReviewEndDate) -gt $today) {$true} else {$false}
+                            $review | Add-Member -MemberType NoteProperty -Name "isPassedToday" -Value $isPassedToday
+                        }
+
+                        $guestAccessReviewList | ForEach-Object {
+                            $review = $_
+                            $recurrence = if ($review.AccesReviewRecurrenceType -eq 'noEnd' -or $isPassedToday -eq $true) {'pass'} else {'fail'}
+                            $review | Add-Member -MemberType NoteProperty -Name "recurrence" -Value $recurrence
+                        }
+
+                        # condition: Check if any object in the list has 'recurrence' containing 'fail'
+                        if ( $guestAccessReviewList  | Where-Object { $_.recurrence -match 'fail' }) {
+                            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceGuestReviews
+                        } else {
+                            $IsCompliant = $true
+                            $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceGuestReviews
+                        }
+                    }
+                }               
             }
         }
         else{
