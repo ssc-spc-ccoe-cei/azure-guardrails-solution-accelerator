@@ -38,15 +38,23 @@ function get-tenantdata {
         $generalQuery=@"
     GuardrailsCompliance_CL | where ControlName_s has "{0}" and ReportTime_s == "{1}"
     | where TimeGenerated > ago (24h)
-    | project Mandatory=Required_s,ControlName_s, ItemName=ItemName_s, Status=iif(tostring(ComplianceStatus_b)=="True", 'Compliant', 'Non-Compliant'),["ITSG Control"]=itsgcode_s
-    | summarize Count=count() by Mandatory,ControlName_s,ItemName, Status, ["ITSG Control"]
+    | project Mandatory=Required_s,ControlName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
+        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+        tostring(ComplianceStatus_b)=="True", "Compliant",
+        "Non-Compliant"
+    ),["ITSG Control"]=itsgcode_s
+    | summarize Count=count() by Mandatory,ControlName_s,ItemName, Profile,Status, ["ITSG Control"]
 "@
     $gr567Query=@"
 GuardrailsCompliance_CL
 | where ControlName_s has "{0}" and ReportTime_s == "{1}"
 | where TimeGenerated > ago (24h)
-| project Mandatory=Required_s,ControlName_s, Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Status=iif(tostring(ComplianceStatus_b)=="True", 'Compliant', 'Non-Compliant'),["ITSG Control"]=itsgcode_s
-| summarize Count=count() by Mandatory, ControlName_s,ItemName,Status,["ITSG Control"]
+| project Mandatory=Required_s,ControlName_s, Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
+        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+        tostring(ComplianceStatus_b)=="True", "Compliant",
+        "Non-Compliant"
+    ),["ITSG Control"]=itsgcode_s
+| summarize Count=count() by Mandatory, ControlName_s,ItemName, Profile, Status,["ITSG Control"]
 "@
         $gr8query=@"
     let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;
@@ -55,8 +63,12 @@ GuardrailsCompliance_CL
     | where ControlName_s has ctrlprefix and ReportTime_s == "{0}"
     | where TimeGenerated > ago (6h)
     |join kind=inner (itsgcodes) on itsgcode_s
-    | project Mandatory=Required_s,ControlName_s, SubnetName=SubnetName_s, ItemName=ItemName_s, Status=iif(tostring(ComplianceStatus_b)=="True", 'Compliant', 'Non-Compliant'), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
-    | summarize Count=count(SubnetName) by Mandatory, ControlName_s, Status,ItemName, ['ITSG Control']
+    | project Mandatory=Required_s,ControlName_s, SubnetName=SubnetName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
+        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+        tostring(ComplianceStatus_b)=="True", "Compliant",
+        "Non-Compliant"
+    ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
+    | summarize Count=count(SubnetName) by Mandatory, ControlName_s, Status,ItemName, Profile, ['ITSG Control']
 "@
         $gr9query=@"
     let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;
@@ -65,8 +77,12 @@ GuardrailsCompliance_CL
     | where ControlName_s has ctrlprefix and ReportTime_s == "{0}"
     | where TimeGenerated > ago (12h)
     |join kind=inner (itsgcodes) on itsgcode_s
-    | project Mandatory=Required_s,ControlName_s, ['VNet Name']= column_ifexists('VNETName_s', ''), ItemName=ItemName_s, Status=iif(tostring(ComplianceStatus_b)=="True", 'Compliant', 'Non-Compliant'), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
-    | summarize Count=count('VNet Name') by Mandatory,ControlName_s, Status, ItemName,['ITSG Control']
+    | project Mandatory=Required_s,ControlName_s, ['VNet Name']= column_ifexists('VNETName_s', ''), ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
+        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+        tostring(ComplianceStatus_b)=="True", "Compliant",
+        "Non-Compliant"
+    ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
+    | summarize Count=count('VNet Name') by Mandatory,ControlName_s, Status, ItemName, Profile, ['ITSG Control']
 "@
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     foreach ($ws in $wsidList.wsid)
