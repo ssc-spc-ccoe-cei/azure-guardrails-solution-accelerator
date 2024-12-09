@@ -102,7 +102,7 @@ function Check-UserRoleReviews {
                         $review | Add-Member -MemberType NoteProperty -Name "Scope" -Value $scope
                     }
 
-                    # scheduled guest access review exists
+                    # Get scheduled recurrence time and type
                     $expandedList | ForEach-Object {
                         $review = $_
                         $today = Get-Date
