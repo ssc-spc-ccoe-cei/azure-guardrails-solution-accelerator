@@ -27,10 +27,10 @@ function Check-UserRoleReviews {
 
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # # portal
-        # $data = $response.Content
-        # localExecution
-        $data = $response
+        # portal
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
         
         if ($null -ne $data -and $null -ne $data.value) {
             $accessReviewsAll = $data.value 
