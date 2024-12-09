@@ -54,8 +54,7 @@ function Check-GuestRoleReviews {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] 
         $EnableMultiCloudProfiles # New feature flag, default to false
@@ -89,7 +88,7 @@ function Check-GuestRoleReviews {
                 Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
 
                 # filter out non-active the access reviews
-                # query status can be 'Completed','InProgress', 'Applied', 'NotStarted'
+                # status can be 'Completed','InProgress', 'Applied', 'NotStarted'
                 $accessReviewHistory = $accessReviewsSorted | Where-Object { $_.status -ne 'Completed'} 
                 $accessReviewHistory = $accessReviewHistory | Where-Object { $_.status -ne 'NotStarted'}
                 Write-Host "Number of most recent access review with in-progress review:  $($accessReviewHistory.count)"
@@ -117,7 +116,7 @@ function Check-GuestRoleReviews {
                             AccesReviewRecurrencePattern    = $review.settings.recurrence.pattern.type
                             AccessReviewScopeList           = if($null -eq $review.scope.principalScopes) {$review.scope.query} else {$review.scope.principalScopes.query}
                             AccessReviewResourceScopeList   = $review.scope.resourceScopes
-                            AccessReviewReviewerList        = $review.reviewers.query    # For iteration2, get the UPN of these reviewers 
+                            AccessReviewReviewerList        = $review.reviewers.query     
                         }
                 
                         $accessReviewList +=  $accessReviewInfo
@@ -126,6 +125,7 @@ function Check-GuestRoleReviews {
                     # Expand the list
                     $expandedList = Expand-ListColumns -accessReviewList $accessReviewList
 
+                    # Get Reviewers' UPN, Iteration #2 work to follow
                     foreach ($review in $expandedList){
                         $reviewerUPN = ""
                         foreach ($reviewer in $review.AccessReviewReviewer) {
