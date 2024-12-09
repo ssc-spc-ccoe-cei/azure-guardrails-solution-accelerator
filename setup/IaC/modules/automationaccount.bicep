@@ -369,7 +369,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
-        version: '1.0.1'
+        version: '1.0.2'
       }
     }
   }
@@ -474,6 +474,30 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
+<<<<<<< HEAD
+=======
+  resource module47 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-ServiceHealthAlerts'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-ServiceHealthAlerts.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module48 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-DefenderForCloudAlerts'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+
+>>>>>>> 7ccd628ad0717392bb9069e2cecf0a8424d38f22
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
