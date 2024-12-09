@@ -115,9 +115,10 @@ automatedRoleForUsers = Attributions de rôles pour les utilisateurs et les admi
 noAutomatedAccessReview = Le locataire n'a pas été intégré aux révisions automatisés de « MS Access Reviews ».
 noInProgressAccessReview = Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
 # noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
+noScheduledUserAccessReview = Tenant has no scheduled role access review scoped to user or groups.
 # hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
 nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence review requirements for the control.
-compliantRecurrenceReviews = Existing guest access reviews meet the requirements for the control.
+compliantRecurrenceReviews = Existing access reviews meet the requirements for the control.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

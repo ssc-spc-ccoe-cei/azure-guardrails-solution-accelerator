@@ -116,21 +116,28 @@ function Check-UserRoleReviews {
                         $review | Add-Member -MemberType NoteProperty -Name "recurrence" -Value $recurrence
                     }
 
-                    # condition: Check if any object in the list has 'recurrence' containing 'fail'
-                    if ( $expandedList | Where-Object { $_.recurrence -match 'fail' }) {
-                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
-                    } else {
-                        $IsCompliant = $true
-                        $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceReviews
+                    # Filter for uses scoped only i.e. exclude 'guest' reviews
+                    $usersAccessReviewList = $expandedList | Where-Object { $_.Scope -like '*Users*' -or $_.Scope -like '*Groups*' }
+                    # Condition: if any role access reviews scoped to user or groups
+                    if( $usersAccessReviewList.Count -eq 0){
+                        # No scheduled user role access review
+                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noScheduledUserAccessReview
                     }
-                    
+                    else{
+                        # condition: Check if at-least one object in the role access review list has 'recurrence' containing 'pass'
+                        if ($usersAccessReviewList.recurrence -contains 'pass') {
+                            $IsCompliant = $true
+                            $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceReviews
+                        } else {
+                            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
+                        }
+                    } 
                 }               
             }
         }
         else{
             Write-Host "Graph query response data is null: $data"
-        }
-        
+        } 
     }
     catch {
         $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
