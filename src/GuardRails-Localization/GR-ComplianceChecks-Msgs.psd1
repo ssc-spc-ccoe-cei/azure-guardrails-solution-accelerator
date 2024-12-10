@@ -182,6 +182,7 @@ hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compl
 # GuardRail #7
 enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
 appGatewayCertValidity = Application Gateway Certificate Validity
+noSslListenersFound = No SSL listener found/configured for Application Gateway: {0}. 
 expiredCertificateFound = Expired certificate found for listener '{0}' in Application Gateway '{1}'.
 unapprovedCAFound = Unapproved Certificate Authority (CA) found for listener '{0}' in Application Gateway '{1}'. Issuer: {2}.
 unableToProcessCertData = Unable to process certificate data for listener '{0}' in Application Gateway '{1}'. Error: {2}.
