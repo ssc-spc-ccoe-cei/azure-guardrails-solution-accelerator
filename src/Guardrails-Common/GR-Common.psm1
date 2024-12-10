@@ -1329,6 +1329,8 @@ function get-AADDiagnosticSettings {
     }
     throw "Failed to retrieve diagnostic settings. Status code: $($response.StatusCode)"
 }
+
+
 # USE OF THIS FUNCITON: GR2 V10 and V3 automated role reviews
 function Expand-ListColumns {
     param (
