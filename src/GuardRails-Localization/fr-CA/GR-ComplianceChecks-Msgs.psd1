@@ -116,7 +116,7 @@ noAutomatedAccessReview = L'environnement n'a pas été intégré aux révisions
 noInProgressAccessReview = Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
 noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
 hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
-nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est en cours et planifiée pour se reproduire.
+nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est « en cours » et planifiée pour se reproduire.
 
 automatedRoleForGuests = Révisions automatisées des utilisateurs invités : Attributions de rôles et exigences d'accès
 noInProgressGuestAccessReview = L'environnement a au moins une révision d'accès planifiée pour les utilisateurs invités. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non démarrée ». Créez une nouvelle révision d'accès invité planifiée pour se reproduire et soit « en cours ».
