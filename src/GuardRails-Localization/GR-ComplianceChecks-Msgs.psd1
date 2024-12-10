@@ -117,7 +117,7 @@ noAutomatedAccessReview = The environment has not been onboarded to automated MS
 noInProgressAccessReview = Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
 noScheduledAccessReview = Tenant has no scheduled access review.
 hasScheduledAccessReview = Tenant has at least one scheduled access review.
-nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control. Ensure the automated review is ongoing and scheduled to reoccur.
+nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control. Ensure the automated review is 'in progress' and scheduled to reoccur.
 
 automatedRoleForGuests = Automated Guest User Reviews: Role Assignments and Access Requirements
 noInProgressGuestAccessReview = The environment has at least one scheduled access review for guest users. However, the access review has been identified as either 'completed' or 'not started'. Create a new guest access review to reoccur and be 'in progress'.
