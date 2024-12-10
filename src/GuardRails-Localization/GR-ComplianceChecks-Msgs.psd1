@@ -113,15 +113,15 @@ nonCompliantC1C2 = Configure the conditional access policies outlined in the rem
 compliantC1C2 = Both conditional access policies have been configured.
 
 automatedRoleForUsers = Role Assignments for Users and Global Administrators
-noAutomatedAccessReview = Tenant has not been onboarded to automated MS Access Reviews.
+noAutomatedAccessReview = The environment has not been onboarded to automated MS Access Reviews. Ensure the environment uses Microsoft Entra Identity features, including Access Reviews.
 noInProgressAccessReview = Tenant Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
 noScheduledAccessReview = Tenant has no scheduled access review.
 hasScheduledAccessReview = Tenant has at least one scheduled access review.
+nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control. Ensure the automated review is ongoing and scheduled to reoccur.
 
 automatedRoleForGuests = Automated Guest User Reviews: Role Assignments and Access Requirements
-noScheduledGuestAccessReview = Tenant has no scheduled guest access review.
-nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control.
-compliantRecurrenceReviews = Existing guest access reviews meet the requirements for the control.
+noScheduledGuestAccessReview = The environment has no scheduled guest access reviews. Configure a guest user review for all user groups. 
+compliantRecurrenceGuestReviews = Existing guest access reviews meet the requirements for the control.
 
 
 # GuardRail #3

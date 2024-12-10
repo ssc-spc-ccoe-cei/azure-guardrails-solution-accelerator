@@ -112,15 +112,15 @@ nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dan
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
 automatedRoleForUsers = Attributions de rôles pour les utilisateurs et les administrateurs généraux
-noAutomatedAccessReview = Le locataire n'a pas été intégré aux révisions automatisés de « MS Access Reviews ».
+noAutomatedAccessReview = L'environnement n'a pas été intégré aux révisions automatisées de MS Access « MS Access Reviews ». Assurez-vous que l'environnement utilise les fonctionnalités de « Microsoft Entra Identity », incluant les révisions d'accès.
 noInProgressAccessReview = Tenant Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
 noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
 hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
 
-automatedRoleForGuests = Évaluations automatisées des utilisateurs invités : attributions de rôles et conditions d'accès
-noScheduledGuestAccessReview = Tenant has no scheduled guest access review.
-nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence of review requirements for the control.
-compliantRecurrenceReviews = Existing guest Access Reviews meet the requirements for the control.
+automatedRoleForGuests = Révisions automatisées des utilisateurs invités : Attributions de rôles et exigences d'accès
+noScheduledGuestAccessReview = L'environnement n'a aucune révision d'accès d'invité planifiée. Configurez une révision d'utilisateur invité pour tous les groupes d'utilisateurs.
+nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est en cours et planifiée pour se reproduire.
+compliantRecurrenceGuestReviews = Les révision d'accès d'invité existantes répondent aux exigences requises pour le contrôle.
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.

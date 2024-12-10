@@ -172,7 +172,7 @@ function Check-GuestRoleReviews {
                         # condition: Check if at-least one object in the guest access review list has 'recurrence' containing 'pass'
                         if ($guestAccessReviewList.recurrence -contains 'pass') {
                             $IsCompliant = $true
-                            $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceReviews
+                            $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceGuestReviews
                         } else {
                             $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
                         }
