@@ -1,7 +1,6 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: [Azure CAC Release]
     types: 
@@ -141,7 +140,7 @@ jobs:
             $configContent = @"
             {
               "keyVaultName": "kvcac",
-              "resourcegroup": "rgcac",
+              "resourcegroup": "guardrailscac",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
@@ -237,7 +236,7 @@ jobs:
             $configContent = @"
             {  
               "keyVaultName": "kvcac",
-              "resourcegroup": "rgcac",
+              "resourcegroup": "guardrailscac",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",

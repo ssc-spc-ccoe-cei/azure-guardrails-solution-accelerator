@@ -1320,6 +1320,15 @@ function Check-PBMMPolicies {
 }
 
 
+# Used in AlersMonitor and UserAccountGCEventLogging
+function get-AADDiagnosticSettings {
+    $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
+    $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
+    if ($response.StatusCode -eq 200) {
+        return ($response.Content | ConvertFrom-Json).value
+    }
+    throw "Failed to retrieve diagnostic settings. Status code: $($response.StatusCode)"
+}
 # USE OF THIS FUNCITON: GR2 V10 and V3 automated role reviews
 function Expand-ListColumns {
     param (

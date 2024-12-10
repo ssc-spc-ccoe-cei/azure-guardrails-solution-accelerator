@@ -93,7 +93,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where ReportTime_s == toscalar(mrt) and TenantDomain_s == \"{Tenants}\" \n| parse ControlName_s_s with * \"GUARDRAIL\" number \":\" rest\n| project-away rest\n| extend Mandatory=iff(Mandatory_s != \"\", iff(Mandatory_s==\"True\",\" (M)\", \" (R)\"),\" - N/A\")\n| summarize by Control=ControlName_s_s, Mandatory=Mandatory_s, ItemName=strcat(ItemName_s, Mandatory),[\"ITSG Control\"]=ITSG_Control_s,Status=Status_s, number\n| sort by toint(number) asc\n| project-away number",
+        "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where ReportTime_s == toscalar(mrt) and TenantDomain_s == \"{Tenants}\" \n| parse ControlName_s_s with * \"GUARDRAIL\" number \":\" rest\n| project-away rest\n| extend Mandatory=iff(Mandatory_s != \"\", iff(Mandatory_s==\"True\",\" (M)\", \" (R)\"),\" - N/A\")\n| summarize by Control=ControlName_s_s, Mandatory=Mandatory_s, ItemName=strcat(ItemName_s, Mandatory),[\"ITSG Control\"]=ITSG_Control_s,Status=Status_s, Profile=Profile_s, number\n| sort by toint(number) asc\n| project-away number",
         "size": 2,
         "timeContext": {
           "durationMs": 43200000
