@@ -119,7 +119,7 @@ hasScheduledAccessReview = Le locataire a au moins une révision d'accès planif
 nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est en cours et planifiée pour se reproduire.
 
 automatedRoleForGuests = Révisions automatisées des utilisateurs invités : Attributions de rôles et exigences d'accès
-noInProgressGuestAccessReview = The environment has at least one scheduled access review for guest users. However, the access review has been identified as either 'completed' or 'not started'. Create a new guest access review to reoccur and be 'in progress'.
+noInProgressGuestAccessReview = L'environnement a au moins une révision d'accès planifiée pour les utilisateurs invités. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non démarrée ». Créez une nouvelle révision d'accès invité planifiée pour se reproduire et soit « en cours ».
 noScheduledGuestAccessReview = L'environnement n'a aucune révision d'accès d'invité planifiée. Configurez une révision d'utilisateur invité pour tous les groupes d'utilisateurs.
 compliantRecurrenceGuestReviews = Les révision d'accès d'invité existantes répondent aux exigences requises pour le contrôle.
 
