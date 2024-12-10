@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.1.27'
+        version: '1.2.1'
       }
     }
   }
@@ -321,7 +321,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserAccountGCEventLogging.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -409,7 +409,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
-        version: '1.0.1'
+        version: '1.0.2'
       }
     }
   }
