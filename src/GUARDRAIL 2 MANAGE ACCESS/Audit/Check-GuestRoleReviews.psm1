@@ -94,7 +94,7 @@ function Check-GuestRoleReviews {
                 Write-Host "Number of most recent access review with in-progress review:  $($accessReviewHistory.count)"
                 # Condition: any access review are in active status. if not, non-compliant
                 if ($accessReviewHistory.Count -eq 0) {
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noInProgressAccessReview
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noInProgressGuestAccessReview
                 }
                 else{
                     # get user info

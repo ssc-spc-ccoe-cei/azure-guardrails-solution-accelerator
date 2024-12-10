@@ -113,13 +113,14 @@ compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées
 
 automatedRoleForUsers = Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReview = L'environnement n'a pas été intégré aux révisions automatisées de MS Access « MS Access Reviews ». Assurez-vous que l'environnement utilise les fonctionnalités de « Microsoft Entra Identity », incluant les révisions d'accès.
-noInProgressAccessReview = Tenant Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
+noInProgressAccessReview = Tenant has at least one scheduled access review. However, the access review are either 'completed' or 'not started'.
 noScheduledAccessReview = Le locataire n'a pas de révision d'accès planifiée.
 hasScheduledAccessReview = Le locataire a au moins une révision d'accès planifiée.
+nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est en cours et planifiée pour se reproduire.
 
 automatedRoleForGuests = Révisions automatisées des utilisateurs invités : Attributions de rôles et exigences d'accès
+noInProgressGuestAccessReview = The environment has at least one scheduled access review for guest users. However, the access review has been identified as either 'completed' or 'not started'. Create a new guest access review to reoccur and be 'in progress'.
 noScheduledGuestAccessReview = L'environnement n'a aucune révision d'accès d'invité planifiée. Configurez une révision d'utilisateur invité pour tous les groupes d'utilisateurs.
-nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est en cours et planifiée pour se reproduire.
 compliantRecurrenceGuestReviews = Les révision d'accès d'invité existantes répondent aux exigences requises pour le contrôle.
 
 # GuardRail #3
