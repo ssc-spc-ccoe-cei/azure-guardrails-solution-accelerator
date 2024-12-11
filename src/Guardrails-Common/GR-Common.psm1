@@ -370,25 +370,44 @@ function Check-DocumentExistsInStorage {
     $docMissing = $false
     $commentsArray = @()
     $blobFound = $false
+    $baseFileNameFound = $false
    
-    ForEach ($docName in $DocumentName_new) {
-        # check for procedure doc in blob storage account
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
-
-        If ($blobs) {
-            $blobFound = $true
-            break
+    # Get a list of filenames uploaded in the blob storage
+    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
+    $fileNamesList = @()
+    $blobs | ForEach-Object {
+        $fileNamesList += $_.Name
+    }
+    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+    if ( $matchingFiles.count -lt 1 ){
+        # check if any fileName matches without the extension
+        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+        
+        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+        if ($BaseFileNamesMatch.Count -gt 0){
+            $baseFileNameFound = $true
         }
     }
-
-    if ($blobFound){
-        # a blob with the name $attestationFileName was located in the specified storage account
-        $commentsArray += $msgTable.procedureFileFound -f $docName
-    }
     else {
-        # no blob with the name $attestationFileName was found in the specified storage account
+        $blobFound = $true
+    }
+
+    # Use case: uploaded fileName is correct but has wrong extension
+    if ($baseFileNameFound){
+        # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
         $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+    }
+    else{
+        if ($blobFound){
+            # Use case: a blob with the name $documentName was located in the specified storage account
+            $commentsArray += $msgTable.procedureFileFound -f  $DocumentName
+        }
+        else {
+            # Use case: no blob with the name $documentName was found in the specified storage account
+            $docMissing = $true
+            $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+        }
     }
 
     $Comments = $commentsArray -join ";"

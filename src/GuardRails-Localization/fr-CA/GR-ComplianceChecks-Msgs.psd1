@@ -346,7 +346,7 @@ bgAccountLoginNotValid = La dernière connexion aux comptes de bris de verre fou
 # GR-Common
 procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.
 procedureFileNotFound = Non conforme. N'a pas trouvé « {0} » créer et télécharger le fichier approprié dans le conteneur « {1} » dans le compte de stockage « {2} » pour devenir conforme.
-
+procedureFileNotFoundWithCorrectExtension = Non-compliant. Required fileName '{0}' found. However, the extension is not supported. Create and upload the appropriate file in Container '{1}' in Storage Account '{2}' to become compliant.
 
 procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
 globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
