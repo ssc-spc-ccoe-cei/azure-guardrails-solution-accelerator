@@ -389,6 +389,7 @@ function Check-DocumentExistsInStorage {
         }
     }
     else {
+        # also covers the use case if more than 1 appropriate files are uploaded
         $blobFound = $true
     }
 
