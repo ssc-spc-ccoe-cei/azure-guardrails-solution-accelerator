@@ -148,8 +148,15 @@ function Check-ApplicationGatewayCertificateValidity {
                                 $isApprovedCA = $true
                             }
                             else {
-                                # Check if the certificate issuer is in the ApprovedCAList
-                                $isApprovedCA = $ApprovedCAList -contains $x509cert.Issuer
+                                # Check if the certificate issuer is in or matches part of the ApprovedCAList
+                                # or if ApprovedCA is part of the Issuer (bidirectional check)
+                                $isApprovedCA = $false
+                                foreach ($approvedCA in $ApprovedCAList) {
+                                    if ($x509cert.Issuer -like "*$approvedCA*" -or $approvedCA -like "*$($x509cert.Issuer)*") {
+                                        $isApprovedCA = $true
+                                        break
+                                    }
+                                }
                             }
 
                             if (-not $isApprovedCA) {
