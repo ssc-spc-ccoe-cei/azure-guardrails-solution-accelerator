@@ -1331,6 +1331,51 @@ function get-AADDiagnosticSettings {
 }
 
 
+# USE OF THIS FUNCITON: GR2 V10 and V3 automated role reviews
+function Expand-ListColumns {
+    param (
+        [Parameter(Mandatory = $true)]
+        [Array]$accessReviewList  # The input list of access review objects
+    )
+
+    $expandedList = @()
+
+    # Iterate through each item in the $accessReviewList
+    foreach ($reviewInfo in $accessReviewList) {
+        # Determine the maximum number of elements in the lists you want to expand
+        $maxCount = @(
+            $reviewInfo.AccessReviewScopeList.Count,
+            $reviewInfo.AccessReviewResourceScopeList.Count,
+            $reviewInfo.AccessReviewReviewerList.Count
+        ) | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+
+        # Expand the lists by iterating through each element
+        for ($i = 0; $i -lt $maxCount; $i++) {
+            $expandedReviewInfo = [PSCustomObject]@{
+                AccessReviewName                            = $reviewInfo.AccessReviewName
+                AccessReviewInstanceId                      = $reviewInfo.AccessReviewInstanceId
+                DescriptionForAdmins                        = $reviewInfo.DescriptionForAdmins
+                DescriptionForReviewers                     = $reviewInfo.DescriptionForReviewers
+                AccessReviewCreatedBy                       = $reviewInfo.AccessReviewCreatedBy
+                AccessReviewStartDate                       = $reviewInfo.AccessReviewStartDate
+                AccessReviewEndDate                         = $reviewInfo.AccessReviewEndDate
+                AccessReviewStatus                          = $reviewInfo.AccessReviewStatus
+                AccesReviewRecurrenceType                   = $reviewInfo.AccesReviewRecurrenceType
+                AccesReviewRecurrencePattern                = $reviewInfo.AccesReviewRecurrencePattern
+                AccessReviewScope                           = if ($reviewInfo.AccessReviewScopeList.Count -eq 1) { $reviewInfo.AccessReviewScopeList} else { if ($reviewInfo.AccessReviewScopeList.Count -gt $i) { $reviewInfo.AccessReviewScopeList[$i] } else {$null}}
+                AccessReviewReviewer                        = if ($reviewInfo.AccessReviewReviewerList.Count -eq 1) { $reviewInfo.AccessReviewReviewerList} else { if ($reviewInfo.AccessReviewReviewerList.Count -gt $i) { $reviewInfo.AccessReviewReviewerList[$i] } else { $null }}
+                AccessReviewResourceScope                   = if ($reviewInfo.AccessReviewResourceScopeList.Count -eq 1) { $reviewInfo.AccessReviewResourceScopeList} else { if ($reviewInfo.AccessReviewResourceScopeList.Count -gt $i) { $reviewInfo.AccessReviewResourceScopeList[$i] } else { $null }}
+            }
+
+            # Add the expanded row to the new list
+            $expandedList += $expandedReviewInfo
+        }
+    }
+
+    # Return the expanded list
+    return $expandedList
+}
+
 # endregion
 
 
