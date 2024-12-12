@@ -187,7 +187,7 @@ function Check-DedicatedAdminAccounts {
     }
     elseif ($blobFound){
         # get UPN from the file
-        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new #-ErrorAction SilentlyContinue
+        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
         if ($null -eq $blob) {            
             # a blob with the name $DocumentName was not located in the specified storage account
             $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
