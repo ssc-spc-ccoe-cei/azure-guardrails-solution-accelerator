@@ -99,7 +99,7 @@ function Get-NetworkWatcherStatus {
                 SubscriptionName  = $sub.Name 
                 ComplianceStatus = $ComplianceStatus
                 Comments = $msgTable.networkWatcherConfigNoRegions
-                ItemName = $msgTable.networkWatcherConfigNoRegions
+                ItemName = $msgTable.networkWatcherConfig
                 itsgcode = $itsgcode
                 ControlName = $ControlName
                 ReportTime = $ReportTime
