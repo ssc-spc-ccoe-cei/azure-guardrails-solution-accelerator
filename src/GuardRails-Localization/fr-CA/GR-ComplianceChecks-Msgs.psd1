@@ -172,7 +172,7 @@ managementGroup = Groupes de gestion
 notAllowedLocation =  L'emplacement est en dehors des emplacements autorisés. 
 allowLocationPolicy = Politique de localisation autorisée
 dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
-dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
+
 
 # GuardRail #6
 pbmmApplied = L'initiative PBMM a été appliquée.
@@ -201,8 +201,11 @@ allBackendSettingsUseWellKnownCA = Tous les paramètres principaux de la passere
 noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonnement.
 allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
 approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
-approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification
+approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification.
+approvedCAFileNotFoundWithCorrectExtension = Approved Certificate Authority (CA) file '{0}' found. However, the extension is not supported. Create and upload the appropriate file in Container '{1}' in Storage Account '{2}' to become compliant.
+
 appServiceHttpsConfig = « Azure App Service » : Configuration d'application HTTPS
+dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
 storageAccTLS12 = Comptes de stockage TLS 1.2
 storageAccValidTLS = Tous les comptes de stockage utilisent TLS1.2 ou version ultérieure. 

@@ -50,10 +50,28 @@ function Check-ApplicationGatewayCertificateValidity {
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
-
+    $baseFileNameFound = $false
     $blobFound = $false
-   
-    ForEach ($docName in $DocumentName_new) {
+
+    # Get a list of filenames uploaded in the blob storage
+    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
+    $fileNamesList = @()
+    $blobs | ForEach-Object {
+        $fileNamesList += $_.Name
+    }
+    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+    if ( $matchingFiles.count -lt 1 ){
+        # check if any fileName matches without the extension
+        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+        
+        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+        if ($BaseFileNamesMatch.Count -gt 0){
+            $baseFileNameFound = $true
+        }
+    }
+    else {
+        # also covers the use case if more than 1 appropriate files are uploaded
+        
         # check for procedure doc in blob storage account
         $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
 
@@ -67,11 +85,33 @@ function Check-ApplicationGatewayCertificateValidity {
         }
     }
 
-    if ($blobFound){
-        $Comments += $msgTable.approvedCAFileFound -f $docName
+   
+   
+    # ForEach ($docName in $DocumentName_new) {
+    #     # check for procedure doc in blob storage account
+    #     $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+
+    #     If ($blobs) {
+    #         $blobFound = $true
+    #         # Read the content of the blob and save CA names into array
+    #         $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -Force
+    #         $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
+    #         Remove-Item $blobContent.Name -Force
+    #         break
+    #     }
+    # }
+
+    # Use case: uploaded fileName is correct but has wrong extension
+    if ($baseFileNameFound){
+        # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
+        $commentsArray += $msgTable.approvedCAFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $IsCompliant = $false
+    }
+    elseif ($blobFound){
+        $Comments += $msgTable.approvedCAFileFound -f $DocumentName
     }
     else {
-        $Comments += $msgTable.approvedCAFileNotFound -f $docName, $ContainerName, $StorageAccountName
+        $Comments += $msgTable.approvedCAFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
         $IsCompliant = $false
         
         $PsObject = [PSCustomObject]@{
