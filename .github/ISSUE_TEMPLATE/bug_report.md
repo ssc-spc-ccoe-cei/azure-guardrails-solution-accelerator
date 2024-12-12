@@ -10,6 +10,9 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+**Azure CaC version**
+A version tag e.g. v2.1.2
+
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
@@ -22,6 +25,12 @@ A clear and concise description of what you expected to happen.
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
+
+**Additional context**
+Add any other context about the problem here
+
+
+**Other configuration (If necessary)**
 
 **Desktop (please complete the following information):**
  - OS: [e.g. iOS]
@@ -37,6 +46,3 @@ If applicable, add screenshots to help explain your problem.
 **Software versions used:**
  - E.g. Azure CLI version [e.g. v2.23.0]
  - Azure Bicep version [e.g. v0.4.613]
-
-**Additional context**
-Add any other context about the problem here.
