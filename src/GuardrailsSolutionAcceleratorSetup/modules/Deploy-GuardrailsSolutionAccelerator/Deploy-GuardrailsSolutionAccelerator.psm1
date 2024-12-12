@@ -433,15 +433,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             'deployerAzureID'       = $config['runtime']['userId']
         }
 
-        # Convert config to JSON and create initial secure string
-        $initialSecureString = ConvertTo-SecureString (ConvertTo-Json $config -Depth 10) -AsPlainText -Force
-
-        # Encrypt the secure string
-        $encryptedConfig = $initialSecureString | ConvertFrom-SecureString
-
-        # Convert back to secure string for Key Vault storage
-        $secretValue = $encryptedConfig | ConvertTo-SecureString
-
+        $secretValue = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
         Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue $secretValue -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
 
         Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
