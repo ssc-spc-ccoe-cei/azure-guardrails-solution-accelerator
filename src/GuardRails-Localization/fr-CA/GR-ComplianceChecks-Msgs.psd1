@@ -202,7 +202,6 @@ noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonneme
 allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
 approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
 approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification.
-
 appServiceHttpsConfig = « Azure App Service » : Configuration d'application HTTPS
 dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
