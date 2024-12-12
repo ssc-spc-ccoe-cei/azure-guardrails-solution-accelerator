@@ -151,25 +151,35 @@ function Check-DedicatedAdminAccounts {
     
     # Get a list of filenames uploaded in the blob storage
     $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
-    $fileNamesList = @()
-    $blobs | ForEach-Object {
-        $fileNamesList += $_.Name
+    if ($null -eq $blobs) {            
+        # a blob with the name $DocumentName was not located in the specified storage account
+        $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add($errorMsg) 
+            
+        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
     }
-    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
-    if ( $matchingFiles.count -lt 1 ){
-        # check if any fileName matches without the extension
-        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
-        
-        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
-        if ($BaseFileNamesMatch.Count -gt 0){
-            $baseFileNameFound = $true
+    else{
+        $fileNamesList = @()
+        $blobs | ForEach-Object {
+            $fileNamesList += $_.Name
+        }
+        $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+        if ( $matchingFiles.count -lt 1 ){
+            # check if any fileName matches without the extension
+            $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+            
+            $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+            if ($BaseFileNamesMatch.Count -gt 0){
+                $baseFileNameFound = $true
+            }
+        }
+        else {
+            # also covers the use case if more than 1 appropriate files are uploaded
+            $blobFound = $true
         }
     }
-    else {
-        # also covers the use case if more than 1 appropriate files are uploaded
-        $blobFound = $true
-    }
-
+    
     # Use case: uploaded fileName is correct but has wrong extension
     if ($baseFileNameFound){
         # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
@@ -177,7 +187,7 @@ function Check-DedicatedAdminAccounts {
     }
     elseif ($blobFound){
         # get UPN from the file
-        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new -ErrorAction SilentlyContinue
+        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new #-ErrorAction SilentlyContinue
         if ($null -eq $blob) {            
             # a blob with the name $DocumentName was not located in the specified storage account
             $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
