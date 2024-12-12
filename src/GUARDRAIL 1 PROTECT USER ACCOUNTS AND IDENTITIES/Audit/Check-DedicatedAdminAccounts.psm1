@@ -143,95 +143,127 @@ function Check-DedicatedAdminAccounts {
     }
 
     $commentsArray = @()
-
-    # get UPN from the file
-    $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new -ErrorAction SilentlyContinue
+    $blobFound = $false
+    $baseFileNameFound = $false
     
-    if ($null -eq $blob) {            
-        # a blob with the name $DocumentName was not located in the specified storage account
-        $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
-        $ErrorList.Add($errorMsg) 
-              
-        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+    # Get a list of filenames uploaded in the blob storage
+    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
+    $fileNamesList = @()
+    $blobs | ForEach-Object {
+        $fileNamesList += $_.Name
+    }
+    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+    if ( $matchingFiles.count -lt 1 ){
+        # check if any fileName matches without the extension
+        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+        
+        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+        if ($BaseFileNamesMatch.Count -gt 0){
+            $baseFileNameFound = $true
+        }
     }
     else {
-        try {
-            $blobContent = $blob.ICloudBlob.DownloadText()| ConvertFrom-Csv
-        } catch {
-            $errorMsg = "Error downloading content from blob '$DocumentName_new': $_"
-            $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"                    
-        }
+        # also covers the use case if more than 1 appropriate files are uploaded
+        $blobFound = $true
+    }
 
-        if ($null -eq $blobContent -or $blobContent -ieq 'N/A' -or $blobContent -ieq 'NA') {
-            $commentsArray += $msgTable.invalidUserFile -f $DocumentName_new
-        } else {
-            # Blob content is present
-            $UserAccountUPNs = $blobContent 
-            
-            # if BG accounts present in the UPN list
-            $BGfound = $false
-            foreach ($user in $UserAccountUPNs) {
-                if ($user.HP_admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
-                    $user.HP_admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
-                    $BGfound = $true
-                    break
-                } 
+    # Use case: uploaded fileName is correct but has wrong extension
+    if ($baseFileNameFound){
+        # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
+        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+    }
+    elseif ($blobFound){
+        # get UPN from the file
+        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new -ErrorAction SilentlyContinue
+        if ($null -eq $blob) {            
+            # a blob with the name $DocumentName was not located in the specified storage account
+            $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
+            $ErrorList.Add($errorMsg) 
+                
+            $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+        }
+        else {
+            ## blob found
+            try {
+                $blobContent = $blob.ICloudBlob.DownloadText()| ConvertFrom-Csv
+            } catch {
+                $errorMsg = "Error downloading content from blob '$DocumentName_new': $_"
+                $ErrorList.Add($errorMsg)
+                Write-Error "Error: $errorMsg"                    
             }
-            ## BG account in attestation file list
-            if ($BGfound) { 
-                $IsCompliant = $false
-                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
-            }
-            else{
-                $hpUPNinRegFound = $false
-                $regUPNinPAFound = $false
-                $hpUPNnotGA = $false
-                # validate: check HP users ONLY have HP admin role assignments
-                foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
-                    
-                    if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                        # each HP admin has active GA or PA role assignment
-                        if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                            # not dedicated user UPN for admin
-                            $hpUPNinRegFound = $true
-                            break
-                        }
-                        else{
-                            # validate: regular accounts are non-GA/PA role assignments
-                            foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
-                                if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
-                                    $regUPNinPAFound = $true
-                                    break 
+    
+            if ($null -eq $blobContent -or $blobContent -ieq 'N/A' -or $blobContent -ieq 'NA') {
+                $commentsArray += $msgTable.invalidUserFile -f $DocumentName_new
+
+            } else {
+                # Blob content is present
+                $UserAccountUPNs = $blobContent 
+                
+                # if BG accounts present in the UPN list
+                $BGfound = $false
+                foreach ($user in $UserAccountUPNs) {
+                    if ($user.HP_admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
+                        $user.HP_admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
+                        $BGfound = $true
+                        break
+                    } 
+                }
+                ## BG account in attestation file list
+                if ($BGfound) { 
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
+                }
+                else{
+                    $hpUPNinRegFound = $false
+                    $regUPNinPAFound = $false
+                    $hpUPNnotGA = $false
+                    # validate: check HP users ONLY have HP admin role assignments
+                    foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
+                        
+                        if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                            # each HP admin has active GA or PA role assignment
+                            if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                                # not dedicated user UPN for admin
+                                $hpUPNinRegFound = $true
+                                break
+                            }
+                            else{
+                                # validate: regular accounts are non-GA/PA role assignments
+                                foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
+                                    if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
+                                        $regUPNinPAFound = $true
+                                        break 
+                                    }
                                 }
                             }
                         }
+                        else{
+                            # listed admin UPN doesn't have active GA
+                            $hpUPNnotGA = $true
+                            break
+                        }
+                    }
+                    
+                    if($hpUPNinRegFound){
+                        $IsCompliant = $false
+                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
+                    }
+                    elseif($regUPNinPAFound){
+                        $IsCompliant = $false
+                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
                     }
                     else{
-                        # listed admin UPN doesn't have active GA
-                        $hpUPNnotGA = $true
-                        break
+                        $IsCompliant = $true
+                        $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
+                    }
+                    if( $hpUPNnotGA){
+                        $commentsArray += " " + $msgTable.hpAccNotGA
                     }
                 }
-                
-                if($hpUPNinRegFound){
-                    $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
-                }
-                elseif($regUPNinPAFound){
-                    $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
-                }
-                else{
-                    $IsCompliant = $true
-                    $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
-                }
-                if( $hpUPNnotGA){
-                    $commentsArray += $msgTable.hpAccNotGA
-                }
             }
-        }
+        }   
+        
     }
 
     $Comments = $commentsArray -join ";"
