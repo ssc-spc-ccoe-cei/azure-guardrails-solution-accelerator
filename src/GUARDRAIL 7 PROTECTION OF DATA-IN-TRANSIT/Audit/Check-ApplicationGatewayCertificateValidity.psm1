@@ -84,20 +84,6 @@ function Check-ApplicationGatewayCertificateValidity {
             break
         }
     }
-   
-    # ForEach ($docName in $DocumentName_new) {
-    #     # check for procedure doc in blob storage account
-    #     $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
-
-    #     If ($blobs) {
-    #         $blobFound = $true
-    #         # Read the content of the blob and save CA names into array
-    #         $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -Force
-    #         $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
-    #         Remove-Item $blobContent.Name -Force
-    #         break
-    #     }
-    # }
 
     # Use case: uploaded fileName is correct but has wrong extension
     if ($baseFileNameFound){
