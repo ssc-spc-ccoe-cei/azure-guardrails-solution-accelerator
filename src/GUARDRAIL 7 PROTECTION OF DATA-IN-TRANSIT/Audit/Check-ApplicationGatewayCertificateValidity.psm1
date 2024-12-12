@@ -84,8 +84,6 @@ function Check-ApplicationGatewayCertificateValidity {
             break
         }
     }
-
-   
    
     # ForEach ($docName in $DocumentName_new) {
     #     # check for procedure doc in blob storage account
@@ -104,7 +102,7 @@ function Check-ApplicationGatewayCertificateValidity {
     # Use case: uploaded fileName is correct but has wrong extension
     if ($baseFileNameFound){
         # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
-        $commentsArray += $msgTable.approvedCAFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
         $IsCompliant = $false
     }
     elseif ($blobFound){
