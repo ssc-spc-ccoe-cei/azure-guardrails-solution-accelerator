@@ -30,7 +30,7 @@ If applicable, add screenshots to help explain your problem.
 Add any other context about the problem here
 
 
-**Other configuration (If necessary)**
+**Other configuration (If applicable)**
 
 ***Desktop (please complete the following information):***
  - OS: [e.g. iOS]
