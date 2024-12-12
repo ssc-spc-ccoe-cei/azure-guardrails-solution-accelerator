@@ -35,6 +35,9 @@ function Check-DedicatedAdminAccounts {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
+    # highly privileged Role names
+    $highlyPrivilegedAdminRoleNames = @("Global Administrator","Privileged Role Administrator")
+
     # Get the list of GA users (ACTIVE assignments)
     $urlPath = "/directoryRoles"
     try {
@@ -57,7 +60,7 @@ function Check-DedicatedAdminAccounts {
     $hpAdminUserAccounts = @()
 
     # # Filter the highly privileged Administrator role ID
-    $highlyPrivilegedAdminRole = $rolesResponse | Where-Object { $_.displayName -eq "Global Administrator" -or $_.displayName -eq "Privileged Role Administrator" }
+    $highlyPrivilegedAdminRole = $rolesResponse | Where-Object { $_.displayName -eq $highlyPrivilegedAdminRoleNames[0] -or $_.displayName -eq $highlyPrivilegedAdminRoleNames[1] }
     foreach ($role in  $highlyPrivilegedAdminRole){
         # Get directory roles for each user with the highly privileged admin access
 
