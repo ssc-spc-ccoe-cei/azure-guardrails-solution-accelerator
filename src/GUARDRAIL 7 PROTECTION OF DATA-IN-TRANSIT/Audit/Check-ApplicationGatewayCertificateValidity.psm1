@@ -79,7 +79,7 @@ function Check-ApplicationGatewayCertificateValidity {
         If ($blobs) {
             $blobFound = $true
             # Read the content of the blob and save CA names into array
-            $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -Force
+            $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageAccount.Context -Force
             $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
             Remove-Item $blobContent.Name -Force
             break
