@@ -173,6 +173,10 @@ function Check-DedicatedAdminAccounts {
             if ($BaseFileNamesMatch.Count -gt 0){
                 $baseFileNameFound = $true
             }
+            else {
+                $blobFound = $false
+                $baseFileNameFound = $false
+            }
         }
         else {
             # also covers the use case if more than 1 appropriate files are uploaded
@@ -188,15 +192,7 @@ function Check-DedicatedAdminAccounts {
     elseif ($blobFound){
         # get UPN from the file
         $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
-        if ($null -eq $blob) {            
-            # a blob with the name $DocumentName was not located in the specified storage account
-            $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
-            $ErrorList.Add($errorMsg) 
-                
-            $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
-        }
-        else {
+        if ($blob) {            
             ## blob found
             try {
                 $blobContent = $blob.ICloudBlob.DownloadText()| ConvertFrom-Csv
@@ -275,8 +271,12 @@ function Check-DedicatedAdminAccounts {
                     }
                 }
             }
-        }   
-        
+        }       
+    }
+    else {
+        # a blob with the name $DocumentName was not located in the specified storage account    
+        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+
     }
 
     $Comments = $commentsArray -join ";"
