@@ -117,15 +117,9 @@ function Check-AllUserMFARequired {
     }
     # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
     else {
-        # This will be used for debugging
-        if($userUPNsBadMFA.Count -eq 0){
-            Write-Error "Something is wrong as userUPNsBadMFA Count equals 0. This output should only execute if there is an error populating userUPNsBadMFA"
-        }
-        else {
-            $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
-            $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
-            $IsCompliant = $false
-        }
+        $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
+        $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
+        $IsCompliant = $false
     }
 
     $Comments = $commentsArray -join ";"

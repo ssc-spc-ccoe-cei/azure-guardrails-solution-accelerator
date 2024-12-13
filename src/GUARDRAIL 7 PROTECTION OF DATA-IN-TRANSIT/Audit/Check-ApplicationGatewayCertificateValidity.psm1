@@ -50,28 +50,72 @@ function Check-ApplicationGatewayCertificateValidity {
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
-
+    $baseFileNameFound = $false
     $blobFound = $false
-   
-    ForEach ($docName in $DocumentName_new) {
+
+    # Get a list of filenames uploaded in the blob storage
+    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
+    
+    $fileNamesList = @()
+    $blobs | ForEach-Object {
+        $fileNamesList += $_.Name
+    }
+    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+    if ( $matchingFiles.count -lt 1 ){
+        # check if any fileName matches without the extension
+        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+        
+        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+        if ($BaseFileNamesMatch.Count -gt 0){
+            $baseFileNameFound = $true
+        }
+    }
+    else {
+        # also covers the use case if more than 1 appropriate files are uploaded
+        
         # check for procedure doc in blob storage account
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
 
         If ($blobs) {
             $blobFound = $true
             # Read the content of the blob and save CA names into array
-            $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $docName -Context $StorageAccount.Context -Force
+            $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageAccount.Context -Force
             $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
-            Remove-Item $blobContent.Name -Force
-            break
+
         }
     }
 
-    if ($blobFound){
-        $Comments += $msgTable.approvedCAFileFound -f $docName
+    # Use case: uploaded fileName is correct but has wrong extension
+    if ($baseFileNameFound){
+        # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
+        $Comments += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $IsCompliant = $false
+
+        $PsObject = [PSCustomObject]@{
+            ComplianceStatus = $IsCompliant
+            ControlName      = $ControlName
+            Comments         = $Comments
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+        }
+
+        if ($EnableMultiCloudProfiles) {
+            Set-ProfileEvaluation -PsObject $PsObject -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        }
+    
+        $moduleOutput = [PSCustomObject]@{ 
+            ComplianceResults = $PsObject
+            Errors            = $ErrorList
+        }
+        return $moduleOutput
+
+    }
+    elseif ($blobFound){
+        $Comments += $msgTable.approvedCAFileFound -f $DocumentName
     }
     else {
-        $Comments += $msgTable.approvedCAFileNotFound -f $docName, $ContainerName, $StorageAccountName
+        $Comments += $msgTable.approvedCAFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
         $IsCompliant = $false
         
         $PsObject = [PSCustomObject]@{
@@ -115,7 +159,7 @@ function Check-ApplicationGatewayCertificateValidity {
                 $sslListeners = $listeners | Where-Object { $_.SslCertificate -ne $null }
                 
                 if ($sslListeners.Count -eq 0) {
-                    $Comments += $msgTable.noSslListenersFound -f $appGateway.Name
+                    $Comments += " " + $msgTable.noSslListenersFound -f $appGateway.Name
                     $allCompliant = $false
                     continue
                 }
@@ -134,7 +178,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             $x509cert = $certCollection[0]
                         
                             if ($x509cert.NotAfter -le (Get-Date)) {
-                                $Comments += $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
+                                $Comments += " " +$msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
                                 $allCompliant = $false
                             }
 
@@ -160,17 +204,17 @@ function Check-ApplicationGatewayCertificateValidity {
                             }
 
                             if (-not $isApprovedCA) {
-                                $Comments += $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                                $Comments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
                                 $allCompliant = $false
                             }
                         }
                         catch {
-                            $Comments += $msgTable.unableToProcessCertData -f $listener.Name, $appGateway.Name, $_.Exception.Message
+                            $Comments += " " + $msgTable.unableToProcessCertData -f $listener.Name, $appGateway.Name, $_.Exception.Message
                             $allCompliant = $false
                         }
                     }
                     else {
-                        $Comments += $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
+                        $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                         $allCompliant = $false
                     }
                 }
@@ -180,18 +224,18 @@ function Check-ApplicationGatewayCertificateValidity {
                     Where-Object { $_.Protocol -eq 'Https' }
 
                 if ($httpsBackendSettings.Count -eq 0) {
-                    $Comments += $msgTable.noHttpsBackendSettingsFound -f $appGateway.Name
+                    $Comments += " " + $msgTable.noHttpsBackendSettingsFound -f $appGateway.Name
                 } else {
                     $allWellKnownCA = $true
                     foreach ($backendSetting in $httpsBackendSettings) {
                         if ($backendSetting.TrustedRootCertificates.Count -gt 0) {
-                            $Comments += $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                            $Comments += " " + $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
                             $allWellKnownCA = $false
                         }
                     }
 
                     if ($allWellKnownCA) {
-                        $Comments += $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
+                        $Comments += " " + $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
                     } else {
                         $allCompliant = $false
                     }
