@@ -81,8 +81,7 @@ function Check-ApplicationGatewayCertificateValidity {
             # Read the content of the blob and save CA names into array
             $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageAccount.Context -Force
             $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
-            Remove-Item $blobContent.Name -Force
-            break
+
         }
     }
 
@@ -160,7 +159,7 @@ function Check-ApplicationGatewayCertificateValidity {
                 $sslListeners = $listeners | Where-Object { $_.SslCertificate -ne $null }
                 
                 if ($sslListeners.Count -eq 0) {
-                    $Comments += $msgTable.noSslListenersFound -f $appGateway.Name
+                    $Comments += " " + $msgTable.noSslListenersFound -f $appGateway.Name
                     $allCompliant = $false
                     continue
                 }
@@ -179,7 +178,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             $x509cert = $certCollection[0]
                         
                             if ($x509cert.NotAfter -le (Get-Date)) {
-                                $Comments += $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
+                                $Comments += " " +$msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
                                 $allCompliant = $false
                             }
 
@@ -205,17 +204,17 @@ function Check-ApplicationGatewayCertificateValidity {
                             }
 
                             if (-not $isApprovedCA) {
-                                $Comments += $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                                $Comments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
                                 $allCompliant = $false
                             }
                         }
                         catch {
-                            $Comments += $msgTable.unableToProcessCertData -f $listener.Name, $appGateway.Name, $_.Exception.Message
+                            $Comments += " " + $msgTable.unableToProcessCertData -f $listener.Name, $appGateway.Name, $_.Exception.Message
                             $allCompliant = $false
                         }
                     }
                     else {
-                        $Comments += $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
+                        $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                         $allCompliant = $false
                     }
                 }
@@ -225,18 +224,18 @@ function Check-ApplicationGatewayCertificateValidity {
                     Where-Object { $_.Protocol -eq 'Https' }
 
                 if ($httpsBackendSettings.Count -eq 0) {
-                    $Comments += $msgTable.noHttpsBackendSettingsFound -f $appGateway.Name
+                    $Comments += " " + $msgTable.noHttpsBackendSettingsFound -f $appGateway.Name
                 } else {
                     $allWellKnownCA = $true
                     foreach ($backendSetting in $httpsBackendSettings) {
                         if ($backendSetting.TrustedRootCertificates.Count -gt 0) {
-                            $Comments += $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                            $Comments += " " + $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
                             $allWellKnownCA = $false
                         }
                     }
 
                     if ($allWellKnownCA) {
-                        $Comments += $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
+                        $Comments += " " + $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
                     } else {
                         $allCompliant = $false
                     }
