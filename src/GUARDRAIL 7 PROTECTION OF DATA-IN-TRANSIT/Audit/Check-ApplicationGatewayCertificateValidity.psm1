@@ -74,7 +74,7 @@ function Check-ApplicationGatewayCertificateValidity {
         # also covers the use case if more than 1 appropriate files are uploaded
         
         # check for procedure doc in blob storage account
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
 
         If ($blobs) {
             $blobFound = $true
