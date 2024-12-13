@@ -55,6 +55,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
     # Get a list of filenames uploaded in the blob storage
     $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
+    
     $fileNamesList = @()
     $blobs | ForEach-Object {
         $fileNamesList += $_.Name
@@ -73,7 +74,7 @@ function Check-ApplicationGatewayCertificateValidity {
         # also covers the use case if more than 1 appropriate files are uploaded
         
         # check for procedure doc in blob storage account
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName
 
         If ($blobs) {
             $blobFound = $true
@@ -88,8 +89,28 @@ function Check-ApplicationGatewayCertificateValidity {
     # Use case: uploaded fileName is correct but has wrong extension
     if ($baseFileNameFound){
         # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
-        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $Comments += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
         $IsCompliant = $false
+
+        $PsObject = [PSCustomObject]@{
+            ComplianceStatus = $IsCompliant
+            ControlName      = $ControlName
+            Comments         = $Comments
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+        }
+
+        if ($EnableMultiCloudProfiles) {
+            Set-ProfileEvaluation -PsObject $PsObject -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        }
+    
+        $moduleOutput = [PSCustomObject]@{ 
+            ComplianceResults = $PsObject
+            Errors            = $ErrorList
+        }
+        return $moduleOutput
+
     }
     elseif ($blobFound){
         $Comments += $msgTable.approvedCAFileFound -f $DocumentName
