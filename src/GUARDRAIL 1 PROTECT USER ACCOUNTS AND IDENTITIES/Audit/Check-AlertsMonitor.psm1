@@ -163,6 +163,10 @@ function Check-AlertsMonitor {
                     $Comments += $msgTable.noActionGroupsForBGaccts
                 }            
             }
+            else{
+                $IsCompliant = $false
+                $Comments += $msgTable.noAlertRuleBGAccount
+            }
 
             #If alert rule has one of the queries to check audit logs
             if($auditLogsQueriesMatching) {
@@ -178,6 +182,10 @@ function Check-AlertsMonitor {
                     $IsCompliant = $false
                     $Comments += $msgTable.noActionGroupsForAuditLogs
                 } 
+            }
+            else{
+                $IsCompliant = $false
+                $Comments += $msgTable.noAlertRuleAuditAccount
             }
         }
         catch{
