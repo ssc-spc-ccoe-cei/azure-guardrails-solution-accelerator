@@ -17,22 +17,23 @@ The solution will ensures that Break Glass accounts remain active and secure by 
 function Test-BreakGlassAccounts {
    
   param (
-    [string] $FirstBreakGlassUPN, 
-    [string] $SecondBreakGlassUPN,
-    [hashtable] $msgTable,
-    [string] $itsgcode,
     [string] $ControlName, 
     [string] $ItemName,
+    [string] $FirstBreakGlassUPN, 
+    [string] $SecondBreakGlassUPN,
     [Parameter(Mandatory=$true)]
-    [string]
-    $ReportTime,
-    [string] 
-    $CloudUsageProfiles = "3",  # Passed as a string
+    [string] $LAWResourceId,
+    [hashtable] $msgTable,
+    [string] $itsgcode,
+    [Parameter(Mandatory=$true)]
+    [string] $ReportTime,
+    [string] $CloudUsageProfiles = "3",  # Passed as a string
     [string] $ModuleProfiles,  # Passed as a string
     [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
   )
 
   [bool] $IsCompliant = $false
+  [bool] $IsSigninCompliant = $false
   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
   [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
@@ -121,38 +122,99 @@ function Test-BreakGlassAccounts {
       }
     }
     else{
-      # Validate BG account Sign-in activity
-      $IsSigninCompliant = $false
-      $oneYearAgo = (Get-Date).AddYears(-1)
+      # # Validate BG account Sign-in activity
 
-      $urlPath = "/auditLogs/signIns"
-      try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        Write-Host "step 2 validate BG account Sign-in $($response.Content.Value.Count)"
+      # Parse LAW Resource ID
+      $lawParts = $LAWResourceId -split '/'
+      $subscriptionId = $lawParts[2]
+      $resourceGroupName = $lawParts[4] 
+      $workspaceId = $lawParts[8] 
 
-        # check 1st break glass account signin
-        $firstBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}
-        $dataMostRecentSignInFirstBG = $firstBGdata | Sort-Object createdDateTime -Descending | Select-Object -First 1
-        
-        $dataSignInFirstBG = $dataMostRecentSignInFirstBG | Select-Object id, userDisplayName, userPrincipalName, createdDateTime, userId
-        $firstBGisWithinLastYear =  $dataSignInFirstBG.createdDateTime -ge $oneYearAgo
-
-        Write-Host "step 2 firstBGisWithinLastYear:  $firstBGisWithinLastYear"
-        
-        # check 2nd break glass account signin
-        $secondBGdata = $response.Content.Value | Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN}
-        $dataMostRecentSignInSecondBG = $secondBGdata | Sort-Object createdDateTime -Descending | Select-Object -First 1
-        
-        $dataSignInSecondBG = $dataMostRecentSignInSecondBG | Select-Object id, userDisplayName, userPrincipalName, createdDateTime, userId
-        $secondBGisWithinLastYear =  $dataSignInSecondBG.createdDateTime -ge $oneYearAgo
-        Write-Host "step 2 secondBGisWithinLastYear:  $secondBGisWithinLastYear"
+      # get context
+      try{
+        Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
       }
       catch {
-        $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
-        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+          $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+              ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+              error message: $_")
+          throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
+              you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
       }
 
-      $IsSigninCompliant = $firstBGisWithinLastYear -and $secondBGisWithinLastYear
+      # Validate singnIns log is enabled
+      try {
+        # logs to check
+        $SignInLogs = @('SignInLogs')
+
+        #Retrieve diagnostic settings to check for logs
+        $diagnosticSettings = get-AADDiagnosticSettings
+        $matchingSetting = $diagnosticSettings | Where-Object { $_.properties.workspaceId -eq $LAWResourceId } | Select-Object -First 1
+
+        if($matchingSetting){
+            $enabledLogs = $matchingSetting.properties.logs | Where-Object { $_.enabled -eq $true } | Select-Object -ExpandProperty category
+            $missingSignInLogs = $SignInLogs | Where-Object { $_ -notin $enabledLogs }
+        }
+        else{
+            $missingSignInLogs = $SignInLogs
+        }
+
+        # Check missing logs for SignInLogs
+        if ($missingSignInLogs.Count -gt 0) {
+            $IsCompliant = $false
+            $Comments += $msgTable.signInlogsNotCollected + " Missing logs: $($missingSignInLogs -join ', ')"
+        }
+        
+      }
+      catch {
+          if ($_.Exception.Message -like "*ResourceNotFound*") {
+              $IsCompliant = $false
+              $Comments += $msgTable.nonCompliantLaw -f $lawName
+              $ErrorList += "Log Analytics Workspace not found: $_"
+          }
+          else {
+              $IsCompliant = $false
+              $ErrorList += "Error accessing Log Analytics Workspace: $_"
+          }
+      }
+
+      # Retrieve the log data and check the data retention period for sign in
+      $kqlQuery = "SigninLogs
+      | where TimeGenerated > ago(365d)
+      | order by TimeGenerated desc"
+
+      try{
+        $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
+        $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery
+
+        $BGdata = $queryResults.Results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN -or $_.UserPrincipalName -eq $SecondBreakGlassUPN}
+        
+        # check break glass account signin
+        $dataMostRecentSignInFirstBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Sort-Object TimeGenerated -Descending
+        $dataMostRecentSignInSecondBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Sort-Object createdDateTime -Descending
+      
+        if ($null -ne $dataMostRecentSignInFirstBG -and $null -ne $dataMostRecentSignInSecondBG ){
+          $IsSigninCompliant = $true
+        }
+
+      }
+      catch {
+        if ($null -eq $workspace) {
+          $IsCompliant = $false
+          $Comments += "Workspace not found in the specified resource group"
+          $ErrorList += "Workspace not found in the specified resource group: $_"
+        }
+        if($_.Exception.Message -like "*ResourceNotFound*"){
+
+        }
+        else{
+          # Handle errors and exceptions
+          $IsCompliant = $false
+          Write-Host "Error occurred retrieving the sign-in log data: $_"
+        }
+
+      }
+
       if($IsSigninCompliant){
         $PsObject = [PSCustomObject]@{
           ComplianceStatus = $IsCompliant
@@ -195,7 +257,7 @@ function Test-BreakGlassAccounts {
 
   $moduleOutput= [PSCustomObject]@{ 
     ComplianceResults = $PsObject
-    Errors=$ErrorList
+    Errors            = $ErrorList
     AdditionalResults = $AdditionalResults
   }
   return $moduleOutput   
