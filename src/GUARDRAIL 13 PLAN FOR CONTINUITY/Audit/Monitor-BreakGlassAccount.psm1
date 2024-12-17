@@ -40,7 +40,7 @@ function Test-BreakGlassAccounts {
   [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
 
   # Validate two BG accounts exist
-  if($FirstBreakGlassUPN -eq "" -or $SecondBreakGlassUPN -eq ""){
+  if($FirstBreakGlassUPN -eq "" -and $SecondBreakGlassUPN -eq ""){
     $IsCompliant = $false
     $PsObject = [PSCustomObject]@{
       ComplianceStatus = $IsCompliant
@@ -48,7 +48,7 @@ function Test-BreakGlassAccounts {
       ItemName         = $ItemName
       Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
       ReportTime       = $ReportTime
-      itsgcode = $itsgcode
+      itsgcode         = $itsgcode
     }
   }
   elseif(($FirstBreakGlassUPN -ne "" -or $SecondBreakGlassUPN -ne "") -and $FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
@@ -59,69 +59,11 @@ function Test-BreakGlassAccounts {
       ItemName         = $ItemName
       Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
       ReportTime       = $ReportTime
-      itsgcode = $itsgcode
+      itsgcode         = $itsgcode
     }
   }
   else{
-    # Validate listed BG accounts as members
-    $FirstBreakGlassAcct = [PSCustomObject]@{
-      UserPrincipalName  = $FirstBreakGlassUPN
-      apiUrl             = $FirstBreakGlassUPNUrl
-      ComplianceStatus   = $false
-    }
-    $SecondBreakGlassAcct = [PSCustomObject]@{
-      UserPrincipalName   = $SecondBreakGlassUPN
-      apiUrl              = $SecondBreakGlassUPNUrl
-      ComplianceStatus    = $false
-    }
-      
-    # get 1st break glass account
-    try {
-      $urlPath = $FirstBreakGlassAcct.apiUrl
-      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-
-      $data = $response.Content
-      
-      if ($data.userType -eq "Member") {
-        $FirstBreakGlassAcct.ComplianceStatus = $true
-      } 
-    }
-    catch {
-      $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
-      Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
-    }
-
-    # get 2nd break glass account
-    try {
-      $urlPath = $SecondBreakGlassAcct.apiURL
-      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-
-      $data = $response.Content
-
-      if ($data.userType -eq "Member") {
-        $SecondBreakGlassAcct.ComplianceStatus = $true
-      } 
-    }
-    catch {
-      $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
-      Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
-    }
-
-    # compliance status
-    $IsCompliant = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
-    Write-Host "step 1 validate listed BG accounts compliance status:  $IsCompliant"
-    # if not compliant
-    if(-not $IsCompliant){
-      $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsCompliant
-        ControlName      = $ControlName
-        ItemName         = $ItemName
-        Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
-        ReportTime       = $ReportTime
-        itsgcode = $itsgcode
-      }
-    }
-    else{
+    
       # # Validate BG account Sign-in activity
 
       # Parse LAW Resource ID
@@ -142,12 +84,12 @@ function Test-BreakGlassAccounts {
               you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
       }
 
-      # Validate singnIns log is enabled
+      # Validate signIn log is enabled
       try {
         # logs to check
         $SignInLogs = @('SignInLogs')
 
-        #Retrieve diagnostic settings to check for logs
+        # Retrieve diagnostic settings to check for logs
         $diagnosticSettings = get-AADDiagnosticSettings
         $matchingSetting = $diagnosticSettings | Where-Object { $_.properties.workspaceId -eq $LAWResourceId } | Select-Object -First 1
 
@@ -164,7 +106,6 @@ function Test-BreakGlassAccounts {
             $IsCompliant = $false
             $Comments += $msgTable.signInlogsNotCollected + " Missing logs: $($missingSignInLogs -join ', ')"
         }
-        
       }
       catch {
           if ($_.Exception.Message -like "*ResourceNotFound*") {
@@ -235,7 +176,7 @@ function Test-BreakGlassAccounts {
           itsgcode = $itsgcode
         }
       }
-    }
+    
   }
 
   # Conditionally add the Profile field based on the feature flag
