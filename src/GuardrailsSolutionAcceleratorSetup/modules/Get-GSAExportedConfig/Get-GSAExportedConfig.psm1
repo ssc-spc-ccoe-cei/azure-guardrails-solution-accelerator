@@ -45,8 +45,7 @@ Function Get-GSAExportedConfig {
     }
     
     try {
-        $configValue = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop
-        $configValue = ConvertFrom-SecureString $configValue
+        [string]$configValue = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop
     }
     catch {
         Write-Error -Message "Unable to retrieve the latest configuration from the Key Vault. Please ensure that the Key Vault exists and that the latest configuration has been exported. Message: $_" -ErrorAction Stop
