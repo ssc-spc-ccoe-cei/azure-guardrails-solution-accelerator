@@ -1,5 +1,3 @@
-Add-Type -AssemblyName System.Security
-
 Function Get-GSAExportedConfig {
     <#
     .SYNOPSIS
@@ -47,21 +45,11 @@ Function Get-GSAExportedConfig {
     }
     
     try {
-        $encryptedConfig = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop
-        $encryptedBytes = [Convert]::FromBase64String($encryptedConfig)
-        $decryptedBytes = [System.Security.Cryptography.ProtectedData]::Unprotect(
-            $encryptedBytes,
-            $null,
-            [System.Security.Cryptography.DataProtectionScope]::CurrentUser
-        )
-        $configString = [System.Text.Encoding]::UTF8.GetString($decryptedBytes)
-        
-        # Return the decrypted config string
-        [PSCustomObject]@{
-            configString = $configString
-        }
+        [string]$configValue = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop
     }
     catch {
-        Write-Error -Message "Unable to retrieve and decrypt the latest configuration from the Key Vault. Please ensure that the Key Vault exists and that the latest configuration has been exported. Message: $_" -ErrorAction Stop
+        Write-Error -Message "Unable to retrieve the latest configuration from the Key Vault. Please ensure that the Key Vault exists and that the latest configuration has been exported. Message: $_" -ErrorAction Stop
     }
+
+    return (New-Object -TypeName PSObject -Property @{configString = $configValue})
 }
