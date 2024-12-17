@@ -38,8 +38,12 @@ function Test-BreakGlassAccounts {
 
   [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
   [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
+  
+  $bgCountConfig = 0
+  if ($FirstBreakGlassUPN -ne ""){$bgCountConfig += 1}
+  if ($SecondBreakGlassUPN -ne ""){$bgCountConfig += 1}
 
-  # Validate two BG accounts exist
+  # Validate at least one unique BG accounts exist in config.json
   if($FirstBreakGlassUPN -eq "" -and $SecondBreakGlassUPN -eq ""){
     $IsCompliant = $false
     $PsObject = [PSCustomObject]@{
@@ -51,21 +55,78 @@ function Test-BreakGlassAccounts {
       itsgcode         = $itsgcode
     }
   }
-  elseif(($FirstBreakGlassUPN -ne "" -or $SecondBreakGlassUPN -ne "") -and $FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
-    $IsCompliant = $false
-    $PsObject = [PSCustomObject]@{
-      ComplianceStatus = $IsCompliant
-      ControlName      = $ControlName
-      ItemName         = $ItemName
-      Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
-      ReportTime       = $ReportTime
-      itsgcode         = $itsgcode
+  elseif ( $bgCountConfig -eq 2){
+    if ($FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
+      $IsCompliant = $false
+      $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
+        ControlName      = $ControlName
+        ItemName         = $ItemName
+        Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
+        ReportTime       = $ReportTime
+        itsgcode         = $itsgcode
+      }
     }
   }
   else{
-    
-      # # Validate BG account Sign-in activity
+    # Step 1: Validate listed BG accounts as members
+    $FirstBreakGlassAcct = [PSCustomObject]@{
+      UserPrincipalName  = $FirstBreakGlassUPN
+      apiUrl             = $FirstBreakGlassUPNUrl
+      ComplianceStatus   = $false
+    }
+    $SecondBreakGlassAcct = [PSCustomObject]@{
+      UserPrincipalName   = $SecondBreakGlassUPN
+      apiUrl              = $SecondBreakGlassUPNUrl
+      ComplianceStatus    = $false
+    }
+    # get 1st break glass account
+    try {
+      $urlPath = $FirstBreakGlassAcct.apiUrl
+      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
 
+      $data = $response.Content
+      
+      if ($null -ne  $data) {
+        $FirstBreakGlassAcct.ComplianceStatus = $true
+      } 
+    }
+    catch {
+      $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+      Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+    }
+
+    # get 2nd break glass account
+    try {
+      $urlPath = $SecondBreakGlassAcct.apiURL
+      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+
+      $data = $response.Content
+
+      if ($null -ne  $data) {
+        $SecondBreakGlassAcct.ComplianceStatus = $true
+      } 
+    }
+    catch {
+      $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
+      Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+    }
+
+    $validBG = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
+    Write-Host "step 1 validate listed BG accounts compliance status:  $validBG"
+    # if not compliant
+    if(-not $validBG){
+      $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $validBG
+        ControlName      = $ControlName
+        ItemName         = $ItemName
+        Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
+        ReportTime       = $ReportTime
+        itsgcode = $itsgcode
+      }
+    }
+    else {
+      # Step 2: Validate BG account Sign-in activity
       # Parse LAW Resource ID
       $lawParts = $LAWResourceId -split '/'
       $subscriptionId = $lawParts[2]
@@ -108,74 +169,75 @@ function Test-BreakGlassAccounts {
         }
       }
       catch {
-          if ($_.Exception.Message -like "*ResourceNotFound*") {
-              $IsCompliant = $false
-              $Comments += $msgTable.nonCompliantLaw -f $lawName
-              $ErrorList += "Log Analytics Workspace not found: $_"
-          }
-          else {
-              $IsCompliant = $false
-              $ErrorList += "Error accessing Log Analytics Workspace: $_"
-          }
+        if ($_.Exception.Message -like "*ResourceNotFound*") {
+            $IsCompliant = $false
+            $Comments += $msgTable.nonCompliantLaw -f $lawName
+            $ErrorList += "Log Analytics Workspace not found: $_"
+        }
+        else {
+            $IsCompliant = $false
+            $ErrorList += "Error accessing Log Analytics Workspace: $_"
+        }
       }
+    }
 
-      # Retrieve the log data and check the data retention period for sign in
-      $kqlQuery = "SigninLogs
-      | where TimeGenerated > ago(365d)
-      | order by TimeGenerated desc"
+    # Retrieve the log data and check the data retention period for sign in
+    $kqlQuery = "SigninLogs
+    | where TimeGenerated > ago(365d)
+    | order by TimeGenerated desc"
 
-      try{
-        $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
-        $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery
+    try{
+      $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
+      $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery
 
-        $BGdata = $queryResults.Results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN -or $_.UserPrincipalName -eq $SecondBreakGlassUPN}
-        
-        # check break glass account signin
-        $dataMostRecentSignInFirstBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Sort-Object TimeGenerated -Descending
-        $dataMostRecentSignInSecondBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Sort-Object createdDateTime -Descending
+      $BGdata = $queryResults.Results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN -or $_.UserPrincipalName -eq $SecondBreakGlassUPN}
       
-        if ($null -ne $dataMostRecentSignInFirstBG -and $null -ne $dataMostRecentSignInSecondBG ){
-          $IsSigninCompliant = $true
-        }
-
-      }
-      catch {
-        if ($null -eq $workspace) {
-          $IsCompliant = $false
-          $Comments += "Workspace not found in the specified resource group"
-          $ErrorList += "Workspace not found in the specified resource group: $_"
-        }
-        if($_.Exception.Message -like "*ResourceNotFound*"){
-
-        }
-        else{
-          # Handle errors and exceptions
-          $IsCompliant = $false
-          Write-Host "Error occurred retrieving the sign-in log data: $_"
-        }
-
+      # check break glass account signin
+      $dataMostRecentSignInFirstBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Sort-Object TimeGenerated -Descending
+      $dataMostRecentSignInSecondBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Sort-Object createdDateTime -Descending
+    
+      if ($null -ne $dataMostRecentSignInFirstBG -and $null -ne $dataMostRecentSignInSecondBG ){
+        $IsSigninCompliant = $true
       }
 
-      if($IsSigninCompliant){
-        $PsObject = [PSCustomObject]@{
-          ComplianceStatus = $IsCompliant
-          ControlName      = $ControlName
-          ItemName         = $ItemName
-          Comments         = $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
-          ReportTime       = $ReportTime
-          itsgcode = $itsgcode
-        }
+    }
+    catch {
+      if ($null -eq $workspace) {
+        $IsCompliant = $false
+        $Comments += "Workspace not found in the specified resource group"
+        $ErrorList += "Workspace not found in the specified resource group: $_"
+      }
+      if($_.Exception.Message -like "*ResourceNotFound*"){
+
       }
       else{
-        $PsObject = [PSCustomObject]@{
-          ComplianceStatus = $IsSigninCompliant
-          ControlName      = $ControlName
-          ItemName         = $ItemName
-          Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
-          ReportTime       = $ReportTime
-          itsgcode = $itsgcode
-        }
+        # Handle errors and exceptions
+        $IsCompliant = $false
+        Write-Host "Error occurred retrieving the sign-in log data: $_"
       }
+
+    }
+
+    if($IsSigninCompliant){
+      $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
+        ControlName      = $ControlName
+        ItemName         = $ItemName
+        Comments         = $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
+        ReportTime       = $ReportTime
+        itsgcode = $itsgcode
+      }
+    }
+    else{
+      $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsSigninCompliant
+        ControlName      = $ControlName
+        ItemName         = $ItemName
+        Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
+        ReportTime       = $ReportTime
+        itsgcode = $itsgcode
+      }
+    }
     
   }
 
