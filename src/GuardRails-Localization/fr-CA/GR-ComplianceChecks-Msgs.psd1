@@ -343,6 +343,7 @@ bgValidSignature = Signatures et approbations valides pour la procédure de comp
 bgAccountTesting = Cadence des tests des comptes de bris de verre
 bgAccountNotExist = Un ou les deux noms d'utilisateur principal (UPN) du compte de bris de verre fournis n'existent pas dans l'environnement. Vérifiez l'exactitude des UPN du compte de bris de verre fournis.
 bgAccountLoginNotValid = La dernière connexion aux comptes de bris de verre fournis est plus qu'un an. Assurez-vous d'effectuer des tests réguliers de la procédure du compte de bris de verre et du processus de connexion.
+bgAccountLoginValid = Last login for the provided Break Glass Accounts is within a year. Ensure regular testing of the Break Glass Account procedure and login process.
 
 # GR-Common
 procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.

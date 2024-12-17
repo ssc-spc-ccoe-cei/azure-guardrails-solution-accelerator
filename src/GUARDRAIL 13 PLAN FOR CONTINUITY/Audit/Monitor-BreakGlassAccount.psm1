@@ -220,7 +220,7 @@ function Test-BreakGlassAccounts {
           ComplianceStatus = $IsCompliant
           ControlName      = $ControlName
           ItemName         = $ItemName
-          Comments         = $msgTable.isCompliant
+          Comments         = $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
           ReportTime       = $ReportTime
           itsgcode = $itsgcode
         }
