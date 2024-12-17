@@ -93,7 +93,8 @@ If ($Locale -eq $null) {
 }
 
 try {
-    $RuntimeConfig = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop | ConvertFrom-Json | Select-Object -Expand runtime
+    $encryptedSecret = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText
+    $RuntimeConfig = ConvertFrom-SecureString $encryptedSecret | ConvertFrom-Json | Select-Object -Expand runtime
     Set-AzContext -SubscriptionId $RuntimeConfig.subscriptionId
 }
 catch {
