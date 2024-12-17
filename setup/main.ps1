@@ -93,8 +93,16 @@ If ($Locale -eq $null) {
 }
 
 try {
-    $encryptedSecret = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText
-    $RuntimeConfig = ConvertFrom-SecureString $encryptedSecret | ConvertFrom-Json | Select-Object -Expand runtime
+# Get and decrypt the config from Key Vault
+    $encryptedConfig = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop
+    $encryptedBytes = [Convert]::FromBase64String($encryptedConfig)
+    $decryptedBytes = [System.Security.Cryptography.ProtectedData]::Unprotect(
+        $encryptedBytes,
+        $null,
+        [System.Security.Cryptography.DataProtectionScope]::CurrentUser
+    )
+    $configString = [System.Text.Encoding]::UTF8.GetString($decryptedBytes)
+    $RuntimeConfig = $configString | ConvertFrom-Json
     Set-AzContext -SubscriptionId $RuntimeConfig.subscriptionId
 }
 catch {
@@ -476,7 +484,3 @@ Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid 
 # vduHbe/rUCbpQefqNRPCsYhO6dp/k6CH5XGin8lPPIDdRl+LaSY13QYD9rWEeAFo
 # A6om4dcNwSng2HswnGtUaDxiDTtAqPv1F5RTFD0ILoHWkDjD4NwHiodDPKn7pbFV
 # yOVynr1zu8cGneK2fBidzculEjzOfaASvM/aH/oDSpTrM8ZKKURcEsU+PqxeByn2
-# yMExxoMHREyWswmY3LtDgo36H0D1SGJ8OcVHhzGFFV5Q9/u8jodCy2JNH83BuKGh
-# 1euy9uKef3TlcDqKCnG2Oaxd6OzqfCTWgWazjQ0M2OZOurZWbXBMVTJuD6GUxNSm
-# z8oLhvJYXybSsUZJ6zHql7KukNVheG7WXTrb6Pe0
-# SIG # End signature block

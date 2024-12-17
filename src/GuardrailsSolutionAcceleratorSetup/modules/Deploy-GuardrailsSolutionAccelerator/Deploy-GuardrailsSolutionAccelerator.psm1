@@ -433,9 +433,17 @@ Function Deploy-GuardrailsSolutionAccelerator {
             'deployerAzureID'       = $config['runtime']['userId']
         }
 
-        # $secureValue = 
-        # $secretValue = ConvertFrom-SecureString $secureValue
-        Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force) -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
+        $jsonConfig = ConvertTo-Json $config -Depth 10
+        $encryptedBytes = [System.Security.Cryptography.ProtectedData]::Protect(
+            [System.Text.Encoding]::UTF8.GetBytes($jsonConfig),
+            $null,
+            [System.Security.Cryptography.DataProtectionScope]::CurrentUser
+        )
+        $encryptedBase64 = [Convert]::ToBase64String($encryptedBytes)
+        $secureString = ConvertTo-SecureString $encryptedBase64 -AsPlainText -Force
+
+        Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName `
+            -SecretValue $secureString -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
 
         Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
     }
