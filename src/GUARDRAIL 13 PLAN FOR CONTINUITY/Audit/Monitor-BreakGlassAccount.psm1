@@ -71,12 +71,12 @@ function Test-BreakGlassAccounts {
     $FirstBreakGlassAcct = [PSCustomObject]@{
       UserPrincipalName  = $FirstBreakGlassUPN
       apiUrl             = $FirstBreakGlassUPNUrl
-      ComplianceStatus   = $false
+      existStatus        = $false
     }
     $SecondBreakGlassAcct = [PSCustomObject]@{
       UserPrincipalName   = $SecondBreakGlassUPN
       apiUrl              = $SecondBreakGlassUPNUrl
-      ComplianceStatus    = $false
+      existStatus         = $false
     }
     # get 1st break glass account
     try {
@@ -86,7 +86,7 @@ function Test-BreakGlassAccounts {
       $data = $response.Content
       
       if ($null -ne  $data) {
-        $FirstBreakGlassAcct.ComplianceStatus = $true
+        $FirstBreakGlassAcct.existStatus = $true
       } 
     }
     catch {
@@ -102,7 +102,7 @@ function Test-BreakGlassAccounts {
       $data = $response.Content
 
       if ($null -ne  $data) {
-        $SecondBreakGlassAcct.ComplianceStatus = $true
+        $SecondBreakGlassAcct.existStatus = $true
       } 
     }
     catch {
@@ -110,7 +110,13 @@ function Test-BreakGlassAccounts {
       Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
     }
 
-    $validBG = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
+    if ($bgCountConfig -eq 2){
+      $validBG = $FirstBreakGlassAcct.existStatus -and $SecondBreakGlassAcct.existStatus
+    }
+    else {
+      $validBG = $FirstBreakGlassAcct.existStatus -or $SecondBreakGlassAcct.existStatus
+    }
+    
     Write-Host "step 1 validate listed BG accounts compliance status:  $validBG"
     # if not compliant
     if(-not $validBG){
@@ -145,7 +151,7 @@ function Test-BreakGlassAccounts {
 
       # Validate signIn log is enabled
       try {
-        # logs to check
+        # the log name to validate
         $SignInLogs = @('SignInLogs')
 
         # Retrieve diagnostic settings to check for logs
@@ -153,28 +159,29 @@ function Test-BreakGlassAccounts {
         $matchingSetting = $diagnosticSettings | Where-Object { $_.properties.workspaceId -eq $LAWResourceId } | Select-Object -First 1
 
         if($matchingSetting){
-            $enabledLogs = $matchingSetting.properties.logs | Where-Object { $_.enabled -eq $true } | Select-Object -ExpandProperty category
-            $missingSignInLogs = $SignInLogs | Where-Object { $_ -notin $enabledLogs }
+          $enabledLogs = $matchingSetting.properties.logs | Where-Object { $_.enabled -eq $true } | Select-Object -ExpandProperty category
+          $missingSignInLogs = $SignInLogs | Where-Object { $_ -notin $enabledLogs }
         }
         else{
-            $missingSignInLogs = $SignInLogs
+          $missingSignInLogs = $SignInLogs
         }
 
-        # Check missing logs for SignInLogs
+        # Check missing logs for SignInLogs, if missing/not enabled, non-compliant
         if ($missingSignInLogs.Count -gt 0) {
-            $IsCompliant = $false
-            $Comments += $msgTable.signInlogsNotCollected + " Missing logs: $($missingSignInLogs -join ', ')"
+          $IsCompliant = $false
+          $Comments += $msgTable.isNotCompliant + " " + $msgTable.signInlogsNotCollected
         }
       }
       catch {
+        # catch exceptions
         if ($_.Exception.Message -like "*ResourceNotFound*") {
-            $IsCompliant = $false
-            $Comments += $msgTable.nonCompliantLaw -f $lawName
-            $ErrorList += "Log Analytics Workspace not found: $_"
+          $IsCompliant = $false
+          $Comments += $msgTable.nonCompliantLaw -f $workspaceId
+          $ErrorList += "Log Analytics Workspace not found: $_"
         }
         else {
-            $IsCompliant = $false
-            $ErrorList += "Error accessing Log Analytics Workspace: $_"
+          $IsCompliant = $false
+          $ErrorList += "Error accessing Log Analytics Workspace: $_"
         }
       }
     }
