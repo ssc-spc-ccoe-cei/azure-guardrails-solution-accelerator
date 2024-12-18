@@ -1,4 +1,3 @@
-
 # import sub-modules
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Confirm-GSAConfigurationParameters\Confirm-GSAConfigurationParameters.psd1")
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Confirm-GSAPrerequisites\Confirm-GSAPrerequisites.psd1")
@@ -136,6 +135,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
     #>
 
     [CmdletBinding(DefaultParameterSetName = 'newDeployment-configFilePath')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '')]
     param (
         # path to the configuration file - for new deployments
         [Parameter(mandatory = $true, ParameterSetName = 'newDeployment-configFilePath')]
@@ -461,5 +461,4 @@ $functionsToExport = @(
     #'Update-GSAGuardrailPSModules'
     #'Update-GSAWorkbookDefintion
 )
-
 Export-ModuleMember -Function $functionsToExport
