@@ -26,7 +26,6 @@ Function Add-GSAAutomationRunbooks {
     Write-Verbose "Importing 'main' Runbook." #main runbook, runs the modules.
     try {
         $ErrorActionPreference = 'Stop'
-
         Write-Verbose "`tImporting 'main' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'"
         Import-AzAutomationRunbook -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" -Description $mainRunbookDescription -Type PowerShell -Published `
             -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
@@ -39,7 +38,6 @@ Function Add-GSAAutomationRunbooks {
     Write-Verbose "Creating schedule for 'main' Runbook."
     try {
         $ErrorActionPreference = 'Stop'
-
         Write-Verbose "`tCreating schedule for 'main' Runbook."
         New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Every6hours" -StartTime (get-date).AddHours(1) -HourInterval 6 | Out-Null
     }
@@ -55,7 +53,7 @@ Function Add-GSAAutomationRunbooks {
         Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Every6hours" | Out-Null
     }
     catch {
-        Write-Error "Error importing 'main' Runbook. $_"
+        Write-Error "Error registering 'main' Runbook to schedule. $_"
         break
     }
     #endregion
