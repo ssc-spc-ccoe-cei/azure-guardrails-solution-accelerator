@@ -1,4 +1,3 @@
-
 # import sub-modules
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Confirm-GSAConfigurationParameters\Confirm-GSAConfigurationParameters.psd1")
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Confirm-GSAPrerequisites\Confirm-GSAPrerequisites.psd1")
@@ -136,6 +135,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
     #>
 
     [CmdletBinding(DefaultParameterSetName = 'newDeployment-configFilePath')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '')]
     param (
         # path to the configuration file - for new deployments
         [Parameter(mandatory = $true, ParameterSetName = 'newDeployment-configFilePath')]
@@ -433,8 +433,10 @@ Function Deploy-GuardrailsSolutionAccelerator {
             'deployerAzureID'       = $config['runtime']['userId']
         }
 
-        $secretValue = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
-        Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue $secretValue -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
+        $secureConfig = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
+        $encryptedConfig = $secureConfig | ConvertFrom-SecureString
+        $secureConfig.Dispose()
+        Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue ($encryptedConfig | ConvertTo-SecureString) -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
 
         Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
     }
@@ -459,5 +461,4 @@ $functionsToExport = @(
     #'Update-GSAGuardrailPSModules'
     #'Update-GSAWorkbookDefintion
 )
-
 Export-ModuleMember -Function $functionsToExport
