@@ -36,9 +36,12 @@ signInlogsNotCollected = Les journaux de connexion « SignInLogs » ne sont actu
 auditlogsNotCollected = Les journaux d'audit « AuditLogs » ne sont actuellement pas activés. Les « AuditLogs » doivent être activés pour capturer et enregistrer tous les événements d'audit significatifs dans l'environnement.
 noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
 noActionGroupsForBGaccts = Aucun groupe d'action n'a été identifié pour les activités de connexion au compte de bris de verre. Les groupes d'action doivent être configurés pour recevoir des alertes en cas de tentatives de connexion au compte de bris de verre.
-noActionGroupsForAuditLogs = Aucun groupe d'action n'a été trouvé pour les journaux d'audit « AuditLogs ». Des groupes d'action doivent être créés pour recevoir des alertes pour les événements auditables importants.
+noActionGroupsForAuditLogs = Aucun groupe d'action n'a été trouvé pour les modifications et les mises à jour de la politique d'accès conditionnel. Des groupes d'action doivent être créés pour recevoir des alertes pour les modifications et les mises à jour de la politique d'accès conditionnel.
+has context menu
 noActionGroups = Aucun groupe d'action n'a été configuré pour le groupe de ressources « {0} ». Assurez-vous que les groupes d'action sont configurés pour recevoir des alertes pour les activités surveillées du groupe de ressources correspondant.
 compliantAlerts = Les alertes pour les comptes de bris de verre et les journaux d'audit « AuditLogs » sont conformes. Les groupes d'action appropriés ont été configurés et reçoivent correctement des alertes pour chaque activité surveillée.
+noAlertRuleforBGaccts = Créez une alerte pour les comptes de bris de verre en utilisant « SignInLogs ». Il manque une des alertes requises.
+noAlertRuleforCaps = Créez une alerte pour les modifications et les mises à jour de la politique d'accès conditionnel en utilisant « AuditLogs ». Il manque une des alertes requises.
 
 allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
