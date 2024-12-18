@@ -55,8 +55,7 @@ function Test-BreakGlassAccounts {
       itsgcode         = $itsgcode
     }
   }
-  elseif ( $bgCountConfig -eq 2){
-    if ($FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
+  elseif (($bgCountConfig -eq 2) -and $FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
       $IsCompliant = $false
       $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
@@ -66,7 +65,6 @@ function Test-BreakGlassAccounts {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
       }
-    }
   }
   else{
     # Step 1: Validate listed BG accounts as members
