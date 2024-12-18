@@ -33,7 +33,7 @@ function Test-BreakGlassAccounts {
   )
 
   [bool] $IsCompliant = $false
-  [bool] $IsSigninCompliant = $false
+  $commentsArray = @()
   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
   [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
@@ -169,14 +169,14 @@ function Test-BreakGlassAccounts {
         # Check missing logs for SignInLogs, if missing/not enabled, non-compliant
         if ($missingSignInLogs.Count -gt 0) {
           $IsCompliant = $false
-          $Comments += $msgTable.isNotCompliant + " " + $msgTable.signInlogsNotCollected
+          $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.signInlogsNotCollected
         }
       }
       catch {
         # catch exceptions
         if ($_.Exception.Message -like "*ResourceNotFound*") {
           $IsCompliant = $false
-          $Comments += $msgTable.nonCompliantLaw -f $workspaceId
+          $commentsArray += $msgTable.nonCompliantLaw -f $workspaceId
           $ErrorList += "Log Analytics Workspace not found: $_"
         }
         else {
@@ -202,14 +202,14 @@ function Test-BreakGlassAccounts {
       $dataMostRecentSignInSecondBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Sort-Object createdDateTime -Descending
     
       if ($null -ne $dataMostRecentSignInFirstBG -and $null -ne $dataMostRecentSignInSecondBG ){
-        $IsSigninCompliant = $true
+        $IsCompliant = $true
       }
 
     }
     catch {
       if ($null -eq $workspace) {
         $IsCompliant = $false
-        $Comments += "Workspace not found in the specified resource group"
+        $commentsArray += "Workspace not found in the specified resource group"
         $ErrorList += "Workspace not found in the specified resource group: $_"
       }
       if($_.Exception.Message -like "*ResourceNotFound*"){
@@ -222,26 +222,24 @@ function Test-BreakGlassAccounts {
       }
 
     }
+    
 
-    if($IsSigninCompliant){
-      $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsCompliant
-        ControlName      = $ControlName
-        ItemName         = $ItemName
-        Comments         = $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
-        ReportTime       = $ReportTime
-        itsgcode = $itsgcode
-      }
+    if($IsCompliant){
+      $commentsArray = $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
     }
-    else{
-      $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsSigninCompliant
-        ControlName      = $ControlName
-        ItemName         = $ItemName
-        Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
-        ReportTime       = $ReportTime
-        itsgcode = $itsgcode
-      }
+    else {
+      $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
+    }
+    
+    $Comments = $commentsArray -join ";"
+
+    $PsObject = [PSCustomObject]@{
+      ComplianceStatus = $IsCompliant
+      ControlName      = $ControlName
+      ItemName         = $ItemName
+      Comments         = $Comments
+      ReportTime       = $ReportTime
+      itsgcode         = $itsgcode
     }
     
   }
