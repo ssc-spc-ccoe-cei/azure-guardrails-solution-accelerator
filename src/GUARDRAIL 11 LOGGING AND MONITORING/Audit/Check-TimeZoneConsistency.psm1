@@ -45,26 +45,26 @@ function Check-TimeZoneConsistency {
             # }
 
             # 2. Check Virtual Machines
-            $vms = Get-AzVM
-            foreach ($vm in $vms) {
-                # Get VM timezone through run command (Windows) or SSH (Linux)
-                $isWindowsVM = $null -ne $vm.OSProfile.WindowsConfiguration
-                if ($isWindowsVM) {
-                    $tzCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName $vm.Name -CommandId 'RunPowerShellScript' -ScriptString '[System.TimeZoneInfo]::Local.Id'
-                    $vmTimeZone = $tzCommand.Value[0].Message
-                } else {
-                    # For Linux, we'd read /etc/timezone if accessible
-                    $tzCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName $vm.Name -CommandId 'RunShellScript' -ScriptString 'cat /etc/timezone'
-                    $vmTimeZone = $tzCommand.Value[0].Message
-                }
+            # $vms = Get-AzVM
+            # foreach ($vm in $vms) {
+            #     # Get VM timezone through run command (Windows) or SSH (Linux)
+            #     $isWindowsVM = $null -ne $vm.OSProfile.WindowsConfiguration
+            #     if ($isWindowsVM) {
+            #         $tzCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName $vm.Name -CommandId 'RunPowerShellScript' -ScriptString '[System.TimeZoneInfo]::Local.Id'
+            #         $vmTimeZone = $tzCommand.Value[0].Message
+            #     } else {
+            #         # For Linux, we'd read /etc/timezone if accessible
+            #         $tzCommand = Invoke-AzVMRunCommand -ResourceGroupName $vm.ResourceGroupName -VMName $vm.Name -CommandId 'RunShellScript' -ScriptString 'cat /etc/timezone'
+            #         $vmTimeZone = $tzCommand.Value[0].Message
+            #     }
 
-                $tzSettings.Add([PSCustomObject]@{
-                    ResourceType = "Virtual Machine"
-                    ResourceName = $vm.Name
-                    TimeZone = $vmTimeZone
-                    Subscription = $sub.Name
-                }) | Out-Null
-            }
+            #     $tzSettings.Add([PSCustomObject]@{
+            #         ResourceType = "Virtual Machine"
+            #         ResourceName = $vm.Name
+            #         TimeZone = $vmTimeZone
+            #         Subscription = $sub.Name
+            #     }) | Out-Null
+            # }
 
             # # 3. Check SQL Databases
             # $sqlServers = Get-AzSqlServer

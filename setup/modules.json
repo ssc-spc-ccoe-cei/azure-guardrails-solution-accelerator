@@ -1326,7 +1326,7 @@
     "ModuleName": "Check-TimeZoneConsistency",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",
-    "Status": "Enabled",
+    "Status": "Disabled",
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Check-TimeZoneConsistency -ControlName $msgTable.CtrName11 -ItemName $msgTable.timeZoneConsistency -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
