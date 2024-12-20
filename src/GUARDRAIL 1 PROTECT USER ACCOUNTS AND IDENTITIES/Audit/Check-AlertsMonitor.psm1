@@ -163,6 +163,10 @@ function Check-AlertsMonitor {
                     $Comments += $msgTable.noActionGroupsForBGaccts
                 }            
             }
+            else{
+                $IsCompliant = $false
+                $Comments += $msgTable.noAlertRuleforBGaccts
+            }
 
             #If alert rule has one of the queries to check audit logs
             if($auditLogsQueriesMatching) {
@@ -179,10 +183,19 @@ function Check-AlertsMonitor {
                     $Comments += $msgTable.noActionGroupsForAuditLogs
                 } 
             }
+            else{
+                $IsCompliant = $false
+                $Comments += $msgTable.NoAlertRuleforCaps
+            }
         }
         catch{
+
+            #Set conditional messages
+            if($bgAcctQueriesMatching -and (-not $auditLogsQueriesMatching)){$Comments += $msgTable.noActionGroupsForBGaccts}
+            elseif($auditLogsQueriesMatching){$Comments += $msgTable.noActionGroupsForAuditLogs}
+            else{$Comments += $msgTable.noActionGroups -f $resourceGroupName}
+
             $IsCompliant = $false
-            $Comments += $msgTable.noActionGroups -f $resourceGroupName
             $ErrorList += "Could not find action groups for the given alert rules for the resource group: $_"
         }
         

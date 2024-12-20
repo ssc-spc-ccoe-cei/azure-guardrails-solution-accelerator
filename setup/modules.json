@@ -1195,7 +1195,7 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Test-BreakGlassAccounts -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountTesting -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Test-BreakGlassAccounts -ControlName $msgTable.CtrName13 -ItemName $msgTable.bgAccountTesting -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -LAWResourceId $vars.LAWResourceId -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
@@ -1204,6 +1204,12 @@
       {
         "Name": "SecondBreakGlassUPN",
         "Value": "BGA2"
+      }
+    ],
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
       }
     ],
     "localVariables": [
@@ -1320,7 +1326,7 @@
     "ModuleName": "Check-TimeZoneConsistency",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",
-    "Status": "Enabled",
+    "Status": "Disabled",
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Check-TimeZoneConsistency -ControlName $msgTable.CtrName11 -ItemName $msgTable.timeZoneConsistency -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",

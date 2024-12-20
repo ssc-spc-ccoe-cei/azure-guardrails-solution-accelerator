@@ -29,11 +29,13 @@ gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 alertsMonitor = Alerts to Flag Misuse and Suspicious Activities
 signInlogsNotCollected = The SignInLogs are currently not enabled. SignInLogs must be enabled to monitor and log user sign-in activities in the environment.
 auditlogsNotCollected = The AuditLogs are currently not enabled. AuditLogs must be enabled to capture and log all significant audit events within the environment.
-noAlertRules = No alert rules were found for either SignInLogs or AuditLogs. Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
+noAlertRules = No alert rules were found for SignInLogs or AuditLogs. Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
 noActionGroupsForBGaccts = No action groups were identified for Break Glass account sign-in activities. Action groups must be configured to receive alerts for Break Glass account sign-in attempts.
-noActionGroupsForAuditLogs = No action groups were found for AuditLogs. Action groups must be created to receive alerts for important auditable events.
+noActionGroupsForAuditLogs = No action groups were found for Conditional Access Policy changes and updates. Action groups must be created to receive alerts for Conditional Access Policy changes and updates.
 noActionGroups = No action groups were configured for the resource group “{0}”. Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
 compliantAlerts = The alerts for Break Glass accounts and audit logs are compliant. Appropriate action groups have been configured and are correctly receiving alerts for each monitored activity.
+noAlertRuleforBGaccts = Create an alert for the Breakglass accounts using the SignInLogs. Missing one of the required alerts.
+NoAlertRuleforCaps = Create an alert for the Conditional Access Policy changes and updates using the AuditLogs. Missing one of the required alerts.
 
 globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
 globalAdminAccntsMinimum = There are not enough Global Administrator Accounts. There must be at least two but no more than five Active Global Administrator Accounts.
@@ -342,6 +344,7 @@ bgValidSignature = Valid Signatures and Approvals for Break Glass Account Proced
 bgAccountTesting = Break Glass Account Testing Cadence
 bgAccountNotExist = One or both of the Break Glass Account User Principal Names (UPNs) provided do not exist in the environment. Review the provided Break Glass Account UPNs for accuracy.
 bgAccountLoginNotValid = Last login for the provided Break Glass Accounts is greater than a year. Ensure regular testing of the Break Glass Account procedure and login process.
+bgAccountLoginValid = Last login for the provided Break Glass Accounts is within a year. Ensure regular testing of the Break Glass Account procedure and login process.
 
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.

@@ -26,19 +26,34 @@ Function Add-GSAAutomationRunbooks {
     Write-Verbose "Importing 'main' Runbook." #main runbook, runs the modules.
     try {
         $ErrorActionPreference = 'Stop'
-
         Write-Verbose "`tImporting 'main' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'"
         Import-AzAutomationRunbook -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" -Description $mainRunbookDescription -Type PowerShell -Published `
             -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
+    }
+    catch {
+        Write-Error "Error importing 'main' Runbook to Azure Automation Account. $_"
+        break
+    }
 
+    Write-Verbose "Creating schedule for 'main' Runbook."
+    try {
+        $ErrorActionPreference = 'Stop'
         Write-Verbose "`tCreating schedule for 'main' Runbook."
         New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Every6hours" -StartTime (get-date).AddHours(1) -HourInterval 6 | Out-Null
+    }
+    catch {
+        Write-Error "Error creating schedule for 'main' Runbook. $_"
+        break
+    }
 
+    Write-Verbose "Registering 'main' Runbook to schedule."
+    try{
+        $ErrorActionPreference = 'Stop'
         Write-Verbose "`tRegistering 'main' Runbook to schedule."
         Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Every6hours" | Out-Null
     }
     catch {
-        Write-Error "Error importing 'main' Runbook. $_"
+        Write-Error "Error registering 'main' Runbook to schedule. $_"
         break
     }
     #endregion
@@ -46,19 +61,34 @@ Function Add-GSAAutomationRunbooks {
     Write-Verbose "Importing 'Backend' Runbook." #backend runbooks. gets information about tenant, version and itsgcontrols.
     try {
         $ErrorActionPreference = 'Stop'
-
         Write-Verbose "`tImporting 'backend' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'"
         Import-AzAutomationRunbook -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" -Description $backendRunbookDescription -Type PowerShell -Published `
             -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
-        
+    }
+    catch {
+        Write-Error "Error importing 'backend' Runbook. $_"
+        break
+    }
+
+    Write-Verbose "Creating schedule for 'Backend' Runbook."
+    try {
+        $ErrorActionPreference = 'Stop'
         Write-Verbose "`tCreating schedule for 'backend' Runbook."
         New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime (get-date).AddHours(1) -HourInterval 24 | Out-Null
-        
+    }
+    catch {
+        Write-Error "Error creating schedule for 'backend' Runbook. $_"
+        break
+    }
+
+    Write-Verbose "Registering 'Backend' Runbook to schedule."
+    try {
+        $ErrorActionPreference = 'Stop'
         Write-Verbose "`tRegistering 'backend' Runbook to schedule."
         Register-AzAutomationScheduledRunbook -Name $backendRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Daily" | Out-Null
     }
     catch {
-        Write-Error "Error importing 'backend' Runbook. $_"
+        Write-Error "Error registering 'Backend' Runbook to schedule. $_"
         break
     }
 
