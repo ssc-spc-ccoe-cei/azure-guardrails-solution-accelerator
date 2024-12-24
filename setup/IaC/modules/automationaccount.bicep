@@ -199,8 +199,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  // resource module17 - removed
-
   resource module18 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
     properties: {
@@ -237,8 +235,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  // resource module22 - removed
-
   resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
     properties: {
@@ -248,8 +244,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  // resource module24 - removed
-
   resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
     properties: {
