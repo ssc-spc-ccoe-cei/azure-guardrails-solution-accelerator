@@ -258,14 +258,10 @@ cbssCompliant = Found resources in these subscriptions:
 MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
-healthMonitoring = HealthMonitoring
 defenderMonitoring =DefenderMonitoring
 
 serviceHealthAlerts = Service Health Alerts and Events Check
 
-healthLAWNotFound = The specified Log Analytics Workspace for Health monitoring has not been found.
-lawRetentionHealthDays = Retention not set to at least {0} days.
-lawHealthNoSolutionFound = Required solutions not present in the Health Log Analytics Workspace.
 createLAW = Please create a log analytics workspace according to guidelines.
 connectAutoAcct = Please connect an automation account to the provided workspace.
 setRetention730Days = Set retention of the workspace to 730 days for workspace: 
@@ -273,7 +269,6 @@ addActivityLogs = Please add the Activity Logs solution to the workspace:
 addUpdatesAndAntiMalware = Please add the both the Updates and Anti-Malware solution to the workspace: 
 configTenantDiag = Please configure the Tenant diagnostics to point to the provided workspace: 
 addAuditAndSignInsLogs = Please enable Audit Logs and SignInLogs in the Tenant Dianostics settings.
-logsAndMonitoringCompliantForHealth= The Logs and Monitoring are compliant for Health.
 
 logsAndMonitoringCompliantForDefender = The Logs and Monitoring are compliant for Defender.
 createHealthLAW = Please create a workspace for Health Monitoring according to the Guardrails guidelines.

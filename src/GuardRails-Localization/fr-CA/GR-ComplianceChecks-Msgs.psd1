@@ -259,14 +259,10 @@ cbssCompliant = Ressources trouvées dans ces abonnements:
 MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
-HealthMonitoring = Surveillance Santé
 defenderMonitoring =Surveillance Defender
 
 serviceHealthAlerts = Alertes de santé du service et vérification des événements
 
-healthLAWNotFound = L'espace de travail Log Analytics spécifié pour la surveillance de la santé est introuvable.
-lawRetentionHealthDays = La rétention n'est pas définie sur au moins {0} jours.
-lawHealthNoSolutionFound = Les solutions requises ne sont pas présentes dans l'espace de travail Health Log Analytics.
 createLAW = Veuillez créer un espace de travail d'analyse de journaux conformément aux directives.
 connectAutoAcct = Veuillez connecter un compte d'automatisation à l'espace de travail fourni.
 setRetention60Days = Définir la rétention de l'espace de travail sur au moins 90 jours pour l'espace de travail: 
@@ -276,7 +272,6 @@ addUpdatesAndAntiMalware = Veuillez ajouter à la fois la solution Mises à jour
 configTenantDiag = Veuillez configurer les diagnostics de locataire pour qu'ils pointent vers l'espace de travail fourni: 
 addAuditAndSignInsLogs = Veuillez activer les journaux d'audit et SignInLogs dans les paramètres de Tenant Dianostics.
 
-logsAndMonitoringCompliantForHealth = Les journaux et la surveillance sont conformes pour la santé.
 logsAndMonitoringCompliantForDefender = Les journaux et la surveillance sont conformes pour Defender.
 createHealthLAW = Veuillez créer un espace de travail pour la surveillance de la santé conformément aux directives de Guardrails.
 enableAgentHealthSolution = Veuillez activer la solution d'évaluation de l'état de santé de l'agent dans l'espace de travail.

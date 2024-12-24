@@ -917,31 +917,6 @@
     ]
   },
   {
-    "ModuleName": "Check-HealthMonitoring",
-    "Control": "Guardrails11",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Get-HealthMonitoringStatus -HealthLAWResourceId $vars.HealthLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfohealthmon $vars.itsgcodehealthmon -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "HealthLAWResourceId",
-        "Value": "HealthLAWResourceId"
-      },
-      {
-        "Name": "cbssubscriptionName",
-        "Value": "CBSSubscriptionName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcodehealthmon",
-        "Value": "AU2"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",

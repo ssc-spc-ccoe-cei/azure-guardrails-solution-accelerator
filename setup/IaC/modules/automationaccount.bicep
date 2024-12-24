@@ -244,15 +244,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module22 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-HealthMonitoring'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-HealthMonitoring.zip'
-        version: '1.1.11'
-      }
-    }
-  }
+  // resource module22 - removed
+
   resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
     properties: {
@@ -263,7 +256,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
   // resource module24 - removed
-  
+
   resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
     properties: {
