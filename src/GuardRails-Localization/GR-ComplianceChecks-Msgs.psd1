@@ -261,6 +261,7 @@ MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 securityMonitoring =SecurityMonitoring
 healthMonitoring = HealthMonitoring
 defenderMonitoring =DefenderMonitoring
+
 serviceHealthAlerts = Service Health Alerts and Events Check
 securityLAWNotFound = The specified Log Analytics Workspace for Security monitoring has not been found.
 lawRetentionSecDays = Retention not set to {0} days.
@@ -290,7 +291,7 @@ setSecurityContact = Please set a security contact for Defender for Cloud in the
 notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Notifications Enabled
-severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
+
 noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}
 NotAllSubsHaveAlerts = Not all subscriptions have Service Health Alerts enabled.
 EventTypeMissingForAlert = Missing a required event type (Service Issue, Health Advisory, or Security Advisory) for the subscription: {0}
