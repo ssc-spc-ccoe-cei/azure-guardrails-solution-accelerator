@@ -259,7 +259,6 @@ cbssCompliant = Ressources trouvées dans ces abonnements:
 MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
-securityMonitoring = Surveillance de la sécurité
 HealthMonitoring = Surveillance Santé
 defenderMonitoring =Surveillance Defender
 
@@ -282,7 +281,7 @@ addActivityLogs = Veuillez ajouter la solution Activity Logs à l'espace de trav
 addUpdatesAndAntiMalware = Veuillez ajouter à la fois la solution Mises à jour et Anti-Malware à l'espace de travail: 
 configTenantDiag = Veuillez configurer les diagnostics de locataire pour qu'ils pointent vers l'espace de travail fourni: 
 addAuditAndSignInsLogs = Veuillez activer les journaux d'audit et SignInLogs dans les paramètres de Tenant Dianostics.
-logsAndMonitoringCompliantForSecurity = Les journaux et la surveillance sont conformes pour la sécurité.
+
 logsAndMonitoringCompliantForHealth = Les journaux et la surveillance sont conformes pour la santé.
 logsAndMonitoringCompliantForDefender = Les journaux et la surveillance sont conformes pour Defender.
 createHealthLAW = Veuillez créer un espace de travail pour la surveillance de la santé conformément aux directives de Guardrails.

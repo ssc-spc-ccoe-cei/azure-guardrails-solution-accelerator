@@ -258,7 +258,6 @@ cbssCompliant = Found resources in these subscriptions:
 MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
-securityMonitoring =SecurityMonitoring
 healthMonitoring = HealthMonitoring
 defenderMonitoring =DefenderMonitoring
 
@@ -281,7 +280,7 @@ addUpdatesAndAntiMalware = Please add the both the Updates and Anti-Malware solu
 configTenantDiag = Please configure the Tenant diagnostics to point to the provided workspace: 
 addAuditAndSignInsLogs = Please enable Audit Logs and SignInLogs in the Tenant Dianostics settings.
 logsAndMonitoringCompliantForHealth= The Logs and Monitoring are compliant for Health.
-logsAndMonitoringCompliantForSecurity = The Logs and Monitoring are compliant for Security.
+
 logsAndMonitoringCompliantForDefender = The Logs and Monitoring are compliant for Defender.
 createHealthLAW = Please create a workspace for Health Monitoring according to the Guardrails guidelines.
 enableAgentHealthSolution = Please enable the Agent Health Assessment solution in the workspace.

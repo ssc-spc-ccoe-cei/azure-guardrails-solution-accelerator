@@ -262,15 +262,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module24 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-SecurityMonitoring'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
-        version: '1.1.11'
-      }
-    }
-  }
+  // resource module24 - removed
+  
   resource module26 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
     properties: {

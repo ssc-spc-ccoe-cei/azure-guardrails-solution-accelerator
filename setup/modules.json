@@ -942,35 +942,6 @@
     ]
   },
   {
-    "ModuleName": "Check-SecurityMonitoring",
-    "Control": "Guardrails11",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "get-SecurityMonitoringStatus -SecurityLAWResourceId $vars.SecurityLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -LAWRetention $vars.securityRetentionDays -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "SecurityLAWResourceId",
-        "Value": "SecurityLAWResourceId"
-      },
-      {
-        "Name": "cbssubscriptionName",
-        "Value": "CBSSubscriptionName"
-      },
-      {
-        "Name": "securityRetentionDays",
-        "Value": "securityRetentionDays"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcodesecmon",
-        "Value": "AU2"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",
