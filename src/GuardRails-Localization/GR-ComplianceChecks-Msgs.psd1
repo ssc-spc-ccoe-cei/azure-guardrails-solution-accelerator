@@ -278,7 +278,6 @@ noSecurityContactInfo = Subscription {0} is missing Contact Information.
 setSecurityContact = Please set a security contact for Defender for Cloud in the subscription. {0}
 notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
-passwordNotificationsConfigured = Notifications Enabled
 
 noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}
 NotAllSubsHaveAlerts = Not all subscriptions have Service Health Alerts enabled.
