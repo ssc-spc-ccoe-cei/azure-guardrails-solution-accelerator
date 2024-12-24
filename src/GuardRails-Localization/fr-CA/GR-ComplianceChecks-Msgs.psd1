@@ -259,8 +259,6 @@ cbssCompliant = Ressources trouvées dans ces abonnements:
 MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
-defenderMonitoring =Surveillance Defender
-
 serviceHealthAlerts = Alertes de santé du service et vérification des événements
 
 createLAW = Veuillez créer un espace de travail d'analyse de journaux conformément aux directives.
@@ -276,9 +274,8 @@ logsAndMonitoringCompliantForDefender = Les journaux et la surveillance sont con
 createHealthLAW = Veuillez créer un espace de travail pour la surveillance de la santé conformément aux directives de Guardrails.
 enableAgentHealthSolution = Veuillez activer la solution d'évaluation de l'état de santé de l'agent dans l'espace de travail.
 lawEnvironmentCompliant = L'environnement est conforme.
-noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
+
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
-notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
 
 noServiceHealthActionGroups = Il manque un groupe d'action pour les alertes de santé du service « Service Health Alerts » associées à l'abonnement : {0}

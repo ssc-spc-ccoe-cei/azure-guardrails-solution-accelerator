@@ -258,8 +258,6 @@ cbssCompliant = Found resources in these subscriptions:
 MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
-defenderMonitoring =DefenderMonitoring
-
 serviceHealthAlerts = Service Health Alerts and Events Check
 
 createLAW = Please create a log analytics workspace according to guidelines.
@@ -274,9 +272,8 @@ logsAndMonitoringCompliantForDefender = The Logs and Monitoring are compliant fo
 createHealthLAW = Please create a workspace for Health Monitoring according to the Guardrails guidelines.
 enableAgentHealthSolution = Please enable the Agent Health Assessment solution in the workspace.
 lawEnvironmentCompliant = The environment is compliant.
-noSecurityContactInfo = Subscription {0} is missing Contact Information.
+
 setSecurityContact = Please set a security contact for Defender for Cloud in the subscription. {0}
-notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 
 noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}

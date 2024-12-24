@@ -896,27 +896,6 @@
     ]
   },
   {
-    "ModuleName": "Check-DefenderForCloudConfig",
-    "Control": "Guardrails11",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "False",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Get-DefenderForCloudConfig -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecdefender $vars.itsgcodedefender -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "cbssubscriptionName",
-        "Value": "CBSSubscriptionName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "itsgcodedefender",
-        "Value": "AU2"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-UserAccountGCEventLogging",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",

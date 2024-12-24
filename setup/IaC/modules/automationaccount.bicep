@@ -199,15 +199,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module17 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-DefenderForCloudConfig'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-DefenderForCloudConfig.zip'
-        version: '1.1.13'
-      }
-    }
-  }
+  // resource module17 - removed
+
   resource module18 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
     properties: {
