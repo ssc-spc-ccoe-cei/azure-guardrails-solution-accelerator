@@ -199,15 +199,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module17 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-DefenderForCloudConfig'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-DefenderForCloudConfig.zip'
-        version: '1.1.13'
-      }
-    }
-  }
   resource module18 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
     properties: {
@@ -244,30 +235,12 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module22 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-HealthMonitoring'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-HealthMonitoring.zip'
-        version: '1.1.11'
-      }
-    }
-  }
   resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
         version: '1.0.6'
-      }
-    }
-  }
-  resource module24 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-SecurityMonitoring'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
-        version: '1.1.11'
       }
     }
   }

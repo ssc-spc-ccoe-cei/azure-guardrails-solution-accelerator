@@ -258,20 +258,8 @@ cbssCompliant = Found resources in these subscriptions:
 MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
-securityMonitoring =SecurityMonitoring
-healthMonitoring = HealthMonitoring
-defenderMonitoring =DefenderMonitoring
 serviceHealthAlerts = Service Health Alerts and Events Check
-securityLAWNotFound = The specified Log Analytics Workspace for Security monitoring has not been found.
-lawRetentionSecDays = Retention not set to {0} days.
-lawNoActivityLogs = WorkSpace not configured to ingest activity Logs.
-lawSolutionNotFound = Required solutions not present in the Log Analytics Workspace.
-lawNoAutoAcct = No linked automation account has been found.
-lawNoTenantDiag = Tenant Diagnostics settings are not pointing to the provided log analytics workspace.
-lawMissingLogTypes = Workspace set in tenant config but not all required log types are enabled (Audit and signin).
-healthLAWNotFound = The specified Log Analytics Workspace for Health monitoring has not been found.
-lawRetentionHealthDays = Retention not set to at least {0} days.
-lawHealthNoSolutionFound = Required solutions not present in the Health Log Analytics Workspace.
+
 createLAW = Please create a log analytics workspace according to guidelines.
 connectAutoAcct = Please connect an automation account to the provided workspace.
 setRetention730Days = Set retention of the workspace to 730 days for workspace: 
@@ -279,18 +267,15 @@ addActivityLogs = Please add the Activity Logs solution to the workspace:
 addUpdatesAndAntiMalware = Please add the both the Updates and Anti-Malware solution to the workspace: 
 configTenantDiag = Please configure the Tenant diagnostics to point to the provided workspace: 
 addAuditAndSignInsLogs = Please enable Audit Logs and SignInLogs in the Tenant Dianostics settings.
-logsAndMonitoringCompliantForHealth= The Logs and Monitoring are compliant for Health.
-logsAndMonitoringCompliantForSecurity = The Logs and Monitoring are compliant for Security.
+
 logsAndMonitoringCompliantForDefender = The Logs and Monitoring are compliant for Defender.
 createHealthLAW = Please create a workspace for Health Monitoring according to the Guardrails guidelines.
 enableAgentHealthSolution = Please enable the Agent Health Assessment solution in the workspace.
 lawEnvironmentCompliant = The environment is compliant.
-noSecurityContactInfo = Subscription {0} is missing Contact Information.
+
 setSecurityContact = Please set a security contact for Defender for Cloud in the subscription. {0}
-notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
-passwordNotificationsConfigured = Notifications Enabled
-severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
+
 noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}
 NotAllSubsHaveAlerts = Not all subscriptions have Service Health Alerts enabled.
 EventTypeMissingForAlert = Missing a required event type (Service Issue, Health Advisory, or Security Advisory) for the subscription: {0}
