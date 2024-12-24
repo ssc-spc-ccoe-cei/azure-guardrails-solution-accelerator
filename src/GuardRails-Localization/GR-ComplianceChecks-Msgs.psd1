@@ -262,13 +262,7 @@ healthMonitoring = HealthMonitoring
 defenderMonitoring =DefenderMonitoring
 
 serviceHealthAlerts = Service Health Alerts and Events Check
-securityLAWNotFound = The specified Log Analytics Workspace for Security monitoring has not been found.
-lawRetentionSecDays = Retention not set to {0} days.
-lawNoActivityLogs = WorkSpace not configured to ingest activity Logs.
-lawSolutionNotFound = Required solutions not present in the Log Analytics Workspace.
-lawNoAutoAcct = No linked automation account has been found.
-lawNoTenantDiag = Tenant Diagnostics settings are not pointing to the provided log analytics workspace.
-lawMissingLogTypes = Workspace set in tenant config but not all required log types are enabled (Audit and signin).
+
 healthLAWNotFound = The specified Log Analytics Workspace for Health monitoring has not been found.
 lawRetentionHealthDays = Retention not set to at least {0} days.
 lawHealthNoSolutionFound = Required solutions not present in the Health Log Analytics Workspace.

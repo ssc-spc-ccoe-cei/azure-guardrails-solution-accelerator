@@ -263,13 +263,7 @@ HealthMonitoring = Surveillance Santé
 defenderMonitoring =Surveillance Defender
 
 serviceHealthAlerts = Alertes de santé du service et vérification des événements
-securityLAWNotFound = L'espace de travail Log Analytics spécifié pour la surveillance de la sécurité est introuvable.
-lawRetentionSecDays = La rétention n'est pas définie sur {0} jours.
-lawNoActivityLogs = WorkSpace n'est pas configuré pour ingérer les journaux d'activité.
-lawSolutionNotFound = Les solutions requises ne sont pas présentes dans l'espace de travail Log Analytics.
-lawNoAutoAcct = Aucun compte d'automatisation lié n'a été trouvé.
-lawNoTenantDiag = Les paramètres de diagnostic des locataires ne pointent pas vers l'espace de travail d'analyse des journaux fourni.
-lawMissingLogTypes = L'espace de travail est défini dans la configuration du locataire, mais tous les types de journaux requis ne sont pas activés (audit et connexion).
+
 healthLAWNotFound = L'espace de travail Log Analytics spécifié pour la surveillance de la santé est introuvable.
 lawRetentionHealthDays = La rétention n'est pas définie sur au moins {0} jours.
 lawHealthNoSolutionFound = Les solutions requises ne sont pas présentes dans l'espace de travail Health Log Analytics.
