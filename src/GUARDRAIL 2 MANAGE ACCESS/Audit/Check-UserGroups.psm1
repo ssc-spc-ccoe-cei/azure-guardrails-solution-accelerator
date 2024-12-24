@@ -140,7 +140,8 @@ function Check-UserGroups {
                         # 2. includedGroups = not null
                         $validPolicies = $caps | Where-Object {
                             $_.state -eq 'enabled' -and
-                            $null -ne $_.conditions.users.includeGroups
+                            ($_.conditions.users.includeGroups.Count -ge 1 -or
+                            $_.conditions.users.excludeGroups.Count -ge 1 )
                         }
                         # Condition: at least one CAP refers to at least one user group
                         if ($validPolicies.count -ne 0) {
