@@ -191,7 +191,7 @@ hasNonComplianceResounce = {0} des ressources {1} applicables ne sont pas confor
 
 
 # GuardRail #7
-enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
+
 appGatewayCertValidity = Validité du certificat : Passerelle d'application
 noSslListenersFound = Aucun écouteur Secure Socket Layer (SSL) trouvé/configuré pour la passerelle d'application : {0}. 
 expiredCertificateFound = Certificat expiré trouvé pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
