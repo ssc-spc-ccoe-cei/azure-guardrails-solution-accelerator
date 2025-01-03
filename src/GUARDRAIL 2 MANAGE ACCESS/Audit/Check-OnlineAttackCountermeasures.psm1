@@ -46,7 +46,13 @@ function Check-OnlineAttackCountermeasures {
             $requiredBannedPasswords = @("password", "Password!", "Summer2018")
             $missingPasswords = $requiredBannedPasswords | Where-Object { $_ -notin $bannedPasswords }
 
+            # Condition: Any of the 3 banned passwords are missing
             if ($missingPasswords.Count -gt 0) {
+                $IsCompliant = $false
+                $BannedPasswordListNonCompliant = $true
+            }
+            # Condition:There should be other restricted password components expect only these three
+            if ($missingPasswords.Count -eq 0 -and $bannedPasswords.Count -eq 3){
                 $IsCompliant = $false
                 $BannedPasswordListNonCompliant = $true
             }
