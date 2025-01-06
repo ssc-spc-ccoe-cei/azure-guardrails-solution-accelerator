@@ -157,7 +157,7 @@ function Check-DedicatedAdminAccounts {
         subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
         $ErrorList.Add($errorMsg) 
             
-        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $blobFound = $false
     }
     else{
         $fileNamesList = @()
