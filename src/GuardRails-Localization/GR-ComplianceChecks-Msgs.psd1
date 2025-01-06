@@ -114,7 +114,7 @@ nonCompliantC2= Configure the conditional access policy to prevent sign-in's fro
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
 compliantC1C2 = Both conditional access policies have been configured.
 
-automatedRoleForUsers = Role Assignments for Users and Global Administrators
+automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
 noAutomatedAccessReview = The environment has not been onboarded to automated MS Access Reviews. Ensure the environment uses Microsoft Entra Identity features, including Access Reviews.
 noInProgressAccessReview = The environment has at least one scheduled role access review for Global Administrators or another Azure built-in role. However, the access review has been identified as either 'completed' or 'not started'. Create a new Global Administrator/Azure built-in role access review to reoccur and be 'in progress'.
 noScheduledUserAccessReview = The environment has no scheduled role access review created for either users or groups. Create an access review for the role assignment of Global Administrator and/or another Azure built-in role.
