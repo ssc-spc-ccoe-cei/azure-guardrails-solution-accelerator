@@ -166,7 +166,7 @@ Function Confirm-GSAConfigurationParameters {
         }
         AllowedLocationInitiativeId           = @{
             IsRequired       = $true
-            ValidationPattern = '^\/(subscriptions\/[a-fA-F0-9]{8}-(?:[a-fA-F0-9]{4}-){3}[a-fA-F0-9]{12}|providers\/Microsoft\.Management\/managementGroups\/[\w\.-]+)\/providers\/Microsoft\.Authorization\/policySetDefinitions\/[a-fA-F0-9]{24}$'
+            ValidationPattern = '^/providers/Microsoft\.Management/managementGroups/[a-f0-9\-]+/providers/Microsoft\.Authorization/policySetDefinitions/[a-f0-9\-]+$'
         }
         FirstBreakGlassAccountUPN         = @{
             IsRequired        = $true
