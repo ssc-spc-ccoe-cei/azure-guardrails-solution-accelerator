@@ -114,7 +114,7 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
-automatedRoleForUsers = Attributions de rôles pour les utilisateurs et les administrateurs généraux
+automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReview = L'environnement n'a pas été intégré aux révisions automatisées de MS Access « MS Access Reviews ». Assurez-vous que l'environnement utilise les fonctionnalités de « Microsoft Entra Identity », incluant les révisions d'accès.
 noInProgressAccessReview = L'environnement a au moins une révision d'accès de rôle planifiée pour les administrateurs généraux ou un autre rôle intégré Azure. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non commencée ». Créez une nouvelle révision d'accès d'administrateur général/rôle intégré Azure pour qu'elle se reproduise et soit « en cours ».
 noScheduledUserAccessReview = L'environnement n'a aucune révision d'accès de rôle planifiée créée pour les utilisateurs ou les groupes. Créez une révision d'accès pour l'attribution de rôle d'administrateur général et/ou un autre rôle intégré à Azure.
@@ -191,7 +191,7 @@ hasNonComplianceResounce = {0} des ressources {1} applicables ne sont pas confor
 
 
 # GuardRail #7
-enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
+
 appGatewayCertValidity = Validité du certificat : Passerelle d'application
 noSslListenersFound = Aucun écouteur Secure Socket Layer (SSL) trouvé/configuré pour la passerelle d'application : {0}. 
 expiredCertificateFound = Certificat expiré trouvé pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
@@ -259,20 +259,8 @@ cbssCompliant = Ressources trouvées dans ces abonnements:
 MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
-securityMonitoring = Surveillance de la sécurité
-HealthMonitoring = Surveillance Santé
-defenderMonitoring =Surveillance Defender
 serviceHealthAlerts = Alertes de santé du service et vérification des événements
-securityLAWNotFound = L'espace de travail Log Analytics spécifié pour la surveillance de la sécurité est introuvable.
-lawRetentionSecDays = La rétention n'est pas définie sur {0} jours.
-lawNoActivityLogs = WorkSpace n'est pas configuré pour ingérer les journaux d'activité.
-lawSolutionNotFound = Les solutions requises ne sont pas présentes dans l'espace de travail Log Analytics.
-lawNoAutoAcct = Aucun compte d'automatisation lié n'a été trouvé.
-lawNoTenantDiag = Les paramètres de diagnostic des locataires ne pointent pas vers l'espace de travail d'analyse des journaux fourni.
-lawMissingLogTypes = L'espace de travail est défini dans la configuration du locataire, mais tous les types de journaux requis ne sont pas activés (audit et connexion).
-healthLAWNotFound = L'espace de travail Log Analytics spécifié pour la surveillance de la santé est introuvable.
-lawRetentionHealthDays = La rétention n'est pas définie sur au moins {0} jours.
-lawHealthNoSolutionFound = Les solutions requises ne sont pas présentes dans l'espace de travail Health Log Analytics.
+
 createLAW = Veuillez créer un espace de travail d'analyse de journaux conformément aux directives.
 connectAutoAcct = Veuillez connecter un compte d'automatisation à l'espace de travail fourni.
 setRetention60Days = Définir la rétention de l'espace de travail sur au moins 90 jours pour l'espace de travail: 
@@ -281,18 +269,15 @@ addActivityLogs = Veuillez ajouter la solution Activity Logs à l'espace de trav
 addUpdatesAndAntiMalware = Veuillez ajouter à la fois la solution Mises à jour et Anti-Malware à l'espace de travail: 
 configTenantDiag = Veuillez configurer les diagnostics de locataire pour qu'ils pointent vers l'espace de travail fourni: 
 addAuditAndSignInsLogs = Veuillez activer les journaux d'audit et SignInLogs dans les paramètres de Tenant Dianostics.
-logsAndMonitoringCompliantForSecurity = Les journaux et la surveillance sont conformes pour la sécurité.
-logsAndMonitoringCompliantForHealth = Les journaux et la surveillance sont conformes pour la santé.
+
 logsAndMonitoringCompliantForDefender = Les journaux et la surveillance sont conformes pour Defender.
 createHealthLAW = Veuillez créer un espace de travail pour la surveillance de la santé conformément aux directives de Guardrails.
 enableAgentHealthSolution = Veuillez activer la solution d'évaluation de l'état de santé de l'agent dans l'espace de travail.
 lawEnvironmentCompliant = L'environnement est conforme.
-noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
+
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
-notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
-passwordNotificationsConfigured = Notifications activées
-severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
+
 noServiceHealthActionGroups = Il manque un groupe d'action pour les alertes de santé du service « Service Health Alerts » associées à l'abonnement : {0}
 NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour tous les abonnements. Assurez-vous que les alertes d'état du service sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
 EventTypeMissingForAlert = L'alerte manque un type d'événement requis (problème de service, avis de santé ou avis de sécurité) « Service Issue, Health Advisory or Security Advisory » pour l'abonnement : {0}

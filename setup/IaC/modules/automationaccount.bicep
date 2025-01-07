@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.2.2'
+        version: '1.2.3'
       }
     }
   }
@@ -199,15 +199,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module17 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-DefenderForCloudConfig'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-DefenderForCloudConfig.zip'
-        version: '1.1.13'
-      }
-    }
-  }
   resource module18 'modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
     properties: {
@@ -244,30 +235,12 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module22 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-HealthMonitoring'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-HealthMonitoring.zip'
-        version: '1.1.11'
-      }
-    }
-  }
   resource module23 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
         version: '1.0.6'
-      }
-    }
-  }
-  resource module24 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-SecurityMonitoring'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-SecurityMonitoring.zip'
-        version: '1.1.11'
       }
     }
   }
@@ -330,7 +303,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
-        version: '1.0.1'
+        version: '1.0.2'
       }
     }
   }
@@ -339,7 +312,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
-        version: '1.0.2'
+        version: '1.0.3'
       }
     }
   }
@@ -349,7 +322,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -369,7 +342,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -469,7 +442,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-TimeZoneConsistency.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }
     }
   }
