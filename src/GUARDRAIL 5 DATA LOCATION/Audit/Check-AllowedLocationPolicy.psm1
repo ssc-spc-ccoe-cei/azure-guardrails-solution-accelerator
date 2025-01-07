@@ -96,9 +96,6 @@ function Check-PolicyStatus {
             $DisplayName=$obj.DisplayName
         }
 
-        Write-Output "Policies for $($DisplayName) : $($AssignedPolicyList)"
-        Write-Output "Initiatives for $($DisplayName) : $($AssignedInitiatives)"
-
         $c = New-Object -TypeName PSCustomObject -Property @{ 
             Type = [string]$objType
             Id = [string]$obj.Id
