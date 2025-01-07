@@ -50,7 +50,7 @@ function Check-PolicyStatus {
             $Errorlist.Value.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
             Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
         }
-        If (($null -eq $AssignedPolicyList -or $null -eq $AssignedInitiatives) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
+        If (($null -eq $AssignedPolicyList -and $null -eq $AssignedInitiatives) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
         {
             $Comment=$($msgTable.policyNotAssigned -f $objType)
             $ComplianceStatus=$false
@@ -95,6 +95,9 @@ function Check-PolicyStatus {
         else {
             $DisplayName=$obj.DisplayName
         }
+
+        Write-Output "Policies for $($DisplayName) : $($AssignedPolicyList)"
+        Write-Output "Initiatives for $($DisplayName) : $($AssignedInitiatives)"
 
         $c = New-Object -TypeName PSCustomObject -Property @{ 
             Type = [string]$objType
