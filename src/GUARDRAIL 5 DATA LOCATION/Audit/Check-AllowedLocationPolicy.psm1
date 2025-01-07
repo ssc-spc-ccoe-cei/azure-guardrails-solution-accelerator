@@ -50,12 +50,13 @@ function Check-PolicyStatus {
             $Errorlist.Value.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
             Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
         }
-        If (($null -eq $AssignedPolicyList -and $null -eq $AssignedInitiatives) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
+        If (($null -eq $AssignedPolicyList -and ($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
         {
             $Comment=$($msgTable.policyNotAssigned -f $objType)
             $ComplianceStatus=$false
         }
         else {
+
             # Test for allowed locations in policies if not null
             $ComplianceStatus=$true # should be true unless we find a non-compliant location
             $Comment=$msgTable.isCompliant
@@ -73,7 +74,7 @@ function Check-PolicyStatus {
                 }
             }
 
-            if ($null -ne $AssignedInitiatives){
+            if ($null -ne $AssignedInitiatives -and $AssignedInitiatives -ne "N/A"){
                 if (!([string]::IsNullOrEmpty($AllowedLocations)))
                 {
                     $AssignedLocations = $AssignedInitiatives.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
