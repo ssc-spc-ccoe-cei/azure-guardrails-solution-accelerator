@@ -825,11 +825,12 @@ function Get-AllUserAuthInformation{
     $userValidMFACounter = 0
     $userUPNsValidMFA = @()
     $userUPNsBadMFA = @()
+    $pattern = "*#EXT#*"
 
     ForEach ($user in $allUserList) {
         $userAccount = $user.userPrincipalName
             
-        if($userAccount -like "*#EXT#*"){
+        if($userAccount -like $pattern){
             # for guest accounts
             $userEmail = $user.mail
             if(!$null -eq  $userEmail){
