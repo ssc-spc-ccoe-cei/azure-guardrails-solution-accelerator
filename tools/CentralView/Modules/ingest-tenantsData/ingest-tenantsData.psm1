@@ -90,6 +90,7 @@ function get-tenantdata {
         "Working on $ws workspace."
 
         # Get latest report time for that Tenant
+        # Keeping SilentlyContinue to avoid throwing error for tenant that dont have GR_TenantInfo_CL and GR_VersionInfo_CL tables i.e central reporting tenant itself
         try {
             $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project  DepartmentTenantID=column_ifexists('DepartmentTenantID_g','N/A'),TenantDomain=column_ifexists('TenantDomain_s','N/A'),TenantDomainName=column_ifexists('DepartmentTenantName_s','N/A'), DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A'),CloudUsageProfiles=column_ifexists('cloudUsageProfiles_s','N/A')"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
@@ -98,7 +99,8 @@ function get-tenantdata {
             $DepartmentNumber=$resultsArray[0].DepartmentNumber
             $DepartmentTenantName=$resultsArray[0].TenantDomainName
             $DepartmentTenantId=$resultsArray[0].DepartmentTenantID
-            $DepartmentCloudUsageProfiles=$resultsArray[0].CloudUsageProfiles
+            $DepartmentCloudUsageProfiles=$re
+            sultsArray[0].CloudUsageProfiles
         }
         catch {
             "Error reading info from $ws workspace."
