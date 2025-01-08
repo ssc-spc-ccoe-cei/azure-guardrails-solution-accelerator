@@ -23,7 +23,7 @@ env:
 
 jobs:
   sign_and_publish_scripts:
-    name: Sign, validate, test and publish PowerShell scripts as pipeline artifacts
+    name: Validate, test and publish PowerShell scripts as pipeline artifacts
     runs-on: windows-2019
     environment: test
     steps:
@@ -215,170 +215,170 @@ jobs:
       #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
       #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       #     enable-AzPSSession: true 
-      - name: Deploy Test environment
-        uses: azure/powershell@v2
-        with:
-          inlineScript: |
-              Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
-              $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
-              $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
-              $TESTSUBSCRIPTION_ID = $env:TESTSUBSCRIPTION_ID
-              $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
-              $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
-              $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
-              $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
-              $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
-              $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
-              $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
-              $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
-              $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID
-              $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
-              $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
-              $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+      # - name: Deploy Test environment
+      #   uses: azure/powershell@v2
+      #   with:
+      #     inlineScript: |
+      #         Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
+      #         $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
+      #         $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
+      #         $TESTSUBSCRIPTION_ID = $env:TESTSUBSCRIPTION_ID
+      #         $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
+      #         $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
+      #         $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
+      #         $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
+      #         $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
+      #         $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
+      #         $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
+      #         $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
+      #         $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID
+      #         $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
+      #         $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
+      #         $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
 
-              $configContent = @"
-              {
-                  "keyVaultName": "gsapipe",
-                  "resourcegroup": "gsapipe",
-                  "region": "CanadaCentral",
-                  "storageaccountName": "gsapipe",
-                  "logAnalyticsworkspaceName": "gsapipe",
-                  "autoMationAccountName": "gsapipe",
-                  "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
-                  "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
-                  "PBMMPolicyID": "$PBMMPOLICY_ID",
-                  "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-                  "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
-                  "DepartmentNumber": "163",
-                  "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
-                  "securityLAWResourceId": "$TESTSEC_RESRC_ID",
-                  "healthLAWResourceId": "$TESTHEALTHLAW_RESRC_ID",
-                  "Locale": "en-CA",
-                  "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-                  "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
-                  "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
-                  "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
-                  "subscriptionId": "$TESTSUBSCRIPTION_ID",
-                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
-                  "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
-                  "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "1,3,5",
-                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
-                }
-              "@
-              Set-Content -Path $configFilePath -Value $configContent
+      #         $configContent = @"
+      #         {
+      #             "keyVaultName": "gsapipe",
+      #             "resourcegroup": "gsapipe",
+      #             "region": "CanadaCentral",
+      #             "storageaccountName": "gsapipe",
+      #             "logAnalyticsworkspaceName": "gsapipe",
+      #             "autoMationAccountName": "gsapipe",
+      #             "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
+      #             "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
+      #             "PBMMPolicyID": "$PBMMPOLICY_ID",
+      #             "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
+      #             "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
+      #             "DepartmentNumber": "163",
+      #             "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
+      #             "securityLAWResourceId": "$TESTSEC_RESRC_ID",
+      #             "healthLAWResourceId": "$TESTHEALTHLAW_RESRC_ID",
+      #             "Locale": "en-CA",
+      #             "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
+      #             "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
+      #             "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
+      #             "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
+      #             "subscriptionId": "$TESTSUBSCRIPTION_ID",
+      #             "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+      #             "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
+      #             "securityRetentionDays": "730",
+      #             "cloudUsageProfiles": "1,3,5",
+      #             "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
+      #           }
+      #         "@
+      #         Set-Content -Path $configFilePath -Value $configContent
 
-              # Load tags JSON content into a variable
-              $setupFileRelativePath = "setup/tags.json"
-              $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
+      #         # Load tags JSON content into a variable
+      #         $setupFileRelativePath = "setup/tags.json"
+      #         $setupFullPath = Join-Path $env:GITHUB_WORKSPACE $setupFileRelativePath
 
-              $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
+      #         $jsonContent = Get-Content -Raw -Path $setupFullPath | ConvertFrom-Json
 
-              # Add additional required tags for test tenant
-              $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
-              $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
-              $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
-              $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
-              $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
-              $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
+      #         # Add additional required tags for test tenant
+      #         $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
+      #         $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
+      #         $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
+      #         $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
+      #         $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
+      #         $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
 
-              # Save the modified content back to the tags JSON file
-              $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
+      #         # Save the modified content back to the tags JSON file
+      #         $jsonContent | ConvertTo-Json | Set-Content -Path $setupFullPath
 
-              $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
-              $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
+      #         $storageContext = (Get-AzStorageAccount -ResourceGroupName $env:PIPELINEMODULESTAGING_RGNAME -Name $env:PIPELINEMODULESTAGING_STORAGEACCOUNTNAME).context
+      #         $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
 
-              $alternatePSModulesURL = $modulesStagingURI
-              Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
+      #         $alternatePSModulesURL = $modulesStagingURI
+      #         Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
 
-              $optionalParams = @{}
-              if ($alternatePSModulesURL) {
-                  $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
-              }
+      #         $optionalParams = @{}
+      #         if ($alternatePSModulesURL) {
+      #             $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+      #         }
 
-              try {
-                  $ErrorActionPreference = 'Stop'
-                  ipmo ./src/GuardrailsSolutionAcceleratorSetup
-                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
-              }
-              catch {
-                  throw "Failed test deploy of solution with error: $_"
-              }
-              finally {
-                If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
-                Pop-Location
-              }
-          azPSVersion: "latest"
-        env:
-          PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
-          PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
-          TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
-          CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
-          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
-          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
-          LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
-          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
-          TESTTENANT_BGA1: ${{ vars.TESTTENANT_BGA1 }}
-          TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
-          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
-          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
-          INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID}}
-          TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
-          TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
-          ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
-      - name: Check for AA Job Errors
-        uses: azure/powershell@v2
-        with:
-          inlineScript: |
-            ipmo ./src/GuardrailsSolutionAcceleratorSetup
+      #         try {
+      #             $ErrorActionPreference = 'Stop'
+      #             ipmo ./src/GuardrailsSolutionAcceleratorSetup
+      #             Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+      #         }
+      #         catch {
+      #             throw "Failed test deploy of solution with error: $_"
+      #         }
+      #         finally {
+      #           If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+      #           Pop-Location
+      #         }
+      #     azPSVersion: "latest"
+      #   env:
+      #     PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
+      #     PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
+      #     TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
+      #     CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
+      #     LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+      #     LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+      #     LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
+      #     UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+      #     TESTTENANT_BGA1: ${{ vars.TESTTENANT_BGA1 }}
+      #     TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
+      #     PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
+      #     LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
+      #     INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID}}
+      #     TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
+      #     TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
+      #     ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
+      # - name: Check for AA Job Errors
+        # uses: azure/powershell@v2
+        # with:
+        #   inlineScript: |
+        #     ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-            $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$env:UNIQUENAME_SUFFIX -y
-            $config = $c.configString | ConvertFrom-Json
+        #     $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$env:UNIQUENAME_SUFFIX -y
+        #     $config = $c.configString | ConvertFrom-Json
             
-            Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
-            $timeout = New-TimeSpan -Minutes 5
-            $timer = [System.Diagnostics.Stopwatch]::StartNew()
-            do {
-              $jobMain = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
-                Sort-Object StartTIme -Descending |
-                Select-Object -First 1
+        #     Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
+        #     $timeout = New-TimeSpan -Minutes 5
+        #     $timer = [System.Diagnostics.Stopwatch]::StartNew()
+        #     do {
+        #       $jobMain = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+        #         Sort-Object StartTIme -Descending |
+        #         Select-Object -First 1
               
-              $jobBackend = Get-AzAutomationJob -RunbookName 'backend' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
-                Sort-Object StartTIme -Descending |
-                Select-Object -First 1
+        #       $jobBackend = Get-AzAutomationJob -RunbookName 'backend' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+        #         Sort-Object StartTIme -Descending |
+        #         Select-Object -First 1
               
-              Start-Sleep 1
-            }
-            until (($jobMain.Status -in 'Completed','Failed' -and $jobBackend -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
+        #       Start-Sleep 1
+        #     }
+        #     until (($jobMain.Status -in 'Completed','Failed' -and $jobBackend -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
 
-            If ($jobMain.Status -eq 'Failed') {
-              throw "main runbook failed to execute"
-            }
-            If ($jobMain.Status -eq 'Completed') {
-              Write-Output "'main' runbook completed successfully, checking for errors in output. "
-            }
+        #     If ($jobMain.Status -eq 'Failed') {
+        #       throw "main runbook failed to execute"
+        #     }
+        #     If ($jobMain.Status -eq 'Completed') {
+        #       Write-Output "'main' runbook completed successfully, checking for errors in output. "
+        #     }
 
-            If ($jobBackend.Status -eq 'Failed') {
-              throw "backend runbook failed to execute"
-            }
-            If ($jobBackend.Status -eq 'Completed') {
-              Write-Output "'backend' runbook completed successfully, checking for errors in output. "
-            }
+        #     If ($jobBackend.Status -eq 'Failed') {
+        #       throw "backend runbook failed to execute"
+        #     }
+        #     If ($jobBackend.Status -eq 'Completed') {
+        #       Write-Output "'backend' runbook completed successfully, checking for errors in output. "
+        #     }
 
-            $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
-            $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+        #     $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+        #     $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
 
-            $errorsFound = $false
-            ForEach ($outputRecord in $jobMainOutput) {
-              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-                throw 'Errors found in "main" runbook Azure Automation jobs'
-              }
-            }
-            ForEach ($outputRecord in $jobBackendOutput) {
-              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-                throw 'Errors found in "backend" runbook Azure Automation jobs'
-              }
-            }
-          azPSVersion: "latest"
-        env:
-          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+        #     $errorsFound = $false
+        #     ForEach ($outputRecord in $jobMainOutput) {
+        #       If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+        #         throw 'Errors found in "main" runbook Azure Automation jobs'
+        #       }
+        #     }
+        #     ForEach ($outputRecord in $jobBackendOutput) {
+        #       If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+        #         throw 'Errors found in "backend" runbook Azure Automation jobs'
+        #       }
+        #     }
+        #   azPSVersion: "latest"
+        # env:
+        #   UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
