@@ -99,8 +99,7 @@ function get-tenantdata {
             $DepartmentNumber=$resultsArray[0].DepartmentNumber
             $DepartmentTenantName=$resultsArray[0].TenantDomainName
             $DepartmentTenantId=$resultsArray[0].DepartmentTenantID
-            $DepartmentCloudUsageProfiles=$re
-            sultsArray[0].CloudUsageProfiles
+            $DepartmentCloudUsageProfiles=$resultsArray[0].CloudUsageProfiles
         }
         catch {
             "Error reading info from $ws workspace."
