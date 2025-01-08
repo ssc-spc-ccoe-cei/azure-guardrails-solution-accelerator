@@ -23,7 +23,7 @@ env:
 
 jobs:
   sign_and_publish_scripts:
-    name: Sign, validate, test and publish PowerShell scripts as pipeline artifacts
+    name: Validate, test and publish PowerShell scripts as pipeline artifacts
     runs-on: windows-2019
     environment: test
     steps:
@@ -147,7 +147,7 @@ jobs:
               $configContent = @"
               {
                   "keyVaultName": "gsapipe",
-                  "resourcegroup": "gsapipe",
+                  "resourcegroup": "guardrailscac_test",
                   "region": "CanadaCentral",
                   "storageaccountName": "gsapipe",
                   "logAnalyticsworkspaceName": "gsapipe",
@@ -239,7 +239,7 @@ jobs:
               $configContent = @"
               {
                   "keyVaultName": "gsapipe",
-                  "resourcegroup": "gsapipe",
+                  "resourcegroup": "guardrailscac_test",
                   "region": "CanadaCentral",
                   "storageaccountName": "gsapipe",
                   "logAnalyticsworkspaceName": "gsapipe",

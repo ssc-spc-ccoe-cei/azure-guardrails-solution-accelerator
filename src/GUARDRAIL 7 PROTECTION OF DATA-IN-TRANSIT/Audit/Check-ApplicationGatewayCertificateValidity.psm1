@@ -186,7 +186,13 @@ function Check-ApplicationGatewayCertificateValidity {
                             $isApprovedCA = $false
                             
                             # Get the Key Vault name from the Application Gateway configuration
-                            $keyVaultName = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName } | Select-Object -ExpandProperty KeyVaultSecretId -ErrorAction SilentlyContinue
+                            try{
+                                $keyVaultName = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName } | Select-Object -ExpandProperty KeyVaultSecretId
+                            }
+                            catch{
+                                $ErrorList.Add("Failed to get Key Vault name from Application Gateway configuration: $_")
+                                throw "Error: Failed to get Key Vault name from Application Gateway configuration: $_"
+                            }
                             if ($keyVaultName) {
                                 $keyVaultName = ($keyVaultName -split '/')[8]
                                 $isApprovedCA = $true

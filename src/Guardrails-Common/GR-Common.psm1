@@ -789,7 +789,7 @@ function add-documentFileExtensions {
         $ItemName.ToLower() -eq "diagramme d'architecture réseau" -or 
         $ItemName.ToLower() -eq 'documentation de Conception de haut niveau'){
 
-            $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx")
+            $fileExtensions = @(".pdf", ".png", ".jpeg", ".vsdx",".txt",".docx", ".doc")
     }
     elseif ($ItemName.ToLower() -eq 'dedicated user accounts for administration' -or 
             $ItemName.ToLower() -eq "Comptes d'utilisateurs dédiés pour l'administration") {
@@ -825,11 +825,12 @@ function Get-AllUserAuthInformation{
     $userValidMFACounter = 0
     $userUPNsValidMFA = @()
     $userUPNsBadMFA = @()
+    $pattern = "*#EXT#*"
 
     ForEach ($user in $allUserList) {
         $userAccount = $user.userPrincipalName
             
-        if($userAccount -like "*#EXT#*"){
+        if($userAccount -like $pattern){
             # for guest accounts
             $userEmail = $user.mail
             if(!$null -eq  $userEmail){

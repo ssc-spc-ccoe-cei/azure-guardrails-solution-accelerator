@@ -14,7 +14,7 @@
 RootModule = 'Check-AllowedLocationPolicy'
 
 # Version number of this module.
-ModuleVersion = '1.0.9'
+ModuleVersion = '1.1.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
