@@ -26,32 +26,24 @@ function Check-AllUserMFARequired {
     [string] $Comments = $null
 
     # list all users
-    $urlPath = "/users"
-    try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
-
-        if ($null -ne $data -and $null -ne $data.value) {
-            $users = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
-        }
-    }
-    catch {
-        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-        $ErrorList.Add($errorMsg)
-        Write-Error "Error: $errorMsg"
-    }
-
+    $users = Get-AzADUser
+    $allUsers =  $users | Select-Object userPrincipalName , displayName, id, mail
     # Check all users for MFA
-    $allUserUPNs = $users.userPrincipalName
+    $allUserUPNs = $allUsers.userPrincipalName
     Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
 
-    ## *************************##
-    ## ****** Member user ******##
-    ## *************************##
-    $memberUsers = $users | Where-Object { $_.userPrincipalName -notlike "*#EXT#*" }
+    # list of guest users
+    $extUsers = Get-AzADUser -Filter "usertype eq 'guest'"
+    if(!$null -eq $extUsers){
+        $extUserList =  $extUsers | Select-Object userPrincipalName , displayName, id, mail
+    }
+
+    $extUserUPNs = $extUserList.userPrincipalName
+    Write-Host "extUsers count is $($extUsers.Count)"
+    Write-Host "extUsers UPNs are $($extUsers.userPrincipalName)"
+    
+    # List of member users
+    $memberUsers = $allUsers | Where-Object { $extUserUPNs -notcontains $_.UserPrincipalName }
 
     # Get member users UPNs
     $memberUserList = $memberUsers | Select-Object userPrincipalName, mail
@@ -64,6 +56,7 @@ function Check-AllUserMFARequired {
     }
     Write-Host "memberUserList count is $($memberUserList.Count)"
 
+    # Get MFA information for member and external users
     if(!$null -eq $memberUserList){
         $result = Get-AllUserAuthInformation -allUserList $memberUserList
         $memberUserUPNsBadMFA = $result.userUPNsBadMFA
@@ -75,16 +68,7 @@ function Check-AllUserMFARequired {
     Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
     Write-Host "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
 
-
-    ## ***************************##
-    ## ****** External user ******##
-    ## ***************************##
-    $extUsers = $users | Where-Object { $_.userPrincipalName -like "*#EXT#*" }
-    Write-Host "extUsers count is $($extUsers.Count)"
-    Write-Host "extUsers UPNs are $($extUsers.userPrincipalName)"
-    if(!$null -eq $extUsers){
-        # Get external users UPNs and emails
-        $extUserList = $extUsers | Select-Object userPrincipalName, mail
+    if(!$null -eq $extUserList){
         $result2 = Get-AllUserAuthInformation -allUserList $extUserList
         $extUserUPNsBadMFA = $result2.userUPNsBadMFA
         if( !$null -eq $result2.ErrorList){
@@ -96,8 +80,6 @@ function Check-AllUserMFARequired {
     Write-Host "extUserUPNsBadMFA count is $($extUserUPNsBadMFA.Count)"
     Write-Host "accounts auth method check done"
     Write-Host "userValidMFACounter count is $userValidMFACounter"
-
-
     
     if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
         $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
