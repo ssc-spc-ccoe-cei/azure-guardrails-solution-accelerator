@@ -33,29 +33,25 @@ function Get-AdminAccess {
     $adminUserIds = @('9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3', '62e90394-69f5-4237-9190-012177145e10', '194ae4cb-b126-40b2-bd5b-6091b380977d', 'fe930be7-5e62-47db-91af-98c3a49a38b1')
 
     # Check for device-based policies with admin users that include target resources
-    $devicePolicies = @(
-        $caps | Where-Object { 
-            $null -ne $_.conditions.devices.deviceFilter -and 
-            $null -ne $_.conditions.applications.includeApplications -and
-            $_.state -eq 'enabled' -and
-            ($adminUserIds -contains $_.conditions.users.includeRoles)
-        }
-    )
+    $devicePolicies = $caps | Where-Object { 
+        $null -ne $_.conditions.devices.deviceFilter -and 
+        $null -ne $_.conditions.applications.includeApplications -and
+        $_.state -eq 'enabled' -and
+        ($adminUserIds -contains $_.conditions.users.includeRoles)
+    }
 
     # Check for location-based policies with admin users
-    $locationPolicies = @(
-        $caps | Where-Object { 
-            $null -ne $_.conditions.locations.includeLocations -and 
-            $_.state -eq 'enabled' -and
-            ($adminUserIds -contains $_.conditions.users.includeRoles)
-        }
-    )
+    $locationPolicies = $caps | Where-Object { 
+        $null -ne $_.conditions.locations.includeLocations -and 
+        $_.state -eq 'enabled' -and
+        ($adminUserIds -contains $_.conditions.users.includeRoles)
+    }
 
     if ($locationPolicies.Count -gt 0 -and $devicePolicies.Count -gt 0) {
         $Comments = $msgTable.hasRequiredPolicies
         $IsCompliant = $true
     }
-    elseif ($locationPolicies.Count -eq 0 -and $devicePolicies.Count -gt 0) {
+    elseif ($locationPolicies.Count -eq 0 -and $devicePolicies.Count.Count -gt 0) {
         $Comments = $msgTable.noLocationFilterPolicies
     }
     elseif ($devicePolicies.Count -eq 0 -and $locationPolicies.Count -gt 0){
