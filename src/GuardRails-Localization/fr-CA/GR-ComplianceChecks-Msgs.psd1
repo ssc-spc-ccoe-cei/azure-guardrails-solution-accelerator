@@ -62,6 +62,8 @@ regAccHasHProle = Il y a des utilisateurs non privilégiés identifiés avec un 
 dedicatedAccExist = Tous les administrateurs infonuagiques utilisent des comptes dédiés pour des rôles hautement privilégiés.
 bgAccExistInUPNlist = Des noms principaux d'utilisateurs (UPN) de bris de verre existent dans le fichier de .csv téléchargé. Examinez les comptes d'utilisateurs .csv fichier et supprimez les UPN du compte bris de verre.
 hpAccNotGA = Un ou plusieurs administrateurs hautement privilégiés identifiés dans le fichier .csv n'utilisent pas activement leurs attributions de rôle d'administrateur général pour le moment. Confirmez que ces utilisateurs disposent d'une attribution d'administrateur général éligible.
+dupHPaccount = Review the highly privileged account UPN's provided for any duplicates. Remove any UPNs that are repeated.
+dupRegAccount = Review the regular account UPN's provided for any duplicates. Remove any UPNs that are repeated.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 

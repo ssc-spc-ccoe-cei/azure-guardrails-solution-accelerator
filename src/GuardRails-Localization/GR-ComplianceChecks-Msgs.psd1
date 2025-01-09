@@ -61,6 +61,8 @@ regAccHasHProle = There are non-privileged users identified with a highly privil
 dedicatedAccExist = All Cloud Administrators are using dedicated accounts for highly privileged roles.
 bgAccExistInUPNlist = Break Glass (BG) User Principal Names (UPNs) exist in the uploaded .csv file. Review the user accounts .csv file and remove the Break Glass (BG) account UPNs.
 hpAccNotGA = One or more highly privileged administrators identified in the .csv file are not actively using their Global Administrator role assignments at this time. Confirm that these users have an Eligible Global Administrator Assignment.
+dupHPaccount = Review the highly privileged account UPN's provided for any duplicates. Remove any UPNs that are repeated.
+dupRegAccount = Review the regular account UPN's provided for any duplicates. Remove any UPNs that are repeated.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type

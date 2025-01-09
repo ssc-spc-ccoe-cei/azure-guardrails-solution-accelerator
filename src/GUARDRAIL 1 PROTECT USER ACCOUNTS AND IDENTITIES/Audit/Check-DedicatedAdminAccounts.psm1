@@ -256,11 +256,11 @@ function Check-DedicatedAdminAccounts {
         }
         elseif ($hpDuplicateUPN){
             $IsCompliant = $false
-            $commentsArray = $msgTable.isNotCompliant + " " + "Duplicate privileged account listed"
+            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupHPAccount
         }
         elseif ($regDuplicateUPN){
             $IsCompliant = $false
-            $commentsArray = $msgTable.isNotCompliant + " " + "Duplicate regular account listed"
+            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupRegAccount
         }
         else{
             $hpUPNinRegFound = $false
