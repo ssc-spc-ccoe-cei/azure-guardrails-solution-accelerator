@@ -43,9 +43,9 @@ function Check-DedicatedAdminAccounts {
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         # # portal
-        # $data = $response.Content
-        # localExecution
-        $data = $response
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
@@ -73,9 +73,9 @@ function Check-DedicatedAdminAccounts {
         try{
             $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
             # # portal
-            # $data = $response.Content
-            # localExecution
-            $data = $response
+            $data = $response.Content
+            # # localExecution
+            # $data = $response
 
             if ($null -ne $data -and $null -ne $data.value) {
                 $hpAdminRoleResponse  = $data.value
@@ -104,10 +104,10 @@ function Check-DedicatedAdminAccounts {
     $urlPath = "/users"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        # $data = $response.Content
-        # localExecution
-        $data = $response
+        # # portal
+        $data = $response.Content
+        # # localExecution
+        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $allUsers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
