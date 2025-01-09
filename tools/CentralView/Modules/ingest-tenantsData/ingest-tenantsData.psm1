@@ -39,22 +39,22 @@ function get-tenantdata {
     GuardrailsCompliance_CL | where ControlName_s has "{0}" and ReportTime_s == "{1}"
     | where TimeGenerated > ago (24h)
     | project Mandatory=Required_s,ControlName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
-        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+        column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
     ),["ITSG Control"]=itsgcode_s
     | summarize Count=count() by Mandatory,ControlName_s,ItemName, Profile,Status, ["ITSG Control"]
 "@
     $gr567Query=@"
-GuardrailsCompliance_CL
-| where ControlName_s has "{0}" and ReportTime_s == "{1}"
-| where TimeGenerated > ago (24h)
-| project Mandatory=Required_s,ControlName_s, Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
-        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+    GuardrailsCompliance_CL
+    | where ControlName_s has "{0}" and ReportTime_s == "{1}"
+    | where TimeGenerated > ago (24h)
+    | project Mandatory=Required_s,ControlName_s, Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
+        column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
     ),["ITSG Control"]=itsgcode_s
-| summarize Count=count() by Mandatory, ControlName_s,ItemName, Profile, Status,["ITSG Control"]
+    | summarize Count=count() by Mandatory, ControlName_s,ItemName, Profile, Status,["ITSG Control"]
 "@
         $gr8query=@"
     let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;
@@ -64,7 +64,7 @@ GuardrailsCompliance_CL
     | where TimeGenerated > ago (6h)
     |join kind=inner (itsgcodes) on itsgcode_s
     | project Mandatory=Required_s,ControlName_s, SubnetName=SubnetName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
-        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+        column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
     ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
@@ -78,7 +78,7 @@ GuardrailsCompliance_CL
     | where TimeGenerated > ago (12h)
     |join kind=inner (itsgcodes) on itsgcode_s
     | project Mandatory=Required_s,ControlName_s, ['VNet Name']= column_ifexists('VNETName_s', ''), ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
-        ComplianceStatus_s == "Not Applicable", "Not Applicable",
+        column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
     ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
@@ -88,7 +88,9 @@ GuardrailsCompliance_CL
     foreach ($ws in $wsidList.wsid)
     {
         "Working on $ws workspace."
+
         # Get latest report time for that Tenant
+        # Keeping SilentlyContinue to avoid throwing error for tenant that dont have GR_TenantInfo_CL and GR_VersionInfo_CL tables i.e central reporting tenant itself
         try {
             $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project  DepartmentTenantID=column_ifexists('DepartmentTenantID_g','N/A'),TenantDomain=column_ifexists('TenantDomain_s','N/A'),TenantDomainName=column_ifexists('DepartmentTenantName_s','N/A'), DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A'),CloudUsageProfiles=column_ifexists('cloudUsageProfiles_s','N/A')"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
@@ -116,7 +118,7 @@ GuardrailsCompliance_CL
             "Error reading info from $ws workspace."
             $TenantDomain=""
         }
-        if ($TenantDomain -ne "")
+        if ($TenantDomain -ne "" -and $TenantDomain -ne "N/A")
         {
 
             $ReportTimeQuery="GuardrailsCompliance_CL | where TimeGenerated > ago(6h)| summarize mrt=max(ReportTime_s)"
@@ -140,12 +142,14 @@ GuardrailsCompliance_CL
                 $QueryList+=$generalQuery -f "GUARDRAIL 10",$LatestRT
                 $QueryList+=$generalQuery -f "GUARDRAIL 11",$LatestRT
                 $QueryList+=$generalQuery -f "GUARDRAIL 12",$LatestRT
+                $QueryList+=$generalQuery -f "GUARDRAIL 13",$LatestRT
+
                 
                 foreach ($Query in $QueryList)
                 {
                     if ($DebugInfo) { $Query }
                     try {
-                        $response=(Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results
+                        $response=(Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query).Results
                     }
                     catch {
                         "Error querying WS $ws."
