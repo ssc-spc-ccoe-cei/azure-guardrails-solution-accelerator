@@ -148,6 +148,7 @@ function Check-DedicatedAdminAccounts {
     $commentsArray = @()
     $blobFound = $false
     $baseFileNameFound = $false
+    $hasBlobContent = $false
     
     # Get a list of filenames uploaded in the blob storage
     $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
@@ -187,9 +188,10 @@ function Check-DedicatedAdminAccounts {
     # Use case: uploaded fileName is correct but has wrong extension
     if ($baseFileNameFound){
         # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
-        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
     }
     elseif ($blobFound){
+        Write-host "Retrieve UPNs from file for compliance check"
         # get UPN from the file
         $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
         if ($blob) {            
@@ -203,80 +205,125 @@ function Check-DedicatedAdminAccounts {
             }
     
             if ($null -eq $blobContent -or $blobContent -ieq 'N/A' -or $blobContent -ieq 'NA') {
-                $commentsArray += $msgTable.invalidUserFile -f $DocumentName_new
-
-            } else {
-                # Blob content is present
-                $UserAccountUPNs = $blobContent 
-                
-                # if BG accounts present in the UPN list
-                $BGfound = $false
-                foreach ($user in $UserAccountUPNs) {
-                    if ($user.HP_admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
-                        $user.HP_admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
-                        $BGfound = $true
-                        break
-                    } 
-                }
-                ## BG account in attestation file list
-                if ($BGfound) { 
-                    $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
-                }
-                else{
-                    $hpUPNinRegFound = $false
-                    $regUPNinPAFound = $false
-                    $hpUPNnotGA = $false
-                    # validate: check HP users ONLY have HP admin role assignments
-                    foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
-                        
-                        if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                            # each HP admin has active GA or PA role assignment
-                            if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                                # not dedicated user UPN for admin
-                                $hpUPNinRegFound = $true
-                                break
-                            }
-                            else{
-                                # validate: regular accounts are non-GA/PA role assignments
-                                foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
-                                    if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
-                                        $regUPNinPAFound = $true
-                                        break 
-                                    }
-                                }
-                            }
-                        }
-                        else{
-                            # listed admin UPN doesn't have active GA
-                            $hpUPNnotGA = $true
-                            break
-                        }
-                    }
-                    
-                    if($hpUPNinRegFound){
-                        $IsCompliant = $false
-                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
-                    }
-                    elseif($regUPNinPAFound){
-                        $IsCompliant = $false
-                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
-                    }
-                    else{
-                        $IsCompliant = $true
-                        $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
-                    }
-                    if( $hpUPNnotGA){
-                        $commentsArray += " " + $msgTable.hpAccNotGA
-                    }
-                }
+                $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.invalidUserFile -f $DocumentName_new
             }
-        }       
+            else{
+                Write-host "Blobcontent is not null or blob doesn't contain NA"
+                $hasBlobContent = $true
+            } 
+        }    
     }
     else {
         # a blob with the name $DocumentName was not located in the specified storage account    
-        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+    }
 
+    if ($hasBlobContent){
+        # Blob content is present
+        $headers = $blobContent[0].PSObject.Properties.Name
+        # check of correct headers
+        if (!($headers -contains "HP_admin_account_UPN" -and $headers -contains "regular_account_UPN") ) {
+            Write-Host "Appropriate file header missing"
+            $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.invalidFileHeader -f $DocumentName_new
+            
+        } else {
+            Write-Host "Appropriate file headers found!"
+
+            $UserAccountUPNs = $blobContent 
+
+            # if BG accounts present in the UPN list
+            $BGfound = $false
+            foreach ($user in $UserAccountUPNs) {
+                if ($user.HP_admin_account_UPN -like $FirstBreakGlassUPN  -or $user.regular_account_UPN -like $FirstBreakGlassUPN  -or `
+                    $user.HP_admin_account_UPN -like $SecondBreakGlassUPN  -or $user.regular_account_UPN -like $SecondBreakGlassUPN) {
+                    $BGfound = $true
+                    break
+                } 
+            }
+            
+            # Check for duplicate UPNs in the list
+            $hpDuplicateUPN = $false
+            $regDuplicateUPN = $false
+            
+            $hpGroupUPN = $UserAccountUPNs.HP_admin_account_UPN
+            $regGroupUPN = $UserAccountUPNs.regular_account_UPN
+
+            $hpDuplicates = $hpGroupUPN | Group-Object | Where-Object { $_.Count -gt 1 }
+            $regDuplicates = $regGroupUPN | Group-Object | Where-Object { $_.Count -gt 1 }
+
+            if ($hpDuplicates.Count -ge 2){
+                $hpDuplicateUPN = $true
+            }
+            if ( $regDuplicates.Count -ge 2){
+                $regDuplicateUPN = $true
+            }
+
+            ## Condition: BG account in attestation file list
+            if ($BGfound) { 
+                $IsCompliant = $false
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
+            }
+            elseif ($hpDuplicateUPN){
+                $IsCompliant = $false
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupHPAccount
+            }
+            elseif ($regDuplicateUPN){
+                $IsCompliant = $false
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupRegAccount
+            }
+            else{
+                $hpUPNinRegFound = $false
+                $regUPNinPAFound = $false
+                $hpUPNnotGA = $false
+
+                # validate: check HP users ONLY have HP admin role assignments
+                foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
+                    
+                    if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                        # each HP admin has active GA or PA role assignment
+                        if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                            # not dedicated user UPN for admin
+                            $hpUPNinRegFound = $true
+                            break
+                        }
+                        else{
+                            # validate: regular accounts are non-GA/PA role assignments
+                            foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
+                                if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
+                                    $regUPNinPAFound = $true
+                                    break 
+                                }
+                            }
+                        }
+                    }
+                    else{
+                        # listed admin UPN doesn't have active GA
+                        $hpUPNnotGA = $true
+                        break
+                    }
+                }
+
+                # Compliance status
+                if($hpUPNinRegFound){
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
+                }
+                elseif($regUPNinPAFound){
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
+                }
+                else{
+                    $IsCompliant = $true
+                    $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
+                }
+
+                if( $hpUPNnotGA){
+                    $commentsArray += " " + $msgTable.hpAccNotGA
+                }
+            }   
+        }
+
+           
     }
 
     $Comments = $commentsArray -join ";"

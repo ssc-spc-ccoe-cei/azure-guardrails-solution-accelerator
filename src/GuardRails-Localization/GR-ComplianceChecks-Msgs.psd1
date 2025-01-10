@@ -56,11 +56,14 @@ gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet
 
 dedicatedAdminAccountsCheck = Dedicated user accounts for administration
 invalidUserFile = Update the {0} file and list the highly privileged role User Principal Names (UPNs) and their regular role UPNs.
+invalidFileHeader = Update the {0} file headers and list the highly privileged role User Principal Names (UPNs) and their regular role UPNs.
 dedicatedAdminAccNotExist = There are privileged users identified without a highly privileged role. Review 'Global Administrator' and 'Privileged Role Administrator' role assignments in the environment and ensure that there are dedicated user accounts for highly privileged roles. 
 regAccHasHProle = There are non-privileged users identified with a highly privileged role. Review 'Global Administrator' and 'Privileged Role Administrator' role assignments in the environment and ensure that there are dedicated user accounts for highly privileged roles.
 dedicatedAccExist = All Cloud Administrators are using dedicated accounts for highly privileged roles.
 bgAccExistInUPNlist = Break Glass (BG) User Principal Names (UPNs) exist in the uploaded .csv file. Review the user accounts .csv file and remove the Break Glass (BG) account UPNs.
 hpAccNotGA = One or more highly privileged administrators identified in the .csv file are not actively using their Global Administrator role assignments at this time. Confirm that these users have an Eligible Global Administrator Assignment.
+dupHPAccount = Review the highly privileged account User Principal Names (UPNs) provided for any duplicates. Remove any UPNs that are repeated.
+dupRegAccount = Review the regular account User Principal Names (UPNs) provided for any duplicates. Remove any UPNs that are repeated.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
