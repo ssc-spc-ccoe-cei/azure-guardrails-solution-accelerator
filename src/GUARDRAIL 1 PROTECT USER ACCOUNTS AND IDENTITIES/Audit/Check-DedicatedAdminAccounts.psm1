@@ -42,10 +42,10 @@ function Check-DedicatedAdminAccounts {
     $urlPath = "/directoryRoles"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
+        # # # portal
+        # $data = $response.Content
+        # localExecution
+        $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
@@ -72,10 +72,10 @@ function Check-DedicatedAdminAccounts {
         $urlPath = "/directoryRoles/$roleId/members"
         try{
             $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-            # # portal
-            $data = $response.Content
-            # # localExecution
-            # $data = $response
+            # # # portal
+            # $data = $response.Content
+            # localExecution
+            $data = $response
 
             if ($null -ne $data -and $null -ne $data.value) {
                 $hpAdminRoleResponse  = $data.value
@@ -104,10 +104,10 @@ function Check-DedicatedAdminAccounts {
     $urlPath = "/users"
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
+        # # # portal
+        # $data = $response.Content
+        # localExecution
+        $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $allUsers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
@@ -188,7 +188,7 @@ function Check-DedicatedAdminAccounts {
     # Use case: uploaded fileName is correct but has wrong extension
     if ($baseFileNameFound){
         # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
-        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
     }
     elseif ($blobFound){
         Write-host "Retrieve UPNs from file for compliance check"
@@ -205,7 +205,7 @@ function Check-DedicatedAdminAccounts {
             }
     
             if ($null -eq $blobContent -or $blobContent -ieq 'N/A' -or $blobContent -ieq 'NA') {
-                $commentsArray += $msgTable.invalidUserFile -f $DocumentName_new
+                $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.invalidUserFile -f $DocumentName_new
             }
             else{
                 Write-host "Blobcontent is not null or blob doesn't contain NA"
@@ -215,7 +215,7 @@ function Check-DedicatedAdminAccounts {
     }
     else {
         # a blob with the name $DocumentName was not located in the specified storage account    
-        $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+        $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
     }
 
     if ($hasBlobContent){
@@ -224,7 +224,7 @@ function Check-DedicatedAdminAccounts {
         # check of correct headers
         if (!($headers -contains "HP_admin_account_UPN" -and $headers -contains "regular_account_UPN") ) {
             Write-Host "Appropriate file header missing"
-            $commentsArray += $msgTable.invalidFileHeader -f $DocumentName_new
+            $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.invalidFileHeader -f $DocumentName_new
             
         } else {
             Write-Host "Appropriate file headers found!"
