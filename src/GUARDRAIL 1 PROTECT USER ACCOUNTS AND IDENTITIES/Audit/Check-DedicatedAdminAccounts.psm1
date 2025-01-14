@@ -240,87 +240,114 @@ function Check-DedicatedAdminAccounts {
                     break
                 } 
             }
-            
-            # Check for duplicate UPNs in the list
-            $hpDuplicateUPN = $false
-            $regDuplicateUPN = $false
-            
+
             $hpGroupUPN = $UserAccountUPNs.HP_admin_account_UPN
             $regGroupUPN = $UserAccountUPNs.regular_account_UPN
 
-            $hpDuplicates = $hpGroupUPN | Group-Object | Where-Object { $_.Count -gt 1 }
-            $regDuplicates = $regGroupUPN | Group-Object | Where-Object { $_.Count -gt 1 }
+            $hpUPNisNull = $false
+            $regUPNisNull = $false
+            
 
-            if ($hpDuplicates.Count -ge 2){
-                $hpDuplicateUPN = $true
+            # Check for both types of UPN exists in the list
+            if ($hpGroupUPN -contains $null -or $hpGroupUPN -contains ""){
+                $hpUPNisNull = $true
             }
-            if ( $regDuplicates.Count -ge 2){
-                $regDuplicateUPN = $true
+            if ( $regGroupUPN -contains $null -or$regGroupUPN -contains ""){
+                $regUPNisNull = $true
             }
-
+            
             ## Condition: BG account in attestation file list
             if ($BGfound) { 
                 $IsCompliant = $false
                 $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccExistInUPNlist
             }
-            elseif ($hpDuplicateUPN){
+            elseif ($hpUPNisNull){
+                # Condition: HP account data is missing
                 $IsCompliant = $false
-                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupHPAccount
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.missingHPaccUPN
             }
-            elseif ($regDuplicateUPN){
+            elseif ($regUPNisNull){
+                # Condition: Reg account data is missing
                 $IsCompliant = $false
-                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupRegAccount
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.missingRegAccUPN
             }
-            else{
-                $hpUPNinRegFound = $false
-                $regUPNinPAFound = $false
-                $hpUPNnotGA = $false
+            else {
+                $hpDuplicateUPN = $false
+                $regDuplicateUPN = $false 
 
-                # validate: check HP users ONLY have HP admin role assignments
-                foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
-                    
-                    if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                        # each HP admin has active GA or PA role assignment
-                        if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                            # not dedicated user UPN for admin
-                            $hpUPNinRegFound = $true
-                            break
-                        }
-                        else{
-                            # validate: regular accounts are non-GA/PA role assignments
-                            foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
-                                if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
-                                    $regUPNinPAFound = $true
-                                    break 
+                # Check for duplicate UPNs in the list
+                $hpDuplicates = $hpGroupUPN | Group-Object | Where-Object { $_.Count -gt 1 }
+                $regDuplicates = $regGroupUPN | Group-Object | Where-Object { $_.Count -gt 1 }
+
+                if ($hpDuplicates.Count -ge 2){
+                    $hpDuplicateUPN = $true
+                }
+                if ( $regDuplicates.Count -ge 2){
+                    $regDuplicateUPN = $true
+                }
+
+                if ($hpDuplicateUPN){
+                    # Condition: HP account has duplicate UPN
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupHPAccount
+                }
+                elseif ($regDuplicateUPN){
+                    # Condition: Reg account has duplicate UPN
+                    $IsCompliant = $false
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupRegAccount
+                }
+                else{
+                    $hpUPNinRegFound = $false
+                    $regUPNinPAFound = $false
+                    $hpUPNnotGA = $false
+    
+                    # validate: check HP users ONLY have HP admin role assignments
+                    foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
+                        
+                        if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                            # each HP admin has active GA or PA role assignment
+                            if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                                # not dedicated user UPN for admin
+                                $hpUPNinRegFound = $true
+                                break
+                            }
+                            else{
+                                # validate: regular accounts are non-GA/PA role assignments
+                                foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
+                                    if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
+                                        $regUPNinPAFound = $true
+                                        break 
+                                    }
                                 }
                             }
                         }
+                        else{
+                            # listed admin UPN doesn't have active GA
+                            $hpUPNnotGA = $true
+                            break
+                        }
+                    }
+    
+                    # Compliance status
+                    if($hpUPNinRegFound){
+                        $IsCompliant = $false
+                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
+                    }
+                    elseif($regUPNinPAFound){
+                        $IsCompliant = $false
+                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
                     }
                     else{
-                        # listed admin UPN doesn't have active GA
-                        $hpUPNnotGA = $true
-                        break
+                        $IsCompliant = $true
+                        $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
                     }
-                }
-
-                # Compliance status
-                if($hpUPNinRegFound){
-                    $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
-                }
-                elseif($regUPNinPAFound){
-                    $IsCompliant = $false
-                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
-                }
-                else{
-                    $IsCompliant = $true
-                    $commentsArray = $msgTable.isCompliant + " " + $msgTable.dedicatedAccExist
-                }
-
-                if( $hpUPNnotGA){
-                    $commentsArray += " " + $msgTable.hpAccNotGA
-                }
-            }   
+    
+                    if( $hpUPNnotGA){
+                        $commentsArray += " " + $msgTable.hpAccNotGA
+                    }
+                } 
+            }
+    
         }
 
            

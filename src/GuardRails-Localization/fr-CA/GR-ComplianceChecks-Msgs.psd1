@@ -65,6 +65,8 @@ bgAccExistInUPNlist = Des noms principaux d'utilisateurs (UPN) de bris de verre 
 hpAccNotGA = Un ou plusieurs administrateurs hautement privilégiés identifiés dans le fichier .csv n'utilisent pas activement leurs attributions de rôle d'administrateur général pour le moment. Confirmez que ces utilisateurs disposent d'une attribution d'administrateur général éligible.
 dupHPAccount = Examinez les noms d'utilisateur principaux [User Principal Names (UPNs)] de compte à privilèges élevés fournis pour tout doublon. Supprimez tous les UPN, qui sont répétés.
 dupRegAccount = Examinez les noms d'utilisateur principaux [User Principal Names (UPNs)] de compte réguliers fournis pour tout doublon. Supprimez tous les UPN, qui sont répétés.
+missingHPaccUPN = Missing data in the 'HP_admin_account_UPN' column. Please ensure this column is filled out before proceeding.
+missingRegAccUPN = Missing data in the 'regular_account_UPN' column. Please ensure this column is filled out before proceeding.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
