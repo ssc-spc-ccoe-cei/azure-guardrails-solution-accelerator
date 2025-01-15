@@ -64,8 +64,8 @@ bgAccExistInUPNlist = Break Glass (BG) User Principal Names (UPNs) exist in the 
 hpAccNotGA = One or more highly privileged administrators identified in the .csv file are not actively using their Global Administrator role assignments at this time. Confirm that these users have an Eligible Global Administrator Assignment.
 dupHPAccount = Review the highly privileged account User Principal Names (UPNs) provided for any duplicates. Remove any UPNs that are repeated.
 dupRegAccount = Review the regular account User Principal Names (UPNs) provided for any duplicates. Remove any UPNs that are repeated.
-missingHPaccUPN = Missing data in the 'HP_admin_account_UPN' column. Please ensure this column is filled out before proceeding.
-missingRegAccUPN = Missing data in the 'regular_account_UPN' column. Please ensure this column is filled out before proceeding.
+missingHPaccUPN = Missing data in the 'HP_admin_account_UPN' column. Please ensure that this column is filled out before proceeding.
+missingRegAccUPN = Missing data in the 'regular_account_UPN' column. Please ensure that this column is filled out before proceeding.
 
 # GuardRail #2
 MSEntIDLicenseTypeFound = Found correct license type
