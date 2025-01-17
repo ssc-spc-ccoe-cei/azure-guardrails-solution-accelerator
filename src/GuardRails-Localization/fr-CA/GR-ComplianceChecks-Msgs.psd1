@@ -300,13 +300,6 @@ AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont inc
 AttackPathNotifictionNotConfigured = Les alertes MS Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous qu'elles sont configurées pour les alertes de chaque abonnement conformément aux instructions du Guide de Remédiation
 DefenderCompliant = MS Defender pour l'infonuagique est activé pour tous les abonnements et les notifications par courriel sont correctement configurées.
 
-timezoneConsistency = Vérification de la cohérence de la configuration du fuseau horaire
-noResourcesFound = Aucune ressource avec des informations de fuseau horaire trouvée.
-resourcesWithoutTimezone = Il y a {0} ressources sans informations de fuseau horaire.
-allResourcesSameTimezone = Toutes les ressources sont dans le même fuseau horaire : {0}.
-twoTimezonesFound = Deux fuseaux horaires trouvés. La majorité des ressources sont dans {0} ({1}% du total).
-multipleTimezonesFound = Plusieurs fuseaux horaires trouvés : {0} fuseaux horaires différents.
-errorCheckingTimezones = Une erreur s'est produite lors de la vérification des configurations de fuseau horaire.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
