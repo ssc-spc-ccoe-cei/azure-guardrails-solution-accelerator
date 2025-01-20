@@ -36,7 +36,7 @@ function Check-PolicyStatus {
         #Retrieving policies and initiatives
         try{
             $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID 
-            $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId "/providers/microsoft.management/managementgroups/pubsec/providers/microsoft.authorization/policysetdefinitions/custom-enable-logging-to-loganalytics" 
+            $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $InitiativeID
         }
         catch{
             $Errorlist.Add("Failed to retrieve policy or initiative assignments for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
@@ -81,8 +81,6 @@ function Check-PolicyStatus {
         }
 
         if($ComplianceStatus -eq $true){
-
-            $InitiativeID = "/subscriptions/64011d17-0f22-40ce-b4da-c577a10877f3/providers/microsoft.authorization/policysetdefinitions/4a98b4d5524141beaaf88e93"
 
             if(!($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")){
                 $InitiativeState = Get-AzPolicyState | Where-Object { $_.PolicySetDefinitionId -eq $InitiativeID }
