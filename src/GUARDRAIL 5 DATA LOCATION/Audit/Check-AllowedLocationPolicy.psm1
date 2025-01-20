@@ -17,8 +17,12 @@ function Check-PolicyStatus {
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
-    )   
+    )
+
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+    $TotalInitResources = 0
+    $TotalPolicyResources = 0
+
     foreach ($obj in $objList)
     {
         Write-Verbose "Checking $objType : $($obj.Name)"
@@ -29,27 +33,16 @@ function Check-PolicyStatus {
             $tempId=$obj.Id
         }
 
-        try {
-            try{
-                $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
+        #Retrieving policies and initiatives
+        try{
+            $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID 
+            $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId "/providers/microsoft.management/managementgroups/pubsec/providers/microsoft.authorization/policysetdefinitions/custom-enable-logging-to-loganalytics" 
+        }
+        catch{
+            $Errorlist.Add("Failed to retrieve policy or initiative assignments for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+            Write-Error "Error: Failed to retrieve policy or initiative assignments for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" 
+        }
 
-            }
-            catch{
-                $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command on policy list for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
-                Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command on policy list for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"  
-            }
-            try{
-                $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $InitiativeID #Retrieve Initiatives
-            }
-            catch{
-                $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command on initiatives for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
-                Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command on initiatives for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"  
-            }
-        }
-        catch {
-            $Errorlist.Value.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
-            Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
-        }
         If (($null -eq $AssignedPolicyList -and ($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")) -or ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
         {
             $Comment=$($msgTable.policyNotAssigned -f $objType)
@@ -59,7 +52,6 @@ function Check-PolicyStatus {
 
             # Test for allowed locations in policies if not null
             $ComplianceStatus=$true # should be true unless we find a non-compliant location
-            $Comment=$msgTable.isCompliant
             
             if ($null -ne $AssignedPolicyList){
                 if (!([string]::IsNullOrEmpty($AllowedLocations)))
@@ -85,9 +77,65 @@ function Check-PolicyStatus {
                         }
                     }
                 }
-            }
-            
+            }     
         }
+
+        if($ComplianceStatus -eq $true){
+
+            $InitiativeID = "/subscriptions/64011d17-0f22-40ce-b4da-c577a10877f3/providers/microsoft.authorization/policysetdefinitions/4a98b4d5524141beaaf88e93"
+
+            if(!($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")){
+                $InitiativeState = Get-AzPolicyState | Where-Object { $_.PolicySetDefinitionId -eq $InitiativeID }
+                $TotalInitResources = $InitiativeState.Count
+                $InitCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $true}).Count
+                $InitNonCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $false}).Count
+            }
+            if(!($null -eq $AssignedPolicyList)){
+                $PolicyState = Get-AzPolicyState | Where-Object { $_.PolicySetDefinitionId -eq $PolicyID }
+                $TotalPolicyResources = $PolicyState.Count
+                $PolicyCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $true}).Count
+                $PolicyNonCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $false}).Count
+            }
+
+            if (($TotalInitResources -gt 0 -and $TotalPolicyResources -eq 0) -or ($TotalPolicyResources -gt 0 -and $TotalInitResources -eq 0)) {
+                # Case 1: Only Initiative has resources, check initiative compliance
+                # Case 2: Only Policy has resources, check policy compliance
+                
+                if ($TotalInitResources -gt 0 -and $TotalInitResources -ne $InitCompliantResources) {
+                    $ComplianceStatus = $false
+                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
+                } 
+                elseif ($TotalPolicyResources -gt 0 -and $TotalPolicyResources -ne $PolicyCompliantResources) {
+                    $ComplianceStatus = $false
+                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
+                } 
+                else {
+                    $ComplianceStatus = $true
+                    $Comment = $msgTable.isCompliant + ' ' + $msgTable.allCompliantResources
+                }
+            }
+            elseif ($TotalInitResources -gt 0 -and $TotalPolicyResources -gt 0) {
+                # Case 3: Both Initiative and Policy have assigned resources, so check both
+            
+                if ($TotalInitResources -eq $InitCompliantResources -and $TotalPolicyResources -eq $PolicyCompliantResources) {
+                    $ComplianceStatus = $true
+                    $Comment = $msgTable.isCompliant + ' ' + $msgTable.allCompliantResources
+                } 
+                elseif($InitNonCompliantResources -gt 0 -and ($InitNonCompliantResources -lt $TotalInitResources)){
+                    $ComplianceStatus = $false
+                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $InitNonCompliantResources, $TotalInitResources
+                }
+                elseif($PolicyNonCompliantResources -gt 0 -and ($PolicyNonCompliantResources -lt $TotalPolicyResources)){
+                    $ComplianceStatus = $false
+                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $PolicyNonCompliantResources, $TotalPolicyResources
+                }
+            }
+            elseif($TotalInitResources -eq 0 -and $TotalPolicyResources -eq 0){
+                $ComplianceStatus = $true
+                $Comment = $msgTable.isCompliant + ' ' + $msgTable.noResource
+            }
+        }
+
         if ($null -eq $obj.DisplayName)
         {
             $DisplayName=$obj.Name
