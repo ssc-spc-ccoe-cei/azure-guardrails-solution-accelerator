@@ -21,16 +21,21 @@ function Check-FinOpsToolStatus {
 
     # Check 1: Verify Service Principal existence
     $spnExists = Check-ServicePrincipalExists "CloudabilityUtilizationDataCollector"
+    Write-Warning "SPN Exists check result: $spnExists"
     if (-not $spnExists) {
         $IsCompliant = $false
+        Write-Warning "Current Comments: '$Comments'"
+        Write-Warning "SPNNotExist message: '$($msgTable.SPNNotExist)'"
         $Comments += $msgTable.SPNNotExist + " "
+        Write-Warning "Updated Comments: '$Comments'"
     }
-
-    # Check 2: Verify Permissions
-    $hasCorrectPermissions = Check-ServicePrincipalPermissions "CloudabilityUtilizationDataCollector"
-    if (-not $hasCorrectPermissions) {
-        $IsCompliant = $false
-        $Comments += $msgTable.SPNIncorrectPermissions + " "
+    else {
+        # Check 2: Verify Permissions (only if SPN exists)
+        $hasCorrectPermissions = Check-ServicePrincipalPermissions "CloudabilityUtilizationDataCollector"
+        if (-not $hasCorrectPermissions) {
+            $IsCompliant = $false
+            $Comments += $msgTable.SPNIncorrectPermissions + " "
+        }
     }
 
     # # Check 3: Verify Roles
@@ -84,13 +89,17 @@ function Check-ServicePrincipalExists {
         [string] $spnName
     )
     try {
-        $urlPath = "/servicePrincipals?$filter=displayName eq '$spnName'"
+        $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         $data = $response.Content
         
-        if ($data.value.Count -gt 0) {
+        Write-Warning "Graph API Response: $($data | ConvertTo-Json)"
+        
+        if ($null -ne $data.value -and $data.value.Count -gt 0) {
+            Write-Warning "SPN '$spnName' found"
             return $true
         } else {
+            Write-Warning "SPN '$spnName' not found"
             return $false
         }
     }
