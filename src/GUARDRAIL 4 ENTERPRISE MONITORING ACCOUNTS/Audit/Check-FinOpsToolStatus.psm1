@@ -21,13 +21,9 @@ function Check-FinOpsToolStatus {
 
     # Check 1: Verify Service Principal existence
     $spnExists = Check-ServicePrincipalExists "CloudabilityUtilizationDataCollector"
-    Write-Warning "SPN Exists check result: $spnExists"
     if (-not $spnExists) {
         $IsCompliant = $false
-        Write-Warning "Current Comments: '$Comments'"
-        Write-Warning "SPNNotExist message: '$($msgTable.SPNNotExist)'"
         $Comments += $msgTable.SPNNotExist + " "
-        Write-Warning "Updated Comments: '$Comments'"
     }
     else {
         # Check 2: Verify Permissions (only if SPN exists)
@@ -92,11 +88,8 @@ function Check-ServicePrincipalExists {
         $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         $data = $response.Content
-        
-        Write-Warning "Graph API Response: $($data | ConvertTo-Json)"
-        
+                
         if ($null -ne $data.value -and $data.value.Count -gt 0) {
-            Write-Warning "SPN '$spnName' found"
             return $true
         } else {
             Write-Warning "SPN '$spnName' not found"
