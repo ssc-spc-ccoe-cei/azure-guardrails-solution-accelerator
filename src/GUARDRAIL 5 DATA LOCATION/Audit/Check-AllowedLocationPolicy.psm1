@@ -22,6 +22,10 @@ function Check-PolicyStatus {
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
     $TotalInitResources = 0
     $TotalPolicyResources = 0
+    $InitNonCompliantResources = 0
+    $InitCompliantResources = 0
+    $PolicyNonCompliantResources = 0
+    $PolicyCompliantResources = 0
 
     foreach ($obj in $objList)
     {
@@ -99,15 +103,23 @@ function Check-PolicyStatus {
                 # Case 1: Only Initiative has resources, check initiative compliance
                 # Case 2: Only Policy has resources, check policy compliance
                 
-                if ($TotalInitResources -gt 0 -and $TotalInitResources -ne $InitCompliantResources) {
+                if ($TotalInitResources -gt 0 -and $TotalInitResources -eq $InitNonCompliantResources) {
                     $ComplianceStatus = $false
                     $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
                 } 
-                elseif ($TotalPolicyResources -gt 0 -and $TotalPolicyResources -ne $PolicyCompliantResources) {
+                elseif ($TotalPolicyResources -gt 0 -and $TotalPolicyResources -eq $PolicyNonCompliantResources) {
                     $ComplianceStatus = $false
                     $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
                 } 
-                else {
+                elseif($InitNonCompliantResources -gt 0 -and ($InitNonCompliantResources -lt $TotalInitResources)){
+                    $ComplianceStatus = $false
+                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $InitNonCompliantResources, $TotalInitResources
+                }
+                elseif($PolicyNonCompliantResources -gt 0 -and ($PolicyNonCompliantResources -lt $TotalPolicyResources)){
+                    $ComplianceStatus = $false
+                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $PolicyNonCompliantResources, $TotalPolicyResources
+                }
+                else{
                     $ComplianceStatus = $true
                     $Comment = $msgTable.isCompliant + ' ' + $msgTable.allCompliantResources
                 }
