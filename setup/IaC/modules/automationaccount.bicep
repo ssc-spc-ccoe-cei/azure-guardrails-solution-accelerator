@@ -422,7 +422,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }
     }
   }
