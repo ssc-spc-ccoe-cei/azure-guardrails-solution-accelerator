@@ -35,7 +35,10 @@ Function Add-GSAAutomationRunbooks {
         break
     }
 
-    $startTime = (Get-Date).Date.AddHours(7).AddMinutes(5).ToUniversalTime()
+    $startTime = (Get-Date).Date.AddHours(7).ToUniversalTime()
+    if ($startTime -lt (Get-Date).AddMinutes(5)) {
+        $startTime = $startTime.AddDays(1)  # Move to the next day if the start time is too close
+    }
 
     Write-Verbose "Creating schedule for 'main' Runbook."
     try {
