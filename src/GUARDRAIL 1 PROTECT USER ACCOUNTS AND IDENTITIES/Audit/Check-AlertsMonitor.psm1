@@ -44,8 +44,6 @@ function Check-AlertsMonitor {
     $IsCompliant = $false
     $signInLogsCompliance = $false
     $auditLogsCompliance = $false
-    $bgAccntActionGroups = $false
-    $auditLogsActionGroups = $false
     $Comments = ""
     $ErrorList = @()
 
