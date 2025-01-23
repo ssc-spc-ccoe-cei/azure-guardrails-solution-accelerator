@@ -168,7 +168,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
-        version: '1.1.0'
+        version: '1.1.1'
       }
     }
   }
@@ -382,7 +382,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -422,7 +422,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }
     }
   }

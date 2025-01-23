@@ -25,12 +25,13 @@ function Check-FinOpsToolStatus {
         $IsCompliant = $false
         $Comments += $msgTable.SPNNotExist + " "
     }
-
-    # Check 2: Verify Permissions
-    $hasCorrectPermissions = Check-ServicePrincipalPermissions "CloudabilityUtilizationDataCollector"
-    if (-not $hasCorrectPermissions) {
-        $IsCompliant = $false
-        $Comments += $msgTable.SPNIncorrectPermissions + " "
+    else {
+        # Check 2: Verify Permissions (only if SPN exists)
+        $hasCorrectPermissions = Check-ServicePrincipalPermissions "CloudabilityUtilizationDataCollector"
+        if (-not $hasCorrectPermissions) {
+            $IsCompliant = $false
+            $Comments += $msgTable.SPNIncorrectPermissions + " "
+        }
     }
 
     # # Check 3: Verify Roles
@@ -84,13 +85,14 @@ function Check-ServicePrincipalExists {
         [string] $spnName
     )
     try {
-        $urlPath = "/servicePrincipals?$filter=displayName eq '$spnName'"
+        $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
         $data = $response.Content
-        
-        if ($data.value.Count -gt 0) {
+                
+        if ($null -ne $data.value -and $data.value.Count -gt 0) {
             return $true
         } else {
+            Write-Warning "SPN '$spnName' not found"
             return $false
         }
     }

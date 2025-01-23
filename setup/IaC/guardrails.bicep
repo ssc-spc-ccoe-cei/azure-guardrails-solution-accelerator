@@ -2,7 +2,7 @@
 targetScope = 'resourceGroup'
 //Parameters and variables
 param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
-param AllowedLocationInitiativeId string = 'N/A'
+param AllowedLocationInitiativeId string = '/providers/microsoft.management/managementgroups/252afaf3-eb71-4f05-8da2-279c8b2466b7/providers/microsoft.authorization/policysetdefinitions/6c7429039715412f9438cb15'
 param automationAccountName string = 'guardrails-AC'
 param CBSSubscriptionName string 
 param currentUserObjectId string = ''
