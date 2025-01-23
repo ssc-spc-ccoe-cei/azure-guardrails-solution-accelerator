@@ -1281,7 +1281,7 @@ function Check-PBMMPolicies {
                     elseif($totalResource -gt 0 -and $countResourceNonCompliant -gt 0 -and ($countResourceNonCompliant -lt $totalResource)){
                         # There are some resources that are non-compliant
                         $ComplianceStatus=$false
-                        $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.hasNonComplianceResounce -f $countResourceNonCompliant, $totalResource
+                        $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.hasNonComplianceResource -f $countResourceNonCompliant, $totalResource
                     }
                     else{
                         # All use cases are covered by now. Anything else?
