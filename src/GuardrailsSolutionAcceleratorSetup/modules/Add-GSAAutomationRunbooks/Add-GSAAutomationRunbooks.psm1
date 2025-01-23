@@ -35,11 +35,12 @@ Function Add-GSAAutomationRunbooks {
         break
     }
 
+    $startTime = (Get-Date).Date.AddHours(7).ToUniversalTime()
     Write-Verbose "Creating schedule for 'main' Runbook."
     try {
         $ErrorActionPreference = 'Stop'
         Write-Verbose "`tCreating schedule for 'main' Runbook."
-        New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Every6hours" -StartTime (get-date).AddHours(1) -HourInterval 6 | Out-Null
+        New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime $startTime -HourInterval 24 | Out-Null
     }
     catch {
         Write-Error "Error creating schedule for 'main' Runbook. $_"
@@ -50,7 +51,7 @@ Function Add-GSAAutomationRunbooks {
     try{
         $ErrorActionPreference = 'Stop'
         Write-Verbose "`tRegistering 'main' Runbook to schedule."
-        Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Every6hours" | Out-Null
+        Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Daily" | Out-Null
     }
     catch {
         Write-Error "Error registering 'main' Runbook to schedule. $_"
@@ -74,7 +75,7 @@ Function Add-GSAAutomationRunbooks {
     try {
         $ErrorActionPreference = 'Stop'
         Write-Verbose "`tCreating schedule for 'backend' Runbook."
-        New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime (get-date).AddHours(1) -HourInterval 24 | Out-Null
+        New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime $startTime -HourInterval 24 | Out-Null
     }
     catch {
         Write-Error "Error creating schedule for 'backend' Runbook. $_"
