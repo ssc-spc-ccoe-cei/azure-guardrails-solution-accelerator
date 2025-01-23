@@ -59,26 +59,25 @@ function Check-NetworkSecurityTools {
             }
 
             # Determine compliance and comments
-            if ($azureFirewalls.Count -gt 0) {
-                $IsCompliant = $true
-                $Comments = $msgTable.firewallFound -f "Azure Firewall"
+            $hasFirewall = $azureFirewalls.Count -gt 0 -or $fortigateVMs.Count -gt 0
+            $hasAppGateway = $appGateways.Count -gt 0
+
+            if ($hasAppGateway -and -not $hasWAFEnabled) {
+                # If there's an App Gateway without WAF, it's non-compliant regardless of other tools
+                $IsCompliant = $false
+                $Comments = $msgTable.wAFNotEnabled
             }
-            elseif ($fortigateVMs.Count -gt 0) {
+            elseif ($hasFirewall) {
+                $firewallType = if ($azureFirewalls.Count -gt 0) { "Azure Firewall" } else { "Fortigate Firewall" }
                 $IsCompliant = $true
-                $Comments = $msgTable.firewallFound -f "Fortigate Firewall"
+                $Comments = $msgTable.firewallFound -f $firewallType
             }
-            elseif ($appGateways.Count -gt 0) {
-                if ($hasWAFEnabled) {
-                    $IsCompliant = $true
-                    $Comments = $msgTable.wAFEnabled
-                }
-                else {
-                    $IsCompliant = $false
-                    $Comments = $msgTable.wAFNotEnabled
-                }
+            elseif ($hasAppGateway -and $hasWAFEnabled) {
+                $IsCompliant = $true
+                $Comments = $msgTable.wAFEnabled
             }
             else {
-                $IsCompliant = $false
+                $IsCompliant = $true
                 $Comments = $msgTable.noFirewallOrGateway
             }
 
