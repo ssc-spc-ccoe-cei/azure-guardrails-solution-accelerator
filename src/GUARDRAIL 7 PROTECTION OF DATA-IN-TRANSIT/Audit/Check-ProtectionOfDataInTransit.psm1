@@ -124,21 +124,7 @@ function Verify-ProtectionDataInTransit {
     $FinalObjectList = [System.Collections.ArrayList]@()
     $ErrorList = [System.Collections.ArrayList]@()
     $grRequiredPolicies=@("FunctionAppShouldOnlyBeAccessibleOverHttps","WebApplicationShouldOnlyBeAccessibleOverHttps", "ApiAppShouldOnlyBeAccessibleOverHttps", "OnlySecureConnectionsToYourRedisCacheShouldBeEnabled","SecureTransferToStorageAccountsShouldBeEnabled")
-    #Check management groups
-    try {
-        $objs = Get-AzManagementGroup -ErrorAction Stop
-    }
-    catch {
-        $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
-        throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
-    }
-    [string]$type = "Management Group"
-    if($EnableMultiCloudProfiles) {
-        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
-    }
-    else {
-        $FinalObjectList+=Check-StatusDataInTransit -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
-    }
+
     #Check Subscriptions
     try {
         $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
