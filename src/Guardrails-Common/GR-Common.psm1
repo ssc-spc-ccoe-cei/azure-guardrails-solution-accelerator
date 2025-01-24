@@ -1078,26 +1078,27 @@ function Test-ComplianceForSubscription {
     if ($PolicyID -match $strPattern){
         $PolicyID = $matches[1]
     }
-    Write-Host "Get compliance details for Subscription : $($subscription.DisplayName)"
+    Write-Warning "Get compliance details for Subscription : $($subscription.DisplayName)"
     $complianceDetails = Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}  
     
     If ($null -eq $complianceDetails) {
-        Write-Host "No compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
+        Write-Warning "No compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
     }
     else{   
         $complianceDetails = $complianceDetails | Where-Object{$_.PolicyAssignmentScope -like "*$($obj.TenantId)*" }
+        Write-Warning "complianceDetails in Test-ComplianceForSubscription function: $complianceDetails"
         $requiredPolicyExemptionIds_smallCaps = @()
         foreach ($str in $requiredPolicyExemptionIds) {
             $requiredPolicyExemptionIds_smallCaps += $str.ToLower()
         }
         # Filter for required policies
         $complianceDetails = $complianceDetails | Where-Object{ $_.PolicyDefinitionReferenceId -in $requiredPolicyExemptionIds_smallCaps}
-        
+        Write-warning " ****** complianceDetails in Test-ComplianceForSubscription function:  $complianceDetails"
         if ($objType -eq "subscription"){
-            Write-Host "$($complianceDetails.count) Compliance details found for subscription: $($subscription.DisplayName)"
+            Write-Warning "$($complianceDetails.count) Compliance details found for subscription: $($subscription.DisplayName)"
         }
         else {
-            Write-Host "$($complianceDetails.count) Compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"                            
+            Write-Warning "$($complianceDetails.count) Compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"                            
         }
         
     }
@@ -1198,14 +1199,13 @@ function Check-PBMMPolicies {
                      # Required Policy Definitions are not exempt. Find compliance details for the assigned PBMM policy
                     $Comment += ' ' + $msgTable.grExemptionNotFound
 
-                    if($debugOutput){Write-Output "Comment * : $Comment"}
                     # Check the number of resources and compliance for the required policies in applied PBMM initiative
                     # ----------------#
                     # Subscription
                     # ----------------#
                     if ($objType -eq "subscription"){
                         if($debugOutput){Write-Output "Find compliance details for Subscription : $($obj.Name)"}
-                        Write-Host "Find compliance details for Subscription : $($obj.Name)"
+                        Write-Warning "Find compliance details for Subscription : $($obj.Name)"
                         $subscription = @()
                         $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
                         
@@ -1213,7 +1213,7 @@ function Check-PBMMPolicies {
                         if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
                             # Set Az context to the this subscription
                             Set-AzContext -SubscriptionId $subscription.SubscriptionID
-                            if($debugOutput){Write-Output "AzContext set to $($subscription.DisplayName)"}
+                            if($debugOutput){Write-Warning "AzContext set to $($subscription.DisplayName)"}
                             Write-Host "AzContext set to $($subscription.DisplayName)"
                         }
     
@@ -1222,13 +1222,13 @@ function Check-PBMMPolicies {
                         if (-not ($complianceDetailsSubscription -is [System.Array])) {
                             $complianceDetailsSubscription = @($complianceDetailsSubscription)
                         }
-                        if($debugOutput){Write-Output "complianceDetailsSubscription OUTPUT COUNT : $($complianceDetailsSubscription.Count)"}
-                        if($debugOutput){Write-Output "complianceDetailsSubscription OUTPUT : $complianceDetailsSubscription"}
+                        if($debugOutput){Write-Warning "complianceDetailsSubscription OUTPUT COUNT : $($complianceDetailsSubscription.Count)"}
+                        if($debugOutput){Write-Warning "complianceDetailsSubscription OUTPUT : $complianceDetailsSubscription"}
 
 
                         if ($null -eq $complianceDetailsSubscription) {
-                            if($debugOutput){Write-Output "Compliance details for $($subscription.DisplayName) outputs as NULL"}
-                            Write-Verbose "Compliance details for $($subscription.DisplayName) outputs as NULL"
+                            if($debugOutput){Write-Warning "Compliance details for $($subscription.DisplayName) outputs as NULL"}
+                            Write-Host "Compliance details for $($subscription.DisplayName) outputs as NULL"
                             $complianceDetailsList = $null
                         }
                         else{
@@ -1237,24 +1237,23 @@ function Check-PBMMPolicies {
                                     Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
                                     ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
                                     ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
-                                if($debugOutput){Write-Output "complianceDetailsList less than 2, COUNT : $($complianceDetailsList.Count)"}
-                                if($debugOutput){Write-}
+                                if($debugOutput){Write-Warning "complianceDetailsList less than 2, COUNT : $($complianceDetailsList.Count)"}
+                               
                             }
                             else{
                                 $complianceDetailsList = $complianceDetailsSubscription | Select-Object `
                                     Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
                                     ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
                                     ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
-                                if($debugOutput){Write-Output "complianceDetailsList 2 or more, COUNT : $($complianceDetailsList.Count)"}
-                            
+                                if($debugOutput){Write-Warning "complianceDetailsList 2 or more, COUNT : $($complianceDetailsList.Count)"}
                             }
                             
                             if (-not ($complianceDetailsList -is [System.Array])) {
                                 $complianceDetailsList = @($complianceDetailsList)
                             }
                             Write-Host "complianceDetailsList OUTPUT COUNT : $($complianceDetailsList.Count)"
-                            if($debugOutput){Write-Output "complianceDetailsList OUTPUT COUNT : $($complianceDetailsList.Count)"}
-                            if($debugOutput){Write-Output "complianceDetailsList OUTPUT : $complianceDetailsList"}
+                            if($debugOutput){Write-Warning "complianceDetailsList OUTPUT COUNT : $($complianceDetailsList.Count)"}
+                            if($debugOutput){Write-Warning "complianceDetailsList OUTPUT : $complianceDetailsList"}
                         }
 
                     }
@@ -1262,7 +1261,7 @@ function Check-PBMMPolicies {
                     if ($null -eq $complianceDetailsList) {
                         # PBMM applied but complianceDetailsList is null i.e. no resources in this subcription to apply the required policies
                         Write-Host "Check for compliance details; outputs as NULL"
-                        if($debugOutput){Write-Output "Check for compliance details; outputs as NULL"}
+                        if($debugOutput){Write-Warning "Check for compliance details; outputs as NULL"}
                         $resourceCompliant = 0 
                         $resourceNonCompliant = 0
                         $totalResource = 0
@@ -1272,7 +1271,7 @@ function Check-PBMMPolicies {
                     else{
                         # # check the compliant & non-compliant resources only for $requiredPolicyExemptionIds policies
                         $totalResource = $complianceDetailsList.Count
-    
+
                         # #-------------# #
                         # # Compliant
                         # #-------------# #
@@ -1295,9 +1294,9 @@ function Check-PBMMPolicies {
                     # At this point PBMM initiative is applied. All 3 policies are applied. No exemption.
                     # # ---------------------------------------------------------------------------------
                     if($debugOutput){
-                        Write-Output "totalResource: $totalResource"
-                        Write-Output "countResourceCompliant: $countResourceCompliant"
-                        Write-Output "countResourceNonCompliant: $countResourceNonCompliant"
+                        Write-Warning "totalResource: $totalResource"
+                        Write-Warning "countResourceCompliant: $countResourceCompliant"
+                        Write-Warning "countResourceNonCompliant: $countResourceNonCompliant"
                     }
 
                     # Count Compliant & non-compliant resources and Total resources
@@ -1323,7 +1322,7 @@ function Check-PBMMPolicies {
                     }
                     else{
                         # All use cases are covered by now. Anything else?
-                        if($debugOutput){Write-Output "# All use cases are covered by now"}
+                        if($debugOutput){Write-Warning "# All use cases are covered by now"}
                         # Do nothing 
                     }                   
                 }
