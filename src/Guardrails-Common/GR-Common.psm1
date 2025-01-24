@@ -1078,27 +1078,25 @@ function Test-ComplianceForSubscription {
     if ($PolicyID -match $strPattern){
         $PolicyID = $matches[1]
     }
-    Write-Warning "Get compliance details for Subscription : $($subscription.DisplayName)"
+    Write-Host "Get compliance details for Subscription : $($subscription.DisplayName)"
     $complianceDetails = Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}  
     
     If ($null -eq $complianceDetails) {
-        Write-Warning "No compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
+        Write-Host "No compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
     }
     else{   
         $complianceDetails = $complianceDetails | Where-Object{$_.PolicyAssignmentScope -like "*$($obj.TenantId)*" }
-        Write-Warning "complianceDetails in Test-ComplianceForSubscription function: $complianceDetails"
         $requiredPolicyExemptionIds_smallCaps = @()
         foreach ($str in $requiredPolicyExemptionIds) {
             $requiredPolicyExemptionIds_smallCaps += $str.ToLower()
         }
         # Filter for required policies
         $complianceDetails = $complianceDetails | Where-Object{ $_.PolicyDefinitionReferenceId -in $requiredPolicyExemptionIds_smallCaps}
-        Write-warning " ****** complianceDetails in Test-ComplianceForSubscription function:  $complianceDetails"
         if ($objType -eq "subscription"){
-            Write-Warning "$($complianceDetails.count) Compliance details found for subscription: $($subscription.DisplayName)"
+            Write-Host "$($complianceDetails.count) Compliance details found for subscription: $($subscription.DisplayName)"
         }
         else {
-            Write-Warning "$($complianceDetails.count) Compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"                            
+            Write-Host "$($complianceDetails.count) Compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"                            
         }
         
     }
@@ -1149,7 +1147,6 @@ function Check-PBMMPolicies {
         # Find assigned policy list from PBMM policy for the scope
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId | `
             Select-Object -ExpandProperty properties | `
-            # Select-Object -Property Scope, PolicyDefinitionID, DisplayName | `
             Where-Object { $_.PolicyDefinitionID -like "*$PolicyID*" } 
 
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
@@ -1204,8 +1201,7 @@ function Check-PBMMPolicies {
                     # Subscription
                     # ----------------#
                     if ($objType -eq "subscription"){
-                        if($debugOutput){Write-Output "Find compliance details for Subscription : $($obj.Name)"}
-                        Write-Warning "Find compliance details for Subscription : $($obj.Name)"
+                        Write-Host "Find compliance details for Subscription : $($obj.Name)"
                         $subscription = @()
                         $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
                         
@@ -1213,18 +1209,10 @@ function Check-PBMMPolicies {
                         if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
                             # Set Az context to the this subscription
                             Set-AzContext -SubscriptionId $subscription.SubscriptionID
-                            if($debugOutput){Write-Warning "AzContext set to $($subscription.DisplayName)"}
                             Write-Host "AzContext set to $($subscription.DisplayName)"
                         }
     
                         $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds -objType $objType
-                        
-                        # if (-not ($complianceDetailsSubscription -is [System.Array])) {
-                        #     $complianceDetailsSubscription = @($complianceDetailsSubscription)
-                        # }
-                        if($debugOutput){Write-Warning "complianceDetailsSubscription OUTPUT COUNT : $($complianceDetailsSubscription.Count)"}
-                        if($debugOutput){Write-Warning "complianceDetailsSubscription OUTPUT : $complianceDetailsSubscription"}
-
 
                         if ($null -eq $complianceDetailsSubscription) {
                             if($debugOutput){Write-Warning "Compliance details for $($subscription.DisplayName) outputs as NULL"}
@@ -1237,23 +1225,17 @@ function Check-PBMMPolicies {
                                     Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
                                     ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
                                     ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
-                                if($debugOutput){Write-Warning "complianceDetailsList less than 2, COUNT : $($complianceDetailsList.Count)"}
-                               
                             }
                             else{
                                 $complianceDetailsList = $complianceDetailsSubscription | Select-Object `
                                     Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
                                     ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
                                     ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
-                                if($debugOutput){Write-Warning "complianceDetailsList 2 or more, COUNT : $($complianceDetailsList.Count)"}
                             }
                             
                             if (-not ($complianceDetailsList -is [System.Array])) {
                                 $complianceDetailsList = @($complianceDetailsList)
                             }
-                            Write-Host "complianceDetailsList OUTPUT COUNT : $($complianceDetailsList.Count)"
-                            if($debugOutput){Write-Warning "complianceDetailsList OUTPUT COUNT : $($complianceDetailsList.Count)"}
-                            if($debugOutput){Write-Warning "complianceDetailsList OUTPUT : $complianceDetailsList"}
                         }
 
                     }
@@ -1287,11 +1269,11 @@ function Check-PBMMPolicies {
                         }
                         if ($null -eq $resourceCompliant){
                             $countResourceCompliant = 0
-                            if($debugOutput){Write-Warning "Check when resourceCompliant is null"}
+                            Write-Host "Check when resourceCompliant is null"
                         }
                         else{
                             $countResourceCompliant = $resourceCompliant.Count
-                            if($debugOutput){Write-Warning "Check when resourceCompliant is not null"}
+                            Write-Host "Check when resourceCompliant is not null"
                         }
                         
                         # #-------------##
@@ -1337,7 +1319,7 @@ function Check-PBMMPolicies {
                     }
                     else{
                         # All use cases are covered by now. Anything else?
-                        if($debugOutput){Write-Warning "# All use cases are covered by now"}
+                        if($debugOutput){Write-Warning "All use cases are covered by now"}
                         # Do nothing 
                     }                   
                 }
