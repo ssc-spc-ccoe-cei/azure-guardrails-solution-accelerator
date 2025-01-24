@@ -1276,7 +1276,12 @@ function Check-PBMMPolicies {
                         # # Compliant
                         # #-------------# #
                         # List compliant resource
-                        $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}
+                        if ( $complianceDetailsList.Count -eq 1){
+                            $resourceCompliant = $complianceDetailsList[0] | Where-Object {$_.ComplianceState -eq "Compliant"}
+                        }
+                        else{
+                            $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}
+                        }
                         $countResourceCompliant = $resourceCompliant.Count
     
                         # #-------------##
