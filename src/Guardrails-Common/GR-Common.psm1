@@ -1148,7 +1148,6 @@ function Check-PBMMPolicies {
             # PBMM initiative not applied
             $ComplianceStatus=$false
             $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.pbmmNotApplied 
-           
         }
         else {
             # PBMM initiative applied
@@ -1305,8 +1304,7 @@ function Check-PBMMPolicies {
                         $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.hasNonComplianceResource -f $countResourceNonCompliant, $totalResource
                     }
                     else{
-                        # All use cases are covered by now. Anything else?
-                        Write-host "All use cases are covered by now"
+                        Write-host "All use cases are addressed."
                         # Do nothing 
                     }                   
                 }
