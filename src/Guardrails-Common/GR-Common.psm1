@@ -1219,9 +1219,9 @@ function Check-PBMMPolicies {
     
                         $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds -objType $objType
                         
-                        if (-not ($complianceDetailsSubscription -is [System.Array])) {
-                            $complianceDetailsSubscription = @($complianceDetailsSubscription)
-                        }
+                        # if (-not ($complianceDetailsSubscription -is [System.Array])) {
+                        #     $complianceDetailsSubscription = @($complianceDetailsSubscription)
+                        # }
                         if($debugOutput){Write-Warning "complianceDetailsSubscription OUTPUT COUNT : $($complianceDetailsSubscription.Count)"}
                         if($debugOutput){Write-Warning "complianceDetailsSubscription OUTPUT : $complianceDetailsSubscription"}
 
