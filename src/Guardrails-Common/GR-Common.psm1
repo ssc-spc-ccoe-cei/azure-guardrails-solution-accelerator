@@ -1282,8 +1282,18 @@ function Check-PBMMPolicies {
                         else{
                             $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}
                         }
-                        $countResourceCompliant = $resourceCompliant.Count
-    
+                        if (-not ($resourceCompliant -is [System.Array])) {
+                            $resourceCompliant = @($resourceCompliant)
+                        }
+                        if ($null -eq $resourceCompliant){
+                            $countResourceCompliant = 0
+                            if($debugOutput){Write-Warning "Check when resourceCompliant is null"}
+                        }
+                        else{
+                            $countResourceCompliant = $resourceCompliant.Count
+                            if($debugOutput){Write-Warning "Check when resourceCompliant is not null"}
+                        }
+                        
                         # #-------------##
                         # # Non-compliant
                         # #-------------##
