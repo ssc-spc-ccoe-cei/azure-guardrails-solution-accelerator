@@ -1124,8 +1124,6 @@ function Check-PBMMPolicies {
     )   
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
 
-    $debugOutput = $false
-
     foreach ($obj in $objList)
     {
         Write-Verbose "Checking $objType : $($obj.Name)"
@@ -1140,10 +1138,6 @@ function Check-PBMMPolicies {
         }
         Write-Host "Scope is $tempId"
 
-        if($ItemName -eq "Azure Functions: HTTPS Application Configuration" -and $($obj.Id) -eq "cf86cfdd-58d0-49d5-95f3-9ae3fa6bd97b" ){
-           $debugOutput = $true
-        }
-        
         # Find assigned policy list from PBMM policy for the scope
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId | `
             Select-Object -ExpandProperty properties | `
@@ -1215,7 +1209,6 @@ function Check-PBMMPolicies {
                         $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds -objType $objType
 
                         if ($null -eq $complianceDetailsSubscription) {
-                            if($debugOutput){Write-Warning "Compliance details for $($subscription.DisplayName) outputs as NULL"}
                             Write-Host "Compliance details for $($subscription.DisplayName) outputs as NULL"
                             $complianceDetailsList = $null
                         }
@@ -1243,7 +1236,6 @@ function Check-PBMMPolicies {
                     if ($null -eq $complianceDetailsList) {
                         # PBMM applied but complianceDetailsList is null i.e. no resources in this subcription to apply the required policies
                         Write-Host "Check for compliance details; outputs as NULL"
-                        if($debugOutput){Write-Warning "Check for compliance details; outputs as NULL"}
                         $resourceCompliant = 0 
                         $resourceNonCompliant = 0
                         $totalResource = 0
@@ -1268,12 +1260,12 @@ function Check-PBMMPolicies {
                             $resourceCompliant = @($resourceCompliant)
                         }
                         if ($null -eq $resourceCompliant){
+                            Write-Host "resourceCompliant is null"
                             $countResourceCompliant = 0
-                            Write-Host "Check when resourceCompliant is null"
                         }
                         else{
+                            Write-Host "resourceCompliant is not null"
                             $countResourceCompliant = $resourceCompliant.Count
-                            Write-Host "Check when resourceCompliant is not null"
                         }
                         
                         # #-------------##
@@ -1290,11 +1282,6 @@ function Check-PBMMPolicies {
                     # # ---------------------------------------------------------------------------------
                     # At this point PBMM initiative is applied. All 3 policies are applied. No exemption.
                     # # ---------------------------------------------------------------------------------
-                    if($debugOutput){
-                        Write-Warning "totalResource: $totalResource"
-                        Write-Warning "countResourceCompliant: $countResourceCompliant"
-                        Write-Warning "countResourceNonCompliant: $countResourceNonCompliant"
-                    }
 
                     # Count Compliant & non-compliant resources and Total resources
                     if($totalResource -eq 0){
@@ -1319,7 +1306,7 @@ function Check-PBMMPolicies {
                     }
                     else{
                         # All use cases are covered by now. Anything else?
-                        if($debugOutput){Write-Warning "All use cases are covered by now"}
+                        Write-host "All use cases are covered by now"
                         # Do nothing 
                     }                   
                 }
