@@ -251,6 +251,7 @@ vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{
 networkWatcherConfig = Configuration de Network Watcher
 networkWatcherConfigNoRegions = En raison d'aucun VNETs ou de tous les VNETs étant exclus, il n'y a aucune région pour vérifier la configuration de Network Watcher
 noFirewallOrGateway = Cet abonnement n'a pas de pare-feu ni de passerelle d'application en utilisation.
+noFirewallOrGatewayCompliant = Cet abonnement est conforme en raison de la présence d'un pare-feu ou d'une passerelle d'application (avec un pare-feu d'application Web) dans un autre abonnement. Assurez-vous que cet abonnement route les adresses IP sources correctement.
 wAFNotEnabled = La passerelle d'application attribuée n'a pas de pares-feux d'application Web (WAF) configuré. Activez un WAF sur la passerelle d'application.
 firewallFound = Il y a un {0} associé à cet abonnement.
 wAFEnabled = Il y a une passerelle d'application associée à cet abonnement avec les configurations appropriées.

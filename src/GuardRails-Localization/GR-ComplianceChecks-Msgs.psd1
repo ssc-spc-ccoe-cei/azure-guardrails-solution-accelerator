@@ -250,6 +250,7 @@ vnetDDosConfig = VNet DDos configuration
 networkWatcherConfig = VNet Network Watcher configuration
 networkWatcherConfigNoRegions = Either due to no VNETs or all VNETs being excluded, there are no regions to check for Network Watcher configuration
 noFirewallOrGateway = This subscription does not have a firewall or an application gateway in use.
+noFirewallOrGatewayCompliant = This subscription does not have a firewall or an application gateway in use.
 wAFNotEnabled = The application gateway assigned does not have configured Web Application Firewalls (WAFs). Enable a WAF on the application gateway.
 firewallFound = There is a {0} associated to this subscription.
 wAFEnabled = There is an application gateway associated to this subscription with the appropriate configurations.
