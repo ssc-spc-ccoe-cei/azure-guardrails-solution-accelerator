@@ -193,7 +193,6 @@ allCompliantResources = All resources are compliant.
 allNonCompliantResources = All resources are non-compliant.
 hasNonComplianceResource = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
 
-
 # GuardRail #7
 
 appGatewayCertValidity = Application Gateway Certificate Validity
@@ -250,6 +249,7 @@ vnetDDosConfig = VNet DDos configuration
 networkWatcherConfig = VNet Network Watcher configuration
 networkWatcherConfigNoRegions = Either due to no VNETs or all VNETs being excluded, there are no regions to check for Network Watcher configuration
 noFirewallOrGateway = This subscription does not have a firewall or an application gateway in use.
+noFirewallOrGatewayCompliant = This subscription is compliant due to the presence of a Firewall, or a Application Gateway (with a Web Application Firewall) in another subscription. Ensure that this subscription is routing source IP Addresses appropriately.
 wAFNotEnabled = The application gateway assigned does not have configured Web Application Firewalls (WAFs). Enable a WAF on the application gateway.
 firewallFound = There is a {0} associated to this subscription.
 wAFEnabled = There is an application gateway associated to this subscription with the appropriate configurations.

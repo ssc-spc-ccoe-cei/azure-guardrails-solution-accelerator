@@ -28,6 +28,37 @@ function Check-NetworkSecurityTools {
         throw $errorMessage
     }
 
+    # First scan all subscriptions to check if any have compliant setup
+    $hasCompliantSetupInTenant = $false
+    foreach ($sub in $subs) {
+        try {
+            Select-AzSubscription -SubscriptionObject $sub | Out-Null
+            
+            $azureFirewalls = Get-AzFirewall -ErrorAction SilentlyContinue
+            $fortigateVMs = Get-AzVM | Where-Object { 
+                $_.StorageProfile.ImageReference.Publisher -eq "fortinet" -and
+                $_.StorageProfile.ImageReference.Offer -like "*fortinet*fortigate*"
+            }
+            
+            $appGateways = Get-AzApplicationGateway -ErrorAction SilentlyContinue
+            foreach ($ag in $appGateways) {
+                if ($ag.Sku.Tier -like "*WAF*") {
+                    $hasCompliantSetupInTenant = $true
+                    break
+                }
+            }
+            
+            if ($azureFirewalls.Count -gt 0 -or $fortigateVMs.Count -gt 0) {
+                $hasCompliantSetupInTenant = $true
+                break
+            }
+        }
+        catch {
+            $ErrorList.Add("Error checking tenant-wide compliance in subscription $($sub.Name): $_")
+        }
+    }
+
+    # Now evaluate each subscription
     foreach ($sub in $subs) {
         $IsCompliant = $false
         $Comments = ""
@@ -44,7 +75,7 @@ function Check-NetworkSecurityTools {
                 $_.StorageProfile.ImageReference.Publisher -eq "fortinet" -and
                 $_.StorageProfile.ImageReference.Offer -like "*fortinet*fortigate*"
             }
-                        
+            
             # Check for Application Gateway with WAF
             $appGateways = Get-AzApplicationGateway -ErrorAction SilentlyContinue
             $hasWAFEnabled = $false
@@ -59,27 +90,31 @@ function Check-NetworkSecurityTools {
             }
 
             # Determine compliance and comments
-            if ($azureFirewalls.Count -gt 0) {
-                $IsCompliant = $true
-                $Comments = $msgTable.firewallFound -f "Azure Firewall"
+            $hasFirewall = $azureFirewalls.Count -gt 0 -or $fortigateVMs.Count -gt 0
+            $hasAppGateway = $appGateways.Count -gt 0
+
+            if ($hasAppGateway -and -not $hasWAFEnabled) {
+                # App Gateway without WAF is always non-compliant
+                $IsCompliant = $false
+                $Comments = $msgTable.wAFNotEnabled
             }
-            elseif ($fortigateVMs.Count -gt 0) {
+            elseif ($hasFirewall) {
+                $firewallType = if ($azureFirewalls.Count -gt 0) { "Azure Firewall" } else { "Fortigate Firewall" }
                 $IsCompliant = $true
-                $Comments = $msgTable.firewallFound -f "Fortigate Firewall"
+                $Comments = $msgTable.firewallFound -f $firewallType
             }
-            elseif ($appGateways.Count -gt 0) {
-                if ($hasWAFEnabled) {
-                    $IsCompliant = $true
-                    $Comments = $msgTable.wAFEnabled
-                }
-                else {
-                    $IsCompliant = $false
-                    $Comments = $msgTable.wAFNotEnabled
-                }
+            elseif ($hasAppGateway -and $hasWAFEnabled) {
+                $IsCompliant = $true
+                $Comments = $msgTable.wAFEnabled
             }
             else {
-                $IsCompliant = $false
-                $Comments = $msgTable.noFirewallOrGateway
+                # No firewall or gateway - compliant only if another sub has compliant setup
+                $IsCompliant = $hasCompliantSetupInTenant
+                $Comments = if ($hasCompliantSetupInTenant) {
+                    $msgTable.noFirewallOrGatewayCompliant
+                } else {
+                    $msgTable.noFirewallOrGateway
+                }
             }
 
             $resultObject = [PSCustomObject]@{
