@@ -146,63 +146,59 @@ function Check-AlertsMonitor {
             if($auditLogsQueriesMatching = CompareKQLQueries -query $auditQuery -targetQuery $targetQuery[1]){break}
          }
 
-        try{
-            #If alert rule has one of the queries to check break glass account signin logs
-            if($bgAcctQueriesMatching) {
-                #Get action groups associated with our alert rule
+
+        #If alert rule has one of the queries to check break glass account signin logs
+        if($bgAcctQueriesMatching) {
+
+            #Get action groups associated with our alert rule
+            try {
                 $actionGroups = Get-AzActionGroup -InputObject $actionGroupID[0]
-
-                $receiversWithValues = $actionGroups.PSObject.properties | Where-Object {
-                    $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
-                }
-                #Action groups exist -> SignInLogs check flow is compliant!
-                if($receiversWithValues.Count -gt 0){$signInLogsCompliance = $true}
-
-                else{
-                    $IsCompliant = $false
-                    $Comments += $msgTable.noActionGroupsForBGaccts
-                }            
             }
-            else{
-                $IsCompliant = $false
-                $Comments += $msgTable.noAlertRuleforBGaccts
+            catch {
+                $signInLogsCompliance = $false
+                $Comments += $msgTable.noActionGroupsForBGaccts
+                $ErrorList += "Could not find action groups for the breakglass account alert rules for the resource group: $_"
             }
-
-            #If alert rule has one of the queries to check audit logs
-            if($auditLogsQueriesMatching) {
-                #Get action groups associated with our alert rule
-                $actionGroups = Get-AzActionGroup -InputObject $actionGroupID[1]
-                $receiversWithValues = $actionGroups.PSObject.Properties | Where-Object {
-                    $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
-                }
-                #Action groups exist -> AuditLogs check flow is compliant!
-                if($receiversWithValues.Count -gt 0){$auditLogsCompliance = $true}       
-                
-                else{
-                    $IsCompliant = $false
-                    $Comments += $msgTable.noActionGroupsForAuditLogs
-                } 
+            
+            $receiversWithValues = $actionGroups.PSObject.properties | Where-Object {
+                $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
             }
-            else{
-                $IsCompliant = $false
-                $Comments += $msgTable.NoAlertRuleforCaps
-            }
+            #Action groups exist -> SignInLogs check flow is compliant!
+            if($receiversWithValues.Count -gt 0){$signInLogsCompliance = $true}
         }
-        catch{
 
-            #Set conditional messages
-            if($bgAcctQueriesMatching -and (-not $auditLogsQueriesMatching)){$Comments += $msgTable.noActionGroupsForBGaccts}
-            elseif($auditLogsQueriesMatching){$Comments += $msgTable.noActionGroupsForAuditLogs}
-            else{$Comments += $msgTable.noActionGroups -f $resourceGroupName}
-
+        else{
             $IsCompliant = $false
-            $ErrorList += "Could not find action groups for the given alert rules for the resource group: $_"
+            $Comments += $msgTable.noAlertRuleforBGaccts
         }
-        
+
+        #If alert rule has one of the queries to check audit logs
+        if($auditLogsQueriesMatching) {
+
+            #Get action groups associated with our alert rule
+            try {
+                $actionGroups = Get-AzActionGroup -InputObject $actionGroupID[1]
+            }
+            catch {
+                $auditLogsCompliance = $false
+                $Comments += $msgTable.noActionGroupsForAuditLogs
+                $ErrorList += "Could not find action groups for the audit log alert rules for the resource group: $_"
+            }
+            
+            $receiversWithValues = $actionGroups.PSObject.Properties | Where-Object {
+                $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+            }
+            #Action groups exist -> AuditLogs check flow is compliant!
+            if($receiversWithValues.Count -gt 0){$auditLogsCompliance = $true}       
+        }
+
+        else{
+            $IsCompliant = $false
+            $Comments += $msgTable.NoAlertRuleforCaps
+        }
+       
         #If both checks are compliant then set the control as compliant
-        if($signInLogsCompliance -and $auditLogsCompliance){
-            $IsCompliant = $true
-        }
+        if($signInLogsCompliance -and $auditLogsCompliance){$IsCompliant = $true}
     }
     catch {
         $IsCompliant = $false
@@ -210,9 +206,7 @@ function Check-AlertsMonitor {
         $ErrorList += "Could not find alert rules for the resource group: $_"
     }
 
-    if($IsCompliant){
-        $Comments = $msgTable.compliantAlerts
-    }
+    if($IsCompliant){$Comments = $msgTable.compliantAlerts}
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
