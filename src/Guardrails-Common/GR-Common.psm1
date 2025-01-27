@@ -1090,9 +1090,8 @@ function Test-ComplianceForSubscription {
         foreach ($str in $requiredPolicyExemptionIds) {
             $requiredPolicyExemptionIds_smallCaps += $str.ToLower()
         }
-        # Filter for GR6 required policies
+        # Filter for required policies
         $complianceDetails = $complianceDetails | Where-Object{ $_.PolicyDefinitionReferenceId -in $requiredPolicyExemptionIds_smallCaps}
-        
         if ($objType -eq "subscription"){
             Write-Host "$($complianceDetails.count) Compliance details found for subscription: $($subscription.DisplayName)"
         }
@@ -1101,7 +1100,6 @@ function Test-ComplianceForSubscription {
         }
         
     }
-
 
     return $complianceDetails
 }
@@ -1139,35 +1137,28 @@ function Check-PBMMPolicies {
             $tempId=$obj.Id                              
         }
         Write-Host "Scope is $tempId"
-        
+
         # Find assigned policy list from PBMM policy for the scope
-        # Az Portal
-        $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
-        # # LocalExecution:
-        # if (!($PolicyID -like "/providers/microsoft.authorization/policysetdefinitions")) {
-        #     $PolicyDefinitionID = "/providers/microsoft.authorization/policysetdefinitions/$PolicyID"
-        # }
-        # $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyDefinitionID
+        $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId | `
+            Select-Object -ExpandProperty properties | `
+            Where-Object { $_.PolicyDefinitionID -like "*$PolicyID*" } 
+
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
             # PBMM initiative not applied
             $ComplianceStatus=$false
             $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.pbmmNotApplied 
-           
         }
         else {
             # PBMM initiative applied
             $Comment = $msgTable.pbmmApplied
 
             # List the policies within the PBMM initiative (policy set definition)
-            # # Az Portal:
-            $policySetDefinition = Get-AzPolicySetDefinition -Id $PolicyID
-            # # LocalExecution:
-            # $policySetDefinition = Get-AzPolicySetDefinition -Id $PolicyDefinitionID
-            $listPolicies = $policySetDefinition.Properties.policyDefinitions
+            $policySetDefinition = Get-AzPolicySetDefinition | `
+                Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" } 
 
+            $listPolicies = $policySetDefinition.Properties.policyDefinitions
             # Check all 3 policies are applied for this scope
-            # $allPoliciesPresent = $requiredPolicyExemptionIds | ForEach-Object { $listPolicies.policyDefinitionReferenceId -contains $_ } | Where-Object { $_ -eq $false } -eq $null
             $appliedPolicies = $listPolicies.policyDefinitionReferenceId | Where-Object { $requiredPolicyExemptionIds -contains $_ }
             if($appliedPolicies.Count -ne  $requiredPolicyExemptionIds.Count){
                 # some required policies are not applied
@@ -1180,7 +1171,7 @@ function Check-PBMMPolicies {
 
                 # PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
                 $policyExemptionList = Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds
-                # 
+
                 $exemptList = $policyExemptionList.exemptionId
                 # $nonExemptList = $policyExemptionList | Where-Object { $_.isExempt -eq $false }
                 if ($ExemptList.Count -gt 0){   
@@ -1189,7 +1180,7 @@ function Check-PBMMPolicies {
                     if(-not($null -eq $exemptList)){
                         $exemptListAllPolicies = $exemptList -join ", "
                     }
-                    # boolean, exemption for gr6 required policies exists.
+                    # boolean, exemption for GR, required policies exists.
                     $ComplianceStatus=$false
                     $Comment += ' '+ $msgTable.grExemptionFound -f $exemptListAllPolicies
 
@@ -1215,16 +1206,30 @@ function Check-PBMMPolicies {
                         }
     
                         $complianceDetailsSubscription = Test-ComplianceForSubscription -obj $obj -subscription $subscription -PolicyID $PolicyID -requiredPolicyExemptionIds $requiredPolicyExemptionIds -objType $objType
+
                         if ($null -eq $complianceDetailsSubscription) {
                             Write-Host "Compliance details for $($subscription.DisplayName) outputs as NULL"
                             $complianceDetailsList = $null
                         }
                         else{
-                            $complianceDetailsList = $complianceDetailsSubscription | Select-Object `
-                                Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
-                                ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
-                                ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
-                        } 
+                            if($complianceDetailsSubscription.Count -lt 2){
+                                $complianceDetailsList = $complianceDetailsSubscription[0] | Select-Object `
+                                    Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
+                                    ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
+                                    ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
+                            }
+                            else{
+                                $complianceDetailsList = $complianceDetailsSubscription | Select-Object `
+                                    Timestamp, ResourceId, ResourceLocation, ResourceType, SubscriptionId, `
+                                    ResourceGroup, PolicyDefinitionName, ManagementGroupIds, PolicyAssignmentScope, IsCompliant, `
+                                    ComplianceState, PolicyDefinitionAction, PolicyDefinitionReferenceId, ResourceTags, ResourceName
+                            }
+                            
+                            if (-not ($complianceDetailsList -is [System.Array])) {
+                                $complianceDetailsList = @($complianceDetailsList)
+                            }
+                        }
+
                     }
 
                     if ($null -eq $complianceDetailsList) {
@@ -1239,14 +1244,29 @@ function Check-PBMMPolicies {
                     else{
                         # # check the compliant & non-compliant resources only for $requiredPolicyExemptionIds policies
                         $totalResource = $complianceDetailsList.Count
-    
+
                         # #-------------# #
                         # # Compliant
                         # #-------------# #
                         # List compliant resource
-                        $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}
-                        $countResourceCompliant = $resourceCompliant.Count
-    
+                        if ( $complianceDetailsList.Count -eq 1){
+                            $resourceCompliant = $complianceDetailsList[0] | Where-Object {$_.ComplianceState -eq "Compliant"}
+                        }
+                        else{
+                            $resourceCompliant = $complianceDetailsList | Where-Object {$_.ComplianceState -eq "Compliant"}
+                        }
+                        if (-not ($resourceCompliant -is [System.Array])) {
+                            $resourceCompliant = @($resourceCompliant)
+                        }
+                        if ($null -eq $resourceCompliant){
+                            Write-Host "resourceCompliant is null"
+                            $countResourceCompliant = 0
+                        }
+                        else{
+                            Write-Host "resourceCompliant is not null"
+                            $countResourceCompliant = $resourceCompliant.Count
+                        }
+                        
                         # #-------------##
                         # # Non-compliant
                         # #-------------##
@@ -1269,7 +1289,7 @@ function Check-PBMMPolicies {
                         $Comment = $msgTable.isCompliant + ' ' + $Comment + ' '+ $msgTable.noResource
                     }
                     elseif($totalResource -gt 0 -and ($countResourceCompliant -eq $totalResource)){
-                        # All resources are non-compliant
+                        # All resources are compliant
                         $ComplianceStatus=$true
                         $Comment = $msgTable.isCompliant + ' ' + $Comment + ' '+ $msgTable.allCompliantResources
                     }
@@ -1284,8 +1304,7 @@ function Check-PBMMPolicies {
                         $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' '+ $msgTable.hasNonComplianceResource -f $countResourceNonCompliant, $totalResource
                     }
                     else{
-                        # All use cases are covered by now. Anything else?
-
+                        Write-host "All use cases are addressed."
                         # Do nothing 
                     }                   
                 }
