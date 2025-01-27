@@ -191,7 +191,7 @@ grExemptionNotFound = Required Policy Definitions are not exempt.
 noResource = No applicable resources for the selected PBMM Initiative's policies to evaluate.
 allCompliantResources = All resources are compliant.
 allNonCompliantResources = All resources are non-compliant.
-hasNonComplianceResounce = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
+hasNonComplianceResource = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
 
 
 # GuardRail #7

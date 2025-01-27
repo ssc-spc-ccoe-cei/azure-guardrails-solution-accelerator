@@ -439,7 +439,7 @@
     "Control": "Guardrails4",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "True",
+    "Required": "False",
     "Profiles": [1, 2, 3, 4, 5, 6],
     "Script": "Check-FinOpsToolStatus -ControlName $msgTable.CtrName4 -ItemName $msgTable.FinOpsToolStatus -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
@@ -577,7 +577,7 @@
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "True",
+    "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
