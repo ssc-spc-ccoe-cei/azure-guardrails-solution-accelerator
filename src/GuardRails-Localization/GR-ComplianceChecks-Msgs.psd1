@@ -193,8 +193,8 @@ allCompliantResources = All resources are compliant.
 allNonCompliantResources = All resources are non-compliant.
 hasNonComplianceResource = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
 
-# GuardRail #7
 
+# GuardRail #7
 appGatewayCertValidity = Application Gateway Certificate Validity
 noSslListenersFound = No SSL listener found/configured for Application Gateway: {0}. 
 expiredCertificateFound = Expired certificate found for listener '{0}' in Application Gateway '{1}'.
@@ -216,6 +216,10 @@ storageAccValidTLS = All storage accounts are using TLS1.2 or higher.
 storageAccNotValidTLS= One or more storage accounts are using TLS1.1 or less. Update the storage accounts to TLS1.2 or higher.
 
 functionAppHttpsConfig = Azure Functions: HTTPS Application Configuration
+
+policyNotConfigured = Required policy is not assigned at tenant level. Please assign the policy to ensure compliance.
+policyCompliant = All resources are compliant with the required policy.
+policyNotCompliant = Resource is not compliant with the required policy. Please review and remediate.
 
 # GuardRail #8
 noNSG=No NSG is present.
