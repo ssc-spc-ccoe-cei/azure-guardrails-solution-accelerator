@@ -36,7 +36,7 @@ function Verify-TLSConfiguration {
                 "/providers/Microsoft.Authorization/policyDefinitions/32e6bbec-16b6-44c2-be37-c5b672d103cf"
             )
         }
-        "Application Gateway WAF" {
+        "Application Gateway WAF TLS Configuration" {
             $grRequiredPolicies = @(
                 "/providers/Microsoft.Authorization/policyDefinitions/564feb30-bf6a-4854-b4bb-0d2d2d1e6c66"
             )
