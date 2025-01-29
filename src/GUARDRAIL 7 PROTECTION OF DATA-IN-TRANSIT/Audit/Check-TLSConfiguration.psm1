@@ -13,7 +13,7 @@ function Verify-TLSConfiguration {
 
     [PSCustomObject] $ObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    
+
     # Define required policies based on ItemName
     $grRequiredPolicies = @()
     
@@ -44,7 +44,7 @@ function Verify-TLSConfiguration {
     }
 
     if ($EnableMultiCloudProfiles) {
-        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
     } else {
         $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
@@ -74,8 +74,32 @@ function Check-BuiltInPolicies {
         [Parameter(Mandatory=$true)]
         [hashtable]$msgTable,
         [Parameter(Mandatory=$true)]
-        [string]$ControlName
+        [string]$ControlName,
+        [string]$CloudUsageProfiles = "3",
+        [string]$ModuleProfiles,
+        [switch]$EnableMultiCloudProfiles
     )
+
+    function Add-ProfileInformation {
+        param (
+            [Parameter(Mandatory=$true)]
+            [PSCustomObject]$Result,
+            [string]$CloudUsageProfiles,
+            [string]$ModuleProfiles
+        )
+        
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $Result.ComplianceStatus = "Not Applicable"
+                $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $Result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            }
+        } else {
+            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+        }
+        return $Result
+    }
 
     $results = New-Object System.Collections.ArrayList
     
@@ -120,7 +144,7 @@ function Check-BuiltInPolicies {
             # If no resources are found that the policy applies to
             if ($null -eq $policyStates -or $policyStates.Count -eq 0) {
                 Write-Output "No resources found that the policy applies to"
-                $results.Add([PSCustomObject]@{
+                $result = [PSCustomObject]@{
                     Type = "tenant"
                     Id = $tenantId
                     Name = "N/A"
@@ -130,7 +154,13 @@ function Check-BuiltInPolicies {
                     ItemName = $ItemName
                     ControlName = $ControlName
                     ReportTime = $ReportTime
-                }) | Out-Null
+                }
+                
+                if ($EnableMultiCloudProfiles) {
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                }
+                
+                $results.Add($result) | Out-Null
                 continue
             }
 
@@ -141,7 +171,7 @@ function Check-BuiltInPolicies {
             if ($nonCompliantResources) {
                 Write-Output "Found $($nonCompliantResources.Count) non-compliant resources"
                 foreach ($resource in $nonCompliantResources) {
-                    $results.Add([PSCustomObject]@{
+                    $result = [PSCustomObject]@{
                         Type = $resource.ResourceType
                         Id = $resource.ResourceId
                         Name = $resource.ResourceGroup + "/" + ($resource.ResourceId -split '/')[-1]
@@ -151,11 +181,17 @@ function Check-BuiltInPolicies {
                         ItemName = $ItemName
                         ControlName = $ControlName
                         ReportTime = $ReportTime
-                    }) | Out-Null
+                    }
+                    
+                    if ($EnableMultiCloudProfiles) {
+                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    }
+                    
+                    $results.Add($result) | Out-Null
                 }
             } else {
                 Write-Output "All resources are compliant with the policy"
-                $results.Add([PSCustomObject]@{
+                $result = [PSCustomObject]@{
                     Type = "tenant"
                     Id = $tenantId
                     Name = "All Resources"
@@ -165,11 +201,17 @@ function Check-BuiltInPolicies {
                     ItemName = $ItemName
                     ControlName = $ControlName
                     ReportTime = $ReportTime
-                }) | Out-Null
+                }
+                
+                if ($EnableMultiCloudProfiles) {
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                }
+                
+                $results.Add($result) | Out-Null
             }
         } else {
             Write-Output "Policy is not assigned at tenant level"
-            $results.Add([PSCustomObject]@{
+            $result = [PSCustomObject]@{
                 Type = "tenant"
                 Id = $tenantId
                 Name = "N/A"
@@ -179,7 +221,13 @@ function Check-BuiltInPolicies {
                 ItemName = $ItemName
                 ControlName = $ControlName
                 ReportTime = $ReportTime
-            }) | Out-Null
+            }
+            
+            if ($EnableMultiCloudProfiles) {
+                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            }
+            
+            $results.Add($result) | Out-Null
         }
     }
 
