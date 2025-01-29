@@ -43,23 +43,13 @@ function Verify-TLSConfiguration {
         }
     }
 
-    try {
-        $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"}
-    }
-    catch {
-        $ErrorList.Add("Failed to execute Get-AzSubscription command: $_")
-        throw "Error: Failed to execute Get-AzSubscription command: $_"
-    }
-
-    [string]$type = "subscription"
-    
     if ($EnableMultiCloudProfiles) {
-        $ObjectList += Check-BuiltInPolicies -objList $objs -objType $type -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     } else {
-        $ObjectList += Check-BuiltInPolicies -objList $objs -objType $type -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
 
-    Write-Host "$type(s) compliance results are collected"
+    Write-Output "Policy compliance results are collected"
     
     # Filter out PSAzureContext objects
     $ObjectList_filtered = $ObjectList | Where-Object { $_.GetType() -notlike "*PSAzureContext*" }
@@ -68,16 +58,13 @@ function Verify-TLSConfiguration {
         ComplianceResults = $ObjectList_filtered
         Errors = $ErrorList
     }
+    
 
     return $moduleOutput
 }
 
 function Check-BuiltInPolicies {
     param (
-        [Parameter(Mandatory=$true)]
-        $objList,
-        [Parameter(Mandatory=$true)]
-        [string]$objType,
         [Parameter(Mandatory=$true)]
         [array]$requiredPolicyIds,
         [Parameter(Mandatory=$true)]
@@ -96,12 +83,18 @@ function Check-BuiltInPolicies {
     $tenantId = (Get-AzContext).Tenant.Id
     $rootScope = "/providers/Microsoft.Management/managementGroups/$tenantId"
 
+    Write-Output "Starting policy compliance check for tenant: $tenantId"
+    
     foreach ($policyId in $requiredPolicyIds) {
+        Write-Output "Checking policy assignment for policy ID: $policyId"
+        
         # Check for policy assignments at tenant level
         $tenantPolicyAssignment = Get-AzPolicyAssignment -Scope $rootScope | 
-            Where-Object { $_.Properties.PolicyDefinitionId -eq $policyId }
+            Where-Object { $_.PolicyDefinitionId -eq $policyId }
         
         if ($tenantPolicyAssignment) {
+            Write-Output "Policy is assigned at tenant level. Checking compliance states..."
+            
             # Initialize an array to store all policy states
             $policyStates = @()
             $skipToken = $null
@@ -126,8 +119,9 @@ function Check-BuiltInPolicies {
 
             # If no resources are found that the policy applies to
             if ($null -eq $policyStates -or $policyStates.Count -eq 0) {
+                Write-Output "No resources found that the policy applies to"
                 $results.Add([PSCustomObject]@{
-                    Type = $objType
+                    Type = "tenant"
                     Id = $tenantId
                     Name = "N/A"
                     DisplayName = "N/A"
@@ -145,6 +139,7 @@ function Check-BuiltInPolicies {
                 Where-Object { $_.ComplianceState -eq "NonCompliant" -or $_.IsCompliant -eq $false }
             
             if ($nonCompliantResources) {
+                Write-Output "Found $($nonCompliantResources.Count) non-compliant resources"
                 foreach ($resource in $nonCompliantResources) {
                     $results.Add([PSCustomObject]@{
                         Type = $resource.ResourceType
@@ -159,8 +154,9 @@ function Check-BuiltInPolicies {
                     }) | Out-Null
                 }
             } else {
+                Write-Output "All resources are compliant with the policy"
                 $results.Add([PSCustomObject]@{
-                    Type = $objType
+                    Type = "tenant"
                     Id = $tenantId
                     Name = "All Resources"
                     DisplayName = "All Resources"
@@ -172,9 +168,9 @@ function Check-BuiltInPolicies {
                 }) | Out-Null
             }
         } else {
-            # Policy not assigned at tenant level
+            Write-Output "Policy is not assigned at tenant level"
             $results.Add([PSCustomObject]@{
-                Type = $objType
+                Type = "tenant"
                 Id = $tenantId
                 Name = "N/A"
                 DisplayName = "N/A"
@@ -187,5 +183,6 @@ function Check-BuiltInPolicies {
         }
     }
 
+    Write-Output "Completed policy compliance check. Found $($results.Count) results"
     return $results
 } 
