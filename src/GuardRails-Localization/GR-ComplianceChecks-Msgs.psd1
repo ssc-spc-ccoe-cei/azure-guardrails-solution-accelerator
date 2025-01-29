@@ -221,6 +221,12 @@ policyNotConfigured = Required policy is not assigned at tenant level. Please as
 policyCompliant = All resources are compliant with the required policy.
 policyNotCompliant = Resource is not compliant with the required policy. Please review and remediate.
 
+# TLS Configuration Messages
+appServiceTLSConfig = App Service TLS Configuration
+functionAppTLSConfig = Function App TLS Configuration
+sqlDbTLSConfig = Azure SQL Database TLS Configuration
+appGatewayWAFConfig = Application Gateway WAF Configuration
+
 # GuardRail #8
 noNSG=No NSG is present.
 subnetCompliant = Subnet is compliant.
