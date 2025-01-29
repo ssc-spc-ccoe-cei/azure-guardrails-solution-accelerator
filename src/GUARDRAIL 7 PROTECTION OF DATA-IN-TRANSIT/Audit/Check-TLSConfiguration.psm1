@@ -147,8 +147,8 @@ function Check-BuiltInPolicies {
                 $result = [PSCustomObject]@{
                     Type = "tenant"
                     Id = $tenantId
-                    Name = "N/A"
-                    DisplayName = "N/A"
+                    Name = "Tenant ($tenantId)"
+                    DisplayName = "Tenant ($tenantId)"
                     ComplianceStatus = $true
                     Comments = "No applicable resources found. Policy is assigned at tenant level."
                     ItemName = $ItemName
@@ -214,8 +214,8 @@ function Check-BuiltInPolicies {
             $result = [PSCustomObject]@{
                 Type = "tenant"
                 Id = $tenantId
-                Name = "N/A"
-                DisplayName = "N/A"
+                Name = "Tenant ($tenantId)"
+                DisplayName = "Tenant ($tenantId)"
                 ComplianceStatus = $false
                 Comments = $msgTable.policyNotConfigured
                 ItemName = $ItemName
