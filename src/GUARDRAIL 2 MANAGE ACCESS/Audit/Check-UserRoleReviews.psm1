@@ -113,7 +113,7 @@ function Check-UserRoleReviews {
                     $expandedList | ForEach-Object {
                         $review = $_
                         $recurrence = if ($review.AccesReviewRecurrenceType -eq 'noEnd' -or $isPassedToday -eq $true) { `
-                            if ($review.AccesReviewRecurrencePattern -ne 'OneTime') {'pass'} else {'fail'} `
+                            if ($review.AccesReviewRecurrencePattern -ne 'oneTime') {'pass'} else {'fail'} `
                         } else {'fail'}
                         $review | Add-Member -MemberType NoteProperty -Name "recurrence" -Value $recurrence
                     }
