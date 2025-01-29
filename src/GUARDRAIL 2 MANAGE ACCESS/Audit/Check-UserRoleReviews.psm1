@@ -127,11 +127,11 @@ function Check-UserRoleReviews {
                     }
                     else{
                         # condition: Check if at-least one object in the role access review list has 'recurrence' containing 'pass'
-                        if ($usersAccessReviewList.recurrence -contains 'fail') {
-                            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
-                        } else {
+                        if ($usersAccessReviewList.recurrence -contains 'pass') {
                             $IsCompliant = $true
                             $commentsArray = $msgTable.isCompliant + " " + $msgTable.compliantRecurrenceReviews
+                        } else {
+                            $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
                         }
                     } 
                 }               
