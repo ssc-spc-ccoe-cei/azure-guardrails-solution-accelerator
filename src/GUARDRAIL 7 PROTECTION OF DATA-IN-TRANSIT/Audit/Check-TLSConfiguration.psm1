@@ -113,9 +113,17 @@ function Check-BuiltInPolicies {
     foreach ($policyId in $requiredPolicyIds) {
         Write-Output "Checking policy assignment for policy ID: $policyId"
         
+        # Get all assignments first to see what we have
+        $allAssignments = Get-AzPolicyAssignment -Scope $rootScope
+        Write-Output "Found $($allAssignments.Count) total policy assignments at tenant level"
+        Write-Output "All policy definition IDs:"
+        $allAssignments | ForEach-Object { Write-Output $_.PolicyDefinitionId }
+        
         # Check for policy assignments at tenant level
         $tenantPolicyAssignments = Get-AzPolicyAssignment -Scope $rootScope | 
             Where-Object { $_.PolicyDefinitionId -eq $policyId }
+        
+        Write-Output "Found $($tenantPolicyAssignments.Count) assignments matching this policy ID"
         
         if ($tenantPolicyAssignments) {
             $hasExemptions = $false
