@@ -44,9 +44,9 @@ function Verify-TLSConfiguration {
     }
 
     if ($EnableMultiCloudProfiles) {
-        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
     } else {
-        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
+        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode
     }
 
     Write-Output "Policy compliance results are collected"
@@ -75,6 +75,7 @@ function Check-BuiltInPolicies {
         [hashtable]$msgTable,
         [Parameter(Mandatory=$true)]
         [string]$ControlName,
+        [string]$itsgcode,
         [string]$CloudUsageProfiles = "3",
         [string]$ModuleProfiles,
         [switch]$EnableMultiCloudProfiles
@@ -154,6 +155,7 @@ function Check-BuiltInPolicies {
                     ItemName = $ItemName
                     ControlName = $ControlName
                     ReportTime = $ReportTime
+                    itsgcode = $itsgcode
                 }
                 
                 if ($EnableMultiCloudProfiles) {
@@ -181,6 +183,7 @@ function Check-BuiltInPolicies {
                         ItemName = $ItemName
                         ControlName = $ControlName
                         ReportTime = $ReportTime
+                        itsgcode = $itsgcode
                     }
                     
                     if ($EnableMultiCloudProfiles) {
@@ -201,6 +204,7 @@ function Check-BuiltInPolicies {
                     ItemName = $ItemName
                     ControlName = $ControlName
                     ReportTime = $ReportTime
+                    itsgcode = $itsgcode
                 }
                 
                 if ($EnableMultiCloudProfiles) {
@@ -221,6 +225,7 @@ function Check-BuiltInPolicies {
                 ItemName = $ItemName
                 ControlName = $ControlName
                 ReportTime = $ReportTime
+                itsgcode = $itsgcode
             }
             
             if ($EnableMultiCloudProfiles) {
