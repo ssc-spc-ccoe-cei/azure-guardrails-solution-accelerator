@@ -114,10 +114,45 @@ function Check-BuiltInPolicies {
         Write-Output "Checking policy assignment for policy ID: $policyId"
         
         # Check for policy assignments at tenant level
-        $tenantPolicyAssignment = Get-AzPolicyAssignment -Scope $rootScope | 
+        $tenantPolicyAssignments = Get-AzPolicyAssignment -Scope $rootScope | 
             Where-Object { $_.PolicyDefinitionId -eq $policyId }
         
-        if ($tenantPolicyAssignment) {
+        if ($tenantPolicyAssignments) {
+            $hasExemptions = $false
+            
+            # Check for policy exemptions
+            foreach ($assignment in $tenantPolicyAssignments) {
+                $policyExemptions = Get-AzPolicyExemption -Scope $rootScope | 
+                    Where-Object { $_.PolicyAssignmentId -eq $assignment.Id }
+                if ($policyExemptions) {
+                    $hasExemptions = $true
+                    break
+                }
+            }
+            
+            if ($hasExemptions) {
+                Write-Output "Policy has exemptions configured at tenant level"
+                $result = [PSCustomObject]@{
+                    Type = "tenant"
+                    Id = $tenantId
+                    Name = "Tenant ($tenantId)"
+                    DisplayName = "Tenant ($tenantId)"
+                    ComplianceStatus = $false
+                    Comments = "Policy has exemptions configured. All resources must be evaluated by this policy."
+                    ItemName = $ItemName
+                    ControlName = $ControlName
+                    ReportTime = $ReportTime
+                    itsgcode = $itsgcode
+                }
+                
+                if ($EnableMultiCloudProfiles) {
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                }
+                
+                $results.Add($result) | Out-Null
+                continue
+            }
+
             Write-Output "Policy is assigned at tenant level. Checking compliance states..."
             
             # Initialize an array to store all policy states
