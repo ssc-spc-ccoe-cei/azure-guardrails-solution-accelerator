@@ -49,8 +49,6 @@ function Verify-TLSConfiguration {
     } else {
         $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ErrorList $ErrorList
     }
-
-    Write-Output "Policy compliance results are collected"
     
     # Filter out PSAzureContext objects
     $ObjectList_filtered = $ObjectList | Where-Object { $_.GetType() -notlike "*PSAzureContext*" }
