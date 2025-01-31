@@ -223,31 +223,6 @@ function Verify-AllowedLocationPolicy {
         break
     }
     # @("canada" , "canadaeast" , "canadacentral")
-    #Check management groups   
-    try {
-        $objs = Get-AzManagementGroup -ErrorAction Stop
-    }
-    catch {
-        $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
-        throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
-    }
-
-    try {
-        $ErrorActionPreference = 'Stop'
-        $type = "Management Group"
-        if ($EnableMultiCloudProfiles) {
-            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
-        } else {
-            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        }
-    }
-    catch {
-        $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_")
-        throw "Failed to execute the 'Check-PolicyStatus' function. Error message: $_"
-    }
-    finally {
-        $ErrorActionPreference = 'Continue'
-    }
     #Check Subscriptions
     try {
         $objs = Get-AzSubscription -ErrorAction Stop
