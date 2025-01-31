@@ -1632,7 +1632,7 @@ function Check-BuiltInPolicies {
                 DisplayName = "Tenant ($tenantId)"
                 ComplianceStatus = $false
                 Comments = $msgTable.policyNotConfigured
-                ItemName = "$ItemName - $policyDisplayName (Not Assigned)"
+                ItemName = "$ItemName - $policyDisplayName"
                 ControlName = $ControlName
                 ReportTime = $ReportTime
                 itsgcode = $itsgcode
