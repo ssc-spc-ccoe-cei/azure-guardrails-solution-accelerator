@@ -120,15 +120,16 @@ nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dan
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
-noAutomatedAccessReview = L'environnement n'a pas été intégré aux révisions automatisées de MS Access « MS Access Reviews ». Assurez-vous que l'environnement utilise les fonctionnalités de « Microsoft Entra Identity », incluant les révisions d'accès.
+noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
 noInProgressAccessReview = L'environnement a au moins une révision d'accès de rôle planifiée pour les administrateurs généraux ou un autre rôle intégré Azure. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non commencée ». Créez une nouvelle révision d'accès d'administrateur général/rôle intégré Azure pour qu'elle se reproduise et soit « en cours ».
-noScheduledUserAccessReview = L'environnement n'a aucune révision d'accès de rôle planifiée créée pour les utilisateurs ou les groupes. Créez une révision d'accès pour l'attribution de rôle d'administrateur général et/ou un autre rôle intégré à Azure.
+noScheduledUserAccessReview = Il n'y a pas de révision d'accès automatisées récurrents ou actuels pour les rôles de répertoire « Microsoft Entra ID ». Assurez-vous que des révisions sont configurées pour se reproduire.
 compliantRecurrenceReviews = Les révisions d'accès existantes répondent aux exigences du contrôle.
 nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est « en cours » et planifiée pour se reproduire.
 
 automatedRoleForGuests = Révisions automatisées des utilisateurs invités : Attributions de rôles et exigences d'accès
+noAutomatedAccessReviewForGuests = Il n'y a aucune révision d'accès automatisée configurée pour les comptes d'utilisateurs invités. Configurez une révision annuelle d'accès pour les utilisateurs invités.
 noInProgressGuestAccessReview = L'environnement a au moins une révision d'accès planifiée pour les utilisateurs invités. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non démarrée ». Créez une nouvelle révision d'accès invité planifiée pour se reproduire et soit « en cours ».
-noScheduledGuestAccessReview = L'environnement n'a aucune révision d'accès d'invité planifiée. Configurez une révision d'utilisateur invité pour tous les groupes d'utilisateurs.
+noScheduledGuestAccessReview = L'environnement n'a pas de révision d'accès planifiées pour les utilisateurs invités. Configurez une révision d'accès d'utilisateur invité pour tous les groupes d'utilisateurs.
 compliantRecurrenceGuestReviews = Les révision d'accès d'invité existantes répondent aux exigences requises pour le contrôle.
 
 

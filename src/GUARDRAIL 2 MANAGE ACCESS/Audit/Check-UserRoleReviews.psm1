@@ -38,7 +38,7 @@ function Check-UserRoleReviews {
             
             # Condition: access review onboarding - any access review exist.
             if ($accessReviewsSorted.Count -eq 0) {
-                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReview
+                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReviewForUsers
             }
             else{
                 Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
