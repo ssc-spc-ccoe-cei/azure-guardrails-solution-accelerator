@@ -1467,10 +1467,10 @@ function Check-BuiltInPolicies {
         return $results
     }
 
-    Write-Output "Starting policy compliance check for tenant: $tenantId"
+    Write-Host "Starting policy compliance check for tenant: $tenantId"
     
     foreach ($policyId in $requiredPolicyIds) {
-        Write-Output "Checking policy assignment for policy ID: $policyId"
+        Write-Host "Checking policy assignment for policy ID: $policyId"
         
         # Get policy definition details
         try {
@@ -1493,7 +1493,6 @@ function Check-BuiltInPolicies {
                     $tenantPolicyAssignments += $assignments
                 }
             }            
-            Write-Output "Final assignments array contains $($tenantPolicyAssignments.Count) items"
         } catch {
             $ErrorList.Add("Error getting policy assignments for policy $policyId : $_")
             $tenantPolicyAssignments = @()
@@ -1501,7 +1500,7 @@ function Check-BuiltInPolicies {
         
         # Check if we have any policy assignments (not null and not empty)
         if ($null -ne $tenantPolicyAssignments -and $tenantPolicyAssignments.Count -gt 0) {
-            Write-Output "Found $($tenantPolicyAssignments.Count) assignments matching this policy ID"
+            Write-Host "Found $($tenantPolicyAssignments.Count) assignments matching this policy ID"
             
             $hasExemptions = $false
             
@@ -1509,34 +1508,31 @@ function Check-BuiltInPolicies {
             foreach ($assignment in $tenantPolicyAssignments) {
                 try {
                     if ($null -ne $assignment -and $null -ne $assignment.PolicyAssignmentId ) {
-                        Write-Output "Checking exemptions for assignment: $($assignment.PolicyAssignmentId)"
+                        Write-Host "Checking exemptions for assignment: $($assignment.PolicyAssignmentId)"
                         $policyExemptions = Get-AzPolicyExemption -Scope $rootScope -PolicyAssignmentId $assignment.PolicyAssignmentId  -ErrorAction Stop
                         if ($policyExemptions) {
                             $hasExemptions = $true
                             break
                         }
                     } else {
-                        Write-Output "Skipping exemption check for invalid assignment"
+                        Write-Host "Skipping exemption check for invalid assignment"
                         continue
                     }
                 } catch {
-                    # Only add to ErrorList if it's not the expected null parameter error
-                    if ($_ -notmatch "Cannot validate argument on parameter 'PolicyAssignmentIdFilter'") {
-                        $ErrorList.Add("Error checking policy exemptions: $_")
-                    }
-                    continue
+                    $ErrorList.Add("Error checking policy exemptions: $_")
                 }
+                continue
             }
             
             if ($hasExemptions) {
-                Write-Output "Policy has exemptions configured at tenant level"
+                Write-Host "Policy has exemptions configured at tenant level"
                 $result = [PSCustomObject]@{
                     Type = "tenant"
                     Id = $tenantId
                     Name = "Tenant ($tenantId)"
                     DisplayName = "Tenant ($tenantId)"
                     ComplianceStatus = $false
-                    Comments = "Policy has exemptions configured. All resources must be evaluated by this policy."
+                    Comments = $msgTable.policyHasExemptions
                     ItemName = "$ItemName - $policyDisplayName"
                     ControlName = $ControlName
                     ReportTime = $ReportTime
@@ -1551,21 +1547,21 @@ function Check-BuiltInPolicies {
                 continue
             }
 
-            Write-Output "Policy is assigned at tenant level. Checking compliance states..."
+            Write-Host "Policy is assigned at tenant level. Checking compliance states..."
             
             # Get all policy states for this policy
             $policyStates = Get-AzPolicyState | Where-Object { $_.PolicyDefinitionId -eq $policyId }
 
             # If no resources are found that the policy applies to
             if ($null -eq $policyStates -or $policyStates.Count -eq 0) {
-                Write-Output "No resources found that the policy applies to"
+                Write-Host "No resources found that the policy applies to"
                 $result = [PSCustomObject]@{
                     Type = "tenant"
                     Id = $tenantId
                     Name = "Tenant ($tenantId)"
                     DisplayName = "Tenant ($tenantId)"
                     ComplianceStatus = $true
-                    Comments = "No applicable resources found. Policy is assigned at tenant level."
+                    Comments = $msgTable.policyNoApplicableResources
                     ItemName = "$ItemName - $policyDisplayName"
                     ControlName = $ControlName
                     ReportTime = $ReportTime
@@ -1585,7 +1581,7 @@ function Check-BuiltInPolicies {
                 Where-Object { $_.ComplianceState -eq "NonCompliant" -or $_.IsCompliant -eq $false }
             
             if ($nonCompliantResources) {
-                Write-Output "Found $($nonCompliantResources.Count) non-compliant resources"
+                Write-Host "Found $($nonCompliantResources.Count) non-compliant resources"
                 foreach ($resource in $nonCompliantResources) {
                     $result = [PSCustomObject]@{
                         Type = $resource.ResourceType
@@ -1607,7 +1603,7 @@ function Check-BuiltInPolicies {
                     $results.Add($result) | Out-Null
                 }
             } else {
-                Write-Output "All resources are compliant with the policy"
+                Write-Host "All resources are compliant with the policy"
                 $result = [PSCustomObject]@{
                     Type = "tenant"
                     Id = $tenantId
@@ -1628,7 +1624,7 @@ function Check-BuiltInPolicies {
                 $results.Add($result) | Out-Null
             }
         } else {
-            Write-Output "Policy is not assigned at tenant level"
+            Write-Host "Policy is not assigned at tenant level"
             $result = [PSCustomObject]@{
                 Type = "tenant"
                 Id = $tenantId
@@ -1650,7 +1646,7 @@ function Check-BuiltInPolicies {
         }
     }
 
-    Write-Output "Completed policy compliance check. Found $($results.Count) results"
+    Write-Host "Completed policy compliance check. Found $($results.Count) results"
     return $results
 }
 

@@ -217,15 +217,18 @@ storageAccNotValidTLS= One or more storage accounts are using TLS1.1 or less. Up
 
 functionAppHttpsConfig = Azure Functions: HTTPS Application Configuration
 
-policyNotConfigured = Required policy is not assigned at tenant level. Please assign the policy to ensure compliance.
-policyCompliant = All resources are compliant with the required policy.
-policyNotCompliant = Resource is not compliant with the required policy. Please review and remediate.
-
 # TLS Configuration Messages
 appServiceTLSConfig = App Service TLS Configuration
 functionAppTLSConfig = Function App TLS Configuration
 sqlDbTLSConfig = Azure SQL Database TLS Configuration
 appGatewayWAFConfig = Application Gateway WAF TLS Configuration
+
+policyNotConfigured = Required policy is not assigned at tenant level. Please assign the policy to ensure compliance.
+policyCompliant = All resources are compliant with the required policy.
+policyNotCompliant = Resource is not compliant with the required policy. Please review and remediate.
+policyHasExemptions = "Policy has exemptions configured. All resources must be evaluated by this policy."
+policyNoApplicableResources = "No applicable resources found. Policy is assigned at tenant level."
+
 
 # GuardRail #8
 noNSG=No NSG is present.
