@@ -167,7 +167,7 @@ jobs:
                   "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
                   "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
                   "subscriptionId": "$TESTSUBSCRIPTION_ID",
-                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+                  "SSCReadOnlyServicePrincipalNameAPPID": "$TESTTENANT_SPN_APPID",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,3,5",
@@ -259,7 +259,7 @@ jobs:
                   "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
                   "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
                   "subscriptionId": "$TESTSUBSCRIPTION_ID",
-                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+                  "SSCReadOnlyServicePrincipalNameAPPID": "$TESTTENANT_SPN_APPID"
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,3,5",
