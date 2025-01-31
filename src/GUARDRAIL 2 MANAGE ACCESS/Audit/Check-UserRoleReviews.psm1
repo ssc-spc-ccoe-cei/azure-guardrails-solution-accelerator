@@ -69,7 +69,7 @@ function Check-UserRoleReviews {
                             AccessReviewEndDate             = $review.settings.recurrence.range.endDate
                             AccessReviewStatus              = $review.status
                             AccesReviewRecurrenceType       = $review.settings.recurrence.range.type
-                            AccesReviewRecurrencePattern    = $review.settings.recurrence.pattern.type
+                            AccesReviewRecurrencePattern    = if($null -eq $review.settings.recurrence.pattern) {"oneTime"} else {$review.settings.recurrence.pattern.type}
                             AccessReviewScopeList           = if($null -eq $review.scope.principalScopes) {$review.scope.query} else {$review.scope.principalScopes.query}
                             AccessReviewResourceScopeList   = $review.scope.resourceScopes
                             AccessReviewReviewerList        = $review.reviewers.query     
@@ -112,11 +112,13 @@ function Check-UserRoleReviews {
 
                     $expandedList | ForEach-Object {
                         $review = $_
-                        $recurrence = if ($review.AccesReviewRecurrenceType -eq 'noEnd' -or $isPassedToday -eq $true) {'pass'} else {'fail'}
+                        $recurrence = if ($review.AccesReviewRecurrenceType -eq 'noEnd' -or $isPassedToday -eq $true) { `
+                            if ($review.AccesReviewRecurrencePattern -ne 'oneTime') {'pass'} else {'fail'} `
+                        } else {'fail'}
                         $review | Add-Member -MemberType NoteProperty -Name "recurrence" -Value $recurrence
                     }
 
-                    # Filter for uses scoped only i.e. exclude 'guest' reviews
+                    # Filter for users scoped only i.e. exclude 'guest' reviews
                     $usersAccessReviewList = $expandedList | Where-Object { $_.Scope -like '*Users*' -or $_.Scope -like '*Groups*' }
                     # Condition: if any role access reviews scoped to user or groups
                     if( $usersAccessReviewList.Count -eq 0){
