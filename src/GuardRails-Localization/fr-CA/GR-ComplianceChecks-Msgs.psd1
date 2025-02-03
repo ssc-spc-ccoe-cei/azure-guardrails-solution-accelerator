@@ -220,6 +220,16 @@ storageAccNotValidTLS = Un ou plusieurs comptes de stockage utilisent TLS1.1 ou 
 
 functionAppHttpsConfig = « Azure Functions » : Configuration d'application HTTPS
 
+appServiceTLSConfig = Configuration TLS pour « Azure App Service »
+functionAppTLSConfig = Configuration TLS pour « Azure Functions App »
+sqlDbTLSConfig = Configuration TLS pour « Azure SQL Database »
+appGatewayWAFConfig = Configuration TLS pour « Application Gateway WAF »
+policyNotConfigured = La politique requise n'est pas attribuée au niveau du locataire. Veuillez attribuer la politique pour assurer la conformité.
+policyCompliant = Toutes les ressources sont conformes à la politique requise.
+policyNotCompliant = La ressource n'est pas conforme à la politique requise. Veuillez la réviser et la remédier.
+policyHasExemptions = La politique a des exemptions configurées. Toutes les ressources doivent être évaluées par cette politique.
+policyNoApplicableResources = Aucune ressource applicable trouvée. La politique est attribuée au niveau du locataire.
+
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
 subnetCompliant = Le sous-réseau est conforme.

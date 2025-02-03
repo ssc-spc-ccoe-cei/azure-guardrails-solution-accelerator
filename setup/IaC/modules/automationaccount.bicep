@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.2.6'
+        version: '1.2.7'
       }
     }
   }
@@ -463,6 +463,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GuestRoleReviews.zip'
         version: '1.0.3'
+      }
+    }
+  }
+
+  resource module49 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-TLSConfiguration'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-TLSConfiguration.zip'
+        version: '1.0.0'
       }
     }
   }
