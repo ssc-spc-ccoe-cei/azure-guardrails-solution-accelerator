@@ -120,15 +120,16 @@ nonCompliantC1C2 = Configure the conditional access policies outlined in the rem
 compliantC1C2 = Both conditional access policies have been configured.
 
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
-noAutomatedAccessReview = The environment has not been onboarded to automated MS Access Reviews. Ensure the environment uses Microsoft Entra Identity features, including Access Reviews.
+noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
 noInProgressAccessReview = The environment has at least one scheduled role access review for Global Administrators or another Azure built-in role. However, the access review has been identified as either 'completed' or 'not started'. Create a new Global Administrator/Azure built-in role access review to reoccur and be 'in progress'.
-noScheduledUserAccessReview = The environment has no scheduled role access review created for either users or groups. Create an access review for the role assignment of Global Administrator and/or another Azure built-in role.
+noScheduledUserAccessReview = There are no recurring or current automated access reviews for Microsoft Entra ID directory roles. Ensure that reviews are set to recur.
 compliantRecurrenceReviews = Existing access reviews meet the requirements for the control.
 nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence requirements for the control. Ensure the automated review is 'in progress' and scheduled to reoccur.
 
 automatedRoleForGuests = Automated Guest User Reviews: Role Assignments and Access Requirements
+noAutomatedAccessReviewForGuests = There are no automated access reviews configured for Guest User Accounts. Set up an annual access review for Guest Users.
 noInProgressGuestAccessReview = The environment has at least one scheduled access review for guest users. However, the access review has been identified as either 'completed' or 'not started'. Create a new guest access review to reoccur and be 'in progress'.
-noScheduledGuestAccessReview = The environment has no scheduled guest access reviews. Configure a guest user review for all user groups. 
+noScheduledGuestAccessReview = The environment has no scheduled guest user access reviews. Configure a guest user access review for all user groups. 
 compliantRecurrenceGuestReviews = Existing guest access reviews meet the requirements for the control.
 
 
