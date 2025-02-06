@@ -3,38 +3,43 @@ function Check-TLSversion {
         [System.Object] $objList
     )
 
+    Write-Verbose "Starting subscription access verification..."
+    
     $storageAccountList = @()
     foreach ($obj in $objList)
     {
-        Write-Host "Find compliance details for Subscription : $($obj.Name)"
-        $subscription = @()
-        $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
-        
-        $currentSubscription = Get-AzContext
-        if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
-            # Set Az context to the this subscription
-            Set-AzContext -SubscriptionId $subscription.SubscriptionID
-            Write-Host "AzContext set to $($subscription.DisplayName)"
-        }
+        Write-Verbose "Processing Subscription: $($obj.Name) ($($obj.Id))" 
 
-        $resourceGroups = Get-AzResourceGroup
-
-        # Loop through each resource group
-        foreach ($resourceGroup in $resourceGroups) {
-            $storageAccounts = Get-AzStorageAccount -ResourceGroupName $resourceGroup.ResourceGroupName
-            if ($storageAccounts.Count -ne 0){
-                foreach ($storageAccount in $storageAccounts) {
-                    $TLSversionNumeric = $storageAccount.MinimumTlsVersion -replace "TLS", "" -replace "_", "." 
-                    $storageAccInfo = [PSCustomObject]@{
-                        SubscriptionName   = $obj.Name
-                        ResourceGroupName  = $resourceGroup.ResourceGroupName
-                        StorageAccountName = $storageAccount.StorageAccountName
-                        MinimumTlsVersion  = $storageAccount.MinimumTlsVersion
-                        TLSversionNumeric  = $TLSversionNumeric
-                    }
-                    $storageAccountList +=  $storageAccInfo
+        try {
+            # Resource Graph query for this specific subscription
+            $query = @"
+            resources
+            | where type =~ 'Microsoft.Storage/storageAccounts'
+            | where subscriptionId =~ '$($obj.Id)'
+            | extend minimumTlsVersion = properties.minimumTlsVersion
+            | project subscriptionId,
+                     resourceGroup = resourceGroup,
+                     name,
+                     minimumTlsVersion
+"@
+            
+            $storageAccounts = Search-AzGraph -Query $query
+            
+            foreach ($storageAcc in $storageAccounts) {
+                $TLSversionNumeric = $storageAcc.minimumTlsVersion -replace "TLS", "" -replace "_", "."
+                $storageAccInfo = [PSCustomObject]@{
+                    SubscriptionName   = $obj.Name
+                    ResourceGroupName  = $storageAcc.resourceGroup
+                    StorageAccountName = $storageAcc.name
+                    MinimumTlsVersion = $storageAcc.minimumTlsVersion
+                    TLSversionNumeric  = $TLSversionNumeric
                 }
+                $storageAccountList += $storageAccInfo
             }
+        }
+        catch {
+            Write-Warning "Failed to query storage accounts for subscription '$($obj.Name)': $_"
+            continue
         }
     }
 
@@ -99,7 +104,7 @@ function Verify-TLSForStorageAccount {
             else{
                 ## keep a record for non-compliant storage acc names for reference
                 $nonCompliantstorageAccountNames = ($storageAccWithTLSLessThan1_2 | Select-Object -ExpandProperty StorageAccountName | ForEach-Object { $_ } ) -join ', '
-                Write-Host "Storage accounts which are using TLS1.1 or less: $nonCompliantstorageAccountNames"
+                Write-Verbose "Storage accounts which are using TLS1.1 or less: $nonCompliantstorageAccountNames"
                 $IsCompliant = $false
                 $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.storageAccNotValidTLS
             }
