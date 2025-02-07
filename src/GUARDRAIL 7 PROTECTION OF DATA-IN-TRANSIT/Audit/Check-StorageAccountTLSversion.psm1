@@ -75,22 +75,37 @@ function Verify-TLSForStorageAccount {
     $ErrorList = [System.Collections.ArrayList]::new()
     $AdditionalResults = @()
     $commentsArray = @()
+    
+    # Initialize moduleOutput at the start
+    $moduleOutput = [PSCustomObject]@{ 
+        ComplianceResults = $null
+        Errors = $ErrorList
+        AdditionalResults = $AdditionalResults
+    }
 
     try {
         $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
         if (-not $objs) {
-            throw "No enabled subscriptions found"
+            $errorMsg = "No enabled subscriptions found"
+            $ErrorList.Add($errorMsg) | Out-Null
+            Write-Warning $errorMsg
+            return $moduleOutput
         }
     }
     catch {
-        $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installation of the Az.Resources module; returned error message: $_") | Out-Null
-        throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installation of the Az.Resources module; returned error message: $_"
+        $errorMsg = "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installation of the Az.Resources module; returned error message: $_"
+        $ErrorList.Add($errorMsg) | Out-Null
+        Write-Warning $errorMsg
+        return $moduleOutput
     }
 
     try {
         $PSObjectList = Check-TLSversion -objList $objs 
         if ($null -eq $PSObjectList) {
-            throw "No storage accounts found to evaluate"
+            $errorMsg = "No storage accounts found to evaluate"
+            $ErrorList.Add($errorMsg) | Out-Null
+            Write-Warning $errorMsg
+            return $moduleOutput
         }
 
         # Filter valid objects and check TLS compliance in one pass
@@ -114,8 +129,10 @@ function Verify-TLSForStorageAccount {
         }
     }
     catch {
-        $ErrorList.Add("Error creating compliance result: $_") | Out-Null
-        throw "Error: $_"
+        $errorMsg = "Error creating compliance result: $_"
+        $ErrorList.Add($errorMsg) | Out-Null
+        Write-Warning $errorMsg
+        return $moduleOutput
     }
 
     $Comments = $commentsArray -join ";"
@@ -144,11 +161,9 @@ function Verify-TLSForStorageAccount {
         }
     }
 
-    $moduleOutput = [PSCustomObject]@{ 
-        ComplianceResults = $PsObject
-        Errors = $ErrorList
-        AdditionalResults = $AdditionalResults
-    }
+    $moduleOutput.ComplianceResults = $PsObject
+    $moduleOutput.Errors = $ErrorList
+    $moduleOutput.AdditionalResults = $AdditionalResults
 
     return $moduleOutput
 }
