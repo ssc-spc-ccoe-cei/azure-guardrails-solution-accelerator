@@ -491,8 +491,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     name: 'Az.Accounts'
     properties: {
       contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
-        version: '4.0.2'
+        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.3.0.0.nupkg'
+        version: '3.0.0'
       }
     }
   }
