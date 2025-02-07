@@ -481,20 +481,20 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     name: 'Az.ResourceGraph'
     properties: {
       contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.1.0.nupkg'
-        version: '1.1.0'
+        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.0.0.nupkg'
+        version: '1.0.0'
       }
     }
   }
 
-  resource module51 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.Accounts'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.3.0.0.nupkg'
-        version: '3.0.0'
-      }
-    }
+  // resource module51 'modules' = if (newDeployment || updatePSModules) {
+  //   name: 'Az.Accounts'
+  //   properties: {
+  //     contentLink: {
+  //       uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.3.0.0.nupkg'
+  //       version: '3.0.0'
+  //     }
+  //   }
   }
 
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
