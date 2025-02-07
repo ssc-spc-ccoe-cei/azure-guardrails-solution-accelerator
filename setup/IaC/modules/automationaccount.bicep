@@ -487,6 +487,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
+  resource module51 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Az.Accounts'
+    properties: {
+      contentLink: {
+        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
+        version: '4.0.2'
+      }
+    }
+  }
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
