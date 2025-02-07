@@ -116,6 +116,7 @@ Function Confirm-GSAConfigurationParameters {
 
     # verify file is a valid JSON file
     Write-Verbose "Verifying that the contents of '$configFilePath'/-configString is a valid JSON document"
+    Write-Verbose "$configString"
     If (-NOT(Test-Json -Json $configString)) {
         Write-Error "Content of '$configFilePath' is not a valid JSON document; verify the file syntax and formatting."
         break
