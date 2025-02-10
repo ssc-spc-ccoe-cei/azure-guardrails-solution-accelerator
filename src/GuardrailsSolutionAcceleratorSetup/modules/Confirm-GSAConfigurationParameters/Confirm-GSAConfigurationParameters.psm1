@@ -69,6 +69,17 @@ Function Confirm-GSASubscriptionSelection {
         }
     }
 }
+
+function Remove-UnexpectedCharacters {
+    param (
+        [string]$jsonString
+    )
+    # Remove unexpected characters (e.g., non-printable characters)
+    $cleanedJsonString = $jsonString -replace '[^\x20-\x7E]', ''
+
+    return $cleanedJsonString
+}
+
 Function Confirm-GSAConfigurationParameters {
     <#
 .SYNOPSIS
@@ -119,7 +130,10 @@ Function Confirm-GSAConfigurationParameters {
     try{
         Write-Verbose "$configString"
         try {
-            $jsonObject = $configString | ConvertFrom-Json -ErrorAction Stop
+            # Clean the JSON string
+            $cleanedConfigString = Remove-UnexpectedCharacters -jsonString $configString
+            # Parse the cleaned JSON string
+            $jsonObject = $cleanedConfigString | ConvertFrom-Json -ErrorAction Stop
             Write-Verbose "Content of '$configFilePath'  is a valid JSON."
         } catch {
             Write-Verbose "Content of '$configFilePath' can not be parsed as JSON."
