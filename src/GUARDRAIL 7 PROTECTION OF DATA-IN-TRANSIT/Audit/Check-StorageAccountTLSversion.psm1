@@ -135,7 +135,7 @@ function Verify-TLSForStorageAccount {
         return $moduleOutput
     }
 
-    $Comments = $commentsArray -join ";"
+    $Comments = $commentsArray -join " "
     
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
