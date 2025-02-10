@@ -116,9 +116,23 @@ Function Confirm-GSAConfigurationParameters {
 
     # verify file is a valid JSON file
     Write-Verbose "Verifying that the contents of '$configFilePath'/-configString is a valid JSON document"
-    Write-Verbose "$configString"
-    If (-NOT(Test-Json -Json $configString)) {
-        Write-Error "Content of '$configFilePath' is not a valid JSON document; verify the file syntax and formatting."
+    try{
+        Write-Verbose "$configString"
+        try {
+            $jsonObject = $configString | ConvertFrom-Json -ErrorAction Stop
+            Write-Verbose "Content of '$configFilePath'  is a valid JSON."
+        } catch {
+            Write-Verbose "Content of '$configFilePath' can not be parsed as JSON."
+            Write-Verbose $_.Exception.Message
+        }
+        # $result = Test-Json -Json $configString
+        # if(-not $result){
+        #     Write-Error "Content of '$configFilePath' is not a valid JSON document; verify the file syntax and formatting."
+        #     break
+        # }
+    }
+    catch{
+        Write-Error "Content of '$configFilePath' can not be parsed as JSON; verify the file syntax and formatting."
         break
     }
 
