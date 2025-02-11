@@ -316,7 +316,7 @@ jobs:
                 else {
                   Write-Output "Upgrade workflow flag is set to '$DEV_UPGRADE_VAR'"
                   Write-Output "Deploying a new installation of the CaC solution"
-                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams
                 }   
             }
             catch {
