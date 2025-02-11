@@ -70,15 +70,6 @@ Function Confirm-GSASubscriptionSelection {
     }
 }
 
-function Remove-UnexpectedCharacters {
-    param (
-        [string]$jsonString
-    )
-    # Remove unexpected characters (e.g., non-printable characters)
-    $cleanedJsonString = $jsonString -replace '[^\x20-\x7E]', ''
-
-    return $cleanedJsonString
-}
 
 Function Confirm-GSAConfigurationParameters {
     <#
@@ -128,26 +119,15 @@ Function Confirm-GSAConfigurationParameters {
     # verify file is a valid JSON file
     Write-Verbose "Verifying that the contents of '$configFilePath'/-configString is a valid JSON document"
     try{
-        Write-Verbose "$configString"
-        try {
-            # Clean the JSON string
-            $cleanedConfigString = Remove-UnexpectedCharacters -jsonString $configString
-            Write-Verbose "Content of '$configFilePath' cleaned successfully."
-            # Parse the cleaned JSON string
-            $jsonObject = $cleanedConfigString | ConvertFrom-Json -ErrorAction Stop
-            Write-Verbose "Content of '$configFilePath'  is a valid JSON."
-        } catch {
-            Write-Verbose "Content of '$configFilePath' can not be parsed as JSON."
-            Write-Verbose $_.Exception.Message
+        $testJsonResult = Test-Json -Json $configString
+        if(-not $testJsonResult){
+            Write-Error "Content of '$configFilePath' is not a valid JSON document; verify the file syntax and formatting."
+            break
         }
-        # $result = Test-Json -Json $configString
-        # if(-not $result){
-        #     Write-Error "Content of '$configFilePath' is not a valid JSON document; verify the file syntax and formatting."
-        #     break
-        # }
     }
     catch{
         Write-Error "Content of '$configFilePath' can not be parsed as JSON; verify the file syntax and formatting."
+        Write-Verbose $_.Exception.Message
         break
     }
 
