@@ -130,11 +130,9 @@ Function Confirm-GSAConfigurationParameters {
     try{
         Write-Verbose "$configString"
         try {
-            Write-Verbose "Attempting to clean the content of '$configFilePath' as JSON..."
             # Clean the JSON string
             $cleanedConfigString = Remove-UnexpectedCharacters -jsonString $configString
             Write-Verbose "Content of '$configFilePath' cleaned successfully."
-            Write-Verbose "$cleanedConfigString"
             # Parse the cleaned JSON string
             $jsonObject = $cleanedConfigString | ConvertFrom-Json -ErrorAction Stop
             Write-Verbose "Content of '$configFilePath'  is a valid JSON."
