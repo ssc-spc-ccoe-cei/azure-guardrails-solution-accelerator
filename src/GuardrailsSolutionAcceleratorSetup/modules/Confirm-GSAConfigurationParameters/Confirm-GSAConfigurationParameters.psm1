@@ -69,6 +69,8 @@ Function Confirm-GSASubscriptionSelection {
         }
     }
 }
+
+
 Function Confirm-GSAConfigurationParameters {
     <#
 .SYNOPSIS
@@ -116,8 +118,16 @@ Function Confirm-GSAConfigurationParameters {
 
     # verify file is a valid JSON file
     Write-Verbose "Verifying that the contents of '$configFilePath'/-configString is a valid JSON document"
-    If (-NOT(Test-Json -Json $configString)) {
-        Write-Error "Content of '$configFilePath' is not a valid JSON document; verify the file syntax and formatting."
+    try{
+        $testJsonResult = Test-Json -Json $configString
+        if(-not $testJsonResult){
+            Write-Error "Content of '$configFilePath' is not a valid JSON document; verify the file syntax and formatting."
+            break
+        }
+    }
+    catch{
+        Write-Error "Content of '$configFilePath' can not be parsed as JSON; verify the file syntax and formatting."
+        Write-Verbose $_.Exception.Message
         break
     }
 

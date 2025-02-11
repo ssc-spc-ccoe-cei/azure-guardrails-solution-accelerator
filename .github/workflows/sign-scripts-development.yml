@@ -143,6 +143,7 @@ jobs:
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
               $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+              $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
 
               $configContent = @"
               {
@@ -167,7 +168,7 @@ jobs:
                   "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
                   "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
                   "subscriptionId": "$TESTSUBSCRIPTION_ID",
-                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+                  "SSCReadOnlyServicePrincipalNameAPPID": "$TESTTENANT_SPN_APPID",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,3,5",
@@ -180,9 +181,9 @@ jobs:
 
               try {
                   $ErrorActionPreference = 'Stop'
-                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
-                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
-                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
+                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
+                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
               }
               catch {
                   throw "Failed test deploy of solution with error: $_"
@@ -205,6 +206,7 @@ jobs:
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
           INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID }}
+          TESTTENANT_SPN_APPID: ${{ vars.TESTTENANT_SPN_APPID}}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
@@ -235,6 +237,7 @@ jobs:
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
               $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+              $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
 
               $configContent = @"
               {
@@ -259,7 +262,7 @@ jobs:
                   "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
                   "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
                   "subscriptionId": "$TESTSUBSCRIPTION_ID",
-                  "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
+                  "SSCReadOnlyServicePrincipalNameAPPID": "$TESTTENANT_SPN_APPID",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,3,5",
@@ -299,7 +302,7 @@ jobs:
               try {
                   $ErrorActionPreference = 'Stop'
                   ipmo ./src/GuardrailsSolutionAcceleratorSetup
-                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams
               }
               catch {
                   throw "Failed test deploy of solution with error: $_"
@@ -323,6 +326,7 @@ jobs:
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
           INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID}}
+          TESTTENANT_SPN_APPID: ${{ vars.TESTTENANT_SPN_APPID}}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
