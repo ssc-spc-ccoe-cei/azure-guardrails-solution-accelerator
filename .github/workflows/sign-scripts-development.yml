@@ -302,7 +302,7 @@ jobs:
               try {
                   $ErrorActionPreference = 'Stop'
                   ipmo ./src/GuardrailsSolutionAcceleratorSetup
-                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams
               }
               catch {
                   throw "Failed test deploy of solution with error: $_"
