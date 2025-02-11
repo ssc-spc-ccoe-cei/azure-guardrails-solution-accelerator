@@ -1,16 +1,6 @@
 name: Deploy to Dev environment upon Release
 
 on:
-  workflow_dispatch:
-  push:
-    paths-ignore:
-      - 'README.md'
-      - 'SECURITY.md'
-      - 'SUPPORT.md'
-      - 'psmodules/**'
-      - 'docs/**'
-    branches:
-      - idutta/pipelineVar
   workflow_run:
     workflows: [Azure CAC Release]
     types: 
