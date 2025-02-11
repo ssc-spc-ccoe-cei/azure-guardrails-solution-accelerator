@@ -362,7 +362,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
-        version: '1.0.1'
+        version: '1.0.2'
       }
     }
   }
@@ -392,7 +392,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
-        version: '1.0.0'
+        version: '1.0.2'
       }
     }
   }
@@ -473,6 +473,26 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-TLSConfiguration.zip'
         version: '1.0.0'
+      }
+    }
+  }
+
+  resource module50 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Az.ResourceGraph'
+    properties: {
+      contentLink: {
+        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.1.0.nupkg'
+        version: '1.1.0'
+      }
+    }
+  }
+
+  resource module51 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Az.Accounts'
+    properties: {
+      contentLink: {
+        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
+        version: '4.0.2'
       }
     }
   }

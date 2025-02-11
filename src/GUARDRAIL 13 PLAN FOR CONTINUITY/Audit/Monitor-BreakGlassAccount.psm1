@@ -187,24 +187,28 @@ function Test-BreakGlassAccounts {
     }
 
     # Retrieve the log data and check the data retention period for sign in
-    $kqlQuery = "SigninLogs
-    | where TimeGenerated > ago(365d)
-    | order by TimeGenerated desc"
+    $kqlQuery = @"
+SigninLogs
+| where UserPrincipalName in ('$($FirstBreakGlassUPN)', '$($SecondBreakGlassUPN)')
+| project TimeGenerated, UserPrincipalName, CreatedDateTime
+| where TimeGenerated > ago(365d)
+| order by TimeGenerated desc
+"@
 
-    try{
-      $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
-      $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery
+    try {
+        $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
+        $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery -ErrorAction Stop
+        
+        # Access the Results property of the query output
+        $results = $queryResults.Results
 
-      $BGdata = $queryResults.Results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN -or $_.UserPrincipalName -eq $SecondBreakGlassUPN}
-      
-      # check break glass account signin
-      $dataMostRecentSignInFirstBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Sort-Object TimeGenerated -Descending
-      $dataMostRecentSignInSecondBG = $BGdata | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Sort-Object createdDateTime -Descending
+        # check break glass account signin
+        $dataMostRecentSignInFirstBG = $results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Select-Object -First 1
+        $dataMostRecentSignInSecondBG = $results | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Select-Object -First 1
     
-      if ($null -ne $dataMostRecentSignInFirstBG -and $null -ne $dataMostRecentSignInSecondBG ){
-        $IsCompliant = $true
-      }
-
+        if ($null -ne $dataMostRecentSignInFirstBG -or $null -ne $dataMostRecentSignInSecondBG) {
+            $IsCompliant = $true
+        }
     }
     catch {
       if ($null -eq $workspace) {
@@ -220,7 +224,6 @@ function Test-BreakGlassAccounts {
         $IsCompliant = $false
         Write-Host "Error occurred retrieving the sign-in log data: $_"
       }
-
     }
     
 
