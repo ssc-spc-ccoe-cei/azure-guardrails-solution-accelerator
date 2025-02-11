@@ -119,6 +119,7 @@ jobs:
           inlineScript: |
             Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
             ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
             $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
             $CBSSUBSCRIPTION_DEV_NAME = $env:CBSSUBSCRIPTION_DEV_NAME
             $DEVSUBSCRIPTION_ID = $env:DEVSUBSCRIPTION_ID
@@ -134,7 +135,7 @@ jobs:
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
             $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
-
+            $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
 
             $configContent = @"
@@ -173,9 +174,9 @@ jobs:
 
             try {
                 $ErrorActionPreference = 'Stop'
-                remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
-                Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
-                Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
+                remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+                Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
+                Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
             }
             catch {
                 throw "Failed test deploy of solution with error: $_"
@@ -201,6 +202,7 @@ jobs:
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
+          DEVTENANT_SPN_APPID: ${{ vars.DEVTENANT_SPN_APPID}}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
         
       # - name: Relogin AZ 
@@ -230,7 +232,7 @@ jobs:
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
             $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
-
+            $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
 
             $configContent = @"
@@ -329,6 +331,7 @@ jobs:
           PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
           LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
           INITIATIVELOCATION_ID_DEV: ${{ vars.INITIATIVELOCATION_ID_DEV}}
+          DEVTENANT_SPN_APPID: ${{ vars.DEVTENANT_SPN_APPID}}
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
