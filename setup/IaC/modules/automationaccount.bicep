@@ -221,7 +221,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     name: 'Check-SecureConnectionInTransit'
     properties: {
       contentLink: {
-        uri: '${ModuleBaseURL}/Check-SecureConnectrionInTransit.zip'
+        uri: '${ModuleBaseURL}/Check-SecureConnectionInTransit.zip'
         version: '1.2.8'
       }
     }
