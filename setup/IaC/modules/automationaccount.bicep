@@ -222,7 +222,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionOfDataInTransit.zip'
-        version: '1.2.7'
+        version: '1.2.8'
       }
     }
   }
