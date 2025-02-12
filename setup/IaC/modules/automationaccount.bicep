@@ -218,10 +218,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
   resource module20 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ProtectionOfDataInTransit'
+    name: 'Check-SecureConnectionInTransit'
     properties: {
       contentLink: {
-        uri: '${ModuleBaseURL}/Check-ProtectionOfDataInTransit.zip'
+        uri: '${ModuleBaseURL}/Check-SecureConnectrionInTransit.zip'
         version: '1.2.8'
       }
     }

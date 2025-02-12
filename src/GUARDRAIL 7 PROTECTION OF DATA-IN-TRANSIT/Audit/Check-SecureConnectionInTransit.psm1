@@ -104,7 +104,7 @@ function Check-StatusDataInTransit {
     return $tempObjectList
 }
 
-function Verify-ProtectionDataInTransit {
+function Verify-SecureConnectionInTransit {
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
     param (
