@@ -142,7 +142,7 @@ jobs:
             $configContent = @"
             {
               "keyVaultName": "kvcac",
-              "resourcegroup": "guardrailscac",
+              "resourcegroup": "guardrailscacdev",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
@@ -158,7 +158,7 @@ jobs:
               "healthLAWResourceId": "$DEVLAW_HEALTH",
               "Locale": "en-CA",
               "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-              "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
+              "lighthousePrincipalDisplayName": "Ss-CSPM-Global-Guardrails-RO",
               "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
               "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
               "subscriptionId": "$DEVSUBSCRIPTION_ID",
@@ -239,7 +239,7 @@ jobs:
             $configContent = @"
             {  
               "keyVaultName": "kvcac",
-              "resourcegroup": "guardrailscac",
+              "resourcegroup": "guardrailscacdev",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
@@ -255,7 +255,7 @@ jobs:
               "healthLAWResourceId": "$DEVLAW_HEALTH",
               "Locale": "en-CA",
               "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-              "lighthousePrincipalDisplayName": "GcPc-CTO-Guardrails_Compliance-Owners",
+              "lighthousePrincipalDisplayName": "Ss-CSPM-Global-Guardrails-RO",
               "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
               "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID_DEV",
               "subscriptionId": "$DEVSUBSCRIPTION_ID",
