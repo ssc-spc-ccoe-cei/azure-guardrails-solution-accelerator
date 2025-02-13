@@ -41,7 +41,7 @@ function Check-StatusDataInTransit {
         }
         # $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
         $query = @"
-            Resources
+            policyresources
             | where type =~ 'microsoft.authorization/policyassignments'
             | where properties.scope =~ '$tempId'
             | where properties.policyDefinitionId == '$PolicyID'
