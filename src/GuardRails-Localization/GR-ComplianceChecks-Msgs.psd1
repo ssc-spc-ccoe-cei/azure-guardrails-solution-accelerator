@@ -215,6 +215,7 @@ dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 storageAccTLS12 = Storage Accounts TLS 1.2
 storageAccValidTLS = All storage accounts are using TLS1.2 or higher. 
 storageAccNotValidTLS= One or more storage accounts are using TLS1.1 or less. Update the storage accounts to TLS1.2 or higher.
+storageAccNotValidList = The following storage accounts are not valid: {0}
 
 functionAppHttpsConfig = Azure Functions: HTTPS Application Configuration
 
