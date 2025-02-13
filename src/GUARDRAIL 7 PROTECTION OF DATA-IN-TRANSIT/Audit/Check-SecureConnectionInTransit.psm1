@@ -104,7 +104,7 @@ function Check-StatusDataInTransit {
     return $tempObjectList
 }
 
-function Verify-ProtectionDataInTransit {
+function Verify-SecureConnectionInTransit {
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
     param (
@@ -123,7 +123,7 @@ function Verify-ProtectionDataInTransit {
     )
     $FinalObjectList = [System.Collections.ArrayList]@()
     $ErrorList = [System.Collections.ArrayList]@()
-    $grRequiredPolicies=@("FunctionAppShouldOnlyBeAccessibleOverHttps","WebApplicationShouldOnlyBeAccessibleOverHttps", "ApiAppShouldOnlyBeAccessibleOverHttps", "OnlySecureConnectionsToYourRedisCacheShouldBeEnabled","SecureTransferToStorageAccountsShouldBeEnabled")
+    $grRequiredPolicies=@("OnlySecureConnectionsToYourRedisCacheShouldBeEnabled","SecureTransferToStorageAccountsShouldBeEnabled")
 
     #Check Subscriptions
     try {
