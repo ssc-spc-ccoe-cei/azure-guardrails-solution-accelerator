@@ -641,13 +641,13 @@
     ]
   },
   {
-    "ModuleName": "Check-ProtectionOfDataInTransit",
+    "ModuleName": "Check-SecureConnectionInTransit",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Verify-SecureConnectionInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "cbssubscriptionName",
