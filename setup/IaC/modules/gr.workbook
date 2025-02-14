@@ -585,19 +585,18 @@
                 "linkTarget": "Url"
               }
             },
-            ,
-            "hierarchySettings": {
-              "treeType": 1,
-              "groupBy": [
-                "Status"
-              ]
-            },
             {
               "columnMatch": "Link",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
               }
+            },
+            "hierarchySettings": {
+              "treeType": 1,
+              "groupBy": [
+                "Status"
+              ]
             }
           ]
         }
