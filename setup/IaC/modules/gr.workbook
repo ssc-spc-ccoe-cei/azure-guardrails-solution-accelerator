@@ -591,14 +591,14 @@
               "formatOptions": {
                 "linkTarget": "Url"
               }
-            },
-            "hierarchySettings": {
-              "treeType": 1,
-              "groupBy": [
-                "Status"
-              ]
             }
-          ]
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
         }
       },
       "conditionalVisibility": {
