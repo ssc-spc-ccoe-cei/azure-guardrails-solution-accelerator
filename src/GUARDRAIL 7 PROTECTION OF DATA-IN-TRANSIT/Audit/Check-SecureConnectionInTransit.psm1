@@ -39,7 +39,7 @@ function Check-StatusDataInTransit {
         else {
             $tempId=$obj.Id
         }
-        # $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
+        
         $query = @"
             policyresources
             | where type =~ 'microsoft.authorization/policyassignments'
