@@ -181,9 +181,9 @@ jobs:
 
               try {
                   $ErrorActionPreference = 'Stop'
-                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath -verbose
-                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath -verbose
-                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath -verbose
+                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
+                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
               }
               catch {
                   throw "Failed test deploy of solution with error: $_"
@@ -302,7 +302,7 @@ jobs:
               try {
                   $ErrorActionPreference = 'Stop'
                   ipmo ./src/GuardrailsSolutionAcceleratorSetup
-                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams
               }
               catch {
                   throw "Failed test deploy of solution with error: $_"
