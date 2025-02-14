@@ -210,7 +210,8 @@ allCertificatesValid = All certificates are valid and from approved Certificate 
 approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
 approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
 appServiceHttpsConfig = Azure App Service: HTTPS Application Configuration
-dataInTransit = PROTECTION OF DATA-IN-TRANSIT
+
+dataInTransit = Secure Connections for Redis Cache and Storage Accounts
 
 storageAccTLS12 = Storage Accounts TLS 1.2
 storageAccValidTLS = All storage accounts are using TLS1.2 or higher. 
