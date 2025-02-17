@@ -1486,7 +1486,7 @@ function Check-BuiltInPolicies {
         $query = @"
         resourcecontainers
         | where type == 'microsoft.resources/subscriptions'
-        | extend subscriptionName = name
+        | extend subscriptionName = tostring(name)
         | extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
         | extend mgChain = properties.managementGroupAncestorsChain
         | mv-expand mgLevel = mgChain
@@ -1500,9 +1500,8 @@ function Check-BuiltInPolicies {
             | where type == 'microsoft.authorization/policyassignments'
             | where properties.policyDefinitionId == '$policyId'
             | extend policyScope = tolower(tostring(properties.scope))
-            | extend assignmentName = name
-            | extend assignmentId = tolower(id)
-            | project policyScope, assignmentId
+            | extend assignmentName = tostring(name)
+            | extend assignmentId = tolower(tostring(id))
         ) on `$left.checkPath == `$right.policyScope
         | summarize 
             hasPolicy = max(isnotempty(policyScope)),
@@ -1518,7 +1517,9 @@ function Check-BuiltInPolicies {
 "@
         
         try {
+            Write-Verbose "Executing query for policy: $policyId"
             $policyAssignments = Search-AzGraph -Query $query
+            Write-Verbose "Query results: $($policyAssignments | ConvertTo-Json -Depth 3)"
 
             foreach ($assignment in $policyAssignments) {
                 $result = [PSCustomObject]@{
@@ -1526,8 +1527,12 @@ function Check-BuiltInPolicies {
                     Id = $assignment.subscriptionId
                     Name = $assignment.subscriptionName
                     DisplayName = $assignment.subscriptionName
-                    ComplianceStatus = $assignment.isPolicyApplied
-                    Comments = if ($assignment.isPolicyApplied) { $msgTable.policyCompliant } else { $msgTable.policyNotConfigured }
+                    ComplianceStatus = [bool]$assignment.isPolicyApplied
+                    Comments = if ($assignment.isPolicyApplied) { 
+                        $msgTable.policyCompliant 
+                    } else { 
+                        $msgTable.policyNotConfigured 
+                    }
                     ItemName = "$ItemName - $policyDisplayName"
                     ControlName = $ControlName
                     ReportTime = $ReportTime
@@ -1536,7 +1541,7 @@ function Check-BuiltInPolicies {
                 }
 
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscriptionId $assignment.subscriptionId
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
                 }
 
                 $results.Add($result) | Out-Null
@@ -1547,7 +1552,6 @@ function Check-BuiltInPolicies {
         }
     }
     
-    Write-Verbose "Completed policy compliance check. Found $($results.Count) results"
     return $results
 }
 
