@@ -1524,12 +1524,12 @@ function Check-BuiltInPolicies {
                     Name = $assignment.subscriptionName
                     DisplayName = $assignment.subscriptionName
                     ComplianceStatus = $assignment.isPolicyApplied
-                    Comments = $assignment.isPolicyApplied ? $msgTable.policyCompliant : $msgTable.policyNotConfigured
+                    Comments = if ($assignment.isPolicyApplied) { $msgTable.policyCompliant } else { $msgTable.policyNotConfigured }
                     ItemName = "$ItemName - $policyDisplayName"
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                     itsgcode = $itsgcode
-                    Assignments = $assignment.assignments # Added to show where policy is assigned
+                    Assignments = $assignment.assignments
                 }
 
                 if ($EnableMultiCloudProfiles) {
