@@ -1421,10 +1421,12 @@ function Add-ProfileInformation {
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$Result,
         [string]$CloudUsageProfiles,
-        [string]$ModuleProfiles
+        [string]$ModuleProfiles,
+        [Parameter(Mandatory = $false)]
+        [string]$subscription
     )
     
-    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscription $subscription
     if (!$evalResult.ShouldEvaluate) {
         if ($evalResult.Profile -gt 0) {
             $Result.ComplianceStatus = "Not Applicable"
