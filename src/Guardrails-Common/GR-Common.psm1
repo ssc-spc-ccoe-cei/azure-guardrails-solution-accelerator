@@ -1484,7 +1484,7 @@ function Check-BuiltInPolicies {
         $query = @"
         resourcecontainers
         | where type == 'microsoft.resources/subscriptions'
-        | extend subscriptionName = tostring(name)
+        | extend subscriptionName = name
         | extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
         | extend mgChain = properties.managementGroupAncestorsChain
         | mv-expand mgLevel = mgChain
@@ -1498,8 +1498,9 @@ function Check-BuiltInPolicies {
             | where type == 'microsoft.authorization/policyassignments'
             | where properties.policyDefinitionId == '$policyId'
             | extend policyScope = tolower(tostring(properties.scope))
-            | extend assignmentName = tostring(name)
-            | extend assignmentId = tolower(tostring(id))
+            | extend assignmentName = name
+            | extend assignmentId = tolower(id)
+            | project policyScope, assignmentId
         ) on $left.checkPath == $right.policyScope
         | summarize 
             hasPolicy = max(isnotempty(policyScope)),
