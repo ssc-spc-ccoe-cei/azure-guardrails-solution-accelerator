@@ -1541,7 +1541,7 @@ function Check-BuiltInPolicies {
                 }
 
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscriptionId $assignment.subscriptionId
                 }
 
                 $results.Add($result) | Out-Null
