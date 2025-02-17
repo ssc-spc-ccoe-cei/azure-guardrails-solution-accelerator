@@ -1501,7 +1501,7 @@ function Check-BuiltInPolicies {
             | extend assignmentName = name
             | extend assignmentId = tolower(id)
             | project policyScope, assignmentId
-        ) on $left.checkPath == $right.policyScope
+        ) on `$left.checkPath == `$right.policyScope
         | summarize 
             hasPolicy = max(isnotempty(policyScope)),
             assignments = make_set(assignmentId)
@@ -1514,7 +1514,7 @@ function Check-BuiltInPolicies {
             assignments
         | order by subscriptionName asc
 "@
-
+        
         try {
             $policyAssignments = Search-AzGraph -Query $query
 
