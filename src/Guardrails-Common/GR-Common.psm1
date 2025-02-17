@@ -1423,10 +1423,10 @@ function Add-ProfileInformation {
         [string]$CloudUsageProfiles,
         [string]$ModuleProfiles,
         [Parameter(Mandatory = $false)]
-        [string]$subscription
+        [string]$subscriptionId
     )
     
-    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscription $subscription
+    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
     if (!$evalResult.ShouldEvaluate) {
         if ($evalResult.Profile -gt 0) {
             $Result.ComplianceStatus = "Not Applicable"
@@ -1536,7 +1536,7 @@ function Check-BuiltInPolicies {
                 }
 
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscription $assignment.subscriptionName
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscriptionId $assignment.subscriptionId
                 }
 
                 $results.Add($result) | Out-Null
