@@ -1498,7 +1498,7 @@ function Check-BuiltInPolicies {
         | join kind=leftouter (
             policyresources
             | where type == 'microsoft.authorization/policyassignments'
-            | where properties.policyDefinitionId == '$policyId'
+            | where properties.policyDefinitionId =~ '${policyId}'
             | extend policyScope = tolower(tostring(properties.scope))
             | extend assignmentName = tostring(name)
             | extend assignmentId = tolower(tostring(id))
