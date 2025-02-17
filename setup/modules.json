@@ -576,7 +576,7 @@
     "ModuleName": "Check-TLSConfiguration-AppService",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
-    "Status": "Disabled",
+    "Status": "Enabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Verify-TLSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.appServiceTLSConfig -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
@@ -593,7 +593,7 @@
     "ModuleName": "Check-TLSConfiguration-FunctionApp",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
-    "Status": "Disabled",
+    "Status": "Enabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Verify-TLSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.functionAppTLSConfig -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
@@ -610,7 +610,7 @@
     "ModuleName": "Check-TLSConfiguration-SQLDatabase",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
-    "Status": "Disabled",
+    "Status": "Enabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Verify-TLSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.sqlDbTLSConfig -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
@@ -627,7 +627,7 @@
     "ModuleName": "Check-TLSConfiguration-AppGatewayWAF",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
-    "Status": "Disabled",
+    "Status": "Enabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Verify-TLSConfiguration -ControlName $msgTable.CtrName7 -ItemName $msgTable.appGatewayWAFConfig -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
@@ -641,13 +641,13 @@
     ]
   },
   {
-    "ModuleName": "Check-SecureConnectionInTransit",
+    "ModuleName": "Check-ProtectionOfDataInTransit",
     "Control": "Guardrails7",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Verify-SecureConnectionInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Verify-ProtectionDataInTransit -ControlName $msgTable.CtrName7 -ItemName $msgTable.dataInTransit -PolicyID $vars.pbmmpolicyID -MsgTable $msgTable  -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "cbssubscriptionName",
@@ -809,7 +809,7 @@
         "Value": "SC7"
       }
     ]
-  },
+  }, 
   {
     "ModuleName": "Get-VnetComplianceInformation",
     "Control": "Guardrails9",
