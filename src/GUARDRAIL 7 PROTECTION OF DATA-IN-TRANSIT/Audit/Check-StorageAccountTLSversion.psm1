@@ -125,7 +125,7 @@ function Verify-TLSForStorageAccount {
             $nonCompliantStorageAccountNames = ($nonCompliantAccounts | 
                 Select-Object -ExpandProperty StorageAccountName) -join ', '
             Write-Verbose "Storage accounts which are using TLS1.1 or less: $nonCompliantStorageAccountNames"
-            $commentsArray = @($msgTable.isNotCompliant, $msgTable.storageAccNotValidTLS)
+            $commentsArray = @($msgTable.isNotCompliant, $msgTable.storageAccNotValidTLS, $msgTable.storageAccNotValidList -f $nonCompliantStorageAccountNames)
         }
     }
     catch {
