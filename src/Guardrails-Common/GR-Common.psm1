@@ -1191,8 +1191,8 @@ function Check-PBMMPolicies {
 
                     # Check the number of resources and compliance for the required policies in applied PBMM initiative
                     # ----------------#
-                    # Subscription
-                    # ----------------#
+                    # # Subscription
+                    # #----------------#
                     if ($objType -eq "subscription"){
                         Write-Host "Find compliance details for Subscription : $($obj.Name)"
                         $subscription = @()
@@ -1458,19 +1458,17 @@ function Check-BuiltInPolicies {
     
     $results = New-Object System.Collections.ArrayList
     
-    # Get tenant root management group
     try {
         $tenantId = (Get-AzContext).Tenant.Id
-        $rootScope = "/providers/Microsoft.Management/managementGroups/$tenantId"
     } catch {
         $ErrorList.Add("Error getting tenant context: $_")
         return $results
     }
 
-    Write-Host "Starting policy compliance check for tenant: $tenantId"
+    Write-Verbose "Starting policy compliance check for tenant: $tenantId"
     
     foreach ($policyId in $requiredPolicyIds) {
-        Write-Host "Checking policy assignment for policy ID: $policyId"
+        Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
         # Get policy definition details
         try {
@@ -1479,174 +1477,74 @@ function Check-BuiltInPolicies {
         } catch {
             $ErrorList.Add("Error getting policy definition: $_")
             $policyDisplayName = "Unknown Policy"
-            return $results
+            continue
         }
-        
-        # Check for policy assignments at tenant level
+
+        # Query Azure Resource Graph for policy assignments at all levels
+        $query = @"
+        resourcecontainers
+        | where type == 'microsoft.resources/subscriptions'
+        | extend subscriptionName = tostring(name)
+        | extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
+        | extend mgChain = properties.managementGroupAncestorsChain
+        | mv-expand mgLevel = mgChain
+        | extend mgName = tostring(mgLevel.name)
+        | extend mgPath = tolower(strcat('/providers/Microsoft.Management/managementGroups/', mgName))
+        | extend paths = pack_array(subPath, mgPath)
+        | mv-expand checkPath = paths
+        | extend checkPath = tostring(checkPath)
+        | join kind=leftouter (
+            policyresources
+            | where type == 'microsoft.authorization/policyassignments'
+            | where properties.policyDefinitionId == '$policyId'
+            | extend policyScope = tolower(tostring(properties.scope))
+            | extend assignmentName = tostring(name)
+            | extend assignmentId = tolower(tostring(id))
+        ) on $left.checkPath == $right.policyScope
+        | summarize 
+            hasPolicy = max(isnotempty(policyScope)),
+            assignments = make_set(assignmentId)
+            by subscriptionId, subscriptionName
+        | extend isPolicyApplied = hasPolicy
+        | project
+            subscriptionId,
+            subscriptionName,
+            isPolicyApplied,
+            assignments
+        | order by subscriptionName asc
+"@
+
         try {
-            $assignments = Get-AzPolicyAssignment -Scope $rootScope -PolicyDefinitionId $policyId -ErrorAction Stop
-            $tenantPolicyAssignments = @()
-            if ($assignments -is [array]) {
-                $tenantPolicyAssignments = $assignments | Where-Object { $null -ne $_ }
-            } else {
-                if ($null -ne $assignments) {
-                    $tenantPolicyAssignments += $assignments
+            $policyAssignments = Search-AzGraph -Query $query
+
+            foreach ($assignment in $policyAssignments) {
+                $result = [PSCustomObject]@{
+                    Type = "subscription"
+                    Id = $assignment.subscriptionId
+                    Name = $assignment.subscriptionName
+                    DisplayName = $assignment.subscriptionName
+                    ComplianceStatus = $assignment.isPolicyApplied
+                    Comments = $assignment.isPolicyApplied ? $msgTable.policyCompliant : $msgTable.policyNotConfigured
+                    ItemName = "$ItemName - $policyDisplayName"
+                    ControlName = $ControlName
+                    ReportTime = $ReportTime
+                    itsgcode = $itsgcode
+                    Assignments = $assignment.assignments # Added to show where policy is assigned
                 }
-            }            
+
+                if ($EnableMultiCloudProfiles) {
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscription $assignment.subscriptionName
+                }
+
+                $results.Add($result) | Out-Null
+            }
         } catch {
-            $ErrorList.Add("Error getting policy assignments for policy $policyId : $_")
-            $tenantPolicyAssignments = @()
-        }
-        
-        # Check if we have any policy assignments (not null and not empty)
-        if ($null -ne $tenantPolicyAssignments -and $tenantPolicyAssignments.Count -gt 0) {
-            Write-Host "Found $($tenantPolicyAssignments.Count) assignments matching this policy ID"
-            
-            $hasExemptions = $false
-            
-            # Check for policy exemptions
-            foreach ($assignment in $tenantPolicyAssignments) {
-                try {
-                    if ($null -ne $assignment -and $null -ne $assignment.PolicyAssignmentId ) {
-                        Write-Host "Checking exemptions for assignment: $($assignment.PolicyAssignmentId)"
-                        $policyExemptions = Get-AzPolicyExemption -Scope $rootScope -PolicyAssignmentId $assignment.PolicyAssignmentId  -ErrorAction Stop
-                        if ($policyExemptions) {
-                            $hasExemptions = $true
-                            break
-                        }
-                    } else {
-                        Write-Host "Skipping exemption check for invalid assignment"
-                        continue
-                    }
-                } catch {
-                    $ErrorList.Add("Error checking policy exemptions: $_")
-                }
-                continue
-            }
-            
-            if ($hasExemptions) {
-                Write-Host "Policy has exemptions configured at tenant level"
-                $result = [PSCustomObject]@{
-                    Type = "tenant"
-                    Id = $tenantId
-                    Name = "Tenant ($tenantId)"
-                    DisplayName = "Tenant ($tenantId)"
-                    ComplianceStatus = $false
-                    Comments = $msgTable.policyHasExemptions
-                    ItemName = "$ItemName - $policyDisplayName"
-                    ControlName = $ControlName
-                    ReportTime = $ReportTime
-                    itsgcode = $itsgcode
-                }
-                
-                if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-                }
-                
-                $results.Add($result) | Out-Null
-                continue
-            }
-
-            Write-Host "Policy is assigned at tenant level. Checking compliance states..."
-            
-            # Get all policy states for this policy
-            $policyStates = Get-AzPolicyState | Where-Object { $_.PolicyDefinitionId -eq $policyId }
-
-            # If no resources are found that the policy applies to
-            if ($null -eq $policyStates -or $policyStates.Count -eq 0) {
-                Write-Host "No resources found that the policy applies to"
-                $result = [PSCustomObject]@{
-                    Type = "tenant"
-                    Id = $tenantId
-                    Name = "Tenant ($tenantId)"
-                    DisplayName = "Tenant ($tenantId)"
-                    ComplianceStatus = $true
-                    Comments = $msgTable.policyNoApplicableResources
-                    ItemName = "$ItemName - $policyDisplayName"
-                    ControlName = $ControlName
-                    ReportTime = $ReportTime
-                    itsgcode = $itsgcode
-                }
-                
-                if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-                }
-                
-                $results.Add($result) | Out-Null
-                continue
-            }
-
-            # Check if any resources are non-compliant
-            $nonCompliantResources = $policyStates | 
-                Where-Object { $_.ComplianceState -eq "NonCompliant" -or $_.IsCompliant -eq $false }
-            
-            if ($nonCompliantResources) {
-                Write-Host "Found $($nonCompliantResources.Count) non-compliant resources"
-                foreach ($resource in $nonCompliantResources) {
-                    $result = [PSCustomObject]@{
-                        Type = $resource.ResourceType
-                        Id = $resource.ResourceId
-                        Name = $resource.ResourceGroup + "/" + ($resource.ResourceId -split '/')[-1]
-                        DisplayName = $resource.ResourceGroup + "/" + ($resource.ResourceId -split '/')[-1]
-                        ComplianceStatus = $false
-                        Comments = $msgTable.policyNotCompliant
-                        ItemName = "$ItemName - $policyDisplayName"
-                        ControlName = $ControlName
-                        ReportTime = $ReportTime
-                        itsgcode = $itsgcode
-                    }
-                    
-                    if ($EnableMultiCloudProfiles) {
-                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-                    }
-                    
-                    $results.Add($result) | Out-Null
-                }
-            } else {
-                Write-Host "All resources are compliant with the policy"
-                $result = [PSCustomObject]@{
-                    Type = "tenant"
-                    Id = $tenantId
-                    Name = "All Resources"
-                    DisplayName = "All Resources"
-                    ComplianceStatus = $true
-                    Comments = $msgTable.policyCompliant
-                    ItemName = "$ItemName - $policyDisplayName"
-                    ControlName = $ControlName
-                    ReportTime = $ReportTime
-                    itsgcode = $itsgcode
-                }
-                
-                if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-                }
-                
-                $results.Add($result) | Out-Null
-            }
-        } else {
-            Write-Host "Policy is not assigned at tenant level"
-            $result = [PSCustomObject]@{
-                Type = "tenant"
-                Id = $tenantId
-                Name = "Tenant ($tenantId)"
-                DisplayName = "Tenant ($tenantId)"
-                ComplianceStatus = $false
-                Comments = $msgTable.policyNotConfigured
-                ItemName = "$ItemName - $policyDisplayName"
-                ControlName = $ControlName
-                ReportTime = $ReportTime
-                itsgcode = $itsgcode
-            }
-            
-            if ($EnableMultiCloudProfiles) {
-                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-            }
-            
-            $results.Add($result) | Out-Null
+            $ErrorList.Add("Error querying Azure Resource Graph: $_")
+            continue
         }
     }
-
-    Write-Host "Completed policy compliance check. Found $($results.Count) results"
+    
+    Write-Verbose "Completed policy compliance check. Found $($results.Count) results"
     return $results
 }
 
