@@ -1459,7 +1459,7 @@ function Check-BuiltInPolicies {
     )
     
     $results = New-Object System.Collections.ArrayList
-    
+    Write-Warning "Required policy IDs: $requiredPolicyIds"
     try {
         $tenantId = (Get-AzContext).Tenant.Id
     } catch {
