@@ -1472,20 +1472,33 @@ function Check-BuiltInPolicies {
     foreach ($policyId in $requiredPolicyIds) {
         Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
-        # First, let's check what policy assignments exist
+        # First, let's see ALL policy assignments
+        $debugQuery0 = @'
+policyresources
+| where type == 'microsoft.authorization/policyassignments'
+| extend policyDefId = properties.policyDefinitionId
+| project id, name, scope=properties.scope, policyDefId
+| limit 10
+'@
+        Write-Verbose "Debug Query 0 (All Policies): $debugQuery0"
+        $debugResults0 = Search-AzGraph -Query $debugQuery0
+        Write-Verbose "Debug results 0 (All Policy Assignments): $($debugResults0 | ConvertTo-Json -Depth 3)"
+
+        # Now check for our specific policy
         $debugQuery1 = @'
 policyresources
 | where type == 'microsoft.authorization/policyassignments'
-| where properties.policyDefinitionId == "{0}"
-| project id, name, properties.scope, properties.policyDefinitionId
+| extend policyDefId = properties.policyDefinitionId
+| where policyDefId has "{0}"
+| project id, name, scope=properties.scope, policyDefId
 '@ -f $policyId
 
         Write-Verbose "Debug Query 1: $debugQuery1"
         Write-Verbose "Executing debug query 1..."
         $debugResults1 = Search-AzGraph -Query $debugQuery1
-        Write-Verbose "Debug results 1 (Policy Assignments): $($debugResults1 | ConvertTo-Json -Depth 3)"
+        Write-Verbose "Debug results 1 (Specific Policy Assignments): $($debugResults1 | ConvertTo-Json -Depth 3)"
 
-        # Main query using string format
+        # Main query using string format and 'has' operator
         $query = @'
 resourcecontainers
 | where type == 'microsoft.resources/subscriptions'
@@ -1501,7 +1514,8 @@ resourcecontainers
 | join kind=leftouter (
     policyresources
     | where type == 'microsoft.authorization/policyassignments'
-    | where properties.policyDefinitionId == "{0}"
+    | extend policyDefId = properties.policyDefinitionId
+    | where policyDefId has "{0}"
     | extend policyScope = tolower(tostring(properties.scope))
     | extend assignmentName = tostring(name)
     | extend assignmentId = tolower(tostring(id))
