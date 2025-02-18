@@ -1483,8 +1483,7 @@ function Check-BuiltInPolicies {
         }
 
         # Query Azure Resource Graph for policy assignments at all levels
-        $query = @"
-        resourcecontainers
+        $query = "resourcecontainers
         | where type == 'microsoft.resources/subscriptions'
         | extend subscriptionName = tostring(name)
         | extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
@@ -1498,7 +1497,7 @@ function Check-BuiltInPolicies {
         | join kind=leftouter (
             policyresources
             | where type == 'microsoft.authorization/policyassignments'
-            | where properties.policyDefinitionId =~ '${policyId}'
+            | where properties.policyDefinitionId == '$policyId'
             | extend policyScope = tolower(tostring(properties.scope))
             | extend assignmentName = tostring(name)
             | extend assignmentId = tolower(tostring(id))
@@ -1513,13 +1512,12 @@ function Check-BuiltInPolicies {
             subscriptionName,
             isPolicyApplied,
             assignments
-        | order by subscriptionName asc
-"@
-        
+        | order by subscriptionName asc"
+
         try {
-            Write-Verbose "Executing query for policy: $policyId"
+            Write-Verbose "Executing query: $query"
             $policyAssignments = Search-AzGraph -Query $query
-            Write-Verbose "Query results: $($policyAssignments | ConvertTo-Json -Depth 3)"
+            Write-Verbose "Raw query results: $($policyAssignments | ConvertTo-Json -Depth 3)"
 
             foreach ($assignment in $policyAssignments) {
                 $result = [PSCustomObject]@{
@@ -1527,8 +1525,8 @@ function Check-BuiltInPolicies {
                     Id = $assignment.subscriptionId
                     Name = $assignment.subscriptionName
                     DisplayName = $assignment.subscriptionName
-                    ComplianceStatus = [bool]$assignment.isPolicyApplied
-                    Comments = if ($assignment.isPolicyApplied) { 
+                    ComplianceStatus = [bool]($assignment.isPolicyApplied)
+                    Comments = if ([bool]($assignment.isPolicyApplied)) { 
                         $msgTable.policyCompliant 
                     } else { 
                         $msgTable.policyNotConfigured 
@@ -1541,13 +1539,14 @@ function Check-BuiltInPolicies {
                 }
 
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -subscriptionId $assignment.subscriptionId
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
                 }
 
                 $results.Add($result) | Out-Null
             }
         } catch {
             $ErrorList.Add("Error querying Azure Resource Graph: $_")
+            Write-Error "Error querying Azure Resource Graph: $_"
             continue
         }
     }
