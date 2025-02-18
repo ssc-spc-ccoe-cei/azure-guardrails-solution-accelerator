@@ -1472,18 +1472,18 @@ function Check-BuiltInPolicies {
     foreach ($policyId in $requiredPolicyIds) {
         Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
-        # Check management group level assignments
-        $debugQuery0 = @'
-policyresources
-| where type == 'microsoft.authorization/policyassignments'
-| extend policyDefId = properties.policyDefinitionId
-| extend policyScope = tolower(properties.scope)
-| where policyScope startswith '/providers/microsoft.management'
-| project id, name, scope=properties.scope, policyDefId
-'@
-        Write-Verbose "Debug Query 0 (Management Group Policies): $debugQuery0"
-        $debugResults0 = Search-AzGraph -Query $debugQuery0
-        Write-Verbose "Debug results 0 (Management Group Assignments): $($debugResults0 | ConvertTo-Json -Depth 3)"
+#         # Check management group level assignments
+#         $debugQuery0 = @'
+# policyresources
+# | where type == 'microsoft.authorization/policyassignments'
+# | extend policyDefId = properties.policyDefinitionId
+# | extend policyScope = tolower(properties.scope)
+# | where policyScope startswith '/providers/microsoft.management'
+# | project id, name, scope=properties.scope, policyDefId
+# '@
+#         Write-Verbose "Debug Query 0 (Management Group Policies): $debugQuery0"
+#         $debugResults0 = Search-AzGraph -Query $debugQuery0
+#         Write-Verbose "Debug results 0 (Management Group Assignments): $($debugResults0 | ConvertTo-Json -Depth 3)"
 
         # Main query modified to handle both subscription and management group scopes
         $query = @'
@@ -1528,7 +1528,7 @@ resourcecontainers
         try {
             Write-Verbose "Executing main query..."
             Write-Verbose "Query: $query"
-            $policyAssignments = Search-AzGraph -Query $query
+            $policyAssignments = Search-AzGraph -Query $query -ManagementGroup $tenantId
             Write-Verbose "Raw query results: $($policyAssignments | ConvertTo-Json -Depth 3)"
 
             foreach ($assignment in $policyAssignments) {
