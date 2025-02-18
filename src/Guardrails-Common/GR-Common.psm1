@@ -1577,6 +1577,7 @@ policyresources
                         $exemption = $exemptions | Where-Object { $_.exemptionAssignmentId -eq $assignmentId }
                         if ($exemption) {
                             $hasExemptions = $true
+                            Write-Warning "Exemption found for assignment ID: $assignmentId for policy $policyDisplayName"
                             break
                         }
                     }
