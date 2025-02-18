@@ -1473,63 +1473,55 @@ function Check-BuiltInPolicies {
         Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
         # First, let's check what policy assignments exist
-        $debugQuery1 = "policyresources
-        | where type == 'microsoft.authorization/policyassignments'
-        | where properties.policyDefinitionId == '$policyId'
-        | project id, name, properties.scope, properties.policyDefinitionId"
-        
+        $debugQuery1 = @'
+policyresources
+| where type == 'microsoft.authorization/policyassignments'
+| where properties.policyDefinitionId == "{0}"
+| project id, name, properties.scope, properties.policyDefinitionId
+'@ -f $policyId
+
+        Write-Verbose "Debug Query 1: $debugQuery1"
         Write-Verbose "Executing debug query 1..."
         $debugResults1 = Search-AzGraph -Query $debugQuery1
         Write-Verbose "Debug results 1 (Policy Assignments): $($debugResults1 | ConvertTo-Json -Depth 3)"
 
-        # Now let's check the management group structure
-        $debugQuery2 = "resourcecontainers
-        | where type == 'microsoft.resources/subscriptions'
-        | extend subscriptionName = tostring(name)
-        | extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
-        | extend mgChain = properties.managementGroupAncestorsChain
-        | mv-expand mgLevel = mgChain
-        | project subscriptionId, subscriptionName, mgName = tostring(mgLevel.name)"
-        
-        Write-Verbose "Executing debug query 2..."
-        $debugResults2 = Search-AzGraph -Query $debugQuery2
-        Write-Verbose "Debug results 2 (Management Groups): $($debugResults2 | ConvertTo-Json -Depth 3)"
-
-        # Main query with simplified join logic
-        $query = "resourcecontainers
-        | where type == 'microsoft.resources/subscriptions'
-        | extend subscriptionName = tostring(name)
-        | extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
-        | extend mgChain = properties.managementGroupAncestorsChain
-        | mv-expand mgLevel = mgChain
-        | extend mgName = tostring(mgLevel.name)
-        | extend mgPath = tolower(strcat('/providers/Microsoft.Management/managementGroups/', mgName))
-        | extend paths = pack_array(subPath, mgPath)
-        | mv-expand checkPath = paths
-        | extend checkPath = tostring(checkPath)
-        | join kind=leftouter (
-            policyresources
-            | where type == 'microsoft.authorization/policyassignments'
-            | where properties.policyDefinitionId == '$policyId'
-            | extend policyScope = tolower(tostring(properties.scope))
-            | extend assignmentName = tostring(name)
-            | extend assignmentId = tolower(tostring(id))
-            | where isnotempty(policyScope)
-        ) on `$left.checkPath == `$right.policyScope
-        | summarize 
-            hasPolicy = max(case(isnotempty(assignmentId), 1, 0)),
-            assignments = make_set_if(assignmentId, isnotempty(assignmentId))
-            by subscriptionId, subscriptionName
-        | extend isPolicyApplied = hasPolicy
-        | project
-            subscriptionId,
-            subscriptionName,
-            isPolicyApplied,
-            assignments
-        | order by subscriptionName asc"
+        # Main query using string format
+        $query = @'
+resourcecontainers
+| where type == 'microsoft.resources/subscriptions'
+| extend subscriptionName = tostring(name)
+| extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
+| extend mgChain = properties.managementGroupAncestorsChain
+| mv-expand mgLevel = mgChain
+| extend mgName = tostring(mgLevel.name)
+| extend mgPath = tolower(strcat('/providers/Microsoft.Management/managementGroups/', mgName))
+| extend paths = pack_array(subPath, mgPath)
+| mv-expand checkPath = paths
+| extend checkPath = tostring(checkPath)
+| join kind=leftouter (
+    policyresources
+    | where type == 'microsoft.authorization/policyassignments'
+    | where properties.policyDefinitionId == "{0}"
+    | extend policyScope = tolower(tostring(properties.scope))
+    | extend assignmentName = tostring(name)
+    | extend assignmentId = tolower(tostring(id))
+) on $left.checkPath == $right.policyScope
+| summarize 
+    hasPolicy = max(isnotempty(policyScope)),
+    assignments = make_set(assignmentId)
+    by subscriptionId, subscriptionName
+| extend isPolicyApplied = hasPolicy
+| project
+    subscriptionId,
+    subscriptionName,
+    isPolicyApplied,
+    assignments
+| order by subscriptionName asc
+'@ -f $policyId
 
         try {
             Write-Verbose "Executing main query..."
+            Write-Verbose "Query: $query"
             $policyAssignments = Search-AzGraph -Query $query
             Write-Verbose "Raw query results: $($policyAssignments | ConvertTo-Json -Depth 3)"
 
