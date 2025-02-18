@@ -1460,6 +1460,8 @@ function Check-BuiltInPolicies {
     
     $results = New-Object System.Collections.ArrayList
     Write-Warning "Required policy IDs: $requiredPolicyIds"
+    Write-Warning "Processing $($requiredPolicyIds.Count) policies:"
+
     try {
         $tenantId = (Get-AzContext).Tenant.Id
     } catch {
@@ -1564,9 +1566,9 @@ policyresources
 
         try {
             Write-Verbose "Executing queries..."
-            $assignmentResults = Search-AzGraph -Query $assignmentQuery -ManagementGroup $tenantId
-            $exemptions = Search-AzGraph -Query $exemptionQuery -ManagementGroup $tenantId
-            $complianceResults = Search-AzGraph -Query $complianceQuery -ManagementGroup $tenantId
+            $assignmentResults = Search-AzGraph -Query $assignmentQuery -ManagementGroup $tenantId -ErrorAction Stop
+            $exemptions = Search-AzGraph -Query $exemptionQuery -ManagementGroup $tenantId -ErrorAction Stop
+            $complianceResults = Search-AzGraph -Query $complianceQuery -ManagementGroup $tenantId -ErrorAction Stop
             Write-Warning "Assignment results: $($assignmentResults | ConvertTo-Json -Depth 3)"
             Write-Warning "Exemption results: $($exemptions | ConvertTo-Json -Depth 3)"
             Write-Warning "Compliance results: $($complianceResults | ConvertTo-Json -Depth 3)"
