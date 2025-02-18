@@ -39,14 +39,8 @@ function Check-StatusDataInTransit {
         else {
             $tempId=$obj.Id
         }
-        
-        $query = @"
-            policyresources
-            | where type =~ 'microsoft.authorization/policyassignments'
-            | where properties.scope =~ '$tempId'
-            | where properties.policyDefinitionId == '$PolicyID'
-"@
-        $AssignedPolicyList = Search-AzGraph -Query $query -ErrorAction Stop
+
+        $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
             $Comment=$msgTable.pbmmNotApplied 
