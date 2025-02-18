@@ -1467,40 +1467,40 @@ function Check-BuiltInPolicies {
         return $results
     }
 
-    Write-Verbose "Starting policy compliance check for tenant: $tenantId"
+        # Query for exemptions
+        $exemptionQuery = @'
+policyresources
+| where type == "microsoft.authorization/policyexemptions"
+| extend 
+    exemptionScope = tolower(properties.scope),
+    exemptionAssignmentId = tolower(properties.policyAssignmentId),
+    exemptionCategory = properties.exemptionCategory
+| project
+    exemptionScope,
+    exemptionAssignmentId,
+    exemptionCategory
+'@
     
+
     foreach ($policyId in $requiredPolicyIds) {
         Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
-#         # Check management group level assignments
-#         $debugQuery0 = @'
-# policyresources
-# | where type == 'microsoft.authorization/policyassignments'
-# | extend policyDefId = properties.policyDefinitionId
-# | extend policyScope = tolower(properties.scope)
-# | where policyScope startswith '/providers/microsoft.management'
-# | project id, name, scope=properties.scope, policyDefId
-# '@
-#         Write-Verbose "Debug Query 0 (Management Group Policies): $debugQuery0"
-#         $debugResults0 = Search-AzGraph -Query $debugQuery0
-#         Write-Verbose "Debug results 0 (Management Group Assignments): $($debugResults0 | ConvertTo-Json -Depth 3)"
-
-        # Main query modified to handle both subscription and management group scopes
-        $query = @'
+        # Base query for policy assignments (keeping your working query)
+        $assignmentQuery = @'
 resourcecontainers
-| where type == 'microsoft.resources/subscriptions'
+| where type == "microsoft.resources/subscriptions"
 | extend subscriptionName = tostring(name)
-| extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
+| extend subPath = tolower(strcat("/subscriptions/", subscriptionId))
 | extend mgChain = properties.managementGroupAncestorsChain
 | mv-expand mgLevel = mgChain
 | extend mgName = tostring(mgLevel.name)
-| extend mgPath = tolower(strcat('/providers/Microsoft.Management/managementGroups/', mgName))
+| extend mgPath = tolower(strcat("/providers/Microsoft.Management/managementGroups/", mgName))
 | extend paths = pack_array(subPath, mgPath)
 | mv-expand checkPath = paths
 | extend checkPath = tostring(checkPath)
 | join kind=leftouter (
     policyresources
-    | where type == 'microsoft.authorization/policyassignments'
+    | where type == "microsoft.authorization/policyassignments"
     | where properties.policyDefinitionId has "{0}"
     | extend policyScope = tolower(tostring(properties.scope))
     | extend assignmentName = tostring(name)
@@ -1508,9 +1508,9 @@ resourcecontainers
     | extend policyDefId = tostring(properties.policyDefinitionId)
     | where isnotempty(policyScope)
     | extend effectiveScope = case(
-        policyScope startswith '/providers/microsoft.management', policyScope,
-        policyScope startswith '/subscriptions', policyScope,
-        '')
+        policyScope startswith "/providers/microsoft.management", policyScope,
+        policyScope startswith "/subscriptions", policyScope,
+        "")
 ) on $left.checkPath == $right.effectiveScope
 | summarize 
     hasPolicy = max(case(isnotempty(assignmentId) and isnotempty(effectiveScope), 1, 0)),
@@ -1525,45 +1525,158 @@ resourcecontainers
 | order by subscriptionName asc
 '@ -f $policyId
 
-        try {
-            Write-Verbose "Executing main query..."
-            Write-Verbose "Query: $query"
-            $policyAssignments = Search-AzGraph -Query $query -ManagementGroup $tenantId
-            Write-Verbose "Raw query results: $($policyAssignments | ConvertTo-Json -Depth 3)"
 
-            foreach ($assignment in $policyAssignments) {
-                $result = [PSCustomObject]@{
-                    Type = "subscription"
-                    Id = $assignment.subscriptionId
-                    Name = $assignment.subscriptionName
-                    DisplayName = $assignment.subscriptionName
-                    ComplianceStatus = [bool]($assignment.isPolicyApplied)
-                    Comments = if ([bool]($assignment.isPolicyApplied)) { 
-                        $msgTable.policyCompliant 
-                    } else { 
-                        $msgTable.policyNotConfigured 
+        # Query for compliance states
+        $complianceQuery = @'
+policyresources
+| where type == "microsoft.policyinsights/policystates"
+| where policyDefinitionId has "{0}"
+| extend 
+    complianceState = properties.complianceState,
+    resourceId = properties.resourceId,
+    resourceType = properties.resourceType,
+    resourceName = properties.resourceName,
+    resourceGroup = properties.resourceGroup
+| summarize 
+    nonCompliantCount = countif(complianceState == "NonCompliant"),
+    totalResources = count(),
+    nonCompliantResources = make_set_if(
+        pack(
+            "id", resourceId,
+            "type", resourceType,
+            "name", resourceName,
+            "group", resourceGroup
+        ),
+        complianceState == "NonCompliant"
+    )
+    by subscriptionId
+'@ -f $policyId
+
+        try {
+            Write-Verbose "Executing queries..."
+            $assignmentResults = Search-AzGraph -Query $assignmentQuery -ManagementGroup $tenantId
+            $exemptions = Search-AzGraph -Query $exemptionQuery -ManagementGroup $tenantId
+            $complianceResults = Search-AzGraph -Query $complianceQuery -ManagementGroup $tenantId
+
+            $results = New-Object System.Collections.ArrayList
+
+            foreach ($sub in $assignmentResults) {
+                # Check for exemptions
+                $hasExemptions = $false
+                if ($sub.assignments) {
+                    foreach ($assignmentId in $sub.assignments) {
+                        $exemption = $exemptions | Where-Object { $_.exemptionAssignmentId -eq $assignmentId }
+                        if ($exemption) {
+                            $hasExemptions = $true
+                            break
+                        }
                     }
-                    ItemName = "$ItemName - $policyDisplayName"
-                    ControlName = $ControlName
-                    ReportTime = $ReportTime
-                    itsgcode = $itsgcode
-                    Assignments = $assignment.assignments
+                }
+
+                # Get compliance information
+                $compliance = $complianceResults | Where-Object { $_.subscriptionId -eq $sub.subscriptionId }
+
+                if ($hasExemptions) {
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $sub.subscriptionId
+                        Name = $sub.subscriptionName
+                        DisplayName = $sub.subscriptionName
+                        ComplianceStatus = $false
+                        Comments = $msgTable.policyHasExemptions
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                        Assignments = $sub.assignments
+                    }
+                }
+                elseif (!$sub.isPolicyApplied) {
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $sub.subscriptionId
+                        Name = $sub.subscriptionName
+                        DisplayName = $sub.subscriptionName
+                        ComplianceStatus = $false
+                        Comments = $msgTable.policyNotConfigured
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                }
+                elseif ($null -eq $compliance -or $compliance.totalResources -eq 0) {
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $sub.subscriptionId
+                        Name = $sub.subscriptionName
+                        DisplayName = $sub.subscriptionName
+                        ComplianceStatus = $true
+                        Comments = $msgTable.policyNoApplicableResources
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                        Assignments = $sub.assignments
+                    }
+                }
+                else {
+                    if ($compliance.nonCompliantCount -gt 0) {
+                        foreach ($resource in $compliance.nonCompliantResources) {
+                            $result = [PSCustomObject]@{
+                                Type = $resource.type
+                                Id = $resource.id
+                                Name = "$($resource.group)/$($resource.name)"
+                                DisplayName = "$($resource.group)/$($resource.name)"
+                                ComplianceStatus = $false
+                                Comments = $msgTable.policyNotCompliant
+                                ItemName = "$ItemName - $policyDisplayName"
+                                ControlName = $ControlName
+                                ReportTime = $ReportTime
+                                itsgcode = $itsgcode
+                                Assignments = $sub.assignments
+                            }
+                            
+                            if ($EnableMultiCloudProfiles) {
+                                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.subscriptionId
+                            }
+                            
+                            $results.Add($result) | Out-Null
+                        }
+                        continue
+                    }
+                    else {
+                        $result = [PSCustomObject]@{
+                            Type = "subscription"
+                            Id = $sub.subscriptionId
+                            Name = $sub.subscriptionName
+                            DisplayName = $sub.subscriptionName
+                            ComplianceStatus = $true
+                            Comments = $msgTable.policyCompliant
+                            ItemName = "$ItemName - $policyDisplayName"
+                            ControlName = $ControlName
+                            ReportTime = $ReportTime
+                            itsgcode = $itsgcode
+                            Assignments = $sub.assignments
+                        }
+                    }
                 }
 
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.subscriptionId
                 }
-
+                
                 $results.Add($result) | Out-Null
             }
+
+            return $results
+
         } catch {
             $ErrorList.Add("Error querying Azure Resource Graph: $_")
             Write-Error "Error querying Azure Resource Graph: $_"
-            continue
+            return $results
         }
     }
-    
-    return $results
 }
 
 
