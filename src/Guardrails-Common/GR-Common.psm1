@@ -1472,33 +1472,20 @@ function Check-BuiltInPolicies {
     foreach ($policyId in $requiredPolicyIds) {
         Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
-        # First, let's see ALL policy assignments
+        # Check management group level assignments
         $debugQuery0 = @'
 policyresources
 | where type == 'microsoft.authorization/policyassignments'
 | extend policyDefId = properties.policyDefinitionId
+| extend policyScope = tolower(properties.scope)
+| where policyScope startswith '/providers/microsoft.management'
 | project id, name, scope=properties.scope, policyDefId
-| limit 10
 '@
-        Write-Verbose "Debug Query 0 (All Policies): $debugQuery0"
+        Write-Verbose "Debug Query 0 (Management Group Policies): $debugQuery0"
         $debugResults0 = Search-AzGraph -Query $debugQuery0
-        Write-Verbose "Debug results 0 (All Policy Assignments): $($debugResults0 | ConvertTo-Json -Depth 3)"
+        Write-Verbose "Debug results 0 (Management Group Assignments): $($debugResults0 | ConvertTo-Json -Depth 3)"
 
-        # Now check for our specific policy
-        $debugQuery1 = @'
-policyresources
-| where type == 'microsoft.authorization/policyassignments'
-| extend policyDefId = properties.policyDefinitionId
-| where policyDefId has "{0}"
-| project id, name, scope=properties.scope, policyDefId
-'@ -f $policyId
-
-        Write-Verbose "Debug Query 1: $debugQuery1"
-        Write-Verbose "Executing debug query 1..."
-        $debugResults1 = Search-AzGraph -Query $debugQuery1
-        Write-Verbose "Debug results 1 (Specific Policy Assignments): $($debugResults1 | ConvertTo-Json -Depth 3)"
-
-        # Main query using string format and 'has' operator
+        # Main query modified to handle both subscription and management group scopes
         $query = @'
 resourcecontainers
 | where type == 'microsoft.resources/subscriptions'
@@ -1514,15 +1501,20 @@ resourcecontainers
 | join kind=leftouter (
     policyresources
     | where type == 'microsoft.authorization/policyassignments'
-    | extend policyDefId = properties.policyDefinitionId
-    | where policyDefId has "{0}"
+    | where properties.policyDefinitionId has "{0}"
     | extend policyScope = tolower(tostring(properties.scope))
     | extend assignmentName = tostring(name)
     | extend assignmentId = tolower(tostring(id))
-) on $left.checkPath == $right.policyScope
+    | extend policyDefId = tostring(properties.policyDefinitionId)
+    | where isnotempty(policyScope)
+    | extend effectiveScope = case(
+        policyScope startswith '/providers/microsoft.management', policyScope,
+        policyScope startswith '/subscriptions', policyScope,
+        '')
+) on $left.checkPath == $right.effectiveScope
 | summarize 
-    hasPolicy = max(isnotempty(policyScope)),
-    assignments = make_set(assignmentId)
+    hasPolicy = max(case(isnotempty(assignmentId) and isnotempty(effectiveScope), 1, 0)),
+    assignments = make_set_if(assignmentId, isnotempty(assignmentId))
     by subscriptionId, subscriptionName
 | extend isPolicyApplied = hasPolicy
 | project
