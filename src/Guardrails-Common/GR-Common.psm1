@@ -1485,7 +1485,16 @@ policyresources
     foreach ($policyId in $requiredPolicyIds) {
         Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
-        # Base query for policy assignments (keeping your working query)
+        # Get policy display name
+        try {
+            $policy = Get-AzPolicyDefinition -Id $policyId -ErrorAction Stop
+            $policyDisplayName = $policy.DisplayName
+        } catch {
+            $ErrorList.Add("Error getting policy definition for ID $policyId : $_")
+            $policyDisplayName = $policyId  # Fallback to ID if we can't get the display name
+        }
+
+        # Base query for policy assignments
         $assignmentQuery = @'
 resourcecontainers
 | where type == "microsoft.resources/subscriptions"
