@@ -1472,17 +1472,30 @@ function Check-BuiltInPolicies {
     foreach ($policyId in $requiredPolicyIds) {
         Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
-        # Get policy definition details
-        try {
-            $policyDefinition = Get-AzPolicyDefinition -Id $policyId -ErrorAction Stop
-            $policyDisplayName = $policyDefinition.Properties.DisplayName
-        } catch {
-            $ErrorList.Add("Error getting policy definition: $_")
-            $policyDisplayName = "Unknown Policy"
-            continue
-        }
+        # First, let's check what policy assignments exist
+        $debugQuery1 = "policyresources
+        | where type == 'microsoft.authorization/policyassignments'
+        | where properties.policyDefinitionId == '$policyId'
+        | project id, name, properties.scope, properties.policyDefinitionId"
+        
+        Write-Verbose "Executing debug query 1..."
+        $debugResults1 = Search-AzGraph -Query $debugQuery1
+        Write-Verbose "Debug results 1 (Policy Assignments): $($debugResults1 | ConvertTo-Json -Depth 3)"
 
-        # Query Azure Resource Graph for policy assignments at all levels
+        # Now let's check the management group structure
+        $debugQuery2 = "resourcecontainers
+        | where type == 'microsoft.resources/subscriptions'
+        | extend subscriptionName = tostring(name)
+        | extend subPath = tolower(strcat('/subscriptions/', subscriptionId))
+        | extend mgChain = properties.managementGroupAncestorsChain
+        | mv-expand mgLevel = mgChain
+        | project subscriptionId, subscriptionName, mgName = tostring(mgLevel.name)"
+        
+        Write-Verbose "Executing debug query 2..."
+        $debugResults2 = Search-AzGraph -Query $debugQuery2
+        Write-Verbose "Debug results 2 (Management Groups): $($debugResults2 | ConvertTo-Json -Depth 3)"
+
+        # Main query with simplified join logic
         $query = "resourcecontainers
         | where type == 'microsoft.resources/subscriptions'
         | extend subscriptionName = tostring(name)
@@ -1501,10 +1514,11 @@ function Check-BuiltInPolicies {
             | extend policyScope = tolower(tostring(properties.scope))
             | extend assignmentName = tostring(name)
             | extend assignmentId = tolower(tostring(id))
+            | where isnotempty(policyScope)
         ) on `$left.checkPath == `$right.policyScope
         | summarize 
-            hasPolicy = max(isnotempty(policyScope)),
-            assignments = make_set(assignmentId)
+            hasPolicy = max(case(isnotempty(assignmentId), 1, 0)),
+            assignments = make_set_if(assignmentId, isnotempty(assignmentId))
             by subscriptionId, subscriptionName
         | extend isPolicyApplied = hasPolicy
         | project
@@ -1515,7 +1529,7 @@ function Check-BuiltInPolicies {
         | order by subscriptionName asc"
 
         try {
-            Write-Verbose "Executing query: $query"
+            Write-Verbose "Executing main query..."
             $policyAssignments = Search-AzGraph -Query $query
             Write-Verbose "Raw query results: $($policyAssignments | ConvertTo-Json -Depth 3)"
 
