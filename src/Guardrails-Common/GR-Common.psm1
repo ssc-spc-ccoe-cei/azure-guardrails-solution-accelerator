@@ -1488,6 +1488,7 @@ policyresources
         # Get policy display name
         try {
             $policy = Get-AzPolicyDefinition -Id $policyId -ErrorAction Stop
+            Write-Warning "Policy definition found: $($policy | ConvertTo-Json -Depth 3)"
             $policyDisplayName = $policy.DisplayName
         } catch {
             $ErrorList.Add("Error getting policy definition for ID $policyId : $_")
@@ -1566,6 +1567,9 @@ policyresources
             $assignmentResults = Search-AzGraph -Query $assignmentQuery -ManagementGroup $tenantId
             $exemptions = Search-AzGraph -Query $exemptionQuery -ManagementGroup $tenantId
             $complianceResults = Search-AzGraph -Query $complianceQuery -ManagementGroup $tenantId
+            Write-Warning "Assignment results: $($assignmentResults | ConvertTo-Json -Depth 3)"
+            Write-Warning "Exemption results: $($exemptions | ConvertTo-Json -Depth 3)"
+            Write-Warning "Compliance results: $($complianceResults | ConvertTo-Json -Depth 3)"
 
             $results = New-Object System.Collections.ArrayList
 
