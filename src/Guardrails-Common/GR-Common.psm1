@@ -1530,7 +1530,7 @@ resourcecontainers
         $complianceQuery = @'
 policyresources
 | where type == "microsoft.policyinsights/policystates"
-| where policyDefinitionId has "{0}"
+| where properties.policyDefinitionId has "{0}"
 | extend 
     complianceState = properties.complianceState,
     resourceId = properties.resourceId,
