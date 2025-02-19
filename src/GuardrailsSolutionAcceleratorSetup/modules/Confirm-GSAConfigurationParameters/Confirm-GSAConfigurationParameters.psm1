@@ -238,6 +238,10 @@ Function Confirm-GSAConfigurationParameters {
             IsRequired        = $false
             ValidationPattern = '^default|\[?\d+(?:,\d+)*\]?$'
         }
+        tenantId = @{
+            IsRequired = $true
+            ValidationByType = 'guid'
+        }
     }
 
     ForEach ($configParam in $config.GetEnumerator()) {
@@ -318,9 +322,8 @@ Function Confirm-GSAConfigurationParameters {
         }
     }
 
-    # get tenant id from curent context
-    $context = Get-AzContext
-    $tenantId = $context.Tenant.Id
+    # Use the config value directly
+    $tenantId = $config.tenantId
 
     # verify Lighthouse config parameters
     $lighthouseServiceProviderTenantID = $config.lighthouseServiceProviderTenantID
