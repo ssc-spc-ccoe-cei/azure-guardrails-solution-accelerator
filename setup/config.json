@@ -23,7 +23,5 @@
   "securityRetentionDays": "730",
   "cloudUsageProfiles": "3",
   "enableMultiCloudProfiles": "false",
-  "tenantId": "00000000-0000-0000-0000-000000000000",
-  "location": "canadacentral",
-  "DepartmentNumber": "999"
+  "tenantId": "00000000-0000-0000-0000-000000000000"
 }
