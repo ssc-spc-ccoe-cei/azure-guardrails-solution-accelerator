@@ -322,8 +322,11 @@ Function Confirm-GSAConfigurationParameters {
         }
     }
 
-    # Use the config value directly
+    # Use tenant ID from config
     $tenantId = $config.tenantId
+
+    # Get context for account type checks
+    $context = Get-AzContext
 
     # verify Lighthouse config parameters
     $lighthouseServiceProviderTenantID = $config.lighthouseServiceProviderTenantID
