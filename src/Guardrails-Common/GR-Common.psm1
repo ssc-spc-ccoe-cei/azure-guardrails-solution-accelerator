@@ -1460,13 +1460,11 @@ function Check-BuiltInPolicies {
     
     $results = New-Object System.Collections.ArrayList
     
-    # Ensure we're working with an array
-    if ($requiredPolicyIds -isnot [array]) {
-        $requiredPolicyIds = @($requiredPolicyIds)
-    }
+    # Force array type and enumeration
+    [string[]]$policiesToProcess = $requiredPolicyIds | ForEach-Object { $_ }
     
-    Write-Warning "Starting policy checks for $($requiredPolicyIds.Count) policies"
-    Write-Warning "Policies to check: $($requiredPolicyIds -join '; ')"
+    Write-Warning "Starting policy checks for $($policiesToProcess.Count) policies"
+    Write-Warning "Policies to check: $($policiesToProcess -join '; ')"
 
     try {
         $tenantId = (Get-AzContext).Tenant.Id
@@ -1488,16 +1486,19 @@ policyresources
     exemptionAssignmentId,
     exemptionCategory
 '@
-    
+        $exemptions = Search-AzGraph -Query $exemptionQuery -ManagementGroup $tenantId -ErrorAction Stop
+        Write-Verbose "Exemption results: $($exemptions | ConvertTo-Json -Depth 3)"
 
-    foreach ($policyId in $requiredPolicyIds) {
-        Write-Warning "Checking policy assignment for policy ID: $policyId"
+
+    $requiredPolicyIds | ForEach-Object {
+        $policyId = $_
+        Write-Verbose "Checking policy assignment for policy ID: $policyId"
         
         # Get policy display name
         try {
             $policy = Get-AzPolicyDefinition -Id $policyId -ErrorAction Stop
-            Write-Warning "Policy definition found: $($policy | ConvertTo-Json -Depth 3)"
-            $policyDisplayName = $policy.DisplayName
+            Write-Verbose "Policy definition found: $($policy | ConvertTo-Json -Depth 3)"
+            $policyDisplayName = $policy.Properties.DisplayName
         } catch {
             $ErrorList.Add("Error getting policy definition for ID $policyId : $_")
             $policyDisplayName = $policyId  # Fallback to ID if we can't get the display name
@@ -1571,13 +1572,10 @@ policyresources
 '@ -f $policyId
 
         try {
-            Write-Verbose "Executing queries..."
             $assignmentResults = Search-AzGraph -Query $assignmentQuery -ManagementGroup $tenantId -ErrorAction Stop
-            $exemptions = Search-AzGraph -Query $exemptionQuery -ManagementGroup $tenantId -ErrorAction Stop
             $complianceResults = Search-AzGraph -Query $complianceQuery -ManagementGroup $tenantId -ErrorAction Stop
-            Write-Warning "Assignment results: $($assignmentResults | ConvertTo-Json -Depth 3)"
-            Write-Warning "Exemption results: $($exemptions | ConvertTo-Json -Depth 3)"
-            Write-Warning "Compliance results: $($complianceResults | ConvertTo-Json -Depth 3)"
+            Write-Verbose "Assignment results: $($assignmentResults | ConvertTo-Json -Depth 3)"
+            Write-Verbose "Compliance results: $($complianceResults | ConvertTo-Json -Depth 3)"
 
             $results = New-Object System.Collections.ArrayList
 
@@ -1589,7 +1587,7 @@ policyresources
                         $exemption = $exemptions | Where-Object { $_.exemptionAssignmentId -eq $assignmentId }
                         if ($exemption) {
                             $hasExemptions = $true
-                            Write-Warning "Exemption found for assignment ID: $assignmentId for policy $policyDisplayName"
+                            Write-Verbose "Exemption found for assignment ID: $assignmentId for policy $policyDisplayName"
                             break
                         }
                     }
