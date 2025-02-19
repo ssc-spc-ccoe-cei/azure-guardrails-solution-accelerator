@@ -1459,8 +1459,14 @@ function Check-BuiltInPolicies {
     )
     
     $results = New-Object System.Collections.ArrayList
-    Write-Warning "Required policy IDs: $requiredPolicyIds"
-    Write-Warning "Processing $($requiredPolicyIds.Count) policies:"
+    
+    # Ensure we're working with an array
+    if ($requiredPolicyIds -isnot [array]) {
+        $requiredPolicyIds = @($requiredPolicyIds)
+    }
+    
+    Write-Warning "Starting policy checks for $($requiredPolicyIds.Count) policies"
+    Write-Warning "Policies to check: $($requiredPolicyIds -join '; ')"
 
     try {
         $tenantId = (Get-AzContext).Tenant.Id
@@ -1485,7 +1491,7 @@ policyresources
     
 
     foreach ($policyId in $requiredPolicyIds) {
-        Write-Verbose "Checking policy assignment for policy ID: $policyId"
+        Write-Warning "Checking policy assignment for policy ID: $policyId"
         
         # Get policy display name
         try {

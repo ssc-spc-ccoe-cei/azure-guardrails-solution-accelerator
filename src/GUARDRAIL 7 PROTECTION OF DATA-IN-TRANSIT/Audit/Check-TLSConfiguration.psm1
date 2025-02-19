@@ -14,7 +14,6 @@ function Verify-TLSConfiguration {
     $ObjectList = New-Object System.Collections.ArrayList
     $ErrorList = New-Object System.Collections.ArrayList
 
-
     # Define required policies based on ItemName
     $grRequiredPolicies = @()
     
@@ -25,12 +24,14 @@ function Verify-TLSConfiguration {
                 "/providers/Microsoft.Authorization/policyDefinitions/817dcf37-e83d-4999-a472-644eada2ea1e",
                 "/providers/Microsoft.Authorization/policyDefinitions/d6545c6b-dd9d-4265-91e6-0b451e2f1c50"
             )
+            Write-Warning "Processing AppService TLS policies: $($grRequiredPolicies.Count)"
         }
         $msgTable.functionAppTLSConfig {
             $grRequiredPolicies = @(
                 "/providers/Microsoft.Authorization/policyDefinitions/fa3a6357-c6d6-4120-8429-855577ec0063",
                 "/providers/Microsoft.Authorization/policyDefinitions/1f01f1c7-539c-49b5-9ef4-d4ffa37d22e0"
             )
+            Write-Warning "Processing Function App TLS policies: $($grRequiredPolicies.Count)"
         }
         $msgTable.sqlDbTLSConfig {
             $grRequiredPolicies = @(
@@ -43,6 +44,9 @@ function Verify-TLSConfiguration {
             )
         }
     }
+
+    Write-Warning "Total policies to process: $($grRequiredPolicies.Count)"
+    Write-Warning "Policies: $($grRequiredPolicies -join '; ')"
 
     if ($EnableMultiCloudProfiles) {
         $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ErrorList $ErrorList
