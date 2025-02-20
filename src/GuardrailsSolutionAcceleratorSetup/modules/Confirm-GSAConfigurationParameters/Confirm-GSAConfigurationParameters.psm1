@@ -322,11 +322,16 @@ Function Confirm-GSAConfigurationParameters {
         }
     }
 
-    # Use tenant ID from config
+    # Use tenant ID from config and set context
     $tenantId = $config.tenantId
-
-    # Get context for account type checks
-    $context = Get-AzContext
+    try {
+        $context = Set-AzContext -TenantId $tenantId -ErrorAction Stop
+        Write-Verbose "Successfully set Azure context to tenant: $tenantId"
+    }
+    catch {
+        Write-Error "Failed to set Azure context to tenant: $tenantId. Error: $_"
+        break
+    }
 
     # verify Lighthouse config parameters
     $lighthouseServiceProviderTenantID = $config.lighthouseServiceProviderTenantID
