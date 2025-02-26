@@ -366,7 +366,7 @@
     "ModuleName": "Check-CloudConsoleAccess",
     "Control": "Guardrails3",
     "ModuleType": "Builtin",
-    "Status": "Enabled",
+    "Status": "Disabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
