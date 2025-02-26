@@ -20,20 +20,6 @@ function Verify-ProtectionDataAtRest {
     [PSCustomObject] $ObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $grRequiredPolicies=@("TransparentDataEncryptionOnSqlDatabasesShouldBeEnabled","AdvancedDataSecurityShouldBeEnabledOnYourSqlServers","AdvancedDataSecurityShouldBeEnabledOnYourManagedInstances")
-    
-    # #Check management groups
-    # try {
-    #     $objs = Get-AzManagementGroup -ErrorAction Stop
-    # }
-    # catch {
-    #     $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of `
-    #         the Az.Resources module; returned error message: $_")
-    #     throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the  `
-    #         Az.Resources module; returned error message: $_"
-    # }
-    # [string]$type = "Management Group"  
-    # $ObjectList += Check-StatusDataAtRest -objList $objs -itsgcode $itsgcode -objType $type -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
-    # Write-Host "$type(s) compliance results are collected"
 
     #Check Subscriptions
     try {
