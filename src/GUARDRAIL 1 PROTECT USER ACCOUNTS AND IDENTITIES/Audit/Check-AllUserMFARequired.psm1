@@ -25,9 +25,18 @@ function Check-AllUserMFARequired {
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
+
     # list all users
-    $users = Get-AzADUser
-    $allUsers =  $users | Select-Object userPrincipalName , displayName, id, mail
+    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail'
+    try {
+        $response = Invoke-GraphQuery -urlPath $usersSignIn -ErrorAction Stop
+        $allUsers = $response.Content.value
+    }
+    catch {
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_")
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_"
+    }
+
     # Check all users for MFA
     $allUserUPNs = $allUsers.userPrincipalName
     Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
