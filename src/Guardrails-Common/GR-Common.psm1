@@ -1037,7 +1037,7 @@ function Get-allowedLocationCAPCompliance {
 }
 
 
-function Test-ExemptionExists {
+function Test-PolicyExemptionExists {
     param (
         [string] $ScopeId,
         [array]  $requiredPolicyExemptionIds
@@ -1172,7 +1172,7 @@ function Check-PBMMPolicies {
                 $Comment += ' ' + $msgTable.reqPolicyApplied
 
                 # PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
-                $policyExemptionList = Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds
+                $policyExemptionList = Test-PolicyExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds
 
                 $exemptList = $policyExemptionList.exemptionId
                 # $nonExemptList = $policyExemptionList | Where-Object { $_.isExempt -eq $false }
