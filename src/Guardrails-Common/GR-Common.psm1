@@ -1043,8 +1043,8 @@ function Test-ExemptionExists {
         [array]  $requiredPolicyExemptionIds
     )
     [PSCustomObject] $policyExemptionList = New-Object System.Collections.ArrayList     
-    $exemptionsIds = Get-AzPolicyExemption -Scope $ScopeId | Select-Object -ExpandProperty Properties| Select-Object PolicyDefinitionReferenceIds
-    
+    # $exemptionsIds = Get-AzPolicyExemption -Scope $ScopeId | Select-Object -ExpandProperty Properties| Select-Object PolicyDefinitionReferenceIds
+    $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds
     $isExempt =  $false
 
     if ($null -ne $exemptionsIds)
