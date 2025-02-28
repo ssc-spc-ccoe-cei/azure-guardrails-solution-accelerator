@@ -12,7 +12,10 @@ name: PSScriptAnalyzer
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    # branches: [ "main" ]
+    branches:
+      - main
+      - idutta/update-codescan
   pull_request:
     branches: [ "main" ]
   schedule:
