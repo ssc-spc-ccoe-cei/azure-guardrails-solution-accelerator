@@ -52,3 +52,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: results_sarif
+          path: results.sarif
