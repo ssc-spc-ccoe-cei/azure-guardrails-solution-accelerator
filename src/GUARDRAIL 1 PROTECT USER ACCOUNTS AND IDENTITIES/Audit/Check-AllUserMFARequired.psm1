@@ -21,13 +21,14 @@ function Check-AllUserMFARequired {
         $EnableMultiCloudProfiles # New feature flag, default to false
     )
 
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = @()
+    [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
 
 
     # list all users
-    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail'
+    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,createdDateTime,userType,accountEnabled'
     try {
         $response = Invoke-GraphQuery -urlPath $usersSignIn -ErrorAction Stop
         $allUsers = $response.Content.value
@@ -70,7 +71,7 @@ function Check-AllUserMFARequired {
         $result = Get-AllUserAuthInformation -allUserList $memberUserList
         $memberUserUPNsBadMFA = $result.userUPNsBadMFA
         if( !$null -eq $result.ErrorList){
-            $ErrorList =  $ErrorList.Add($result.ErrorList)
+            $ErrorList += $result.ErrorList
         }
         $userValidMFACounter = $result.userValidMFACounter
     }
@@ -81,7 +82,7 @@ function Check-AllUserMFARequired {
         $result2 = Get-AllUserAuthInformation -allUserList $extUserList
         $extUserUPNsBadMFA = $result2.userUPNsBadMFA
         if( !$null -eq $result2.ErrorList){
-            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+            $ErrorList += $result2.ErrorList
         }
         # combined list
         $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
@@ -99,18 +100,50 @@ function Check-AllUserMFARequired {
     }
     Write-Host "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
     Write-Host "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
-       
+    
+    $matchingBadUsers = $allUsers | Where-Object {$userUPNsBadMFA.UPN -eq $_.userPrincipalName}
 
     # Condition: all users are MFA enabled
     if(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
         $commentsArray = $msgTable.allUserHaveMFA
         $IsCompliant = $true
+
+        #If all users are mfa compliant, display a ghost user with mfa enabled comment displayed
+        $Customuser = [PSCustomObject] @{
+            DisplayName = "N/A"
+            User_Enabled = "N/A"
+            User_Type = "N/A"
+            CreatedTime = "N/A"
+            LastSignIn = "N/A"
+            Comments = $commentsArray
+            ItemName= $ItemName 
+            ReportTime = $ReportTime
+            itsgcode = $itsgcode
+        }
+
+        $nonMfaUsers.add($Customuser)
     }
     # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
     else {
-        $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
+
         $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
         $IsCompliant = $false
+
+        foreach($badUser in $matchingBadUsers){
+
+            $nonMfaUser = [PSCustomObject] @{
+                DisplayName = $badUser.DisplayName
+                User_Enabled = $badUser.accountEnabled
+                User_Type = $badUser.userType
+                CreatedTime = $badUser.createdDateTime
+                LastSignIn = $badUser.signInActivity.lastSignInDateTime
+                Comments = $commentsArray
+                ItemName= $ItemName 
+                ReportTime = $ReportTime
+                itsgcode = $itsgcode
+            }
+            $nonMfaUsers.add($nonMfaUser)
+        }
     }
 
     $Comments = $commentsArray -join ";"
@@ -122,6 +155,11 @@ function Check-AllUserMFARequired {
         Comments         = $Comments
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
+    }
+
+    $AdditionalResults = [PSCustomObject]@{
+        records = $nonMfaUsers
+        logType = "GR1NonMfaUsers"
     }
 
     # Conditionally add the Profile field based on the feature flag
