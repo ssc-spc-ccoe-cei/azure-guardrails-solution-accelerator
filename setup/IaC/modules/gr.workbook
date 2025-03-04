@@ -275,7 +275,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, User_Type_s, CreatedTime_s, LastSignIn_s, Comments_s",
+        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, User_Type_s, CreatedTime_s = tostring(CreatedTime_s), LastSignIn_s = tostring(LastSignIn_s), Comments_s",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
