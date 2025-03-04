@@ -144,7 +144,7 @@ jobs:
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
               $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
               $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
-
+              $TESTTENANT_ID = $env:TESTTENANT_ID
               $configContent = @"
               {
                   "keyVaultName": "gsapipe",
@@ -172,7 +172,8 @@ jobs:
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,3,5",
-                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
+                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
+                  "tenantId": "$TESTTENANT_ID"
               }
               "@
               Set-Content -Path $configFilePath -Value $configContent
@@ -194,7 +195,7 @@ jobs:
               }
           azPSVersion: "latest"
         env:
-          TESTTENANT_DOMAIN: ${{ vars.TESTTENANT_DOMAIN }}
+          TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
           TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
           CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
           LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
@@ -238,7 +239,7 @@ jobs:
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
               $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
               $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
-
+              $TESTTENANT_ID = $env:TESTTENANT_ID
               $configContent = @"
               {
                   "keyVaultName": "gsapipe",
@@ -266,7 +267,8 @@ jobs:
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "1,3,5",
-                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
+                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
+                  "tenantId": "$TESTTENANT_ID"
                 }
               "@
               Set-Content -Path $configFilePath -Value $configContent
@@ -330,6 +332,7 @@ jobs:
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
+          TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
       - name: Check for AA Job Errors
         uses: azure/powershell@v2
         with:

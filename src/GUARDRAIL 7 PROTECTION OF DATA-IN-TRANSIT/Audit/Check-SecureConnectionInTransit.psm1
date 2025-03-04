@@ -39,6 +39,7 @@ function Check-StatusDataInTransit {
         else {
             $tempId=$obj.Id
         }
+
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {

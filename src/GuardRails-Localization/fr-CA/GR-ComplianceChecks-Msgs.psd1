@@ -218,6 +218,7 @@ dataInTransit = Connexions sécurisées pour les comptes de cache et de stockage
 storageAccTLS12 = Comptes de stockage TLS 1.2
 storageAccValidTLS = Tous les comptes de stockage utilisent TLS1.2 ou version ultérieure. 
 storageAccNotValidTLS = Un ou plusieurs comptes de stockage utilisent TLS1.1 ou une version antérieure. Mettez à jour les comptes de stockage vers TLS1.2 ou version ultérieure.
+storageAccNotValidList = Les comptes de stockage suivants ne sont pas valides: {0}
 
 functionAppHttpsConfig = « Azure Functions » : Configuration d'application HTTPS
 
@@ -310,8 +311,7 @@ NotAllSubsHaveDefenderPlans = Le(s) abonnement(s) suivant(s) n'a/n'ont pas de pl
 errorRetrievingNotifications = Les notifications d'alerte MS Defender pour le ou les abonnements ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
 EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
-AttackPathNotifictionNotConfigured = Les alertes MS Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous qu'elles sont configurées pour les alertes de chaque abonnement conformément aux instructions du Guide de Remédiation
-DefenderCompliant = MS Defender pour l'infonuagique est activé pour tous les abonnements et les notifications par courriel sont correctement configurées.
+AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
 
 
 # GuardRail #12

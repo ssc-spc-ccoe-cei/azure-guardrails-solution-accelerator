@@ -238,6 +238,10 @@ Function Confirm-GSAConfigurationParameters {
             IsRequired        = $false
             ValidationPattern = '^default|\[?\d+(?:,\d+)*\]?$'
         }
+        tenantId = @{
+            IsRequired = $true
+            ValidationByType = 'guid'
+        }
     }
 
     ForEach ($configParam in $config.GetEnumerator()) {
@@ -318,9 +322,16 @@ Function Confirm-GSAConfigurationParameters {
         }
     }
 
-    # get tenant id from curent context
-    $context = Get-AzContext
-    $tenantId = $context.Tenant.Id
+    # Use tenant ID from config and set context
+    $tenantId = $config.tenantId
+    try {
+        $context = Set-AzContext -TenantId $tenantId -ErrorAction Stop
+        Write-Verbose "Successfully set Azure context to tenant: $tenantId"
+    }
+    catch {
+        Write-Error "Failed to set Azure context to tenant: $tenantId. Error: $_"
+        break
+    }
 
     # verify Lighthouse config parameters
     $lighthouseServiceProviderTenantID = $config.lighthouseServiceProviderTenantID

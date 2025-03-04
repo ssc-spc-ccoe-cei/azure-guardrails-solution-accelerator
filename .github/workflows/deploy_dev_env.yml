@@ -138,7 +138,7 @@ jobs:
             $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
             $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
-
+            $DEVTENANT_ID = $env:DEVTENANT_ID
             $configContent = @"
             {
               "keyVaultName": "kvcac",
@@ -166,7 +166,8 @@ jobs:
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
               "cloudUsageProfiles": "3",
-              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
+              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
+              "tenantId": "$DEVTENANT_ID"
             }
             "@
             Set-Content -Path $configFilePath -Value $configContent
@@ -188,11 +189,11 @@ jobs:
             }
           azPSVersion: "latest"
         env:
-          DEVTENANT_DOMAIN: ${{ vars.DEVTENANT_DOMAIN }}
+          DEVTENANT_ID: ${{ vars.DEVTENANT_ID }}
           DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
           CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
-          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
-          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID_TEST }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID_TEST }}
           LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
           UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
           DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
@@ -235,6 +236,7 @@ jobs:
             $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
             $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
+            $DEVTENANT_ID = $env:DEVTENANT_ID
 
             $configContent = @"
             {  
@@ -263,7 +265,8 @@ jobs:
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
               "cloudUsageProfiles": "3",
-              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES"
+              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
+              "tenantId": "$DEVTENANT_ID"
               }
             "@
             Set-Content -Path $configFilePath -Value $configContent
@@ -323,8 +326,8 @@ jobs:
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
           DEVSUBSCRIPTION_ID: ${{ vars.DEVSUBSCRIPTION_ID }}
           CBSSUBSCRIPTION_DEV_NAME: ${{ vars.CBSSUBSCRIPTION_DEV_NAME }}
-          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
-          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID_TEST }}
+          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID_TEST }}
           LIGHTHOUSEPROVIDER_MGMTGRPID_DEV: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID_DEV }}
           UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
           DEVTENANT_BGA1: ${{ vars.DEVTENANT_BGA1 }}
@@ -337,6 +340,7 @@ jobs:
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
+          DEVTENANT_ID: ${{ vars.DEVTENANT_ID }}
 
       - name: Check for AA Job Errors
         uses: azure/powershell@v2
