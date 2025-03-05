@@ -13,6 +13,7 @@ function format-dateTime {
         elseif ($badUser.signInActivity.lastSignInDateTime -is [datetime]) {
             $badUser.signInActivity.lastSignInDateTime = [string]$badUser.signInActivity.lastSignInDateTime.ToString("yyyy-MM-dd HH:mm:ss")
             $badUser.createdDateTime = [string]$badUser.createdDateTime.ToString("yyyy-MM-dd HH:mm:ss")
+            
         }
     }
     return $matchingBadUsers
