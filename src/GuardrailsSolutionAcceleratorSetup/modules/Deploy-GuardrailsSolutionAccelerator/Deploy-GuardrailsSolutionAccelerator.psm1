@@ -342,18 +342,42 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
             If ($newComponents -contains 'CoreComponents') {
                 # deploy core resources
-                Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                try{
+                    Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSACoreResources. $_"
+                }
                 
                 # add runbooks to AA
-                Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                try{
+                    Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in adding GSA automation runbooks. $_"
+                }
+
             }
             
             # deploy Lighthouse components
             If ($newComponents -contains 'CentralizedCustomerReportingSupport') {
-                Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
+                try{
+                    Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSA centralized reporting customer components. $_"
+                }
+
             }
+            
             If ($newComponents -contains 'CentralizedCustomerDefenderForCloudSupport') {
-                Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
+                try{
+                    Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSA centralized defender customer components. $_"
+                }
+
             }
 
             Write-Verbose "Completed new deployment."
@@ -410,7 +434,13 @@ Function Deploy-GuardrailsSolutionAccelerator {
             # deploy the bicep template with the specified parameters
             If ($updateBicep) {
                 Write-Verbose "Deploying core Bicep template with update parameters '$($paramObject.Keys.Where({$_ -like 'update*'}) -join ',')'..."
-                Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                try{
+                    Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in undating GSA core resources. $_"
+                }
+
             }
             
             # update runbook definitions in AA
