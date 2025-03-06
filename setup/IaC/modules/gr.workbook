@@ -247,7 +247,7 @@
             "id": "9gf3d484-e871-4df0-8cbe-8ae6550c5984",
             "version": "KqlParameterItem/1.0",
             "name": "showNonMfa",
-            "label": "Show Non-Mfa Users",
+            "label": "Show Non-MFA Users",
             "type": 10,
             "isRequired": true,
             "value": "no",
@@ -275,7 +275,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, User_Type_s, CreatedTime_s, LastSignIn_s, Comments_s",
+        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend CreatedTime = format_datetime(CreatedTime_t, 'yyyy-MM-dd HH:mm:ss')\n| extend LastSignIn = iff(isnull(LastSignIn_t), \"Never Signed In\", format_datetime(LastSignIn_t, 'yyyy-MM-dd HH:mm:ss'))\n| project DisplayName_s, User_Type_s, CreatedTime, LastSignIn, Comments_s",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000

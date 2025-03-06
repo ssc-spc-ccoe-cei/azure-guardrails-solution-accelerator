@@ -1,24 +1,3 @@
-function format-dateTime {
-    param (
-        $matchingBadUsers
-    )
-
-    foreach ($badUser in $matchingBadUsers){
-        if($null -eq $badUser.signInActivity.lastSignInDateTime){
-            $badUser | Add-Member -MemberType NoteProperty -Name "signInActivity" -Value @{ lastSignInDateTime = "Never Logged In"} -Force
-            if($badUser.createdDateTime -is [datetime]){
-                $badUser.createdDateTime = $badUser.createdDateTime.ToString("yyyy-MM-dd HH:mm:ss")
-            }
-        }
-        elseif ($badUser.signInActivity.lastSignInDateTime -is [datetime]) {
-            $badUser.signInActivity.lastSignInDateTime = $badUser.signInActivity.lastSignInDateTime.ToString("yyyy-MM-dd HH:mm:ss")
-            $badUser.createdDateTime = $badUser.createdDateTime.ToString("yyyy-MM-dd HH:mm:ss")
-
-        }
-    }
-    return $matchingBadUsers
-}
-
 function Check-AllUserMFARequired {
     param (      
         [Parameter(Mandatory=$true)]
@@ -123,7 +102,6 @@ function Check-AllUserMFARequired {
     Write-Host "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
     
     $matchingBadUsers = $allUsers | Where-Object {$userUPNsBadMFA.UPN -eq $_.userPrincipalName}
-    $matchingBadUsers = format-dateTime -matchingBadUsers $matchingBadUsers
 
     # Condition: all users are MFA enabled
     if(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
