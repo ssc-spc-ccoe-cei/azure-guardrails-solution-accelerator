@@ -111,6 +111,7 @@ function Check-AllUserMFARequired {
         #If all users are mfa compliant, display a ghost user with mfa enabled comment displayed
         $Customuser = [PSCustomObject] @{
             DisplayName = "N/A"
+            UserPrincipalName = "N/A"
             User_Enabled = "N/A"
             User_Type = "N/A"
             CreatedTime = "N/A"
@@ -133,6 +134,7 @@ function Check-AllUserMFARequired {
 
             $nonMfaUser = [PSCustomObject] @{
                 DisplayName = $badUser.DisplayName
+                UserPrincipalName = $badUser.userPrincipalName
                 User_Enabled = $badUser.accountEnabled
                 User_Type = $badUser.userType
                 CreatedTime = $badUser.createdDateTime
