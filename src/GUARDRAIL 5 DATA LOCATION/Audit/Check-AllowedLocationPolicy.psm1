@@ -48,7 +48,6 @@ function Check-PolicyStatus {
         }
 
         If (($null -eq $AssignedPolicyList -and ($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")) -or `
-            # ($($policyInitiativeList.count) -eq 0) -or `
             ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
         {
             $Comment=$($msgTable.policyNotAssigned -f $objType)
