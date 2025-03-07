@@ -1,3 +1,15 @@
+function lastLoginInDays{
+    param(
+        $LastSignIn
+    )
+
+    $lastSignInDate = Get-Date $LastSignIn
+    $todayDate = Get-Date
+    $daysLastLogin = ($todayDate - $lastSignInDate).Days
+
+    return $daysLastLogin
+}
+
 function Check-AllUserMFARequired {
     param (      
         [Parameter(Mandatory=$true)]
@@ -25,6 +37,7 @@ function Check-AllUserMFARequired {
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
+    [string] $UserComments = $null
 
 
     # list all users
@@ -127,11 +140,18 @@ function Check-AllUserMFARequired {
     # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
     else {
 
-        $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
+        $commentsArray = $msgTable.userMisconfiguredMFA
         $IsCompliant = $false
 
         foreach($badUser in $matchingBadUsers){
 
+            if($null -eq $badUser.signInActivity.lastSignInDateTime){
+                $UserComments = $msgTable.nativeUserNoSignIn
+            }
+            elseif($null -ne $badUser.signInActivity.lastSignInDateTime){
+                $daysLastSignIn = lastLoginInDays -LastSignIn $badUser.signInActivity.lastSignInDateTime
+                $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
+            }
             $nonMfaUser = [PSCustomObject] @{
                 DisplayName = $badUser.DisplayName
                 UserPrincipalName = $badUser.userPrincipalName
@@ -139,7 +159,7 @@ function Check-AllUserMFARequired {
                 User_Type = $badUser.userType
                 CreatedTime = $badUser.createdDateTime
                 LastSignIn = $badUser.signInActivity.lastSignInDateTime
-                Comments = $commentsArray
+                Comments = $UserComments
                 ItemName= $ItemName 
                 ReportTime = $ReportTime
                 itsgcode = $itsgcode
