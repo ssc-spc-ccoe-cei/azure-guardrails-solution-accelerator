@@ -14,9 +14,9 @@ function Check-PolicyStatus {
         $ReportTime,
         [array] $AllowedLocations,
         [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
-        [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+        $CloudUsageProfiles = "3",
+        [string] $ModuleProfiles,
+        [switch] $EnableMultiCloudProfiles # default to false    
     )
 
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
@@ -224,7 +224,7 @@ function Verify-AllowedLocationPolicy {
         [string] $LogType,
         [string] $itsgcode,
         [Parameter(Mandatory=$true)]
-        [string] $AllowedLocationsString,#locations, separated by comma.
+        [string] $AllowedLocationsString,   #locations, separated by comma.
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
@@ -257,21 +257,25 @@ function Verify-AllowedLocationPolicy {
         $ErrorActionPreference = 'Stop'
         $type = "subscription"
         if ($EnableMultiCloudProfiles) {
-            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles 
+            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles 
         } else {
-            $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles 
+            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles 
         }
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_" )
         throw "Failed to execute the 'Check-PolicyStatus' function. Error message: $_"
     }
+
+    # Filter out objects of type PSAzureContext
+    $FinalObjectList = $ObjectList | Where-Object { $_.GetType() -notlike "*PSAzureContext*" }
     
     $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $FinalObjectList 
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
     }
+
     return $moduleOutput
 }
 
