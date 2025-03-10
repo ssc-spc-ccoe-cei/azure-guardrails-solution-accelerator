@@ -1037,14 +1037,14 @@ function Get-allowedLocationCAPCompliance {
 }
 
 
-function Test-ExemptionExists {
+function Test-PolicyExemptionExists {
     param (
         [string] $ScopeId,
         [array]  $requiredPolicyExemptionIds
     )
+    [PSCustomObject] $policyExemptionList = New-Object System.Collections.ArrayList     
+    # $exemptionsIds = Get-AzPolicyExemption -Scope $ScopeId | Select-Object -ExpandProperty Properties| Select-Object PolicyDefinitionReferenceIds
     $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds
-    [PSCustomObject] $policyExemptionList = New-Object System.Collections.ArrayList
-
     $isExempt =  $false
 
     if ($null -ne $exemptionsIds)
@@ -1052,16 +1052,18 @@ function Test-ExemptionExists {
         foreach ($exemptionId in $exemptionsIds)
         {
             if ($exemptionId -in $requiredPolicyExemptionIds){
-                $isExempt = $true 
+                $isExempt = $true
+
+                # if exempted, add to the list
+                $result = [PSCustomObject] @{
+                    isExempt = $isExempt 
+                    exemptionId = $exemptionId
+                }
+                $policyExemptionList.add($result)
             }
-            $result = [PSCustomObject] @{
-                isExempt = $isExempt 
-                exemptionId = $exemptionId
-            }
-            $policyExemptionList.add($result)
+
         }
     }
-
     return $policyExemptionList
     
 }
@@ -1170,7 +1172,7 @@ function Check-PBMMPolicies {
                 $Comment += ' ' + $msgTable.reqPolicyApplied
 
                 # PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
-                $policyExemptionList = Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds
+                $policyExemptionList = Test-PolicyExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds
 
                 $exemptList = $policyExemptionList.exemptionId
                 # $nonExemptList = $policyExemptionList | Where-Object { $_.isExempt -eq $false }
