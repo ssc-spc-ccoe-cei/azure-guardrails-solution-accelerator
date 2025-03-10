@@ -497,6 +497,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
+  resource module52 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-NetworkInterfaceIPs'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-NetworkInterfaceIPs.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
