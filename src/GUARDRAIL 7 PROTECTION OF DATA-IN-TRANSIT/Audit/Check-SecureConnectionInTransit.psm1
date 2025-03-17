@@ -43,7 +43,7 @@ function Check-StatusDataInTransit {
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
-            $Comment= $msgTable.isNotCompliant + ' ' + $msgTable.pbmmNotApplied 
+            $Comment = $msgTable.pbmmNotApplied 
             $ComplianceStatus=$false
         }
         else {
@@ -60,7 +60,7 @@ function Check-StatusDataInTransit {
             if($appliedPolicies.Count -ne  $requiredPolicyExemptionIds.Count){
                 # some required policies are not applied
                 $ComplianceStatus=$false
-                $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' ' + $msgTable.reqPolicyNotApplied
+                $Comment += ' ' + $msgTable.reqPolicyNotApplied
             }
             else{
                 # All required policies are applied
@@ -84,11 +84,19 @@ function Check-StatusDataInTransit {
                 }
                 else {
                     # Required Policy Definitions are not exempt. 
-                    $Comment += $msgTable.isCompliant + ' ' + $msgTable.grExemptionNotFound
+                    $Comment += ' ' + $msgTable.grExemptionNotFound
                     $ComplianceStatus=$true
                 }
             }
         }
+
+        if ($ComplianceStatus) {
+            $Comment = $msgTable.isCompliant + ' ' + $Comment
+        }
+        else {
+            $Comment = $msgTable.isNotCompliant + ' ' + $Comment
+        }
+
         if ($null -eq $obj.DisplayName)
         {
             $DisplayName=$obj.Name
