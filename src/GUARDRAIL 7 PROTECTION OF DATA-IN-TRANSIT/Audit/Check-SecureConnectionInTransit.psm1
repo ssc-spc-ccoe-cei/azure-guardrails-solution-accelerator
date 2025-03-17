@@ -43,20 +43,50 @@ function Check-StatusDataInTransit {
         $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
-            $Comment=$msgTable.pbmmNotApplied 
+            $Comment= $msgTable.isNotCompliant + ' ' + $msgTable.pbmmNotApplied 
             $ComplianceStatus=$false
         }
         else {
-            #PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
-            if (Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds)
-            { # boolean, exemption for gr6 required policies exists.
+            # PBMM initiative applied
+            $Comment = $msgTable.pbmmApplied
+
+            # List the policies within the PBMM initiative (policy set definition)
+            $policySetDefinition = Get-AzPolicySetDefinition | `
+                Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" } 
+
+            $listPolicies = $policySetDefinition.Properties.policyDefinitions
+            # Check all policies are applied for this scope
+            $appliedPolicies = $listPolicies.policyDefinitionReferenceId | Where-Object { $requiredPolicyExemptionIds -contains $_ }
+            if($appliedPolicies.Count -ne  $requiredPolicyExemptionIds.Count){
+                # some required policies are not applied
                 $ComplianceStatus=$false
-                $Comment=$msgTable.grexemptionFound -f $obj.Name
+                $Comment = $msgTable.isNotCompliant + ' ' + $Comment + ' ' + $msgTable.reqPolicyNotApplied
             }
-            else {
-                $ComplianceStatus=$true
-                $Comment=$msgTable.isCompliant + ' ' + $msgTable.grExemptionNotFound
-                #No exemption exists. All good.
+            else{
+                # All required policies are applied
+                $Comment += ' ' + $msgTable.reqPolicyApplied
+
+                # PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
+                $policyExemptionList = Test-PolicyExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds
+
+                $exemptList = $policyExemptionList.exemptionId
+                # $nonExemptList = $policyExemptionList | Where-Object { $_.isExempt -eq $false }
+                if ($ExemptList.Count -gt 0){   
+                    
+                    # join all exempt policies to a string
+                    if(-not($null -eq $exemptList)){
+                        $exemptListAllPolicies = $exemptList -join ", "
+                    }
+                    # boolean, exemption for GR, required policies exists.
+                    $ComplianceStatus=$false
+                    $Comment += ' ' + $msgTable.grExemptionFound -f $exemptListAllPolicies
+
+                }
+                else {
+                    # Required Policy Definitions are not exempt. 
+                    $Comment += $msgTable.isCompliant + ' ' + $msgTable.grExemptionNotFound
+                    $ComplianceStatus=$true
+                }
             }
         }
         if ($null -eq $obj.DisplayName)
