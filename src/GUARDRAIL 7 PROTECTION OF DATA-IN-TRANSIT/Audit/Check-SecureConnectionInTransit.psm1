@@ -51,11 +51,11 @@ function Check-StatusDataInTransit {
             if (Test-ExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds)
             { # boolean, exemption for gr6 required policies exists.
                 $ComplianceStatus=$false
-                $Comment=$msgTable.grexemptionFound -f $obj.Id,$objType
+                $Comment=$msgTable.grexemptionFound -f $obj.Name
             }
             else {
                 $ComplianceStatus=$true
-                $Comment=$msgTable.isCompliant 
+                $Comment=$msgTable.isCompliant + ' ' + $msgTable.grExemptionNotFound
                 #No exemption exists. All good.
             }
         }
