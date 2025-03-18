@@ -1,0 +1,53 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Bicep Code Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '46 11 * * 6'
+
+env:
+  SCANNER_TOOL_URL: "https://github.com/Azure/template-analyzer/releases/download/0.8.1/TemplateAnalyzer-linux-x64.zip"
+
+jobs:
+  scan:
+    name: Scan Bicep templates
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Download scanner
+        run: curl -OL $SCANNER_TOOL_URL 
+
+      - name: Extract scanner
+        run: unzip TemplateAnalyzer-linux-x64.zip -d ./scantool
+
+      - name: Run scanner
+        run: ./scantool/TemplateAnalyzer.exe analyze-directory --report-format SARIF --output-file-path ./scan_results.sarif ./setup/IaC
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scan_results.sarif
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
