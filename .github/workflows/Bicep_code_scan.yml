@@ -53,6 +53,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: scan_results.sarif
+      # looks like we are hitting an issue uploading the results: https://github.com/github/codeql/issues/11512
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
