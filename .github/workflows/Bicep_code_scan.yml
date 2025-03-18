@@ -35,7 +35,7 @@ jobs:
         run: unzip TemplateAnalyzer-linux-x64.zip -d ./scantool
 
       - name: Run scanner
-        run: ./scantool/TemplateAnalyzer.exe analyze-directory --report-format SARIF --output-file-path ./scan_results.sarif ./setup/IaC
+        run: ./scantool/TemplateAnalyzer analyze-directory --report-format SARIF --output-file-path ./scan_results.sarif ./setup/IaC
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
