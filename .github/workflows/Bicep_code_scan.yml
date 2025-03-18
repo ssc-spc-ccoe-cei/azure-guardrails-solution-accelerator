@@ -43,6 +43,12 @@ jobs:
         run: dotnet ./scantool/TemplateAnalyzer.dll analyze-directory --report-format SARIF --output-file-path ./scan_results.sarif ./setup/IaC
         continue-on-error: true # returns code 20 if voilations found 
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan_result
+          path: ./scan_results.sarif
+
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
         with:
