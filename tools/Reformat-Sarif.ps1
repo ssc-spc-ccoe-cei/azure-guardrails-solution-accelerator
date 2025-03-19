@@ -18,10 +18,6 @@ if (-not (Test-Path $sourceFile)) {
     Write-Error "Source file does not exist: $sourceFile"
     exit 1
 }
-if (-not (Test-Path $targetFile)) {
-    Write-Error "Target file does not exist: $targetFile"
-    exit 1
-}
 
 $sourceObj = Get-Content $sourceFile | ConvertFrom-Json 
 
