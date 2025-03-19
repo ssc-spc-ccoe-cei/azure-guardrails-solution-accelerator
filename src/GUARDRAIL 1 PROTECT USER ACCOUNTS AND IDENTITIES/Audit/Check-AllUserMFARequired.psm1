@@ -26,6 +26,7 @@ function Check-AllUserMFARequired {
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
+        [string] $LAWResourceId,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
@@ -39,6 +40,11 @@ function Check-AllUserMFARequired {
     [string] $Comments = $null
     [string] $UserComments = $null
 
+    # Parse LAW Resource ID
+    $lawParts = $LAWResourceId -split '/'
+    $subscriptionId = $lawParts[2]
+    $resourceGroupName = $lawParts[4] 
+    $workspaceId = $lawParts[8]
 
     # list all users
     $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,createdDateTime,userType,accountEnabled'
@@ -142,6 +148,59 @@ function Check-AllUserMFARequired {
 
         $commentsArray = $msgTable.userMisconfiguredMFA
         $IsCompliant = $false
+
+
+        $badUpns = $matchingBadUsers | Select-Object -ExpandProperty UserPrincipalName
+        $badUpnString = ($badUpns | ForEach-Object {$_.ToLower()}) -join "','"
+
+            # Retrieve the log data and check the data retention period for sign in
+        $kqlQuery = @"
+SigninLogs
+| where tolower(UserPrincipalName) in ('$($badUpnString)')
+| where TimeGenerated > ago(365d)
+| summarize arg_max(TimeGenerated, CreatedDateTime) by UserPrincipalName
+| project LastSignIn=TimeGenerated, UserPrincipalName, CreatedTime = CreatedDateTime
+| order by LastSignIn desc
+"@
+
+        # get context
+        try{
+        Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
+        }
+        catch {
+            $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+                ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+                error message: $_")
+            throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
+                you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
+        }
+
+        try {
+            $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
+            $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery -ErrorAction Stop
+            
+            # Access the Results property of the query output
+            $results = $queryResults.Results
+    
+            # check break glass account signin
+            #$dataMostRecentSignInFirstBG = $results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Select-Object -First 1
+            #$dataMostRecentSignInSecondBG = $results | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Select-Object -First 1
+        }
+        catch {
+          if ($null -eq $workspace) {
+            $IsCompliant = $false
+            $commentsArray += "Workspace not found in the specified resource group"
+            $ErrorList += "Workspace not found in the specified resource group: $_"
+          }
+          if($_.Exception.Message -like "*ResourceNotFound*"){
+    
+          }
+          else{
+            # Handle errors and exceptions
+            $IsCompliant = $false
+            Write-Host "Error occurred retrieving the sign-in log data: $_"
+          }
+        }
 
         foreach($badUser in $matchingBadUsers){
 
