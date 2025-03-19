@@ -267,6 +267,7 @@ wAFNotEnabled = The application gateway assigned does not have configured Web Ap
 firewallFound = There is a {0} associated to this subscription.
 wAFEnabled = There is an application gateway associated to this subscription with the appropriate configurations.
 networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP Addresses
+networkInterfaceIPs = Policy for Limiting Public IPs
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
