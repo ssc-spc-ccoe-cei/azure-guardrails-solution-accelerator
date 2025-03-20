@@ -1,12 +1,12 @@
 [
-  {
+    {
     "ModuleName": "Check-AllUserMFARequired",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -LAWResourceId $vars.LAWResourceId -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
@@ -15,6 +15,12 @@
       {
         "Name": "SecondBreakGlassUPN",
         "Value": "BGA2"
+      }
+    ],
+    "variables": [
+      {
+        "Name": "LAWResourceId",
+        "Value": "SecurityLAWResourceId"
       }
     ],
     "localVariables": [
