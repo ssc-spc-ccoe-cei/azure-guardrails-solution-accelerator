@@ -12,13 +12,13 @@ function lastLoginInDays{
 
 function get-nonMfaMemberUsers{
     param(
-        $memberUsers,
-        $logUsers
+       [System.Collections.ArrayList] $memberUsersList,
+       $logUsers
     )
 
-    [PSCustomObject] $nonMfaMemberUsers = New-Object System.Collections.ArrayList
+    $nonMfaMemberUsersList = @()
 
-    foreach($badUser in $memberUsers){
+    foreach($badUser in $memberUsersList){
 
         $currentLogUser = $logUsers | Where-Object {
             $_.UserPrincipalName.ToLower() -eq $badUser.userPrincipalName.ToLower()
@@ -31,54 +31,57 @@ function get-nonMfaMemberUsers{
             $daysLastSignIn = lastLoginInDays -LastSignIn $currentLogUser.LastSignIn
             $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
         }
+
+        $lastSignInDateTime = Get-Date -Date $currentLogUser.LastSignIn
+
         $nonMfaUser = [PSCustomObject] @{
             DisplayName = $badUser.DisplayName
             UserPrincipalName = $badUser.userPrincipalName
             User_Enabled = $badUser.accountEnabled
             User_Type = $badUser.userType
             CreatedTime = $badUser.createdDateTime
-            LastSignIn = $currentLogUser.LastSignIn
+            LastSignIn = $lastSignInDateTime
             Comments = $UserComments
             ItemName= $ItemName 
             ReportTime = $ReportTime
             itsgcode = $itsgcode
         }
-        $nonMfaMemberUsers.add($nonMfaUser)
+        $nonMfaMemberUsersList += $nonMfaUser
     }
-    return $nonMfaMemberUsers
+    return $nonMfaMemberUsersList
 }
 
 function get-nonMfaExtUsers{
     param(
-        $extUsers
+       [System.Collections.ArrayList] $extUsersList
     )
 
-    [PSCustomObject] $nonMfaExtUsers = New-Object System.Collections.ArrayList
+    $nonMfaExtUsersList = @()
 
-    foreach($badUser in $extUsers){
+    foreach($badExtUser in $extUsersList){
 
-        if($null -eq $badUser.signInActivity.lastSignInDateTime){
+        if($null -eq $badExtUser.signInActivity.lastSignInDateTime){
             $UserComments = $msgTable.nativeUserNoSignIn
         }
-        elseif($null -ne $badUser.signInActivity.lastSignInDateTime){
-            $daysLastSignIn = lastLoginInDays -LastSignIn $badUser.signInActivity.lastSignInDateTime
+        elseif($null -ne $badExtUser.signInActivity.lastSignInDateTime){
+            $daysLastSignIn = lastLoginInDays -LastSignIn $badExtUser.signInActivity.lastSignInDateTime
             $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
         }
-        $nonMfaUser = [PSCustomObject] @{
-            DisplayName = $badUser.DisplayName
-            UserPrincipalName = $badUser.userPrincipalName
-            User_Enabled = $badUser.accountEnabled
-            User_Type = $badUser.userType
-            CreatedTime = $badUser.createdDateTime
-            LastSignIn = $badUser.signInActivity.lastSignInDateTime
+        $nonMfaExtUser = [PSCustomObject] @{
+            DisplayName = $badExtUser.DisplayName
+            UserPrincipalName = $badExtUser.userPrincipalName
+            User_Enabled = $badExtUser.accountEnabled
+            User_Type = $badExtUser.userType
+            CreatedTime = $badExtUser.createdDateTime
+            LastSignIn = $badExtUser.signInActivity.lastSignInDateTime
             Comments = $UserComments
             ItemName= $ItemName 
             ReportTime = $ReportTime
             itsgcode = $itsgcode
         }
-        $nonMfaExtUsers.add($nonMfaUser)
+        $nonMfaExtUsersList += $nonMfaExtUser
     }
-    return $nonMfaExtUsers
+    return $nonMfaExtUsersList
 }
 
 function Check-AllUserMFARequired {
@@ -285,6 +288,7 @@ SigninLogs
             $badmemberUPN -contains $userPrincipalName
         }
 
+        [PSCustomObject] $nonMfaMemberUsers = New-Object System.Collections.ArrayList
         $nonMfaMemberUsers = get-nonMfaMemberUsers -memberUsers $memberAccountsBadUsers -logUsers $badMemberUsers
         $nonMfaExtUsers = get-nonMfaExtUsers -extUsers $extAccountsBadUsers
 
