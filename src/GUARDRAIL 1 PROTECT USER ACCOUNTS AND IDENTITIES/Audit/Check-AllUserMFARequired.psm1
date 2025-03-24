@@ -112,7 +112,6 @@ function Check-AllUserMFARequired {
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-    [string] $UserComments = $null
 
     # Parse LAW Resource ID
     $lawParts = $LAWResourceId -split '/'
@@ -224,7 +223,7 @@ function Check-AllUserMFARequired {
         $IsCompliant = $false
 
 
-        $badUpns = $matchingBadUsers | Select-Object -ExpandProperty UserPrincipalName
+        $badUpns = $matchingBadUsers | Select-Object -ExpandProperty userPrincipalName
         $badUpnString = ($badUpns | ForEach-Object {$_.ToLower()}) -join "','"
 
             # Retrieve the log data and check the data retention period for sign in
@@ -281,14 +280,13 @@ SigninLogs
                 -not ($badMemberUsers.UserPrincipalName.ToLower() -contains
                 $userPrincipalName)
         }
-
+        Write-Output "Filtering memberAccountsBadUsers"
         $memberAccountsBadUsers = $matchingBadUsers | Where-Object {
             $userPrincipalName = $_.userPrincipalName.ToLower()
             $badmemberUPN = $badMemberUsers.UserPrincipalName.ToLower()
             $badmemberUPN -contains $userPrincipalName
         }
 
-        [PSCustomObject] $nonMfaMemberUsers = New-Object System.Collections.ArrayList
         $nonMfaMemberUsers = get-nonMfaMemberUsers -memberUsers $memberAccountsBadUsers -logUsers $badMemberUsers
         $nonMfaExtUsers = get-nonMfaExtUsers -extUsers $extAccountsBadUsers
 
