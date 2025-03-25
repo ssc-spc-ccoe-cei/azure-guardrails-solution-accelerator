@@ -230,7 +230,7 @@ foreach ($module in $modules) {
             Write-Error "One or more variables are null."
         }
         else{
-            Write-Output "No null varlues present"
+            Write-Output "No null values present"
         }
         #Write-host $module.Script
         Write-Output "Running module with script: $module.Script"
