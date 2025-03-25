@@ -85,7 +85,9 @@ function get-nonMfaExtUsers{
 }
 
 function Check-AllUserMFARequired {
-    param (      
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $LAWResourceId,    
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
@@ -100,10 +102,7 @@ function Check-AllUserMFARequired {
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
-        [Parameter(Mandatory=$true)]
-        [string] $LAWResourceId,
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] 
         $EnableMultiCloudProfiles # New feature flag, default to false
@@ -239,7 +238,7 @@ function Check-AllUserMFARequired {
 
         # get context
         try{
-        Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
+            Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
         }
         catch {
             $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`

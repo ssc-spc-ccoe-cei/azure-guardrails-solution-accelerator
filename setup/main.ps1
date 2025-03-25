@@ -191,12 +191,14 @@ Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 
 foreach ($module in $modules) {
+    Write-Output "module: $module"
     if ($module.Status -eq "Enabled") {
         if($enableMultiCloudProfiles) {
             $module.Script += " -EnableMultiCloudProfiles"
             $ModuleProfilesString = $module.Profiles -join ','
         }
         $NewScriptBlock = [scriptblock]::Create($module.Script)
+        Write-Output "NewScriptBlock: $NewScriptBlock"
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
         $secrets = $module.secrets
@@ -220,15 +222,45 @@ foreach ($module in $modules) {
             }
         }
         #$vars
+        write-Output "vars: $vars"
+        write-Output "controlName: $($msgTable.CtrName1)"
+        write-output "ModuleProfiles: $ModuleProfilesString"
+
+        if ($null -eq $vars -or $null -eq $msgTable -or $null -eq $ReportTime -or $null -eq $cloudUsageProfilesString -or $null -eq $ModuleProfilesString) {
+            Write-Error "One or more variables are null."
+        }
+        else{
+            Write-Output "No null varlues present"
+        }
         #Write-host $module.Script
         Write-Output "Running module with script: $module.Script"
 
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
-            #Write-Output "Result for invoking is $($results.ComplianceResults)" 
+            Write-Output "Result for invoking is $($results.ComplianceResults)" 
+        }
+        catch [System.IO.IOException] {
+            Write-Output "File access error: $_" 
+            Write-Output "Error Code 100: Unable to access resource."
+        }
+        catch [System.Management.Automation.ParameterBindingException] {
+            Write-Host "A parameter binding error occurred: $_"
+        }
+        catch [System.Management.Automation.RuntimeException] {
+            Write-Error "Failed to invoke the module execution script: $_"
+        }
+        catch {
+            Write-Output "Caught error while invoking result is $($results.Errors)" 
+            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
+            
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
+                with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
+        }
 
-            #$results.ComplianceResults
+        try{
+            write-Output " Results: $($results.ComplianceResults)"
             #$results.Add("Required", $module.Required)
             #Write-Output "required in module: $($module.Required)."
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
@@ -249,12 +281,7 @@ foreach ($module in $modules) {
             Write-Output "Script running is done for $($module.modulename)"
         }
         catch {
-            Write-Output "Caught error while invoking result is $($results.Errors)" 
-            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
-            
-            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
-                with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
+            Write-Output "Caught error while retriving more data from the result: $_" 
         }
     }
     else {
