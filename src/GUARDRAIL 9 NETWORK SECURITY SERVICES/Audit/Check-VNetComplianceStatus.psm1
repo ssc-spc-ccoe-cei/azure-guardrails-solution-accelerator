@@ -123,14 +123,14 @@ function Get-NoVNetsComplianceObject {
 
     $Comments = "$($msgTable.noVNets) - $($sub.Name)"
 
-    $VNETObject = [PSCustomObject]@{ 
-        SubscriptionName = $sub.Name 
+    $VNETObject = [PSCustomObject]@{
         SubnetName       = $msgTable.noVNets
+        SubscriptionName = $sub.Name 
         ComplianceStatus = $ComplianceStatus
         Comments         = $Comments
-        ItemName         = $msgTable.networkSegmentation
-        ControlName      = $ControlName
+        ItemName         = $msgTable.vnetDDosConfig
         itsgcode         = $itsgcode
+        ControlName      = $ControlName
         ReportTime       = $ReportTime
     }
 
