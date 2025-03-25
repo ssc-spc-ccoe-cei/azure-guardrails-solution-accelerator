@@ -100,6 +100,7 @@ function Check-AllUserMFARequired {
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
+        [Parameter(Mandatory=$true)]
         [string] $LAWResourceId,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
@@ -228,12 +229,12 @@ function Check-AllUserMFARequired {
 
             # Retrieve the log data and check the data retention period for sign in
         $kqlQuery = @"
-SigninLogs
-| where tolower(UserPrincipalName) in ('$($badUpnString)')
-| where TimeGenerated > ago(365d)
-| summarize arg_max(TimeGenerated, CreatedDateTime) by UserPrincipalName
-| project LastSignIn=TimeGenerated, UserPrincipalName, CreatedTime = CreatedDateTime
-| order by LastSignIn desc
+            SigninLogs
+            | where tolower(UserPrincipalName) in ('$($badUpnString)')
+            | where TimeGenerated > ago(365d)
+            | summarize arg_max(TimeGenerated, CreatedDateTime) by UserPrincipalName
+            | project LastSignIn=TimeGenerated, UserPrincipalName, CreatedTime = CreatedDateTime
+            | order by LastSignIn desc
 "@
 
         # get context
