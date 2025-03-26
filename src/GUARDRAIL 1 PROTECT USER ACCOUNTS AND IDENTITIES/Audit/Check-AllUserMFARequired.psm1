@@ -1,3 +1,15 @@
+function lastLoginInDays{
+    param(
+        $LastSignIn
+    )
+
+    $lastSignInDate = Get-Date $LastSignIn
+    $todayDate = Get-Date
+    $daysLastLogin = ($todayDate - $lastSignInDate).Days
+
+    return $daysLastLogin
+}
+
 function Check-AllUserMFARequired {
     param (      
         [Parameter(Mandatory=$true)]
@@ -21,16 +33,26 @@ function Check-AllUserMFARequired {
         $EnableMultiCloudProfiles # New feature flag, default to false
     )
 
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = @()
+    [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
+    $UserComments = $null
 
     # list all users
-    $users = Get-AzADUser
-    $allUsers =  $users | Select-Object userPrincipalName , displayName, id, mail
+    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,createdDateTime,userType,accountEnabled'
+    try {
+        $response = Invoke-GraphQuery -urlPath $usersSignIn -ErrorAction Stop
+        $allUsers = $response.Content.value
+    }
+    catch {
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_")
+        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_"
+    }
+
     # Check all users for MFA
     $allUserUPNs = $allUsers.userPrincipalName
-    Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
+    Write-Output "allUserUPNs count is $($allUserUPNs.Count)"
 
     # list of guest users
     $extUsers = Get-AzADUser -Filter "usertype eq 'guest'"
@@ -54,25 +76,25 @@ function Check-AllUserMFARequired {
     if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
         $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
     }
-    Write-Host "memberUserList count is $($memberUserList.Count)"
+    Write-Output "memberUserList count is $($memberUserList.Count)"
 
     # Get MFA information for member and external users
     if(!$null -eq $memberUserList){
         $result = Get-AllUserAuthInformation -allUserList $memberUserList
         $memberUserUPNsBadMFA = $result.userUPNsBadMFA
         if( !$null -eq $result.ErrorList){
-            $ErrorList =  $ErrorList.Add($result.ErrorList)
+            $ErrorList += $result.ErrorList
         }
         $userValidMFACounter = $result.userValidMFACounter
     }
     Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
-    Write-Host "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
+    Write-Output "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
 
     if(!$null -eq $extUserList){
         $result2 = Get-AllUserAuthInformation -allUserList $extUserList
         $extUserUPNsBadMFA = $result2.userUPNsBadMFA
         if( !$null -eq $result2.ErrorList){
-            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+            $ErrorList += $result2.ErrorList
         }
         # combined list
         $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
@@ -90,18 +112,61 @@ function Check-AllUserMFARequired {
     }
     Write-Host "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
     Write-Host "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
-       
+    
+    $matchingBadUsers = $allUsers | Where-Object {$userUPNsBadMFA.UPN -eq $_.userPrincipalName}
 
     # Condition: all users are MFA enabled
     if(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
         $commentsArray = $msgTable.allUserHaveMFA
         $IsCompliant = $true
+
+        #If all users are mfa compliant, display a ghost user with mfa enabled comment displayed
+        $Customuser = [PSCustomObject] @{
+            DisplayName = "N/A"
+            UserPrincipalName = "N/A"
+            User_Enabled = "N/A"
+            User_Type = "N/A"
+            CreatedTime = "N/A"
+            LastSignIn = "N/A"
+            Comments = $commentsArray
+            ItemName= $ItemName 
+            ReportTime = $ReportTime
+            itsgcode = $itsgcode
+        }
+
+        $nonMfaUsers.add($Customuser)
     }
     # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
     else {
-        $upnString = ($userUPNsBadMFA | ForEach-Object { $_.UPN }) -join ', '
-        $commentsArray = $msgTable.userMisconfiguredMFA -f $upnString
+
+        $commentsArray = $msgTable.userMisconfiguredMFA
         $IsCompliant = $false
+
+
+        foreach($badExtUser in $matchingBadUsers){
+
+            if($null -eq $badExtUser.signInActivity.lastSignInDateTime){
+                $UserComments = $msgTable.nativeUserNoSignIn
+            }
+            elseif($null -ne $badExtUser.signInActivity.lastSignInDateTime){
+                $daysLastSignIn = lastLoginInDays -LastSignIn $badExtUser.signInActivity.lastSignInDateTime
+                $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
+            }
+            $nonMfaExtUser = [PSCustomObject] @{
+                DisplayName = $badExtUser.DisplayName
+                UserPrincipalName = $badExtUser.userPrincipalName
+                User_Enabled = $badExtUser.accountEnabled
+                User_Type = $badExtUser.userType
+                CreatedTime = $badExtUser.createdDateTime
+                LastSignIn = $badExtUser.signInActivity.lastSignInDateTime
+                Comments = $UserComments
+                ItemName= $ItemName 
+                ReportTime = $ReportTime
+                itsgcode = $itsgcode
+            }
+            $nonMfaUsers += $nonMfaExtUser
+        }
+        return $nonMfaUsers
     }
 
     $Comments = $commentsArray -join ";"
@@ -113,6 +178,11 @@ function Check-AllUserMFARequired {
         Comments         = $Comments
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
+    }
+
+    $AdditionalResults = [PSCustomObject]@{
+        records = $nonMfaUsers
+        logType = "GR1NonMfaUsers"
     }
 
     # Conditionally add the Profile field based on the feature flag
