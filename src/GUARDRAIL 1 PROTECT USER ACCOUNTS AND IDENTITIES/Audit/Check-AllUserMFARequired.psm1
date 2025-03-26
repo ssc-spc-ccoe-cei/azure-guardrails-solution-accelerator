@@ -10,80 +10,6 @@ function lastLoginInDays{
     return $daysLastLogin
 }
 
-function get-nonMfaMemberUsers{
-    param(
-       [System.Collections.ArrayList] $memberUsersList,
-       $logUsers
-    )
-
-    $nonMfaMemberUsersList = @()
-
-    foreach($badUser in $memberUsersList){
-
-        $currentLogUser = $logUsers | Where-Object {
-            $_.UserPrincipalName.ToLower() -eq $badUser.userPrincipalName.ToLower()
-        }
-
-        if($null -eq $badUser.signInActivity.lastSignInDateTime){
-            $UserComments = $msgTable.nativeUserNoSignIn
-        }
-        elseif($null -ne $badUser.signInActivity.lastSignInDateTime){
-            $daysLastSignIn = lastLoginInDays -LastSignIn $currentLogUser.LastSignIn
-            $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
-        }
-
-        $lastSignInDateTime = Get-Date -Date $currentLogUser.LastSignIn
-
-        $nonMfaUser = [PSCustomObject] @{
-            DisplayName = $badUser.DisplayName
-            UserPrincipalName = $badUser.userPrincipalName
-            User_Enabled = $badUser.accountEnabled
-            User_Type = $badUser.userType
-            CreatedTime = $badUser.createdDateTime
-            LastSignIn = $lastSignInDateTime
-            Comments = $UserComments
-            ItemName= $ItemName 
-            ReportTime = $ReportTime
-            itsgcode = $itsgcode
-        }
-        $nonMfaMemberUsersList += $nonMfaUser
-    }
-    return $nonMfaMemberUsersList
-}
-
-function get-nonMfaExtUsers{
-    param(
-       [System.Collections.ArrayList] $extUsersList
-    )
-
-    $nonMfaExtUsersList = @()
-
-    foreach($badExtUser in $extUsersList){
-
-        if($null -eq $badExtUser.signInActivity.lastSignInDateTime){
-            $UserComments = $msgTable.nativeUserNoSignIn
-        }
-        elseif($null -ne $badExtUser.signInActivity.lastSignInDateTime){
-            $daysLastSignIn = lastLoginInDays -LastSignIn $badExtUser.signInActivity.lastSignInDateTime
-            $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
-        }
-        $nonMfaExtUser = [PSCustomObject] @{
-            DisplayName = $badExtUser.DisplayName
-            UserPrincipalName = $badExtUser.userPrincipalName
-            User_Enabled = $badExtUser.accountEnabled
-            User_Type = $badExtUser.userType
-            CreatedTime = $badExtUser.createdDateTime
-            LastSignIn = $badExtUser.signInActivity.lastSignInDateTime
-            Comments = $UserComments
-            ItemName= $ItemName 
-            ReportTime = $ReportTime
-            itsgcode = $itsgcode
-        }
-        $nonMfaExtUsersList += $nonMfaExtUser
-    }
-    return $nonMfaExtUsersList
-}
-
 function Check-AllUserMFARequired {
     param (      
         [Parameter(Mandatory=$true)]
@@ -100,7 +26,6 @@ function Check-AllUserMFARequired {
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
-        [string] $LAWResourceId,
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
@@ -112,12 +37,7 @@ function Check-AllUserMFARequired {
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-
-    # Parse LAW Resource ID
-    $lawParts = $LAWResourceId -split '/'
-    $subscriptionId = $lawParts[2]
-    $resourceGroupName = $lawParts[4] 
-    $workspaceId = $lawParts[8]
+    $UserComments = $null
 
     # list all users
     $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,createdDateTime,userType,accountEnabled'
@@ -132,7 +52,7 @@ function Check-AllUserMFARequired {
 
     # Check all users for MFA
     $allUserUPNs = $allUsers.userPrincipalName
-    Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
+    Write-Output "allUserUPNs count is $($allUserUPNs.Count)"
 
     # list of guest users
     $extUsers = Get-AzADUser -Filter "usertype eq 'guest'"
@@ -156,7 +76,7 @@ function Check-AllUserMFARequired {
     if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
         $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
     }
-    Write-Host "memberUserList count is $($memberUserList.Count)"
+    Write-Output "memberUserList count is $($memberUserList.Count)"
 
     # Get MFA information for member and external users
     if(!$null -eq $memberUserList){
@@ -168,7 +88,7 @@ function Check-AllUserMFARequired {
         $userValidMFACounter = $result.userValidMFACounter
     }
     Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
-    Write-Host "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
+    Write-Output "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
 
     if(!$null -eq $extUserList){
         $result2 = Get-AllUserAuthInformation -allUserList $extUserList
@@ -223,74 +143,30 @@ function Check-AllUserMFARequired {
         $IsCompliant = $false
 
 
-        $badUpns = $matchingBadUsers | Select-Object -ExpandProperty userPrincipalName
-        $badUpnString = ($badUpns | ForEach-Object {$_.ToLower()}) -join "','"
+        foreach($badExtUser in $matchingBadUsers){
 
-            # Retrieve the log data and check the data retention period for sign in
-        $kqlQuery = @"
-SigninLogs
-| where tolower(UserPrincipalName) in ('$($badUpnString)')
-| where TimeGenerated > ago(365d)
-| summarize arg_max(TimeGenerated, CreatedDateTime) by UserPrincipalName
-| project LastSignIn=TimeGenerated, UserPrincipalName, CreatedTime = CreatedDateTime
-| order by LastSignIn desc
-"@
-
-        # get context
-        try{
-        Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
+            if($null -eq $badExtUser.signInActivity.lastSignInDateTime){
+                $UserComments = $msgTable.nativeUserNoSignIn
+            }
+            elseif($null -ne $badExtUser.signInActivity.lastSignInDateTime){
+                $daysLastSignIn = lastLoginInDays -LastSignIn $badExtUser.signInActivity.lastSignInDateTime
+                $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
+            }
+            $nonMfaExtUser = [PSCustomObject] @{
+                DisplayName = $badExtUser.DisplayName
+                UserPrincipalName = $badExtUser.userPrincipalName
+                User_Enabled = $badExtUser.accountEnabled
+                User_Type = $badExtUser.userType
+                CreatedTime = $badExtUser.createdDateTime
+                LastSignIn = $badExtUser.signInActivity.lastSignInDateTime
+                Comments = $UserComments
+                ItemName= $ItemName 
+                ReportTime = $ReportTime
+                itsgcode = $itsgcode
+            }
+            $nonMfaUsers += $nonMfaExtUser
         }
-        catch {
-            $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
-                ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-                error message: $_")
-            throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
-                you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
-        }
-
-        try {
-            $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
-            $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery -ErrorAction Stop
-            
-            # Access the Results property of the query output
-            $badMemberUsers = $queryResults.Results
-    
-            # check break glass account signin
-            #$dataMostRecentSignInFirstBG = $results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Select-Object -First 1
-            #$dataMostRecentSignInSecondBG = $results | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Select-Object -First 1
-        }
-        catch {
-          if ($null -eq $workspace) {
-            $IsCompliant = $false
-            $commentsArray += "Workspace not found in the specified resource group"
-            $ErrorList += "Workspace not found in the specified resource group: $_"
-          }
-          if($_.Exception.Message -like "*ResourceNotFound*"){
-    
-          }
-          else{
-            # Handle errors and exceptions
-            $IsCompliant = $false
-            Write-Host "Error occurred retrieving the sign-in log data: $_"
-          }
-        }
-
-        $extAccountsBadUsers = $matchingBadUsers | Where-Object {
-            $userPrincipalName = $_.userPrincipalName.ToLower()
-                -not ($badMemberUsers.UserPrincipalName.ToLower() -contains
-                $userPrincipalName)
-        }
-        Write-Output "Filtering memberAccountsBadUsers"
-        $memberAccountsBadUsers = $matchingBadUsers | Where-Object {
-            $userPrincipalName = $_.userPrincipalName.ToLower()
-            $badmemberUPN = $badMemberUsers.UserPrincipalName.ToLower()
-            $badmemberUPN -contains $userPrincipalName
-        }
-
-        $nonMfaMemberUsers = get-nonMfaMemberUsers -memberUsers $memberAccountsBadUsers -logUsers $badMemberUsers
-        $nonMfaExtUsers = get-nonMfaExtUsers -extUsers $extAccountsBadUsers
-
-        $nonMfaUsers = $nonMfaMemberUsers + $nonMfaExtUsers
+        return $nonMfaUsers
     }
 
     $Comments = $commentsArray -join ";"
