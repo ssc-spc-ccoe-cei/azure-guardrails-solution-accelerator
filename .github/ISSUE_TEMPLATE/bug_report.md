@@ -11,7 +11,7 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **Azure CaC version**
-A version tag e.g. v2.1.2
+A version tag e.g. v2.3.1
 
 **To Reproduce**
 Steps to reproduce the behavior:

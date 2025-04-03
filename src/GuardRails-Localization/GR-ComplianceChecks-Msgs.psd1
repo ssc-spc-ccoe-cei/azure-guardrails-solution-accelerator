@@ -273,7 +273,6 @@ cbsSubDoesntExist = CBS Subscription doesnt exist
 cbcSensorsdontExist = The expected CBC sensors do not exist
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
 cbssCompliant = Found resources in these subscriptions: 
-MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
 serviceHealthAlerts = Service Health Alerts and Events Check
