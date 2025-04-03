@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Azure CaC current version**
-A version tag e.g. v2.1.2
+A version tag e.g. v2.3.1
 
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. E.g. I'm always frustrated when [...]
