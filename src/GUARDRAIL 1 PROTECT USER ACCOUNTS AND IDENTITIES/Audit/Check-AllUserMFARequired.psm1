@@ -61,7 +61,7 @@ function Check-AllUserMFARequired {
         $result = Get-AllUserAuthInformation -allUserList $memberUserList
         $memberUserUPNsBadMFA = $result.userUPNsBadMFA
         if( !$null -eq $result.ErrorList){
-            $ErrorList =  $ErrorList.Add($result.ErrorList)
+            $ErrorList.Add($result.ErrorList)
         }
         $userValidMFACounter = $result.userValidMFACounter
     }
@@ -72,7 +72,7 @@ function Check-AllUserMFARequired {
         $result2 = Get-AllUserAuthInformation -allUserList $extUserList
         $extUserUPNsBadMFA = $result2.userUPNsBadMFA
         if( !$null -eq $result2.ErrorList){
-            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+            $ErrorList.Add($result2.ErrorList)
         }
         # combined list
         $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
