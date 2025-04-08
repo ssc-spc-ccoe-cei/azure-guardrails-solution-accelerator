@@ -215,7 +215,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -254,7 +254,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -352,7 +352,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -391,7 +391,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -429,7 +429,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -467,7 +467,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -504,7 +504,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -530,7 +530,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project SubnetName=SubnetName_s, ['Item Name']=ItemName_s, Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Mitigation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project SubnetName=SubnetName_s, ['Item Name']=ItemName_s, Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
         "title": "GR 8",
         "timeContext": {
@@ -541,7 +541,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -567,7 +567,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Subscription Name']=SubscriptionName_s, ['Item Name']=ItemName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Mitigation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Subscription Name']=SubscriptionName_s, ['Item Name']=ItemName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
         "size": 0,
         "title": "GR 9",
         "timeContext": {
@@ -579,7 +579,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -624,7 +624,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -663,7 +663,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -702,7 +702,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
@@ -741,7 +741,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Mitigation",
+              "columnMatch": "Remediation",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
