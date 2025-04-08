@@ -78,46 +78,15 @@ function Get-SubnetComplianceInformation {
         # Get all VNETs
         $allVNETs = Get-AzVirtualNetwork
 
-        # # expand all VNETz with tags and subnets
-        # $expandedVNETList = @()
-        # foreach ($VNET in $allVNETs ){
-        #     # Determine the maximum number of elements in the lists you want to expand
-        #     $maxCount = @(
-        #         $VNET.Subnets.Count,
-        #         $VNET.Tag.Count
-        #     ) | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
-        #     # Expand the lists by iterating through each element
-        #     for ($i = 0; $i -lt $maxCount; $i++) {
-
-        #         $expandedInfo = [PSCustomObject]@{
-        #             VNETname                    = $VNET.Name
-        #             SubnetName                  = if ($VNET.Subnets.Count -eq 1) { $VNET.Subnets.Name} else { if ($VNET.Subnets.Count -gt $i) { $VNET.Subnets.Name[$i] } else {$null}}
-        #             SubnetId                    = if ($VNET.Subnets.Count -eq 1) { $VNET.Subnets.Id} else { if ($VNET.Subnets.Count -gt $i) { $VNET.Subnets.Id[$i] } else {$null}}
-        #             EnableDdosProtection        = $VNET.EnableDdosProtection
-        #             SubnetsText                 = $VNET.SubnetsText
-        #             ResourceGroupName           = $VNET.ResourceGroupName
-        #             Location                    = $VNET.Location
-        #             ResourceGuid                = $VNET.ResourceGuid
-        #             TagKey                      = if ($VNET.Tag.Count -eq 1) { $VNET.Tag.Keys} else { if ($VNET.Tag.Count -gt $i) { @($VNET.Tag).Keys[$i] } else {$null}}
-        #             TagValue                    = if ($VNET.Tag.Count -eq 1) { $VNET.Tag.Values} else { if ($VNET.Tag.Count -gt $i) { @($VNET.Tag).Values[$i] } else {$null}}
-        #             Etag                        = if ($VNET.Etag.Count -eq 1) { $VNET.Etag} else { if ($VNET.Etag.Count -gt $i) { $VNET.Etag[$i] } else {$null}}
-        #             Id                          = $VNET.Id
-                    
-        #         }
-        #         # Add the expanded row to the new list
-        #         $expandedVNETList += $expandedInfo
-        #     }
-        # }
-
-        #
+        # find the VNETs without exclude tag
         $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine $true}
-        # $includedVNETs = $expandedVNETList | Where-Object { -not($_.TagKey -eq $ExcludeVnetTag -and $_.TagValue -eq $true) }
         Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag." 
         if ($includedVNETs.count -gt 0) {
             foreach ($VNet in $allVNETs) {
                 If ($vnet -in $includedVNETs) {
                     Write-Debug "Working on $($VNet.Name) VNet..."
 
+                    # List the Subnet tags
                     $ExcludeSubnetsTag = get-tagValue -tagKey $ExcludedSubnetListTag -object $VNet
                     if (!([string]::IsNullOrEmpty($ExcludeSubnetsTag))) {
                         $ExcludedSubnetListFromTag = $ExcludeSubnetsTag.Split(",")
@@ -126,7 +95,7 @@ function Get-SubnetComplianceInformation {
                         $ExcludedSubnetListFromTag = @()
                     }
 
-                    #Handles the subnets
+                    # Handles the subnets
                     foreach ($subnet in Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $VNet) {
                         Write-Debug "Working on $($subnet.Name) Subnet..."
                         if ($subnet.Name -notin $allexcluded -and $subnet.Name -notin $ExcludedSubnetListFromTag) {
@@ -178,7 +147,7 @@ function Get-SubnetComplianceInformation {
                             }
 
                             $SubnetList.add($SubnetObject) | Out-Null
-                            #Checks Routes
+                            # Checks Routes
                             if ($subnet.RouteTable) {
                                 $UDR = $subnet.RouteTable.Id.Split("/")[8]
                                 Write-Debug "Found $UDR UDR"
@@ -194,7 +163,7 @@ function Get-SubnetComplianceInformation {
                             }
                         }
                         else {
-                            #subnet excluded - log reason
+                            # subnet excluded - log reason
                             $ComplianceStatus = $true
                             
                             If ($subnet.Name -in $reservedSubnetNames) {
@@ -250,7 +219,7 @@ function Get-SubnetComplianceInformation {
         }
         
         if ($includedVNETs.count -eq 0 -or $SubnetList.count -eq 0) {
-            #No vnets found or no subnets found in vnets
+            # No vnets found or no subnets found in vnets
             $ComplianceStatus = $true
             $Comments = "$($msgTable.noSubnets) - $($sub.Name)"
             $SubnetObject = [PSCustomObject]@{ 
