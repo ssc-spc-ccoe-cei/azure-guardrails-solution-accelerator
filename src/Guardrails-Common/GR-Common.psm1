@@ -29,10 +29,25 @@ function get-tagstring {
         $tKeys = $object.tag | Select-Object -ExpandProperty keys
         $tValues = $object.Tag | Select-Object -ExpandProperty values
         $index = 0
-        foreach ($tkey in $tKeys) {
-            [void]$tagstring.Append("$tkey=$($tValues[$index]);")
-            $index++
+        # $tKeysArray = @($tKeys)
+        # $tValuesArray = @($tValues)
+        if ($object.Tag.Count -eq 1) {
+            $tagstring = "$tKeys=$tValues"
         }
+        else {
+            foreach ($tkey in $tKeys) {
+                [void]$tagstring.Append("$tkey=$($tValues[$index]);")
+                $index++
+            }
+        }
+        # # foreach ($tkey in $tKeys) {
+        # #     [void]$tagstring.Append("$tkey=$($tValues[$index]);")
+        # #     $index++
+        # # }
+        # foreach ($tkey in $tKeysArray) {
+        #     [void]$tagstring.Append("$tkey=$($tValuesArray[$index]);")
+        #     $index++
+        # }
         $tagstring = $tagstring.ToString().TrimEnd(';')
     }
     return $tagstring
