@@ -18,6 +18,7 @@ Function Add-GSAAutomationRunbooks {
     Write-Verbose "Exporting modules.json to Storage Account '$($config['runtime']['StorageAccountName'])' for runbook consumption"
 
     import-module "$PSScriptRoot/../../../../src/Guardrails-Common/GR-Common.psm1"
+    $modulesJsonPath = "$PSScriptRoot/../../../../setup/modules.json"
     copy-toBlob -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration"
 
     Write-Verbose "Importing runbook definitions..."
@@ -33,17 +34,17 @@ Function Add-GSAAutomationRunbooks {
     Write-Log -Message "File access error: $_" -Level Error
     Write-Output "Error Code 100: Unable to access required file or resource."
     break
-}
-catch [Microsoft.Rest.Azure.CloudException] {
-    Write-Log -Message "Azure cloud service error: $_" -Level Error
-    Write-Output "Error Code 200: Azure API failure."
-    break
-}
-catch {
-    Write-Log -Message "Unexpected error occurred: $_" -Level Error
-    Write-Output "Error Code 999: An unknown error occurred."
-    break
-}
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
+    catch {
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
+        break
+    }
 
     $startTime = (Get-Date).Date.AddHours(7).ToUniversalTime()
     if ($startTime -lt (Get-Date).AddMinutes(5)) {
@@ -60,17 +61,17 @@ catch {
     Write-Log -Message "File access error: $_" -Level Error
     Write-Output "Error Code 100: Unable to access required file or resource."
     break
-}
-catch [Microsoft.Rest.Azure.CloudException] {
-    Write-Log -Message "Azure cloud service error: $_" -Level Error
-    Write-Output "Error Code 200: Azure API failure."
-    break
-}
-catch {
-    Write-Log -Message "Unexpected error occurred: $_" -Level Error
-    Write-Output "Error Code 999: An unknown error occurred."
-    break
-}
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
+    catch {
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
+        break
+    }
 
     Write-Verbose "Registering 'main' Runbook to schedule."
     try{
@@ -82,17 +83,17 @@ catch {
     Write-Log -Message "File access error: $_" -Level Error
     Write-Output "Error Code 100: Unable to access required file or resource."
     break
-}
-catch [Microsoft.Rest.Azure.CloudException] {
-    Write-Log -Message "Azure cloud service error: $_" -Level Error
-    Write-Output "Error Code 200: Azure API failure."
-    break
-}
-catch {
-    Write-Log -Message "Unexpected error occurred: $_" -Level Error
-    Write-Output "Error Code 999: An unknown error occurred."
-    break
-}
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
+    catch {
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
+        break
+    }
     #endregion
     #region Import main runbook
     Write-Verbose "Importing 'Backend' Runbook." #backend runbooks. gets information about tenant, version and itsgcontrols.
@@ -106,17 +107,17 @@ catch {
     Write-Log -Message "File access error: $_" -Level Error
     Write-Output "Error Code 101: Unable to access required file or resource."
     break
-}
-catch [Microsoft.Rest.Azure.CloudException] {
-    Write-Log -Message "Azure cloud service error: $_" -Level Error
-    Write-Output "Error Code 200: Azure API failure."
-    break
-}
-catch {
-    Write-Log -Message "Unexpected error occurred: $_" -Level Error
-    Write-Output "Error Code 999: An unknown error occurred."
-    break
-}
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
+    catch {
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
+        break
+    }
 
     Write-Verbose "Creating schedule for 'Backend' Runbook."
     try {
@@ -128,17 +129,17 @@ catch {
     Write-Log -Message "File access error: $_" -Level Error
     Write-Output "Error Code 100: Unable to access required file or resource."
     break
-}
-catch [Microsoft.Rest.Azure.CloudException] {
-    Write-Log -Message "Azure cloud service error: $_" -Level Error
-    Write-Output "Error Code 200: Azure API failure."
-    break
-}
-catch {
-    Write-Log -Message "Unexpected error occurred: $_" -Level Error
-    Write-Output "Error Code 999: An unknown error occurred."
-    break
-}
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
+    catch {
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
+        break
+    }
 
     Write-Verbose "Registering 'Backend' Runbook to schedule."
     try {
@@ -150,17 +151,17 @@ catch {
     Write-Log -Message "File access error: $_" -Level Error
     Write-Output "Error Code 100: Unable to access required file or resource."
     break
-}
-catch [Microsoft.Rest.Azure.CloudException] {
-    Write-Log -Message "Azure cloud service error: $_" -Level Error
-    Write-Output "Error Code 200: Azure API failure."
-    break
-}
-catch {
-    Write-Log -Message "Unexpected error occurred: $_" -Level Error
-    Write-Output "Error Code 999: An unknown error occurred."
-    break
-}
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
+    catch {
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
+        break
+    }
 
     Write-Verbose "Completed import Azure Automation Runbook definitions..."
 }
