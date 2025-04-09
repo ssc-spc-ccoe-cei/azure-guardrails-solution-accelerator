@@ -42,7 +42,7 @@ var containername = 'guardrailsstorage'
 param Url string ='https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1'
 
 param displayText string = 'URL'
-var GRDocsBaseUrl= '<a href = ="${Url}">${displayText}</a>'
+var GRDocsBaseUrl= '<a href = "${Url}">${displayText}</a>'
 
 // var GRDocsBaseUrl='https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
