@@ -49,7 +49,7 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     displayName: 'gr_geturl'
     //query: 'let baseurl="${GRDocsBaseUrl}";\nlet Link=strcat(baseurl,control,"-", replace_string(replace_string(itsgcode,"(","-"),")",""),".md");\nLink\n'
     // query: 'let baseurl="${GRDocsBaseUrl}";\nlet Link=baseurl;\nLink\n'
-    query: 'let baseurl="${GRDocsBaseUrl}";\nlet Link=strcat("<a href=\'", baseurl, "\'>URL</a>";\nLink\n'
+    query: 'let baseurl = "${GRDocsBaseUrl}";\nlet Link = strcat("<a href=\'", baseurl, "\'>URL</a>");\nLink\n'
     functionAlias: 'gr_geturl'
     functionParameters: 'control:string, itsgcode:string'
     version: 2
