@@ -27,7 +27,7 @@ mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0}
 gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
 
 globalAdminAccntsSurplus = Il doit y avoir cinq comptes d'administrateur général ou moins.
-globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général. Il doit y avoir au moins deux, mais pas plus de cinq comptes d'administrateur général actifs.
+globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général dans un état actif permanent. La solution présume que vous utilisez des comptes d’administrateur général éligibles et que vous incluez vos deux comptes de Bris de verre pour être conforme.  Remarque : Il doit y avoir au moins deux mais pas plus de cinq comptes d’administrateur général actifs.
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
