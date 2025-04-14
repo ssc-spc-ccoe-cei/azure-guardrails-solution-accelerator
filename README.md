@@ -1,6 +1,6 @@
 # Azure Compliance as Code Solution (Guardrails Solution Accelerator) for Canadian Public Sector
 
-## Notice on version 2.3.1 (Pending Upgrade to version 2.3.2)
+<p style="color:red;"> ## Notice on version 2.3.1 (Pending Upgrade to version 2.3.2)</P>
 We would like to inform you that major enhancements for Guardrail 3 and Guardrail 1 are expected in the upcoming v2.3.2 release. This release is anticipated to be available in early May.
  
 While you are welcome to install the current version 2.3.1, please be prepared to upgrade to version 2.3.2, once it is released. We highly recommend waiting for the upcoming release to take advantage of the significant improvements.
