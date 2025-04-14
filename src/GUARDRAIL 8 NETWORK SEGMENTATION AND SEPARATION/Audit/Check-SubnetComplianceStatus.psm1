@@ -74,15 +74,19 @@ function Get-SubnetComplianceInformation {
         if ($EnableMultiCloudProfiles) {        
             $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
         }
-
+        
+        # Get all VNETs
         $allVNETs = Get-AzVirtualNetwork
-        $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
-        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
+
+        # find the VNETs without exclude tag
+        $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine $true}
+        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag." 
         if ($includedVNETs.count -gt 0) {
             foreach ($VNet in $allVNETs) {
                 If ($vnet -in $includedVNETs) {
                     Write-Debug "Working on $($VNet.Name) VNet..."
 
+                    # List the Subnet tags
                     $ExcludeSubnetsTag = get-tagValue -tagKey $ExcludedSubnetListTag -object $VNet
                     if (!([string]::IsNullOrEmpty($ExcludeSubnetsTag))) {
                         $ExcludedSubnetListFromTag = $ExcludeSubnetsTag.Split(",")
@@ -91,7 +95,7 @@ function Get-SubnetComplianceInformation {
                         $ExcludedSubnetListFromTag = @()
                     }
 
-                    #Handles the subnets
+                    # Handles the subnets
                     foreach ($subnet in Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $VNet) {
                         Write-Debug "Working on $($subnet.Name) Subnet..."
                         if ($subnet.Name -notin $allexcluded -and $subnet.Name -notin $ExcludedSubnetListFromTag) {
@@ -143,7 +147,7 @@ function Get-SubnetComplianceInformation {
                             }
 
                             $SubnetList.add($SubnetObject) | Out-Null
-                            #Checks Routes
+                            # Checks Routes
                             if ($subnet.RouteTable) {
                                 $UDR = $subnet.RouteTable.Id.Split("/")[8]
                                 Write-Debug "Found $UDR UDR"
@@ -159,7 +163,7 @@ function Get-SubnetComplianceInformation {
                             }
                         }
                         else {
-                            #subnet excluded - log reason
+                            # subnet excluded - log reason
                             $ComplianceStatus = $true
                             
                             If ($subnet.Name -in $reservedSubnetNames) {
@@ -169,6 +173,7 @@ function Get-SubnetComplianceInformation {
                                 $Comments = $msgTable.subnetExcludedByTag -f $subnet.Name,$VNet.Name,$ExcludedSubnetListTag
                             }
                         }
+
                         $SubnetObject = [PSCustomObject]@{ 
                             SubscriptionName = $sub.Name 
                             SubnetName       = "$($VNet.Name)\$($subnet.Name)"
@@ -214,7 +219,7 @@ function Get-SubnetComplianceInformation {
         }
         
         if ($includedVNETs.count -eq 0 -or $SubnetList.count -eq 0) {
-            #No vnets found or no subnets found in vnets
+            # No vnets found or no subnets found in vnets
             $ComplianceStatus = $true
             $Comments = "$($msgTable.noSubnets) - $($sub.Name)"
             $SubnetObject = [PSCustomObject]@{ 
@@ -230,7 +235,7 @@ function Get-SubnetComplianceInformation {
             if ($EnableMultiCloudProfiles) {
                 Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
             }
-$SubnetList.add($SubnetObject) | Out-Null
+            $SubnetList.add($SubnetObject) | Out-Null
         }
     }
     if ($debug) {
