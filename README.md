@@ -7,7 +7,7 @@ While you are welcome to install the current version 2.3.1, please be prepared t
  
 Thank you for your attention and cooperation.
 ___________________________________________________________________
-## Avis sur la version 2.3.1 (en attente de mise à niveau vers la version 2.3.2)
+## $${\color{Red} Avis \space sur \space la \space version \space 2.3.1 \space (en \space attente \space de \space mise \space à \space niveau \space vers \space la \space version \space 2.3.2)
 Nous aimerions vous informer que des améliorations majeures pour la Mesure de protection 3 et la Mesure de protection 1 sont attendues dans la prochaine version v2.3.2. Cette version devrait être disponible au début du mois de mai.
  
 Bien que vous puissiez installer la version actuelle 2.3.1, soyez prêt à passer à la version 2.3.2, une fois qu’elle sera disponible. Nous vous recommandons fortement d’attendre la prochaine version pour profiter des améliorations significatives.
