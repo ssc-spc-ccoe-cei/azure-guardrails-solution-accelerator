@@ -1,5 +1,21 @@
 # Azure Compliance as Code Solution (Guardrails Solution Accelerator) for Canadian Public Sector
 
+## $${\color{Red} Notice \space on \space version \space 2.3.1 \space (Pending \space Upgrade \space to \space version \space 2.3.2)}$$
+We would like to inform you that major enhancements for Guardrail 3 and Guardrail 1 are expected in the upcoming v2.3.2 release. This release is anticipated to be available in early May.
+ 
+While you are welcome to install the current version 2.3.1, please be prepared to upgrade to version 2.3.2, once it is released. We highly recommend waiting for the upcoming release to take advantage of the significant improvements.
+ 
+Thank you for your attention and cooperation.
+___________________________________________________________________
+## $${\color{Red} Avis \space sur \space la \space version \space 2.3.1 \space (en \space attente \space de \space mise \space à \space niveau \space vers \space la \space version \space 2.3.2)}$$
+Nous aimerions vous informer que des améliorations majeures pour la Mesure de protection 3 et la Mesure de protection 1 sont attendues dans la prochaine version v2.3.2. Cette version devrait être disponible au début du mois de mai.
+ 
+Bien que vous puissiez installer la version actuelle 2.3.1, soyez prêt à passer à la version 2.3.2, une fois qu’elle sera disponible. Nous vous recommandons fortement d’attendre la prochaine version pour profiter des améliorations significatives.
+
+Nous vous remercions de votre attention et votre coopération.
+
+----------------------------------------------------------------------
+
 ## Introduction
 
 The purpose of this implementation is to help Canadian Public Sector departments and agencies to identify and remediate the [GC Cloud Guardrails](https://github.com/canada-ca/cloud-guardrails#gc-cloud-guardrails) to ensure ongoing compliance with the GC Cloud Guardrail policy validations.
