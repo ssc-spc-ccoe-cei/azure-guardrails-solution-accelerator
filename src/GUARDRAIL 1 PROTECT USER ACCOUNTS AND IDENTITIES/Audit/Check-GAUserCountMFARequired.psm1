@@ -109,8 +109,7 @@ function Check-GAUserCountMFARequired {
         if($allGAUserUPNs.Count -lt 2){
             ## ASSUMPTION: There are two BG accounts
             Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
-            Write-Host "There must be at least two but no more than five Active Global Administrator Accounts."
-            Write-Host "The solution is assuming that you are using eligible Global Administrator Accounts and including your two Break Glass accounts in order to be compliant. "
+            Write-Host "The solution is assuming that the user is using eligible Global Administrator Accounts and including your two Break Glass accounts in order to be compliant. "
             $commentsArray =  $msgTable.isCompliant + ' ' + $msgTable.globalAdminAccntsMinimum
         }else{
             $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus    
