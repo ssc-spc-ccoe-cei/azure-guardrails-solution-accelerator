@@ -38,7 +38,7 @@ noAlertRuleforBGaccts = Create an alert for the Breakglass accounts using the Si
 NoAlertRuleforCaps = Create an alert for the Conditional Access Policy changes and updates using the AuditLogs. Missing one of the required alerts.
 
 globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
-globalAdminAccntsMinimum = There are not enough Global Administrator Accounts found in a permanently active state. The solution is assuming that you are using eligible Global Administrator Accounts and including your two Break Glass accounts in order to be compliant.  Note: There must be at least two but no more than five active Global Administrator Accounts.
+globalAdminAccntsMinimum = There are not enough Global Administrator Accounts found with an active status. The solution is assuming that you are using eligible Global Administrator Accounts.
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
 gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
