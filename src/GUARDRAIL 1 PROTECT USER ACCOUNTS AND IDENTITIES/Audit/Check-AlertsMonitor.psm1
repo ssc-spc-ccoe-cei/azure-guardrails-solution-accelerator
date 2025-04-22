@@ -5,7 +5,8 @@ function Find-LogType {
     )
 
     for ($index = 0; $index -lt $alertRules.Count; $index++) {
-        if($alertRules.CriterionAllOf[$index].Query -like "*SignInLogs*"){
+        Write-Host "Reading the alert rule: $($alertRules.CriterionAllOf[$index].Query) for index $index "
+        if($alertRules.CriterionAllOf[$index].Query -like "*SigninLogs*"){
             $SignInIndex = $index
         }
         elseif($alertRules.CriterionAllOf[$index].Query -like "*AuditLogs*"){
@@ -123,8 +124,20 @@ function Check-AlertsMonitor {
 
         $alertRules = Get-AzScheduledQueryRule -ResourceGroupName $resourceGroupName
         
-        #Get log type index in pair -> [SignInLog Index, AuditLogs Index]
-        $logType = Find-LogType -alertRules $alertRules
+        # #Get log type index in pair -> [SignInLog Index, AuditLogs Index]
+        # $logType = Find-LogType -alertRules $alertRules
+        $SignInIndex = @()
+        $AuditLogIndex = @()
+
+        for ($index = 0; $index -lt $alertRules.Count; $index++) {
+            Write-Host "Reading the alert rule: $($alertRules.CriterionAllOf[$index].Query) for index $index "
+            if($alertRules.CriterionAllOf[$index].Query -like "*SigninLogs*"){
+                $SignInIndex += $index
+            }
+            elseif($alertRules.CriterionAllOf[$index].Query -like "*AuditLogs*"){
+                $AuditLogIndex += $index
+            }
+        }
 
         if($logType -contains $null){
             $IsCompliant = $false
@@ -144,8 +157,7 @@ function Check-AlertsMonitor {
 
         foreach ($auditQuery in $AuditLogsQueries){
             if($auditLogsQueriesMatching = CompareKQLQueries -query $auditQuery -targetQuery $targetQuery[1]){break}
-         }
-
+        }
 
         #If alert rule has one of the queries to check break glass account signin logs
         if($bgAcctQueriesMatching) {
