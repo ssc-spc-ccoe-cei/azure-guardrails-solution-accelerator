@@ -4,13 +4,15 @@ function Find-LogType {
         [Object[]] $alertRules
     )
 
+    $SignInIndex = @()
+    $AuditLogIndex = @()
     for ($index = 0; $index -lt $alertRules.Count; $index++) {
         Write-Host "Reading the alert rule: $($alertRules.CriterionAllOf[$index].Query) for index $index "
         if($alertRules.CriterionAllOf[$index].Query -like "*SigninLogs*"){
-            $SignInIndex = $index
+            $SignInIndex += $index
         }
         elseif($alertRules.CriterionAllOf[$index].Query -like "*AuditLogs*"){
-            $AuditLogIndex = $index
+            $AuditLogIndex += $index
         }
     }
     return $SignInIndex, $AuditLogIndex
@@ -125,38 +127,59 @@ function Check-AlertsMonitor {
         $alertRules = Get-AzScheduledQueryRule -ResourceGroupName $resourceGroupName
         
         # #Get log type index in pair -> [SignInLog Index, AuditLogs Index]
-        # $logType = Find-LogType -alertRules $alertRules
-        $SignInIndex = @()
-        $AuditLogIndex = @()
-
-        for ($index = 0; $index -lt $alertRules.Count; $index++) {
-            Write-Host "Reading the alert rule: $($alertRules.CriterionAllOf[$index].Query) for index $index "
-            if($alertRules.CriterionAllOf[$index].Query -like "*SigninLogs*"){
-                $SignInIndex += $index
-            }
-            elseif($alertRules.CriterionAllOf[$index].Query -like "*AuditLogs*"){
-                $AuditLogIndex += $index
-            }
-        }
+        $logType = Find-LogType -alertRules $alertRules
 
         if($logType -contains $null){
             $IsCompliant = $false
             throw "Could not find alert rules for the resource group: $_"
         }
-
-        #Action group ID to retrieve action groups
-        $actionGroupID = if ($alertRules.ActionGroup -and $alertRules.ActionGroup.Count -gt 0) { $alertRules.ActionGroup[$logType] }
-
-        #Extract relevant properties of alert rules
-        $targetQuery = if ($alertRules.CriterionAllOf -and $alertRules.CriterionAllOf.Count -gt 0) { $alertRules.CriterionAllOf[$logType].Query}
-
-        #Check if the query in alert rule is matching with one of our queries
-        foreach ($query in $BreakGlassAccountQueries){
-            if($bgAcctQueriesMatching = CompareKQLQueries -query $query -targetQuery $targetQuery[0]){break}
+        
+        $flattenedList = @()
+        foreach ($lg in $logType) {
+            $flattenedList += $lg
         }
 
+        # Action group ID to retrieve action groups
+        $actionGroupID = if ($alertRules.ActionGroup -and $alertRules.ActionGroup.Count -gt 0) { $alertRules.ActionGroup[$flattenedList] }
+        # remove duplicate from actionGroup ID
+        $actionGroupID = $actionGroupID | ForEach-Object{ $_.ToLower() } | Select-Object -Unique 
+
+        # Extract relevant properties of alert rules
+        $targetQuery = if ($alertRules.CriterionAllOf -and $alertRules.CriterionAllOf.Count -gt 0) { $alertRules.CriterionAllOf[$flattenedList].Query} 
+        $targetQuery =  $targetQuery | ForEach-Object { $_.TrimEnd() }
+
+        # Get unique targetQuery
+        $hashTable = @{}
+        foreach ($item in $targetQuery) {
+            Write-Host $item
+            $hashTable[$item] = $true
+        }
+        $targetQueryUnique = $hashTable.Keys
+        
+        $stopBGAccLoop = $false
+        #Check if the query in alert rule is matching with one of our queries
+        foreach ($query in $BreakGlassAccountQueries){
+            foreach ($targetqueryU in $targetQueryUnique){
+                if($bgAcctQueriesMatching = CompareKQLQueries -query $query -targetQuery $targetqueryU){
+                    Write-Host "targetquery: $targetqueryU and bgAcctQueriesMatching: $bgAcctQueriesMatching "
+                    $stopBGAccLoop = $true
+                    break
+                }
+            }
+            if ($stopBGAccLoop) {break}
+        }
+
+        $stopAuditLoop = $false
+        #Check if the query in alert rule is matching with one of our queries
         foreach ($auditQuery in $AuditLogsQueries){
-            if($auditLogsQueriesMatching = CompareKQLQueries -query $auditQuery -targetQuery $targetQuery[1]){break}
+            foreach ($targetqueryU in $targetQueryUnique){
+                if($auditLogsQueriesMatching = CompareKQLQueries -query $auditQuery -targetQuery $targetQueryU){
+                    Write-Host "targetquery: $targetqueryU and auditLogsQueriesMatching: $auditLogsQueriesMatching"
+                    $stopAuditLoop = $true
+                    break
+                }
+            }
+            if ($stopAuditLoop) {break}
         }
 
         #If alert rule has one of the queries to check break glass account signin logs
@@ -164,7 +187,7 @@ function Check-AlertsMonitor {
 
             #Get action groups associated with our alert rule
             try {
-                $actionGroups = Get-AzActionGroup -InputObject $actionGroupID[0]
+                $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
             }
             catch {
                 $signInLogsCompliance = $false
@@ -189,7 +212,7 @@ function Check-AlertsMonitor {
 
             #Get action groups associated with our alert rule
             try {
-                $actionGroups = Get-AzActionGroup -InputObject $actionGroupID[1]
+                $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
             }
             catch {
                 $auditLogsCompliance = $false
