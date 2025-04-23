@@ -1,3 +1,15 @@
+function lastLoginInDays{
+    param(
+        $LastSignIn
+    )
+
+    $lastSignInDate = Get-Date $LastSignIn
+    $todayDate = Get-Date
+    $daysLastLogin = ($todayDate - $lastSignInDate).Days
+
+    return $daysLastLogin
+}
+
 function Check-AllUserMFARequired {
     param (      
         [Parameter(Mandatory=$true)]
