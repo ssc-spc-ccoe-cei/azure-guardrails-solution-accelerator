@@ -36,7 +36,6 @@ function Check-AllUserMFARequired {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-    [PSCustomObject] $ErrorList = @()
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     $UserComments = $null
 
@@ -133,7 +132,6 @@ function Check-AllUserMFARequired {
             ReportTime = $ReportTime
             itsgcode = $itsgcode
         }
-
         $nonMfaUsers.add($Customuser)
     }
     # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
@@ -162,7 +160,7 @@ function Check-AllUserMFARequired {
                 ReportTime = $ReportTime
                 itsgcode = $itsgcode
             }
-            $nonMfaUsers += $nonMfaExtUser
+            $nonMfaUsers.add($nonMfaExtUser)
         }
     }
 
