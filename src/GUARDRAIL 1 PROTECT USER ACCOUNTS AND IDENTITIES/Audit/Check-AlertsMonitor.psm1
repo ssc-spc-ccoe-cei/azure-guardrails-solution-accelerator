@@ -123,7 +123,6 @@ function Check-AlertsMonitor {
 
     #Check signInLogs and auditLogs alerts and action groups for breakglass accounts
     try{
-
         $alertRules = Get-AzScheduledQueryRule -ResourceGroupName $resourceGroupName
         
         # #Get log type index in pair -> [SignInLog Index, AuditLogs Index]
