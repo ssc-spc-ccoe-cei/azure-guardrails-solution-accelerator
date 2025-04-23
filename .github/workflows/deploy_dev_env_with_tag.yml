@@ -2,11 +2,11 @@ name: Deploy CaC to Dev Environment by Tag
 
 on:
   workflow_dispatch:
-  inputs:
-  version_tag:
-  description: 'Tag version to deploy (e.g., v2.3.1)'
-  required: true
-  type: string
+    inputs:
+      version_tag:
+        description: 'Tag version to deploy (e.g., v2.3.1)'
+        required: true
+        type: string
 
 env:
   ARTIFACT_NAME: PowerShell.Workflows.ScriptSigning
@@ -16,7 +16,7 @@ jobs:
     name: Validate Version Tag
     runs-on: ubuntu-latest
     outputs:
-    valid: ${{ steps.validate.outputs.valid }}
+      valid: ${{ steps.validate.outputs.valid }}
     steps:
       - name: Check version tag is >= v2.1.2
         id: validate
@@ -68,8 +68,8 @@ jobs:
       - name: Publish artifacts
         uses: actions/upload-artifact@v4
         with:
-        name: ${{ env.ARTIFACT_NAME }}
-        path: ./psmodules/*.zip
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./psmodules/*.zip
 
   deploy:
     name: Deploy CaC to Dev Tenant
@@ -80,16 +80,16 @@ jobs:
       - name: Check out repository at tag
         uses: actions/checkout@v3
         with:
-        ref: ${{ github.event.inputs.version_tag }}
+          ref: ${{ github.event.inputs.version_tag }}
 
       - name: Download zipped modules and replace old ones
         uses: actions/download-artifact@v4
         with:
-        name: ${{ env.ARTIFACT_NAME }}
-        path: ./psmodules
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./psmodules
 
       - name: AZ Login
         uses: azure/login@v2
         with:
-        creds: ${{ secrets.DEV_AZURE_CREDENTIALS }}
-        enable-AzPSSession: true
+          creds: ${{ secrets.DEV_AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
