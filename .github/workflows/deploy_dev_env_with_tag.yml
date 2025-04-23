@@ -1,4 +1,4 @@
-name: Deploy to Dev environment upon Release
+name: Deploy CaC to Dev Environment by Tag
 
 on:
   workflow_dispatch:
