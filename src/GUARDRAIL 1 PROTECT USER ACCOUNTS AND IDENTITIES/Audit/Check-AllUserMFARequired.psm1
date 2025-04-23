@@ -164,7 +164,6 @@ function Check-AllUserMFARequired {
             }
             $nonMfaUsers += $nonMfaExtUser
         }
-        return $nonMfaUsers
     }
 
     $Comments = $commentsArray -join ";"
