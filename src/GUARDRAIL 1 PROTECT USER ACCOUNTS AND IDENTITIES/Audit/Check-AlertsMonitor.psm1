@@ -41,7 +41,7 @@ function Check-AlertsMonitor {
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] 
-        $EnableMultiCloudProfiles # New feature flag, default to false
+        $EnableMultiCloudProfiles # default to false
     )
 
     $IsCompliant = $false
@@ -99,7 +99,7 @@ function Check-AlertsMonitor {
             $missingAuditLogs = $AuditLogs
         }
 
-        #Check missing logs for SignInLogs and AuditLogs
+        # Check missing logs for SignInLogs and AuditLogs
         if ($missingSignInLogs.Count -gt 0) {
             $IsCompliant = $false
             $Comments += $msgTable.signInlogsNotCollected + " Missing logs: $($missingSignInLogs -join ', ')"
@@ -125,9 +125,10 @@ function Check-AlertsMonitor {
     try{
         $alertRules = Get-AzScheduledQueryRule -ResourceGroupName $resourceGroupName
         
-        # #Get log type index in pair -> [SignInLog Index, AuditLogs Index]
+        # Get log type index in pair -> [SignInLog Index, AuditLogs Index]
         $logType = Find-LogType -alertRules $alertRules
 
+        # CONDITION: Check alert rules exists for both logs
         if($logType -contains $null){
             $IsCompliant = $false
             throw "Could not find alert rules for the resource group: $_"
@@ -138,10 +139,8 @@ function Check-AlertsMonitor {
             $flattenedList += $lg
         }
 
-        # Action group ID to retrieve action groups
+        # Find action group ID to retrieve action groups
         $actionGroupID = if ($alertRules.ActionGroup -and $alertRules.ActionGroup.Count -gt 0) { $alertRules.ActionGroup[$flattenedList] }
-        # remove duplicate from actionGroup ID
-        $actionGroupID = $actionGroupID | ForEach-Object{ $_.ToLower() } | Select-Object -Unique 
 
         # Extract relevant properties of alert rules
         $targetQuery = if ($alertRules.CriterionAllOf -and $alertRules.CriterionAllOf.Count -gt 0) { $alertRules.CriterionAllOf[$flattenedList].Query} 
@@ -155,6 +154,7 @@ function Check-AlertsMonitor {
         }
         $targetQueryUnique = $hashTable.Keys
         
+        # CONDITION: Find Matching Alert rule for BG SignIN and CAP Audit Log
         $stopBGAccLoop = $false
         #Check if the query in alert rule is matching with one of our queries
         foreach ($query in $BreakGlassAccountQueries){
@@ -169,7 +169,7 @@ function Check-AlertsMonitor {
         }
 
         $stopAuditLoop = $false
-        #Check if the query in alert rule is matching with one of our queries
+        #Check if the query in alert rule is matching with one of our AuditLogs queries
         foreach ($auditQuery in $AuditLogsQueries){
             foreach ($targetqueryU in $targetQueryUnique){
                 if($auditLogsQueriesMatching = CompareKQLQueries -query $auditQuery -targetQuery $targetQueryU){
@@ -181,10 +181,12 @@ function Check-AlertsMonitor {
             if ($stopAuditLoop) {break}
         }
 
-        #If alert rule has one of the queries to check break glass account signin logs
-        if($bgAcctQueriesMatching) {
+        # CONDITION: If alert rule has one of the queries to check break glass account signin logs
+        # Remove duplicate from actionGroup ID
+        $actionGroupID = $actionGroupID | Where-Object { $_ -ne $null } | ForEach-Object{ $_.ToLower() } | Select-Object -Unique 
 
-            #Get action groups associated with our alert rule
+        if($bgAcctQueriesMatching) {
+            # Get action groups associated with our alert rule
             try {
                 $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
             }
@@ -197,7 +199,7 @@ function Check-AlertsMonitor {
             $receiversWithValues = $actionGroups.PSObject.properties | Where-Object {
                 $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
             }
-            #Action groups exist -> SignInLogs check flow is compliant!
+            # Action groups exist -> SignInLogs check flow is compliant!
             if($receiversWithValues.Count -gt 0){$signInLogsCompliance = $true}
         }
 
@@ -206,10 +208,10 @@ function Check-AlertsMonitor {
             $Comments += $msgTable.noAlertRuleforBGaccts
         }
 
-        #If alert rule has one of the queries to check audit logs
+        # CONDITION: If alert rule has one of the queries to check audit logs
         if($auditLogsQueriesMatching) {
 
-            #Get action groups associated with our alert rule
+            # Get action groups associated with our alert rule
             try {
                 $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
             }
@@ -222,7 +224,7 @@ function Check-AlertsMonitor {
             $receiversWithValues = $actionGroups.PSObject.Properties | Where-Object {
                 $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
             }
-            #Action groups exist -> AuditLogs check flow is compliant!
+            # Action groups exist -> AuditLogs check flow is compliant!
             if($receiversWithValues.Count -gt 0){$auditLogsCompliance = $true}       
         }
 
@@ -231,7 +233,7 @@ function Check-AlertsMonitor {
             $Comments += $msgTable.NoAlertRuleforCaps
         }
        
-        #If both checks are compliant then set the control as compliant
+        # CONDITION: If both checks are compliant then set the control as compliant
         if($signInLogsCompliance -and $auditLogsCompliance){$IsCompliant = $true}
     }
     catch {
