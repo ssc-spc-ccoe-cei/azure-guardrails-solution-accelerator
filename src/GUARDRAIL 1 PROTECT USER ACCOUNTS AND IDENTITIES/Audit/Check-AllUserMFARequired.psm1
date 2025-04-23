@@ -81,8 +81,8 @@ function Check-AllUserMFARequired {
     if(!$null -eq $memberUserList){
         $result = Get-AllUserAuthInformation -allUserList $memberUserList
         $memberUserUPNsBadMFA = $result.userUPNsBadMFA
-        if( !$null -eq $result.ErrorList){
-            $ErrorList =  $ErrorList.Add($result.ErrorList)
+        if($result.ErrorList){
+            $ErrorList.Add($result.ErrorList)
         }
         $userValidMFACounter = $result.userValidMFACounter
     }
@@ -92,8 +92,8 @@ function Check-AllUserMFARequired {
     if(!$null -eq $extUserList){
         $result2 = Get-AllUserAuthInformation -allUserList $extUserList
         $extUserUPNsBadMFA = $result2.userUPNsBadMFA
-        if( !$null -eq $result2.ErrorList){
-            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+        if($result2.ErrorList){
+            $ErrorList.Add($result2.ErrorList)
         }
         # combined list
         $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
@@ -113,7 +113,7 @@ function Check-AllUserMFARequired {
     Write-Host "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
        
 
-    $matchingBadUsers = $allUsers | Where-Object {$userUPNsBadMFA.UPN -eq $_.userPrincipalName}
+    $matchingBadUsers = $allUsers | Where-Object {$userUPNsBadMFA.UPN -contains $_.userPrincipalName}
 
     # Condition: all users are MFA enabled
     if(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
