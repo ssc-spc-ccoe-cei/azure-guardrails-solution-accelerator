@@ -259,7 +259,6 @@ function Check-AlertsMonitor {
             }
             
         }
-
         else{
             $IsCompliant = $false
             $Comments += $msgTable.NoAlertRuleforCaps
