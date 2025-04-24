@@ -121,19 +121,28 @@ function Check-AlertsMonitor {
         }
     }
 
-    #Check signInLogs and auditLogs alerts and action groups for breakglass accounts
+    # Check signInLogs and auditLogs alerts and action groups for breakglass accounts
+    # CONDITION: if alert rules present
     try{
         $alertRules = Get-AzScheduledQueryRule -ResourceGroupName $resourceGroupName
-        
+    }   
+    catch {
+        $IsCompliant = $false
+        $Comments += $msgTable.noAlertRules -f $resourceGroupName
+        $ErrorList += "Could not find alert rules for the resource group: $_"
+    }
+ 
+    if ($alertRules.Count -gt 0){
         # Get log type index in pair -> [SignInLog Index, AuditLogs Index]
         $logType = Find-LogType -alertRules $alertRules
 
-        # CONDITION: Check alert rules exists for both logs
+        # CONDITION: Check alert rules exists for both logs ( signInLogs and auditLogs)
         if($logType -contains $null){
             $IsCompliant = $false
-            throw "Could not find alert rules for the resource group: $_"
+            $Comments += $msgTable.noAlertRules -f $resourceGroupName
+            throw "Could not find SignInLogs and AuditLogs alert rules for the resource group: $_"
         }
-        
+
         $flattenedList = @()
         foreach ($lg in $logType) {
             $flattenedList += $lg
@@ -153,10 +162,10 @@ function Check-AlertsMonitor {
             $hashTable[$item] = $true
         }
         $targetQueryUnique = $hashTable.Keys
-        
+
         # CONDITION: Find Matching Alert rule for BG SignIN and CAP Audit Log
         $stopBGAccLoop = $false
-        #Check if the query in alert rule is matching with one of our queries
+        # Check if the query in alert rule is matching with one of our queries
         foreach ($query in $BreakGlassAccountQueries){
             foreach ($targetqueryU in $targetQueryUnique){
                 if($bgAcctQueriesMatching = CompareKQLQueries -query $query -targetQuery $targetqueryU){
@@ -188,71 +197,93 @@ function Check-AlertsMonitor {
         if($bgAcctQueriesMatching) {
             # Get action groups associated with BG signIn alert rule
             $filterAlertRuleBGSignIn = $alertRules | Where-Object {$_.CriterionAllOf.Query -like "*SigninLogs*"}
-            $uniqueActionGroupBGSignIn = $filterAlertRuleBGSignIn.ActionGroup | ForEach-Object{ $_.ToLower() } | Select-Object -Unique 
+
+            if ($null -ne $filterAlertRuleBGSignIn.ActionGroup){
+                $uniqueActionGroupBGSignIn = $filterAlertRuleBGSignIn.ActionGroup | ForEach-Object{ $_.ToLower() } | Select-Object -Unique 
            
-            try {
-                $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
-                $actionGroupIdsFromCmd = $actionGroups.Id | ForEach-Object { $_.ToLower() }
-                $allExistBG = $actionGroupIdsFromCmd | ForEach-Object {$uniqueActionGroupBGSignIn -contains $_}
+                try {
+                    $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
+                    $actionGroupIdsFromCmd = $actionGroups.Id | ForEach-Object { $_.ToLower() }
+                    $allExistBG = $actionGroupIdsFromCmd | ForEach-Object {$uniqueActionGroupBGSignIn -contains $_}
 
-                if ($allExistBG -notcontains $false){
-                    Write-Host "All action groups are in the unique SignIn list."
-            
-                    $receiversWithValues = $actionGroups.PSObject.properties | Where-Object {
-                        $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+                    if ($allExistBG -notcontains $false){
+                        Write-Host "All action groups are in the unique SignIn list."
+                
+                        $receiversWithValues = $actionGroups.PSObject.properties | Where-Object {
+                            $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+                        }
+                        # Action groups exist -> SignInLogs check flow is compliant!
+                        if($receiversWithValues.Count -gt 0){$signInLogsCompliance = $true}
+
                     }
-                    # Action groups exist -> SignInLogs check flow is compliant!
-                    if($receiversWithValues.Count -gt 0){$signInLogsCompliance = $true}
+                    else {
+                        Write-Host "Some action groups are missing from the SignIn list."
 
+                        $signInLogsCompliance = $false
+                        $Comments += $msgTable.noActionGroupsForBGaccts
+                        $ErrorList += "Could not find action groups for the breakglass account alert rules for the resource group: $_"
+                    }   
                 }
-                else {
-                    Write-Host "Some action groups are missing from the SignIn list."
-
+                catch {
                     $signInLogsCompliance = $false
                     $Comments += $msgTable.noActionGroupsForBGaccts
                     $ErrorList += "Could not find action groups for the breakglass account alert rules for the resource group: $_"
-                }   
+                }
             }
-            catch {
+            else{
+                # if no associated action group
                 $signInLogsCompliance = $false
                 $Comments += $msgTable.noActionGroupsForBGaccts
                 $ErrorList += "Could not find action groups for the breakglass account alert rules for the resource group: $_"
-            } 
+            }
+            
         }
         else{
+            # No matching alert rules in signin logs
             $IsCompliant = $false
             $Comments += $msgTable.noAlertRuleforBGaccts
         }
 
         # CONDITION: If alert rule has one of the queries to check audit logs
         if($auditLogsQueriesMatching) {
+
             # Get action groups associated with BG signIn alert rule
             $filterAlertRuleCAP = $alertRules | Where-Object {$_.CriterionAllOf.Query -like "*AuditLogs*"}
-            $uniqueActionGroupCAP= $filterAlertRuleCAP.ActionGroup | ForEach-Object{ $_.ToLower() } | Select-Object -Unique 
-            # Get action groups associated with our alert rule
-            try {
-                $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
-                $actionGroupIdsFromCmdCAP = $actionGroups.Id | ForEach-Object { $_.ToLower() }
-                $allExistCAP = $actionGroupIdsFromCmdCAP | ForEach-Object {$uniqueActionGroupCAP -contains $_}
 
-                if ($allExistCAP -notcontains $false){
-                    Write-Host "All action groups are in the unique Aurdit list."
-            
-                    $receiversWithValues = $actionGroups.PSObject.Properties | Where-Object {
-                        $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+            if ($null -ne $filterAlertRuleCAP.ActionGroup){
+                $uniqueActionGroupCAP= $filterAlertRuleCAP.ActionGroup | ForEach-Object{ $_.ToLower() } | Select-Object -Unique
+
+                # Get action groups associated with our alert rule
+                try {
+                    $actionGroups = Get-AzActionGroup | Where-Object {$_.Id -like $actionGroupID}
+                    $actionGroupIdsFromCmdCAP = $actionGroups.Id | ForEach-Object { $_.ToLower() }
+                    $allExistCAP = $actionGroupIdsFromCmdCAP | ForEach-Object {$uniqueActionGroupCAP -contains $_}
+
+                    if ($allExistCAP -notcontains $false){
+                        Write-Host "All action groups are in the unique Audit list."
+                
+                        $receiversWithValues = $actionGroups.PSObject.Properties | Where-Object {
+                            $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+                        }
+                        # Action groups exist -> AuditLogs check flow is compliant!
+                        if($receiversWithValues.Count -gt 0){$auditLogsCompliance = $true}
+
                     }
-                    # Action groups exist -> AuditLogs check flow is compliant!
-                    if($receiversWithValues.Count -gt 0){$auditLogsCompliance = $true}
-
+                    else {
+                        Write-Host "Some action groups are missing from the Audit list."
+                        $auditLogsCompliance = $false
+                        $Comments += $msgTable.noActionGroupsForAuditLogs
+                        $ErrorList += "Could not find action groups for the audit log alert rules for the resource group: $_"
+                    } 
                 }
-                else {
-                    Write-Host "Some action groups are missing from the Audit list."
+                catch {
                     $auditLogsCompliance = $false
                     $Comments += $msgTable.noActionGroupsForAuditLogs
                     $ErrorList += "Could not find action groups for the audit log alert rules for the resource group: $_"
-                } 
+                }
             }
-            catch {
+            else {
+                # if no associated action group
                 $auditLogsCompliance = $false
                 $Comments += $msgTable.noActionGroupsForAuditLogs
                 $ErrorList += "Could not find action groups for the audit log alert rules for the resource group: $_"
@@ -260,20 +291,22 @@ function Check-AlertsMonitor {
             
         }
         else{
+            # No matching alert rules in audit logs
             $IsCompliant = $false
             $Comments += $msgTable.NoAlertRuleforCaps
+
         }
        
         # CONDITION: If both checks are compliant then set the control as compliant
         if($signInLogsCompliance -and $auditLogsCompliance){$IsCompliant = $true}
-    }
-    catch {
-        $IsCompliant = $false
-        $Comments += $msgTable.noAlertRules -f $resourceGroupName
-        $ErrorList += "Could not find alert rules for the resource group: $_"
+
     }
 
-    if($IsCompliant){$Comments = $msgTable.compliantAlerts}
+    if($IsCompliant){
+        $Comments = $msgTable.compliantAlerts
+    }else{
+        $Comments = $msgTable.isNotCompliant + ' ' + $Comments
+    }
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
