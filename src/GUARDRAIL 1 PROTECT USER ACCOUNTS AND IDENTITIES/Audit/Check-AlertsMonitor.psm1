@@ -53,6 +53,7 @@ function Check-AlertsMonitor {
     #Queries that will be used in alert rules
     $BreakGlassAccountQueries = @(
         "SigninLogs | where UserPrincipalName == `"$($FirstBreakGlassUPN)`" or UserPrincipalName == `"$($SecondBreakGlassUPN)`"",
+        "SigninLogs | where UserPrincipalName =~ `"$($FirstBreakGlassUPN)`" or UserPrincipalName =~ `"$($SecondBreakGlassUPN)`"",
         "SigninLogs | where UserPrincipalName in (`"$($FirstBreakGlassUPN)`",`"$($SecondBreakGlassUPN)`")",
         "SigninLogs | where UserPrincipalName has_any (`"$($FirstBreakGlassUPN)`",`"$($SecondBreakGlassUPN)`")"
     )
