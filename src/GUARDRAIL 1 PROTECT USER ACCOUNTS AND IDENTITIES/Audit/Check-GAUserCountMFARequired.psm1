@@ -180,7 +180,7 @@ function Check-GAUserCountMFARequired {
     Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
     Write-Host "allGAUserUPNs user UPNs are $allGAUserUPNs"
 
-    if($allGAUserUPNs.Count -lt 0){
+    if($allGAUserUPNs.Count -eq 0){
         ## ASSUMPTION: There are two BG accounts
         Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
         Write-Host "The solution is assuming that the user is using eligible Global Administrator Accounts and including the two Break Glass accounts in order to be compliant. "
