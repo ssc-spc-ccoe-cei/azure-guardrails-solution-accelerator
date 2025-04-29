@@ -30,8 +30,19 @@ Function Add-GSAAutomationRunbooks {
         Import-AzAutomationRunbook -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" -Description $mainRunbookDescription -Type PowerShell -Published `
             -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
     }
+    catch [System.IO.IOException] {
+    Write-Log -Message "File access error: $_" -Level Error
+    Write-Output "Error Code 100: Unable to access required file or resource."
+    break
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
     catch {
-        Write-Error "Error importing 'main' Runbook to Azure Automation Account. $_"
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
         break
     }
 
@@ -46,8 +57,19 @@ Function Add-GSAAutomationRunbooks {
         Write-Verbose "`tCreating schedule for 'main' Runbook."
         New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime $startTime -HourInterval 24 | Out-Null
     }
+    catch [System.IO.IOException] {
+    Write-Log -Message "File access error: $_" -Level Error
+    Write-Output "Error Code 100: Unable to access required file or resource."
+    break
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
     catch {
-        Write-Error "Error creating schedule for 'main' Runbook. $_"
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
         break
     }
 
@@ -57,8 +79,19 @@ Function Add-GSAAutomationRunbooks {
         Write-Verbose "`tRegistering 'main' Runbook to schedule."
         Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Daily" | Out-Null
     }
+    catch [System.IO.IOException] {
+    Write-Log -Message "File access error: $_" -Level Error
+    Write-Output "Error Code 100: Unable to access required file or resource."
+    break
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
     catch {
-        Write-Error "Error registering 'main' Runbook to schedule. $_"
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
         break
     }
     #endregion
@@ -70,8 +103,19 @@ Function Add-GSAAutomationRunbooks {
         Import-AzAutomationRunbook -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" -Description $backendRunbookDescription -Type PowerShell -Published `
             -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
     }
+    catch [System.IO.IOException] {
+    Write-Log -Message "File access error: $_" -Level Error
+    Write-Output "Error Code 101: Unable to access required file or resource."
+    break
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
     catch {
-        Write-Error "Error importing 'backend' Runbook. $_"
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
         break
     }
 
@@ -81,8 +125,19 @@ Function Add-GSAAutomationRunbooks {
         Write-Verbose "`tCreating schedule for 'backend' Runbook."
         New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime $startTime -HourInterval 24 | Out-Null
     }
+    catch [System.IO.IOException] {
+    Write-Log -Message "File access error: $_" -Level Error
+    Write-Output "Error Code 100: Unable to access required file or resource."
+    break
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
     catch {
-        Write-Error "Error creating schedule for 'backend' Runbook. $_"
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
         break
     }
 
@@ -92,8 +147,19 @@ Function Add-GSAAutomationRunbooks {
         Write-Verbose "`tRegistering 'backend' Runbook to schedule."
         Register-AzAutomationScheduledRunbook -Name $backendRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Daily" | Out-Null
     }
+    catch [System.IO.IOException] {
+    Write-Log -Message "File access error: $_" -Level Error
+    Write-Output "Error Code 100: Unable to access required file or resource."
+    break
+    }
+    catch [Microsoft.Rest.Azure.CloudException] {
+        Write-Log -Message "Azure cloud service error: $_" -Level Error
+        Write-Output "Error Code 200: Azure API failure."
+        break
+    }
     catch {
-        Write-Error "Error registering 'Backend' Runbook to schedule. $_"
+        Write-Log -Message "Unexpected error occurred: $_" -Level Error
+        Write-Output "Error Code 999: An unknown error occurred."
         break
     }
 
