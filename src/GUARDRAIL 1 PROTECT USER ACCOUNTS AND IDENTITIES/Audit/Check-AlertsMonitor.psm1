@@ -17,7 +17,7 @@ function Find-ReceiverValues{
         }
     }
     
-    return  $allReceiversWithValuesUpdated
+    return  $allReceiversWithValues
 }
 
 function Check-AlertsMonitor {
