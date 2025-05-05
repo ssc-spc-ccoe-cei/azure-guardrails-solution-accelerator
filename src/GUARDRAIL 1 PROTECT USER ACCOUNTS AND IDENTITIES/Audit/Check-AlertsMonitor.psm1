@@ -1,22 +1,3 @@
-function Find-LogType {
-    param (
-        [Object[]] $alertRules
-    )
-
-    $SignInIndex = @()
-    $AuditLogIndex = @()
-    for ($index = 0; $index -lt $alertRules.Count; $index++) {
-        Write-Host "Reading the alert rule: $($alertRules.CriterionAllOf[$index].Query) for index $index "
-        if($alertRules.CriterionAllOf[$index].Query -like "*SigninLogs*"){
-            $SignInIndex += $index
-        }
-        elseif($alertRules.CriterionAllOf[$index].Query -like "*AuditLogs*"){
-            $AuditLogIndex += $index
-        }
-    }
-    return $SignInIndex, $AuditLogIndex
-}
-
 function Find-ReceiverValues{
     param (
         [Object[]] $actionGroups
@@ -35,7 +16,8 @@ function Find-ReceiverValues{
             Receivers = $receiversWithValues
         }
     }
-    return  $allReceiversWithValues
+    
+    return  $allReceiversWithValuesUpdated
 }
 
 function Check-AlertsMonitor {
@@ -292,14 +274,35 @@ function Check-AlertsMonitor {
                     }
                     else {
                         Write-Host "Some action groups are not from the Audit list."
-                        if ($filterAlertRuleCAP.ActionGroup.Count -eq ($allExistCAP | Where-Object { $_ -eq $true }).Count){
+                        $countTrue = ($allExistCAP | Where-Object { $_ -eq $true }).Count
+
+                        if ($filterAlertRuleCAP.ActionGroup.Count -eq $countTrue){
+                            
                             if($actionGroups.Id -contains $filterAlertRuleCAP.ActionGroup){
                                 $actionGroupsCAP = $actionGroups | where-object {$_.id -like $filterAlertRuleCAP.ActionGroup}
                                 
-                                $allReceiversWithValuesCAP = Find-ReceiverValues($actionGroupsCAP)
+                                Write-Host "Finding allReceiversWithValuesCAP for AuditLog alerts"
+
+                                # Test and use function later for this use case
+                                # $allReceiversWithValuesCAP = Find-ReceiverValues($actionGroupsCAP)
+
+                                $allReceiversWithValuesCAP = @()
+                                # Iterate through each action group
+                                foreach ($actionGroup in $actionGroupsCAP) {
+                                    # Filter the properties to find the receivers with values
+                                    $receiversWithValues = $actionGroup.PSObject.properties | Where-Object {
+                                        $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+                                    }
+                                    $allReceiversWithValuesCAP += [PSCustomObject]@{
+                                        ActionGroupName = $actionGroup.Name
+                                        Receivers = $receiversWithValues
+                                    }
+                                }
+                                
                                 # Action groups exist -> AuditLogs check flow is compliant!
                                 if($allReceiversWithValuesCAP.Count -gt 0){$auditLogsCompliance = $true}
-                            } 
+                            }
+
                         }
                         else{
                             $auditLogsCompliance = $false
@@ -329,8 +332,9 @@ function Check-AlertsMonitor {
         }
        
         # CONDITION: If both checks are compliant then set the control as compliant
-        if($signInLogsCompliance -and $auditLogsCompliance){$IsCompliant = $true}
-
+        if($signInLogsCompliance -and $auditLogsCompliance){
+            $IsCompliant = $true
+        }
     }
 
     if($IsCompliant){
