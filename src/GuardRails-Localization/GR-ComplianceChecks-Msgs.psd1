@@ -45,7 +45,10 @@ gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator ac
 allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
-userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
+
+userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly
+nativeUserNonMfa = This native user account has not been set up with Multi-Factor Authentication (MFA). It has been {0} days since the last sign-in.
+nativeUserNoSignIn = This native user account has not been set up with Multi-Factor Authentication (MFA) and it has never been used to sign in.
 
 retentionNotMet = The LAW {0} does not meet data retention requirements
 readOnlyLaw = The {0} LAW identified is missing a read-only lock. Add the read-only lock to prevent accidental deletions.
