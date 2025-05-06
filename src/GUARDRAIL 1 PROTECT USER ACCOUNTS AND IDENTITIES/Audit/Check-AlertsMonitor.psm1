@@ -207,8 +207,20 @@ function Check-AlertsMonitor {
 
                     if ($allExistBG -notcontains $false){
                         Write-Host "All action groups are in the unique SignIn list."
-                        
-                        $allReceiversWithValuesBG = Find-ReceiverValues($actionGroups)
+                        # Test and use function later for this use case
+                        # $allReceiversWithValuesBG = Find-ReceiverValues($actionGroups)
+                        $allReceiversWithValuesBG = @()
+                        # Iterate through each action group
+                        foreach ($actionGroup in $actionGroups) {
+                            # Filter the properties to find the receivers with values
+                            $receiversWithValues = $actionGroup.PSObject.properties | Where-Object {
+                                $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+                            }
+                            $allReceiversWithValuesBG += [PSCustomObject]@{
+                                ActionGroupName = $actionGroup.Name
+                                Receivers = $receiversWithValues
+                            }
+                        }
                         # Action groups exist -> SignInLogs check flow is compliant!
                         if($allReceiversWithValuesBG.Count -gt 0){$signInLogsCompliance = $true}
 
@@ -217,7 +229,20 @@ function Check-AlertsMonitor {
                         # Write-Host "Some action groups are not in the SignIn list."
                         if ($filterAlertRuleBGSignIn.ActionGroup.Count -eq ($allExistBG | Where-Object { $_ -eq $true }).Count){
 
-                            $allReceiversWithValuesBG = Find-ReceiverValues($actionGroups)
+                            # Test and use function later for this use case
+                            # $allReceiversWithValuesBG = Find-ReceiverValues($actionGroups)
+                            $allReceiversWithValuesBG = @()
+                            # Iterate through each action group
+                            foreach ($actionGroup in $actionGroups) {
+                                # Filter the properties to find the receivers with values
+                                $receiversWithValues = $actionGroup.PSObject.properties | Where-Object {
+                                    $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+                                }
+                                $allReceiversWithValuesBG += [PSCustomObject]@{
+                                    ActionGroupName = $actionGroup.Name
+                                    Receivers = $receiversWithValues
+                                }
+                            }
                             # Action groups exist -> SignInLogs check flow is compliant!
                             if($allReceiversWithValuesBG.Count -gt 0){$signInLogsCompliance = $true}
 
@@ -266,8 +291,21 @@ function Check-AlertsMonitor {
                     $allExistCAP = $actionGroupIdsFromCmdCAP | ForEach-Object {$uniqueActionGroupCAP -contains $_}
 
                     if ($allExistCAP -notcontains $false){
-                        # Write-Host "All action groups are in the unique Audit list."
-                        $allReceiversWithValuesCAP = Find-ReceiverValues($actionGroups)
+                        Write-Host "All action groups are in the unique Audit list."
+                        # Test and use function later for this use case
+                        # $allReceiversWithValuesCAP = Find-ReceiverValues($actionGroups)
+                        $allReceiversWithValuesCAP = @()
+                        # Iterate through each action group
+                        foreach ($actionGroup in $actionGroups) {
+                            # Filter the properties to find the receivers with values
+                            $receiversWithValues = $actionGroup.PSObject.properties | Where-Object {
+                                $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+                            }
+                            $allReceiversWithValuesCAP += [PSCustomObject]@{
+                                ActionGroupName = $actionGroup.Name
+                                Receivers = $receiversWithValues
+                            }
+                        }
                         # Action groups exist -> AuditLogs check flow is compliant!
                         if($allReceiversWithValuesCAP.Count -gt 0){$auditLogsCompliance = $true}
 
@@ -282,10 +320,8 @@ function Check-AlertsMonitor {
                                 $actionGroupsCAP = $actionGroups | where-object {$_.id -like $filterAlertRuleCAP.ActionGroup}
                                 
                                 Write-Host "Finding allReceiversWithValuesCAP for AuditLog alerts"
-
                                 # Test and use function later for this use case
                                 # $allReceiversWithValuesCAP = Find-ReceiverValues($actionGroupsCAP)
-
                                 $allReceiversWithValuesCAP = @()
                                 # Iterate through each action group
                                 foreach ($actionGroup in $actionGroupsCAP) {
