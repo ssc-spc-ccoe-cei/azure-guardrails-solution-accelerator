@@ -20,8 +20,8 @@ function get-MFACount{
         $result = Get-AllUserAuthInformation -allUserList $memberUsersUPNs
         $memberUserUPNsBadMFA = $result.userUPNsBadMFA
         $memberUserUPNsValidMFA = $result.userUPNsValidMFA
-        if( !$null -eq $result.ErrorList){
-            $ErrorList =  $ErrorList.Add($result.ErrorList)
+        if($result.ErrorList){
+            $ErrorList.Add($result.ErrorList)
         }
         $userValidMFACounter = $result.userValidMFACounter
     }
@@ -40,8 +40,8 @@ function get-MFACount{
         $result2 = Get-AllUserAuthInformation -allUserList $extUsersUPN
         $extUserUPNsBadMFA = $result2.userUPNsBadMFA
         $extUserUPNsValidMFA = $result2.userUPNsValidMFA
-        if( !$null -eq $result2.ErrorList){
-            $ErrorList =  $ErrorList.Add($result2.ErrorList)
+        if($result2.ErrorList){
+            $ErrorList.Add($result2.ErrorList)
         }
         
         # combined list
@@ -195,7 +195,9 @@ function Check-GAUserCountMFARequired {
 
         $userValidMFACounter = $MFAresult.userValidMFACounter
         $userUPNsBadMFA = $MFAresult.userUPNsBadMFA
-        $ErrorList =  $ErrorList.Add($MFAresult.ErrorList)
+        if($MFAresult.ErrorList){
+            $ErrorList.Add($MFAresult.ErrorList)
+        }
 
         if ($allGAUserUPNs.Count -eq 1) {
             ## Proceed with MFA check for the non-BG account with the following assumption
