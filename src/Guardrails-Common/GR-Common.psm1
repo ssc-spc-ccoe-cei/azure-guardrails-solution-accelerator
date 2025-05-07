@@ -1439,6 +1439,185 @@ function Add-ProfileInformation {
     return $Result
 }
 
+function Check-BuiltInPoliciesPerSubscription {
+    param (
+        [Parameter(Mandatory = $true)]
+        [array]$requiredPolicyIds,
+        [Parameter(Mandatory = $true)]
+        [string]$ReportTime,
+        [Parameter(Mandatory = $true)]
+        [string]$ItemName,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$msgTable,
+        [Parameter(Mandatory = $true)]
+        [string]$ControlName,
+        [string]$itsgcode,
+        [string]$CloudUsageProfiles = "3",
+        [string]$ModuleProfiles,
+        [switch]$EnableMultiCloudProfiles,
+        [System.Collections.ArrayList]$ErrorList
+    )
+
+    $results = New-Object System.Collections.ArrayList
+    $subscriptions = Get-AzSubscription
+
+    foreach ($subscription in $subscriptions) {
+        try {
+            Set-AzContext -SubscriptionId $subscription.Id -ErrorAction Stop
+            $scope = "/subscriptions/$($subscription.Id)"
+            Write-Host "Checking policies for subscription: $($subscription.Name) [$($subscription.Id)]"
+        } catch {
+            $ErrorList.Add("Error setting context for subscription $($subscription.Id): $_")
+            continue
+        }
+
+        foreach ($policyId in $requiredPolicyIds) {
+            Write-Host "Checking policy ID: $policyId"
+
+            try {
+                $policyDefinition = Get-AzPolicyDefinition -Id $policyId -ErrorAction Stop
+                $policyDisplayName = $policyDefinition.Properties.DisplayName
+            } catch {
+                $ErrorList.Add("Error getting policy definition $policyId : $_")
+                $policyDisplayName = "Unknown Policy"
+                continue
+            }
+
+            try {
+                $assignments = Get-AzPolicyAssignment -Scope $scope -PolicyDefinitionId $policyId -ErrorAction Stop
+                $policyAssignments = @()
+                if ($assignments -is [array]) {
+                    $policyAssignments = $assignments | Where-Object { $null -ne $_ }
+                } elseif ($null -ne $assignments) {
+                    $policyAssignments += $assignments
+                }
+            } catch {
+                $ErrorList.Add("Error getting policy assignments for $policyId in $scope : $_")
+                $policyAssignments = @()
+            }
+
+            if ($policyAssignments.Count -gt 0) {
+                Write-Host "Policy is assigned. Checking exemptions and compliance..."
+
+                $hasExemptions = $false
+                foreach ($assignment in $policyAssignments) {
+                    try {
+                        if ($null -ne $assignment.Id) {
+                            $exemptions = Get-AzPolicyExemption -Scope $scope -PolicyAssignmentId $assignment.Id -ErrorAction Stop
+                            if ($exemptions) {
+                                $hasExemptions = $true
+                                break
+                            }
+                        }
+                    } catch {
+                        $ErrorList.Add("Error checking exemptions: $_")
+                    }
+                }
+
+                if ($hasExemptions) {
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $subscription.Id
+                        Name = $subscription.Name
+                        DisplayName = $subscription.Name
+                        ComplianceStatus = $false
+                        Comments = $msgTable.policyHasExemptions
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                    if ($EnableMultiCloudProfiles) {
+                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    }
+                    $results.Add($result) | Out-Null
+                    continue
+                }
+
+                $policyStates = Get-AzPolicyState | Where-Object { $_.PolicyDefinitionId -eq $policyId }
+                if ($null -eq $policyStates -or $policyStates.Count -eq 0) {
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $subscription.Id
+                        Name = $subscription.Name
+                        DisplayName = $subscription.Name
+                        ComplianceStatus = $true
+                        Comments = $msgTable.policyNoApplicableResources
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                } else {
+                    $nonCompliant = $policyStates | Where-Object { $_.ComplianceState -eq "NonCompliant" -or $_.IsCompliant -eq $false }
+                    if ($nonCompliant) {
+                        foreach ($resource in $nonCompliant) {
+                            $result = [PSCustomObject]@{
+                                Type = $resource.ResourceType
+                                Id = $resource.ResourceId
+                                Name = $resource.ResourceGroup + "/" + ($resource.ResourceId -split '/')[-1]
+                                DisplayName = $resource.ResourceGroup + "/" + ($resource.ResourceId -split '/')[-1]
+                                ComplianceStatus = $false
+                                Comments = $msgTable.policyNotCompliant
+                                ItemName = "$ItemName - $policyDisplayName"
+                                ControlName = $ControlName
+                                ReportTime = $ReportTime
+                                itsgcode = $itsgcode
+                            }
+                            if ($EnableMultiCloudProfiles) {
+                                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                            }
+                            $results.Add($result) | Out-Null
+                        }
+                    } else {
+                        $result = [PSCustomObject]@{
+                            Type = "subscription"
+                            Id = $subscription.Id
+                            Name = "All Resources"
+                            DisplayName = $subscription.Name
+                            ComplianceStatus = $true
+                            Comments = $msgTable.policyCompliant
+                            ItemName = "$ItemName - $policyDisplayName"
+                            ControlName = $ControlName
+                            ReportTime = $ReportTime
+                            itsgcode = $itsgcode
+                        }
+                    }
+                }
+
+                if ($result) {
+                    if ($EnableMultiCloudProfiles) {
+                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    }
+                    $results.Add($result) | Out-Null
+                }
+            } else {
+                Write-Host "Policy not assigned at subscription level"
+                $result = [PSCustomObject]@{
+                    Type = "subscription"
+                    Id = $subscription.Id
+                    Name = $subscription.Name
+                    DisplayName = $subscription.Name
+                    ComplianceStatus = $false
+                    Comments = $msgTable.policyNotConfigured
+                    ItemName = "$ItemName - $policyDisplayName"
+                    ControlName = $ControlName
+                    ReportTime = $ReportTime
+                    itsgcode = $itsgcode
+                }
+                if ($EnableMultiCloudProfiles) {
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                }
+                $results.Add($result) | Out-Null
+            }
+        }
+    }
+
+    Write-Host "Completed subscription policy compliance checks. Found $($results.Count) results."
+    return $results
+}
+
+
 function Check-BuiltInPolicies {
     param (
         [Parameter(Mandatory=$true)]
