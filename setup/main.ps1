@@ -82,7 +82,6 @@ Else {
 
 Write-Output  "KeyvaultName: $(Get-GSAAutomationVariable -Name "KeyvaultName")"
 Write-Output  "ResourceGroupName: $(Get-GSAAutomationVariable -Name "ResourceGroupName")"
-Write-Output  "Region: $(Get-GSAAutomationVariable -Name 'region')"
 Write-Output  "StorageAccountName: $(Get-GSAAutomationVariable -Name "StorageAccountName")"
 Write-Output  "SSCReadOnlyServicePrincipalNameAPPID: $(Get-GSAAutomationVariable -Name "SSCReadOnlyServicePrincipalNameAPPID")"
 Write-Output  "PBMMPolicyID: $(Get-GSAAutomationVariable -Name "PBMMPolicyID")"
