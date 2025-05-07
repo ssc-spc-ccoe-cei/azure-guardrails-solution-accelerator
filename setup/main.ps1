@@ -82,7 +82,7 @@ Else {
 
 Write-Output  "KeyvaultName: $(Get-GSAAutomationVariable -Name "KeyvaultName")"
 Write-Output  "ResourceGroupName: $(Get-GSAAutomationVariable -Name "ResourceGroupName")"
-Write-Output  "Region: $(Get-GSAAutomationVariable -Name 'Region')"
+Write-Output  "Region: $(Get-GSAAutomationVariable -Name 'region')"
 Write-Output  "StorageAccountName: $(Get-GSAAutomationVariable -Name "StorageAccountName")"
 Write-Output  "AutomationAccountName: $(Get-GSAAutomationVariable -Name "AutomationAccountName")"
 Write-Output  "SSCReadOnlyServicePrincipalNameAPPID: $(Get-GSAAutomationVariable -Name "SSCReadOnlyServicePrincipalNameAPPID")"
@@ -97,7 +97,6 @@ Write-Output  "GuardRailsLocale: $(Get-GSAAutomationVariable -Name "GuardRailsLo
 Write-Output  "lighthouseTargetManagementGroupID: $(Get-GSAAutomationVariable -Name "lighthouseTargetManagementGroupID")"
 Write-Output  "securityRetentionDays: $(Get-GSAAutomationVariable -Name "securityRetentionDays")"
 Write-Output  "cloudUsageProfiles: $(Get-GSAAutomationVariable -Name "cloudUsageProfiles")"
-Write-Output  "enableMultiCloudProfiles: $(Get-GSAAutomationVariable -Name 'enableMultiCloudProfiles')"
 
 Write-Output  "ContainerName: $(Get-GSAAutomationVariable -Name "ContainerName")"
 Write-Output  "DepartmentName: $(Get-GSAAutomationVariable -Name "DepartmentName")"
