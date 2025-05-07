@@ -77,6 +77,37 @@ Else {
     [System.Environment]::SetEnvironmentVariable('ReservedSubnetList', "GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet", [System.EnvironmentVariableTarget]::Process)
 }
 
+
+# output configs
+
+Write-Output  "KeyvaultName: $(Get-GSAAutomationVariable -Name "KeyvaultName")"
+Write-Output  "ResourceGroupName: $(Get-GSAAutomationVariable -Name "ResourceGroupName")"
+Write-Output  "Region: $(Get-GSAAutomationVariable -Name 'Region')"
+Write-Output  "StorageAccountName: $(Get-GSAAutomationVariable -Name "StorageAccountName")"
+Write-Output  "AutomationAccountName: $(Get-GSAAutomationVariable -Name "AutomationAccountName")"
+Write-Output  "SSCReadOnlyServicePrincipalNameAPPID: $(Get-GSAAutomationVariable -Name "SSCReadOnlyServicePrincipalNameAPPID")"
+Write-Output  "PBMMPolicyID: $(Get-GSAAutomationVariable -Name "PBMMPolicyID")"
+Write-Output  "AllowedLocationPolicyId: $(Get-GSAAutomationVariable -Name "AllowedLocationPolicyId")"
+Write-Output  "AllowedLocationInitiativeId: $(Get-GSAAutomationVariable -Name "AllowedLocationInitiativeId")"
+Write-Output  "DepartmentNumber: $(Get-GSAAutomationVariable -Name "DepartmentNumber")"
+Write-Output  "CBSSubscriptionName: $(Get-GSAAutomationVariable -Name "CBSSubscriptionName")"
+Write-Output  "SecurityLAWResourceId: $(Get-GSAAutomationVariable -Name "SecurityLAWResourceId")"
+Write-Output  "HealthLAWResourceId: $(Get-GSAAutomationVariable -Name "HealthLAWResourceId")"
+Write-Output  "GuardRailsLocale: $(Get-GSAAutomationVariable -Name "GuardRailsLocale")"
+Write-Output  "lighthouseTargetManagementGroupID: $(Get-GSAAutomationVariable -Name "lighthouseTargetManagementGroupID")"
+Write-Output  "securityRetentionDays: $(Get-GSAAutomationVariable -Name "securityRetentionDays")"
+Write-Output  "cloudUsageProfiles: $(Get-GSAAutomationVariable -Name "cloudUsageProfiles")"
+Write-Output  "enableMultiCloudProfiles: $(Get-GSAAutomationVariable -Name 'enableMultiCloudProfiles')"
+
+Write-Output  "ContainerName: $(Get-GSAAutomationVariable -Name "ContainerName")"
+Write-Output  "DepartmentName: $(Get-GSAAutomationVariable -Name "DepartmentName")"
+Write-Output  "GuardrailWorkspaceIDKeyName: $(Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName")"
+Write-Output  "LogType: $(Get-GSAAutomationVariable -Name "LogType")"
+Write-Output  "reservedSubnetList: $(Get-GSAAutomationVariable -Name "reservedSubnetList")"
+Write-Output  "TenantDomainUPN: $(Get-GSAAutomationVariable -Name "TenantDomainUPN")"
+Write-Output  "WorkSpaceID: $(Get-GSAAutomationVariable -Name "WorkSpaceID")"
+
+
 #Standard variables
 $WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID" 
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
