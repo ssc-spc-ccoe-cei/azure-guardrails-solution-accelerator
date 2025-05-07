@@ -239,6 +239,65 @@
       "name": "Gr1"
     },
     {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9gf3d484-e871-4df0-8cbe-8ae6550c5984",
+            "version": "KqlParameterItem/1.0",
+            "name": "showNonMfa",
+            "label": "Show Non-MFA Users",
+            "type": 10,
+            "isRequired": true,
+            "value": "no",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Yes\" },\n    { \"value\":\"no\", \"label\":\"No\", \"selected\":true }\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "parameters - Non-MFA Users Toggle"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend \n    CreatedRaw = coalesce(column_ifexists(\"CreatedTime_t\", datetime(null)), column_ifexists(\"CreatedTime_s\", datetime(null))),\n    LastSignInRaw = coalesce(column_ifexists(\"LastSignIn_t\", datetime(null)), column_ifexists(\"LastSign_s\", datetime(null)))\n| extend \n    CreatedTime = iff(isnull(CreatedRaw), \"N/A\", format_datetime(CreatedRaw, 'yyyy-MM-dd HH:mm:ss')),\n    LastSignIn = iff(isnull(LastSignInRaw), \"Never Signed In\", format_datetime(LastSignInRaw, 'yyyy-MM-dd HH:mm:ss'))\n| project DisplayName_s, UserPrincipalName_s, User_Type_s, CreatedTime, LastSignIn, Comments_s\n",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr1"
+        },
+        {
+          "parameterName": "showNonMfa",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - Non-MFA Users"
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",

@@ -34,7 +34,7 @@ gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azur
 alertsMonitor = Alertes pour signaler l'utilisation abusive et les activités suspectes
 signInlogsNotCollected = Les journaux de connexion « SignInLogs » ne sont actuellement pas activés. Les « SignInLogs » doivent être activés pour surveiller et enregistrer les activités de connexion des utilisateurs dans l'environnement.
 auditlogsNotCollected = Les journaux d'audit « AuditLogs » ne sont actuellement pas activés. Les « AuditLogs » doivent être activés pour capturer et enregistrer tous les événements d'audit significatifs dans l'environnement.
-noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
+noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs » pour le groupe de ressources « {0} ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
 noActionGroupsForBGaccts = Aucun groupe d'action n'a été identifié pour les activités de connexion au compte de bris de verre. Les groupes d'action doivent être configurés pour recevoir des alertes en cas de tentatives de connexion au compte de bris de verre.
 noActionGroupsForAuditLogs = Aucun groupe d'action n'a été trouvé pour les modifications et les mises à jour de la politique d'accès conditionnel. Des groupes d'action doivent être créés pour recevoir des alertes pour les modifications et les mises à jour de la politique d'accès conditionnel.
 has context menu
@@ -46,7 +46,10 @@ noAlertRuleforCaps = Créez une alerte pour les modifications et les mises à jo
 allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
-userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
+
+userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF
+nativeUserNonMfa = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM). Il y a {0} jours depuis la dernière connexion.
+nativeUserNoSignIn = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM) et il n'a jamais été utilisé pour se connecter.
 
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
 readOnlyLaw = Il manque un verrou en lecture seule pour l'espace de travail {0} [Log Analytics Workspace (LAW)] identifié. Ajoutez le verrou en lecture seule pour éviter des suppressions accidentelles.
