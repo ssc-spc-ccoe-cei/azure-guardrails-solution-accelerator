@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.2.8'
+        version: '1.2.9'
       }
     }
   }
@@ -502,7 +502,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkInterfaceIPs.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }
     }
   }
