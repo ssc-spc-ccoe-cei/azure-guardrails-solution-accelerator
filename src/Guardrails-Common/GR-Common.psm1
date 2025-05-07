@@ -1524,7 +1524,7 @@ function Check-BuiltInPoliciesPerSubscription {
                     $result = [PSCustomObject]@{
                         Type = "subscription"
                         Id = $subscription.Id
-                        Name = $subscription.Name
+                        SubscriptionName = $subscription.Name
                         DisplayName = $subscription.Name
                         ComplianceStatus = $false
                         Comments = $msgTable.policyHasExemptions
@@ -1545,7 +1545,7 @@ function Check-BuiltInPoliciesPerSubscription {
                     $result = [PSCustomObject]@{
                         Type = "subscription"
                         Id = $subscription.Id
-                        Name = $subscription.Name
+                        SubscriptionName = $subscription.Name
                         DisplayName = $subscription.Name
                         ComplianceStatus = $true
                         Comments = $msgTable.policyNoApplicableResources
@@ -1602,7 +1602,7 @@ function Check-BuiltInPoliciesPerSubscription {
                 $result = [PSCustomObject]@{
                     Type = "subscription"
                     Id = $subscription.Id
-                    Name = $subscription.Name
+                    SubscriptionName = $subscription.Name
                     DisplayName = $subscription.Name
                     ComplianceStatus = $false
                     Comments = $msgTable.policyNotConfigured
