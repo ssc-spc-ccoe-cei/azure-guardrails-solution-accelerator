@@ -29,10 +29,10 @@ gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 alertsMonitor = Alerts to Flag Misuse and Suspicious Activities
 signInlogsNotCollected = The SignInLogs are currently not enabled. SignInLogs must be enabled to monitor and log user sign-in activities in the environment.
 auditlogsNotCollected = The AuditLogs are currently not enabled. AuditLogs must be enabled to capture and log all significant audit events within the environment.
-noAlertRules = No alert rules were found for SignInLogs or AuditLogs. Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
+noAlertRules = No alert rules were found for SignInLogs or AuditLogs for the resource group "{0}". Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
 noActionGroupsForBGaccts = No action groups were identified for Break Glass account sign-in activities. Action groups must be configured to receive alerts for Break Glass account sign-in attempts.
 noActionGroupsForAuditLogs = No action groups were found for Conditional Access Policy changes and updates. Action groups must be created to receive alerts for Conditional Access Policy changes and updates.
-noActionGroups = No action groups were configured for the resource group “{0}”. Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
+noActionGroups = No action groups were configured for the resource group "{0}". Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
 compliantAlerts = The alerts for Break Glass accounts and audit logs are compliant. Appropriate action groups have been configured and are correctly receiving alerts for each monitored activity.
 noAlertRuleforBGaccts = Create an alert for the Breakglass accounts using the SignInLogs. Missing one of the required alerts.
 NoAlertRuleforCaps = Create an alert for the Conditional Access Policy changes and updates using the AuditLogs. Missing one of the required alerts.
@@ -45,7 +45,10 @@ gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator ac
 allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
-userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
+
+userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly
+nativeUserNonMfa = This native user account has not been set up with Multi-Factor Authentication (MFA). It has been {0} days since the last sign-in.
+nativeUserNoSignIn = This native user account has not been set up with Multi-Factor Authentication (MFA) and it has never been used to sign in.
 
 retentionNotMet = The LAW {0} does not meet data retention requirements
 readOnlyLaw = The {0} LAW identified is missing a read-only lock. Add the read-only lock to prevent accidental deletions.
@@ -274,7 +277,6 @@ cbsSubDoesntExist = CBS Subscription doesnt exist
 cbcSensorsdontExist = The expected CBC sensors do not exist
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
 cbssCompliant = Found resources in these subscriptions: 
-MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
 serviceHealthAlerts = Service Health Alerts and Events Check

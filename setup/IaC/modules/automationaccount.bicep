@@ -123,7 +123,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
-        version: '1.1.9'
+        version: '1.1.10'
       }
     }
   }
@@ -168,7 +168,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
-        version: '1.2.0'
+        version: '1.2.1'
       }
     }
   }
@@ -222,7 +222,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SecureConnectionInTransit.zip'
-        version: '1.2.10'
+        version: '1.2.11'
       }
     }
   }
@@ -267,7 +267,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.0.5'
+        version: '1.0.6'
       }
     }
   }

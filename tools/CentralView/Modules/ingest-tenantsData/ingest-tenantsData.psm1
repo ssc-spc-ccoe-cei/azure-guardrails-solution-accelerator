@@ -67,7 +67,7 @@ function get-tenantdata {
         column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
-    ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
+    ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
     | summarize Count=count(SubnetName) by Mandatory, ControlName_s, Status,ItemName, Profile, ['ITSG Control']
 "@
         $gr9query=@"
@@ -81,7 +81,7 @@ function get-tenantdata {
         column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
-    ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Mitigation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
+    ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
     | summarize Count=count('VNet Name') by Mandatory,ControlName_s, Status, ItemName, Profile, ['ITSG Control']
 "@
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList

@@ -1,0 +1,70 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Bicep Code Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '46 11 * * 6'
+
+env:
+  SCANNER_TOOL_URL: "https://github.com/Azure/template-analyzer/releases/download/0.8.1/TemplateAnalyzer-linux-x64.zip"
+
+jobs:
+  scan:
+    name: Scan Bicep templates
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Download scanner
+        run: curl -OL $SCANNER_TOOL_URL 
+
+      - name: Extract scanner
+        run: unzip TemplateAnalyzer-linux-x64.zip -d ./scantool
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 8.x
+
+      - name: Run scanner
+        run: dotnet ./scantool/TemplateAnalyzer.dll analyze-directory --report-format SARIF --output-file-path ./scan_results.sarif .
+        continue-on-error: true # returns code 20 if voilations found 
+
+      - name: Reformat Sarif
+        run: ./tools/Reformat-Sarif.ps1 -sourceFile ./scan_results.sarif -targetFile ./scan_results_2.sarif
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan_result
+          path: ./scan_results_2.sarif
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scan_results_2.sarif
+      # looks like we are hitting an issue uploading the results: https://github.com/github/codeql/issues/11512
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
