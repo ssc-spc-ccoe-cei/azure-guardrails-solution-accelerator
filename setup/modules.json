@@ -831,11 +831,11 @@
       }
     ]
   },
-  {
+	  {
     "ModuleName": "Check-NetworkInterfaceIPs",
     "Control": "Guardrails9",
     "ModuleType": "Builtin",
-    "Status": "Disabled",
+    "Status": "Enabled",
     "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Check-NetworkInterfaceIPs -ControlName $msgTable.CtrName9 -ItemName $msgTable.networkInterfaceIPs -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
