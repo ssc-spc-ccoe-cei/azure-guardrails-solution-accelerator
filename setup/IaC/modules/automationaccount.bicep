@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.2.8'
+        version: '1.2.9'
       }
     }
   }
@@ -493,6 +493,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
         version: '4.0.2'
+      }
+    }
+  }
+
+  resource module52 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-NetworkInterfaceIPs'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-NetworkInterfaceIPs.zip'
+        version: '1.0.1'
       }
     }
   }
