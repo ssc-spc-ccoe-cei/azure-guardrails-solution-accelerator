@@ -185,9 +185,11 @@ function Check-GAUserCountMFARequired {
         Write-Host "allGAUserUPNs count is $($allGAUserUPNs.Count)"
         Write-Host "The solution is assuming that the user is using eligible Global Administrator Accounts and including the two Break Glass accounts in order to be compliant. "
         $commentsArray =  $msgTable.isCompliant + ' ' + $msgTable.globalAdminAccntsMinimum
+        $IsCompliant = $true
     }
     elseif ($allGAUserUPNs.Count -ge 5){
-        $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus   
+        $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
+        $IsCompliant = $false  
     }
     else {
         ## Proceed with MFA check
