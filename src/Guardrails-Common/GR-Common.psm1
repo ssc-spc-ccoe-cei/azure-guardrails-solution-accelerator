@@ -1445,6 +1445,46 @@ function Add-ProfileInformation {
     return $Result
 }
 
+function Check-BuiltInPoliciesPerSubscription {
+    param (
+        [Parameter(Mandatory = $true)]
+        [array]$requiredPolicyIds,
+        [Parameter(Mandatory = $true)]
+        [string]$ReportTime,
+        [Parameter(Mandatory = $true)]
+        [string]$ItemName,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$msgTable,
+        [Parameter(Mandatory = $true)]
+        [string]$ControlName,
+        [string]$itsgcode,
+        [string]$CloudUsageProfiles = "3",
+        [string]$ModuleProfiles,
+        [switch]$EnableMultiCloudProfiles,
+        [System.Collections.ArrayList]$ErrorList
+    )
+
+
+    $subscriptions = Get-AzSubscription
+    $results = New-Object System.Collections.ArrayList
+
+    foreach ($subscription in $subscriptions) {
+        try {
+            Set-AzContext -SubscriptionId $subscription.Id -ErrorAction Stop
+            $scope = "/subscriptions/$($subscription.Id)"
+            Write-Host "Checking policies for subscription: $($subscription.Name) [$($subscription.Id)]"
+        } catch {
+            $ErrorList.Add("Error setting context for subscription $($subscription.Id): $_")
+            continue
+        }
+        $result = Check-BuiltInPolicies -requiredPolicyIds $requiredPolicyIds -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -subScope $scope -subscription $subscription -itsgcode $itsgcode -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ErrorList $ErrorList
+        $results.Add($result)
+    }
+    Write-Host "Completed policy compliance check. Found $($results.Count) results"
+    return $results
+}
+
+
 function Check-BuiltInPolicies {
     param (
         [Parameter(Mandatory=$true)]
@@ -1457,6 +1497,8 @@ function Check-BuiltInPolicies {
         [hashtable]$msgTable,
         [Parameter(Mandatory=$true)]
         [string]$ControlName,
+        [string]$subScope, #optional param to check a specific subscription
+        $subscription,
         [string]$itsgcode,
         [string]$CloudUsageProfiles = "3",
         [string]$ModuleProfiles,
@@ -1466,13 +1508,16 @@ function Check-BuiltInPolicies {
     
     $results = New-Object System.Collections.ArrayList
     
-    # Get tenant root management group
-    try {
-        $tenantId = (Get-AzContext).Tenant.Id
-        $rootScope = "/providers/Microsoft.Management/managementGroups/$tenantId"
-    } catch {
-        $ErrorList.Add("Error getting tenant context: $_")
-        return $results
+    if($subScope){$rootScope = $subScope}
+    else{
+        # Get tenant root management group
+        try {
+            $tenantId = (Get-AzContext).Tenant.Id
+            $rootScope = "/providers/Microsoft.Management/managementGroups/$tenantId"
+        } catch {
+            $ErrorList.Add("Error getting tenant context: $_")
+            return $results
+        }
     }
 
     Write-Host "Starting policy compliance check for tenant: $tenantId"
@@ -1533,24 +1578,37 @@ function Check-BuiltInPolicies {
             }
             
             if ($hasExemptions) {
-                Write-Host "Policy has exemptions configured at tenant level"
-                $result = [PSCustomObject]@{
-                    Type = "tenant"
-                    Id = $tenantId
-                    Name = "Tenant ($tenantId)"
-                    DisplayName = "Tenant ($tenantId)"
-                    ComplianceStatus = $false
-                    Comments = $msgTable.policyHasExemptions
-                    ItemName = "$ItemName - $policyDisplayName"
-                    ControlName = $ControlName
-                    ReportTime = $ReportTime
-                    itsgcode = $itsgcode
+                if($subScope){
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $subscription.Id
+                        SubscriptionName = $subscription.Name
+                        DisplayName = $subscription.Name
+                        ComplianceStatus = $false
+                        Comments = $msgTable.policyHasExemptions
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
                 }
-                
+                else{
+                    $result = [PSCustomObject]@{
+                        Type = "tenant"
+                        Id = $tenantId
+                        Name = "Tenant ($tenantId)"
+                        DisplayName = "Tenant ($tenantId)"
+                        ComplianceStatus = $false
+                        Comments = $msgTable.policyHasExemptions
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                }
                 if ($EnableMultiCloudProfiles) {
                     $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
                 }
-                
                 $results.Add($result) | Out-Null
                 continue
             }
@@ -1562,20 +1620,35 @@ function Check-BuiltInPolicies {
 
             # If no resources are found that the policy applies to
             if ($null -eq $policyStates -or $policyStates.Count -eq 0) {
-                Write-Host "No resources found that the policy applies to"
-                $result = [PSCustomObject]@{
-                    Type = "tenant"
-                    Id = $tenantId
-                    Name = "Tenant ($tenantId)"
-                    DisplayName = "Tenant ($tenantId)"
-                    ComplianceStatus = $true
-                    Comments = $msgTable.policyNoApplicableResources
-                    ItemName = "$ItemName - $policyDisplayName"
-                    ControlName = $ControlName
-                    ReportTime = $ReportTime
-                    itsgcode = $itsgcode
+
+                if($subScope){
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $subscription.Id
+                        SubscriptionName = $subscription.Name
+                        DisplayName = $subscription.Name
+                        ComplianceStatus = $true
+                        Comments = $msgTable.policyNoApplicableResourcesSub
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
                 }
-                
+                else{
+                    $result = [PSCustomObject]@{
+                        Type = "tenant"
+                        Id = $tenantId
+                        Name = "Tenant ($tenantId)"
+                        DisplayName = "Tenant ($tenantId)"
+                        ComplianceStatus = $true
+                        Comments = $msgTable.policyNoApplicableResources
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                }
                 if ($EnableMultiCloudProfiles) {
                     $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
                 }
@@ -1612,44 +1685,73 @@ function Check-BuiltInPolicies {
                 }
             } else {
                 Write-Host "All resources are compliant with the policy"
+
+                if($subScope){
+                    $result = [PSCustomObject]@{
+                        Type = "subscription"
+                        Id = $subscription.Id
+                        Name = "All Resources"
+                        DisplayName = $subscription.Name
+                        ComplianceStatus = $true
+                        Comments = $msgTable.policyCompliant
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                }
+                else{
+                    $result = [PSCustomObject]@{
+                        Type = "tenant"
+                        Id = $tenantId
+                        Name = "All Resources"
+                        DisplayName = "All Resources"
+                        ComplianceStatus = $true
+                        Comments = $msgTable.policyCompliant
+                        ItemName = "$ItemName - $policyDisplayName"
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                }
+                if ($EnableMultiCloudProfiles) {
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                }
+                $results.Add($result) | Out-Null
+            }
+        } else {
+            
+            if($subScope){
                 $result = [PSCustomObject]@{
-                    Type = "tenant"
-                    Id = $tenantId
-                    Name = "All Resources"
-                    DisplayName = "All Resources"
-                    ComplianceStatus = $true
-                    Comments = $msgTable.policyCompliant
+                    Type = "subscription"
+                    Id = $subscription.Id
+                    SubscriptionName = $subscription.Name
+                    DisplayName = $subscription.Name
+                    ComplianceStatus = $false
+                    Comments = $msgTable.policyNotConfiguredSub -f $subScope
                     ItemName = "$ItemName - $policyDisplayName"
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                     itsgcode = $itsgcode
                 }
-                
-                if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            }
+            else{
+                $result = [PSCustomObject]@{
+                    Type = "tenant"
+                    Id = $tenantId
+                    Name = "Tenant ($tenantId)"
+                    DisplayName = "Tenant ($tenantId)"
+                    ComplianceStatus = $false
+                    Comments = $msgTable.policyNotConfigured
+                    ItemName = "$ItemName - $policyDisplayName"
+                    ControlName = $ControlName
+                    ReportTime = $ReportTime
+                    itsgcode = $itsgcode
                 }
-                
-                $results.Add($result) | Out-Null
             }
-        } else {
-            Write-Host "Policy is not assigned at tenant level"
-            $result = [PSCustomObject]@{
-                Type = "tenant"
-                Id = $tenantId
-                Name = "Tenant ($tenantId)"
-                DisplayName = "Tenant ($tenantId)"
-                ComplianceStatus = $false
-                Comments = $msgTable.policyNotConfigured
-                ItemName = "$ItemName - $policyDisplayName"
-                ControlName = $ControlName
-                ReportTime = $ReportTime
-                itsgcode = $itsgcode
-            }
-            
             if ($EnableMultiCloudProfiles) {
                 $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
             }
-            
             $results.Add($result) | Out-Null
         }
     }
