@@ -1628,7 +1628,7 @@ function Check-BuiltInPolicies {
                         SubscriptionName = $subscription.Name
                         DisplayName = $subscription.Name
                         ComplianceStatus = $true
-                        Comments = $msgTable.policyNoApplicableResources
+                        Comments = $msgTable.policyNoApplicableResourcesSub
                         ItemName = "$ItemName - $policyDisplayName"
                         ControlName = $ControlName
                         ReportTime = $ReportTime
@@ -1728,7 +1728,7 @@ function Check-BuiltInPolicies {
                     SubscriptionName = $subscription.Name
                     DisplayName = $subscription.Name
                     ComplianceStatus = $false
-                    Comments = $msgTable.policyNotConfigured
+                    Comments = $msgTable.policyNotConfiguredSub -f $subScope
                     ItemName = "$ItemName - $policyDisplayName"
                     ControlName = $ControlName
                     ReportTime = $ReportTime
