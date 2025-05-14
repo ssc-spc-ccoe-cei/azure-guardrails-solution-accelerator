@@ -27,7 +27,7 @@ mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0}
 gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
 
 globalAdminAccntsSurplus = Il doit y avoir cinq comptes d'administrateur général ou moins.
-globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général. Il doit y avoir au moins deux, mais pas plus de cinq comptes d'administrateur général actifs.
+globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général avec un état actif. La solution présume que vous utilisez des comptes d'administrateur général éligibles.
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
@@ -272,6 +272,10 @@ wAFNotEnabled = La passerelle d'application attribuée n'a pas de pares-feux d'a
 firewallFound = Il y a un {0} associé à cet abonnement.
 wAFEnabled = Il y a une passerelle d'application associée à cet abonnement avec les configurations appropriées.
 networkSecurityTools = Outils utilisés pour limiter l'accès aux adresses IP sources autorisées
+networkInterfaceIPs = Politique de limitation des adresses IP publiques
+
+policyNoApplicableResourcesSub = La politique est attribuée au niveau de l'abonnement. Aucune ressource applicable n'a été trouvée. 
+policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonnement : {0}. Veuillez attribuer la politique pour assurer la conformité.
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
