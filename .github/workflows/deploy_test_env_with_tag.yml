@@ -7,17 +7,6 @@ on:
         required: true
         type: string
 
-  push:
-    paths-ignore:
-      - 'README.md'
-      - 'SECURITY.md'
-      - 'SUPPORT.md'
-      - 'psmodules/**'
-      - 'docs/**'
-    branches:
-      - main
-      - dev
-
 concurrency:
   group: Deploy-Azure-CAC-Test
   cancel-in-progress: false
