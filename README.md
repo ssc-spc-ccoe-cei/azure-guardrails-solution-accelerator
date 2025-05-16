@@ -9,6 +9,7 @@ Thank you for your understanding.
 ___________________________________________________________________
 ## $${\color{Red} Avertissement: \space Version \space bêta \space 2.3.2 \space }$$
 La version actuelle (v2.3.2beta) disponible fait l'objet de tests opérationnels finaux. Elle a passé avec succès tous les tests unitaires et les tests d'intégration, mais doit encore faire l'objet d'un dernier cycle d'assurance qualité.
+
 Comme il s'agit d'une version bêta, veuillez l'installer avec précaution. Vous pouvez toujours utiliser la version 2.3.1 dans l'intervalle. L'étiquette bêta sera supprimée une fois l'examen final terminé.
 
 Nous vous remercions de votre compréhension.
