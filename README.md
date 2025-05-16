@@ -1,18 +1,18 @@
 # Azure Compliance as Code Solution (Guardrails Solution Accelerator) for Canadian Public Sector
 
-## $${\color{Red} Notice \space on \space version \space 2.3.1 \space (Pending \space Upgrade \space to \space version \space 2.3.2)}$$
-We would like to inform you that major enhancements for Guardrail 3 and Guardrail 1 are expected in the upcoming v2.3.2 release. This release is anticipated to be available in early May.
+## $${\color{Red} Warning: \space Beta \space Release \space 2.3.2 \space }$$
+The current release (v2.3.2beta) available is undergoing final operations testing. It has passed all unit tests and integration testing but still requires a final quality assurance cycle.
  
-While you are welcome to install the current version 2.3.1, please be prepared to upgrade to version 2.3.2, once it is released. We highly recommend waiting for the upcoming release to take advantage of the significant improvements.
+As this is a beta release, please install with caution. You can still use version 2.3.1 in the interim. The beta tag will be removed once the final review is completed.
  
-Thank you for your attention and cooperation.
+Thank you for your understanding.
 ___________________________________________________________________
-## $${\color{Red} Avis \space sur \space la \space version \space 2.3.1 \space (en \space attente \space de \space mise \space à \space niveau \space vers \space la \space version \space 2.3.2)}$$
-Nous aimerions vous informer que des améliorations majeures pour la Mesure de protection 3 et la Mesure de protection 1 sont attendues dans la prochaine version v2.3.2. Cette version devrait être disponible au début du mois de mai.
- 
-Bien que vous puissiez installer la version actuelle 2.3.1, soyez prêt à passer à la version 2.3.2, une fois qu’elle sera disponible. Nous vous recommandons fortement d’attendre la prochaine version pour profiter des améliorations significatives.
+## $${\color{Red} Avertissement: \space Version \space bêta \space 2.3.2 \space }$$
+La version actuelle (v2.3.2beta) disponible fait l'objet de tests opérationnels finaux. Elle a passé avec succès tous les tests unitaires et les tests d'intégration, mais doit encore faire l'objet d'un dernier cycle d'assurance qualité.
 
-Nous vous remercions de votre attention et votre coopération.
+Comme il s'agit d'une version bêta, veuillez l'installer avec précaution. Vous pouvez toujours utiliser la version 2.3.1 dans l'intervalle. L'étiquette bêta sera supprimée une fois l'examen final terminé.
+
+Nous vous remercions de votre compréhension.
 
 ----------------------------------------------------------------------
 
