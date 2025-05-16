@@ -30,7 +30,7 @@ function Check-AllUserMFARequired {
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] 
-        $EnableMultiCloudProfiles # New feature flag, default to false
+        $EnableMultiCloudProfiles # default to false
     )
 
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
@@ -39,7 +39,7 @@ function Check-AllUserMFARequired {
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     $UserComments = $null
 
-    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,createdDateTime,userType,accountEnabled'
+    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled'
     try {
         $response = Invoke-GraphQuery -urlPath $usersSignIn -ErrorAction Stop
         $allUsers = $response.Content.value
@@ -49,11 +49,13 @@ function Check-AllUserMFARequired {
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_"
     }
     # Check all users for MFA
+    $allUsers = $allUsers | Where-Object {$_.accountEnabled -ne $false}
     $allUserUPNs = $allUsers.userPrincipalName
+
     Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
 
     # list of guest users
-    $extUsers = Get-AzADUser -Filter "usertype eq 'guest'"
+    $extUsers = $allUsers | Where-Object { $_.userType -eq 'Guest'}
     if(!$null -eq $extUsers){
         $extUserList =  $extUsers | Select-Object userPrincipalName , displayName, id, mail
     }
