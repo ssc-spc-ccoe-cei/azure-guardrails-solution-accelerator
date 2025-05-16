@@ -1,5 +1,17 @@
 # Azure Compliance as Code Solution (Guardrails Solution Accelerator) for Canadian Public Sector
 
+## $${\color{Red} Warning \space : \space Beta \space Release \space 2.3.2 \space }$$
+The current release (v2.3.2beta) available is undergoing final operations testing. It has passed all unit tests and integration testing but still requires a final quality assurance cycle.
+ 
+As this is a beta release, please install with caution. You can still use version 2.3.1 in the interim. The beta tag will be removed once the final review is completed.
+ 
+Thank you for your understanding.
+___________________________________________________________________
+## $${\color{Red}  }$$
+
+
+----------------------------------------------------------------------
+
 ## Introduction
 
 The purpose of this implementation is to help Canadian Public Sector departments and agencies to identify and remediate the [GC Cloud Guardrails](https://github.com/canada-ca/cloud-guardrails#gc-cloud-guardrails) to ensure ongoing compliance with the GC Cloud Guardrail policy validations.
