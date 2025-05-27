@@ -19,13 +19,13 @@ Function Invoke-GSARunbooks {
     )
 
     try {
-        Start-AzAutomationRunbook -Name "main" -AutomationAccountName $config['runtime']['autoMationAccountName'] -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction Stop | Out-Null
+        Start-AzAutomationRunbook -Name "main" -AutomationAccountName $config['runtime']['autoMationAccountName'] -ResourceGroupName $config['runtime']['resourceGroup'] -Verbose -LogVerbose $true -LogProgress $true -ErrorAction Stop | Out-Null
     }
     catch { 
         Write-Error "Error starting 'main' runbook. $_"
     }
     try {
-        Start-AzAutomationRunbook -Name "backend" -AutomationAccountName $config['runtime']['autoMationAccountName'] -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction Stop | Out-Null
+        Start-AzAutomationRunbook -Name "backend" -AutomationAccountName $config['runtime']['autoMationAccountName'] -ResourceGroupName $config['runtime']['resourceGroup'] -Verbose -LogVerbose $true -LogProgress $true -ErrorAction Stop | Out-Null
     }
     catch { 
         Write-Error "Error starting 'backend' runbook. $_"
