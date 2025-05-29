@@ -134,7 +134,7 @@ function Check-PrivilegedExternalUsers  {
                             Type = $user.userType
                             CreatedDate = $user.createdDateTime
                             Enabled = $user.accountEnabled
-                            Roles = "True"                           # At least one role assigned to the user in this scope(i.e. subscription)
+                            Role = "True"                           # At least one role assigned to the user in this scope(i.e. subscription)
                             PrivilegedRole = $user.privilegedRole
                             Comments = $msgTable.guestAssigned
                             ItemName= $ItemName 
@@ -162,7 +162,7 @@ function Check-PrivilegedExternalUsers  {
                             Type = $user.userType
                             CreatedDate = $user.createdDateTime
                             Enabled = $user.accountEnabled
-                            Roles = "False"                        # No role assigned to the user in this scope(i.e. subscription)
+                            Role = "False"                        # No role assigned to the user in this scope(i.e. subscription)
                             PrivilegedRole = "False"
                             Comments = $msgTable.guestNotAssigned
                             ItemName= $ItemName 
@@ -197,7 +197,7 @@ function Check-PrivilegedExternalUsers  {
             Type = "N/A"
             CreatedDate = "N/A"
             Enabled = "N/A"
-            Roles = "N/A"
+            Role = "N/A"
             PrivilegedRole = "N/A"
             Comments = $comment
             ItemName= $ItemName 
@@ -210,7 +210,7 @@ function Check-PrivilegedExternalUsers  {
         $MitigationCommands = $msgTable.existingPrivilegedGuestAccounts
     
         # Group by DisplayName and others, aggregate Subscription
-        $guestUsersArray_grouped = $guestUsersArray | Group-Object -Property DisplayName, Roles, Comments | ForEach-Object {
+        $guestUsersArray_grouped = $guestUsersArray | Group-Object -Property DisplayName, Role, Comments | ForEach-Object {
             $subscriptions = $_.Group.Subscription -join ', '
             [PSCustomObject]@{
                 DisplayName = $_.Group[0].DisplayName
@@ -219,7 +219,7 @@ function Check-PrivilegedExternalUsers  {
                 Type = $_.Group[0].Type
                 CreatedDate = $_.Group[0].CreatedDate
                 Enabled = $_.Group[0].Enabled
-                Role = $_.Group[0].Roles
+                Role = $_.Group[0].Role
                 PrivilegedRole = $_.Group[0].PrivilegedRole
                 Comments = $_.Group[0].Comments
                 ItemName= $_.Group[0].ItemName 
