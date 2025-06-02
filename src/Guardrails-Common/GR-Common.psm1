@@ -661,19 +661,45 @@ function Get-EvaluationProfile {
         $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
         $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
+        # CONDITION 1: subscription tag is in cloudUsaProfile & moduleProfile
+        # CONDITION 2: subscription tag is not in cloudUsaProfile but in moduleProfile
+        # CONDITION 3: subscription tag is not in both cloudUsaProfile or moduleProfile
+        # CONDITION 4: subscription tag is not in moduleProfile only (doesn't matter if in cloudUsaProfile)
         # Use the highest profile if it's present in the module profiles
         if ($highestTagProfile -in $moduleProfileArray) {
-            return [PSCustomObject]@{
-                Profile = $highestTagProfile
-                ShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
+            if($highestTagProfile -in $cloudUsageProfileArray){
+                # Condition 1
+                $returnProfile = $highestTagProfile
+                $returnShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
             }
+            else{
+                # condition 2
+                if ($highestTagProfile -le $highestCloudUsageProfile){
+                    $returnProfile = $highestTagProfile
+                    $returnShouldEvaluate  = ($highestTagProfile -in $moduleProfileArray)
+                }
+                else{
+                    $returnProfile = $highestTagProfile
+                    $returnShouldEvaluate  = ($highestTagProfile -in $cloudUsageProfileArray)
+                }
+            }
+            
+        }
+        else{
+            # Condition 3 & 4
+            $returnProfile = $highestTagProfile
+            $returnShouldEvaluate = ($highestTagProfile -in $moduleProfileArray) 
         }
 
         # Otherwise, use the highest matching profile that doesn't exceed the module profile
-        $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        # $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        # return [PSCustomObject]@{
+        #     Profile = $highestMatchingProfile
+        #     ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
+        # }
         return [PSCustomObject]@{
-            Profile = $highestMatchingProfile
-            ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
+            Profile =  $returnProfile
+            ShouldEvaluate = $returnShouldEvaluate
         }
     }
     catch {
