@@ -38,7 +38,7 @@ The Azure Installation Playbook can be found on gcxchange.
 
 ## Release Notes
 
-Release Notes can be found on gcxchange. They’ll advise of any breaking changes and deltas between the previous version and the latest available on GitHub.
+Release Notes can be found on gcxchange. They will provide any breaking changes and deltas between the previous version and the latest available on GitHub.
 [Release Notes for Azure CaC Solution](https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Release%20Notes&p=true&ga=1)
 
 ## How it works
