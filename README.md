@@ -5,7 +5,7 @@ The current release (v2.3.2beta) available is undergoing final operations testin
  
 As this is a beta release, please install with caution. You can still use version 2.3.1 in the interim. The beta tag will be removed once the final review is completed.
  
-Thank you for your understanding.
+Thank you for your understanding. 
 ___________________________________________________________________
 ## $${\color{Red} Avertissement: \space Version \space bêta \space 2.3.2 \space }$$
 La version actuelle (v2.3.2beta) disponible fait l'objet de tests opérationnels finaux. Elle a passé avec succès tous les tests unitaires et les tests d'intégration, mais doit encore faire l'objet d'un dernier cycle d'assurance qualité.
