@@ -130,6 +130,7 @@ catch {
 
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
+Write-Output "Reading Subscription Id from context: $SubID"
 Write-Output "Starting main runbooks."
 Write-Output "Reading configuration file."
 read-blob -FilePath ".\modules.json" -resourcegroup $ResourceGroupName -storageaccountName $StorageAccountName -containerName "configuration" | Out-Null
