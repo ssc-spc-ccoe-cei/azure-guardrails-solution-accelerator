@@ -70,7 +70,7 @@ function Get-DefenderForCloudAlerts {
 
         #Check theres minimum two emails and owner is also notified
         if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
-            $Comments += $msgTable.EmailsOrOwnerNotConfigured -f $subscription
+            $Comments += $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
             break
         }
 
