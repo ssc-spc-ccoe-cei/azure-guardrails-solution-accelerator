@@ -55,6 +55,9 @@ catch {
 
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
+Write-Output "Reading Subscription Id from context: $SubID"
+Write-Output "Starting backend runbooks."
+Write-Output "Reading workspace key with secrects"
 try {
     [String] $WorkspaceKey = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
 }
@@ -63,6 +66,7 @@ catch {
 }
 
 # Updates ITSG Controls
+Write-Output "Reading itsgURL file."
 $itsgURL="https://raw.githubusercontent.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/main/setup/itsg33-ann4a-eng.csv"
 
 get-itsgdata -URL $itsgURL -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey

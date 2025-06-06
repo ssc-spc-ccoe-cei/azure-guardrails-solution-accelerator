@@ -20,7 +20,7 @@ env:
 jobs:
   sign-scripts:
     name: Validate, test and publish Powershell scripts as pipeline artifacts
-    runs-on: windows-2019
+    runs-on: windows-latest
     environment: test
     steps:
       - name: Check out repository

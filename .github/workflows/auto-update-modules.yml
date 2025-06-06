@@ -13,7 +13,7 @@ env:
 jobs:
   sign_scripts:
     name: Sign, validate, test and publish PowerShell scripts
-    runs-on: windows-2019
+    runs-on: windows-latest
     environment: test
     permissions:
       id-token: write

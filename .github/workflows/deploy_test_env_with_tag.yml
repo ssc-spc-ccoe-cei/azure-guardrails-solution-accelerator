@@ -38,7 +38,7 @@ jobs:
     name: Validate, test and publish PowerShell scripts as pipeline artifacts
     needs: check-version
     if: needs.check-version.outputs.valid == 'true'
-    runs-on: windows-2019
+    runs-on: windows-latest
     environment: test
     steps:
       - name: Check out repository at specific tag
