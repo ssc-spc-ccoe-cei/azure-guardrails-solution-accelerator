@@ -29,23 +29,26 @@ gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 alertsMonitor = Alerts to Flag Misuse and Suspicious Activities
 signInlogsNotCollected = The SignInLogs are currently not enabled. SignInLogs must be enabled to monitor and log user sign-in activities in the environment.
 auditlogsNotCollected = The AuditLogs are currently not enabled. AuditLogs must be enabled to capture and log all significant audit events within the environment.
-noAlertRules = No alert rules were found for SignInLogs or AuditLogs. Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
+noAlertRules = No alert rules were found for SignInLogs or AuditLogs for the resource group "{0}". Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
 noActionGroupsForBGaccts = No action groups were identified for Break Glass account sign-in activities. Action groups must be configured to receive alerts for Break Glass account sign-in attempts.
 noActionGroupsForAuditLogs = No action groups were found for Conditional Access Policy changes and updates. Action groups must be created to receive alerts for Conditional Access Policy changes and updates.
-noActionGroups = No action groups were configured for the resource group “{0}”. Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
+noActionGroups = No action groups were configured for the resource group "{0}". Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
 compliantAlerts = The alerts for Break Glass accounts and audit logs are compliant. Appropriate action groups have been configured and are correctly receiving alerts for each monitored activity.
 noAlertRuleforBGaccts = Create an alert for the Breakglass accounts using the SignInLogs. Missing one of the required alerts.
 NoAlertRuleforCaps = Create an alert for the Conditional Access Policy changes and updates using the AuditLogs. Missing one of the required alerts.
 
 globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
-globalAdminAccntsMinimum = There are not enough Global Administrator Accounts. There must be at least two but no more than five Active Global Administrator Accounts.
+globalAdminAccntsMinimum = There are not enough Global Administrator Accounts found with an active status. The solution is assuming that you are using eligible Global Administrator Accounts.
 allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
 gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
 allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
-userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly: {0}
+
+userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly
+nativeUserNonMfa = This native user account has not been set up with Multi-Factor Authentication (MFA). It has been {0} days since the last sign-in.
+nativeUserNoSignIn = This native user account has not been set up with Multi-Factor Authentication (MFA) and it has never been used to sign in.
 
 retentionNotMet = The LAW {0} does not meet data retention requirements
 readOnlyLaw = The {0} LAW identified is missing a read-only lock. Add the read-only lock to prevent accidental deletions.
@@ -230,6 +233,7 @@ policyNotCompliant = Resource is not compliant with the required policy. Please 
 policyHasExemptions = Policy has exemptions configured. All resources must be evaluated by this policy.
 policyNoApplicableResources = No applicable resources found. Policy is assigned at tenant level.
 
+
 # GuardRail #8
 noNSG=No NSG is present.
 subnetCompliant = Subnet is compliant.
@@ -267,13 +271,15 @@ wAFNotEnabled = The application gateway assigned does not have configured Web Ap
 firewallFound = There is a {0} associated to this subscription.
 wAFEnabled = There is an application gateway associated to this subscription with the appropriate configurations.
 networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP Addresses
+networkInterfaceIPs = Policy for Limiting Public IPs
+policyNoApplicableResourcesSub = Policy is assigned at the subscription level. No applicable resources found
+policyNotConfiguredSub = Required policy is not assigned to this subscription: {0}. Please assign the policy to ensure compliance.
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
 cbcSensorsdontExist = The expected CBC sensors do not exist
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
 cbssCompliant = Found resources in these subscriptions: 
-MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
 
 # GuardRail #11
 serviceHealthAlerts = Service Health Alerts and Events Check
@@ -304,7 +310,7 @@ compliantServiceHealthAlerts = All subscriptions have Service Health Alerts, and
 msDefenderChecks = Microsoft Defender for Cloud Alerts and Events Check
 NotAllSubsHaveDefenderPlans = The following subscription(s) lack a defender plan: {0}. Enable Defender monitoring for all subscriptions.
 errorRetrievingNotifications = Defender alert notifications for the subscription(s) are not configured. Ensure they match the Remediation Guidance requirements.
-EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription do not include at least two email addresses or subscription owners. Configure this to ensure alerts are sent correctly.
+EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription {0} do not include at least two email addresses or subscription owners. Configure this to ensure alerts are sent correctly.
 AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set the severity to Medium or Low and review the Remediation Guidance.
 AttackPathNotificationNotConfigured = Defender alerts must include attack path notifications. Ensure that the severity is set to Medium or Low for each subscription's alerts, following the guidelines provided in the Remediation Guidance.
 DefenderCompliant = MS Defender for Cloud is enabled for all subscriptions, and email notifications are properly configured.

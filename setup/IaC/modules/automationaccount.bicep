@@ -96,7 +96,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
-        version: '1.0.5'
+        version: '1.0.6'
       }
     }
   }
@@ -123,7 +123,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
-        version: '1.1.9'
+        version: '1.1.10'
       }
     }
   }
@@ -150,7 +150,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.2.8'
+        version: '1.2.9'
       }
     }
   }
@@ -267,7 +267,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.0.5'
+        version: '1.0.8'
       }
     }
   }
@@ -276,7 +276,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -382,7 +382,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
-        version: '1.0.4'
+        version: '1.0.5'
       }
     }
   }
@@ -452,7 +452,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }
     }
   }
@@ -493,6 +493,16 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
         version: '4.0.2'
+      }
+    }
+  }
+
+  resource module52 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-NetworkInterfaceIPs'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-NetworkInterfaceIPs.zip'
+        version: '1.0.1'
       }
     }
   }

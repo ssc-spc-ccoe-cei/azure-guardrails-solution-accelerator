@@ -2,7 +2,7 @@
 targetScope = 'resourceGroup'
 //Parameters and variables
 param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
-param AllowedLocationInitiativeId string = '/providers/microsoft.management/managementgroups/252afaf3-eb71-4f05-8da2-279c8b2466b7/providers/microsoft.authorization/policysetdefinitions/6c7429039715412f9438cb15'
+param AllowedLocationInitiativeId string = 'N/A'
 param automationAccountName string = 'guardrails-AC'
 param CBSSubscriptionName string 
 param currentUserObjectId string = ''
@@ -38,8 +38,8 @@ param breakglassAccount1 string = ''
 param breakglassAccount2 string = ''
 
 var containername = 'guardrailsstorage'
-//var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/docs/'
-var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
+// var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
+var GRDocsBaseUrl='https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name
 

@@ -28,4 +28,4 @@ git tag -f v1.0.8
 git push upstream tag v1.0.8
 ```
 
-Once the tag is pushed to GitHub, the tag created above will trigger the Pipeline named ['Azure.GuardrailsSolutionAccelerator Release Pipeline' in Azure DevOps](https://dev.azure.com/guardrailssolutionaccelerator/GuardrailsSolutionAccelerator/_build?definitionId=11). Navigate to Azure DevOps to monitor the progress of the pipeline and address any issues. If the pipeline fails, a release will not be created in GitHub. 
+Once the tag is pushed to GitHub, the tag created above will trigger the Pipeline named ['Azure CAC Release' in GitHub](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/blob/main/.github/workflows/release-pipeline.yml). Navigate to GitHub actions to monitor the progress of the pipeline and address any issues. If the pipeline fails, a release will not be created in GitHub. 

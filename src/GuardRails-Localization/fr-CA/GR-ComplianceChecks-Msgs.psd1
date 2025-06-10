@@ -27,14 +27,14 @@ mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0}
 gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
 
 globalAdminAccntsSurplus = Il doit y avoir cinq comptes d'administrateur général ou moins.
-globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général. Il doit y avoir au moins deux, mais pas plus de cinq comptes d'administrateur général actifs.
+globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général avec un état actif. La solution présume que vous utilisez des comptes d'administrateur général éligibles.
 allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
 gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
 
 alertsMonitor = Alertes pour signaler l'utilisation abusive et les activités suspectes
 signInlogsNotCollected = Les journaux de connexion « SignInLogs » ne sont actuellement pas activés. Les « SignInLogs » doivent être activés pour surveiller et enregistrer les activités de connexion des utilisateurs dans l'environnement.
 auditlogsNotCollected = Les journaux d'audit « AuditLogs » ne sont actuellement pas activés. Les « AuditLogs » doivent être activés pour capturer et enregistrer tous les événements d'audit significatifs dans l'environnement.
-noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
+noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs » pour le groupe de ressources « {0} ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
 noActionGroupsForBGaccts = Aucun groupe d'action n'a été identifié pour les activités de connexion au compte de bris de verre. Les groupes d'action doivent être configurés pour recevoir des alertes en cas de tentatives de connexion au compte de bris de verre.
 noActionGroupsForAuditLogs = Aucun groupe d'action n'a été trouvé pour les modifications et les mises à jour de la politique d'accès conditionnel. Des groupes d'action doivent être créés pour recevoir des alertes pour les modifications et les mises à jour de la politique d'accès conditionnel.
 has context menu
@@ -46,7 +46,10 @@ noAlertRuleforCaps = Créez une alerte pour les modifications et les mises à jo
 allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
-userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF: {0}
+
+userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF
+nativeUserNonMfa = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM). Il y a {0} jours depuis la dernière connexion.
+nativeUserNoSignIn = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM) et il n'a jamais été utilisé pour se connecter.
 
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
 readOnlyLaw = Il manque un verrou en lecture seule pour l'espace de travail {0} [Log Analytics Workspace (LAW)] identifié. Ajoutez le verrou en lecture seule pour éviter des suppressions accidentelles.
@@ -269,13 +272,16 @@ wAFNotEnabled = La passerelle d'application attribuée n'a pas de pares-feux d'a
 firewallFound = Il y a un {0} associé à cet abonnement.
 wAFEnabled = Il y a une passerelle d'application associée à cet abonnement avec les configurations appropriées.
 networkSecurityTools = Outils utilisés pour limiter l'accès aux adresses IP sources autorisées
+networkInterfaceIPs = Politique de limitation des adresses IP publiques
+
+policyNoApplicableResourcesSub = La politique est attribuée au niveau de l'abonnement. Aucune ressource applicable n'a été trouvée. 
+policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonnement : {0}. Veuillez attribuer la politique pour assurer la conformité.
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
 cbcSensorsdontExist = Les capteurs CBC attendus n'existent pas
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
 cbssCompliant = Ressources trouvées dans ces abonnements: 
-MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
 serviceHealthAlerts = Alertes de santé du service et vérification des événements
@@ -309,7 +315,7 @@ monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
 NotAllSubsHaveDefenderPlans = Le(s) abonnement(s) suivant(s) n'a/n'ont pas de plan MS Defender : {0} . Activez la surveillance MS Defender pour tous les abonnements.
 errorRetrievingNotifications = Les notifications d'alerte MS Defender pour le ou les abonnements ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
-EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
+EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement {0} n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
 AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
 

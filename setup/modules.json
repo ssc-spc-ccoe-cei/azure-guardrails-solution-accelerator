@@ -382,7 +382,7 @@
     "Control": "Guardrails3",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "True",
+    "Required": "False",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Get-AdminAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.adminAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
@@ -438,7 +438,7 @@
     "ModuleName": "Check-FinOpsToolStatus",
     "Control": "Guardrails4",
     "ModuleType": "Builtin",
-    "Status": "Enabled",
+    "Status": "Disabled",
     "Required": "False",
     "Profiles": [1, 2, 3, 4, 5, 6],
     "Script": "Check-FinOpsToolStatus -ControlName $msgTable.CtrName4 -ItemName $msgTable.FinOpsToolStatus -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
@@ -831,6 +831,21 @@
       }
     ]
   },
+	  {
+    "ModuleName": "Check-NetworkInterfaceIPs",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Disabled",
+    "Required": "False",
+    "Profiles": [2, 3, 4, 5, 6],
+    "Script": "Check-NetworkInterfaceIPs -ControlName $msgTable.CtrName9 -ItemName $msgTable.networkInterfaceIPs -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
   {
     "ModuleName": "Check-NetworkWatcherEnabled",
     "Control": "Guardrails9",
@@ -887,7 +902,7 @@
     "Control": "Guardrails10",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
+    "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
     "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName 'CBS Subscription' -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
@@ -900,37 +915,6 @@
       {
         "Name": "itsgcode",
         "Value": "SI4"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails10",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-DocumentsExistInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName10 -ItemName $msgTable.MOUwithCCCS -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": [
-          "MemorandumOfUnderstanding"
-        ]
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "SC5"
       }
     ]
   },
@@ -965,7 +949,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Profiles": [2, 3, 4, 5, 6],
     "Script": "Get-ServiceHealthAlerts -ControlName $msgTable.CtrName11 -ItemName $msgTable.serviceHealthAlerts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "localVariables": [
       {

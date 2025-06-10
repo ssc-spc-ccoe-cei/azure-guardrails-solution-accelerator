@@ -57,13 +57,12 @@ function Check-UserAccountGCEventLogging {
             $Comments += $msgTable.retentionNotMet -f $lawName
         }
 
-        # Check if required logs are enabled
+        # # Check if required logs are enabled
+        # 'AuditLogs', 'SignInLogs', 'NonInteractiveUserSignInLogs', 'ServicePrincipalSignInLogs', 'ManagedIdentitySignInLogs', 'ProvisioningLogs', 
+        # 'ADFSSignInLogs', 'RiskyUsers','UserRiskEvents', 'NetworkAccessTrafficLogs', 'RiskyServicePrincipals',
+        # 'ServicePrincipalRiskEvents', 'EnrichedOffice365AuditLogs', 'MicrosoftGraphActivityLogs','RemoteNetworkHealthLogs'
         $requiredLogs = @(
-            'AuditLogs', 'SignInLogs', 'NonInteractiveUserSignInLogs', 'ServicePrincipalSignInLogs',
-            'ManagedIdentitySignInLogs', 'ProvisioningLogs', 'ADFSSignInLogs', 'RiskyUsers',
-            'UserRiskEvents', 'NetworkAccessTrafficLogs', 'RiskyServicePrincipals',
-            'ServicePrincipalRiskEvents', 'EnrichedOffice365AuditLogs', 'MicrosoftGraphActivityLogs',
-            'RemoteNetworkHealthLogs'
+            'AuditLogs', 'SignInLogs', 'ManagedIdentitySignInLogs', 'RiskyUsers', 'MicrosoftGraphActivityLogs'
         )
         $diagnosticSettings = get-AADDiagnosticSettings
 
