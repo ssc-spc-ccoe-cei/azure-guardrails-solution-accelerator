@@ -354,9 +354,9 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
                 }
                 catch{
-                    Write-Error "Error in adding GSA automation runbooks. $_"
+                    Write-Error "Error adding to runbook. $_"
                 }
-
+                
             }
             
             # deploy Lighthouse components
@@ -367,17 +367,15 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 catch{
                     Write-Error "Error in deploying GSA centralized reporting customer components. $_"
                 }
-
             }
-            
             If ($newComponents -contains 'CentralizedCustomerDefenderForCloudSupport') {
                 try{
                     Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
                 }
                 catch{
-                    Write-Error "Error in deploying GSA centralized defender customer components. $_"
+                    Write-Error "Error in deploying GSA centralized defender for cloud customer components. $_"
                 }
-
+                
             }
 
             Write-Verbose "Completed new deployment."
@@ -440,12 +438,17 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 catch{
                     Write-Error "Error in undating GSA core resources. $_"
                 }
-
             }
             
             # update runbook definitions in AA
             If ($componentsToUpdate -contains 'AutomationAccountRunbooks') {
-                Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                try{
+                    Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in undating runbook. $_"
+                }
+                
             }
 
             Write-Verbose "Completed update deployment."
