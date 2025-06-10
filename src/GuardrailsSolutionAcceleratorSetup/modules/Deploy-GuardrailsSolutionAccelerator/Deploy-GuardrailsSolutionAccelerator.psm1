@@ -436,7 +436,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
                 }
                 catch{
-                    Write-Error "Error in undating GSA core resources. $_"
+                    Write-Error "Error in updating GSA core resources. $_"
                 }
             }
             
@@ -446,7 +446,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
                 }
                 catch{
-                    Write-Error "Error in undating runbook. $_"
+                    Write-Error "Error in updating runbook. $_"
                 }
                 
             }
