@@ -446,7 +446,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
                 }
                 catch{
-                    Write-Error "Error in updating runbook. $_"
+                    Write-Error "Error in updating Azure automation runbook. $_"
                 }
                 
             }
@@ -456,7 +456,13 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
         # after successful deployment or update
         Write-Verbose "Invoking manual execution of Azure Automation runbooks..."
-        Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        try{
+            Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        }
+        catch{
+            Write-Error "Error in invoking Azure automation runbook. $_"
+        }
+
 
         Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
         $configSecretName = 'gsaConfigExportLatest'
