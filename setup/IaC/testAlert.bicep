@@ -13,7 +13,7 @@ resource featuresTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-
         name: 'GR_VersionInfo_CL'
         columns: [
             {
-                name: 'DeployedVersion_s'
+                name: 'CurrentVersion_s'
                 type: 'string'
             }
             {
@@ -25,7 +25,7 @@ resource featuresTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-
               type: 'string'
             }
             {
-              name: 'UpdateNeeded_b'
+              name: 'UpdateAvailable'
               type: 'bool'
             }
         ]
@@ -45,7 +45,7 @@ module alertNewVersion 'modules/alert.bicep' = {
       alertRuleDisplayName: 'Guardrails New Version Available.'
       alertRuleSeverity: 3
       location: location
-      query: 'GR_VersionInfo_CL | summarize total=count() by UpdateNeeded_b=iff(DeployedVersion_s != AvailableVersion_s, "Yes",\'No\') | where UpdateAvailable == \'Yes\''
+      query: 'GR_VersionInfo_CL | summarize total=count() by UpdateAvailable=iff(CurrentVersion_s != AvailableVersion_s, "Yes",\'No\') | where UpdateAvailable == \'Yes\''
       scope: lawId
       autoMitigate: true
       evaluationFrequency: 'PT6H'
