@@ -25,7 +25,7 @@ resource featuresTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-
               type: 'string'
             }
             {
-              name: 'UpdateAvailable'
+              name: 'UpdateNeeded_b'
               type: 'bool'
             }
         ]
