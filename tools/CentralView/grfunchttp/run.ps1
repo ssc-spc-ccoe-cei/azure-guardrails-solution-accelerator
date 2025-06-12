@@ -36,7 +36,7 @@ $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 "Report Time: $ReportTime"
 try {
     get-tenantdata -workspaceID $workspaceId -workspacekey $WorkspaceKey -ReportTime $ReportTime `
-        -tenantName $TenantName -tenantDomainUPN $TenantDomainUPN -tenantId $TenantId
+        -tenantName $TenantName -tenantDomainUPN $TenantDomainUPN -tenantId $TenantId -DebugInfo $true
 }
 catch {
     Write-Output "Error running get-tenantdata"
