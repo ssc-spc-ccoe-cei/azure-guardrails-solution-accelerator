@@ -10,7 +10,7 @@
   "SSCReadOnlyServicePrincipalNameAPPID": "00000000-0000-0000-0000-000000000000",
   "pbmmPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
   "allowedLocationPolicyId": "e56962a6-4747-49cd-b67b-bf8b01975c4c",
-  "allowedLocationInitiativeId": "/providers/microsoft.management/managementgroups/252afaf3-eb71-4f05-8da2-279c8b2466b7/providers/microsoft.authorization/policysetdefinitions/6c7429039715412f9438cb15",
+  "allowedLocationInitiativeId": "N/A",
   "departmentNumber": "",
   "cbsSubscriptionName": "N/A",
   "securityLAWResourceId": "/subscriptions/xxxxx-xxxx-xxxx-xxxx-xxxxx/resourceGroups/xxxxx/providers/Microsoft.OperationalInsights/workspaces/xxxxxxx",

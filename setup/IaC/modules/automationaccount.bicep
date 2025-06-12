@@ -96,7 +96,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
-        version: '1.0.5'
+        version: '1.0.6'
       }
     }
   }
@@ -267,7 +267,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.0.7'
+        version: '1.0.8'
       }
     }
   }
@@ -452,7 +452,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.0.0'
+        version: '1.0.2'
       }
     }
   }

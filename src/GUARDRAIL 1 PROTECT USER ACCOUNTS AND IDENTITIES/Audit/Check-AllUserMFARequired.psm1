@@ -116,8 +116,27 @@ function Check-AllUserMFARequired {
 
     $matchingBadUsers = $allUsers | Where-Object {$userUPNsBadMFA.UPN -contains $_.userPrincipalName}
 
+    if($null -eq $allUsers){
+        $IsCompliant = $false
+        $commentsArray = $msgTable.MSEntIDLicenseTypeNotFound
+
+        $Customuser = [PSCustomObject] @{
+            DisplayName = "N/A"
+            UserPrincipalName = "N/A"
+            User_Enabled = "N/A"
+            User_Type = "N/A"
+            CreatedTime = "N/A"
+            LastSignIn = "N/A"
+            Comments = $commentsArray
+            ItemName= $ItemName 
+            ReportTime = $ReportTime
+            itsgcode = $itsgcode
+        }
+        $nonMfaUsers.add($Customuser)
+    }
+
     # Condition: all users are MFA enabled
-    if(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
+    elseif(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
         $commentsArray = $msgTable.allUserHaveMFA
         $IsCompliant = $true
 
