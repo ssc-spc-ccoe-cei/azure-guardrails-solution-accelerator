@@ -339,9 +339,10 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
             # confirms that prerequisites are met and that deployment can proceed
             Confirm-GSAPrerequisites -config $config -newComponents $newComponents -Verbose:$useVerbose
-
+            
             If ($newComponents -contains 'CoreComponents') {
                 # deploy core resources
+                Write-Host "Deploying CoreComponents..." -ForegroundColor Green
                 try{
                     Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
                 }
@@ -350,6 +351,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 }
                 
                 # add runbooks to AA
+                Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
                 try{
                     Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
                 }
@@ -360,6 +362,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             }
             
             # deploy Lighthouse components
+            Write-Host "Deploying Lighthouse components..." -ForegroundColor Green
             If ($newComponents -contains 'CentralizedCustomerReportingSupport') {
                 try{
                     Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
@@ -378,6 +381,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 
             }
 
+            Write-Host "Completed new deployment."
             Write-Verbose "Completed new deployment."
         }
         Else {
@@ -455,7 +459,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         }
 
         # after successful deployment or update
-        Write-Verbose "Invoking manual execution of Azure Automation runbooks..."
+        Write-Host "Invoking manual execution of Azure Automation runbooks..."
         try{
             Invoke-GSARunbooks -config $config -Verbose:$useVerbose
         }
@@ -463,7 +467,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Error "Error in invoking Azure automation runbook. $_"
         }
 
-
+        Write-Host "Exporting configuration to GSA KeyVault "
         Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
         $configSecretName = 'gsaConfigExportLatest'
         $secretTags = @{
