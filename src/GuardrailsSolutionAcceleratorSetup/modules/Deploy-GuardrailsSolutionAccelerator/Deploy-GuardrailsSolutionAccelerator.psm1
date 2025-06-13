@@ -339,23 +339,51 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
             # confirms that prerequisites are met and that deployment can proceed
             Confirm-GSAPrerequisites -config $config -newComponents $newComponents -Verbose:$useVerbose
-
+            
             If ($newComponents -contains 'CoreComponents') {
                 # deploy core resources
-                Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                Write-Host "Deploying CoreComponents..." -ForegroundColor Green
+                try{
+                    Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSACoreResources. $_"
+                }
                 
                 # add runbooks to AA
-                Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
+                try{
+                    Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error adding to runbook. $_"
+                }
+                
             }
             
             # deploy Lighthouse components
+            Write-Host "Deploying Lighthouse components..." -ForegroundColor Green
             If ($newComponents -contains 'CentralizedCustomerReportingSupport') {
-                Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
+                Write-Host "Deploying CentralizedReportingCustomerComponents..." -ForegroundColor Green
+                try{
+                    Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSA centralized reporting customer components. $_"
+                }
             }
             If ($newComponents -contains 'CentralizedCustomerDefenderForCloudSupport') {
-                Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
+                Write-Host "Deploying GSACentralizedDefenderCustomerComponents..." -ForegroundColor Green
+                try{
+                    Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSA centralized defender for cloud customer components. $_"
+                }
+                
             }
 
+            Write-Host "Completed new deployment."
             Write-Verbose "Completed new deployment."
         }
         Else {
@@ -410,21 +438,38 @@ Function Deploy-GuardrailsSolutionAccelerator {
             # deploy the bicep template with the specified parameters
             If ($updateBicep) {
                 Write-Verbose "Deploying core Bicep template with update parameters '$($paramObject.Keys.Where({$_ -like 'update*'}) -join ',')'..."
-                Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                try{
+                    Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in updating GSA core resources. $_"
+                }
             }
             
             # update runbook definitions in AA
             If ($componentsToUpdate -contains 'AutomationAccountRunbooks') {
-                Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                try{
+                    Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in updating Azure automation runbook. $_"
+                }
+                
             }
 
             Write-Verbose "Completed update deployment."
         }
 
         # after successful deployment or update
-        Write-Verbose "Invoking manual execution of Azure Automation runbooks..."
-        Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        Write-Host "Invoking manual execution of Azure Automation runbooks..."
+        try{
+            Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        }
+        catch{
+            Write-Error "Error in invoking Azure automation runbook. $_"
+        }
 
+        Write-Host "Exporting configuration to GSA KeyVault "
         Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
         $configSecretName = 'gsaConfigExportLatest'
         $secretTags = @{
