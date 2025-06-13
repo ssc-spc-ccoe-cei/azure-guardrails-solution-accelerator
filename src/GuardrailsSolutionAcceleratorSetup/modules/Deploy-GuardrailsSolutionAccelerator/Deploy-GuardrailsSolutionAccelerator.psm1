@@ -364,6 +364,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             # deploy Lighthouse components
             Write-Host "Deploying Lighthouse components..." -ForegroundColor Green
             If ($newComponents -contains 'CentralizedCustomerReportingSupport') {
+                Write-Host "Deploying CentralizedReportingCustomerComponents..." -ForegroundColor Green
                 try{
                     Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
                 }
@@ -372,6 +373,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 }
             }
             If ($newComponents -contains 'CentralizedCustomerDefenderForCloudSupport') {
+                Write-Host "Deploying GSACentralizedDefenderCustomerComponents..." -ForegroundColor Green
                 try{
                     Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
                 }
