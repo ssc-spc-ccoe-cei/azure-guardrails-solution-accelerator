@@ -22,16 +22,12 @@ function Check-UserGroups {
     [string] $Comments = $null
 
     # list all users in the tenant
-    $urlPath = "/users"
+    $urlPath = '/users?$select=userPrincipalName,displayName,givenName,surname,id,mail,userType'
     try {
         $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
 
-        if ($null -ne $data -and $null -ne $data.value) {
-            $users = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+        if ($null -ne $response.Content -and $null -ne $response.Content.value) {
+            $users = $response.Content.value
         }
     }
     catch {
@@ -39,11 +35,14 @@ function Check-UserGroups {
         $ErrorList.Add($errorMsg)
         Write-Error "Error: $errorMsg"
     }
-    Write-Host "users count is $($users.Count)"
+    Write-LogInfo "users count is $($users.Count)"
     
     # Find total user count in the environment
     $allUserCount = $users.Count
-    Write-Host "userCount is $allUserCount"
+    Write-LogInfo "userCount is $allUserCount"
+    $memberCount = ($users | Where-Object { $_.userType -eq 'Member' }).Count
+    $guestCount = ($users | Where-Object { $_.userType -eq 'Guest' }).Count
+
 
     # List of all user groups in the environment
     $urlPath = "/groups"
@@ -65,7 +64,7 @@ function Check-UserGroups {
     }
     # Find total user groups count are in the environment
     $userGroupCount = $groups.Count
-    Write-Host "number of user groups in the tenant are $userGroupCount"
+    Write-LogInfo "number of user groups in the tenant are $userGroupCount"
 
     # Find members in each group
     $groupMemberList = @()
@@ -105,9 +104,10 @@ function Check-UserGroups {
     }
     # Find unique users from all user groups by unique userPrincipalName
     $uniqueUsers = $groupMemberList | Sort-Object userPrincipalName -Unique
-    Write-Host "number of unique users calculated from user groups are $($uniqueUsers.Count)"
+    Write-LogInfo "number of unique users calculated from user groups are $($uniqueUsers.Count)"
     # filter unique users which have UPN only (e.g exclude mailbox email etc.)
-    $uniqueUsers = $uniqueUsers | Where-Object { $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' }
+    $uniqueUsers = $uniqueUsers | Where-Object { $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' }
+    $totalGroupUserCount = $uniqueUsers.Count
     
     # Condition: if only 1 user in the tenant
     if($allUserCount -le 1) {
@@ -168,6 +168,8 @@ function Check-UserGroups {
         
     }
 
+    $statsComments = "\n User stats - Total Users: $allUserCount; Group Users (Total - Unique): $totalGroupUserCount; Members in Tenants: $memberCount; Guests in Tenants: $guestCount" 
+    $commentsArray += $statsComments
     $Comments = $commentsArray -join ";"
     
     $PsObject = [PSCustomObject]@{
