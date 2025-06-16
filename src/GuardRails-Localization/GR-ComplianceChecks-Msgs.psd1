@@ -115,6 +115,7 @@ noCAPforAnyGroups = None of the conditional access policies refer to one of your
 userCountOne = There is only one user in the environment. User groups are not required. 
 userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
 reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
+userStats = User stats - Total Users: {0}; Group Users (Total - Unique): {1}; Members in Tenants: {2}; Guests in Tenants: {3}
 
 riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
 nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.

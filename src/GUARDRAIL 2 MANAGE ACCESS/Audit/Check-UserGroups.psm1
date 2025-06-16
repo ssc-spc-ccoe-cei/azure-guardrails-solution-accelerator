@@ -35,11 +35,11 @@ function Check-UserGroups {
         $ErrorList.Add($errorMsg)
         Write-Error "Error: $errorMsg"
     }
-    Write-LogInfo "users count is $($users.Count)"
+    Write-Output "users count is $($users.Count)"
     
     # Find total user count in the environment
     $allUserCount = $users.Count
-    Write-LogInfo "userCount is $allUserCount"
+    Write-Output "userCount is $allUserCount"
     $memberCount = ($users | Where-Object { $_.userType -eq 'Member' }).Count
     $guestCount = ($users | Where-Object { $_.userType -eq 'Guest' }).Count
 
@@ -64,7 +64,7 @@ function Check-UserGroups {
     }
     # Find total user groups count are in the environment
     $userGroupCount = $groups.Count
-    Write-LogInfo "number of user groups in the tenant are $userGroupCount"
+    Write-Output "number of user groups in the tenant are $userGroupCount"
 
     # Find members in each group
     $groupMemberList = @()
@@ -104,7 +104,7 @@ function Check-UserGroups {
     }
     # Find unique users from all user groups by unique userPrincipalName
     $uniqueUsers = $groupMemberList | Sort-Object userPrincipalName -Unique
-    Write-LogInfo "number of unique users calculated from user groups are $($uniqueUsers.Count)"
+    Write-Output "number of unique users calculated from user groups are $($uniqueUsers.Count)"
     # filter unique users which have UPN only (e.g exclude mailbox email etc.)
     $uniqueUsers = $uniqueUsers | Where-Object { $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' }
     $totalGroupUserCount = $uniqueUsers.Count
@@ -168,8 +168,7 @@ function Check-UserGroups {
         
     }
 
-    $statsComments = "\n User stats - Total Users: $allUserCount; Group Users (Total - Unique): $totalGroupUserCount; Members in Tenants: $memberCount; Guests in Tenants: $guestCount" 
-    $commentsArray += $statsComments
+    $commentsArray += $msgTable.userStats -f $allUserCount, $totalGroupUserCount, $memberCount, $guestCount
     $Comments = $commentsArray -join ";"
     
     $PsObject = [PSCustomObject]@{
