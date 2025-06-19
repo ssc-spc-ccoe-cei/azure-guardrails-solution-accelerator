@@ -623,6 +623,9 @@ function Get-EvaluationProfile {
         [Parameter(Mandatory = $false)]
         [string] $SubscriptionId
     )
+    Write-Host "Config CloudUsageProfiles $CloudUsageProfiles"
+    Write-Host "MCP GR ModuleProfiles $ModuleProfiles"
+    Write-Host "SubscriptionId $SubscriptionId"
 
     try {
         # Convert input strings to integer arrays  
