@@ -8,6 +8,7 @@ Function Deploy-GSACentralizedReportingCustomerComponents {
     )
     $ErrorActionPreference = 'Stop'
 
+    Write-Host "Starting deployment of Lighthouse delegation of access to the GSA resource group"
     Write-Verbose "Starting deployment of Lighthouse delegation of access to the GSA resource group"
     $lighthouseBicepPath = "$PSScriptRoot/../../../../setup/lighthouse/"
 
@@ -36,6 +37,7 @@ Function Deploy-GSACentralizedReportingCustomerComponents {
         )
     }
 
+    Write-Host "Deploying Guardrails resource group permission delegation...."
     #deploy Guardrails resource group permission delegation
     try {
         $null = New-AzDeployment -Location $config.region `
