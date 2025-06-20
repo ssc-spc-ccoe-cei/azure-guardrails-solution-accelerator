@@ -660,8 +660,11 @@ function Get-EvaluationProfile {
         $profileTagValuesArray = ConvertTo-IntArray $profileTagValues
 
         # Get the highest profile from all sources
+        #cloudUsageProfile from config json
         $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
+        #module profiles for the guardrail
         $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
+        #subscription tag
         $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
         # CONDITION 1: subscription tag is in cloudUsaProfile & moduleProfile
