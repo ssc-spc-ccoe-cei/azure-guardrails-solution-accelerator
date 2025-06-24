@@ -627,6 +627,10 @@ function Get-EvaluationProfile {
     Write-Host "MCP GR ModuleProfiles $ModuleProfiles"
     Write-Host "SubscriptionId $SubscriptionId"
 
+    $returnProfile = ""
+    $returnShouldEvaluate = $false
+    $returnShouldAvailable = $false
+
     try {
         # Convert input strings to integer arrays  
         $cloudUsageProfileArray = ConvertTo-IntArray $CloudUsageProfiles
@@ -654,6 +658,7 @@ function Get-EvaluationProfile {
             return [PSCustomObject]@{
                 Profile = $matchedProfile
                 ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
+                ShouldAvailable = ($matchedProfile -in $moduleProfileArray)
             }
         }
 
@@ -667,34 +672,19 @@ function Get-EvaluationProfile {
         #subscription tag
         $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
-        # CONDITION 1: subscription tag is in cloudUsaProfile & moduleProfile
-        # CONDITION 2: subscription tag is not in cloudUsaProfile but in moduleProfile
-        # CONDITION 3: subscription tag is not in both cloudUsaProfile or moduleProfile
-        # CONDITION 4: subscription tag is not in moduleProfile only (doesn't matter if in cloudUsaProfile)
         # Use the highest profile if it's present in the module profiles
         if ($highestTagProfile -in $moduleProfileArray) {
-            if($highestTagProfile -in $cloudUsageProfileArray){
-                # Condition 1
-                $returnProfile = $highestTagProfile
-                $returnShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
-            }
-            else{
-                # condition 2
-                if ($highestTagProfile -le $highestCloudUsageProfile){
-                    $returnProfile = $highestTagProfile
-                    $returnShouldEvaluate  = ($highestTagProfile -in $moduleProfileArray)
-                }
-                else{
-                    $returnProfile = $highestTagProfile
-                    $returnShouldEvaluate  = ($highestTagProfile -in $cloudUsageProfileArray)
-                }
-            }
+            # CONDITION: hightest sub tag is in module profile
+            $returnProfile = $highestTagProfile
+            $returnShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
+            $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
             
         }
         else{
-            # Condition 3 & 4
+            # CONDITION: hightest sub tag is not in module profile
             $returnProfile = $highestTagProfile
-            $returnShouldEvaluate = ($highestTagProfile -in $moduleProfileArray) 
+            $returnShouldEvaluate = ($highestTagProfile -in $moduleProfileArray)
+            $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
         }
 
         # Otherwise, use the highest matching profile that doesn't exceed the module profile
@@ -706,6 +696,7 @@ function Get-EvaluationProfile {
         return [PSCustomObject]@{
             Profile =  $returnProfile
             ShouldEvaluate = $returnShouldEvaluate
+            ShouldAvailable = $returnShouldAvailable
         }
     }
     catch {
@@ -713,6 +704,7 @@ function Get-EvaluationProfile {
         return [PSCustomObject]@{
             Profile = 0
             ShouldEvaluate = $false
+            ShouldAvailable = $false
         }
     }
 }

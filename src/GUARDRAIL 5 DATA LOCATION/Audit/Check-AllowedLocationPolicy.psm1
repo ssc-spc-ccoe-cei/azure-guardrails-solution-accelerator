@@ -194,7 +194,7 @@ function Check-PolicyStatus {
                 $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
             }
             
-            if (!$evalResult.ShouldEvaluate) {
+            if (!$evalResult.ShouldEvaluate ) {
                 if ($evalResult.Profile -gt 0) {
                     $c.ComplianceStatus = "Not Applicable"
                     $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
@@ -206,7 +206,13 @@ function Check-PolicyStatus {
                 
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
-        }        
+
+            if(!$evalResult.ShouldAvailable ){
+                $c.ComplianceStatus = "Not Available"
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $c.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+            }
+        }       
         
         $tempObjectList.add($c)| Out-Null
     }
