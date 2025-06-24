@@ -79,7 +79,8 @@ function Check-UserGroups {
             # $data = $response
 
             if ($null -ne $data -and $null -ne $data.value) {
-                $grMembers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+                $grMembers = $data.value | Where-Object { $_.'@odata.type' -eq '#microsoft.graph.user' } |
+                Select-Object userPrincipalName , displayName, givenName, surname, id, mail
 
                 foreach ($grMember in $grMembers) {
                     $groupMembers = [PSCustomObject]@{
@@ -103,7 +104,7 @@ function Check-UserGroups {
         }
     }
     # Find unique users from all user groups by unique userPrincipalName
-    $uniqueUsers = $groupMemberList | Sort-Object userPrincipalName -Unique
+    $uniqueUsers = $groupMemberList | Where-Object { $_.userPrincipalName } | Sort-Object userPrincipalName -Unique
     Write-Output "number of unique users calculated from user groups are $($uniqueUsers.Count)"
     # filter unique users which have UPN only (e.g exclude mailbox email etc.)
     $uniqueUsers = $uniqueUsers | Where-Object { $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' }
