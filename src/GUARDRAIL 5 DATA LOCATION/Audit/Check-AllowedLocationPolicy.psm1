@@ -203,14 +203,19 @@ function Check-PolicyStatus {
                     $ErrorList.Add("Error occurred while evaluating profile configuration")
                 }
             } else {
-                
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
 
             if(!$evalResult.ShouldAvailable ){
+                if ($evalResult.Profile -gt 0) {
                 $c.ComplianceStatus = "Not Available"
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                 $c.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                }
+            } else {
+                $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }       
         
