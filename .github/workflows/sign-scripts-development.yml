@@ -93,6 +93,11 @@ jobs:
     steps:
       - name: Check Out
         uses: actions/checkout@v3
+      - name: Check Azure CLI version
+        run: az --version
+      - name: Check Powershell version
+        shell: pwsh
+        run: $PSVersionTable
       - name: Download zipped modules and replace old ones
         uses: actions/download-artifact@v4
         with:
