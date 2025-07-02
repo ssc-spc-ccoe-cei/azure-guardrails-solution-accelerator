@@ -141,7 +141,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Get-AzureADLicenseType.zip'
-        version: '1.1.9'
+        version: '1.1.10'
       }
     }
   }
@@ -276,7 +276,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
-        version: '1.0.4'
+        version: '1.0.5'
       }
     }
   }
@@ -294,7 +294,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserAccountGCEventLogging.zip'
-        version: '1.0.4'
+        version: '1.0.6'
       }
     }
   }
@@ -332,7 +332,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudAccountsMFA.zip'
-        version: '1.0.1'
+        version: '1.0.2'
       }
     }
   }
@@ -342,7 +342,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
-        version: '1.0.6'
+        version: '1.0.7'
       }
     }
   }
