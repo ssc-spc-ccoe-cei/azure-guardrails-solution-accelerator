@@ -60,7 +60,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
-        version: '1.1.8'        
+        version: '1.1.9'        
       }
     }
   }
@@ -69,7 +69,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
-        version: '1.1.8'
+        version: '1.1.9'
       }
     }
   }
@@ -132,7 +132,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
-        version: '1.2.6'
+        version: '1.2.7'
       }
     }
   }
@@ -159,7 +159,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
-        version: '1.0.9'
+        version: '1.0.10'
       }
     }
   }
@@ -362,7 +362,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
-        version: '1.0.2'
+        version: '1.0.3'
       }
     }
   }
