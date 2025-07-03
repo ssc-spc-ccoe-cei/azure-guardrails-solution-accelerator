@@ -41,12 +41,22 @@ function Check-CBSSensors {
         if ($EnableMultiCloudProfiles) {
             $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
             if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $Object.ComplianceStatus = "Not Applicable"
-                    $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $Object.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                if(!$evalResult.ShouldAvailable ){
+                    if ($evalResult.Profile -gt 0) {
+                        $Object.ComplianceStatus = "Not Available"
+                        $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $Object.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                    }
                 } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    if ($evalResult.Profile -gt 0) {
+                        $Object.ComplianceStatus = "Not Applicable"
+                        $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $Object.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    }
                 }
             } else {
                 
@@ -59,12 +69,22 @@ function Check-CBSSensors {
         if ($EnableMultiCloudProfiles) {        
             $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
             if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $Object.ComplianceStatus = "Not Applicable"
-                    $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $Object.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                if(!$evalResult.ShouldAvailable ){
+                    if ($evalResult.Profile -gt 0) {
+                        $Object.ComplianceStatus = "Not Available"
+                        $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $Object.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                    }
                 } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    if ($evalResult.Profile -gt 0) {
+                        $Object.ComplianceStatus = "Not Applicable"
+                        $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $Object.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    }
                 }
             } else {
                 
