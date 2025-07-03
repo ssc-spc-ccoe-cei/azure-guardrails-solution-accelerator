@@ -78,7 +78,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DeprecatedAccounts.zip'
-        version: '1.2.5'
+        version: '1.2.6'
       }
     }
   }
@@ -87,7 +87,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
-        version: '1.2.9'
+        version: '1.2.10'
       }
     }
   }
@@ -96,7 +96,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
-        version: '1.0.6'
+        version: '1.0.7'
       }
     }
   }
@@ -303,7 +303,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
-        version: '1.0.2'
+        version: '1.0.3'
       }
     }
   }
@@ -312,7 +312,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -352,7 +352,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-RiskBasedAccess.zip'
-        version: '1.0.0'
+        version: '1.0.2'
       }
     }
   }
@@ -432,7 +432,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserRoleReviews.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -462,7 +462,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GuestRoleReviews.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
