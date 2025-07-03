@@ -100,15 +100,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module6 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-MonitorAccount'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-MonitorAccount.zip'
-        version: '1.1.5'
-      }
-    }
-  }
   resource module7 'modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
     properties: {
@@ -249,7 +240,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
-        version: '1.3.3'
+        version: '1.3.4'
       }
     }
   }
@@ -258,7 +249,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }
     }
   }
@@ -422,7 +413,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
-        version: '1.0.1'
+        version: '1.0.2'
       }
     }
   }
