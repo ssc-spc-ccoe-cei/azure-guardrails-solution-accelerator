@@ -49,12 +49,22 @@ function Check-DeprecatedUsers {
     if ($EnableMultiCloudProfiles) {        
         $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"
-                $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $DeprecatedUserStatus.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            if(!$evalResult.ShouldAvailable ){
+                if ($evalResult.Profile -gt 0) {
+                    $DeprecatedUserStatus.ComplianceStatus = "Not Available"
+                    $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $DeprecatedUserStatus.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                }
             } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
+                if ($evalResult.Profile -gt 0) {
+                    $DeprecatedUserStatus.ComplianceStatus = "Not Applicable"
+                    $DeprecatedUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $DeprecatedUserStatus.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             }
         } else {
             
