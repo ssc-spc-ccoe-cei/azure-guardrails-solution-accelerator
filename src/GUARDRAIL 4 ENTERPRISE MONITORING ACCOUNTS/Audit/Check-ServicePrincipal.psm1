@@ -53,12 +53,13 @@ function Check-DepartmentServicePrincipalName {
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+        [switch] $EnableMultiCloudProfiles # default to false    
     )
         
     [bool] $IsCompliant = $false
 
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $Results = New-Object System.Collections.ArrayList
 
     $servicePrincipalName = [PSCustomObject]@{
         ServicePrincipalNameAPPID = $msgTable.NoSPN   

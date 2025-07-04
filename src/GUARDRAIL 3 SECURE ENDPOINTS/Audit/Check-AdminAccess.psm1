@@ -12,11 +12,12 @@ function Get-AdminAccess {
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # New feature flag, default to false  
+        [switch] $EnableMultiCloudProfiles # default to false  
     )
 
     $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
     
     # Get conditional access policies
     $CABaseAPIUrl = '/identity/conditionalAccess/policies'
