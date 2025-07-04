@@ -15,11 +15,14 @@ function Check-CBSSensors {
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     ) 
 
-    $IsCompliant = $true 
+    $IsCompliant = $true
+    $Comments = ""
     $Object = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
         ControlName = $ControlName
-        ReportTime = $ReportTime
         ItemName = $ItemName
+        Comments = $Comments
+        ReportTime = $ReportTime
         itsgcode = $itsgcode
     }
 
