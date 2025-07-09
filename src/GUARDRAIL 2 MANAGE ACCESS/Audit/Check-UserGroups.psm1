@@ -193,11 +193,12 @@ function Check-UserGroups {
                 $commentsArray += " " + $msgTable.userCountGroupNoMatch
                 
                 # Identify users without group assignments for remediation
-                $usersWithoutGroups = $users | Where-Object { 
+                $usersWithoutGroups = @()
+                $users | Where-Object { 
                     $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' -and
                     -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
                 } | ForEach-Object {
-                    [PSCustomObject]@{
+                    $userObject = [PSCustomObject]@{
                         userId = $_.id
                         displayName = $_.displayName
                         givenName = $_.givenName
@@ -210,9 +211,10 @@ function Check-UserGroups {
                         ReportTime = $ReportTime
                         itsgcode = $itsgcode
                     }
+                    $usersWithoutGroups += $userObject
                 }
                 
-                if ($usersWithoutGroups.Count -gt 0) {
+                if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
                     Write-Warning "UsersWithoutGroups count is greater than 0"
                     $AdditionalResults = [PSCustomObject]@{
                         records = $usersWithoutGroups
