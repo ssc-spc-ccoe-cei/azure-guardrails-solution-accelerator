@@ -213,6 +213,7 @@ function Check-UserGroups {
                 }
                 
                 if ($usersWithoutGroups.Count -gt 0) {
+                    Write-Warning "UsersWithoutGroups count is greater than 0"
                     $AdditionalResults = [PSCustomObject]@{
                         records = $usersWithoutGroups
                         logType = "GR2UsersWithoutGroups"
