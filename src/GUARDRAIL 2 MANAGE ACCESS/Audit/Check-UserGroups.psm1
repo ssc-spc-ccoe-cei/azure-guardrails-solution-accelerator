@@ -129,14 +129,12 @@ function Check-UserGroups {
                 -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
             } | ForEach-Object {
                     $userObject = [PSCustomObject]@{
-                        userId = $_.id
-                        displayName = $_.displayName
-                        givenName = $_.givenName
-                        surname = $_.surname
-                        mail = $_.mail
-                        userPrincipalName = $_.userPrincipalName
-                        groupAssignmentStatus = "No group assignment"
-                        remediationRequired = $true
+                        UserId = $_.id
+                        DisplayName = $_.displayName
+                        GivenName = $_.givenName
+                        UserPrincipalName = $_.userPrincipalName
+                        GroupAssignmentStatus = "No group assignment"
+                        RemediationRequired = $true
                         ItemName = $ItemName
                         ReportTime = $ReportTime
                         itsgcode = $itsgcode
@@ -201,14 +199,12 @@ function Check-UserGroups {
                     -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
                 } | ForEach-Object {
                     $userObject = [PSCustomObject]@{
-                        userId = $_.id
-                        displayName = $_.displayName
-                        givenName = $_.givenName
-                        surname = $_.surname
-                        mail = $_.mail
-                        userPrincipalName = $_.userPrincipalName
-                        groupAssignmentStatus = "No group assignment"
-                        remediationRequired = $true
+                        UserId = $_.id
+                        DisplayName = $_.displayName
+                        GivenName = $_.givenName
+                        UserPrincipalName = $_.userPrincipalName
+                        GroupAssignmentStatus = "No group assignment"
+                        RemediationRequired = $true
                         ItemName = $ItemName
                         ReportTime = $ReportTime
                         itsgcode = $itsgcode
