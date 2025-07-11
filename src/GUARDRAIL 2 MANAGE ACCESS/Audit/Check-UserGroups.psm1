@@ -123,26 +123,28 @@ function Check-UserGroups {
             $commentsArray = $msgTable.isNotCompliant + " " +  $commentsArray  + " " + $msgTable.userGroupsMany
             
             # Identify users without group assignments for remediation
-            $usersWithoutGroups = $users | Where-Object { 
+            $usersWithoutGroups = @()
+            $users | Where-Object { 
                 $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' -and
                 -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
             } | ForEach-Object {
-                [PSCustomObject]@{
-                    userId = $_.id
-                    displayName = $_.displayName
-                    givenName = $_.givenName
-                    surname = $_.surname
-                    mail = $_.mail
-                    userPrincipalName = $_.userPrincipalName
-                    groupAssignmentStatus = "No group assignment"
-                    remediationRequired = $true
-                    ItemName = $ItemName
-                    ReportTime = $ReportTime
-                    itsgcode = $itsgcode
-                }
+                    $userObject = [PSCustomObject]@{
+                        userId = $_.id
+                        displayName = $_.displayName
+                        givenName = $_.givenName
+                        surname = $_.surname
+                        mail = $_.mail
+                        userPrincipalName = $_.userPrincipalName
+                        groupAssignmentStatus = "No group assignment"
+                        remediationRequired = $true
+                        ItemName = $ItemName
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                    $usersWithoutGroups += $userObject
             }
-            
-            if ($usersWithoutGroups.Count -gt 0) {
+                
+            if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
                 $AdditionalResults = [PSCustomObject]@{
                     records = $usersWithoutGroups
                     logType = "GR2UsersWithoutGroups"
