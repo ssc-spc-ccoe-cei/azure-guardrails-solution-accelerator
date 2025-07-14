@@ -429,10 +429,23 @@
       "name": "parameters - 19"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "⚠️ Only the first 20 users without group assignments are shown below.",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "users-cap-info"
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR2UsersWithoutGroups_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, UserPrincipalName_s, GroupAssignmentStatus_s, RemediationRequired_b, ItemName_s, ReportTime_s",
+        "query": "GR2UsersWithoutGroups_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, UserPrincipalName_s, Comments_s",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000

@@ -133,18 +133,15 @@ function Check-UserGroups {
                         DisplayName = $_.displayName
                         GivenName = $_.givenName
                         UserPrincipalName = $_.userPrincipalName
-                        GroupAssignmentStatus = "No group assignment"
-                        RemediationRequired = $true
-                        ItemName = $ItemName
-                        ReportTime = $ReportTime
-                        itsgcode = $itsgcode
+                        Comments = "User is not associated with any user group"
                     }
                     $usersWithoutGroups += $userObject
             }
                 
             if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
+                $limitedUsers = $usersWithoutGroups | Select-Object -First 20
                 $AdditionalResults = [PSCustomObject]@{
-                    records = $usersWithoutGroups
+                    records = $limitedUsers
                     logType = "GR2UsersWithoutGroups"
                 }
             }
@@ -203,19 +200,16 @@ function Check-UserGroups {
                         DisplayName = $_.displayName
                         GivenName = $_.givenName
                         UserPrincipalName = $_.userPrincipalName
-                        GroupAssignmentStatus = "No group assignment"
-                        RemediationRequired = $true
-                        ItemName = $ItemName
-                        ReportTime = $ReportTime
+                        Comments = "User is not associated with any user group"
                         itsgcode = $itsgcode
                     }
                     $usersWithoutGroups += $userObject
                 }
                 
                 if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
-                    Write-Warning "UsersWithoutGroups count is greater than 0"
+                    $limitedUsers = $usersWithoutGroups | Select-Object -First 20
                     $AdditionalResults = [PSCustomObject]@{
-                        records = $usersWithoutGroups
+                        records = $limitedUsers
                         logType = "GR2UsersWithoutGroups"
                     }
                 }
