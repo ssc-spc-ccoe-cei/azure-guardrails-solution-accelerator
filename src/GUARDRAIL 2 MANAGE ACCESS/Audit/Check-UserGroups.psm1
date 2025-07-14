@@ -134,6 +134,7 @@ function Check-UserGroups {
                         GivenName = $_.givenName
                         UserPrincipalName = $_.userPrincipalName
                         Comments = "User is not associated with any user group"
+                        ReportTime = $ReportTime
                         itsgcode = $itsgcode
                     }
                     $usersWithoutGroups += $userObject
@@ -202,6 +203,7 @@ function Check-UserGroups {
                         GivenName = $_.givenName
                         UserPrincipalName = $_.userPrincipalName
                         Comments = "User is not associated with any user group"
+                        ReportTime = $ReportTime
                         itsgcode = $itsgcode
                     }
                     $usersWithoutGroups += $userObject
