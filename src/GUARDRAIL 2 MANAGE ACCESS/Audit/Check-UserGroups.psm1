@@ -134,6 +134,7 @@ function Check-UserGroups {
                         GivenName = $_.givenName
                         UserPrincipalName = $_.userPrincipalName
                         Comments = "User is not associated with any user group"
+                        itsgcode = $itsgcode
                     }
                     $usersWithoutGroups += $userObject
             }
