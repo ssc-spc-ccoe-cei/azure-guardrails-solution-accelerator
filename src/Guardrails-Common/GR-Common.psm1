@@ -686,13 +686,7 @@ function Get-EvaluationProfile {
             $returnShouldEvaluate = ($highestTagProfile -in $moduleProfileArray)
             $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
         }
-
-        # Otherwise, use the highest matching profile that doesn't exceed the module profile
-        # $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
-        # return [PSCustomObject]@{
-        #     Profile = $highestMatchingProfile
-        #     ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
-        # }
+        
         return [PSCustomObject]@{
             Profile =  $returnProfile
             ShouldEvaluate = $returnShouldEvaluate
