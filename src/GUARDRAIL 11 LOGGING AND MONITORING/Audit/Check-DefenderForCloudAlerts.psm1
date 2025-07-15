@@ -80,7 +80,7 @@ function Get-DefenderForCloudAlerts {
         }
 
         if($null -eq $attackPathNotification){
-            $Comments += $msgTable.AttackPathNotifictionNotConfigured
+            $Comments += $msgTable.AttackPathNotificationNotConfigured
             break
         }
 
