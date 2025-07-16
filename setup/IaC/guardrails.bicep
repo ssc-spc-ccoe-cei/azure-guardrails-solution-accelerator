@@ -27,7 +27,6 @@ param SSCReadOnlyServicePrincipalNameAPPID string
 param storageAccountName string
 param subscriptionId string
 param TenantDomainUPN string
-param MFAUserNextLink string 
 param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
@@ -59,7 +58,6 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     AllowedLocationInitiativeId: AllowedLocationInitiativeId
     automationAccountName: automationAccountName
     CBSSubscriptionName: CBSSubscriptionName
-    MFAUserNextLink: MFAUserNextLink
     containername: containername
     ModuleBaseURL: ModuleBaseURL
     DepartmentNumber: DepartmentNumber
