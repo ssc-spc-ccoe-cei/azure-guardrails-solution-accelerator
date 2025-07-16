@@ -82,6 +82,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
+    MFAUsersNextLink:MFAUsersNextLink
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
