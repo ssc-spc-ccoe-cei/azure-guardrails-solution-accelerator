@@ -485,7 +485,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
         for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
             try {
-                Write-Verbose "Attempt $attempt of $maxRetries: Uploading gsaConfigExportLatest secret to Key Vault..."
+                Write-Verbose "Attempt $attempt of $maxRetries : Uploading gsaConfigExportLatest secret to Key Vault..."
                 
                 # Add delay for role assignment propagation on first attempt
                 if ($attempt -eq 1) {
