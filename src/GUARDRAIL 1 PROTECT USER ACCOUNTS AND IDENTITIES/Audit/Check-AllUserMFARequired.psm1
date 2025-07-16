@@ -43,50 +43,37 @@ function Check-AllUserMFARequired {
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     $UserComments = $null
 
+    $accessToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/').Token
+ 
+    $headers = @{
+            Authorization    = "Bearer $accessToken"
+         }
     # Get the automation variable for paging through users
-    $nextLinkVar = $MFAUsersNextLink
+   
     $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled&$top=100'
 
     # Retrieve the next page link if available (handles encrypted variable)
     try {
-        $secureNextLink = Get-AutomationVariable -Name $nextLinkVar -ErrorAction SilentlyContinue
-        if ($secureNextLink -is [System.Security.SecureString]) {
-            $ptr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureNextLink)
-            $nextLink = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
-            [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)
-        } else {
-            $nextLink = $secureNextLink
+        $secureNextLink = Get-AutomationVariable -Name "MFAUsersNextLink"
+        if(-not [string]::IsNullOrWhiteSpace($secureNextLink)){
+            $queryPath= $secureNextLink
+         else {
+            $queryPath = $usersSignIn
         }
     } catch {
-        $nextLink = $null
-    }
-
-    # Build the query path for Microsoft Graph API
-    if ([string]::IsNullOrEmpty($nextLink)) {
         $queryPath = $usersSignIn
-    } else {
-        $queryPath = $nextLink.Replace("https://graph.microsoft.com/v1.0", "")
     }
+     $response = Invoke-RestMethod -Uri $queryPath -Headers $headers -Method Get
+    
+     $nextPage = $response.Content.'@odata.nextLink'
 
-    # Query Microsoft Graph API for user data
-    try {
-        $response = Invoke-GraphQuery -urlPath $queryPath -ErrorAction Stop
-        $allUsers = $response.Content.value
-        $nextPage = $response.Content.'@odata.nextLink'
-        # Handle paging: save next link and exit if more pages exist
-        if ($null -ne $nextPage -and $nextPage -ne "") {
-            Set-AutomationVariable -Name $nextLinkVar -Value $nextPage
-            Write-Output "More pages exist. Next link saved. Please re-run the runbook."
-            Exit
-        } else {
-            Set-AutomationVariable -Name $nextLinkVar -Value ""
-            Write-Output "All users processed."
-        }
-    } catch {
-        $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$queryPath'; returned error message: $_")
-        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$queryPath'; returned error message: $_"
-    }
-
+     if($nextPage){
+       Set-AutomationVariable -Name "MFAUsersNextLink" -Value $nextPage 
+     }
+     else {
+        Set-AutomationVariable -Name "MFAUsersNextLink" -Value $null 
+     }
+    
     # Filter out disabled accounts
     $allUsers = $allUsers | Where-Object { $_.accountEnabled -ne $false }
     $allUserUPNs = $allUsers.userPrincipalName
