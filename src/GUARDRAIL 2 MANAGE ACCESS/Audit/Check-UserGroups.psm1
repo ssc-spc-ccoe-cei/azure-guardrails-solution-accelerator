@@ -22,94 +22,67 @@ function Check-UserGroups {
     [string] $Comments = $null
 
     # list all users in the tenant
-    $urlPath = '/users?$select=userPrincipalName,displayName,givenName,surname,id,mail,userType'
-    try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+    
+    $accessToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/').Token
 
-        if ($null -ne $response.Content -and $null -ne $response.Content.value) {
-            $users = $response.Content.value
-        }
+    $headers = @{
+        Authorization    = "Bearer $accessToken"
+        ConsistencyLevel = "eventual"
     }
-    catch {
-        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-        $ErrorList.Add($errorMsg)
-        Write-Error "Error: $errorMsg"
-    }
-    Write-Output "users count is $($users.Count)"
+    
+    $memberUrlPath = '/users/$count?$filter=userType eq ''Member'''
+    $memberUri = "https://graph.microsoft.com/v1.0$memberUrlPath"
+    $memResp = Invoke-RestMethod -Uri $memberUri -Method Get -Headers $headers
+    $memberCount = [int]$memResp
+
+    $guestUrlPath = '/users/$count?$filter=userType eq ''Guest'''
+    $guestUri = "https://graph.microsoft.com/v1.0$guestUrlPath"
+    $guestResp = Invoke-RestMethod -Uri $guestUri -Method Get -Headers $headers
+    $guestCount = [int]$guestResp
+
+    $groupUrlPath = '/groups/$count'
+    $groupsUri = "https://graph.microsoft.com/v1.0$groupUrlPath"
+    $groupResp = Invoke-RestMethod -Uri $groupsUri -Method Get -Headers $headers
+    $groupCount = [int]$groupResp
+    
     
     # Find total user count in the environment
-    $allUserCount = $users.Count
-    Write-Output "userCount is $allUserCount"
-    $memberCount = ($users | Where-Object { $_.userType -eq 'Member' }).Count
-    $guestCount = ($users | Where-Object { $_.userType -eq 'Guest' }).Count
+    $allUserCount = $memberCount + $guestCount
+
+    Write-Output "Members: $memberCount, Guests: $guestCount, Groups: $groupCount"
+
+    $uniqueUPNs = [System.Collections.Generic.HashSet[string]]::new()
 
 
-    # List of all user groups in the environment
-    $urlPath = "/groups"
-    try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
-        $data = $response.Content
-        # # localExecution
-        # $data = $response
+    $groupsUrl = "https://graph.microsoft.com/v1.0/groups?`$select=id&`$top=999"
+    do {
+    $grpResp = Invoke-RestMethod -Method Get -Uri $groupsUrl -Headers $headers
 
-        if ($null -ne $data -and $null -ne $data.value) {
-            $groups = $data.value #| Select-Object userPrincipalName , displayName, givenName, surname, id, mail
-        }
-    }
-    catch {
-        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-        $ErrorList.Add($errorMsg)
-        Write-Error "Error: $errorMsg"
-    }
-    # Find total user groups count are in the environment
-    $userGroupCount = $groups.Count
-    Write-Output "number of user groups in the tenant are $userGroupCount"
+    foreach ($g in $grpResp.value) {
 
-    # Find members in each group
-    $groupMemberList = @()
-    foreach ($group in $groups){
-        $groupId = $group.id
-        $urlPath = "/groups/$groupId/members"
-        try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-            # portal
-            $data = $response.Content
-            # # localExecution
-            # $data = $response
+        # page members of each group (filter to users only)
+        $membersUrl = "https://graph.microsoft.com/v1.0/groups/$($g.id)/members/microsoft.graph.user?`$select=userPrincipalName&`$top=999"
 
-            if ($null -ne $data -and $null -ne $data.value) {
-                $grMembers = $data.value | Where-Object { $_.'@odata.type' -eq '#microsoft.graph.user' } |
-                Select-Object userPrincipalName , displayName, givenName, surname, id, mail
-
-                foreach ($grMember in $grMembers) {
-                    $groupMembers = [PSCustomObject]@{
-                        groupName           = $group.displayName
-                        groupId             = $group.id
-                        userId              = $grMember.id
-                        displayName         = $grMember.displayName
-                        givenName           = $grMember.givenName
-                        surname             = $grMember.surname
-                        mail                = $grMember.mail
-                        userPrincipalName   = $grMember.userPrincipalName
-                    }
-                    $groupMemberList +=  $groupMembers
-                }
+        do {
+        $memResp = Invoke-RestMethod -Method Get -Uri $membersUrl -Headers $headers
+        foreach ($u in $memResp.value) {
+            if ($u.userPrincipalName) {
+            $uniqueUPNs.Add($u.userPrincipalName) | Out-Null
             }
         }
-        catch {
-            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-            $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg" 
-        }
+        $membersUrl = $memResp.'@odata.nextLink'
+        # stop paging members early if we’ve seen every user
+        } while ($membersUrl -and $uniqueUPNs.Count -lt $allUserCount)
+
+        # break out of the group loop if done
+        if ($uniqueUPNs.Count -eq $allUserCount) { break }
     }
-    # Find unique users from all user groups by unique userPrincipalName
-    $uniqueUsers = $groupMemberList | Where-Object { $_.userPrincipalName } | Sort-Object userPrincipalName -Unique
-    Write-Output "number of unique users calculated from user groups are $($uniqueUsers.Count)"
-    # filter unique users which have UPN only (e.g exclude mailbox email etc.)
-    $uniqueUsers = $uniqueUsers | Where-Object { $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' }
-    $totalGroupUserCount = $uniqueUsers.Count
-    
+
+    $groupsUrl = $grpResp.'@odata.nextLink'
+    } while ($groupsUrl)
+
+    $totalGroupUsers = $uniqueUPNs.Count
+
     # Condition: if only 1 user in the tenant
     if($allUserCount -le 1) {
         $commentsArray = $msgTable.isCompliant + " " + $msgTable.userCountOne    
@@ -117,7 +90,7 @@ function Check-UserGroups {
     }
     else{
         # Condition: if more than 1 user in the tenant
-        if($userGroupCount -lt 2){
+        if($groupCount -lt 2){
             # Condition: There is less than 2 user group in the tenant
             $IsCompliant = $false
             $commentsArray = $msgTable.isNotCompliant + " " +  $commentsArray  + " " + $msgTable.userGroupsMany
@@ -125,7 +98,7 @@ function Check-UserGroups {
         else {
             # User groups >= 2
             # Condition: all users count == unique users in all groups count
-            if( $uniqueUsers.Count -eq $allUserCount){
+            if( $totalGroupUsers.Count -eq $allUserCount){
                 # get conditional access policies
                 $CABaseAPIUrl = '/identity/conditionalAccess/policies'
                 try {
@@ -169,7 +142,7 @@ function Check-UserGroups {
         
     }
 
-    $commentsArray += $msgTable.userStats -f $allUserCount, $totalGroupUserCount, $memberCount, $guestCount
+    $commentsArray += $msgTable.userStats -f $allUserCount, $totalGroupUsers, $memberCount, $guestCount
     $Comments = $commentsArray -join ";"
     
     $PsObject = [PSCustomObject]@{
