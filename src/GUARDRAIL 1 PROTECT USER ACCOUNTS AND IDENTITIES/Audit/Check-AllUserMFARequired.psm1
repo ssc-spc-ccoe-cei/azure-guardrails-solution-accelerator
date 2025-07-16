@@ -50,7 +50,7 @@ function Check-AllUserMFARequired {
          }
     # Get the automation variable for paging through users
    
-    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled&$top=100'
+    $usersSignIn = 'https://graph.microsoft.com/v1.0/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled&$top=100'
 
     # Retrieve the next page link if available (handles encrypted variable)
     try {
