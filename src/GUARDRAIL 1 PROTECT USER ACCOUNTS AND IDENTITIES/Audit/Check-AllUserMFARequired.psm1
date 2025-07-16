@@ -32,7 +32,8 @@ function Check-AllUserMFARequired {
         # Optional parameters for multi-cloud profile evaluation
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # default to false
+        [switch] $EnableMultiCloudProfiles, # default to false
+        [string] $MFAUsersNextLink = "MFAUsersNextLink"  # Default value for next link variable
     )
 
     # Initialize variables for results and error tracking
