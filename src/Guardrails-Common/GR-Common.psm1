@@ -1460,10 +1460,16 @@ function Add-ProfileInformation {
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$Result,
         [string]$CloudUsageProfiles,
-        [string]$ModuleProfiles
+        [string]$ModuleProfiles,
+        [string]$SubscriptionId
     )
     
-    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    if($null -eq $SubscriptionId){
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    }else{
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
+    }
+
     if (!$evalResult.ShouldEvaluate) {
         if(!$evalResult.ShouldAvailable ){
             if ($evalResult.Profile -gt 0) {
