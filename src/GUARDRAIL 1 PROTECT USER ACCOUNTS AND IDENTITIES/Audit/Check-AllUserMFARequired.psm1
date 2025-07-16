@@ -44,7 +44,7 @@ function Check-AllUserMFARequired {
     $UserComments = $null
 
     # Get the automation variable for paging through users
-    $nextLinkVar = Get-AutomationVariable -Name "MFAUsersNextLink"
+    $nextLinkVar = Get-AutomationVariable -Name $MFAUsersNextLink
     $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled&$top=100'
 
     # Retrieve the next page link if available (handles encrypted variable)
