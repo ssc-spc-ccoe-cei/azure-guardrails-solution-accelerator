@@ -36,8 +36,7 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
-param MFAUsersNextLink string 
-
+param MFAUsersNextLink string = ''
 
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
