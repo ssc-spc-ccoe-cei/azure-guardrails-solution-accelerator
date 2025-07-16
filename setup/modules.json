@@ -6,7 +6,7 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString -MFAUsersNextLink $MFAUsersNextLink",
     "secrets": [
       {
         "Name": "FirstBreakGlassUPN",
@@ -22,8 +22,14 @@
         "Name": "itsgcode",
         "Value": "IA2(1)"
       }
+    ], 
+      "variables": [
+      {
+        "Name": "MFAUsersNextLink", 
+        "Value": "MFAUsersNextLink"
+      }
     ]
-  },
+    },
   {
     "ModuleName": "Check-CloudAccountsMFA",
     "Control": "Guardrails1",
