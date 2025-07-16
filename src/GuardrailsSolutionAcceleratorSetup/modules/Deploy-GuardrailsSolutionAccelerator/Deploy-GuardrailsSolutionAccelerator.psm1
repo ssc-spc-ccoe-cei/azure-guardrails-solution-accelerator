@@ -478,12 +478,60 @@ Function Deploy-GuardrailsSolutionAccelerator {
             'deployerAzureID'       = $config['runtime']['userId']
         }
 
-        $secureConfig = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
-        $encryptedConfig = $secureConfig | ConvertFrom-SecureString
-        $secureConfig.Dispose()
-        Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue ($encryptedConfig | ConvertTo-SecureString) -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
+        # Enhanced error handling for Key Vault secret upload with retry logic
+        $maxRetries = 3
+        $retryDelay = 10  # seconds
+        $secretUploadSuccess = $false
 
-        Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
+        for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+            try {
+                Write-Verbose "Attempt $attempt of $maxRetries: Uploading gsaConfigExportLatest secret to Key Vault..."
+                
+                # Add delay for role assignment propagation on first attempt
+                if ($attempt -eq 1) {
+                    Write-Verbose "Waiting $retryDelay seconds for Key Vault role assignments to propagate..."
+                    Start-Sleep -Seconds $retryDelay
+                }
+
+                $secureConfig = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
+                $encryptedConfig = $secureConfig | ConvertFrom-SecureString
+                $secureConfig.Dispose()
+                
+                $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue ($encryptedConfig | ConvertTo-SecureString) -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose -ErrorAction Stop
+                
+                # Verify the secret was actually created
+                $verifySecret = Get-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -ErrorAction Stop
+                if ($verifySecret) {
+                    Write-Host "Successfully uploaded gsaConfigExportLatest secret to Key Vault '$($config['runtime']['keyVaultName'])'" -ForegroundColor Green
+                    $secretUploadSuccess = $true
+                    break
+                } else {
+                    throw "Secret verification failed - secret was not found after upload"
+                }
+            }
+            catch {
+                $errorMessage = $_.Exception.Message
+                Write-Warning "Attempt $attempt of $maxRetries failed to upload gsaConfigExportLatest secret: $errorMessage"
+                
+                if ($attempt -lt $maxRetries) {
+                    $nextDelay = $retryDelay * $attempt  # Exponential backoff
+                    Write-Verbose "Retrying in $nextDelay seconds..."
+                    Start-Sleep -Seconds $nextDelay
+                } else {
+                    Write-Error "Failed to upload gsaConfigExportLatest secret after $maxRetries attempts. This will cause compliance data collection to fail."
+                    Write-Error "Last error: $errorMessage"
+                    Write-Error "Please check Key Vault permissions and network access settings."
+                    throw "Critical: Failed to upload gsaConfigExportLatest secret to Key Vault '$($config['runtime']['keyVaultName'])' after $maxRetries attempts. Error: $errorMessage"
+                }
+            }
+        }
+
+        if ($secretUploadSuccess) {
+            Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
+        } else {
+            Write-Error "Deployment completed with errors - gsaConfigExportLatest secret upload failed. Compliance data collection will not work."
+            throw "Deployment failed - gsaConfigExportLatest secret upload unsuccessful"
+        }
     }
 }
 
