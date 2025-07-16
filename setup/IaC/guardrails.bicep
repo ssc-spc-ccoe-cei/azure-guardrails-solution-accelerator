@@ -25,6 +25,7 @@ param releaseVersion string
 param SecurityLAWResourceId string
 param SSCReadOnlyServicePrincipalNameAPPID string
 param storageAccountName string
+param MFAUsersNextLink string 
 param subscriptionId string
 param TenantDomainUPN string
 param updateCoreResources bool = false
@@ -36,6 +37,7 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
+
 
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'

@@ -24,6 +24,7 @@ param updatePSModules bool = false
 param updateCoreResources bool = false
 param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
+param MFAUsersNextLink string
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -665,5 +666,13 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         value: '"${AllowedLocationInitiativeId}"'
     }
   }
+  resource variable23 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'MFAUsersNextLink'
+    properties: {
+        isEncrypted: true
+        value: '"${MFAUsersNextLink}"'
+    }
+  }
+
 }
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId
