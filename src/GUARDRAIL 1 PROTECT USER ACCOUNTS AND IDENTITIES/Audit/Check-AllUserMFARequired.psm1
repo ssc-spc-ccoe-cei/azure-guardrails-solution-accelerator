@@ -57,6 +57,7 @@ function Check-AllUserMFARequired {
         $secureNextLink = Get-AutomationVariable -Name "MFAUsersNextLink"
         if(-not [string]::IsNullOrWhiteSpace($secureNextLink)){
             $queryPath= $secureNextLink
+        }
          else {
             $queryPath = $usersSignIn
         }
