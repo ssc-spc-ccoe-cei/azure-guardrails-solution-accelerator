@@ -229,7 +229,7 @@ function Check-AllUserMFARequired {
     # Combine comments for output
     $Comments = $commentsArray -join ";"
 
-    # Build output object for compliance results
+    # Build output object for compliance results.
     $PsObject = [PSCustomObject] @{
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
