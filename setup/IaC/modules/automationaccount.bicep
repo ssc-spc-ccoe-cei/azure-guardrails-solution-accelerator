@@ -2,6 +2,7 @@ param AllowedLocationPolicyId string
 param AllowedLocationInitiativeId string
 param automationAccountName string
 param CBSSubscriptionName string
+param MFAUserNextLink string
 param containername string
 param ModuleBaseURL string
 param DepartmentNumber string
@@ -663,6 +664,13 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
         isEncrypted: true
         value: '"${AllowedLocationInitiativeId}"'
+    }
+  }
+    resource variable23 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'MFAUserNextLink'
+    properties: {
+      isEncrypted: true
+      value: '"${MFAUserNextLink}"'
     }
   }
 }
