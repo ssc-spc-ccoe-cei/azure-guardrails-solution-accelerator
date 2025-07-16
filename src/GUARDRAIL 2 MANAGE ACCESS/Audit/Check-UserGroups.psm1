@@ -133,7 +133,7 @@ function Check-UserGroups {
                         DisplayName = $_.displayName
                         GivenName = $_.givenName
                         UserPrincipalName = $_.userPrincipalName
-                        Comments = "User is not associated with any user group"
+                        Comments = $msgTable.userNotInGroup
                         ReportTime = $ReportTime
                         itsgcode = $itsgcode
                     }
@@ -202,7 +202,7 @@ function Check-UserGroups {
                         DisplayName = $_.displayName
                         GivenName = $_.givenName
                         UserPrincipalName = $_.userPrincipalName
-                        Comments = "User is not associated with any user group"
+                        Comments = $msgTable.userNotInGroup
                         ReportTime = $ReportTime
                         itsgcode = $itsgcode
                     }
