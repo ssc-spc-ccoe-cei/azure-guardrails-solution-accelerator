@@ -396,6 +396,78 @@
       "name": "query - 17"
     },
     {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9ff4b484-e871-4df0-8cbe-8ae6570c5985",
+            "version": "KqlParameterItem/1.0",
+            "name": "suwg",
+            "label": "Show Users Without Groups",
+            "type": 10,
+            "isRequired": true,
+            "value": "yes",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Yes\" },\n    { \"value\":\"no\", \"label\":\"No\", \"selected\":true }\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "parameters - 19"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "⚠️ Only the first 20 users without group assignments are shown below.",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "users-cap-info"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR2UsersWithoutGroups_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, UserPrincipalName_s, Comments_s",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "suwg",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - 18"
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -957,3 +1029,4 @@
     }
   ],
   "fallbackResourceIds": [
+

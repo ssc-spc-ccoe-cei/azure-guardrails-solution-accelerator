@@ -20,6 +20,7 @@ function Check-UserGroups {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
+    [PSCustomObject] $AdditionalResults = $null
 
     # list all users in the tenant
     $urlPath = "/users"
@@ -120,6 +121,32 @@ function Check-UserGroups {
             # Condition: There is less than 2 user group in the tenant
             $IsCompliant = $false
             $commentsArray = $msgTable.isNotCompliant + " " +  $commentsArray  + " " + $msgTable.userGroupsMany
+            
+            # Identify users without group assignments for remediation
+            $usersWithoutGroups = @()
+            $users | Where-Object { 
+                $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' -and
+                -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
+            } | ForEach-Object {
+                    $userObject = [PSCustomObject]@{
+                        UserId = $_.id
+                        DisplayName = $_.displayName
+                        GivenName = $_.givenName
+                        UserPrincipalName = $_.userPrincipalName
+                        Comments = $msgTable.userNotInGroup
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                    $usersWithoutGroups += $userObject
+            }
+                
+            if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
+                $limitedUsers = $usersWithoutGroups | Select-Object -First 20
+                $AdditionalResults = [PSCustomObject]@{
+                    records = $limitedUsers
+                    logType = "GR2UsersWithoutGroups"
+                }
+            }
         } 
         else {
             # User groups >= 2
@@ -163,6 +190,32 @@ function Check-UserGroups {
             } else {
                 $IsCompliant = $false
                 $commentsArray += " " + $msgTable.userCountGroupNoMatch
+                
+                # Identify users without group assignments for remediation
+                $usersWithoutGroups = @()
+                $users | Where-Object { 
+                    $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' -and
+                    -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
+                } | ForEach-Object {
+                    $userObject = [PSCustomObject]@{
+                        UserId = $_.id
+                        DisplayName = $_.displayName
+                        GivenName = $_.givenName
+                        UserPrincipalName = $_.userPrincipalName
+                        Comments = $msgTable.userNotInGroup
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }
+                    $usersWithoutGroups += $userObject
+                }
+                
+                if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
+                    $limitedUsers = $usersWithoutGroups | Select-Object -First 20
+                    $AdditionalResults = [PSCustomObject]@{
+                        records = $limitedUsers
+                        logType = "GR2UsersWithoutGroups"
+                    }
+                }
             }
         }
         
