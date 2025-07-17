@@ -114,12 +114,22 @@ function Get-BreakGlassAccountLicense {
     if ($EnableMultiCloudProfiles) {        
         $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
         if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $PsObject.ComplianceStatus = "Not Applicable"
-                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            if(!$evalResult.ShouldAvailable ){
+                if ($evalResult.Profile -gt 0) {
+                    $PsObject.ComplianceStatus = "Not Available"
+                    $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $PsObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                }
             } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
+                if ($evalResult.Profile -gt 0) {
+                    $PsObject.ComplianceStatus = "Not Applicable"
+                    $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             }
         } else {
             

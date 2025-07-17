@@ -1,4 +1,4 @@
-name: Sign PowerShell Scripts and Deploy to Test environment
+name: Deploy to Test environment
 on:
   workflow_dispatch:
   push:
@@ -93,6 +93,11 @@ jobs:
     steps:
       - name: Check Out
         uses: actions/checkout@v3
+      - name: Check Azure CLI version
+        run: az --version
+      - name: Check Powershell version
+        shell: pwsh
+        run: $PSVersionTable
       - name: Download zipped modules and replace old ones
         uses: actions/download-artifact@v4
         with:
@@ -143,6 +148,7 @@ jobs:
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
               $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+              $TEST_CLOUDUSAGEPROFILES = $env:TEST_CLOUDUSAGEPROFILES
               $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
               $TESTTENANT_ID = $env:TESTTENANT_ID
               $configContent = @"
@@ -171,7 +177,7 @@ jobs:
                   "SSCReadOnlyServicePrincipalNameAPPID": "$TESTTENANT_SPN_APPID",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "1,3,5",
+                  "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
                   "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
                   "tenantId": "$TESTTENANT_ID"
               }
@@ -211,6 +217,7 @@ jobs:
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
+          TEST_CLOUDUSAGEPROFILES: ${{ vars.TEST_CLOUDUSAGEPROFILES}}
       # - name: ReLogin AZ (due to timeout issue)
       #   uses: azure/login@v2
       #   with:
@@ -238,6 +245,7 @@ jobs:
               $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
               $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
               $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+              $TEST_CLOUDUSAGEPROFILES = $env:TEST_CLOUDUSAGEPROFILES
               $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
               $TESTTENANT_ID = $env:TESTTENANT_ID
               $configContent = @"
@@ -266,7 +274,7 @@ jobs:
                   "SSCReadOnlyServicePrincipalNameAPPID": "$TESTTENANT_SPN_APPID",
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "1,3,5",
+                  "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
                   "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
                   "tenantId": "$TESTTENANT_ID"
                 }
@@ -332,6 +340,7 @@ jobs:
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
+          TEST_CLOUDUSAGEPROFILES: ${{ vars.TEST_CLOUDUSAGEPROFILES}}
           TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
       - name: Check for AA Job Errors
         uses: azure/powershell@v2
