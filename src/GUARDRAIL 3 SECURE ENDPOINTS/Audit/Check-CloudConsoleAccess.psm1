@@ -32,9 +32,9 @@ function Get-CloudConsoleAccess {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
+        Write-Host "$result"
     }
-    $PsObject.Add($result) | Out-Null
 
 
     $moduleOutput= [PSCustomObject]@{ 
