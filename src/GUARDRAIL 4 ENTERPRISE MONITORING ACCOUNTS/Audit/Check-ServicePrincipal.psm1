@@ -119,33 +119,12 @@ function Check-DepartmentServicePrincipalName {
 
     # Conditionally add the Profile field based on the feature flag
     if ($EnableMultiCloudProfiles) {
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if (!$evalResult.ShouldEvaluate) {
-            if(!$evalResult.ShouldAvailable ){
-                if ($evalResult.Profile -gt 0) {
-                    $Results.ComplianceStatus = "Not Available"
-                    $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $Results.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
-                } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration availability")
-                }
-            } else {
-                if ($evalResult.Profile -gt 0) {
-                    $Results.ComplianceStatus = "Not Applicable"
-                    $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $Results.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-                } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
-                }
-            }
-        } else {
-            
-            $Results | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
+        $result = Add-ProfileInformation -Result $Results -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
+        Write-Host "$result"
     }
 
     $moduleOutput = [PSCustomObject]@{ 
-        ComplianceResults = $Results 
+        ComplianceResults = $Results
         Errors            = $ErrorList
         AdditionalResults = $AdditionalResults
     }
