@@ -1461,10 +1461,7 @@ function Add-ProfileInformation {
         [PSCustomObject]$Result,
         [string]$CloudUsageProfiles,
         [string]$ModuleProfiles,
-        [string]$SubscriptionId,
-        [Parameter(Mandatory = $true)]
-        [AllowEmptyCollection()]
-        [System.Collections.ArrayList]$ErrorList
+        [string]$SubscriptionId
     )
     
     if($null -eq $SubscriptionId){
