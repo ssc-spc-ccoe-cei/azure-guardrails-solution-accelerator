@@ -55,7 +55,7 @@ $Object| Add-Member -MemberType NoteProperty -Name ItemName -Value $msgTable.mkt
 $Object| Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode -Force | Out-Null
 
 
-# Conditionally add the Profile field based on the feature flag
+# Add profile information if MCUP feature is enabled
 if ($EnableMultiCloudProfiles) {
     $result = Add-ProfileInformation -Result $Object -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
     Write-Host "$result"

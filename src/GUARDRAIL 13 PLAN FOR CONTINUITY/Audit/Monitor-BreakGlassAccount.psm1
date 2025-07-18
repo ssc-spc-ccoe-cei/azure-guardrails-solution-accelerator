@@ -247,11 +247,11 @@ SigninLogs
     
   }
 
-  # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
-        Write-Host "$result"
-    }
+  # Add profile information if MCUP feature is enabled
+  if ($EnableMultiCloudProfiles) {
+      $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
+      Write-Host "$result"
+  }
 
   $moduleOutput= [PSCustomObject]@{ 
     ComplianceResults = $PsObject
