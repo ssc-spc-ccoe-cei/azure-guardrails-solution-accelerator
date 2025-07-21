@@ -782,7 +782,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
+        "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 1,
         "title": "GR 11",
         "timeContext": {

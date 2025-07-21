@@ -41,7 +41,7 @@ function Get-DefenderForCloudAlerts {
 
         if(-not $defenderEnabled){
             $isCompliant = $false
-            $Comments += $msgTable.NotAllSubsHaveDefenderPlans -f $subscription
+            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $subscription
             
         }
         else{
@@ -62,8 +62,8 @@ function Get-DefenderForCloudAlerts {
             }
             catch{
                 $isCompliant = $false
-                $Comments += $msgTable.errorRetrievingNotifications
-                $ErrorList += "Error invoking $restUri for notifications for the subscription: $_"
+                $Comments = $msgTable.errorRetrievingNotifications
+                $ErrorList = "Error invoking $restUri for notifications for the subscription: $_"
                 
             }
             
@@ -81,19 +81,19 @@ function Get-DefenderForCloudAlerts {
             # CONDITION: Check if there is minimum two emails and owner is also notified
             if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
                 $isCompliant = $false
-                $Comments += $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
+                $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
                 
             }
 
             if($null -eq $alertNotification){
                 $isCompliant = $false
-                $Comments += $msgTable.AlertNotificationNotConfigured
+                $Comments = $msgTable.AlertNotificationNotConfigured
                 
             }
 
             if($null -eq $attackPathNotification){
                 $isCompliant = $false
-                $Comments += $msgTable.AttackPathNotificationNotConfigured
+                $Comments = $msgTable.AttackPathNotificationNotConfigured
                 
             }
 
@@ -101,12 +101,12 @@ function Get-DefenderForCloudAlerts {
 
         # If it reaches here, then this subscription is compliant
         if ($isCompliant){
-            $Comments += $msgTable.DefenderCompliant
+            $Comments = $msgTable.DefenderCompliant
         }
 
         # $subCompliance += $true
         $C = [PSCustomObject]@{
-            SubscriptionName = $subId
+            SubscriptionName = $subscription.Name
             ComplianceStatus = $isCompliant
             ControlName = $ControlName
             Comments = $Comments
