@@ -42,57 +42,61 @@ function Get-DefenderForCloudAlerts {
         if(-not $defenderEnabled){
             $isCompliant = $false
             $Comments += $msgTable.NotAllSubsHaveDefenderPlans -f $subscription
+            
         }
+        else{
+            
+            $azContext = Get-AzContext
+            $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId 
+            
+            $authHeader = @{
+                'Content-Type'  = 'application/json'
+                'Authorization' = 'Bearer ' + $token.Token
+            }
 
-        $azContext = Get-AzContext
-        $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId 
-        
-        $authHeader = @{
-            'Content-Type'  = 'application/json'
-            'Authorization' = 'Bearer ' + $token.Token
-        }
+            # Retrieve notifications for alert and attack paths
+            $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
 
-        # Retrieve notifications for alert and attack paths
-        $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
+            try{
+                $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
+            }
+            catch{
+                $isCompliant = $false
+                $Comments += $msgTable.errorRetrievingNotifications
+                $ErrorList += "Error invoking $restUri for notifications for the subscription: $_"
+                
+            }
+            
+            $notificationSources = $response.properties.notificationsSources
+            $notificationEmails = $response.properties.emails
+            $ownerRole = $response.properties.notificationsByRole.roles | Where-Object {$_ -eq "Owner"}
+            $ownerState = $response.properties.notificationsByRole.State
 
-        try{
-            $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
-        }
-        catch{
-            $isCompliant = $false
-            $Comments += $msgTable.errorRetrievingNotifications
-            $ErrorList += "Error invoking $restUri for notifications for the subscription: $_"
-            continue
-        }
-        
-        $notificationSources = $response.properties.notificationsSources
-        $notificationEmails = $response.properties.emails
-        $ownerRole = $response.properties.notificationsByRole.roles | Where-Object {$_ -eq "Owner"}
-        $ownerState = $response.properties.notificationsByRole.State
+            # Filter to get required notification types
+            $alertNotification = $notificationSources | Where-Object {$_.sourceType -eq "Alert" -and $_.minimalSeverity -in @("Medium","Low")}
+            $attackPathNotification = $notificationSources | Where-Object {$_.sourceType -eq "AttackPath" -and $_.minimalRiskLevel -in @("Medium","Low")}
 
-        # Filter to get required notification types
-        $alertNotification = $notificationSources | Where-Object {$_.sourceType -eq "Alert" -and $_.minimalSeverity -in @("Medium","Low")}
-        $attackPathNotification = $notificationSources | Where-Object {$_.sourceType -eq "AttackPath" -and $_.minimalRiskLevel -in @("Medium","Low")}
+            $emailCount = ($notificationEmails -split ";").Count
 
-        $emailCount = ($notificationEmails -split ";").Count
+            # CONDITION: Check if there is minimum two emails and owner is also notified
+            if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
+                $isCompliant = $false
+                $Comments += $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
+                
+            }
 
-        # CONDITION: Check if there is minimum two emails and owner is also notified
-        if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
-            $isCompliant = $false
-            $Comments += $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
-            continue
-        }
+            if($null -eq $alertNotification){
+                $isCompliant = $false
+                $Comments += $msgTable.AlertNotificationNotConfigured
+                
+            }
 
-        if($null -eq $alertNotification){
-            $isCompliant = $false
-            $Comments += $msgTable.AlertNotificationNotConfigured
-            continue
-        }
+            if($null -eq $attackPathNotification){
+                $isCompliant = $false
+                $Comments += $msgTable.AttackPathNotificationNotConfigured
+                
+            }
 
-        if($null -eq $attackPathNotification){
-            $isCompliant = $false
-            $Comments += $msgTable.AttackPathNotificationNotConfigured
-            continue
         }
 
         # If it reaches here, then this subscription is compliant
@@ -129,6 +133,7 @@ function Get-DefenderForCloudAlerts {
         }
 
         $PsObject.add($C) | Out-Null
+        
         
     }
     
