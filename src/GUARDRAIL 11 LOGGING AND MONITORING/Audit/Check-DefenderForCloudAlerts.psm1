@@ -40,8 +40,8 @@ function Get-DefenderForCloudAlerts {
         $defenderEnabled = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'} #A paid plan should exist on the sub resource
 
         if(-not $defenderEnabled){
+            $isCompliant = $false
             $Comments += $msgTable.NotAllSubsHaveDefenderPlans -f $subscription
-            break
         }
 
         $azContext = Get-AzContext
@@ -59,9 +59,10 @@ function Get-DefenderForCloudAlerts {
             $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
         }
         catch{
+            $isCompliant = $false
             $Comments += $msgTable.errorRetrievingNotifications
             $ErrorList += "Error invoking $restUri for notifications for the subscription: $_"
-            break
+            continue
         }
         
         $notificationSources = $response.properties.notificationsSources
@@ -79,19 +80,19 @@ function Get-DefenderForCloudAlerts {
         if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
             $isCompliant = $false
             $Comments += $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
-            break
+            continue
         }
 
         if($null -eq $alertNotification){
             $isCompliant = $false
             $Comments += $msgTable.AlertNotificationNotConfigured
-            break
+            continue
         }
 
         if($null -eq $attackPathNotification){
             $isCompliant = $false
             $Comments += $msgTable.AttackPathNotificationNotConfigured
-            break
+            continue
         }
 
         # If it reaches here, then this subscription is compliant

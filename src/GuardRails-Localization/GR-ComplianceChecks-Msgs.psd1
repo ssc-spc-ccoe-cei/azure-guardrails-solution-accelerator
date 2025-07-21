@@ -310,7 +310,7 @@ compliantServiceHealthAlerts = All subscriptions have Service Health Alerts, and
 
 msDefenderChecks = Microsoft Defender for Cloud Alerts and Events Check
 NotAllSubsHaveDefenderPlans = The following subscription(s) lack a defender plan: {0}. Enable Defender monitoring for this subscription.
-errorRetrievingNotifications = Defender alert notifications for the subscription(s) are not configured. Ensure they match the Remediation Guidance requirements.
+errorRetrievingNotifications = Defender alert notifications for this subscription is not configured. Ensure they match the Remediation Guidance requirements.
 EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription {0} do not include at least two email addresses or subscription owners. Configure this to ensure alerts are sent correctly.
 AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set the severity to Medium or Low and review the Remediation Guidance.
 AttackPathNotificationNotConfigured = Defender alerts must include attack path notifications. Ensure that the severity is set to Medium or Low for each subscription's alerts, following the guidelines provided in the Remediation Guidance.
