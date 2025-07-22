@@ -807,7 +807,13 @@
                 "linkTarget": "Url"
               }
             }
-          ]
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
         }
       },
       "conditionalVisibility": {
