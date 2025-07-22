@@ -314,7 +314,7 @@ compliantServiceHealthAlerts = Les alertes de santé du service « Service Healt
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 
 msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
-NotAllSubsHaveDefenderPlans = Le(s) abonnement(s) suivant(s) n'a/n'ont pas de plan MS Defender : {0} . Activez la surveillance MS Defender pour cet abonnement.
+NotAllSubsHaveDefenderPlans = L'abonnement {0} n'a pas de plan « Defender ». Activez la surveillance « Defender » pour cet abonnement.
 errorRetrievingNotifications = Les notifications d'alerte MS Defender pour cet abonnement ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
 EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement {0} n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
