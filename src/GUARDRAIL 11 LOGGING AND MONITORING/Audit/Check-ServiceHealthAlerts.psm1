@@ -68,41 +68,46 @@ function Get-ServiceHealthAlerts {
         $EnableMultiCloudProfiles # New feature flag, default to false
     )
 
+    [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $isCompliant = $false
     $Comments = ""
-    $ErrorList = @()
 
-    try{
-        #Get All the Subscriptions
-        $subs = Get-AzSubscription -ErrorAction SilentlyContinue| Where-Object {$_.State -eq "Enabled"}
+    # Get All the Subscriptions
+    try {
+        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
+    }
+    catch {
+        $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+        throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
+    }
 
-        foreach($subscription in $subs){
-            $subId = $subscription.Id
-            Set-AzContext -SubscriptionId $subId
+    foreach($subscription in $subs){
+        $subId = $subscription.Id
+        Set-AzContext -SubscriptionId $subId
 
-            #Get subscription owners
-            $subOwners = Get-AzRoleAssignment -Scope "/subscriptions/$subId" | Where-Object {
-                $_.RoleDefinitionName -eq "Owner" 
-            } | Select-Object -ExpandProperty SignInName
+        #Get subscription owners
+        $subOwners = Get-AzRoleAssignment -Scope "/subscriptions/$subId" | Where-Object {
+            $_.RoleDefinitionName -eq "Owner" 
+        } | Select-Object -ExpandProperty SignInName
 
-            try{
-                # Get all service health alerts
-                $alerts = Get-AzActivityLogAlert
+        try{
+            # Get all service health alerts
+            $alerts = Get-AzActivityLogAlert
 
-                # Filter for Service Health Alerts with specific conditions
-                $filteredAlerts = $alerts | Where-Object {
-                    # Check if any condition in ConditionAllOf matches the criteria
-                    $_.ConditionAllOf | Where-Object { 
-                        $_.Field -eq "category" -and $_.Equal -eq "ServiceHealth" 
-                    }
+            # Filter for Service Health Alerts with specific conditions
+            $filteredAlerts = $alerts | Where-Object {
+                # Check if any condition in ConditionAllOf matches the criteria
+                $_.ConditionAllOf | Where-Object { 
+                    $_.Field -eq "category" -and $_.Equal -eq "ServiceHealth" 
                 }
+            }
 
-                #Exit if no health alert found for any sub
-                if($null -eq $filteredAlerts){
-                    $Comments += $msgTable.NotAllSubsHaveAlerts
-                    break
-                }
-                
+            #Exit if no health alert found for any sub
+            if($null -eq $filteredAlerts){
+                $Comments = $msgTable.NotAllSubsHaveAlerts
+            }
+            else{
                 #Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
                 $filteredAlerts = $filteredAlerts | Where-Object {
                     # Check if ConditionAllOf contains objects with AnyOf containing the required conditions
@@ -115,18 +120,18 @@ function Get-ServiceHealthAlerts {
 
                 #Check if event types not configured for any service health alert
                 if($null -eq $filteredAlerts.Count){
-                    $Comments += $msgTable.EventTypeMissingForAlert -f $subscription.Name
-                    break
+                    $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name 
                 }
             }
-            catch{
-                $isCompliant = $false
-                $Comments += $msgTable.noServiceHealthAlerts -f $subscription
-                $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
-            }
-            #Store compliance state of each action group
-            $actionGroupsCompliance += Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
+            
         }
+        catch{
+            $isCompliant = $false
+            $Comments = $msgTable.noServiceHealthAlerts -f $subscription
+            $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
+        }
+        #Store compliance state of each action group
+        $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
 
         #All action groups are compliant
         if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
@@ -135,42 +140,41 @@ function Get-ServiceHealthAlerts {
         #Even if one is non compliant
         elseif ($actionGroupsCompliance -contains $false) {
             $isCompliant = $false
-            $Comments += $msgTable.nonCompliantActionGroups
+            $Comments = $msgTable.nonCompliantActionGroups
         }
-    }
-    catch{
-        $IsCompliant = $false
-        $ErrorList += "Encountered an error retrieving subscriptions"
-    }
 
-    if($isCompliant){
-        $Comments = $msgTable.compliantServiceHealthAlerts
-    }
+        if($isCompliant){
+            $Comments = $msgTable.compliantServiceHealthAlerts
+        }
 
-    $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsCompliant
-        ControlName = $ControlName
-        Comments = $Comments
-        ItemName = $ItemName
-        ReportTime = $ReportTime
-        itsgcode = $itsgcode
-    }
+        $C = [PSCustomObject]@{
+            SubscriptionName = $subscription.Name
+            ComplianceStatus = $IsCompliant
+            ControlName = $ControlName
+            Comments = $Comments
+            ItemName = $ItemName
+            ReportTime = $ReportTime
+            itsgcode = $itsgcode
+        }
 
-    # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $PsObject.ComplianceStatus = "Not Applicable"
-                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+        # Conditionally add the Profile field based on the feature flag
+        if ($EnableMultiCloudProfiles) {
+            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            if (!$evalResult.ShouldEvaluate) {
+                if ($evalResult.Profile -gt 0) {
+                    $C.ComplianceStatus = "Not Applicable"
+                    $C | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                    $C.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                } else {
+                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                }
             } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
+                
+                $C | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
-        } else {
-            
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
         }
+        $PsObject.add($C) | Out-Null
+
     }
     
     $moduleOutput = [PSCustomObject]@{

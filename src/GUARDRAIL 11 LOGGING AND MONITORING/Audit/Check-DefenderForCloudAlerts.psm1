@@ -104,7 +104,6 @@ function Get-DefenderForCloudAlerts {
             $Comments = $msgTable.DefenderCompliant
         }
 
-        # $subCompliance += $true
         $C = [PSCustomObject]@{
             SubscriptionName = $subscription.Name
             ComplianceStatus = $isCompliant
