@@ -3,21 +3,48 @@ function Find-ReceiverValues{
         [Object[]] $actionGroups
     )
 
-    # Write-Host "All action groups are in the unique SignIn/Audit list."
+    if ($null -eq $actionGroups -or $actionGroups.Count -eq 0) {
+        Write-Output "No action groups provided to Find-ReceiverValues"
+        return @()
+    }
+
     $allReceiversWithValues = @()
+    
     # Iterate through each action group
     foreach ($actionGroup in $actionGroups) {
-        # Filter the properties to find the receivers with values
-        $receiversWithValues = $actionGroup.PSObject.properties | Where-Object {
-            $_.Name -like "*Receiver*" -and $_.MemberType -eq 'Property' -and $null -ne $_.Value -and $_.Value.Count -gt 0
+        if ($null -eq $actionGroup) {
+            Write-Output "Skipping null action group"
+            continue
         }
-        $allReceiversWithValues += [PSCustomObject]@{
-            ActionGroupName = $actionGroup.Name
-            Receivers = $receiversWithValues
+        
+        try {
+            # Filter the properties to find the receivers with values
+            $receiversWithValues = $actionGroup.PSObject.properties | Where-Object {
+                $_.Name -like "*Receiver*" -and 
+                $_.MemberType -eq 'Property' -and 
+                $null -ne $_.Value -and 
+                $_.Value.Count -gt 0
+            }
+            
+            if ($receiversWithValues.Count -gt 0) {
+                $allReceiversWithValues += [PSCustomObject]@{
+                    ActionGroupName = $actionGroup.Name
+                    Receivers = $receiversWithValues
+                    ReceiverCount = $receiversWithValues.Count
+                }
+                Write-Output "Found $($receiversWithValues.Count) receivers in action group: $($actionGroup.Name)"
+            }
+            else {
+                Write-Output "No configured receivers found in action group: $($actionGroup.Name)"
+            }
+        }
+        catch {
+            Write-Output "Error processing action group $($actionGroup.Name): $_"
         }
     }
     
-    return  $allReceiversWithValues
+    Write-Output "Total action groups with receivers: $($allReceiversWithValues.Count)"
+    return $allReceiversWithValues
 }
 
 function CompareKQLQueryToPattern{
@@ -26,10 +53,30 @@ function CompareKQLQueryToPattern{
         [string] $targetQuery
     )
 
-    #Fix the formatting of KQL query
-    $normalizedTargetQuery = $targetQuery -replace '\|', ' | ' -replace '\s+', ' '
+    if ([string]::IsNullOrWhiteSpace($pattern)) {
+        Write-Output "Pattern is null or empty"
+        return $false
+    }
+    
+    if ([string]::IsNullOrWhiteSpace($targetQuery)) {
+        Write-Output "Target query is null or empty"
+        return $false
+    }
 
-    return $normalizedTargetQuery -imatch $pattern
+    try {
+        #Fix the formatting of KQL query
+        $normalizedTargetQuery = $targetQuery -replace '\|', ' | ' -replace '\s+', ' '
+        
+        $isMatch = $normalizedTargetQuery -imatch $pattern
+        
+        Write-Output "Pattern matching: '$pattern' against '$normalizedTargetQuery' = $isMatch"
+        
+        return $isMatch
+    }
+    catch {
+        Write-Output "Error in pattern matching: $_"
+        return $false
+    }
 }
 
 function Check-AlertsMonitor {
@@ -57,6 +104,7 @@ function Check-AlertsMonitor {
         [switch] 
         $EnableMultiCloudProfiles # default to false
     )
+    
 
     $IsCompliant = $false
     $signInLogsCompliance = $false
@@ -65,9 +113,19 @@ function Check-AlertsMonitor {
     $ErrorList = @()
 
     #Queries that will be used in alert rules
+    # Escape UPNs to prevent regex injection
+    $escapedFirstUPN = [regex]::Escape($FirstBreakGlassUPN)
+    $escapedSecondUPN = [regex]::Escape($SecondBreakGlassUPN)
+    
     $BreakGlassAccountQueries = @(
-        "SigninLogs \| Where.*UserPrincipalName (?:==|=~|contains) `"($FirstBreakGlassUPN|$SecondBreakGlassUPN)`" or UserPrincipalName (?:==|=~|contains) `"(?!\1)($FirstBreakGlassUPN|$SecondBreakGlassUPN)`".*",
-        "SigninLogs \| Where.*UserPrincipalName (?:in|has_any) \(`"($FirstBreakGlassUPN|$SecondBreakGlassUPN)`", `"(?!\1)($FirstBreakGlassUPN|$SecondBreakGlassUPN)`"\).*"
+        # Pattern 1: Simple equality or contains with OR condition
+        "SigninLogs \| Where.*UserPrincipalName (?:==|=~|contains) `"($escapedFirstUPN|$escapedSecondUPN)`".*",
+        # Pattern 2: IN clause with multiple accounts
+        "SigninLogs \| Where.*UserPrincipalName (?:in|has_any) \(`"($escapedFirstUPN|$escapedSecondUPN)`".*",
+        # Pattern 3: Multiple OR conditions for different UPNs
+        "SigninLogs \| Where.*UserPrincipalName (?:==|=~|contains) `"$escapedFirstUPN`".*UserPrincipalName (?:==|=~|contains) `"$escapedSecondUPN`".*",
+        # Pattern 4: Alternative syntax with parentheses
+        "SigninLogs \| Where.*\(UserPrincipalName (?:==|=~|contains) `"($escapedFirstUPN|$escapedSecondUPN)`"\).*"
     )
     $BreakGlassAccountQueryMatchPattern = "`($($BreakGlassAccountQueries -join '|')`)"
 
@@ -78,9 +136,12 @@ function Check-AlertsMonitor {
 
     # Parse LAW Resource ID
     $lawParts = $LAWResourceId -split '/'
+    
     $subscriptionId = $lawParts[2]
     $resourceGroupName = $lawParts[4]
     $lawName = $lawParts[-1]
+    
+    Write-Output "Parsed LAW Resource ID: Subscription=$subscriptionId, ResourceGroup=$resourceGroupName, Workspace=$lawName"
 
     try{
         Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
@@ -138,69 +199,120 @@ function Check-AlertsMonitor {
     # Check alert rules exist
     try{
         $alertRules = Get-AzScheduledQueryRule -ResourceGroupName $resourceGroupName
+        if ($alertRules.Count -le 0) {
+            $Comments += $msgTable.noAlertRules -f $resourceGroupName
+            $ErrorList += "No alert rules found in resource group: $resourceGroupName"
+            Write-Output "No alert rules found in resource group: $resourceGroupName"
+        }
+        else {
+            Write-Output "Found $($alertRules.Count) alert rules in resource group: $resourceGroupName"
+        }
     }   
     catch {
         $Comments += $msgTable.noAlertRules -f $resourceGroupName
         $ErrorList += "Get-AzScheduledQueryRule could not find alert rules for the resource group: $_"
-    }
-    if ($alertRules.Count -le 0) {
-        $Comments += $msgTable.noAlertRules -f $resourceGroupName
+        Write-Output "Error retrieving alert rules: $_"
     }
 
     # Check action groups exist.  Only keep action groups with configured receivers
     try {
         $actionGroups = Get-AzActionGroup -ResourceGroupName $resourceGroupName
-        $receiversWithValues = Find-ReceiverValues $actionGroups
-        $actionGroupsWithReceivers = $actionGroups | Where-Object { $_.Name -in $receiversWithValues.ActionGroupName }
-        $actionGroupIds = $actionGroupsWithReceivers.Id | ForEach-Object{ $_.ToLower() }
+        if ($actionGroups.Count -le 0) {
+            $Comments += $msgTable.noActionGroups -f $resourceGroupName
+            $ErrorList += "No action groups found in resource group: $resourceGroupName"
+        }
+        else {
+            $receiversWithValues = Find-ReceiverValues $actionGroups
+            $actionGroupsWithReceivers = $actionGroups | Where-Object { $_.Name -in $receiversWithValues.ActionGroupName }
+            $actionGroupIds = $actionGroupsWithReceivers.Id | ForEach-Object{ $_.ToLower() }
+            
+            if ($actionGroupsWithReceivers.Count -le 0) {
+                $Comments += $msgTable.noActionGroupsForBGaccts
+                $ErrorList += "No action groups with configured receivers found in resource group: $resourceGroupName"
+            }
+        }
     }
     catch {
         $Comments += $msgTable.noActionGroups -f $resourceGroupName
-        $ErrorList += "Get-AzActionGroup could not find action groups for the resource group : $_"
-    }
-    if ($actionGroups.Count -le 0) {
-        $Comments += $msgTable.noActionGroups -f $resourceGroupName
+        $ErrorList += "Get-AzActionGroup could not find action groups for the resource group: $_"
+        Write-Output "Error retrieving action groups: $_"
     }
 
     if ($alertRules.Count -gt 0 -and $actionGroups.Count -gt 0) {
         # check break glass compliance
         $signInLogsCompliance = $false
-        # Select alert rules with a query that matches the pattern for break glass accounts
-        $bgAlertRules = $alertRules | Where-Object {
-            $_.CriterionAllOf -and
-            $_.CriterionAllOf.Count -gt 0 -and
-            (CompareKQLQueryToPattern -pattern $BreakGlassAccountQueryMatchPattern -targetQuery $_.CriterionAllOf.Query)
+        
+        try {
+            # Select alert rules with a query that matches the pattern for break glass accounts
+            $bgAlertRules = $alertRules | Where-Object {
+                $_.CriterionAllOf -and
+                $_.CriterionAllOf.Count -gt 0 -and
+                (CompareKQLQueryToPattern -pattern $BreakGlassAccountQueryMatchPattern -targetQuery $_.CriterionAllOf.Query)
+            }
+            
+            Write-Output "Found $($bgAlertRules.Count) alert rules matching break glass account patterns"
+            
+            if ($bgAlertRules.Count -le 0) {
+                $Comments += $msgTable.noAlertRuleforBGaccts
+                Write-Output "No alert rules found matching break glass account patterns"
+            }
+            else {
+                # Select the action groups of the BG alert rules if they are also in the list of action groups with receivers
+                $bgActionGroupIds = ($bgAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
+                
+                Write-Output "Found $($bgActionGroupIds.Count) action groups with receivers for break glass alert rules"
+                
+                if ($bgActionGroupIds.Count -gt 0) {
+                    $signInLogsCompliance = $true # we found alert rules with a query that matches the BG query pattern and with action groups with configured receivers
+                    Write-Output "Break glass compliance: TRUE - Found alert rules with proper action groups"
+                }
+                else {
+                    $Comments += $msgTable.noActionGroupsForBGaccts
+                    Write-Output "Break glass compliance: FALSE - No action groups with receivers found"
+                }
+            }
         }
-        if ($bgAlertRules.Count -le 0) {
-            $Comments += $msgTable.noAlertRuleforBGaccts
-        }
-        # Select the action groups of the BG alert rules if they are also in the list of action groups with receivers
-        $bgActionGroupIds = ($bgAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
-        if ($bgActionGroupIds.Count -gt 0) {
-            $signInLogsCompliance = $true # we found alert rules with a query that matches the BG query pattern and with action groups with configured receivers
-        }
-        else {
-            $Comments += $msgTable.noActionGroupsForBGaccts
+        catch {
+            $ErrorList += "Error processing break glass alert rules: $_"
+            Write-Output "Error processing break glass alert rules: $_"
         }
 
         # check conditional access policy compliance
         $auditLogsCompliance = $false
-        # Select alert rules with a query that matches the pattern for conditional access policies
-        $capAlertRules = $alertRules | Where-Object {
-            $_.CriterionAllOf -and
-            $_.CriterionAllOf.Count -gt 0 -and
-            (CompareKQLQueryToPattern -pattern $CAPQueryMatchPattern -targetQuery $_.CriterionAllOf.Query)
+        
+        try {
+            # Select alert rules with a query that matches the pattern for conditional access policies
+            $capAlertRules = $alertRules | Where-Object {
+                $_.CriterionAllOf -and
+                $_.CriterionAllOf.Count -gt 0 -and
+                (CompareKQLQueryToPattern -pattern $CAPQueryMatchPattern -targetQuery $_.CriterionAllOf.Query)
+            }
+            
+            Write-Output "Found $($capAlertRules.Count) alert rules matching conditional access policy patterns"
+            
+            if ($capAlertRules.Count -le 0) {
+                $Comments += $msgTable.noAlertRuleforCaps
+                Write-Output "No alert rules found matching conditional access policy patterns"
+            }
+            else {
+                # Select the action groups of the CAP alert rules if they are also in the list of action groups with receivers
+                $capActionGroupIds = ($capAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
+                
+                Write-Output "Found $($capActionGroupIds.Count) action groups with receivers for conditional access policy alert rules"
+                
+                if ($capActionGroupIds.Count -gt 0) {
+                    $auditLogsCompliance = $true # we found alert rules with a query that matches the CAP query pattern and with action groups with configured receivers
+                    Write-Output "Conditional access policy compliance: TRUE - Found alert rules with proper action groups"
+                }
+                else {
+                    $Comments += $msgTable.noActionGroupsForAuditLogs
+                    Write-Output "Conditional access policy compliance: FALSE - No action groups with receivers found"
+                }
+            }
         }
-        if ($capAlertRules.Count -le 0) {
-            $Comments += $msgTable.noAlertRuleforCaps
-        }
-        # Select the action groups of the CAP alert rules if they are also in the list of action groups with receivers
-        $capActionGroupIds = ($capAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
-        if ($capActionGroupIds.Count -gt 0) {
-            $auditLogsCompliance = $true # we found alert rules with a query that matches the CAP query pattern and with action groups with configured receivers
-        }
-        else {
-            $Comments += $msgTable.noActionGroupsForAuditLogs
+        catch {
+            $ErrorList += "Error processing conditional access policy alert rules: $_"
+            Write-Output "Error processing conditional access policy alert rules: $_"
         }
     }
 
@@ -209,10 +321,18 @@ function Check-AlertsMonitor {
         $IsCompliant = $true
     }
 
+    Write-Output "=== Compliance Summary ==="
+    Write-Output "Sign-in Logs Compliance: $signInLogsCompliance"
+    Write-Output "Audit Logs Compliance: $auditLogsCompliance"
+    Write-Output "Overall Compliance: $IsCompliant"
+    Write-Output "Error Count: $($ErrorList.Count)"
+
     if($IsCompliant){
         $Comments = $msgTable.compliantAlerts
+        Write-Output "Result: COMPLIANT - All alert monitoring requirements met"
     }else{
         $Comments = $msgTable.isNotCompliant + ' ' + $Comments
+        Write-Output "Result: NON-COMPLIANT - Alert monitoring requirements not met"
     }
 
     $PsObject = [PSCustomObject]@{
