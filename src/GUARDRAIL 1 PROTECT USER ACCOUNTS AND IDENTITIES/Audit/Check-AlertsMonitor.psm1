@@ -118,14 +118,10 @@ function Check-AlertsMonitor {
     $escapedSecondUPN = [regex]::Escape($SecondBreakGlassUPN)
     
     $BreakGlassAccountQueries = @(
-        # Pattern 1: Simple equality or contains with OR condition
-        "SigninLogs \| Where.*UserPrincipalName (?:==|=~|contains) `"($escapedFirstUPN|$escapedSecondUPN)`".*",
-        # Pattern 2: IN clause with multiple accounts
-        "SigninLogs \| Where.*UserPrincipalName (?:in|has_any) \(`"($escapedFirstUPN|$escapedSecondUPN)`".*",
-        # Pattern 3: Multiple OR conditions for different UPNs
-        "SigninLogs \| Where.*UserPrincipalName (?:==|=~|contains) `"$escapedFirstUPN`".*UserPrincipalName (?:==|=~|contains) `"$escapedSecondUPN`".*",
-        # Pattern 4: Alternative syntax with parentheses
-        "SigninLogs \| Where.*\(UserPrincipalName (?:==|=~|contains) `"($escapedFirstUPN|$escapedSecondUPN)`"\).*"
+        # Pattern 1: Explicit OR conditions with negative lookahead to ensure different UPNs
+        "SigninLogs \| Where.*UserPrincipalName (?:==|=~|contains) `"($escapedFirstUPN|$escapedSecondUPN)`" or UserPrincipalName (?:==|=~|contains) `"(?!\1)($escapedFirstUPN|$escapedSecondUPN)`".*",
+        # Pattern 2: IN clause with negative lookahead to ensure both UPNs are included
+        "SigninLogs \| Where.*UserPrincipalName (?:in|has_any) \(`"($escapedFirstUPN|$escapedSecondUPN)`", `"(?!\1)($escapedFirstUPN|$escapedSecondUPN)`"\).*"
     )
     $BreakGlassAccountQueryMatchPattern = "`($($BreakGlassAccountQueries -join '|')`)"
 
