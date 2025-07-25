@@ -36,7 +36,6 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
-param MFAUsersNextLink string = ''
 
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
@@ -81,7 +80,6 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
-    MFAUsersNextLink:MFAUsersNextLink
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
