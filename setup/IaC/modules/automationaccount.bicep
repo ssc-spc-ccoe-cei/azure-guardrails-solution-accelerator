@@ -24,7 +24,6 @@ param updatePSModules bool = false
 param updateCoreResources bool = false
 param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
-param MFAUsersNextLink string
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -646,33 +645,33 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
   }
   }
   resource variable20 'variables' = if (newDeployment || updateCoreResources) {
-    name: 'securityRetentionDays'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${securityRetentionDays}"'
-  }
-  }
-  resource variable21 'variables' = if (newDeployment || updateCoreResources) {
-    name: 'cloudUsageProfiles'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${cloudUsageProfiles}"'
-  }
-  }
-  resource variable22 'variables' = if (newDeployment || updateCoreResources) {
-    name: 'AllowedLocationInitiativeId'
-    properties: {
+      name: 'securityRetentionDays'
+      properties: {
+        isEncrypted: true
+        value: '"${securityRetentionDays}"'
+      }
+    }
+    resource variable21 'variables' = if (newDeployment || updateCoreResources) {
+      name: 'cloudUsageProfiles'
+      properties: {
+        isEncrypted: true
+        value: '"${cloudUsageProfiles}"'
+      }
+    }
+    resource variable22 'variables' = if (newDeployment || updateCoreResources) {
+      name: 'AllowedLocationInitiativeId'
+      properties: {
         isEncrypted: true
         value: '"${AllowedLocationInitiativeId}"'
+      }
     }
-  }
-  resource variable23 'variables' = if (newDeployment || updateCoreResources) {
-    name: 'MFAUsersNextLink'
-    properties: {
+    resource variable23 'Microsoft.Automation/automationAccounts/variables@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
+      name: '${automationAccountName}/MFAUserNextLink'
+      properties: {
         isEncrypted: true
-        value: '"${MFAUsersNextLink}"'
+        type: 'String'
+        value: ''
+      }
     }
   }
-
-}
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId
