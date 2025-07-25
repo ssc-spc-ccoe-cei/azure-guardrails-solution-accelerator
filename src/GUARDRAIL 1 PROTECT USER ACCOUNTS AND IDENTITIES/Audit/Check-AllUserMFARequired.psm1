@@ -7,11 +7,11 @@ function lastLoginInDays{
 
 function Check-AllUserMFARequired {
     param(
-        [Parameter(Mandatory = $true)] [string] $ControlName,
-        [Parameter(Mandatory = $true)] [string] $ItemName,
-        [Parameter(Mandatory = $true)] [string] $itsgcode,
-        [Parameter(Mandatory = $true)] [hashtable] $msgTable,   
-        [Parameter(Mandatory = $true)] [string] $ReportTime,
+        #[Parameter(Mandatory = $true)] [string] $ControlName,
+       # [Parameter(Mandatory = $true)] [string] $ItemName,
+        #[Parameter(Mandatory = $true)] [string] $itsgcode,
+        #[Parameter(Mandatory = $true)] [hashtable] $msgTable,   
+        #[Parameter(Mandatory = $true)] [string] $ReportTime,
         [Parameter(Mandatory = $true)] [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory = $true)] [string] $SecondBreakGlassUPN,
         [string] $CloudUsageProfiles = "3",     # Profile usage flag (if needed)
@@ -26,11 +26,12 @@ $Comments = $null
 
 # Read previous Graph pagination link (for resuming long queries)
 $nextLinkVarName = "MFAUserNextLink"
-$nextLink = Get-AutomationVariable -Name $nextLinkVarName
-
+#$nextLink = Get-AutomationVariable -Name $nextLinkVarName
+$nextLink= $null
 # Helper function to store pagination progress in Automation Variable
 function Save-NextLink($link) {
-    Set-AutomationVariable -Name $nextLinkVarName -Value $link
+  #  Set-AutomationVariable -Name $nextLinkVarName -Value $link
+  $nextLink = $link
 }
 # First Graph query URL for users
 $baseUrl = "/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled"
@@ -65,7 +66,7 @@ do {
                 # Skip break-glass accounts
                 $isExcluded = $user.userPrincipalName -eq $FirstBreakGlassUPN -or $user.userPrincipalName -eq $SecondBreakGlassUPN
                 if (-not $isExcluded) {
-                    $methods = (Invoke-GraphQuery -urlPath "/users/$($user.id)/authentication/methods").Content.value
+                    $methods = (Invoke-NewGraphQuery -urlPath "/users/$($user.id)/authentication/methods").Content.value
 
                     # Check for at least one MFA method
 
@@ -125,7 +126,9 @@ function Invoke-NewGraphQuery {
 
     try {
         if (-not $accessToken) {
-            $accessToken = (Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com").Token
+            #$secureaccessToken = (Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com").Token.tostring()
+          #  $accessToken = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureaccessToken)) 
+        $accessToken= [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR((Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com").Token))
         }
 
         $headers = @{ Authorization = "Bearer $accessToken" }

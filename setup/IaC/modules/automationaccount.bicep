@@ -665,8 +665,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         value: '"${AllowedLocationInitiativeId}"'
       }
     }
-    resource variable23 'Microsoft.Automation/automationAccounts/variables@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
-      name: '${automationAccountName}/MFAUserNextLink'
+    resource variable23  'variables' = if (newDeployment || updatePSModules || updateCoreResources) {
+      name: 'MFAUserNextLink'
       properties: {
         isEncrypted: true
         type: 'String'
