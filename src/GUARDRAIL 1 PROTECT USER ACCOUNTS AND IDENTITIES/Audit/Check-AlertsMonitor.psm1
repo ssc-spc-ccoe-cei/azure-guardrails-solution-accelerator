@@ -4,7 +4,7 @@ function Find-ReceiverValues{
     )
 
     if ($null -eq $actionGroups -or $actionGroups.Count -eq 0) {
-        Write-Output "No action groups provided to Find-ReceiverValues"
+        Write-Error "No action groups provided to Find-ReceiverValues"
         return @()
     }
 
@@ -13,7 +13,7 @@ function Find-ReceiverValues{
     # Iterate through each action group
     foreach ($actionGroup in $actionGroups) {
         if ($null -eq $actionGroup) {
-            Write-Output "Skipping null action group"
+            Write-Verbose "Skipping null action group"
             continue
         }
         
@@ -32,18 +32,18 @@ function Find-ReceiverValues{
                     Receivers = $receiversWithValues
                     ReceiverCount = $receiversWithValues.Count
                 }
-                Write-Output "Found $($receiversWithValues.Count) receivers in action group: $($actionGroup.Name)"
+                Write-Verbose "Found $($receiversWithValues.Count) receivers in action group: $($actionGroup.Name)"
             }
             else {
-                Write-Output "No configured receivers found in action group: $($actionGroup.Name)"
+                Write-Verbose "No configured receivers found in action group: $($actionGroup.Name)"
             }
         }
         catch {
-            Write-Output "Error processing action group $($actionGroup.Name): $_"
+            Write-Error "Error processing action group $($actionGroup.Name): $_"
         }
     }
     
-    Write-Output "Total action groups with receivers: $($allReceiversWithValues.Count)"
+    Write-Verbose "Total action groups with receivers: $($allReceiversWithValues.Count)"
     return $allReceiversWithValues
 }
 
@@ -54,12 +54,12 @@ function CompareKQLQueryToPattern{
     )
 
     if ([string]::IsNullOrWhiteSpace($pattern)) {
-        Write-Output "Pattern is null or empty"
+        Write-Error "Pattern is null or empty"
         return $false
     }
     
     if ([string]::IsNullOrWhiteSpace($targetQuery)) {
-        Write-Output "Target query is null or empty"
+        Write-Error "Target query is null or empty"
         return $false
     }
 
@@ -69,12 +69,12 @@ function CompareKQLQueryToPattern{
         
         $isMatch = $normalizedTargetQuery -imatch $pattern
         
-        Write-Output "Pattern matching: '$pattern' against '$normalizedTargetQuery' = $isMatch"
+        Write-Verbose "Pattern matching: '$pattern' against '$normalizedTargetQuery' = $isMatch"
         
         return $isMatch
     }
     catch {
-        Write-Output "Error in pattern matching: $_"
+        Write-Error "Error in pattern matching: $_"
         return $false
     }
 }
@@ -126,7 +126,7 @@ function Check-AlertsMonitor {
     $BreakGlassAccountQueryMatchPattern = "`($($BreakGlassAccountQueries -join '|')`)"
 
     $AuditLogsQueries = @(
-        "AuditLogs | Where.*(?:OperationName|ActivityDisplayName) in \(`"(Update|Add|Delete) conditional access policy`", `"(!\1)(Update|Add|Delete) conditional access policy`", `"(!\2)(Update|Add|Delete) conditional access policy`"\)"
+        "AuditLogs \| Where.*(?:OperationName|ActivityDisplayName) in \(`"(Update|Add|Delete) conditional access policy`", `"(!\1)(Update|Add|Delete) conditional access policy`", `"(!\2)(Update|Add|Delete) conditional access policy`"\)"
     )
     $CAPQueryMatchPattern = "`($($AuditLogsQueries -join '|')`)"
 
@@ -137,7 +137,7 @@ function Check-AlertsMonitor {
     $resourceGroupName = $lawParts[4]
     $lawName = $lawParts[-1]
     
-    Write-Output "Parsed LAW Resource ID: Subscription=$subscriptionId, ResourceGroup=$resourceGroupName, Workspace=$lawName"
+    Write-Verbose "Parsed LAW Resource ID: Subscription=$subscriptionId, ResourceGroup=$resourceGroupName, Workspace=$lawName"
 
     try{
         Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
@@ -198,16 +198,16 @@ function Check-AlertsMonitor {
         if ($alertRules.Count -le 0) {
             $Comments += $msgTable.noAlertRules -f $resourceGroupName
             $ErrorList += "No alert rules found in resource group: $resourceGroupName"
-            Write-Output "No alert rules found in resource group: $resourceGroupName"
+            Write-Error "No alert rules found in resource group: $resourceGroupName"
         }
         else {
-            Write-Output "Found $($alertRules.Count) alert rules in resource group: $resourceGroupName"
+            Write-Verbose "Found $($alertRules.Count) alert rules in resource group: $resourceGroupName"
         }
     }   
     catch {
         $Comments += $msgTable.noAlertRules -f $resourceGroupName
         $ErrorList += "Get-AzScheduledQueryRule could not find alert rules for the resource group: $_"
-        Write-Output "Error retrieving alert rules: $_"
+        Write-Error "Error retrieving alert rules: $_"
     }
 
     # Check action groups exist.  Only keep action groups with configured receivers
@@ -231,7 +231,7 @@ function Check-AlertsMonitor {
     catch {
         $Comments += $msgTable.noActionGroups -f $resourceGroupName
         $ErrorList += "Get-AzActionGroup could not find action groups for the resource group: $_"
-        Write-Output "Error retrieving action groups: $_"
+        Write-Error "Error retrieving action groups: $_"
     }
 
     if ($alertRules.Count -gt 0 -and $actionGroups.Count -gt 0) {
@@ -246,31 +246,31 @@ function Check-AlertsMonitor {
                 (CompareKQLQueryToPattern -pattern $BreakGlassAccountQueryMatchPattern -targetQuery $_.CriterionAllOf.Query)
             }
             
-            Write-Output "Found $($bgAlertRules.Count) alert rules matching break glass account patterns"
+            Write-Verbose "Found $($bgAlertRules.Count) alert rules matching break glass account patterns"
             
             if ($bgAlertRules.Count -le 0) {
                 $Comments += $msgTable.noAlertRuleforBGaccts
-                Write-Output "No alert rules found matching break glass account patterns"
+                Write-Verbose "No alert rules found matching break glass account patterns"
             }
             else {
                 # Select the action groups of the BG alert rules if they are also in the list of action groups with receivers
                 $bgActionGroupIds = ($bgAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
                 
-                Write-Output "Found $($bgActionGroupIds.Count) action groups with receivers for break glass alert rules"
+                Write-Verbose "Found $($bgActionGroupIds.Count) action groups with receivers for break glass alert rules"
                 
                 if ($bgActionGroupIds.Count -gt 0) {
                     $signInLogsCompliance = $true # we found alert rules with a query that matches the BG query pattern and with action groups with configured receivers
-                    Write-Output "Break glass compliance: TRUE - Found alert rules with proper action groups"
+                    Write-Verbose "Break glass compliance: TRUE - Found alert rules with proper action groups"
                 }
                 else {
                     $Comments += $msgTable.noActionGroupsForBGaccts
-                    Write-Output "Break glass compliance: FALSE - No action groups with receivers found"
+                    Write-Verbose "Break glass compliance: FALSE - No action groups with receivers found"
                 }
             }
         }
         catch {
             $ErrorList += "Error processing break glass alert rules: $_"
-            Write-Output "Error processing break glass alert rules: $_"
+            Write-Error "Error processing break glass alert rules: $_"
         }
 
         # check conditional access policy compliance
@@ -284,31 +284,31 @@ function Check-AlertsMonitor {
                 (CompareKQLQueryToPattern -pattern $CAPQueryMatchPattern -targetQuery $_.CriterionAllOf.Query)
             }
             
-            Write-Output "Found $($capAlertRules.Count) alert rules matching conditional access policy patterns"
+            Write-Verbose "Found $($capAlertRules.Count) alert rules matching conditional access policy patterns"
             
             if ($capAlertRules.Count -le 0) {
                 $Comments += $msgTable.noAlertRuleforCaps
-                Write-Output "No alert rules found matching conditional access policy patterns"
+                Write-Verbose "No alert rules found matching conditional access policy patterns"
             }
             else {
                 # Select the action groups of the CAP alert rules if they are also in the list of action groups with receivers
                 $capActionGroupIds = ($capAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
                 
-                Write-Output "Found $($capActionGroupIds.Count) action groups with receivers for conditional access policy alert rules"
+                Write-Verbose "Found $($capActionGroupIds.Count) action groups with receivers for conditional access policy alert rules"
                 
                 if ($capActionGroupIds.Count -gt 0) {
                     $auditLogsCompliance = $true # we found alert rules with a query that matches the CAP query pattern and with action groups with configured receivers
-                    Write-Output "Conditional access policy compliance: TRUE - Found alert rules with proper action groups"
+                    Write-Verbose "Conditional access policy compliance: TRUE - Found alert rules with proper action groups"
                 }
                 else {
                     $Comments += $msgTable.noActionGroupsForAuditLogs
-                    Write-Output "Conditional access policy compliance: FALSE - No action groups with receivers found"
+                    Write-Verbose "Conditional access policy compliance: FALSE - No action groups with receivers found"
                 }
             }
         }
         catch {
             $ErrorList += "Error processing conditional access policy alert rules: $_"
-            Write-Output "Error processing conditional access policy alert rules: $_"
+            Write-Error "Error processing conditional access policy alert rules: $_"
         }
     }
 
@@ -317,18 +317,18 @@ function Check-AlertsMonitor {
         $IsCompliant = $true
     }
 
-    Write-Output "=== Compliance Summary ==="
-    Write-Output "Sign-in Logs Compliance: $signInLogsCompliance"
-    Write-Output "Audit Logs Compliance: $auditLogsCompliance"
-    Write-Output "Overall Compliance: $IsCompliant"
-    Write-Output "Error Count: $($ErrorList.Count)"
+    Write-Verbose "=== Compliance Summary ==="
+    Write-Verbose "Sign-in Logs Compliance: $signInLogsCompliance"
+    Write-Verbose "Audit Logs Compliance: $auditLogsCompliance"
+    Write-Verbose "Overall Compliance: $IsCompliant"
+    Write-Verbose "Error Count: $($ErrorList.Count)"
 
     if($IsCompliant){
         $Comments = $msgTable.compliantAlerts
-        Write-Output "Result: COMPLIANT - All alert monitoring requirements met"
+        Write-Verbose "Result: COMPLIANT - All alert monitoring requirements met"
     }else{
         $Comments = $msgTable.isNotCompliant + ' ' + $Comments
-        Write-Output "Result: NON-COMPLIANT - Alert monitoring requirements not met"
+        Write-Verbose "Result: NON-COMPLIANT - Alert monitoring requirements not met"
     }
 
     $PsObject = [PSCustomObject]@{
