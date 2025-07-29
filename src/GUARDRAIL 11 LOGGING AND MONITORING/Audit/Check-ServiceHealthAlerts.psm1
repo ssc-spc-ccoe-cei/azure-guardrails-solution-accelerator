@@ -72,6 +72,7 @@ function Get-ServiceHealthAlerts {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $isCompliant = $false
     $Comments = ""
+    $actionGroupsCompliance = @()
 
     # Get All the Subscriptions
     try {
@@ -120,8 +121,49 @@ function Get-ServiceHealthAlerts {
 
                 #Check if event types not configured for any service health alert
                 if($null -eq $filteredAlerts.Count){
-                    $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name 
+                    $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                 }
+                else{
+                    $requiredFilteredAlerts = $filteredAlerts | where-object {
+                        $_.ConditionAllOf | Where-Object {
+                             $_.AnyOf | Where-Object { 
+                                $_.Field -eq "properties.incidentType"
+                        }}
+                    }
+                    $incidentTypes = $requiredFilteredAlerts | ForEach-Object {
+                        $_.ConditionAllOf | ForEach-Object {
+                            $_.AnyOf | Where-Object {
+                                $_.Field -eq "properties.incidentType"
+                            }
+                        }
+                    }
+                    
+                    if (($null -ne $filteredAlerts.Count) -and ($incidentTypes.Count -lt 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains $false) {
+                        $isCompliant = $false
+                        $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
+                    }
+                    else{
+                        #Store compliance state of each action group
+                        $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
+
+                        #All action groups are compliant
+                        if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
+                            $isCompliant = $true
+                        }
+                        #Even if one is non compliant
+                        elseif ($actionGroupsCompliance -contains $false) {
+                            $isCompliant = $false
+                            $Comments = $msgTable.nonCompliantActionGroups
+                        }
+
+                        if($isCompliant){
+                            $Comments = $msgTable.compliantServiceHealthAlerts
+                        }
+
+                    }
+
+                }
+
             }
             
         }
@@ -130,26 +172,11 @@ function Get-ServiceHealthAlerts {
             $Comments = $msgTable.noServiceHealthAlerts -f $subscription
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
-        #Store compliance state of each action group
-        $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
-
-        #All action groups are compliant
-        if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
-            $isCompliant = $true
-        }
-        #Even if one is non compliant
-        elseif ($actionGroupsCompliance -contains $false) {
-            $isCompliant = $false
-            $Comments = $msgTable.nonCompliantActionGroups
-        }
-
-        if($isCompliant){
-            $Comments = $msgTable.compliantServiceHealthAlerts
-        }
-
+        
+        # Add evaluation info for each subs
         $C = [PSCustomObject]@{
             SubscriptionName = $subscription.Name
-            ComplianceStatus = $IsCompliant
+            ComplianceStatus = $isCompliant
             ControlName = $ControlName
             Comments = $Comments
             ItemName = $ItemName
