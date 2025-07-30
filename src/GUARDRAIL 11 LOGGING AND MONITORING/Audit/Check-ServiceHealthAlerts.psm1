@@ -139,11 +139,18 @@ function Get-ServiceHealthAlerts {
                     }
                     
                     # Condition: non-compliant if null or 3 correct alert conditions are not used
-                    if (($null -ne $filteredAlerts.Count -or $incidentTypes.Count -lt 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
+                    if ($null -ne $filteredAlerts.Count) {
                         $isCompliant = $false
                         $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                     }
-                    else{
+
+                    if ($incidentTypes.Count -lt 3) {
+                        $isCompliant = $false
+                        $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
+                    }
+
+                    if (($incidentTypes.Count -ge- 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
+                    
                         #Store compliance state of each action group
                         $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
 
