@@ -138,7 +138,8 @@ function Get-ServiceHealthAlerts {
                         }
                     }
                     
-                    if (($null -ne $filteredAlerts.Count) -and ($incidentTypes.Count -lt 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains $false) {
+                    # Condition: non-compliant if null or 3 correct alert conditions are not used
+                    if (($null -ne $filteredAlerts.Count -or $incidentTypes.Count -lt 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
                         $isCompliant = $false
                         $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                     }
