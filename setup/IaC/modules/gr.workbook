@@ -7,6 +7,55 @@
         "version": "KqlParameterItem/1.0",
         "parameters": [
           {
+            "id": "initial-locale-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "initialLocale",
+            "type": 1,
+            "isRequired": false,
+            "query": "GR_TenantInfo_CL | top 1 by TimeGenerated desc | project initialLocale = coalesce(locale_s, \"en-CA\")",
+            "isHiddenWhenLocked": true,
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - initial locale"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select whether Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "initialLocale",
+        "comparison": "isNotEqualTo",
+        "value": "fr-CA"
+      },
+      "name": "Details Title - English"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Accélérateur de barrières\n\nSélectionnez l'heure du rapport (par défaut, la plus récente). Sélectionnez si les éléments recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "initialLocale",
+        "comparison": "isEqualTo",
+        "value": "fr-CA"
+      },
+      "name": "Details Title - French"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
             "id": "618c9321-a3de-4287-b4cf-860a4adf42d4",
             "version": "KqlParameterItem/1.0",
             "name": "RunTime",
@@ -40,7 +89,7 @@
           "value": "information"
         },
         {
-          "parameterName": "currentLocale",
+          "parameterName": "initialLocale",
           "comparison": "isNotEqualTo",
           "value": "fr-CA"
         }
@@ -86,7 +135,7 @@
           "value": "information"
         },
         {
-          "parameterName": "currentLocale",
+          "parameterName": "initialLocale",
           "comparison": "isEqualTo",
           "value": "fr-CA"
         }
@@ -117,32 +166,6 @@
       "name": "parameters - locale"
     },
     {
-      "type": 1,
-      "content": {
-        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select whether Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended",
-        "style": "info"
-      },
-      "conditionalVisibility": {
-        "parameterName": "currentLocale",
-        "comparison": "isNotEqualTo",
-        "value": "fr-CA"
-      },
-      "name": "Details Title - English"
-    },
-    {
-      "type": 1,
-      "content": {
-        "json": "## Accélérateur de barrières\n\nSélectionnez l'heure du rapport (par défaut, la plus récente). Sélectionnez si les éléments recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé",
-        "style": "info"
-      },
-      "conditionalVisibility": {
-        "parameterName": "currentLocale",
-        "comparison": "isEqualTo",
-        "value": "fr-CA"
-      },
-      "name": "Details Title - French"
-    },
-    {
       "type": 9,
       "content": {
         "version": "KqlParameterItem/1.0",
@@ -170,7 +193,7 @@
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
       "conditionalVisibility": {
-        "parameterName": "currentLocale",
+        "parameterName": "initialLocale",
         "comparison": "isNotEqualTo",
         "value": "fr-CA"
       },
@@ -204,7 +227,7 @@
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
       "conditionalVisibility": {
-        "parameterName": "currentLocale",
+        "parameterName": "initialLocale",
         "comparison": "isEqualTo",
         "value": "fr-CA"
       },
