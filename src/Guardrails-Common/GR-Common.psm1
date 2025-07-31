@@ -263,7 +263,11 @@ Function Add-TenantInfo {
         $cloudUsageProfiles,
         [Parameter(Mandatory = $true)]
         [string]
-        $tenantName
+        $tenantName,
+        # Added for workbook French localization - stores locale in Log Analytics so workbook can read it
+        [Parameter(Mandatory = $false)]
+        [string]
+        $locale
     )
     $tenantInfo = Get-GSAAutomationVariable("tenantDomainUPN")
 
@@ -275,6 +279,7 @@ Function Add-TenantInfo {
         DepartmentName     = $DepartmentName
         DepartmentNumber   = $DepartmentNumber
         cloudUsageProfiles = $cloudUsageProfiles
+        locale             = $locale  # Added for workbook UI localization (fr-CA or en-CA)
     }
     if ($debug) { Write-Output $tenantInfo }
     $JSON = ConvertTo-Json -inputObject $object
