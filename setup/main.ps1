@@ -131,6 +131,22 @@ catch {
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
 Write-Output "Reading Subscription Id from context: $SubID"
+
+# Get required variables for tenant info
+$DepartmentName = Get-GSAAutomationVariable -Name "DepartmentName"
+$DepartmentNumber = Get-GSAAutomationVariable -Name "DepartmentNumber"
+$cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
+
+# Get tenant name from Graph API
+try {
+    $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json
+    $tenantName = $response.value.displayName
+}
+catch {
+    Write-Warning "Could not retrieve tenant name from Graph API. Using default."
+    $tenantName = "Unknown"
+}
+
 Write-Output "Starting main runbooks."
 Write-Output "Reading configuration file."
 read-blob -FilePath ".\modules.json" -resourcegroup $ResourceGroupName -storageaccountName $StorageAccountName -containerName "configuration" | Out-Null
@@ -189,6 +205,13 @@ catch {
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
     -additionalValues @{reportTime = $ReportTime; locale = $locale }
+
+# Write tenant info with locale to Log Analytics (same ReportTime as compliance data)
+# This enables the workbook to retrieve the locale for UI localization
+Write-Output "Writing tenant info with locale '$Locale' to Log Analytics"
+Add-TenantInfo -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime `
+               -TenantId $tenantID -DepartmentName $DepartmentName -DepartmentNumber $DepartmentNumber `
+               -tenantName $tenantName -cloudUsageProfiles $cloudUsageProfiles -locale $Locale
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName = "GR-ComplianceChecks-Msgs"

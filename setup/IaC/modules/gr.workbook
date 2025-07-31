@@ -128,7 +128,7 @@
             "name": "currentLocale",
             "type": 1,
             "isRequired": false,
-            "query": "GR_TenantInfo_CL | where ReportTime_s == \"{RunTime}\" | top 1 by TimeGenerated desc | project coalesce(locale_s, \"en-CA\")",
+            "query": "GR_TenantInfo_CL | where ReportTime_s == \"{RunTime}\" | top 1 by TimeGenerated desc | project currentLocale = coalesce(locale_s, \"en-CA\")",
             "isHiddenWhenLocked": true,
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
@@ -185,7 +185,7 @@
             "name": "currentLocale",
             "type": 1,
             "isRequired": false,
-            "query": "GR_TenantInfo_CL | where ReportTime_s == \"{RunTime}\" | top 1 by TimeGenerated desc | project coalesce(locale_s, \"en-CA\")",
+            "query": "GR_TenantInfo_CL | where ReportTime_s == \"{RunTime}\" | top 1 by TimeGenerated desc | project currentLocale = coalesce(locale_s, \"en-CA\")",
             "isHiddenWhenLocked": true,
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
@@ -208,13 +208,6 @@
         }
       ],
       "name": "parameters - 1 - French"
-    },
-    {
-      "type": 1,
-      "content": {
-        "json": "---\n### IMPORTANT: Localization Pattern\nThe following tab sections are DUPLICATED for English/French localization.\n- **English tabs**: Visible when locale != 'fr-CA'\n- **French tabs**: Visible when locale == 'fr-CA'\n\n⚠️ **WARNING**: When adding/modifying tabs, you MUST update BOTH sections to keep them in sync!\n---"
-      },
-      "name": "localization-warning"
     },
     {
       "type": 11,
@@ -1306,4 +1299,3 @@
     }
   ],
   "fallbackResourceIds": [
-
