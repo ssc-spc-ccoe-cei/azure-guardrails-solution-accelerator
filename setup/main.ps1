@@ -132,12 +132,17 @@ $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
 Write-Output "Reading Subscription Id from context: $SubID"
 
-# Get required variables for tenant info
+# LOCALIZATION: Get required variables for Add-TenantInfo function
+# WHY: We need to write locale to Log Analytics so the workbook can retrieve it for UI localization
+# WHAT: We're reusing the existing Add-TenantInfo function (rather than creating a new function just for locale)
+# Since Add-TenantInfo has mandatory parameters, we must provide ALL of them even though only 'locale' 
+# is relevant to our localization work. This is a trade-off to avoid modifying existing infrastructure.
 $DepartmentName = Get-GSAAutomationVariable -Name "DepartmentName"
 $DepartmentNumber = Get-GSAAutomationVariable -Name "DepartmentNumber"
 $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
 
-# Get tenant name from Graph API
+# LOCALIZATION: Get tenant name from Graph API (required parameter for Add-TenantInfo)
+# This value isn't available elsewhere in main.ps1, so we must fetch it from Graph API
 try {
     $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json
     $tenantName = $response.value.displayName
