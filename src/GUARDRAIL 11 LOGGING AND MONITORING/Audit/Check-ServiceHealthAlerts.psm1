@@ -106,6 +106,7 @@ function Get-ServiceHealthAlerts {
 
             #Exit if no health alert found for any sub
             if($null -eq $filteredAlerts){
+                $isCompliant = $false
                 $Comments = $msgTable.NotAllSubsHaveAlerts
             }
             else{
