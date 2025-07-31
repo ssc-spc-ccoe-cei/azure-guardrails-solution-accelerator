@@ -98,7 +98,7 @@ function Check-UserGroups {
         else {
             # User groups >= 2
             # Condition: all users count == unique users in all groups count
-            if( $totalGroupUsers.Count -eq $allUserCount){
+            if( $totalGroupUsers -eq $allUserCount){
                 # get conditional access policies
                 $CABaseAPIUrl = '/identity/conditionalAccess/policies'
                 try {
