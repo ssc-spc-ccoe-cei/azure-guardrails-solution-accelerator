@@ -753,7 +753,76 @@ function Parse-BlobContent {
 
     return $result
 }
+# New improves version of Invoke-GraphQuery function that handles paging and retries
+# This function is designed to be used with the Microsoft Graph API and will automatically handle pagination
 
+function Invoke-GraphQueryEX {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^(?!https://graph.microsoft.com/(v1|beta)/)')]
+        [string]
+        $urlPath,
+        [int]$MaxRetries = 3,
+        [int]$RetryDelaySeconds = 5
+    )
+
+    $baseUri = "https://graph.microsoft.com/v1.0"
+    $fullUri = "$baseUri$urlPath"
+    $allResults = @()
+    $statusCode = $null
+
+    do {
+        $retryCount = 0
+        $success = $false
+        do {
+            try {
+                $uri = $fullUri -as [uri]
+                $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
+                $data = $response.Content | ConvertFrom-Json
+                $statusCode = $response.StatusCode
+                $success = $true
+            }
+            catch {
+                $retryCount++
+                if ($retryCount -ge $MaxRetries) {
+                    Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message)"
+                    return @{
+                        Content    = $null
+                        StatusCode = $null
+                        Error      = $_.Exception.Message
+                    }
+                } else {
+                    Write-Warning "Transient error calling Graph API: $($_.Exception.Message). Retrying in $RetryDelaySeconds seconds... (Attempt $retryCount of $MaxRetries)"
+                    Start-Sleep -Seconds $RetryDelaySeconds
+                }
+            }
+        } while (-not $success -and $retryCount -lt $MaxRetries)
+
+        if ($null -ne $data.value) {
+            $allResults += $data.value
+        } else {
+            # For endpoints that don't return .value (single object)
+            $allResults = $data
+            break
+        }
+
+        # Handle paging
+        if ($data.'@odata.nextLink') {
+            $fullUri = $data.'@odata.nextLink'
+        } else {
+            $fullUri = $null
+        }
+        $fullUri #### Delete after testing, this is not needed 
+    } while ($fullUri)
+
+    return @{
+        Content    = @{ value = $allResults }
+        StatusCode = $statusCode
+    }
+}
+
+# end of Invoke-GraphQueryEX function
 function Invoke-GraphQuery {
     [CmdletBinding()]
     param(

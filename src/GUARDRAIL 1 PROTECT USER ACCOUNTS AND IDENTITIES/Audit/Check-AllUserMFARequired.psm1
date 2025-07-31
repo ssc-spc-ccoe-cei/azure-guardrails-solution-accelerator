@@ -41,7 +41,7 @@ function Check-AllUserMFARequired {
 
     $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled'
     try {
-        $response = Invoke-GraphQuery -urlPath $usersSignIn -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $usersSignIn -ErrorAction Stop
         $allUsers = $response.Content.value
     }
     catch {
@@ -182,7 +182,7 @@ function Check-AllUserMFARequired {
                 itsgcode = $itsgcode
             }
             $nonMfaUsers.add($nonMfaExtUser)
-        }
+        } 
     }
 
     $Comments = $commentsArray -join ";"
