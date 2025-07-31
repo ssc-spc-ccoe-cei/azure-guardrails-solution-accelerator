@@ -39,7 +39,7 @@ function Check-AllUserMFARequired {
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     $UserComments = $null
 
-    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled'
+    $usersSignIn = "/users?\$top=999&\$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled"
     try {
         $response = Invoke-GraphQueryEX -urlPath $usersSignIn -ErrorAction Stop
         $allUsers = $response.Content.value
