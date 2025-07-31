@@ -771,10 +771,14 @@ function Invoke-GraphQueryEX {
     $fullUri = "$baseUri$urlPath"
     $allResults = @()
     $statusCode = $null
+    $pageCount = 0
 
     do {
         $retryCount = 0
         $success = $false
+        $pageCount++
+        Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Retrieving page $pageCount..."
+
         do {
             try {
                 $uri = $fullUri -as [uri]
@@ -787,6 +791,7 @@ function Invoke-GraphQueryEX {
                 $retryCount++
                 if ($retryCount -ge $MaxRetries) {
                     Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message)"
+                    Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null
                         StatusCode = $null
@@ -813,15 +818,14 @@ function Invoke-GraphQueryEX {
         } else {
             $fullUri = $null
         }
-        $fullUri #### Delete after testing, this is not needed 
     } while ($fullUri)
+
+    Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
     return @{
         Content    = @{ value = $allResults }
         StatusCode = $statusCode
     }
-}
-
 # end of Invoke-GraphQueryEX function
 function Invoke-GraphQuery {
     [CmdletBinding()]
