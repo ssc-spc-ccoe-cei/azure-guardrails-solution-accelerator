@@ -12,7 +12,7 @@ function lastLoginInDays{
 
 function Check-AllUserMFARequired {
     param (      
-        <#[Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
         [string] $ItemName,
@@ -22,7 +22,7 @@ function Check-AllUserMFARequired {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
-        [Parameter(Mandatory=$true)]#>
+        [Parameter(Mandatory=$true)]
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
@@ -38,11 +38,12 @@ function Check-AllUserMFARequired {
     [string] $Comments = $null
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     $UserComments = $null
-
     $usersSignIn = "/users?$top=999&$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+
     try {
         $response = Invoke-GraphQueryEX -urlPath $usersSignIn -ErrorAction Stop
         $allUsers = $response.Content.value
+        $allusers
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_")
