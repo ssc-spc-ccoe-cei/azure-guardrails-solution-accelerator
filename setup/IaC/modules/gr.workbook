@@ -1,8 +1,6 @@
 {
   "version": "Notebook/1.0",
   "items": [
-    // French Localization: Duplicate UI elements with conditional visibility based on locale
-    // English version shows when locale is NOT fr-CA
     {
       "type": 1,
       "content": {
@@ -16,7 +14,6 @@
       },
       "name": "Details Title - English"
     },
-    // French version shows when locale IS fr-CA
     {
       "type": 1,
       "content": {
@@ -30,8 +27,6 @@
       },
       "name": "Details Title - French"
     },
-    // French Localization: Parameter sections are duplicated for English/French
-    // English parameter UI - shows when locale is not fr-CA
     {
       "type": 9,
       "content": {
@@ -66,8 +61,6 @@
       },
       "name": "parameters - 19 - English"
     },
-    // French parameter UI - shows when locale is fr-CA
-    // Note: jsonData contains French labels (Oui/Non instead of Yes/No)
     {
       "type": 9,
       "content": {
@@ -102,9 +95,6 @@
       },
       "name": "parameters - 19 - French"
     },
-    // French Localization: Second parameter section - English version
-    // Workbook has multiple parameter sections - each needs its own locale parameter
-    // Shows when locale is not fr-CA
     {
       "type": 9,
       "content": {
@@ -132,9 +122,6 @@
             "resourceType": "microsoft.operationalinsights/workspaces",
             "value": "2023-01-16 19:55:14"
           },
-          // French Localization: Hidden parameter that reads locale from Log Analytics
-          // Gets locale stored by PowerShell modules, defaults to en-CA if not found
-          // This drives all conditional visibility throughout the workbook
           {
             "id": "locale-param",
             "version": "KqlParameterItem/1.0",
@@ -151,9 +138,6 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      // French Localization: Multiple conditions for visibility (ALL must be true)
-      // 1. selectedTab != "information" - Hide when Information tab is selected
-      // 2. currentLocale != "fr-CA" - Show English version when locale is not French
       "conditionalVisibilities": [
         {
           "parameterName": "selectedTab",
@@ -168,9 +152,6 @@
       ],
       "name": "parameters - 1 - English"
     },
-    // French Localization: Second parameter section - French version
-    // This duplicates the RunTime parameter with French labels
-    // Shows when locale is fr-CA
     {
       "type": 9,
       "content": {
@@ -198,10 +179,6 @@
             "resourceType": "microsoft.operationalinsights/workspaces",
             "value": "2023-01-16 19:55:14"
           },
-          // French Localization: DUPLICATE locale parameter (required)
-          // Must be repeated in each parameter section due to Azure Workbook scope limitations
-          // Parameters from one section aren't accessible to other sections
-          // This enables conditional visibility to work throughout the entire workbook
           {
             "id": "locale-param",
             "version": "KqlParameterItem/1.0",
@@ -218,9 +195,6 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      // French Localization: Multiple conditions for visibility (ALL must be true)
-      // 1. selectedTab != "information" - Hide when Information tab is selected
-      // 2. currentLocale == "fr-CA" - Show French version when locale is French
       "conditionalVisibilities": [
         {
           "parameterName": "selectedTab",
@@ -242,8 +216,6 @@
       },
       "name": "localization-warning"
     },
-    // French Localization: English tab navigation
-    // Shows when locale is not fr-CA
     {
       "type": 11,
       "content": {
@@ -371,8 +343,6 @@
       },
       "name": "links - 1 - English"
     },
-    // French Localization: Tab labels translated to French
-    // Shows BARRIÈRE instead of GUARDRAIL when locale is fr-CA
     {
       "type": 11,
       "content": {
