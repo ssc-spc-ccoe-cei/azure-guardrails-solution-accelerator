@@ -826,6 +826,7 @@ function Invoke-GraphQueryEX {
         Content    = @{ value = $allResults }
         StatusCode = $statusCode
     }
+}
 # end of Invoke-GraphQueryEX function
 function Invoke-GraphQuery {
     [CmdletBinding()]

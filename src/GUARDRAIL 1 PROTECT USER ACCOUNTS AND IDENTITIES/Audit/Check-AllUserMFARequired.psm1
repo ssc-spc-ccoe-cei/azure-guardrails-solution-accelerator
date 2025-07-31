@@ -12,7 +12,7 @@ function lastLoginInDays{
 
 function Check-AllUserMFARequired {
     param (      
-        [Parameter(Mandatory=$true)]
+       <# [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
         [string] $ItemName,
@@ -21,7 +21,7 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime,
+        [string] $ReportTime,#>
         [Parameter(Mandatory=$true)]
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
