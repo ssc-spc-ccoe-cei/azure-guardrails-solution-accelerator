@@ -772,7 +772,7 @@ function Invoke-GraphQueryEX {
     $allResults = @()
     $statusCode = $null
     $pageCount = 0
-
+    Write-Output $fullUri
     do {
         $retryCount = 0
         $success = $false

@@ -12,7 +12,7 @@ function lastLoginInDays{
 
 function Check-AllUserMFARequired {
     param (      
-        [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
         [string] $ItemName,
@@ -21,7 +21,7 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime,#>
+        [string] $ReportTime, 
         [Parameter(Mandatory=$true)]
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
@@ -38,10 +38,12 @@ function Check-AllUserMFARequired {
     [string] $Comments = $null
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     $UserComments = $null
-    $usersSignIn = "/users?$top=999&$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
-
+    $usersSignIn = '/users?$top=999&$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity'
+    Write-Warning "Start Invoke-GraphQueryEX "
     try {
+        Write-Warning $usersSignIn
         $response = Invoke-GraphQueryEX -urlPath $usersSignIn -ErrorAction Stop
+        Write-Warning $response.Content.value
         $allUsers = $response.Content.value
         $allusers
     }
