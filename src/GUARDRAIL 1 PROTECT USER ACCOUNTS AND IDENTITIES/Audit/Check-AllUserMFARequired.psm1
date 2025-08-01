@@ -81,18 +81,19 @@ function Check-AllUserMFARequired {
 
     # Get MFA information for member and external users
     if(!$null -eq $memberUserList){
-        $result = Get-AllUserAuthInformation -allUserList $memberUserList
+        $result = Get-AllUserAuthInformationEX -allUserList $memberUserList
         $memberUserUPNsBadMFA = $result.userUPNsBadMFA
         if($result.ErrorList){
             $ErrorList.Add($result.ErrorList)
         }
         $userValidMFACounter = $result.userValidMFACounter
     }
-    Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
+    Write-Host "
+     count from memberUsersUPNs count is $userValidMFACounter"
     Write-Host "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
 
     if(!$null -eq $extUserList){
-        $result2 = Get-AllUserAuthInformation -allUserList $extUserList
+        $result2 = Get-AllUserAuthInformationEX -allUserList $extUserList
         $extUserUPNsBadMFA = $result2.userUPNsBadMFA
         if($result2.ErrorList){
             $ErrorList.Add($result2.ErrorList)

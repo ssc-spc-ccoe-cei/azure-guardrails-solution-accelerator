@@ -1024,7 +1024,116 @@ function Get-AllUserAuthInformation{
     return $PsObject
 
 }
+function Get-AllUserAuthInformationEX {
+    <#
+    .SYNOPSIS
+    Optimized version of Get-AllUserAuthInformation using Microsoft Graph Batch API for improved performance.
+    Compatible with PowerShell 5.1. Signature and output format are unchanged.
 
+    .PARAMETER allUserList
+    Array of user objects to check for MFA status.
+
+    .OUTPUTS
+    PSCustomObject with userUPNsBadMFA, ErrorList, userValidMFACounter, userUPNsValidMFA.
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [array]$allUserList
+    )
+
+    # Initialize output containers
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $userValidMFACounter = 0
+    $userUPNsValidMFA = @()
+    $userUPNsBadMFA = @()
+    $batchSize = 20
+    $pattern = "*#EXT#*"
+
+    # Process users in batches of 20 (Graph Batch API limit)
+    for ($i = 0; $i -lt $allUserList.Count; $i += $batchSize) {
+        $batchUsers = $allUserList[$i..([Math]::Min($i+$batchSize-1, $allUserList.Count-1))]
+        $batchRequests = @()
+        $userMap = @{}
+
+        # Build batch request payload for each user in the batch
+        $reqId = 1
+        foreach ($user in $batchUsers) {
+            $userAccount = $user.userPrincipalName
+            if ($userAccount -like $pattern) {
+                # Guest accounts
+                $userEmail = $user.mail
+                if ($null -ne $userEmail) {
+                    $urlPath = "/users/$userEmail/authentication/methods"
+                } else {
+                    $extractedEmail = (($userAccount -split '#')[0]) -replace '_', '@'
+                    $urlPath = "/users/$extractedEmail/authentication/methods"
+                }
+            } else {
+                # Member accounts
+                $urlPath = "/users/$userAccount/authentication/methods"
+            }
+            $batchRequests += @{
+                id     = "$reqId"
+                method = "GET"
+                url    = $urlPath
+            }
+            $userMap["$reqId"] = $userAccount
+            $reqId++
+        }
+
+        # Convert batch request to JSON
+        $batchPayload = @{ requests = $batchRequests } | ConvertTo-Json -Depth 4
+
+        # Send batch request to Graph API
+        try {
+            $response = Invoke-AzRestMethod -Uri "https://graph.microsoft.com/v1.0/\$batch" -Method POST -Body $batchPayload -ErrorAction Stop
+            $batchResults = ($response.Content | ConvertFrom-Json).responses
+        }
+        catch {
+            $ErrorList.Add("Batch request failed: $_")
+            continue
+        }
+
+        # Process each response in the batch
+        foreach ($result in $batchResults) {
+            $userAccount = $userMap[$result.id]
+            if ($result.status -eq 200 -and $null -ne $result.body.value) {
+                $authFound = $false
+                foreach ($authmeth in $result.body.value) {
+                    switch ($authmeth.'@odata.type') {
+                        "#microsoft.graph.phoneAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.fido2AuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.temporaryAccessPassAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" { $authFound = $true; break }
+                        "#microsoft.graph.softwareOathAuthenticationMethod" { $authFound = $true; break }
+                    }
+                }
+                if ($authFound) {
+                    $userValidMFACounter += 1
+                    $userValidUPNtemplate = [PSCustomObject]@{ UPN = $userAccount; MFAStatus = $true }
+                    $userUPNsValidMFA += $userValidUPNtemplate
+                } else {
+                    $userUPNtemplate = [PSCustomObject]@{ UPN = $userAccount; MFAStatus = $false }
+                    $userUPNsBadMFA += $userUPNtemplate
+                }
+            } else {
+                $ErrorList.Add("No authentication methods data for $userAccount or error status: $($result.status)")
+                $userUPNtemplate = [PSCustomObject]@{ UPN = $userAccount; MFAStatus = $false }
+                $userUPNsBadMFA += $userUPNtemplate
+            }
+        }
+    }
+
+    # Return results in the same format as the original function
+    $PsObject = [PSCustomObject]@{
+        userUPNsBadMFA      = $userUPNsBadMFA
+        ErrorList           = $ErrorList
+        userValidMFACounter = $userValidMFACounter
+        userUPNsValidMFA    = $userUPNsValidMFA
+    }
+}
 function CompareKQLQueries{
     param (
         [string] $query,
