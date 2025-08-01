@@ -194,7 +194,7 @@
             "value": "Other"
           }
         ],
-        "style": "above",
+        "style": "pills",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
@@ -229,7 +229,7 @@
             "value": "Other"
           }
         ],
-        "style": "above",
+        "style": "pills",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
