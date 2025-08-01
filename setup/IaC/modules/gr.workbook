@@ -163,6 +163,11 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
+      "conditionalVisibility": {
+        "parameterName": "AlwaysHidden",
+        "comparison": "isEqualTo",
+        "value": "true"
+      },
       "name": "parameters - locale"
     },
     {
@@ -181,6 +186,7 @@
               "additionalResourceOptions": [],
               "showDefault": false
             },
+            "defaultValue": "Other",
             "jsonData": "[\n    { \"value\":\"Other\", \"label\":\"Yes\" },\n    { \"value\":\"False\", \"label\":\"No\", \"selected\":true }\n]",
             "timeContext": {
               "durationMs": 86400000
@@ -188,7 +194,7 @@
             "value": "Other"
           }
         ],
-        "style": "pills",
+        "style": "above",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
@@ -215,6 +221,7 @@
               "additionalResourceOptions": [],
               "showDefault": false
             },
+            "defaultValue": "Other",
             "jsonData": "[\n    { \"value\":\"Other\", \"label\":\"Oui\" },\n    { \"value\":\"False\", \"label\":\"Non\", \"selected\":true }\n]",
             "timeContext": {
               "durationMs": 86400000
@@ -222,7 +229,7 @@
             "value": "Other"
           }
         ],
-        "style": "pills",
+        "style": "above",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
@@ -1323,4 +1330,3 @@
     }
   ],
   "fallbackResourceIds": [
-
