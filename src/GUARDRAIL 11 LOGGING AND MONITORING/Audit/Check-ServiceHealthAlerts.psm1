@@ -8,8 +8,13 @@ function Validate-ActionGroups {
 
     #Retrieve action group IDs
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
+    
+    if ($actionGroupIds -isnot [System.Collections.IEnumerable] -or $actionGroupIds -is [string]) {
+        $actionGroupIds = @($actionGroupIds)
+    }
+    $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds)
 
-    foreach ($id in $actionGroupIds){
+    foreach ($id in $actionGroupIdsArray){
 
         #Get sub id from action group
         $subscriptionId = ($id -split '/')[2]
@@ -73,6 +78,7 @@ function Get-ServiceHealthAlerts {
     $isCompliant = $false
     $Comments = ""
     $actionGroupsCompliance = @()
+    $checkActionGroupNext = $false
 
     # Get All the Subscriptions
     try {
@@ -110,85 +116,81 @@ function Get-ServiceHealthAlerts {
                 $Comments = $msgTable.NotAllSubsHaveAlerts
             }
             else{
-                $anyOfAlerts = $filteredAlerts | Where-Object {
-                    $_.ConditionAllOf -and (($_.ConditionAllOf | Where-Object { $null -ne $_.anyOf}) )
+                # Case: when all the alert event types are selected from the conditions/properties.incidentType
+                $allAnyOfNullOrEmpty = $filteredAlerts.ConditionAllOf -notmatch '\S' -or ($filteredAlerts.ConditionAllOf | ForEach-Object {
+                    if ($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0) {$true} else {$false}
+                }) -notcontains $false
+
+                #Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
+                $filteredAlertsContions = $filteredAlerts | Where-Object {
+                    # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
+                    ($_.ConditionAllOf | Where-Object {
+                        $_.AnyOf | Where-Object { 
+                            $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
+                        }
+                    }).Count -eq 1
                 }
-                # condition : this case happens when all 4 conditions are selected
-                if($anyOfAlerts.Count -eq 0){
-                    $isCompliant = $true
+
+                if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsContions)){
+                    $checkActionGroupNext = $true  
+                }
+                # Check if event types not configured for any service health alert i.e. Condition: non-compliant if null
+                elseif($null -eq $filteredAlertsContions.Count){
+                    $isCompliant = $false
+                    $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                 }
                 else{
-                    #Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
-                        $filteredAlerts = $filteredAlerts | Where-Object {
-                            # Check if ConditionAllOf contains objects with AnyOf containing the required conditions
-                            ($_.ConditionAllOf | Where-Object {
-                                $_.AnyOf | Where-Object { 
-                                    $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
-                                }
-                            }).Count -eq 1
+                    
+                    $requiredFilteredAlerts = $filteredAlertsContions | where-object {
+                        $_.ConditionAllOf | Where-Object {
+                            $_.AnyOf | Where-Object { 
+                                $_.Field -eq "properties.incidentType"
+                        }}
+                    }
+                    $incidentTypes = $requiredFilteredAlerts | ForEach-Object {
+                        $_.ConditionAllOf | ForEach-Object {
+                            $_.AnyOf | Where-Object {
+                                $_.Field -eq "properties.incidentType"
+                            }
                         }
-
-                        # Check if event types not configured for any service health alert
-                        if($null -eq $filteredAlerts.Count){
-                            $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
-                        }
-                        else{
-                            $requiredFilteredAlerts = $filteredAlerts | where-object {
-                                $_.ConditionAllOf | Where-Object {
-                                    $_.AnyOf | Where-Object { 
-                                        $_.Field -eq "properties.incidentType"
-                                }}
-                            }
-                            $incidentTypes = $requiredFilteredAlerts | ForEach-Object {
-                                $_.ConditionAllOf | ForEach-Object {
-                                    $_.AnyOf | Where-Object {
-                                        $_.Field -eq "properties.incidentType"
-                                    }
-                                }
-                            }
-                            
-                            # Condition: non-compliant if null or 3 correct alert conditions are not met
-                            if ($null -eq $filteredAlerts.Count) {
-                                $isCompliant = $false
-                                $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
-                            }
-                            # Condition: non-compliant if alert conditions<3
-                            elseif ($incidentTypes.Count -lt 3) {
-                                $isCompliant = $false
-                                $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
-                            }
-                            # Condition: non-compliant if not meet the 3 requires alert conditions ("Service Issues" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security")
-                            elseif (($incidentTypes.Count -ge- 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
-                            
-                                #Store compliance state of each action group
-                                $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
-
-                                #All action groups are compliant
-                                if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
-                                    $isCompliant = $true
-                                }
-                                #Even if one is non compliant
-                                elseif ($actionGroupsCompliance -contains $false) {
-                                    $isCompliant = $false
-                                    $Comments = $msgTable.nonCompliantActionGroups
-                                }
-
-                                if($isCompliant){
-                                    $Comments = $msgTable.compliantServiceHealthAlerts
-                                }
-
-                            }
-                            else{
-                                # Condition: non-compliant if 3 correct alert conditions are not met
-                                $isCompliant = $false
-                                $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
-                            }
-
-                        }
-
                     }
 
+                    # Condition: non-compliant if alert conditions<3
+                    if ($incidentTypes.Count -lt 3) {
+                        $isCompliant = $false
+                        $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
+                    }
+                    # Condition: if allAnyOfNullOrEmpty is true, means All ConditionAllOf.AnyOf are null or empty -> all 4 conditions are selected
+                    elseif($allAnyOfNullOrEmpty -and $filteredAlerts.Count -eq 3){
+                       $checkActionGroupNext = $true
+                    }
+                    # Condition: non-compliant if not meet the 3 requires alert conditions ("Service Issues" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security")
+                    elseif (($incidentTypes.Count -ge- 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
+                        $checkActionGroupNext = $true
+                    }
+                    else{
+                        # Condition: non-compliant if 3 correct alert conditions are not met
+                        $isCompliant = $false
+                        $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
+                    }
                 }
+                
+                if($checkActionGroupNext){
+                    #Store compliance state of each action group
+                    $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
+
+                    #All action groups are compliant
+                    if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
+                        $isCompliant = $true
+                        $Comments = $msgTable.compliantServiceHealthAlerts
+                    }
+                    #Even if one is non compliant
+                    elseif ($actionGroupsCompliance -contains $false) {
+                        $isCompliant = $false
+                        $Comments = $msgTable.nonCompliantActionGroups
+                    }
+                }
+            }
             
         }
         catch{
