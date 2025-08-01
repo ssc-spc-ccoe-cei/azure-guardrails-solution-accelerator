@@ -8,7 +8,6 @@ function Validate-ActionGroups {
 
     #Retrieve action group IDs
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
-    
     if ($actionGroupIds -isnot [System.Collections.IEnumerable] -or $actionGroupIds -is [string]) {
         $actionGroupIds = @($actionGroupIds)
     }
@@ -70,7 +69,7 @@ function Get-ServiceHealthAlerts {
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] 
-        $EnableMultiCloudProfiles # New feature flag, default to false
+        $EnableMultiCloudProfiles # feature flag, default to false
     )
 
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
@@ -176,15 +175,15 @@ function Get-ServiceHealthAlerts {
                 }
                 
                 if($checkActionGroupNext){
-                    #Store compliance state of each action group
+                    # Store compliance state of each action group
                     $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
 
-                    #All action groups are compliant
+                    # All action groups are compliant
                     if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
                         $isCompliant = $true
                         $Comments = $msgTable.compliantServiceHealthAlerts
                     }
-                    #Even if one is non compliant
+                    # Even if one is non-compliant
                     elseif ($actionGroupsCompliance -contains $false) {
                         $isCompliant = $false
                         $Comments = $msgTable.nonCompliantActionGroups
@@ -199,7 +198,7 @@ function Get-ServiceHealthAlerts {
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
         
-        # Add evaluation info for each subs
+        # Add evaluation info for each subscription
         $C = [PSCustomObject]@{
             SubscriptionName = $subscription.Name
             ComplianceStatus = $isCompliant
