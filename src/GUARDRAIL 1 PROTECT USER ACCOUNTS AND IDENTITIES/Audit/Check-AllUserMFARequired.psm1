@@ -12,7 +12,7 @@ function lastLoginInDays{
 
 function Check-AllUserMFARequired {
     param (      
-       <# [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
         [string] $ItemName,
