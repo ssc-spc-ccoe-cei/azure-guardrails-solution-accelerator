@@ -27,7 +27,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select whether Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended",
+        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select if Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended",
         "style": "info"
       },
       "conditionalVisibility": {
@@ -40,7 +40,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Accélérateur de barrières\n\nSélectionnez l'heure du rapport (par défaut, la plus récente). Sélectionnez si les éléments recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé",
+        "json": "## Accélérateur de mesures de protection\n\nSélectionnez l'heure du rapport et choisissez si les articles recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé",
         "style": "info"
       },
       "conditionalVisibility": {
@@ -377,7 +377,7 @@
             "id": "6a683959-7ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 1",
+            "linkLabel": "MESURE 1",
             "subTarget": "gr1",
             "style": "link"
           },
@@ -385,7 +385,7 @@
             "id": "6a683959-7fd3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 2",
+            "linkLabel": "MESURE 2",
             "subTarget": "gr2",
             "style": "link"
           },
@@ -393,7 +393,7 @@
             "id": "6a683359-5ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 3",
+            "linkLabel": "MESURE 3",
             "subTarget": "gr3",
             "style": "link"
           },
@@ -401,7 +401,7 @@
             "id": "6a383959-1ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 4",
+            "linkLabel": "MESURE 4",
             "subTarget": "gr4",
             "style": "link"
           },
@@ -409,7 +409,7 @@
             "id": "6b683959-7ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 5",
+            "linkLabel": "MESURE 5",
             "subTarget": "gr5",
             "style": "link"
           },
@@ -417,7 +417,7 @@
             "id": "6a683959-4fd3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 6",
+            "linkLabel": "MESURE 6",
             "subTarget": "test6",
             "style": "link"
           },
@@ -425,7 +425,7 @@
             "id": "6a683959-7ed3-42b1-a509-3cfcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 7",
+            "linkLabel": "MESURE 7",
             "subTarget": "gr7",
             "style": "link"
           },
@@ -433,7 +433,7 @@
             "id": "4b2de2e9-a9c7-486c-a524-7da0e8f44d26",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 8",
+            "linkLabel": "MESURE 8",
             "subTarget": "gr8",
             "style": "link"
           },
@@ -441,7 +441,7 @@
             "id": "40243b3d-3037-482b-959b-d95c1b4b2014",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 9",
+            "linkLabel": "MESURE 9",
             "subTarget": "gr9",
             "style": "link"
           },
@@ -449,7 +449,7 @@
             "id": "6bc4aa50-56c1-425b-9894-d6d7edb20e3a",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 10",
+            "linkLabel": "MESURE 10",
             "subTarget": "gr10",
             "style": "link"
           },
@@ -457,7 +457,7 @@
             "id": "cad591d5-9404-46e2-b56f-b32723b390de",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 11",
+            "linkLabel": "MESURE 11",
             "subTarget": "gr11",
             "style": "link"
           },
@@ -465,7 +465,7 @@
             "id": "144c0d71-a9de-4e02-95bf-0474d243ada6",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 12",
+            "linkLabel": "MESURE 12",
             "subTarget": "gr12",
             "style": "link"
           },
@@ -473,7 +473,7 @@
             "id": "6a683959-2ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "BARRIÈRE 13",
+            "linkLabel": "MESURE 13",
             "subTarget": "gr13",
             "style": "link"
           },
