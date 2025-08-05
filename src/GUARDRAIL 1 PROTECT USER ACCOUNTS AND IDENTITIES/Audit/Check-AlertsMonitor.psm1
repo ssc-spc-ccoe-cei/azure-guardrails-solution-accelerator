@@ -126,7 +126,8 @@ function Check-AlertsMonitor {
     $BreakGlassAccountQueryMatchPattern = "`($($BreakGlassAccountQueries -join '|')`)"
 
     $AuditLogsQueries = @(
-        "AuditLogs \| Where.*(?:OperationName|ActivityDisplayName) in .*\`"(?:Update|Add|Delete) conditional access policy`"\"
+        "AuditLogs \| Where.*(?:OperationName|ActivityDisplayName) (?:==|=~|contains) `"(?:Update|Add|Delete) conditional access policy`".*", 
+        "AuditLogs \| Where.*(?:OperationName|ActivityDisplayName) in \(`"(Update|Add|Delete) conditional access policy`", `"(?!\1)(Update|Add|Delete) conditional access policy`", `"(?!\2)(Update|Add|Delete) conditional access policy`"\).*"
     )
     $CAPQueryMatchPattern = "`($($AuditLogsQueries -join '|')`)"
 
