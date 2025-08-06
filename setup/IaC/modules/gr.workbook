@@ -70,9 +70,9 @@
             "timeContext": {
               "durationMs": 86400000
             },
+            "defaultValue": "",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "2023-01-16 19:55:14"
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
@@ -113,9 +113,9 @@
             "timeContext": {
               "durationMs": 86400000
             },
+            "defaultValue": "",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "2023-01-16 19:55:14"
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
