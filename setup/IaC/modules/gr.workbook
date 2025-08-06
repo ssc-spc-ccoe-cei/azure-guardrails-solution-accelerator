@@ -24,6 +24,28 @@
       "name": "parameters - initial locale"
     },
     {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "selectedTabLocale-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "selectedTabLocale",
+            "type": 1,
+            "query": "print selectedTabLocale = strcat('{selectedTab}', '_', '{initialLocale}')",
+            "isHiddenWhenLocked": true,
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - selectedTabLocale"
+    },
+    {
       "type": 1,
       "content": {
         "json": "## Guardrails Accelerator\n\nSelect the Report Time and choose if Recommended Items are shown.\n\n(M) = Mandatory / (R) = Recommended",
@@ -509,9 +531,9 @@
       },
       "name": "Gr1-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr1"
+        "value": "gr1_en-CA"
       }
     },
     {
@@ -572,9 +594,9 @@
       },
       "name": "Gr1-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr1"
+        "value": "gr1_fr-CA"
       }
     },
     {
@@ -629,9 +651,9 @@
       },
       "name": "Gr2-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr2"
+        "value": "gr2_en-CA"
       }
     },
     {
@@ -693,9 +715,9 @@
       },
       "name": "Gr2-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr2"
+        "value": "gr2_fr-CA"
       }
     },
     {
@@ -815,9 +837,9 @@
       },
       "name": "Gr3-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr3"
+        "value": "gr3_en-CA"
       }
     },
     {
@@ -846,9 +868,9 @@
       },
       "name": "Gr3-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr3"
+        "value": "gr3_fr-CA"
       }
     },
     {
@@ -884,9 +906,9 @@
       },
       "name": "Gr4-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr4"
+        "value": "gr4_en-CA"
       }
     },
     {
@@ -915,9 +937,9 @@
       },
       "name": "Gr4-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr4"
+        "value": "gr4_fr-CA"
       }
     },
     {
@@ -951,9 +973,9 @@
       },
       "name": "Gr5-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr5"
+        "value": "gr5_en-CA"
       }
     },
     {
@@ -981,9 +1003,9 @@
       },
       "name": "Gr5-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr5"
+        "value": "gr5_fr-CA"
       }
     },
     {
@@ -1018,9 +1040,9 @@
       },
       "name": "Gr6-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr6"
+        "value": "gr6_en-CA"
       }
     },
     {
@@ -1049,9 +1071,9 @@
       },
       "name": "Gr6-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr6"
+        "value": "gr6_fr-CA"
       }
     },
     {
@@ -1085,9 +1107,9 @@
       },
       "name": "Gr7-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr7"
+        "value": "gr7_en-CA"
       }
     },
     {
@@ -1115,9 +1137,9 @@
       },
       "name": "Gr7-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr7"
+        "value": "gr7_fr-CA"
       }
     },
     {
@@ -1151,9 +1173,9 @@
       },
       "name": "Gr8-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr8"
+        "value": "gr8_en-CA"
       }
     },
     {
@@ -1187,9 +1209,9 @@
       },
       "name": "Gr8-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr8"
+        "value": "gr8_fr-CA"
       }
     },
     {
@@ -1231,9 +1253,9 @@
       },
       "name": "Gr9-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr9"
+        "value": "gr9_en-CA"
       }
     },
     {
@@ -1275,9 +1297,9 @@
       },
       "name": "Gr9-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr9"
+        "value": "gr9_fr-CA"
       }
     },
     {
@@ -1313,9 +1335,9 @@
       },
       "name": "Gr10-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr10"
+        "value": "gr10_en-CA"
       }
     },
     {
@@ -1344,9 +1366,9 @@
       },
       "name": "Gr10-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr10"
+        "value": "gr10_fr-CA"
       }
     },
     {
@@ -1388,9 +1410,9 @@
       },
       "name": "Gr11-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr11"
+        "value": "gr11_en-CA"
       }
     },
     {
@@ -1419,9 +1441,9 @@
       },
       "name": "Gr11-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr11"
+        "value": "gr11_fr-CA"
       }
     },
     {
@@ -1457,9 +1479,9 @@
       },
       "name": "Gr12-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr12"
+        "value": "gr12_en-CA"
       }
     },
     {
@@ -1488,9 +1510,9 @@
       },
       "name": "Gr12-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr12"
+        "value": "gr12_fr-CA"
       }
     },
     {
@@ -1526,9 +1548,9 @@
       },
       "name": "Gr13-English",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr13"
+        "value": "gr13_en-CA"
       }
     },
     {
@@ -1557,9 +1579,9 @@
       },
       "name": "Gr13-French",
       "conditionalVisibility": {
-        "parameterName": "selectedTab",
+        "parameterName": "selectedTabLocale",
         "comparison": "isEqualTo",
-        "value": "gr13"
+        "value": "gr13_fr-CA"
       }
     },
     {
