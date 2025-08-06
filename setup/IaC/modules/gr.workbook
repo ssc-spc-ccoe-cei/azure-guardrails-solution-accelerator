@@ -64,15 +64,18 @@
             "isRequired": true,
             "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
             "typeSettings": {
-              "additionalResourceOptions": [],
+              "additionalResourceOptions": [
+                "value::1"
+              ],
               "showDefault": false
             },
             "timeContext": {
               "durationMs": 86400000
             },
-            "defaultValue": "",
+            "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": "2023-01-16 19:55:14"
           }
         ],
         "style": "pills",
@@ -107,15 +110,18 @@
             "isRequired": true,
             "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
             "typeSettings": {
-              "additionalResourceOptions": [],
+              "additionalResourceOptions": [
+                "value::1"
+              ],
               "showDefault": false
             },
             "timeContext": {
               "durationMs": 86400000
             },
-            "defaultValue": "",
+            "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": "2023-01-16 19:55:14"
           }
         ],
         "style": "pills",
