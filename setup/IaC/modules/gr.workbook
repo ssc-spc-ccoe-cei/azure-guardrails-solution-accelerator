@@ -24,28 +24,6 @@
       "name": "parameters - initial locale"
     },
     {
-      "type": 9,
-      "content": {
-        "version": "KqlParameterItem/1.0",
-        "parameters": [
-          {
-            "id": "selectedTabLocale-param",
-            "version": "KqlParameterItem/1.0",
-            "name": "selectedTabLocale",
-            "type": 1,
-            "query": "print selectedTabLocale = strcat('{selectedTab}', '_', '{initialLocale}')",
-            "isHiddenWhenLocked": true,
-            "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
-          }
-        ],
-        "style": "pills",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
-      },
-      "name": "parameters - selectedTabLocale"
-    },
-    {
       "type": 1,
       "content": {
         "json": "## Guardrails Accelerator\n\nSelect the Report Time and choose if Recommended Items are shown.\n\n(M) = Mandatory / (R) = Recommended",
@@ -530,11 +508,18 @@
         }
       },
       "name": "Gr1-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr1_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr1"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 9,
@@ -593,11 +578,18 @@
         }
       },
       "name": "Gr1-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr1_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr1"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -650,11 +642,18 @@
         }
       },
       "name": "Gr2-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr2_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 9,
@@ -714,11 +713,18 @@
         }
       },
       "name": "Gr2-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr2_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -836,11 +842,18 @@
         }
       },
       "name": "Gr3-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr3_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr3"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -867,11 +880,18 @@
         }
       },
       "name": "Gr3-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr3_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr3"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -905,11 +925,18 @@
         }
       },
       "name": "Gr4-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr4_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr4"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -936,11 +963,18 @@
         }
       },
       "name": "Gr4-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr4_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr4"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -972,11 +1006,18 @@
         }
       },
       "name": "Gr5-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr5_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr5"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1002,11 +1043,18 @@
         }
       },
       "name": "Gr5-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr5_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr5"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1039,11 +1087,18 @@
         }
       },
       "name": "Gr6-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr6_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr6"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1070,11 +1125,18 @@
         }
       },
       "name": "Gr6-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr6_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr6"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1106,11 +1168,18 @@
         }
       },
       "name": "Gr7-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr7_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr7"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1136,11 +1205,18 @@
         }
       },
       "name": "Gr7-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr7_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr7"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1172,11 +1248,18 @@
         }
       },
       "name": "Gr8-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr8_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr8"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1208,11 +1291,18 @@
         }
       },
       "name": "Gr8-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr8_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr8"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1252,11 +1342,18 @@
         }
       },
       "name": "Gr9-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr9_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr9"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1296,11 +1393,18 @@
         }
       },
       "name": "Gr9-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr9_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr9"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1334,11 +1438,18 @@
         }
       },
       "name": "Gr10-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr10_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr10"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1365,11 +1476,18 @@
         }
       },
       "name": "Gr10-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr10_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr10"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1409,11 +1527,18 @@
         }
       },
       "name": "Gr11-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr11_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr11"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1440,11 +1565,18 @@
         }
       },
       "name": "Gr11-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr11_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr11"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1478,11 +1610,18 @@
         }
       },
       "name": "Gr12-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr12_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr12"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1509,11 +1648,18 @@
         }
       },
       "name": "Gr12-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr12_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr12"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1547,11 +1693,18 @@
         }
       },
       "name": "Gr13-English",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr13_en-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr13"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isNotEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
@@ -1578,11 +1731,18 @@
         }
       },
       "name": "Gr13-French",
-      "conditionalVisibility": {
-        "parameterName": "selectedTabLocale",
-        "comparison": "isEqualTo",
-        "value": "gr13_fr-CA"
-      }
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr13"
+        },
+        {
+          "parameterName": "initialLocale",
+          "comparison": "isEqualTo",
+          "value": "fr-CA"
+        }
+      ]
     },
     {
       "type": 3,
