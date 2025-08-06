@@ -27,7 +27,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select if Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended",
+        "json": "## Guardrails Accelerator\n\nSelect the Report Time and choose if Recommended Items are shown.\n\n(M) = Mandatory / (R) = Recommended",
         "style": "info"
       },
       "conditionalVisibility": {
