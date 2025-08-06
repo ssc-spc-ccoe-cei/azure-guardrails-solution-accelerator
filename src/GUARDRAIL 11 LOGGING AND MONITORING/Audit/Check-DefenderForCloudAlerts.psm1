@@ -19,8 +19,6 @@ function Get-DefenderForCloudAlerts {
 
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $isCompliant = $true
-    $Comments = ""
 
     # Get All the Subscriptions
     try {
@@ -33,6 +31,11 @@ function Get-DefenderForCloudAlerts {
 
 
     foreach($subscription in $subs){
+        # Initialize
+        $isCompliant = $true
+        $Comments = ""
+
+        # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
 

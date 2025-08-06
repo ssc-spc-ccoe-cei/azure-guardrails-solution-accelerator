@@ -74,10 +74,6 @@ function Get-ServiceHealthAlerts {
 
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $isCompliant = $false
-    $Comments = ""
-    $actionGroupsCompliance = @()
-    $checkActionGroupNext = $false
 
     # Get All the Subscriptions
     try {
@@ -89,10 +85,17 @@ function Get-ServiceHealthAlerts {
     }
 
     foreach($subscription in $subs){
+        # Initialize
+        $isCompliant = $false
+        $Comments = ""
+        $actionGroupsCompliance = @()
+        $checkActionGroupNext = $false
+
+        # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
 
-        #Get subscription owners
+        # Get subscription owners
         $subOwners = Get-AzRoleAssignment -Scope "/subscriptions/$subId" | Where-Object {
             $_.RoleDefinitionName -eq "Owner" 
         } | Select-Object -ExpandProperty SignInName
