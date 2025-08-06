@@ -37,7 +37,6 @@ auditlogsNotCollected = Les journaux d'audit « AuditLogs » ne sont actuellemen
 noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs » pour le groupe de ressources « {0} ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
 noActionGroupsForBGaccts = Aucun groupe d'action n'a été identifié pour les activités de connexion au compte de bris de verre. Les groupes d'action doivent être configurés pour recevoir des alertes en cas de tentatives de connexion au compte de bris de verre.
 noActionGroupsForAuditLogs = Aucun groupe d'action n'a été trouvé pour les modifications et les mises à jour de la politique d'accès conditionnel. Des groupes d'action doivent être créés pour recevoir des alertes pour les modifications et les mises à jour de la politique d'accès conditionnel.
-has context menu
 noActionGroups = Aucun groupe d'action n'a été configuré pour le groupe de ressources « {0} ». Assurez-vous que les groupes d'action sont configurés pour recevoir des alertes pour les activités surveillées du groupe de ressources correspondant.
 compliantAlerts = Les alertes pour les comptes de bris de verre et les journaux d'audit « AuditLogs » sont conformes. Les groupes d'action appropriés ont été configurés et reçoivent correctement des alertes pour chaque activité surveillée.
 noAlertRuleforBGaccts = Créez une alerte pour les comptes de bris de verre en utilisant « SignInLogs ». Il manque une des alertes requises.
@@ -115,6 +114,7 @@ noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référe
 userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des groupes d'utilisateurs ne sont pas nécessaires.
 userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
 reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
+userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
 
 riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
 nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
@@ -304,21 +304,21 @@ setSecurityContact = Veuillez définir un contact de sécurité pour Defender fo
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
 
 noServiceHealthActionGroups = Il manque un groupe d'action pour les alertes de santé du service « Service Health Alerts » associées à l'abonnement : {0}
-NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour tous les abonnements. Assurez-vous que les alertes d'état du service sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
+NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour cet abonnement. Assurez-vous que les alertes d'état du service sont configurées sur cet abonnement et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
 EventTypeMissingForAlert = L'alerte manque un type d'événement requis (problème de service, avis de santé ou avis de sécurité) « Service Issue, Health Advisory or Security Advisory » pour l'abonnement : {0}
 noServiceHealthAlerts = Ne peut pas récupérer les alertes configurées pour l'abonnement : "{0}". Assurez-vous que les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
-nonCompliantActionGroups = Toutes les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements. Par contre, tous les groupes d'action associés ne sont pas configurés correctement. Au moins deux adresses de courriel ou propriétaires d'abonnement sont requis pour le groupe d'action.
-compliantServiceHealthAlerts = Les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et le groupe d'action associé à l'alerte a au moins deux contacts différents.
+nonCompliantActionGroups = Toutes les alertes de santé du service « Service Health Alerts » sont configurées sur cet abonnement. Par contre, tous les groupes d'action associés ne sont pas configurés correctement. Au moins deux adresses de courriel ou propriétaires d'abonnement sont requis pour le groupe d'action.
+compliantServiceHealthAlerts = Les alertes de santé du service « Service Health Alerts » sont configurées sur cet abonnement et le groupe d'action associé à l'alerte a au moins deux contacts différents.
 
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 
 msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
-NotAllSubsHaveDefenderPlans = Le(s) abonnement(s) suivant(s) n'a/n'ont pas de plan MS Defender : {0} . Activez la surveillance MS Defender pour tous les abonnements.
-errorRetrievingNotifications = Les notifications d'alerte MS Defender pour le ou les abonnements ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
+NotAllSubsHaveDefenderPlans = L'abonnement {0} n'a pas de plan « Defender ». Activez la surveillance « Defender » pour cet abonnement.
+errorRetrievingNotifications = Les notifications d'alerte MS Defender pour cet abonnement ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
 EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement {0} n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
 AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
-DefenderCompliant = MS Defender pour l'infonuagique est activé pour tous les abonnements et les notifications par courriel sont correctement configurées.
+DefenderCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement et les notifications par courriel sont correctement configurées.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

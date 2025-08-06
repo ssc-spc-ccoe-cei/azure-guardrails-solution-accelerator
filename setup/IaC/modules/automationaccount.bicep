@@ -443,7 +443,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.0.2'
+        version: '1.0.3'
       }
     }
   }
