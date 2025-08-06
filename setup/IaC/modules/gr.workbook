@@ -70,7 +70,6 @@
             "timeContext": {
               "durationMs": 86400000
             },
-            "defaultValue": "value::1",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
             "value": "2023-01-16 19:55:14"
@@ -114,7 +113,6 @@
             "timeContext": {
               "durationMs": 86400000
             },
-            "defaultValue": "value::1",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
             "value": "2023-01-16 19:55:14"
