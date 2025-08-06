@@ -500,7 +500,7 @@
         "version": "KqlItem/1.0",
         "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 1",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -598,7 +598,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 1,
-        "title": "GR 2",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -768,7 +768,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")",
         "size": 0,
-        "title": "GR 3",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -807,7 +807,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 4",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -846,7 +846,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 5",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -883,7 +883,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 6",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -921,7 +921,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 7",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -958,7 +958,7 @@
         "version": "KqlItem/1.0",
         "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['Subnet Name']=SubnetName_s, Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
-        "title": "GR 8",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -995,7 +995,7 @@
         "version": "KqlItem/1.0",
         "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
         "size": 0,
-        "title": "GR 9",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1040,7 +1040,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
-        "title": "GR 10",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1079,7 +1079,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 1,
-        "title": "GR 11",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1124,7 +1124,7 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
-        "title": "GR 12",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1163,7 +1163,7 @@
         "version": "KqlItem/1.0",
         "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 13",
+        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
