@@ -11,7 +11,6 @@
             "version": "KqlParameterItem/1.0",
             "name": "initialLocale",
             "type": 1,
-            "isRequired": false,
             "query": "GR_TenantInfo_CL | top 1 by TimeGenerated desc | project initialLocale = coalesce(locale_s, \"en-CA\")",
             "isHiddenWhenLocked": true,
             "queryType": 0,
@@ -40,7 +39,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Accélérateur de mesures de protection\n\nSélectionnez l'heure du rapport et choisissez si les articles recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé",
+        "json": "## Acc\u00e9l\u00e9rateur de mesures de protection\n\nS\u00e9lectionnez l'heure du rapport et choisissez si les articles recommand\u00e9s sont affich\u00e9s.\n\n(M) = Obligatoire / (R) = Recommand\u00e9",
         "style": "info"
       },
       "conditionalVisibility": {
@@ -74,27 +73,19 @@
             },
             "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "2023-01-16 19:55:14"
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isNotEqualTo",
-          "value": "information"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "parameters - 1 - English"
+      "name": "parameters - 1 - English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      }
     },
     {
       "type": 9,
@@ -120,27 +111,19 @@
             },
             "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "2023-01-16 19:55:14"
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isNotEqualTo",
-          "value": "information"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "parameters - 1 - French"
+      "name": "parameters - 1 - French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      }
     },
     {
       "type": 9,
@@ -152,7 +135,6 @@
             "version": "KqlParameterItem/1.0",
             "name": "currentLocale",
             "type": 1,
-            "isRequired": false,
             "query": "GR_TenantInfo_CL | where ReportTime_s == \"{RunTime}\" | top 1 by TimeGenerated desc | project currentLocale = coalesce(locale_s, \"en-CA\")",
             "isHiddenWhenLocked": true,
             "queryType": 0,
@@ -214,7 +196,7 @@
             "id": "c90ebce2-9568-40ee-82cd-a8fd774f2e6b",
             "version": "KqlParameterItem/1.0",
             "name": "RequiredYesNo",
-            "label": "Afficher les contrôles recommandés",
+            "label": "Afficher les contr\u00f4les recommand\u00e9s",
             "type": 10,
             "isRequired": true,
             "typeSettings": {
@@ -500,7 +482,6 @@
         "version": "KqlItem/1.0",
         "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -526,19 +507,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr1"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr1-English"
+      "name": "Gr1-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      }
     },
     {
       "type": 9,
@@ -552,7 +526,6 @@
             "label": "Show Non-MFA Users",
             "type": 10,
             "isRequired": true,
-            "value": "no",
             "typeSettings": {
               "additionalResourceOptions": []
             },
@@ -579,7 +552,6 @@
         "version": "KqlItem/1.0",
         "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"MESURE DE PROTECTION 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -598,19 +570,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr1"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr1-French"
+      "name": "Gr1-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      }
     },
     {
       "type": 3,
@@ -624,19 +589,12 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr1"
-        },
-        {
-          "parameterName": "showNonMfa",
-          "comparison": "isEqualTo",
-          "value": "yes"
-        }
-      ],
-      "name": "query - Non-MFA Users"
+      "name": "query - Non-MFA Users",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      }
     },
     {
       "type": 3,
@@ -644,7 +602,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 1,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -670,19 +627,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr2"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr2-English"
+      "name": "Gr2-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      }
     },
     {
       "type": 9,
@@ -723,7 +673,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"MESURE DE PROTECTION 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 1,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -742,19 +691,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr2"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr2-French"
+      "name": "Gr2-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      }
     },
     {
       "type": 3,
@@ -768,19 +710,12 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr2"
-        },
-        {
-          "parameterName": "su",
-          "comparison": "isEqualTo",
-          "value": "yes"
-        }
-      ],
-      "name": "query - 17"
+      "name": "query - 17",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      }
     },
     {
       "type": 9,
@@ -818,7 +753,7 @@
     {
       "type": 1,
       "content": {
-        "json": "⚠️ Only the first 20 users without group assignments are shown below.",
+        "json": "\u26a0\ufe0f Only the first 20 users without group assignments are shown below.",
         "style": "info"
       },
       "conditionalVisibility": {
@@ -840,27 +775,19 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr2"
-        },
-        {
-          "parameterName": "suwg",
-          "comparison": "isEqualTo",
-          "value": "yes"
-        }
-      ],
-      "name": "query - 18"
+      "name": "query - 18",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(iff(\"{initialLocale}\" == \"fr-CA\", \"MESURE DE PROTECTION 3\", \"GUARDRAIL 3\"),\"{RunTime}\",  \"{RequiredYesNo}\")",
+        "query": "gr_data(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -886,19 +813,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr3"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr3-English"
+      "name": "Gr3-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      }
     },
     {
       "type": 3,
@@ -906,7 +826,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"MESURE DE PROTECTION 3\",\"{RunTime}\",  \"{RequiredYesNo}\")",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -925,19 +844,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr3"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr3-French"
+      "name": "Gr3-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      }
     },
     {
       "type": 3,
@@ -945,7 +857,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -971,19 +882,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr4"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr4-English"
+      "name": "Gr4-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      }
     },
     {
       "type": 3,
@@ -991,7 +895,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"MESURE DE PROTECTION 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1010,19 +913,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr4"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr4-French"
+      "name": "Gr4-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      }
     },
     {
       "type": 3,
@@ -1030,7 +926,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1054,19 +949,12 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr5"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr5-English"
+      "name": "Gr5-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      }
     },
     {
       "type": 3,
@@ -1074,7 +962,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"MESURE DE PROTECTION 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1092,19 +979,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr5"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr5-French"
+      "name": "Gr5-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      }
     },
     {
       "type": 3,
@@ -1112,7 +992,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1137,19 +1016,12 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr6"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr6-English"
+      "name": "Gr6-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      }
     },
     {
       "type": 3,
@@ -1157,7 +1029,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"MESURE DE PROTECTION 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1176,19 +1047,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr6"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr6-French"
+      "name": "Gr6-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      }
     },
     {
       "type": 3,
@@ -1196,7 +1060,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1220,19 +1083,12 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr7"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr7-English"
+      "name": "Gr7-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      }
     },
     {
       "type": 3,
@@ -1240,7 +1096,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data567(\"MESURE DE PROTECTION 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1258,27 +1113,19 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr7"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr7-French"
+      "name": "Gr7-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['Subnet Name']=SubnetName_s, Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['Subnet Name']=SubnetName_s, Status=case(ComplianceStatus_b == true, \"\u2714\ufe0f\", ComplianceStatus_b == false, \"\u274c\", \"\u2796\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1302,27 +1149,19 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr8"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr8-English"
+      "name": "Gr8-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"MESURE DE PROTECTION 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['Subnet Name']=SubnetName_s, Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"MESURE DE PROTECTION 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['Subnet Name']=SubnetName_s, Status=case(ComplianceStatus_b == true, \"\u2714\ufe0f\", ComplianceStatus_b == false, \"\u274c\", \"\u2796\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1346,27 +1185,19 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr8"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr8-French"
+      "name": "Gr8-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"\u2714\ufe0f\", ComplianceStatus_b == false, \"\u274c\", \"\u2796\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1398,27 +1229,19 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr9"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr9-English"
+      "name": "Gr9-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"MESURE DE PROTECTION 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"MESURE DE PROTECTION 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"\u2714\ufe0f\", ComplianceStatus_b == false, \"\u274c\", \"\u2796\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1450,19 +1273,12 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr9"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr9-French"
+      "name": "Gr9-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      }
     },
     {
       "type": 3,
@@ -1470,7 +1286,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1496,19 +1311,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr10"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr10-English"
+      "name": "Gr10-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      }
     },
     {
       "type": 3,
@@ -1516,7 +1324,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"MESURE DE PROTECTION 10\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1535,19 +1342,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr10"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr10-French"
+      "name": "Gr10-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      }
     },
     {
       "type": 3,
@@ -1555,7 +1355,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 1,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1587,19 +1386,12 @@
           }
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr11"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr11-English"
+      "name": "Gr11-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      }
     },
     {
       "type": 3,
@@ -1607,7 +1399,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data11(\"MESURE DE PROTECTION 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 1,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1626,19 +1417,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr11"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr11-French"
+      "name": "Gr11-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      }
     },
     {
       "type": 3,
@@ -1646,7 +1430,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1672,19 +1455,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr12"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr12-English"
+      "name": "Gr12-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      }
     },
     {
       "type": 3,
@@ -1692,7 +1468,6 @@
         "version": "KqlItem/1.0",
         "query": "gr_data(\"MESURE DE PROTECTION 12\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1711,19 +1486,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr12"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr12-French"
+      "name": "Gr12-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      }
     },
     {
       "type": 3,
@@ -1731,7 +1499,6 @@
         "version": "KqlItem/1.0",
         "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1757,19 +1524,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr13"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isNotEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr13-English"
+      "name": "Gr13-English",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      }
     },
     {
       "type": 3,
@@ -1777,7 +1537,6 @@
         "version": "KqlItem/1.0",
         "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"MESURE DE PROTECTION 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1796,19 +1555,12 @@
           ]
         }
       },
-      "conditionalVisibilities": [
-        {
-          "parameterName": "selectedTab",
-          "comparison": "isEqualTo",
-          "value": "gr13"
-        },
-        {
-          "parameterName": "initialLocale",
-          "comparison": "isEqualTo",
-          "value": "fr-CA"
-        }
-      ],
-      "name": "Gr13-French"
+      "name": "Gr13-French",
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      }
     },
     {
       "type": 3,
