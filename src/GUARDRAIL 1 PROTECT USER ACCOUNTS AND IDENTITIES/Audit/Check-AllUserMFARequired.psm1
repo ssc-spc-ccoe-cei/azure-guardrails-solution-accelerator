@@ -18,33 +18,34 @@ function Check-AllUserMFARequired {
         [string] $ItemName,
         [Parameter(Mandatory=$true)]
         [string] $itsgcode,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime, 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)] 
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] 
-        $EnableMultiCloudProfiles # default to false
+        [switch] $EnableMultiCloudProfiles # default to false
     )
+Print Parameters 
 
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
     [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
     $UserComments = $null
-    $usersSignIn = '/users?$top=999&$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity'
+    $usersSignIn = "/users?`$top=999&$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
     Write-Warning "Start Invoke-GraphQueryEX "
     try {
         Write-Warning $usersSignIn
+        
         $response = Invoke-GraphQueryEX -urlPath $usersSignIn -ErrorAction Stop
-        Write-Warning $response.Content.value
-        $allUsers = $response.Content.value
+      #  Write-Warning $response.Content.value
+
+        $allUsers = @($response.Content.value)
         $allusers
     }
     catch {

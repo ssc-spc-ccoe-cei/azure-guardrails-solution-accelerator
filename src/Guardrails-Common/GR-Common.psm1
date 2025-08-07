@@ -767,30 +767,37 @@ function Invoke-GraphQueryEX {
         [int]$RetryDelaySeconds = 5
     )
 
-    $baseUri = "https://graph.microsoft.com/v1.0"
-    $fullUri = "$baseUri$urlPath"
+    [string]$baseUri = "https://graph.microsoft.com/v1.0"
+    $fullUri = "$baseUri$urlPath" 
+    $fullUri
     $allResults = @()
     $statusCode = $null
     $pageCount = 0
-    Write-Output $fullUri
+   # Write-Host $fullUri
     do {
         $retryCount = 0
         $success = $false
         $pageCount++
         Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Retrieving page $pageCount..."
-
+        
         do {
             try {
                 $uri = $fullUri -as [uri]
-                $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
+                $uri 
+                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
+              
+  
+  
                 $data = $response.Content | ConvertFrom-Json
+                $parsedcontent = $data.value
+              
                 $statusCode = $response.StatusCode
                 $success = $true
             }
             catch {
                 $retryCount++
                 if ($retryCount -ge $MaxRetries) {
-                    Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message)"
+                    Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message) at page $pagecounts"
                     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null

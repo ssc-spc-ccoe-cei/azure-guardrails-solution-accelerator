@@ -1,0 +1,898 @@
+#TYPE System.IO.FileInfo
+"PSPath","PSParentPath","PSChildName","PSDrive","PSProvider","PSIsContainer","Mode","VersionInfo","BaseName","Target","LinkType","Name","Length","DirectoryName","Directory","IsReadOnly","Exists","FullName","Extension","CreationTime","CreationTimeUtc","LastAccessTime","LastAccessTimeUtc","LastWriteTime","LastWriteTimeUtc","Attributes"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\setup\blob-functions.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\setup","blob-functions.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\setup\blob-functions.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","blob-functions","System.Collections.Generic.List`1[System.String]",,"blob-functions.psm1","17061","C:\git\azure-guardrails-solution-accelerator\setup","C:\git\azure-guardrails-solution-accelerator\setup","False","True","C:\git\azure-guardrails-solution-accelerator\setup\blob-functions.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-AlertsMonitor.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","Check-AlertsMonitor.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-AlertsMonitor.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-AlertsMonitor","System.Collections.Generic.List`1[System.String]",,"Check-AlertsMonitor.psm1","20744","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-AlertsMonitor.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-AllUserMFARequired.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","Check-AllUserMFARequired.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-AllUserMFARequired.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-AllUserMFARequired","System.Collections.Generic.List`1[System.String]",,"Check-AllUserMFARequired.psm1","9263","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-AllUserMFARequired.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:39:22 PM","2025-08-01 8:39:22 PM","2025-07-31 11:59:13 PM","2025-08-01 3:59:13 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-CloudAccountsMFA.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","Check-CloudAccountsMFA.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-CloudAccountsMFA.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-CloudAccountsMFA","System.Collections.Generic.List`1[System.String]",,"Check-CloudAccountsMFA.psm1","4210","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-CloudAccountsMFA.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-DedicatedAdminAccounts.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","Check-DedicatedAdminAccounts.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-DedicatedAdminAccounts.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-DedicatedAdminAccounts","System.Collections.Generic.List`1[System.String]",,"Check-DedicatedAdminAccounts.psm1","16497","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-DedicatedAdminAccounts.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-GAUserCountMFARequired.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","Check-GAUserCountMFARequired.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-GAUserCountMFARequired.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-GAUserCountMFARequired","System.Collections.Generic.List`1[System.String]",,"Check-GAUserCountMFARequired.psm1","11704","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-GAUserCountMFARequired.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-UserAccountGCEventLogging.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","Check-UserAccountGCEventLogging.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-UserAccountGCEventLogging.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-UserAccountGCEventLogging","System.Collections.Generic.List`1[System.String]",,"Check-UserAccountGCEventLogging.psm1","5790","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Check-UserAccountGCEventLogging.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Get-AzureADLicenseType.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","Get-AzureADLicenseType.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Get-AzureADLicenseType.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Get-AzureADLicenseType","System.Collections.Generic.List`1[System.String]",,"Get-AzureADLicenseType.psm1","3632","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES\Audit\Get-AzureADLicenseType.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 10 CYBER DEFENSE SERVICES\Audit\Check-CyberSecurityServices.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 10 CYBER DEFENSE SERVICES\Audit","Check-CyberSecurityServices.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 10 CYBER DEFENSE SERVICES\Audit\Check-CyberSecurityServices.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-CyberSecurityServices","System.Collections.Generic.List`1[System.String]",,"Check-CyberSecurityServices.psm1","4490","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 10 CYBER DEFENSE SERVICES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 10 CYBER DEFENSE SERVICES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 10 CYBER DEFENSE SERVICES\Audit\Check-CyberSecurityServices.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit\Check-DefenderForCloudAlerts.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit","Check-DefenderForCloudAlerts.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit\Check-DefenderForCloudAlerts.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-DefenderForCloudAlerts","System.Collections.Generic.List`1[System.String]",,"Check-DefenderForCloudAlerts.psm1","5091","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit\Check-DefenderForCloudAlerts.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit\Check-ServiceHealthAlerts.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit","Check-ServiceHealthAlerts.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit\Check-ServiceHealthAlerts.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-ServiceHealthAlerts","System.Collections.Generic.List`1[System.String]",,"Check-ServiceHealthAlerts.psm1","7031","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 11 LOGGING AND MONITORING\Audit\Check-ServiceHealthAlerts.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 12 CONFIGURATION OF CLOUD MARKETPLACES\Audit\Check-PrivateMarketPlace.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 12 CONFIGURATION OF CLOUD MARKETPLACES\Audit","Check-PrivateMarketPlace.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 12 CONFIGURATION OF CLOUD MARKETPLACES\Audit\Check-PrivateMarketPlace.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-PrivateMarketPlace","System.Collections.Generic.List`1[System.String]",,"Check-PrivateMarketPlace.psm1","3587","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 12 CONFIGURATION OF CLOUD MARKETPLACES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 12 CONFIGURATION OF CLOUD MARKETPLACES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 12 CONFIGURATION OF CLOUD MARKETPLACES\Audit\Check-PrivateMarketPlace.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Check-BreakGlassAccountIdentityProtectionLicense.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","Check-BreakGlassAccountIdentityProtectionLicense.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Check-BreakGlassAccountIdentityProtectionLicense.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-BreakGlassAccountIdentityProtectionLicense","System.Collections.Generic.List`1[System.String]",,"Check-BreakGlassAccountIdentityProtectionLicense.psm1","5756","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Check-BreakGlassAccountIdentityProtectionLicense.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Check-BreakGlassAccountOwnersInformation.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","Check-BreakGlassAccountOwnersInformation.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Check-BreakGlassAccountOwnersInformation.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-BreakGlassAccountOwnersInformation","System.Collections.Generic.List`1[System.String]",,"Check-BreakGlassAccountOwnersInformation.psm1","5582","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Check-BreakGlassAccountOwnersInformation.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Detect-UserBGAUsersAuthMethods.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","Detect-UserBGAUsersAuthMethods.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Detect-UserBGAUsersAuthMethods.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Detect-UserBGAUsersAuthMethods","System.Collections.Generic.List`1[System.String]",,"Detect-UserBGAUsersAuthMethods.psm1","4425","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Detect-UserBGAUsersAuthMethods.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Monitor-BreakGlassAccount.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","Monitor-BreakGlassAccount.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Monitor-BreakGlassAccount.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Monitor-BreakGlassAccount","System.Collections.Generic.List`1[System.String]",,"Monitor-BreakGlassAccount.psm1","10670","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Monitor-BreakGlassAccount.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Validate-BreakGlassAccount.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","Validate-BreakGlassAccount.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Validate-BreakGlassAccount.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Validate-BreakGlassAccount","System.Collections.Generic.List`1[System.String]",,"Validate-BreakGlassAccount.psm1","5077","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 13 PLAN FOR CONTINUITY\Audit\Validate-BreakGlassAccount.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-DeprecatedAccounts.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-DeprecatedAccounts.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-DeprecatedAccounts.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-DeprecatedAccounts","System.Collections.Generic.List`1[System.String]",,"Check-DeprecatedAccounts.psm1","2899","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-DeprecatedAccounts.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-ExternalAccounts.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-ExternalAccounts.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-ExternalAccounts.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-ExternalAccounts","System.Collections.Generic.List`1[System.String]",,"Check-ExternalAccounts.psm1","10690","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-ExternalAccounts.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-GuestRoleReviews.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-GuestRoleReviews.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-GuestRoleReviews.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-GuestRoleReviews","System.Collections.Generic.List`1[System.String]",,"Check-GuestRoleReviews.psm1","9910","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-GuestRoleReviews.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-OnlineAttackCountermeasures.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-OnlineAttackCountermeasures.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-OnlineAttackCountermeasures.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-OnlineAttackCountermeasures","System.Collections.Generic.List`1[System.String]",,"Check-OnlineAttackCountermeasures.psm1","4657","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-OnlineAttackCountermeasures.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-PrivilegedExternalAccounts.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-PrivilegedExternalAccounts.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-PrivilegedExternalAccounts.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-PrivilegedExternalAccounts","System.Collections.Generic.List`1[System.String]",,"Check-PrivilegedExternalAccounts.psm1","15112","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-PrivilegedExternalAccounts.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-RiskBasedAccess.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-RiskBasedAccess.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-RiskBasedAccess.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-RiskBasedAccess","System.Collections.Generic.List`1[System.String]",,"Check-RiskBasedAccess.psm1","10538","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-RiskBasedAccess.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-UserGroups.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-UserGroups.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-UserGroups.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-UserGroups","System.Collections.Generic.List`1[System.String]",,"Check-UserGroups.psm1","11469","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-UserGroups.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-UserRoleReviews.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","Check-UserRoleReviews.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-UserRoleReviews.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-UserRoleReviews","System.Collections.Generic.List`1[System.String]",,"Check-UserRoleReviews.psm1","9817","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 2 MANAGE ACCESS\Audit\Check-UserRoleReviews.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit\Check-AdminAccess.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit","Check-AdminAccess.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit\Check-AdminAccess.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-AdminAccess","System.Collections.Generic.List`1[System.String]",,"Check-AdminAccess.psm1","4096","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit\Check-AdminAccess.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit\Check-CloudConsoleAccess.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit","Check-CloudConsoleAccess.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit\Check-CloudConsoleAccess.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-CloudConsoleAccess","System.Collections.Generic.List`1[System.String]",,"Check-CloudConsoleAccess.psm1","2310","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 3 SECURE ENDPOINTS\Audit\Check-CloudConsoleAccess.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-FinOpsToolStatus.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","Check-FinOpsToolStatus.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-FinOpsToolStatus.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-FinOpsToolStatus","System.Collections.Generic.List`1[System.String]",,"Check-FinOpsToolStatus.psm1","6713","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-FinOpsToolStatus.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-MonitorAccount.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","Check-MonitorAccount.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-MonitorAccount.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-MonitorAccount","System.Collections.Generic.List`1[System.String]",,"Check-MonitorAccount.psm1","2305","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-MonitorAccount.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-ServicePrincipal.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","Check-ServicePrincipal.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-ServicePrincipal.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-ServicePrincipal","System.Collections.Generic.List`1[System.String]",,"Check-ServicePrincipal.psm1","6203","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-ServicePrincipal.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-ServicePrincipalSecrets.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","Check-ServicePrincipalSecrets.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-ServicePrincipalSecrets.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-ServicePrincipalSecrets","System.Collections.Generic.List`1[System.String]",,"Check-ServicePrincipalSecrets.psm1","4977","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS\Audit\Check-ServicePrincipalSecrets.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 5 DATA LOCATION\Audit\Check-AllowedLocationPolicy.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 5 DATA LOCATION\Audit","Check-AllowedLocationPolicy.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 5 DATA LOCATION\Audit\Check-AllowedLocationPolicy.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-AllowedLocationPolicy","System.Collections.Generic.List`1[System.String]",,"Check-AllowedLocationPolicy.psm1","14561","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 5 DATA LOCATION\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 5 DATA LOCATION\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 5 DATA LOCATION\Audit\Check-AllowedLocationPolicy.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 6 PROTECTION OF DATA-AT-REST\Audit\Check-ProtectionDataAtRest.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 6 PROTECTION OF DATA-AT-REST\Audit","Check-ProtectionDataAtRest.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 6 PROTECTION OF DATA-AT-REST\Audit\Check-ProtectionDataAtRest.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-ProtectionDataAtRest","System.Collections.Generic.List`1[System.String]",,"Check-ProtectionDataAtRest.psm1","2720","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 6 PROTECTION OF DATA-AT-REST\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 6 PROTECTION OF DATA-AT-REST\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 6 PROTECTION OF DATA-AT-REST\Audit\Check-ProtectionDataAtRest.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-ApplicationGatewayCertificateValidity.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","Check-ApplicationGatewayCertificateValidity.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-ApplicationGatewayCertificateValidity.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-ApplicationGatewayCertificateValidity","System.Collections.Generic.List`1[System.String]",,"Check-ApplicationGatewayCertificateValidity.psm1","13643","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-ApplicationGatewayCertificateValidity.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-AppServiceHTTPSConfiguration.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","Check-AppServiceHTTPSConfiguration.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-AppServiceHTTPSConfiguration.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-AppServiceHTTPSConfiguration","System.Collections.Generic.List`1[System.String]",,"Check-AppServiceHTTPSConfiguration.psm1","2503","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-AppServiceHTTPSConfiguration.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-FunctionAppHTTPSConfiguration.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","Check-FunctionAppHTTPSConfiguration.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-FunctionAppHTTPSConfiguration.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-FunctionAppHTTPSConfiguration","System.Collections.Generic.List`1[System.String]",,"Check-FunctionAppHTTPSConfiguration.psm1","2493","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-FunctionAppHTTPSConfiguration.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-SecureConnectionInTransit.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","Check-SecureConnectionInTransit.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-SecureConnectionInTransit.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-SecureConnectionInTransit","System.Collections.Generic.List`1[System.String]",,"Check-SecureConnectionInTransit.psm1","8454","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-SecureConnectionInTransit.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-StorageAccountTLSversion.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","Check-StorageAccountTLSversion.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-StorageAccountTLSversion.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-StorageAccountTLSversion","System.Collections.Generic.List`1[System.String]",,"Check-StorageAccountTLSversion.psm1","6707","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-StorageAccountTLSversion.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-TLSConfiguration.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","Check-TLSConfiguration.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-TLSConfiguration.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-TLSConfiguration","System.Collections.Generic.List`1[System.String]",,"Check-TLSConfiguration.psm1","2699","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 7 PROTECTION OF DATA-IN-TRANSIT\Audit\Check-TLSConfiguration.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 8 NETWORK SEGMENTATION AND SEPARATION\Audit\Check-SubnetComplianceStatus.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 8 NETWORK SEGMENTATION AND SEPARATION\Audit","Check-SubnetComplianceStatus.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 8 NETWORK SEGMENTATION AND SEPARATION\Audit\Check-SubnetComplianceStatus.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-SubnetComplianceStatus","System.Collections.Generic.List`1[System.String]",,"Check-SubnetComplianceStatus.psm1","13770","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 8 NETWORK SEGMENTATION AND SEPARATION\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 8 NETWORK SEGMENTATION AND SEPARATION\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 8 NETWORK SEGMENTATION AND SEPARATION\Audit\Check-SubnetComplianceStatus.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkInterfaceIPs.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","Check-NetworkInterfaceIPs.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkInterfaceIPs.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-NetworkInterfaceIPs","System.Collections.Generic.List`1[System.String]",,"Check-NetworkInterfaceIPs.psm1","1565","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkInterfaceIPs.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkSecurityTools.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","Check-NetworkSecurityTools.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkSecurityTools.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-NetworkSecurityTools","System.Collections.Generic.List`1[System.String]",,"Check-NetworkSecurityTools.psm1","6264","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkSecurityTools.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkWatcherEnabled.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","Check-NetworkWatcherEnabled.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkWatcherEnabled.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-NetworkWatcherEnabled","System.Collections.Generic.List`1[System.String]",,"Check-NetworkWatcherEnabled.psm1","6144","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-NetworkWatcherEnabled.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-VNetComplianceStatus.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","Check-VNetComplianceStatus.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-VNetComplianceStatus.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Check-VNetComplianceStatus","System.Collections.Generic.List`1[System.String]",,"Check-VNetComplianceStatus.psm1","6501","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit","False","True","C:\git\azure-guardrails-solution-accelerator\src\GUARDRAIL 9 NETWORK SECURITY SERVICES\Audit\Check-VNetComplianceStatus.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\Guardrails-Common\GR-Common.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\Guardrails-Common","GR-Common.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\Guardrails-Common\GR-Common.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","GR-Common","System.Collections.Generic.List`1[System.String]",,"GR-Common.psm1","79167","C:\git\azure-guardrails-solution-accelerator\src\Guardrails-Common","C:\git\azure-guardrails-solution-accelerator\src\Guardrails-Common","False","True","C:\git\azure-guardrails-solution-accelerator\src\Guardrails-Common\GR-Common.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:39:22 PM","2025-08-01 8:39:22 PM","2025-08-01 10:59:32 AM","2025-08-01 2:59:32 PM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardRails-Localization\GR-ComplianceChecks.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardRails-Localization","GR-ComplianceChecks.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardRails-Localization\GR-ComplianceChecks.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","GR-ComplianceChecks","System.Collections.Generic.List`1[System.String]",,"GR-ComplianceChecks.psm1","932","C:\git\azure-guardrails-solution-accelerator\src\GuardRails-Localization","C:\git\azure-guardrails-solution-accelerator\src\GuardRails-Localization","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardRails-Localization\GR-ComplianceChecks.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\GuardrailsSolutionAcceleratorSetup.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup","GuardrailsSolutionAcceleratorSetup.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\GuardrailsSolutionAcceleratorSetup.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","GuardrailsSolutionAcceleratorSetup","System.Collections.Generic.List`1[System.String]",,"GuardrailsSolutionAcceleratorSetup.psm1","1008","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\GuardrailsSolutionAcceleratorSetup.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Add-GSAAutomationRunbooks\Add-GSAAutomationRunbooks.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Add-GSAAutomationRunbooks","Add-GSAAutomationRunbooks.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Add-GSAAutomationRunbooks\Add-GSAAutomationRunbooks.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Add-GSAAutomationRunbooks","System.Collections.Generic.List`1[System.String]",,"Add-GSAAutomationRunbooks.psm1","7904","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Add-GSAAutomationRunbooks","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Add-GSAAutomationRunbooks","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Add-GSAAutomationRunbooks\Add-GSAAutomationRunbooks.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAConfigurationParameters\Confirm-GSAConfigurationParameters.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAConfigurationParameters","Confirm-GSAConfigurationParameters.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAConfigurationParameters\Confirm-GSAConfigurationParameters.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Confirm-GSAConfigurationParameters","System.Collections.Generic.List`1[System.String]",,"Confirm-GSAConfigurationParameters.psm1","19787","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAConfigurationParameters","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAConfigurationParameters","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAConfigurationParameters\Confirm-GSAConfigurationParameters.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAPrerequisites\Confirm-GSAPrerequisites.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAPrerequisites","Confirm-GSAPrerequisites.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAPrerequisites\Confirm-GSAPrerequisites.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Confirm-GSAPrerequisites","System.Collections.Generic.List`1[System.String]",,"Confirm-GSAPrerequisites.psm1","16264","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAPrerequisites","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAPrerequisites","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Confirm-GSAPrerequisites\Confirm-GSAPrerequisites.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedDefenderCustomerComponents\Deploy-GSACentralizedDefenderCustomerComponents.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedDefenderCustomerComponents","Deploy-GSACentralizedDefenderCustomerComponents.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedDefenderCustomerComponents\Deploy-GSACentralizedDefenderCustomerComponents.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Deploy-GSACentralizedDefenderCustomerComponents","System.Collections.Generic.List`1[System.String]",,"Deploy-GSACentralizedDefenderCustomerComponents.psm1","6424","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedDefenderCustomerComponents","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedDefenderCustomerComponents","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedDefenderCustomerComponents\Deploy-GSACentralizedDefenderCustomerComponents.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingCustomerComponents\Deploy-GSACentralizedReportingCustomerComponents.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingCustomerComponents","Deploy-GSACentralizedReportingCustomerComponents.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingCustomerComponents\Deploy-GSACentralizedReportingCustomerComponents.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Deploy-GSACentralizedReportingCustomerComponents","System.Collections.Generic.List`1[System.String]",,"Deploy-GSACentralizedReportingCustomerComponents.psm1","2431","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingCustomerComponents","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingCustomerComponents","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingCustomerComponents\Deploy-GSACentralizedReportingCustomerComponents.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingProviderComponents\Deploy-GSACentralizedReportingProviderComponents.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingProviderComponents","Deploy-GSACentralizedReportingProviderComponents.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingProviderComponents\Deploy-GSACentralizedReportingProviderComponents.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Deploy-GSACentralizedReportingProviderComponents","System.Collections.Generic.List`1[System.String]",,"Deploy-GSACentralizedReportingProviderComponents.psm1","117","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingProviderComponents","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingProviderComponents","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACentralizedReportingProviderComponents\Deploy-GSACentralizedReportingProviderComponents.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACoreResources\Deploy-GSACoreResources.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACoreResources","Deploy-GSACoreResources.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACoreResources\Deploy-GSACoreResources.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Deploy-GSACoreResources","System.Collections.Generic.List`1[System.String]",,"Deploy-GSACoreResources.psm1","5319","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACoreResources","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACoreResources","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GSACoreResources\Deploy-GSACoreResources.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GuardrailsSolutionAccelerator\Deploy-GuardrailsSolutionAccelerator.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GuardrailsSolutionAccelerator","Deploy-GuardrailsSolutionAccelerator.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GuardrailsSolutionAccelerator\Deploy-GuardrailsSolutionAccelerator.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Deploy-GuardrailsSolutionAccelerator","System.Collections.Generic.List`1[System.String]",,"Deploy-GuardrailsSolutionAccelerator.psm1","31979","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GuardrailsSolutionAccelerator","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GuardrailsSolutionAccelerator","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Deploy-GuardrailsSolutionAccelerator\Deploy-GuardrailsSolutionAccelerator.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Get-GSAExportedConfig\Get-GSAExportedConfig.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Get-GSAExportedConfig","Get-GSAExportedConfig.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Get-GSAExportedConfig\Get-GSAExportedConfig.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Get-GSAExportedConfig","System.Collections.Generic.List`1[System.String]",,"Get-GSAExportedConfig.psm1","3405","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Get-GSAExportedConfig","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Get-GSAExportedConfig","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Get-GSAExportedConfig\Get-GSAExportedConfig.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents\Remove-GSACentralizedDefenderCustomerComponents.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents","Remove-GSACentralizedDefenderCustomerComponents.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents\Remove-GSACentralizedDefenderCustomerComponents.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Remove-GSACentralizedDefenderCustomerComponents","System.Collections.Generic.List`1[System.String]",,"Remove-GSACentralizedDefenderCustomerComponents.psm1","7378","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents\Remove-GSACentralizedDefenderCustomerComponents.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents\Remove-GSACentralizedReportingCustomerComponents.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents","Remove-GSACentralizedReportingCustomerComponents.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents\Remove-GSACentralizedReportingCustomerComponents.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Remove-GSACentralizedReportingCustomerComponents","System.Collections.Generic.List`1[System.String]",,"Remove-GSACentralizedReportingCustomerComponents.psm1","7749","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents\Remove-GSACentralizedReportingCustomerComponents.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources\Remove-GSACoreResources.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources","Remove-GSACoreResources.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources\Remove-GSACoreResources.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Remove-GSACoreResources","System.Collections.Generic.List`1[System.String]",,"Remove-GSACoreResources.psm1","5237","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources\Remove-GSACoreResources.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Show-GSADeploymentSummary\Show-GSADeploymentSummary.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Show-GSADeploymentSummary","Show-GSADeploymentSummary.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Show-GSADeploymentSummary\Show-GSADeploymentSummary.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Show-GSADeploymentSummary","System.Collections.Generic.List`1[System.String]",,"Show-GSADeploymentSummary.psm1","4641","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Show-GSADeploymentSummary","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Show-GSADeploymentSummary","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Show-GSADeploymentSummary\Show-GSADeploymentSummary.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSAAutomationRunbooks\Update-GSAAutomationRunbooks.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSAAutomationRunbooks","Update-GSAAutomationRunbooks.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSAAutomationRunbooks\Update-GSAAutomationRunbooks.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Update-GSAAutomationRunbooks","System.Collections.Generic.List`1[System.String]",,"Update-GSAAutomationRunbooks.psm1","2754","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSAAutomationRunbooks","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSAAutomationRunbooks","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSAAutomationRunbooks\Update-GSAAutomationRunbooks.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSACoreResources\Update-GSACoreResources.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSACoreResources","Update-GSACoreResources.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSACoreResources\Update-GSACoreResources.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Update-GSACoreResources","System.Collections.Generic.List`1[System.String]",,"Update-GSACoreResources.psm1","1417","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSACoreResources","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSACoreResources","False","True","C:\git\azure-guardrails-solution-accelerator\src\GuardrailsSolutionAcceleratorSetup\modules\Update-GSACoreResources\Update-GSACoreResources.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\tools\Create-manifestpsd1.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\tools","Create-manifestpsd1.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\tools\Create-manifestpsd1.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","Create-manifestpsd1","System.Collections.Generic.List`1[System.String]",,"Create-manifestpsd1.psm1","18480","C:\git\azure-guardrails-solution-accelerator\tools","C:\git\azure-guardrails-solution-accelerator\tools","False","True","C:\git\azure-guardrails-solution-accelerator\tools\Create-manifestpsd1.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
+"Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\tools\CentralView\Modules\ingest-tenantsData\ingest-tenantsData.psm1","Microsoft.PowerShell.Core\FileSystem::C:\git\azure-guardrails-solution-accelerator\tools\CentralView\Modules\ingest-tenantsData","ingest-tenantsData.psm1","C","Microsoft.PowerShell.Core\FileSystem","False","-a----","File:             C:\git\azure-guardrails-solution-accelerator\tools\CentralView\Modules\ingest-tenantsData\ingest-tenantsData.psm1
+InternalName:     
+OriginalFilename: 
+FileVersion:      
+FileDescription:  
+Product:          
+ProductVersion:   
+Debug:            False
+Patched:          False
+PreRelease:       False
+PrivateBuild:     False
+SpecialBuild:     False
+Language:         
+","ingest-tenantsData","System.Collections.Generic.List`1[System.String]",,"ingest-tenantsData.psm1","12842","C:\git\azure-guardrails-solution-accelerator\tools\CentralView\Modules\ingest-tenantsData","C:\git\azure-guardrails-solution-accelerator\tools\CentralView\Modules\ingest-tenantsData","False","True","C:\git\azure-guardrails-solution-accelerator\tools\CentralView\Modules\ingest-tenantsData\ingest-tenantsData.psm1",".psm1","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","2025-08-01 4:45:59 PM","2025-08-01 8:45:59 PM","2025-07-31 4:25:47 AM","2025-07-31 8:25:47 AM","Archive"
