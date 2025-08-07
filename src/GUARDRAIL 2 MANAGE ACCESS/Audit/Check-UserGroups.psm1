@@ -31,6 +31,17 @@ function Check-UserGroups {
         ConsistencyLevel = "eventual"
     }
     
+    # Get all users in the tenant (Members and Guests)
+    $usersUrl = "https://graph.microsoft.com/v1.0/users?`$select=id,displayName,givenName,userPrincipalName&`$top=999"
+    $users = @()
+    do {
+        $usersResp = Invoke-RestMethod -Method Get -Uri $usersUrl -Headers $headers
+        if ($usersResp.value) {
+            $users += $usersResp.value
+        }
+        $usersUrl = $usersResp.'@odata.nextLink'
+    } while ($usersUrl)
+
     $memberUrlPath = '/users/$count?$filter=userType eq ''Member'''
     $memberUri = "https://graph.microsoft.com/v1.0$memberUrlPath"
     $memResp = Invoke-RestMethod -Uri $memberUri -Method Get -Headers $headers
@@ -83,6 +94,7 @@ function Check-UserGroups {
     } while ($groupsUrl)
 
     $totalGroupUsers = $uniqueUPNs.Count
+    $uniqueUsers = $users | Where-Object { $uniqueUPNs.Contains($_.userPrincipalName) }
 
     # Condition: if only 1 user in the tenant
     if($allUserCount -le 1) {
@@ -99,7 +111,7 @@ function Check-UserGroups {
             # Identify users without group assignments for remediation
             $usersWithoutGroups = @()
             $users | Where-Object { 
-                $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' -and
+                $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' -and
                 -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
             } | ForEach-Object {
                     $userObject = [PSCustomObject]@{
@@ -168,7 +180,7 @@ function Check-UserGroups {
                 # Identify users without group assignments for remediation
                 $usersWithoutGroups = @()
                 $users | Where-Object { 
-                    $_.userPrincipalName -ne $null -and $_.userPrincipalName -ne '' -and
+                    $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' -and
                     -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
                 } | ForEach-Object {
                     $userObject = [PSCustomObject]@{
