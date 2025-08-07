@@ -232,6 +232,8 @@ function Get-SubnetComplianceInformation {
             # No vnets found or no subnets found in vnets
             $ComplianceStatus = $true
             $Comments = "$($msgTable.noSubnets) - $($sub.Name)"
+
+            # Segmentation
             $SubnetObject = [PSCustomObject]@{ 
                 SubscriptionName = $sub.Name 
                 SubnetName       = $msgTable.noSubnets
@@ -246,6 +248,23 @@ function Get-SubnetComplianceInformation {
                 Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
             }
             $SubnetList.add($SubnetObject) | Out-Null
+
+            # Separation
+            $SubnetObject = [PSCustomObject]@{ 
+                SubscriptionName = $sub.Name 
+                SubnetName       = $msgTable.noSubnets
+                ComplianceStatus = $ComplianceStatus
+                Comments         = $Comments
+                ItemName         = $msgTable.networkSeparation
+                ControlName      = $ControlName
+                itsgcode         = $itsgcodesegmentation
+                ReportTime       = $ReportTime
+            }
+            if ($EnableMultiCloudProfiles) {
+                Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
+            }
+            $SubnetList.add($SubnetObject) | Out-Null
+
         }
     }
     if ($debug) {
