@@ -339,23 +339,51 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
             # confirms that prerequisites are met and that deployment can proceed
             Confirm-GSAPrerequisites -config $config -newComponents $newComponents -Verbose:$useVerbose
-
+            
             If ($newComponents -contains 'CoreComponents') {
                 # deploy core resources
-                Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                Write-Host "Deploying CoreComponents..." -ForegroundColor Green
+                try{
+                    Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSACoreResources. $_"
+                }
                 
                 # add runbooks to AA
-                Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
+                try{
+                    Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error adding to runbook. $_"
+                }
+                
             }
             
             # deploy Lighthouse components
+            Write-Host "Deploying Lighthouse components..." -ForegroundColor Green
             If ($newComponents -contains 'CentralizedCustomerReportingSupport') {
-                Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
+                Write-Host "Deploying CentralizedReportingCustomerComponents..." -ForegroundColor Green
+                try{
+                    Deploy-GSACentralizedReportingCustomerComponents -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSA centralized reporting customer components. $_"
+                }
             }
             If ($newComponents -contains 'CentralizedCustomerDefenderForCloudSupport') {
-                Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
+                Write-Host "Deploying GSACentralizedDefenderCustomerComponents..." -ForegroundColor Green
+                try{
+                    Deploy-GSACentralizedDefenderCustomerComponents -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in deploying GSA centralized defender for cloud customer components. $_"
+                }
+                
             }
 
+            Write-Host "Completed new deployment."
             Write-Verbose "Completed new deployment."
         }
         Else {
@@ -410,21 +438,38 @@ Function Deploy-GuardrailsSolutionAccelerator {
             # deploy the bicep template with the specified parameters
             If ($updateBicep) {
                 Write-Verbose "Deploying core Bicep template with update parameters '$($paramObject.Keys.Where({$_ -like 'update*'}) -join ',')'..."
-                Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                try{
+                    Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in updating GSA core resources. $_"
+                }
             }
             
             # update runbook definitions in AA
             If ($componentsToUpdate -contains 'AutomationAccountRunbooks') {
-                Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                try{
+                    Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                }
+                catch{
+                    Write-Error "Error in updating Azure automation runbook. $_"
+                }
+                
             }
 
             Write-Verbose "Completed update deployment."
         }
 
         # after successful deployment or update
-        Write-Verbose "Invoking manual execution of Azure Automation runbooks..."
-        Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        Write-Host "Invoking manual execution of Azure Automation runbooks..."
+        try{
+            Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        }
+        catch{
+            Write-Error "Error in invoking Azure automation runbook. $_"
+        }
 
+        Write-Host "Exporting configuration to GSA KeyVault "
         Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
         $configSecretName = 'gsaConfigExportLatest'
         $secretTags = @{
@@ -433,12 +478,60 @@ Function Deploy-GuardrailsSolutionAccelerator {
             'deployerAzureID'       = $config['runtime']['userId']
         }
 
-        $secureConfig = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
-        $encryptedConfig = $secureConfig | ConvertFrom-SecureString
-        $secureConfig.Dispose()
-        Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue ($encryptedConfig | ConvertTo-SecureString) -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
+        # Enhanced error handling for Key Vault secret upload with retry logic
+        $maxRetries = 3
+        $retryDelay = 10  # seconds
+        $secretUploadSuccess = $false
 
-        Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
+        for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+            try {
+                Write-Verbose "Attempt $attempt of $maxRetries : Uploading gsaConfigExportLatest secret to Key Vault..."
+                
+                # Add delay for role assignment propagation on first attempt
+                if ($attempt -eq 1) {
+                    Write-Verbose "Waiting $retryDelay seconds for Key Vault role assignments to propagate..."
+                    Start-Sleep -Seconds $retryDelay
+                }
+
+                $secureConfig = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
+                $encryptedConfig = $secureConfig | ConvertFrom-SecureString
+                $secureConfig.Dispose()
+                
+                $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue ($encryptedConfig | ConvertTo-SecureString) -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose -ErrorAction Stop
+                
+                # Verify the secret was actually created
+                $verifySecret = Get-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -ErrorAction Stop
+                if ($verifySecret) {
+                    Write-Host "Successfully uploaded gsaConfigExportLatest secret to Key Vault '$($config['runtime']['keyVaultName'])'" -ForegroundColor Green
+                    $secretUploadSuccess = $true
+                    break
+                } else {
+                    throw "Secret verification failed - secret was not found after upload"
+                }
+            }
+            catch {
+                $errorMessage = $_.Exception.Message
+                Write-Warning "Attempt $attempt of $maxRetries failed to upload gsaConfigExportLatest secret: $errorMessage"
+                
+                if ($attempt -lt $maxRetries) {
+                    $nextDelay = $retryDelay * $attempt  # Exponential backoff
+                    Write-Verbose "Retrying in $nextDelay seconds..."
+                    Start-Sleep -Seconds $nextDelay
+                } else {
+                    Write-Error "Failed to upload gsaConfigExportLatest secret after $maxRetries attempts. This will cause compliance data collection to fail."
+                    Write-Error "Last error: $errorMessage"
+                    Write-Error "Please check Key Vault permissions and network access settings."
+                    throw "Critical: Failed to upload gsaConfigExportLatest secret to Key Vault '$($config['runtime']['keyVaultName'])' after $maxRetries attempts. Error: $errorMessage"
+                }
+            }
+        }
+
+        if ($secretUploadSuccess) {
+            Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
+        } else {
+            Write-Error "Deployment completed with errors - gsaConfigExportLatest secret upload failed. Compliance data collection will not work."
+            throw "Deployment failed - gsaConfigExportLatest secret upload unsuccessful"
+        }
     }
 }
 

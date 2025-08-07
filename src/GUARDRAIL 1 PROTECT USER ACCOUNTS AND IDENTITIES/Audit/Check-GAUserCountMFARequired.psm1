@@ -187,7 +187,7 @@ function Check-GAUserCountMFARequired {
         $commentsArray =  $msgTable.isCompliant + ' ' + $msgTable.globalAdminAccntsMinimum
         $IsCompliant = $true
     }
-    elseif ($allGAUserUPNs.Count -ge 5){
+    elseif ($allGAUserUPNs.Count -gt 5){
         $commentsArray =  $msgTable.isNotCompliant + ' ' + $msgTable.globalAdminAccntsSurplus
         $IsCompliant = $false  
     }
