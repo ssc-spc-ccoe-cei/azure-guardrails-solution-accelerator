@@ -84,22 +84,31 @@ function Check-UserGroups {
 
     $groupsUrl = "https://graph.microsoft.com/v1.0/groups?`$select=id&`$top=999"
     do {
-    $grpResp = Invoke-RestMethod -Method Get -Uri $groupsUrl -Headers $headers
-
+        try {
+            # Get all groups in the tenant
+            $grpResp = Invoke-RestMethod -Method Get -Uri $groupsUrl -Headers $headers
+        } catch {
+            $ErrorList.Add("Failed to get groups: $_")
+        }
     foreach ($g in $grpResp.value) {
 
         # page members of each group (filter to users only)
         $membersUrl = "https://graph.microsoft.com/v1.0/groups/$($g.id)/members/microsoft.graph.user?`$select=userPrincipalName&`$top=999"
 
         do {
-        $memResp = Invoke-RestMethod -Method Get -Uri $membersUrl -Headers $headers
-        foreach ($u in $memResp.value) {
-            if ($u.userPrincipalName) {
-            $uniqueUPNs.Add($u.userPrincipalName) | Out-Null
+            try {
+                # Get members of the group
+                $memResp = Invoke-RestMethod -Method Get -Uri $membersUrl -Headers $headers
+            } catch {
+                $ErrorList.Add("Failed to get members for group ID '$($g.id)': $_")
             }
-        }
-        $membersUrl = $memResp.'@odata.nextLink'
-        # stop paging members early if we’ve seen every user
+            foreach ($u in $memResp.value) {
+                if ($u.userPrincipalName) {
+                    $uniqueUPNs.Add($u.userPrincipalName) | Out-Null
+                }
+            }
+            $membersUrl = $memResp.'@odata.nextLink'
+            # stop paging members early if we’ve seen every user
         } while ($membersUrl -and $uniqueUPNs.Count -lt $allUserCount)
 
         # break out of the group loop if done
