@@ -30,8 +30,8 @@ function Check-AllUserMFARequired {
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # default to false
     )
-Print Parameters 
-
+    Write-Host "[DEBUG] Entered Check-AllUserMFARequired"
+    Write-Host "[DEBUG] Parameters: ControlName=$ControlName, ItemName=$ItemName, itsgcode=$itsgcode, ReportTime=$ReportTime, FirstBreakGlassUPN=$FirstBreakGlassUPN, SecondBreakGlassUPN=$SecondBreakGlassUPN, CloudUsageProfiles=$CloudUsageProfiles, ModuleProfiles=$ModuleProfiles, EnableMultiCloudProfiles=$EnableMultiCloudProfiles"
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
@@ -47,10 +47,25 @@ Print Parameters
 
         $allUsers = @($response.Content.value)
         $allusers
+        Write-Host "[DEBUG] response.Content: $($response.Content | ConvertTo-Json -Depth 5)"
+        Write-Host "[DEBUG] allUsers: $($allUsers | ConvertTo-Json -Depth 5)"
+         Write-Warning "[ERROR] Exception details: $($_ | ConvertTo-Json -Depth 5)"
+        if ($null -ne $_.Exception) {
+            Write-Warning "[ERROR] Exception.Message: $($_.Exception.Message)"
+            Write-Warning "[ERROR] Exception.StackTrace: $($_.Exception.StackTrace)"
+        }
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_"
+        Write-Warning "[ERROR] Exception details: $($_ | ConvertTo-Json -Depth 5)"
+        Write-Warning "[ERROR] Exception object type: $($_.GetType().FullName)"
+        Write-Warning "[ERROR] Exception raw: $_"
+        Write-Warning "[ERROR] Exception details (Out-String): $($_ | Out-String)"
+        if ($null -ne $_.Exception) {
+            Write-Warning "[ERROR] Exception.Message: $($_.Exception.Message)"
+            Write-Warning "[ERROR] Exception.StackTrace: $($_.Exception.StackTrace)"
+        }
     }
     # Check all users for MFA
     $allUsers = $allUsers | Where-Object {$_.accountEnabled -ne $false}
@@ -227,6 +242,17 @@ Print Parameters
         ComplianceResults = $PsObject
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
+    }
+     # Ensure ComplianceResults is never empty/null
+    if ($null -eq $moduleOutput.ComplianceResults) {
+        $moduleOutput.ComplianceResults = [PSCustomObject]@{
+            ComplianceStatus = $false
+            ControlName      = $ControlName
+            ItemName         = $ItemName
+            Comments         = "No compliance data returned."
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+        }
     }
     return $moduleOutput   
 }
