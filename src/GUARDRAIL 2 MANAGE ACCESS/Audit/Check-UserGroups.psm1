@@ -35,7 +35,11 @@ function Check-UserGroups {
     $usersUrl = "https://graph.microsoft.com/v1.0/users?`$select=id,displayName,givenName,userPrincipalName&`$top=999"
     $users = @()
     do {
-        $usersResp = Invoke-RestMethod -Method Get -Uri $usersUrl -Headers $headers
+        try {
+            $usersResp = Invoke-RestMethod -Method Get -Uri $usersUrl -Headers $headers
+        } catch {
+            $ErrorList.Add("Failed to get users: $_")
+        }
         if ($usersResp.value) {
             $users += $usersResp.value
         }
@@ -44,17 +48,29 @@ function Check-UserGroups {
 
     $memberUrlPath = '/users/$count?$filter=userType eq ''Member'''
     $memberUri = "https://graph.microsoft.com/v1.0$memberUrlPath"
-    $memResp = Invoke-RestMethod -Uri $memberUri -Method Get -Headers $headers
+    try {
+        $memResp = Invoke-RestMethod -Uri $memberUri -Method Get -Headers $headers
+    } catch {
+        $ErrorList.Add("Failed to get member count: $_")
+    }
     $memberCount = [int]$memResp
 
     $guestUrlPath = '/users/$count?$filter=userType eq ''Guest'''
     $guestUri = "https://graph.microsoft.com/v1.0$guestUrlPath"
-    $guestResp = Invoke-RestMethod -Uri $guestUri -Method Get -Headers $headers
+    try {
+        $guestResp = Invoke-RestMethod -Uri $guestUri -Method Get -Headers $headers
+    } catch {
+        $ErrorList.Add("Failed to get guest count: $_")
+    }
     $guestCount = [int]$guestResp
 
     $groupUrlPath = '/groups/$count'
     $groupsUri = "https://graph.microsoft.com/v1.0$groupUrlPath"
-    $groupResp = Invoke-RestMethod -Uri $groupsUri -Method Get -Headers $headers
+    try {
+        $groupResp = Invoke-RestMethod -Uri $groupsUri -Method Get -Headers $headers
+    } catch {
+        $ErrorList.Add("Failed to get guest count: $_")
+    }
     $groupCount = [int]$groupResp
     
     
