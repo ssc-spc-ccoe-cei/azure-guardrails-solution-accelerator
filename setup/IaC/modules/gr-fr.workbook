@@ -203,7 +203,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 1",
         "timeContext": {
@@ -301,7 +301,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 1,
         "title": "MESURE 2",
         "timeContext": {
@@ -471,7 +471,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")\r\n| project-rename ['Nom element'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 3",
         "timeContext": {
@@ -510,7 +510,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 4",
         "timeContext": {
@@ -549,7 +549,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 5",
         "timeContext": {
@@ -586,7 +586,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 6",
         "timeContext": {
@@ -624,7 +624,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 7",
         "timeContext": {
@@ -661,7 +661,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom élément']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom sous-réseau']=SubnetName_s, Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s,[\"Contrôle ITSG\"]=itsgcode_s, Remédiation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom element']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom sous-reseau']=SubnetName_s, Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s,['Controle ITSG']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
         "title": "MESURE 8",
         "timeContext": {
@@ -698,7 +698,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom élément']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom VNet']=column_ifexists('VNETName_s', ''), Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s, ['Contrôle ITSG']=itsgcode_s, Remédiation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom element']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom VNet']=column_ifexists('VNETName_s', ''), Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s, ['Controle ITSG']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
         "size": 0,
         "title": "MESURE 9",
         "timeContext": {
@@ -743,7 +743,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom element'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 4,
         "title": "MESURE 10",
         "timeContext": {
@@ -782,7 +782,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 1,
         "title": "MESURE 11",
         "timeContext": {
@@ -827,7 +827,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom element'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 4,
         "title": "MESURE 12",
         "timeContext": {
@@ -866,7 +866,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 13",
         "timeContext": {
