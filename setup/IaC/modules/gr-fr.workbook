@@ -549,7 +549,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
+        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], Commentaires = Comments, Statut = Status, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 5",
         "timeContext": {
@@ -570,7 +570,7 @@
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
-              "Status"
+              "Statut"
             ]
           }
         }
@@ -586,7 +586,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
+        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], Commentaires = Comments, Statut = Status, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 6",
         "timeContext": {
@@ -608,7 +608,7 @@
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
-              "Status"
+              "Statut"
             ]
           }
         }
@@ -624,7 +624,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
+        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom element'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], Commentaires = Comments, Statut = Status, ['Controle ITSG'] = ['ITSG Control'], Remediation = Remediation, Profil = Profile",
         "size": 0,
         "title": "MESURE 7",
         "timeContext": {
@@ -645,7 +645,7 @@
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
-              "Status"
+              "Statut"
             ]
           }
         }
@@ -661,7 +661,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom element']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom sous-reseau']=SubnetName_s, Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s,['Controle ITSG']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom element']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom sous-reseau']=SubnetName_s, Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s,['Controle ITSG']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Statut asc",
         "size": 0,
         "title": "MESURE 8",
         "timeContext": {
@@ -682,7 +682,7 @@
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
-              "Status"
+              "Statut"
             ]
           }
         }
@@ -727,7 +727,7 @@
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
-              "Status"
+              "Statut"
             ]
           }
         }
@@ -811,7 +811,7 @@
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
-              "Status"
+              "Statut"
             ]
           }
         }
