@@ -8,12 +8,14 @@ param deployLAW bool
 param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
-var wb = loadTextContent('gr.workbook')
+var wbEn = loadTextContent('gr.workbook')
+var wbFr = loadTextContent('gr-fr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
 //'''
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
-var wbConfig='${wb}${wbConfig2}'
+var wbConfigEn='${wbEn}${wbConfig2}'
+var wbConfigFr='${wbFr}${wbConfig2}'
 
 resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: logAnalyticsWorkspaceName
@@ -78,13 +80,26 @@ resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource guarrailsWorkbooksEn 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   location: location
   kind: 'shared'
-  name: guid('guardrails')
+  name: guid('guardrails-en')
   properties:{
-    displayName: 'Guardrails'
-    serializedData: wbConfig
+    displayName: 'Guardrails Accelerator'
+    serializedData: wbConfigEn
+    version: releaseVersion
+    category: 'workbook'
+    sourceId: guardrailsLogAnalytics.id
+  }
+}
+
+resource guarrailsWorkbooksFr 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+  location: location
+  kind: 'shared'
+  name: guid('guardrails-fr')
+  properties:{
+    displayName: 'Accélérateur de Mesures de protection'
+    serializedData: wbConfigFr
     version: releaseVersion
     category: 'workbook'
     sourceId: guardrailsLogAnalytics.id
@@ -93,4 +108,3 @@ resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((dep
 
 output logAnalyticsWorkspaceId string = guardrailsLogAnalytics.properties.customerId 
 output logAnalyticsResourceId string = guardrailsLogAnalytics.id
-

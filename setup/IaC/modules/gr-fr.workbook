@@ -1,0 +1,1037 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Accélérateur de mesures de protection\n\nSélectionnez l'heure du rapport et choisissez si les articles recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé",
+        "style": "info"
+      },
+      "name": "Details Title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "c90ebce2-9568-40ee-82cd-a8fd774f2e6b",
+            "version": "KqlParameterItem/1.0",
+            "name": "RequiredYesNo",
+            "label": "Afficher les contrôles recommandés",
+            "type": 10,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[\n    { \"value\":\"Other\", \"label\":\"Oui\" },\n    { \"value\":\"False\", \"label\":\"Non\", \"selected\":true }\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "value": "Other"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 19"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "618c9321-a3de-4287-b4cf-860a4adf42d4",
+            "version": "KqlParameterItem/1.0",
+            "name": "RunTime",
+            "label": "Heure du rapport",
+            "type": 2,
+            "isRequired": true,
+            "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::1"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "defaultValue": "value::1",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": "2023-01-16 19:55:14"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
+      "name": "parameters - 1"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "6a683959-7ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 1",
+            "subTarget": "gr1",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-7fd3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 2",
+            "subTarget": "gr2",
+            "style": "link"
+          },
+          {
+            "id": "6a683359-5ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 3",
+            "subTarget": "gr3",
+            "style": "link"
+          },
+          {
+            "id": "6a383959-1ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 4",
+            "subTarget": "gr4",
+            "style": "link"
+          },
+          {
+            "id": "6b683959-7ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 5",
+            "subTarget": "gr5",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-4fd3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 6",
+            "subTarget": "test6",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-7ed3-42b1-a509-3cfcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 7",
+            "subTarget": "gr7",
+            "style": "link"
+          },
+          {
+            "id": "4b2de2e9-a9c7-486c-a524-7da0e8f44d26",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 8",
+            "subTarget": "gr8",
+            "style": "link"
+          },
+          {
+            "id": "40243b3d-3037-482b-959b-d95c1b4b2014",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 9",
+            "subTarget": "gr9",
+            "style": "link"
+          },
+          {
+            "id": "6bc4aa50-56c1-425b-9894-d6d7edb20e3a",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 10",
+            "subTarget": "gr10",
+            "style": "link"
+          },
+          {
+            "id": "cad591d5-9404-46e2-b56f-b32723b390de",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 11",
+            "subTarget": "gr11",
+            "style": "link"
+          },
+          {
+            "id": "144c0d71-a9de-4e02-95bf-0474d243ada6",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 12",
+            "subTarget": "gr12",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-2ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 13",
+            "subTarget": "gr13",
+            "style": "link"
+          },
+          {
+            "id": "8c5914bd-a497-473f-b767-f646b642fe5e",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Informations",
+            "subTarget": "information",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "links - 1"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 0,
+        "title": "MESURE 1",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "Gr1"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9gf3d484-e871-4df0-8cbe-8ae6550c5984",
+            "version": "KqlParameterItem/1.0",
+            "name": "showNonMfa",
+            "label": "Afficher les utilisateurs sans AMF",
+            "type": 10,
+            "isRequired": true,
+            "value": "no",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Oui\" },\n    { \"value\":\"no\", \"label\":\"Non\", \"selected\":true }\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "parameters - Non-MFA Users Toggle"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend \n    CreatedRaw = coalesce(\n        column_ifexists(\"CreatedTime_t\", datetime(null)), \n        todatetime(column_ifexists(\"CreatedTime_s\", \"\"))\n    ),\n    LastSignInRaw = coalesce(\n        column_ifexists(\"LastSignIn_t\", datetime(null)), \n        todatetime(column_ifexists(\"LastSignIn_s\", \"\"))\n    )\n| extend \n    CreatedTime = iff(isnull(CreatedRaw), \"N/A\", format_datetime(CreatedRaw, 'yyyy-MM-dd HH:mm:ss')),\n    LastSignIn = iff(isnull(LastSignInRaw), \"Jamais connecté\", format_datetime(LastSignInRaw, 'yyyy-MM-dd HH:mm:ss'))\n| project ['Nom affichage']=DisplayName_s, ['Nom principal utilisateur']=UserPrincipalName_s, ['Type utilisateur']=User_Type_s, ['Date de création']=CreatedTime, ['Dernière connexion']=LastSignIn, Commentaires=Comments_s\n",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr1"
+        },
+        {
+          "parameterName": "showNonMfa",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - Non-MFA Users"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 1,
+        "title": "MESURE 2",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "Gr1 - Copy"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9ff4b484-e871-4df0-8cbe-8ae6570c5984",
+            "version": "KqlParameterItem/1.0",
+            "name": "su",
+            "label": "Afficher les comptes invités",
+            "type": 10,
+            "isRequired": true,
+            "value": "yes",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Oui\" },\n    { \"value\":\"no\", \"label\":\"Non\", \"selected\":true }\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "parameters - 18"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR2ExternalUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project ['Nom affichage']=DisplayName_s, Courriel=Mail_s, Abonnement=Subscription_s, Rôle=Role_s, ['Rôle privilégié']=PrivilegedRole_s, Commentaires=Comments_s",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "su",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - 17"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9ff4b484-e871-4df0-8cbe-8ae6570c5985",
+            "version": "KqlParameterItem/1.0",
+            "name": "suwg",
+            "label": "Afficher les utilisateurs sans groupes",
+            "type": 10,
+            "isRequired": true,
+            "value": "yes",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Oui\" },\n    { \"value\":\"no\", \"label\":\"Non\", \"selected\":true }\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "parameters - 19"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "⚠️ Seuls les 20 premiers utilisateurs sans attribution de groupe sont affichés ci-dessous.",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "users-cap-info"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR2UsersWithoutGroups_CL \n| where ReportTime_s == \"{RunTime}\"\n| project ['Nom affichage']=DisplayName_s, ['Nom principal utilisateur']=UserPrincipalName_s, Commentaires=Comments_s",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "suwg",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - 18"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 0,
+        "title": "MESURE 3",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      },
+      "name": "Gr1 - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 0,
+        "title": "MESURE 4",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      },
+      "name": "query - 6 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 0,
+        "title": "MESURE 5",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      },
+      "name": "query - 2 - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 0,
+        "title": "MESURE 6",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "exportToExcelOptions": "all",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "test6"
+      },
+      "name": "query - 26 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], ['Nom ressource'] = ['Resource Name'], ['Nom groupe ressources'] = ['Resource Group Name'], Emplacement = Location, Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 0,
+        "title": "MESURE 7",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      },
+      "name": "query - 6 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom élément']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom sous-réseau']=SubnetName_s, Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s,[\"Contrôle ITSG\"]=itsgcode_s, Remédiation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "size": 0,
+        "title": "MESURE 8",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      },
+      "name": "query - 2"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Nom élément']=ItemName_s, ['Nom abonnement']=SubscriptionName_s, ['Nom VNet']=column_ifexists('VNETName_s', ''), Statut=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Commentaires=Comments_s, ['Contrôle ITSG']=itsgcode_s, Remédiation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profil=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "size": 0,
+        "title": "MESURE 9",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      },
+      "name": "query - 3"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 4,
+        "title": "MESURE 10",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      },
+      "name": "query - 2 - Copy - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], ['Nom abonnement'] = ['Subscription Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 1,
+        "title": "MESURE 11",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      },
+      "name": "query - 2 - Copy - Copy - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 4,
+        "title": "MESURE 12",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      },
+      "name": "GR11"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )\r\n| project-rename ['Nom élément'] = ['Item Name'], Statut = Status, Commentaires = Comments, ['Contrôle ITSG'] = ['ITSG Control'], Remédiation = Remediation, Profil = Profile",
+        "size": 0,
+        "title": "MESURE 13",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Gr13"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=case(\n    ComplianceStatus_b == true, 'Éléments conformes',\n    ComplianceStatus_b == false, 'Éléments non conformes',\n    'Articles non applicables'\n    ), Title=\"Éléments par conformité\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Status",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Total",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal",
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "showBorder": true
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
+      "name": "query - 16"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL\n| where ReportTime_s == '{RunTime}'\n| summarize by ControlName_s\n| count \n| extend Title=\"Nombre total de contrôles\"",
+        "size": 4,
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Title",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal"
+              }
+            }
+          },
+          "showBorder": true,
+          "size": "auto"
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
+      "name": "group - 17"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let dt = GR_VersionInfo_CL | summarize max(ReportTime_s);\nGR_VersionInfo_CL\n| where ReportTime_s == toscalar (dt)\n|project [\"Version déployée\"]= DeployedVersion_s, [\"Version disponible\"]=AvailableVersion_s, [\"Mise à jour requise\"]=iff(UpdateNeeded_b==true,\"Oui\",\"Non\"),[\"Date de vérification\"]=toscalar (dt)",
+        "size": 4,
+        "title": "Informations sur la version des mesures de protection",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "information"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let dt = GR_TenantInfo_CL | summarize max(ReportTime_s);\r\nGR_TenantInfo_CL\r\n| where ReportTime_s == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(cloudUsageProfiles_s == 'default',toscalar(\"Cloud Usage Profile not specified or 'default'\"),cloudUsageProfiles_s),[\"Report Time\"]=toscalar (dt)",
+        "size": 0,
+        "title": "Cloud Usage Profile Configuration",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "card"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "query - 20"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "***ITSG-33 POLICIES***\r\n\r\nITSG-33 English Link: https://www.cyber.gc.ca/sites/default/files/cyber/publications/itsg33-ann3a-eng.pdf\r\n\r\nITSG-33 French Link: https://www.cyber.gc.ca/sites/default/files/cyber/publications/itsg33-ann3a-fra.pdf",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "information"
+    }
+  ],
+  "fallbackResourceIds": [
