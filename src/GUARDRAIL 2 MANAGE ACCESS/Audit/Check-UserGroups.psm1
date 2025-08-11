@@ -24,7 +24,13 @@ function Check-UserGroups {
 
     # list all users in the tenant
     
-    $accessToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/').Token
+    try {
+        $accessToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/').Token
+    }
+    catch {
+        $ErrorList.Add("Failed to get access token for Microsoft Graph API: $_")
+        return "Error: Failed to get access token for Microsoft Graph API: $_"
+    }
 
     $headers = @{
         Authorization    = "Bearer $accessToken"
@@ -69,7 +75,7 @@ function Check-UserGroups {
     try {
         $groupResp = Invoke-RestMethod -Uri $groupsUri -Method Get -Headers $headers
     } catch {
-        $ErrorList.Add("Failed to get guest count: $_")
+        $ErrorList.Add("Failed to get group count: $_")
     }
     $groupCount = [int]$groupResp
     
