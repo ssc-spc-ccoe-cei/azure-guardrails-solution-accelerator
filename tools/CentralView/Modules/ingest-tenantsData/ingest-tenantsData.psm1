@@ -75,7 +75,7 @@ function get-tenantdata {
     let ctrlprefix="GUARDRAIL 9";
     GuardrailsCompliance_CL
     | where ControlName_s has ctrlprefix and ReportTime_s == "{0}"
-    | where TimeGenerated > ago (12h)
+    | where TimeGenerated > ago (24h))
     |join kind=inner (itsgcodes) on itsgcode_s
     | project Mandatory=Required_s,ControlName_s, ['VNet Name']= column_ifexists('VNETName_s', ''), ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
         column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
