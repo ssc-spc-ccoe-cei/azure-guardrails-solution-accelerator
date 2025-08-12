@@ -189,9 +189,21 @@ function Check-ApplicationGatewayCertificateValidity {
                     if ($keyVaultSecretId) {
                         Write-Warning "Processing Key Vault certificate"
                         # Certificate is stored in Key Vault - need to retrieve and validate it
-                        $keyVaultName = ($keyVaultSecretId -split '/')[8]
-                        $secretName = ($keyVaultSecretId -split '/')[-1]
+                        # Parse the Key Vault URL: https://testappgateway.vault.azure.net/secrets/myapp
+                        $keyVaultUrlParts = $keyVaultSecretId -split '/'
+                        Write-Warning "URL parts: $($keyVaultUrlParts -join ', ')"
+                        $keyVaultName = $keyVaultUrlParts[2] -replace '\.vault\.azure\.net', ''
+                        $secretName = $keyVaultUrlParts[-1]
                         Write-Warning "keyVaultName is $keyVaultName and secret is $secretName"
+                        
+                        # Validate that we have the required values
+                        if ([string]::IsNullOrEmpty($keyVaultName) -or [string]::IsNullOrEmpty($secretName)) {
+                            Write-Warning "Failed to parse Key Vault URL properly"
+                            $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
+                            $ErrorList.Add("Failed to parse Key Vault URL '$keyVaultSecretId' for listener '$($listener.Name)'. Expected format: https://[vaultname].vault.azure.net/secrets/[secretname]")
+                            $allCompliant = $false
+                            continue
+                        }
                         
                         $kvAccessResult = Test-KeyVaultAccess -KeyVaultName $keyVaultName -SecretName $secretName
                         if (-not $kvAccessResult.Success) {
