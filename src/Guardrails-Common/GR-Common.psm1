@@ -1461,7 +1461,9 @@ function Add-ProfileInformation {
         [PSCustomObject]$Result,
         [string]$CloudUsageProfiles,
         [string]$ModuleProfiles,
-        [string]$SubscriptionId
+        [string]$SubscriptionId,
+        [AllowEmptyCollection()]
+        [System.Collections.ArrayList]$ErrorList
     )
     
     if($null -eq $SubscriptionId){
@@ -1656,7 +1658,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 $results.Add($result) | Out-Null
                 continue
@@ -1699,7 +1701,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 
                 $results.Add($result) | Out-Null
@@ -1727,7 +1729,7 @@ function Check-BuiltInPolicies {
                     }
                     
                     if ($EnableMultiCloudProfiles) {
-                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                     }
                     
                     $results.Add($result) | Out-Null
@@ -1764,7 +1766,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 $results.Add($result) | Out-Null
             }
@@ -1799,7 +1801,7 @@ function Check-BuiltInPolicies {
                 }
             }
             if ($EnableMultiCloudProfiles) {
-                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
             }
             $results.Add($result) | Out-Null
         }

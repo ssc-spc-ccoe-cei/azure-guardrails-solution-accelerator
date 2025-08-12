@@ -115,7 +115,7 @@ function Get-DefenderForCloudAlerts {
         }
         
         # Add profile information if MCUP feature is enabled
-        $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
+        $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
         Write-Host "$result"
 
         $PsObject.add($result) | Out-Null

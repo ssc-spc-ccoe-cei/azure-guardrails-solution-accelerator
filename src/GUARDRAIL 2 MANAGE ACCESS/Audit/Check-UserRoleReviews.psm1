@@ -160,7 +160,7 @@ function Check-UserRoleReviews {
     
     # Add profile information if MCUP feature is enabled
     if ($EnableMultiCloudProfiles) {
-        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId
+        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
         Write-Host "$result"
     }
     
