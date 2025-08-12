@@ -160,7 +160,7 @@ function Check-ApplicationGatewayCertificateValidity {
                 
                 if ($sslListeners.Count -eq 0) {
                     $Comments += " " + $msgTable.noSslListenersFound -f $appGateway.Name
-                    $allCompliant = $true
+                    $allCompliant = $false
                     continue
                 }
 
@@ -201,6 +201,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             Write-Warning "Failed to parse Key Vault URL properly - assuming approved CA"
                             $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                             $ErrorList.Add("Failed to parse Key Vault URL '$keyVaultSecretId' for listener '$($listener.Name)'. Expected format: https://[vaultname].vault.azure.net/secrets/[secretname]. Assuming certificate is from approved CA.")
+                            # Don't set allCompliant to false - assume it's approved
                             continue
                         }
                         
@@ -209,8 +210,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             Write-Warning "KeyVault access not successful - assuming approved CA"
                             $automationAccountMSI = (Get-AzContext).Account.Id
                             $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name, $automationAccountMSI
-                            Write-Warning "Comments now are $Comments"
-                            # $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error). Assuming certificate is from approved CA.")
+                            $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error). Assuming certificate is from approved CA.")
                             # Don't set allCompliant to false - assume it's approved
                             continue
                         }
@@ -220,11 +220,24 @@ function Check-ApplicationGatewayCertificateValidity {
                             
                             if ($keyVaultCert.SecretValue) {
                                 Write-Warning "Inside keyVaultCert.SecretValue"
+                                # Convert SecureString to plain text first, then to certificate
+                                $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($keyVaultCert.SecretValue)
+                                $plainTextSecret = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+                                Write-Warning "Secret value type: $($plainTextSecret.GetType().Name), Length: $($plainTextSecret.Length)"
+                                
                                 # Convert secret value to certificate
-                                $certBytes = [System.Convert]::FromBase64String($keyVaultCert.SecretValue)
-                                $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
-                                $certCollection.Import($certBytes)
-                                $x509cert = $certCollection[0]
+                                try {
+                                    $certBytes = [System.Convert]::FromBase64String($plainTextSecret)
+                                    $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+                                    $certCollection.Import($certBytes)
+                                    $x509cert = $certCollection[0]
+                                    Write-Warning "Successfully imported certificate from Key Vault"
+                                }
+                                catch [System.FormatException] {
+                                    Write-Warning "Base64 conversion failed: $($_.Exception.Message)"
+                                    Write-Warning "Secret value preview (first 50 chars): $($plainTextSecret.Substring(0, [Math]::Min(50, $plainTextSecret.Length)))"
+                                    throw
+                                }
                                 
                                 # Validate certificate expiration
                                 if ($x509cert.NotAfter -le (Get-Date)) {
@@ -325,17 +338,30 @@ function Check-ApplicationGatewayCertificateValidity {
         }
     }
 
-    Write-Warning "Before final logic -allCompliant $allCompliant, Comments: $Comments"
+    Write-Warning "Before final logic - allCompliant: $allCompliant, Comments: $Comments"
+    
     if (-not $appGatewaysFound) {
         $Comments = $msgTable.noAppGatewayFound
         $IsCompliant = $true
+        Write-Warning "No app gateways found - Comments: $Comments"
     } else {
         $IsCompliant = $allCompliant
+        Write-Warning "App gateways found - IsCompliant: $IsCompliant, allCompliant: $allCompliant"
         if ($IsCompliant) {
-            $Comments += $msgTable.allCertificatesValid
+            Write-Warning "IsCompliant is true - setting success message"
+            # Only set success message if no other comments exist
+            if ([string]::IsNullOrEmpty($Comments)) {
+                $Comments = $msgTable.allCertificatesValid
+            } else {
+                # Append success message to existing comments
+                $Comments += " " + $msgTable.allCertificatesValid
+            }
+        } else {
+            Write-Warning "IsCompliant is false - keeping existing comments: $Comments"
         }
     }
-    Write-Warning "Right before final logic -allCompliant $allCompliant, Comments: $Comments"
+    
+    Write-Warning "Final Comments: $Comments"
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
