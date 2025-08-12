@@ -189,7 +189,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             
                             # Check if certificate is stored in Key Vault
                             $keyVaultSecretId = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName } | Select-Object -ExpandProperty KeyVaultSecretId
-                            Write-Warning "keyvaultSecretId is $keyVauldSecretId"
+                            Write-Warning "keyvaultSecretId is $keyVaultSecretId"
 
                             if ($keyVaultSecretId) {
                                 Write-Warning "Inside keyvaultSecretId logic"
