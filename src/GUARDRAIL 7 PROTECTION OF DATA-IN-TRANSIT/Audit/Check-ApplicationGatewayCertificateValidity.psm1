@@ -171,8 +171,83 @@ function Check-ApplicationGatewayCertificateValidity {
                     # 3. Check certificate validity
                     $cert = Get-AzApplicationGatewaySslCertificate -ApplicationGateway $appGateway -Name $certName
                     Write-Warning "Cert is $cert"
-                    if ($cert.PublicCertData) {
-                        Write-Warning "Inside public cert logic"
+                    Write-Warning "Cert.PublicCertData exists: $($cert.PublicCertData -ne $null)"
+                    Write-Warning "Cert.KeyVaultSecretId exists: $($cert.KeyVaultSecretId -ne $null)"
+                    
+                    # Check if certificate is stored in Key Vault first
+                    Write-Warning "Looking for certificate name: $certName"
+                    Write-Warning "Available SSL certificates: $($appGateway.SslCertificates.Name -join ', ')"
+                    $matchingCert = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName }
+                    Write-Warning "Matching certificate found: $($matchingCert -ne $null)"
+                    if ($matchingCert) {
+                        Write-Warning "Matching cert KeyVaultSecretId: $($matchingCert.KeyVaultSecretId)"
+                        Write-Warning "Matching cert PublicCertData exists: $($matchingCert.PublicCertData -ne $null)"
+                    }
+                    $keyVaultSecretId = $matchingCert | Select-Object -ExpandProperty KeyVaultSecretId
+                    Write-Warning "keyvaultSecretId is $keyVaultSecretId"
+                    
+                    if ($keyVaultSecretId) {
+                        Write-Warning "Processing Key Vault certificate"
+                        # Certificate is stored in Key Vault - need to retrieve and validate it
+                        $keyVaultName = ($keyVaultSecretId -split '/')[8]
+                        $secretName = ($keyVaultSecretId -split '/')[-1]
+                        Write-Warning "keyVaultName is $keyVaultName and secret is $secretName"
+                        
+                        $kvAccessResult = Test-KeyVaultAccess -KeyVaultName $keyVaultName -SecretName $secretName
+                        if (-not $kvAccessResult.Success) {
+                            Write-Warning "KeyVault access not successful"
+                            $automationAccountMSI = (Get-AzContext).Account.Id
+                            $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name, $automationAccountMSI
+                            $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error)")
+                            $allCompliant = $false
+                            continue
+                        }
+                        try {
+                            $keyVaultCert = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -ErrorAction Stop
+                            Write-Warning "KeyVault cert is $keyVaultCert"
+                            
+                            if ($keyVaultCert.SecretValue) {
+                                Write-Warning "Inside keyVaultCert.SecretValue"
+                                # Convert secret value to certificate
+                                $certBytes = [System.Convert]::FromBase64String($keyVaultCert.SecretValue)
+                                $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+                                $certCollection.Import($certBytes)
+                                $x509cert = $certCollection[0]
+                                
+                                # Validate certificate expiration
+                                if ($x509cert.NotAfter -le (Get-Date)) {
+                                    $Comments += " " + $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
+                                    $allCompliant = $false
+                                }
+                                
+                                # Check if certificate is from an approved CA
+                                $isApprovedCA = $false
+                                foreach ($approvedCA in $ApprovedCAList) {
+                                    if ($x509cert.Issuer -like "*$approvedCA*" -or $approvedCA -like "*$($x509cert.Issuer)*") {
+                                        $isApprovedCA = $true
+                                        break
+                                    }
+                                }
+                                
+                                if (-not $isApprovedCA) {
+                                    $Comments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                                    $allCompliant = $false
+                                }
+                            }
+                            else {
+                                $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
+                                $allCompliant = $false
+                            }
+                        }
+                        catch {
+                            $Comments += " " + $msgTable.keyVaultCertRetrievalFailed -f $listener.Name, $appGateway.Name
+                            $ErrorList.Add("Failed to retrieve certificate from Key Vault '$keyVaultName' for listener '$($listener.Name)': $_")
+                            $allCompliant = $false
+                        }
+                    }
+                    elseif ($cert.PublicCertData) {
+                        Write-Warning "Processing direct certificate (not in Key Vault)"
+                        # Certificate is uploaded directly to Application Gateway
                         try {
                             $certBytes = [System.Convert]::FromBase64String($cert.PublicCertData)
                             $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
@@ -184,83 +259,12 @@ function Check-ApplicationGatewayCertificateValidity {
                                 $allCompliant = $false
                             }
 
-                            # 4. Check if certificate is from an approved CA
+                            # Check if certificate is from an approved CA
                             $isApprovedCA = $false
-                            
-                            # Check if certificate is stored in Key Vault
-                            $keyVaultSecretId = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName } | Select-Object -ExpandProperty KeyVaultSecretId
-                            Write-Warning "keyvaultSecretId is $keyVaultSecretId"
-
-                            if ($keyVaultSecretId) {
-                                Write-Warning "Inside keyvaultSecretId logic"
-
-                                # Certificate is stored in Key Vault - need to retrieve and validate it
-                                $keyVaultName = ($keyVaultSecretId -split '/')[8]
-                                $secretName = ($keyVaultSecretId -split '/')[-1]
-                                Write-Warning "keyVaultName is $keyVaultName and secret is $secretName "
-
-                                $kvAccessResult = Test-KeyVaultAccess -KeyVaultName $keyVaultName -SecretName $secretName
-                                if (-not $kvAccessResult.Success) {
-                                    Write-Warning "KeyVault access not successfull"
-                                    $automationAccountMSI = (Get-AzContext).Account.Id
-                                    $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name, $automationAccountMSI
-                                    $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error)")
-                                    $allCompliant = $false
-                                    continue
-                                }
-                                try {
-                                    $keyVaultCert = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -ErrorAction Stop
-                                    Write-Warning "KeyVault cert is $keyVaultCert"
-
-                                    if ($keyVaultCert.SecretValue) {
-                                        Write-Warning "Inside keyVaultCert.SecretValue"
-
-                                        # Convert secret value to certificate
-                                        $certBytes = [System.Convert]::FromBase64String($keyVaultCert.SecretValue)
-                                        $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
-                                        $certCollection.Import($certBytes)
-                                        $x509cert = $certCollection[0]
-                                        
-                                        # Validate certificate expiration
-                                        if ($x509cert.NotAfter -le (Get-Date)) {
-                                            $Comments += " " + $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
-                                            $allCompliant = $false
-                                        }
-                                        
-                                        # Check if certificate is from an approved CA
-                                        $isApprovedCA = $false
-                                        foreach ($approvedCA in $ApprovedCAList) {
-                                            if ($x509cert.Issuer -like "*$approvedCA*" -or $approvedCA -like "*$($x509cert.Issuer)*") {
-                                                $isApprovedCA = $true
-                                                break
-                                            }
-                                        }
-                                        
-                                        if (-not $isApprovedCA) {
-                                            $Comments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
-                                            $allCompliant = $false
-                                        }
-                                    }
-                                    else {
-                                        $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
-                                        $allCompliant = $false
-                                    }
-                                }
-                                catch {
-                                    $Comments += " " + $msgTable.keyVaultCertRetrievalFailed -f $listener.Name, $appGateway.Name
-                                    $ErrorList.Add("Failed to retrieve certificate from Key Vault '$keyVaultName' for listener '$($listener.Name)': $_")
-                                    $allCompliant = $false
-                                }
-                            }
-                            else {
-                                # Check if the certificate issuer is in or matches part of the ApprovedCAList
-                                # or if ApprovedCA is part of the Issuer (bidirectional check)
-                                $isApprovedCA = $false
-                                foreach ($approvedCA in $ApprovedCAList) {
-                                    if ($x509cert.Issuer -like "*$approvedCA*" -or $approvedCA -like "*$($x509cert.Issuer)*") {
-                                        $isApprovedCA = $true
-                                        break
-                                    }
+                            foreach ($approvedCA in $ApprovedCAList) {
+                                if ($x509cert.Issuer -like "*$approvedCA*" -or $approvedCA -like "*$($x509cert.Issuer)*") {
+                                    $isApprovedCA = $true
+                                    break
                                 }
                             }
 
@@ -275,7 +279,7 @@ function Check-ApplicationGatewayCertificateValidity {
                         }
                     }
                     else {
-                        Write-Warning "Not public cert"
+                        Write-Warning "Certificate has no PublicCertData and no KeyVaultSecretId"
                         $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                         $allCompliant = $false
                     }
