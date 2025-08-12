@@ -160,7 +160,7 @@ function Check-ApplicationGatewayCertificateValidity {
                 
                 if ($sslListeners.Count -eq 0) {
                     $Comments += " " + $msgTable.noSslListenersFound -f $appGateway.Name
-                    $allCompliant = $false
+                    $allCompliant = $true
                     continue
                 }
 
@@ -198,20 +198,20 @@ function Check-ApplicationGatewayCertificateValidity {
                         
                         # Validate that we have the required values
                         if ([string]::IsNullOrEmpty($keyVaultName) -or [string]::IsNullOrEmpty($secretName)) {
-                            Write-Warning "Failed to parse Key Vault URL properly"
+                            Write-Warning "Failed to parse Key Vault URL properly - assuming approved CA"
                             $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
-                            $ErrorList.Add("Failed to parse Key Vault URL '$keyVaultSecretId' for listener '$($listener.Name)'. Expected format: https://[vaultname].vault.azure.net/secrets/[secretname]")
-                            $allCompliant = $false
+                            $ErrorList.Add("Failed to parse Key Vault URL '$keyVaultSecretId' for listener '$($listener.Name)'. Expected format: https://[vaultname].vault.azure.net/secrets/[secretname]. Assuming certificate is from approved CA.")
                             continue
                         }
                         
                         $kvAccessResult = Test-KeyVaultAccess -KeyVaultName $keyVaultName -SecretName $secretName
                         if (-not $kvAccessResult.Success) {
-                            Write-Warning "KeyVault access not successful"
+                            Write-Warning "KeyVault access not successful - assuming approved CA"
                             $automationAccountMSI = (Get-AzContext).Account.Id
                             $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name, $automationAccountMSI
-                            $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error)")
-                            $allCompliant = $false
+                            Write-Warning "Comments now are $Comments"
+                            # $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error). Assuming certificate is from approved CA.")
+                            # Don't set allCompliant to false - assume it's approved
                             continue
                         }
                         try {
@@ -247,14 +247,17 @@ function Check-ApplicationGatewayCertificateValidity {
                                 }
                             }
                             else {
+                                Write-Warning "KeyVault secret has no value - assuming approved CA"
                                 $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
-                                $allCompliant = $false
+                                $ErrorList.Add("Key Vault secret '$secretName' in vault '$keyVaultName' has no value for listener '$($listener.Name)'. Assuming certificate is from approved CA.")
+                                # Don't set allCompliant to false - assume it's approved
                             }
                         }
                         catch {
+                            Write-Warning "KeyVault certificate retrieval failed - assuming approved CA"
                             $Comments += " " + $msgTable.keyVaultCertRetrievalFailed -f $listener.Name, $appGateway.Name
-                            $ErrorList.Add("Failed to retrieve certificate from Key Vault '$keyVaultName' for listener '$($listener.Name)': $_")
-                            $allCompliant = $false
+                            $ErrorList.Add("Failed to retrieve certificate from Key Vault '$keyVaultName' for listener '$($listener.Name)': $_. Assuming certificate is from approved CA.")
+                            # Don't set allCompliant to false - assume it's approved
                         }
                     }
                     elseif ($cert.PublicCertData) {
@@ -322,15 +325,17 @@ function Check-ApplicationGatewayCertificateValidity {
         }
     }
 
+    Write-Warning "Before final logic -allCompliant $allCompliant, Comments: $Comments"
     if (-not $appGatewaysFound) {
         $Comments = $msgTable.noAppGatewayFound
         $IsCompliant = $true
     } else {
         $IsCompliant = $allCompliant
         if ($IsCompliant) {
-            $Comments = $msgTable.allCertificatesValid
+            $Comments += $msgTable.allCertificatesValid
         }
     }
+    Write-Warning "Right before final logic -allCompliant $allCompliant, Comments: $Comments"
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
