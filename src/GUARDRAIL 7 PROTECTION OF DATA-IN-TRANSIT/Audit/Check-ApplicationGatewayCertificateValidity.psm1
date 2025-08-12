@@ -170,7 +170,9 @@ function Check-ApplicationGatewayCertificateValidity {
 
                     # 3. Check certificate validity
                     $cert = Get-AzApplicationGatewaySslCertificate -ApplicationGateway $appGateway -Name $certName
+                    Write-Warning "Cert is $cert"
                     if ($cert.PublicCertData) {
+                        Write-Warning "Inside public cert logic"
                         try {
                             $certBytes = [System.Convert]::FromBase64String($cert.PublicCertData)
                             $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
@@ -187,14 +189,19 @@ function Check-ApplicationGatewayCertificateValidity {
                             
                             # Check if certificate is stored in Key Vault
                             $keyVaultSecretId = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName } | Select-Object -ExpandProperty KeyVaultSecretId
-                            
+                            Write-Warning "keyvaultSecretId is $keyVauldSecretId"
+
                             if ($keyVaultSecretId) {
+                                Write-Warning "Inside keyvaultSecretId logic"
+
                                 # Certificate is stored in Key Vault - need to retrieve and validate it
                                 $keyVaultName = ($keyVaultSecretId -split '/')[8]
                                 $secretName = ($keyVaultSecretId -split '/')[-1]
-                                
+                                Write-Warning "keyVaultName is $keyVaultName and secret is $secretName "
+
                                 $kvAccessResult = Test-KeyVaultAccess -KeyVaultName $keyVaultName -SecretName $secretName
                                 if (-not $kvAccessResult.Success) {
+                                    Write-Warning "KeyVault access not successfull"
                                     $automationAccountMSI = (Get-AzContext).Account.Id
                                     $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name, $automationAccountMSI
                                     $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error)")
@@ -203,8 +210,11 @@ function Check-ApplicationGatewayCertificateValidity {
                                 }
                                 try {
                                     $keyVaultCert = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -ErrorAction Stop
-                                    
+                                    Write-Warning "KeyVault cert is $keyVaultCert"
+
                                     if ($keyVaultCert.SecretValue) {
+                                        Write-Warning "Inside keyVaultCert.SecretValue"
+
                                         # Convert secret value to certificate
                                         $certBytes = [System.Convert]::FromBase64String($keyVaultCert.SecretValue)
                                         $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
@@ -265,6 +275,7 @@ function Check-ApplicationGatewayCertificateValidity {
                         }
                     }
                     else {
+                        Write-Warning "Not public cert"
                         $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                         $allCompliant = $false
                     }
