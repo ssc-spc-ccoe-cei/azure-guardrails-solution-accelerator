@@ -95,7 +95,7 @@ function Get-VNetComplianceObject {
         if (!$evalResult.ShouldEvaluate) {
             if(!$evalResult.ShouldAvailable ){
                 if ($evalResult.Profile -gt 0) {
-                    $VNetObject.ComplianceStatus = "Not Available"
+                    $VNetObject.ComplianceStatus = "Not Applicable"
                     $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                     $VNetObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
                 } else {

@@ -132,7 +132,7 @@ function Check-NetworkSecurityTools {
                 if (!$evalResult.ShouldEvaluate) {
                     if(!$evalResult.ShouldAvailable ){
                         if ($evalResult.Profile -gt 0) {
-                            $resultObject.ComplianceStatus = "Not Available"
+                            $resultObject.ComplianceStatus = "Not Applicable"
                             $resultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                             $resultObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
                         } else {

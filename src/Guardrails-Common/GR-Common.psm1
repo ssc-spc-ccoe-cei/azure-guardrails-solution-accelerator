@@ -1372,7 +1372,7 @@ function Check-PBMMPolicies {
             if (!$evalResult.ShouldEvaluate) {
                 if(!$evalResult.ShouldAvailable ){
                     if ($evalResult.Profile -gt 0) {
-                        $c.ComplianceStatus = "Not Available"
+                        $c.ComplianceStatus = "Not Applicable"
                         $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                         $c.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
                     } else {
@@ -1473,7 +1473,7 @@ function Add-ProfileInformation {
     if (!$evalResult.ShouldEvaluate) {
         if(!$evalResult.ShouldAvailable ){
             if ($evalResult.Profile -gt 0) {
-                $Result.ComplianceStatus = "Not Available"
+                $Result.ComplianceStatus = "Not Applicable"
                 $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                 $Result.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
             } else {

@@ -12,7 +12,7 @@ function Update-SubnetObjectWithProfile {
     if (!$EvalResult.ShouldEvaluate) {
         if(!$evalResult.ShouldAvailable ){
             if ($evalResult.Profile -gt 0) {
-                $SubnetObject.ComplianceStatus = "Not Available"
+                $SubnetObject.ComplianceStatus = "Not Applicable"
                 $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
                 $SubnetObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
             } else {

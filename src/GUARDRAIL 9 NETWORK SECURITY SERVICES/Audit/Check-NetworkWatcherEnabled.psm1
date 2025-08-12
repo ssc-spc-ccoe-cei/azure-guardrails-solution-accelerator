@@ -138,7 +138,7 @@ function Add-ProfileEvaluationResult {
     if (!$evalResult.ShouldEvaluate) {
         if(!$evalResult.ShouldAvailable ){
             if ($evalResult.Profile -gt 0) {
-                $RegionObject.ComplianceStatus = "Not Available"
+                $RegionObject.ComplianceStatus = "Not Applicable"
                 $RegionObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                 $RegionObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
             } else {

@@ -297,7 +297,7 @@ function Set-ProfileEvaluation {
     if (!$evalResult.ShouldEvaluate) {
         if(!$evalResult.ShouldAvailable ){
             if ($evalResult.Profile -gt 0) {
-                $PsObject.ComplianceStatus = "Not Available"
+                $PsObject.ComplianceStatus = "Not Applicable"
                 $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
                 $PsObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
             } else {
