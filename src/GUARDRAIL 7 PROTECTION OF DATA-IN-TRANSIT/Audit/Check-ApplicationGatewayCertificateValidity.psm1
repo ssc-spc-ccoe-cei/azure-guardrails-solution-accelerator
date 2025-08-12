@@ -170,31 +170,31 @@ function Check-ApplicationGatewayCertificateValidity {
 
                     # 3. Check certificate validity
                     $cert = Get-AzApplicationGatewaySslCertificate -ApplicationGateway $appGateway -Name $certName
-                    Write-Warning "Cert is $cert"
-                    Write-Warning "Cert.PublicCertData exists: $($cert.PublicCertData -ne $null)"
-                    Write-Warning "Cert.KeyVaultSecretId exists: $($cert.KeyVaultSecretId -ne $null)"
+                    Write-Verbose "Cert is $cert"
+                    Write-Verbose "Cert.PublicCertData exists: $($cert.PublicCertData -ne $null)"
+                    Write-Verbose "Cert.KeyVaultSecretId exists: $($cert.KeyVaultSecretId -ne $null)"
                     
                     # Check if certificate is stored in Key Vault first
-                    Write-Warning "Looking for certificate name: $certName"
-                    Write-Warning "Available SSL certificates: $($appGateway.SslCertificates.Name -join ', ')"
+                    Write-Verbose "Looking for certificate name: $certName"
+                    Write-Verbose "Available SSL certificates: $($appGateway.SslCertificates.Name -join ', ')"
                     $matchingCert = $appGateway.SslCertificates | Where-Object { $_.Name -eq $certName }
-                    Write-Warning "Matching certificate found: $($matchingCert -ne $null)"
+                    Write-Verbose "Matching certificate found: $($matchingCert -ne $null)"
                     if ($matchingCert) {
-                        Write-Warning "Matching cert KeyVaultSecretId: $($matchingCert.KeyVaultSecretId)"
-                        Write-Warning "Matching cert PublicCertData exists: $($matchingCert.PublicCertData -ne $null)"
+                        Write-Verbose "Matching cert KeyVaultSecretId: $($matchingCert.KeyVaultSecretId)"
+                        Write-Verbose "Matching cert PublicCertData exists: $($matchingCert.PublicCertData -ne $null)"
                     }
                     $keyVaultSecretId = $matchingCert | Select-Object -ExpandProperty KeyVaultSecretId
-                    Write-Warning "keyvaultSecretId is $keyVaultSecretId"
+                    Write-Verbose "keyvaultSecretId is $keyVaultSecretId"
                     
                     if ($keyVaultSecretId) {
-                        Write-Warning "Processing Key Vault certificate"
+                        Write-Verbose "Processing Key Vault certificate"
                         # Certificate is stored in Key Vault - need to retrieve and validate it
                         # Parse the Key Vault URL: https://testappgateway.vault.azure.net/secrets/myapp
                         $keyVaultUrlParts = $keyVaultSecretId -split '/'
-                        Write-Warning "URL parts: $($keyVaultUrlParts -join ', ')"
+                        Write-Verbose "URL parts: $($keyVaultUrlParts -join ', ')"
                         $keyVaultName = $keyVaultUrlParts[2] -replace '\.vault\.azure\.net', ''
                         $secretName = $keyVaultUrlParts[-1]
-                        Write-Warning "keyVaultName is $keyVaultName and secret is $secretName"
+                        Write-Verbose "keyVaultName is $keyVaultName and secret is $secretName"
                         
                         # Validate that we have the required values
                         if ([string]::IsNullOrEmpty($keyVaultName) -or [string]::IsNullOrEmpty($secretName)) {
@@ -204,13 +204,11 @@ function Check-ApplicationGatewayCertificateValidity {
                             # Don't set allCompliant to false - assume it's approved
                             continue
                         }
-                        
                         $kvAccessResult = Test-KeyVaultAccess -KeyVaultName $keyVaultName -SecretName $secretName
                         if (-not $kvAccessResult.Success) {
                             Write-Warning "KeyVault access not successful - assuming approved CA"
-                            $automationAccountMSI = (Get-AzContext).Account.Id
-                            $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name, $automationAccountMSI
-                            $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account (ID: $automationAccountMSI) requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error). Assuming certificate is from approved CA.")
+                            $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name
+                            $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account managed identity requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error). Assuming certificate is from approved CA.")
                             # Don't set allCompliant to false - assume it's approved
                             continue
                         }
@@ -223,7 +221,7 @@ function Check-ApplicationGatewayCertificateValidity {
                                 # Convert SecureString to plain text first, then to certificate
                                 $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($keyVaultCert.SecretValue)
                                 $plainTextSecret = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-                                Write-Warning "Secret value type: $($plainTextSecret.GetType().Name), Length: $($plainTextSecret.Length)"
+                                Write-Verbose "Secret value type: $($plainTextSecret.GetType().Name), Length: $($plainTextSecret.Length)"
                                 
                                 # Convert secret value to certificate
                                 try {
@@ -231,12 +229,12 @@ function Check-ApplicationGatewayCertificateValidity {
                                     $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
                                     $certCollection.Import($certBytes)
                                     $x509cert = $certCollection[0]
-                                    Write-Warning "Successfully imported certificate from Key Vault"
+                                    Write-Verbose "Successfully imported certificate from Key Vault"
                                 }
-                                catch [System.FormatException] {
-                                    Write-Warning "Base64 conversion failed: $($_.Exception.Message)"
-                                    Write-Warning "Secret value preview (first 50 chars): $($plainTextSecret.Substring(0, [Math]::Min(50, $plainTextSecret.Length)))"
-                                    throw
+                                catch [System.FormatException] {                                    
+                                    Write-Error "Base64 conversion failed: $($_.Exception.Message)"
+                                    $ErrorList.Add("Base64 conversion failed: $($_.Exception.Message)")
+                                    continue
                                 }
                                 
                                 # Validate certificate expiration
@@ -260,21 +258,21 @@ function Check-ApplicationGatewayCertificateValidity {
                                 }
                             }
                             else {
-                                Write-Warning "KeyVault secret has no value - assuming approved CA"
+                                Write-Verbose "KeyVault secret has no value - assuming approved CA"
                                 $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                                 $ErrorList.Add("Key Vault secret '$secretName' in vault '$keyVaultName' has no value for listener '$($listener.Name)'. Assuming certificate is from approved CA.")
                                 # Don't set allCompliant to false - assume it's approved
                             }
                         }
                         catch {
-                            Write-Warning "KeyVault certificate retrieval failed - assuming approved CA"
+                            Write-Verbose "KeyVault certificate retrieval failed - assuming approved CA"
                             $Comments += " " + $msgTable.keyVaultCertRetrievalFailed -f $listener.Name, $appGateway.Name
                             $ErrorList.Add("Failed to retrieve certificate from Key Vault '$keyVaultName' for listener '$($listener.Name)': $_. Assuming certificate is from approved CA.")
                             # Don't set allCompliant to false - assume it's approved
                         }
                     }
                     elseif ($cert.PublicCertData) {
-                        Write-Warning "Processing direct certificate (not in Key Vault)"
+                        Write-Verbose "Processing direct certificate (not in Key Vault)"
                         # Certificate is uploaded directly to Application Gateway
                         try {
                             $certBytes = [System.Convert]::FromBase64String($cert.PublicCertData)
@@ -307,7 +305,7 @@ function Check-ApplicationGatewayCertificateValidity {
                         }
                     }
                     else {
-                        Write-Warning "Certificate has no PublicCertData and no KeyVaultSecretId"
+                        Write-Verbose "Certificate has no PublicCertData and no KeyVaultSecretId"
                         $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                         $allCompliant = $false
                     }
@@ -337,8 +335,6 @@ function Check-ApplicationGatewayCertificateValidity {
             }
         }
     }
-
-    Write-Warning "Before final logic - allCompliant: $allCompliant, Comments: $Comments"
     
     if (-not $appGatewaysFound) {
         $Comments = $msgTable.noAppGatewayFound
@@ -348,16 +344,7 @@ function Check-ApplicationGatewayCertificateValidity {
         $IsCompliant = $allCompliant
         Write-Warning "App gateways found - IsCompliant: $IsCompliant, allCompliant: $allCompliant"
         if ($IsCompliant) {
-            Write-Warning "IsCompliant is true - setting success message"
-            # Only set success message if no other comments exist
-            if ([string]::IsNullOrEmpty($Comments)) {
-                $Comments = $msgTable.allCertificatesValid
-            } else {
-                # Append success message to existing comments
-                $Comments += " " + $msgTable.allCertificatesValid
-            }
-        } else {
-            Write-Warning "IsCompliant is false - keeping existing comments: $Comments"
+            $Comments = $msgTable.allCertificatesValid
         }
     }
     
