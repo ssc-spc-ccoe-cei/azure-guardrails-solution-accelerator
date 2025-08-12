@@ -339,16 +339,15 @@ function Check-ApplicationGatewayCertificateValidity {
     if (-not $appGatewaysFound) {
         $Comments = $msgTable.noAppGatewayFound
         $IsCompliant = $true
-        Write-Warning "No app gateways found - Comments: $Comments"
+        Write-Verbose "No app gateways found - Comments: $Comments"
     } else {
         $IsCompliant = $allCompliant
-        Write-Warning "App gateways found - IsCompliant: $IsCompliant, allCompliant: $allCompliant"
+        Write-Verbose "App gateways found - IsCompliant: $IsCompliant, allCompliant: $allCompliant"
         if ($IsCompliant) {
             $Comments = $msgTable.allCertificatesValid
         }
     }
     
-    Write-Warning "Final Comments: $Comments"
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
