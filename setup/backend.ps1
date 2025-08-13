@@ -119,8 +119,7 @@ If ($lighthouseTargetManagementGroupID) {
 
         If ($jobData.registrationState -notin ('Registered','Registering')) {
             Write-Warning "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register"
-            Add-LogEntry 'Warning' "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
-                -additionalValues @{reportTime=$ReportTime; locale=$locale}
+            Add-LogEntry 'Warning' "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend -additionalValues @{reportTime=$ReportTime; locale=$locale}
 
             $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}/register?api-version=2021-04-01" -f $subscriptionId,'Microsoft.ManagedServices'
             
@@ -143,19 +142,16 @@ If ($lighthouseTargetManagementGroupID) {
         Write-Output "Checking on Lighthouse RP registration job status for subscription '$subscriptionId...'"
         If ($job.error) {
             Write-Error "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)"
-            Add-LogEntry 'Error' "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
-                -additionalValues @{reportTime=$ReportTime; locale=$locale}
+            Add-LogEntry 'Error' "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend -additionalValues @{reportTime=$ReportTime; locale=$locale}
         }
         Else {
             Write-Output "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'"
-            Add-LogEntry 'Information' "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
-            -additionalValues @{reportTime=$ReportTime; locale=$locale}
+            Add-LogEntry 'Information' "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend -additionalValues @{reportTime=$ReportTime; locale=$locale}
         }
     }
 }
 
-Add-LogEntry 'Information' "Completed execution of backend runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
-    -additionalValues @{reportTime=$ReportTime; locale=$locale}
+Add-LogEntry 'Information' "Completed execution of backend runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend -additionalValues @{reportTime=$ReportTime; locale=$locale}
 
 # SIG # Begin signature block
 # MIInqgYJKoZIhvcNAQcCoIInmzCCJ5cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
