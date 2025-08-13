@@ -10,12 +10,22 @@ function Update-SubnetObjectWithProfile {
     )
 
     if (!$EvalResult.ShouldEvaluate) {
-        if ($EvalResult.Profile -gt 0) {
-            $SubnetObject.ComplianceStatus = "Not Applicable"
-            $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $EvalResult.Profile -Force
-            $SubnetObject.Comments = "Not evaluated - Profile $($EvalResult.Profile) not present in CloudUsageProfiles"
+        if(!$evalResult.ShouldAvailable ){
+            if ($evalResult.Profile -gt 0) {
+                $SubnetObject.ComplianceStatus = "Not Applicable"
+                $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
+                $SubnetObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+            }
         } else {
-            $ErrorList.Add("Error occurred while evaluating profile configuration")
+            if ($evalResult.Profile -gt 0) {
+                $SubnetObject.ComplianceStatus = "Not Applicable"
+                $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
+                $SubnetObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         }
     } else {
         $SubnetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $EvalResult.Profile -Force
@@ -222,6 +232,8 @@ function Get-SubnetComplianceInformation {
             # No vnets found or no subnets found in vnets
             $ComplianceStatus = $true
             $Comments = "$($msgTable.noSubnets) - $($sub.Name)"
+
+            # Segmentation
             $SubnetObject = [PSCustomObject]@{ 
                 SubscriptionName = $sub.Name 
                 SubnetName       = $msgTable.noSubnets
@@ -236,6 +248,23 @@ function Get-SubnetComplianceInformation {
                 Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
             }
             $SubnetList.add($SubnetObject) | Out-Null
+
+            # Separation
+            $SubnetObject = [PSCustomObject]@{ 
+                SubscriptionName = $sub.Name 
+                SubnetName       = $msgTable.noSubnets
+                ComplianceStatus = $ComplianceStatus
+                Comments         = $Comments
+                ItemName         = $msgTable.networkSeparation
+                ControlName      = $ControlName
+                itsgcode         = $itsgcodesegmentation
+                ReportTime       = $ReportTime
+            }
+            if ($EnableMultiCloudProfiles) {
+                Update-SubnetObjectWithProfile -SubnetObject $SubnetObject -EvalResult $evalResult -ErrorList $ErrorList
+            }
+            $SubnetList.add($SubnetObject) | Out-Null
+
         }
     }
     if ($debug) {

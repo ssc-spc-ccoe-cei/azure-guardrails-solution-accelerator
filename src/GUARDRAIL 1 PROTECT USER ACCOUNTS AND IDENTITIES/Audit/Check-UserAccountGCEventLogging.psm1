@@ -105,7 +105,7 @@ function Check-UserAccountGCEventLogging {
         $Comments = $msgTable.gcEventLoggingCompliantComment
     }
 
-    $result = [PSCustomObject]@{
+    $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
         ControlName = $ControlName
         Comments = $Comments
@@ -114,25 +114,14 @@ function Check-UserAccountGCEventLogging {
         itsgcode = $itsgcode
     }
 
-    # Conditionally add the Profile field based on the feature flag
+    # Add profile information if MCUP feature is enabled
     if ($EnableMultiCloudProfiles) {
-        $evalResult = Get-EvaluationProfile -SubscriptionId $subscriptionId -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $result.ComplianceStatus = "Not Applicable"
-                $result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
-            }
-        } else {
-            
-            $result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
+        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+        Write-Host "$result"
     }
 
     $moduleOutput = [PSCustomObject]@{
-        ComplianceResults = $result
+        ComplianceResults = $PsObject
         Errors = $ErrorList
     }
 
