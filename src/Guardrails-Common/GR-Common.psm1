@@ -675,19 +675,17 @@ function Get-EvaluationProfile {
         #subscription tag
         $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
+
+        $returnProfile = $highestTagProfile
+        $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
         # Use the highest profile if it's present in the module profiles
         if ($highestTagProfile -in $moduleProfileArray) {
             # CONDITION: hightest sub tag is in module profile
-            $returnProfile = $highestTagProfile
-            $returnShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
-            $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
-            
+            $returnShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)   
         }
         else{
             # CONDITION: hightest sub tag is not in module profile
-            $returnProfile = $highestTagProfile
             $returnShouldEvaluate = ($highestTagProfile -in $moduleProfileArray)
-            $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
         }
         
         return [PSCustomObject]@{
