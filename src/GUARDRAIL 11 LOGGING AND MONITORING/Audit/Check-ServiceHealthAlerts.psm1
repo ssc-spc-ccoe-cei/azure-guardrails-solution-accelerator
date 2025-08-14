@@ -212,24 +212,13 @@ function Get-ServiceHealthAlerts {
             itsgcode = $itsgcode
         }
 
-        # Conditionally add the Profile field based on the feature flag
+        # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
-            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-            if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $C.ComplianceStatus = "Not Applicable"
-                    $C | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $C.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-                } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
-                }
-            } else {
-                
-                $C | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-            }
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+            Write-Host "$result"
         }
-        $PsObject.add($C) | Out-Null
-
+        $PsObject.Add($result) | Out-Null
+        continue
     }
     
     $moduleOutput = [PSCustomObject]@{

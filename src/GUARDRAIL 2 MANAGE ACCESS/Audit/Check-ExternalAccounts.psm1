@@ -196,21 +196,10 @@
         logType = "GR2ExternalUsers"
     }
 
-    # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {        
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $GuestUserStatus.ComplianceStatus = "Not Applicable"
-                $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $GuestUserStatus.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
-            }
-        } else {
-            
-            $GuestUserStatus | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
+    # Add profile information if MCUP feature is enabled
+    if ($EnableMultiCloudProfiles) {
+        $result = Add-ProfileInformation -Result $GuestUserStatus -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+        Write-Host "$result"
     }
 
     $moduleOutput= [PSCustomObject]@{ 

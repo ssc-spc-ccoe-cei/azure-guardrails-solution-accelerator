@@ -187,8 +187,7 @@ catch {
     throw "Failed to retrieve workspace key with secret name '$GuardrailWorkspaceIDKeyName' from KeyVault '$KeyVaultName'. Error message: $_"
 }
 
-Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
-    -additionalValues @{reportTime = $ReportTime; locale = $locale }
+Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName = "GR-ComplianceChecks-Msgs"
@@ -208,8 +207,7 @@ try {
 catch {
     $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey', '***')))
             
-    Add-LogEntry 'Error' "Failed to load message table for main module. script: '$sanitizedScriptblock' `
-        with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+    Add-LogEntry 'Error' "Failed to load message table for main module. script: '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
     Write-Error "Failed to load messages table for main module."
     Write-Output "Content of messages specified directory: $messagesBaseDirectory."
     Get-ChildItem $messagesBaseDirectory
@@ -271,8 +269,7 @@ foreach ($module in $modules) {
             if ($null -ne $results.AdditionalResults) {
                 # There is more data!
                 "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
-                New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID `
-                    -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
+                New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
             }
 
             Write-Output "Script running is done for $($module.modulename)"
@@ -281,8 +278,7 @@ foreach ($module in $modules) {
             Write-Output "Caught error while invoking result is $($results.Errors)" 
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
             
-            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' `
-                with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
             Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
         }
     }
@@ -291,8 +287,7 @@ foreach ($module in $modules) {
     }
 }
 
-Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
-    -additionalValues @{reportTime = $ReportTime; locale = $locale }
+Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
 # SIG # Begin signature block
 # MIInqgYJKoZIhvcNAQcCoIInmzCCJ5cCAQExDzANBglghkgBZQMEAgEFADB5Bgor

@@ -130,16 +130,24 @@ function Check-NetworkSecurityTools {
             if ($EnableMultiCloudProfiles) {
                 $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
                 if (!$evalResult.ShouldEvaluate) {
-                    if ($evalResult.Profile -gt 0) {
-                        $resultObject.ComplianceStatus = "Not Applicable"
-                        $resultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                        $resultObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                    if(!$evalResult.ShouldAvailable ){
+                        if ($evalResult.Profile -gt 0) {
+                            $resultObject.ComplianceStatus = "Not Applicable"
+                            $resultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                            $resultObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                        } else {
+                            $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                        }
+                    } else {
+                        if ($evalResult.Profile -gt 0) {
+                            $resultObject.ComplianceStatus = "Not Applicable"
+                            $resultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                            $resultObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                        } else {
+                            $ErrorList.Add("Error occurred while evaluating profile configuration")
+                        }
                     }
-                    else {
-                        $ErrorList.Add("Error occurred while evaluating profile configuration")
-                    }
-                }
-                else {
+                } else {
                     $resultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
                 }
             }
