@@ -83,6 +83,7 @@ function Check-UserAccountGCEventLogging {
     $Comments = ""
     $ErrorList = @()  
 
+
     # Parse LAW Resource ID
     $lawInfo = Get-ResourceIdInfo -Id $LAWResourceId
     $subscriptionId    = $lawInfo.SubscriptionId
