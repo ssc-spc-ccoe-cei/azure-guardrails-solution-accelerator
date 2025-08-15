@@ -1,3 +1,20 @@
+function Get-SentinelInUse {
+    param (
+        [string]$LAWResourceId
+    )
+
+    # check that the tenant-based defender for cloud data connector for Sentinel is enabled
+    $installedDefenderConnectorsForSentinel = ((Invoke-AzRestMethod -uri "https://management.azure.com/$LAWResourceId/providers/Microsoft.SecurityInsights/dataConnectors?api-version=2025-07-01-preview").Content | ConvertFrom-Json).value | Where-Object { $_.name -eq 'MicrosoftDefenderForCloudTenantBased' }
+
+    # check that defender related incidents are being closed in Sentinel i.e. someone is monitoring / closing incidents
+    $filter = "`$filter=properties/status eq 'Closed' and properties/additionalData/alertProductNames/any(apn: apn eq 'Azure Security Center')"
+    $orderby = "`$orderby=properties/createdTimeUtc desc"
+    $top = "`$top=1"
+    $lastClosedDefenderIncident = ((Invoke-AzRestMethod -uri "https://management.azure.com/$LAWResourceId/providers/Microsoft.SecurityInsights/incidents?api-version=2025-06-01&$filter&$orderby&$top").Content | ConvertFrom-Json).value 
+
+    return ($installedDefenderConnectorsForSentinel.count -gt 0) -and ($lastClosedDefenderIncident.properties.createdTimeUtc -gt (Get-Date).AddDays(-30))
+}
+
 function Get-DefenderForCloudAlerts {
     param (
         [Parameter(Mandatory=$true)]
@@ -9,12 +26,11 @@ function Get-DefenderForCloudAlerts {
         [Parameter(Mandatory=$true)]
         [hashtable]$msgTable,
         [Parameter(Mandatory=$true)]
+        [string]$LAWResourceId,
         [string]$ReportTime,
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
-        [string] $ModuleProfiles,  # Passed as a string
-        [switch] 
-        $EnableMultiCloudProfiles # default is false
+        [string]$CloudUsageProfiles = "3",  # Passed as a string
+        [string]$ModuleProfiles,  # Passed as a string
+        [switch]$EnableMultiCloudProfiles # default is false
     )
 
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
@@ -22,13 +38,15 @@ function Get-DefenderForCloudAlerts {
 
     # Get All the Subscriptions
     try {
-        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
+        $tenantId = (Get-AzContext).Subscription.TenantId
+        $subs = Get-AzSubscription -TenantId $tenantId -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
     }
     catch {
-        $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
-        throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
+        $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installation of the Az.Resources module; returned error message: $_" )
+        throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installation of the Az.Resources module; returned error message: $_"
     }
 
+    $sentinelInUse = Get-SentinelInUse -LAWResourceId $LAWResourceId
 
     foreach($subscription in $subs){
         # Initialize
@@ -37,7 +55,7 @@ function Get-DefenderForCloudAlerts {
 
         # find subscription information
         $subId = $subscription.Id
-        Set-AzContext -SubscriptionId $subId
+        Set-AzContext -SubscriptionId $subId -TenantId $tenantId
 
         $defenderPlans = Get-AzSecurityPricing
         $defenderEnabled = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'} #A paid plan should exist on the sub resource
@@ -47,19 +65,11 @@ function Get-DefenderForCloudAlerts {
             $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $subscription 
         }
         else{
-            $azContext = Get-AzContext
-            $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId 
-            
-            $authHeader = @{
-                'Content-Type'  = 'application/json'
-                'Authorization' = 'Bearer ' + $token.Token
-            }
-
             # Retrieve notifications for alert and attack paths
-            $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
+            $restUri = "https://management.azure.com/subscriptions/$($subId)/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
 
             try{
-                $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
+                $response = (Invoke-AzRestMethod -Uri $restUri -Method Get).Content | ConvertFrom-Json
             }
             catch{
                 $isCompliant = $false
@@ -80,7 +90,7 @@ function Get-DefenderForCloudAlerts {
             $emailCount = ($notificationEmails -split ";").Count
 
             # CONDITION: Check if there is minimum two emails and owner is also notified
-            if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
+            if(($emailCount -lt 2 -and -not $sentinelInUse) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
                 $isCompliant = $false
                 $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
             }
