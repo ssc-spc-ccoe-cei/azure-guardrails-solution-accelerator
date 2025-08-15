@@ -1,3 +1,13 @@
+function Get-SentinelInUse {
+    param (
+        [string]$LAWResourceId
+    )
+
+    # check that the tenant-based defender for cloud data connector for Sentinel is enabled
+    $installedDefenderConnectorsForSentinel = ((Invoke-AzRestMethod -uri "https://management.azure.com/$LAWResourceId/providers/Microsoft.SecurityInsights/dataConnectors?api-version=2025-07-01-preview").Content | ConvertFrom-Json).value | Where-Object { $_.name -eq 'MicrosoftDefenderForCloudTenantBased' }
+
+    return ($installedDefenderConnectorsForSentinel.count -gt 0)
+}
 
 function Check-UserAccountGCEventLogging {
     [CmdletBinding()]
@@ -83,7 +93,7 @@ function Check-UserAccountGCEventLogging {
 
         # Check if Read-only lock is in place
         $lock = Get-AzResourceLock -ResourceGroupName $resourceGroupName -ResourceName $lawName -ResourceType "Microsoft.OperationalInsights/workspaces"
-        if (-not $lock -or $lock.Properties.level -ne "ReadOnly") {
+        if ((-not $lock -or $lock.Properties.level -ne "ReadOnly") -and -not (Get-SentinelInUse -LAWResourceId $LAWResourceId)) {
             $IsCompliant = $false
             $Comments += $msgTable.readOnlyLaw -f $lawName
         }
