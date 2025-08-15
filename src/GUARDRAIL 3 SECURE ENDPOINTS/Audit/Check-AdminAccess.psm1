@@ -12,7 +12,7 @@ function Get-AdminAccess {
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # New feature flag, default to false  
+        [switch] $EnableMultiCloudProfiles # default to false  
     )
 
     $IsCompliant = $false
@@ -75,23 +75,11 @@ function Get-AdminAccess {
     }
 
 
-    # Conditionally add the Profile field based on the feature flag
-    if ($EnableMultiCloudProfiles) {        
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $PsObject.ComplianceStatus = "Not Applicable"
-                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
-            }
-        } else {
-            
-            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
+    # Add profile information if MCUP feature is enabled
+    if ($EnableMultiCloudProfiles) {
+        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+        Write-Host "$result"
     }
-
 
     $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject

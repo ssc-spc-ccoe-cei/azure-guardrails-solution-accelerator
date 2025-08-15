@@ -44,11 +44,9 @@ function Get-DefenderForCloudAlerts {
 
         if(-not $defenderEnabled){
             $isCompliant = $false
-            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $subscription
-            
+            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $subscription 
         }
         else{
-            
             $azContext = Get-AzContext
             $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId 
             
@@ -85,7 +83,6 @@ function Get-DefenderForCloudAlerts {
             if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
                 $isCompliant = $false
                 $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
-                
             }
 
             if($null -eq $alertNotification){
@@ -117,25 +114,11 @@ function Get-DefenderForCloudAlerts {
             itsgcode = $itsgcode
         }
         
-        # Conditionally add the Profile field based on the feature flag
-        if ($EnableMultiCloudProfiles) {
-            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-            if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $C.ComplianceStatus = "Not Applicable"
-                    $C | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $C.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-                } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
-                }
-            } else {
-                
-                $C | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-            }
-        }
+        # Add profile information if MCUP feature is enabled
+        $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+        Write-Host "$result"
 
-        $PsObject.add($C) | Out-Null
-        
+        $PsObject.add($result) | Out-Null
         
     }
     

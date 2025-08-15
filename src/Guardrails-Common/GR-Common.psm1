@@ -626,6 +626,13 @@ function Get-EvaluationProfile {
         [Parameter(Mandatory = $false)]
         [string] $SubscriptionId
     )
+    Write-Host "Config CloudUsageProfiles $CloudUsageProfiles"
+    Write-Host "MCP GR ModuleProfiles $ModuleProfiles"
+    Write-Host "SubscriptionId $SubscriptionId"
+
+    $returnProfile = ""
+    $returnShouldEvaluate = $false
+    $returnShouldAvailable = $false
 
     try {
         # Convert input strings to integer arrays  
@@ -654,29 +661,37 @@ function Get-EvaluationProfile {
             return [PSCustomObject]@{
                 Profile = $matchedProfile
                 ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
+                ShouldAvailable = ($matchedProfile -in $moduleProfileArray)
             }
         }
 
         $profileTagValuesArray = ConvertTo-IntArray $profileTagValues
 
         # Get the highest profile from all sources
+        #cloudUsageProfile from config json
         $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
+        #module profiles for the guardrail
         $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
+        #subscription tag
         $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
+
+        $returnProfile = $highestTagProfile
+        $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
         # Use the highest profile if it's present in the module profiles
         if ($highestTagProfile -in $moduleProfileArray) {
-            return [PSCustomObject]@{
-                Profile = $highestTagProfile
-                ShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
-            }
+            # CONDITION: hightest sub tag is in module profile
+            $returnShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)   
         }
-
-        # Otherwise, use the highest matching profile that doesn't exceed the module profile
-        $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        else{
+            # CONDITION: hightest sub tag is not in module profile
+            $returnShouldEvaluate = ($highestTagProfile -in $moduleProfileArray)
+        }
+        
         return [PSCustomObject]@{
-            Profile = $highestMatchingProfile
-            ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
+            Profile =  $returnProfile
+            ShouldEvaluate = $returnShouldEvaluate
+            ShouldAvailable = $returnShouldAvailable
         }
     }
     catch {
@@ -684,6 +699,7 @@ function Get-EvaluationProfile {
         return [PSCustomObject]@{
             Profile = 0
             ShouldEvaluate = $false
+            ShouldAvailable = $false
         }
     }
 }
@@ -1352,12 +1368,22 @@ function Check-PBMMPolicies {
             }
             
             if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $c.ComplianceStatus = "Not Applicable"
-                    $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                if(!$evalResult.ShouldAvailable ){
+                    if ($evalResult.Profile -gt 0) {
+                        $c.ComplianceStatus = "Not Applicable"
+                        $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $c.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                    }
                 } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    if ($evalResult.Profile -gt 0) {
+                        $c.ComplianceStatus = "Not Applicable"
+                        $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    }
                 }
             } else {
                 
@@ -1432,15 +1458,35 @@ function Add-ProfileInformation {
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$Result,
         [string]$CloudUsageProfiles,
-        [string]$ModuleProfiles
+        [string]$ModuleProfiles,
+        [string]$SubscriptionId,
+        [AllowEmptyCollection()]
+        [System.Collections.ArrayList]$ErrorList
     )
     
-    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    if($null -eq $SubscriptionId){
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    }else{
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
+    }
+
     if (!$evalResult.ShouldEvaluate) {
-        if ($evalResult.Profile -gt 0) {
-            $Result.ComplianceStatus = "Not Applicable"
-            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-            $Result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+        if(!$evalResult.ShouldAvailable ){
+            if ($evalResult.Profile -gt 0) {
+                $Result.ComplianceStatus = "Not Applicable"
+                $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $Result.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+            }
+        } else {
+            if ($evalResult.Profile -gt 0) {
+                $Result.ComplianceStatus = "Not Applicable"
+                $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $Result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         }
     } else {
         $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
@@ -1610,7 +1656,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 $results.Add($result) | Out-Null
                 continue
@@ -1653,7 +1699,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 
                 $results.Add($result) | Out-Null
@@ -1681,7 +1727,7 @@ function Check-BuiltInPolicies {
                     }
                     
                     if ($EnableMultiCloudProfiles) {
-                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                     }
                     
                     $results.Add($result) | Out-Null
@@ -1718,7 +1764,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 $results.Add($result) | Out-Null
             }
@@ -1753,7 +1799,7 @@ function Check-BuiltInPolicies {
                 }
             }
             if ($EnableMultiCloudProfiles) {
-                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
             }
             $results.Add($result) | Out-Null
         }

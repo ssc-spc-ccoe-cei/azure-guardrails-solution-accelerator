@@ -130,6 +130,7 @@ jobs:
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
             $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+            $DEV_CLOUDUSAGEPROFILES = $env:DEV_CLOUDUSAGEPROFILES
             $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
             $DEVTENANT_ID = $env:DEVTENANT_ID
@@ -159,7 +160,7 @@ jobs:
               "SSCReadOnlyServicePrincipalNameAPPID": "$DEVTENANT_SPN_APPID",
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
-              "cloudUsageProfiles": "3",
+              "cloudUsageProfiles": "$DEV_CLOUDUSAGEPROFILES",
               "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
               "tenantId": "$DEVTENANT_ID"
             }
@@ -200,7 +201,7 @@ jobs:
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
           DEVTENANT_SPN_APPID: ${{ vars.DEVTENANT_SPN_APPID}}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
-        
+          DEV_CLOUDUSAGEPROFILES: ${{ vars.DEV_CLOUDUSAGEPROFILES}}
       # - name: Relogin AZ 
       #   uses: azure/login@v2
       #   with:
@@ -228,6 +229,7 @@ jobs:
             $DEVLAW_SEC = $env:DEVLAW_SEC
             $DEVLAW_HEALTH = $env:DEVLAW_HEALTH
             $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
+            $DEV_CLOUDUSAGEPROFILES = $env:DEV_CLOUDUSAGEPROFILES
             $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
             $DEVTENANT_ID = $env:DEVTENANT_ID
@@ -258,7 +260,7 @@ jobs:
               "SSCReadOnlyServicePrincipalNameAPPID": "$DEVTENANT_SPN_APPID",
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
-              "cloudUsageProfiles": "3",
+              "cloudUsageProfiles": "$DEV_CLOUDUSAGEPROFILES",
               "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
               "tenantId": "$DEVTENANT_ID"
               }
@@ -334,6 +336,7 @@ jobs:
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
           DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
+          DEV_CLOUDUSAGEPROFILES: ${{ vars.DEV_CLOUDUSAGEPROFILES}}
           DEVTENANT_ID: ${{ vars.DEVTENANT_ID }}
 
       - name: Check for AA Job Errors
