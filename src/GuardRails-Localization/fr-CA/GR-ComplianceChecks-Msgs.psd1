@@ -58,7 +58,7 @@ gcEventLogging = Vérification de la journalisation des événements du GC du co
 gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
 lockLevelApproved = L'espace de travail d'analyse de journaux {0} a un niveau de verrouillage approuvé de {1}.
 lockLevelNotApproved = L'espace de travail d'analyse de journaux {0} a un niveau de verrouillage de {1} qui n'est pas approuvé. Les niveaux de verrouillage approuvés sont ' ReadOnly ' ou ''DeleteOnly '.
-tagSentinelTrue = L'espace de travail d'analyse de journaux {0} a une étiquette de ressource 'sentinel' avec une valeur de 'true' qui indique qu'il est utilisé pour Sentinel. Un verrou 'DeleteOnly' est recommandé.
+tagFound = L'espace de travail d'analyse de journaux {0} a une étiquette de ressource 'sentinel' avec une valeur de 'true' qui indique qu'il est utilisé pour Sentinel. Un verrou 'DeleteOnly' est recommandé.
 sentinelTablesFound = L'espace de travail d'analyse de journaux {0} a des tables Sentinel configurées. L'espace de travail d'analyse de journaux manque l'étiquette de ressource Sentinel attendue, mettez à jour ou ajoutez l'étiquette à : sentinel=true.
 noLockNoTagNoTables = L'espace de travail d'analyse de journaux {0} n'a pas de verrou approuvé 'ReadOnly' ou 'DeleteOnly' en place. Consultez le Guide de Remédiation pour plus d'informations.
 

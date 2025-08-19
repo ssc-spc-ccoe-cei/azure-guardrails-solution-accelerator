@@ -159,7 +159,7 @@ function Check-UserAccountGCEventLogging {
             }
             if ($tagSentinelTrue) {
                 # Pass due to tag
-                $Comments += $msgTable.tagSentinelTrue -f $lawName
+                $Comments += $msgTable.tagFound -f $lawName
             } else {
                 # 3) No tag -> check Sentinel tables
                 $tbl = Test-SentinelTables -Workspace $law
