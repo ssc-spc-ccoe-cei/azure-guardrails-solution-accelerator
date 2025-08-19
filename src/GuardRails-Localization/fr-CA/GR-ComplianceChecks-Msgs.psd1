@@ -121,6 +121,7 @@ userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rappor
 reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
 userStats = Statistiques d'utilisateur - Utilisateurs totaux : {0} ; Utilisateurs de groupe (Total - Unique) : {1} ; Membres dans les locataires : {2} ; Invités dans les locataires : {3}
 userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
+userInGroup = Pas d'utilisateurs sans groupes
 
 riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
 nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
