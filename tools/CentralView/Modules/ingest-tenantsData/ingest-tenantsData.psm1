@@ -75,7 +75,7 @@ function get-tenantdata {
     let ctrlprefix="GUARDRAIL 9";
     GuardrailsCompliance_CL
     | where ControlName_s has ctrlprefix and ReportTime_s == "{0}"
-    | where TimeGenerated > ago (24h))
+    | where TimeGenerated > ago (24h)
     |join kind=inner (itsgcodes) on itsgcode_s
     | project Mandatory=Required_s,ControlName_s, ['VNet Name']= column_ifexists('VNETName_s', ''), ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
         column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
@@ -121,7 +121,7 @@ function get-tenantdata {
         if ($TenantDomain -ne "" -and $TenantDomain -ne "N/A")
         {
 
-            $ReportTimeQuery="GuardrailsCompliance_CL | where TimeGenerated > ago(24)| summarize mrt=max(ReportTime_s)"
+            $ReportTimeQuery="GuardrailsCompliance_CL | where TimeGenerated > ago(24h)| summarize mrt=max(ReportTime_s)"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $ReportTimeQuery).Results)   
             $LatestRT=$resultsArray[0].mrt
             if ([string]::IsNullOrEmpty($LatestRT)) {
