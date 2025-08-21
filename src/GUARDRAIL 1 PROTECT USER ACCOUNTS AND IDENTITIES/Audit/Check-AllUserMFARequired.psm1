@@ -1,18 +1,7 @@
-function lastLoginInDays{
-    param(
-        $LastSignIn
-    )
-
-    $lastSignInDate = Get-Date $LastSignIn
-    $todayDate = Get-Date
-    $daysLastLogin = ($todayDate - $lastSignInDate).Days
-
-    return $daysLastLogin
-}
-
 function Check-AllUserMFARequired {
+    [CmdletBinding()]
     param (      
-    [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
         [string] $ItemName,
@@ -30,33 +19,96 @@ function Check-AllUserMFARequired {
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # default to false
     )
-    Write-Host "[DEBUG] Entered Check-AllUserMFARequired"
-    Write-Host "[DEBUG] Parameters: ControlName=$ControlName, ItemName=$ItemName, itsgcode=$itsgcode, ReportTime=$ReportTime, FirstBreakGlassUPN=$FirstBreakGlassUPN, SecondBreakGlassUPN=$SecondBreakGlassUPN, CloudUsageProfiles=$CloudUsageProfiles, ModuleProfiles=$ModuleProfiles, EnableMultiCloudProfiles=$EnableMultiCloudProfiles"
-    $usersSignIn = "/users?`$top=999&$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
-    Write-Host "[DEBUG] Fetching all users from Microsoft Graph: $usersSignIn"
+
+    Write-Verbose "Entered Check-AllUserMFARequired for ItemName='$ItemName' itsgcode='$itsgcode'"
+
+    # Initialize error list for orchestrator compatibility
+    $ErrorList = @()
+
+    # Fetch users (raw)
+    $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+    Write-Verbose "Fetching users from Microsoft Graph: $usersPath"
     try {
-        $response = Invoke-GraphQueryEX -urlPath $usersSignIn -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
+        if ($response -is [System.Array]) {
+            $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
+        }
         $allUsers = @($response.Content.value)
-        Write-Host "[DEBUG] Retrieved $($allUsers.Count) users."
+        Write-Verbose "Retrieved $($allUsers.Count) users"
     }
     catch {
-        Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersSignIn'; error: $_"
+        Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
+        $ErrorList += "Graph call failed for users list: $_"
         $allUsers = @()
     }
 
-    # Send raw user data to Log Analytics using the existing module
-    if ($allUsers.Count -gt 0) {
-        # Use the same function and parameters as other modules
-        New-LogAnalyticsData -Data $allUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkSpaceKey -LogType "GuardrailsUserRaw" | Out-Null
-        Write-Host "[DEBUG] Sent raw user data to Log Analytics using existing module."
-    } else {
-        Write-Warning "No user data to send to Log Analytics."
+    # For each user, fetch authentication methods and attach to the record (flattened for ingestion)
+    $augmentedUsers = @()
+    foreach ($u in $allUsers) {
+        $flatMethods = @()
+        try {
+            $authUrl = "/users/$($u.id)/authentication/methods"
+            $authResp = Invoke-GraphQueryEX -urlPath $authUrl -ErrorAction Stop
+            if ($authResp -is [System.Array]) {
+                $authResp = $authResp | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
+            }
+            $methods = @($authResp.Content.value)
+
+            foreach ($m in $methods) {
+                $flatMethods += [PSCustomObject]@{
+                    type             = $m.'@odata.type'
+                    id               = $m.id
+                    displayName      = $m.displayName
+                    phoneType        = $m.phoneType
+                    phoneNumber      = $m.phoneNumber
+                    isDefault        = $m.isDefault
+                    keyStrength      = $m.keyStrength
+                    appDisplayName   = $m.appDisplayName
+                    createdDateTime  = $m.createdDateTime
+                }
+            }
+        }
+        catch {
+            Write-Warning "Failed to get authentication methods for user $($u.userPrincipalName): $_"
+            $ErrorList += "Failed auth methods for $($u.userPrincipalName): $_"
+        }
+
+        # Build a composite object, preserving user properties and adding flattened methods
+        $augmentedUsers += [PSCustomObject]@{
+            id                     = $u.id
+            userPrincipalName      = $u.userPrincipalName
+            displayName            = $u.displayName
+            mail                   = $u.mail
+            createdDateTime        = $u.createdDateTime
+            userType               = $u.userType
+            accountEnabled         = $u.accountEnabled
+            signInActivity         = $u.signInActivity
+            authenticationMethods  = $flatMethods
+            ReportTime             = $ReportTime
+            ItemName               = $ItemName
+            itsgcode               = $itsgcode
+        }
     }
-$allUsers
-    # Return a minimal result object for orchestrator compatibility
-    return [PSCustomObject]@{
-        ComplianceResults = $allUsers.Count
-        AdditionalResults = if ($allUsers.Count -gt 0) { "Success" } else { "NoData" }
+
+    # Prepare a minimal compliance-shaped object so main.ps1 can process uniformly
+    $PsObject = [PSCustomObject]@{
+        ComplianceStatus = "Not Evaluated"
+        ControlName      = $ControlName
+        ItemName         = $ItemName
+        Comments         = "Raw export of users and authentication methods"
+        ReportTime       = $ReportTime
+        itsgcode         = $itsgcode
     }
+
+    # Return in the expected envelope; main.ps1 will send AdditionalResults to Log Analytics
+    $moduleOutput = [PSCustomObject]@{ 
+        ComplianceResults = @($PsObject)  # ensure array for ingestion
+        Errors            = @($ErrorList)
+        AdditionalResults = [PSCustomObject]@{
+            records = @($augmentedUsers)
+            logType = "GuardrailsUserRaw"
+        }
+    }
+    return $moduleOutput   
 }
 
