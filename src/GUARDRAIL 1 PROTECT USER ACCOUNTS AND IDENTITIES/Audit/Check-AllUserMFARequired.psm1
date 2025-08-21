@@ -55,7 +55,7 @@ function Check-AllUserMFARequired {
 $allUsers
     # Return a minimal result object for orchestrator compatibility
     return [PSCustomObject]@{
-        RawUserCount = $allUsers.Count
-        Status = if ($allUsers.Count -gt 0) { "Success" } else { "NoData" }
+        ComplianceResults = $allUsers.Count
+        AdditionalResults = if ($allUsers.Count -gt 0) { "Success" } else { "NoData" }
     }
 
