@@ -44,10 +44,11 @@ function Check-AllUserMFARequired {
         $allUsers = @()
     }
 
-    # Send raw user data to Log Analytics
+    # Send raw user data to Log Analytics using the existing module
     if ($allUsers.Count -gt 0) {
-        New-LogAnalyticsData -Data $allUsers -WorkSpaceID $ReportTime -WorkSpaceKey $FirstBreakGlassUPN -LogType "GuardrailsUserRaw" | Out-Null
-        Write-Host "[DEBUG] Sent raw user data to Log Analytics."
+        # Use the same function and parameters as other modules
+        New-LogAnalyticsData -Data $allUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkSpaceKey -LogType "GuardrailsUserRaw" | Out-Null
+        Write-Host "[DEBUG] Sent raw user data to Log Analytics using existing module."
     } else {
         Write-Warning "No user data to send to Log Analytics."
     }
