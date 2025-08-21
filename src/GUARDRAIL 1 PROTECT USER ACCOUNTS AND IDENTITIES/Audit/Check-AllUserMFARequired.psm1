@@ -52,7 +52,7 @@ function Check-AllUserMFARequired {
     } else {
         Write-Warning "No user data to send to Log Analytics."
     }
-
+$allUsers
     # Return a minimal result object for orchestrator compatibility
     return [PSCustomObject]@{
         RawUserCount = $allUsers.Count
