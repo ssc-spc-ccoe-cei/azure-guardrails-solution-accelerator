@@ -58,4 +58,5 @@ $allUsers
         ComplianceResults = $allUsers.Count
         AdditionalResults = if ($allUsers.Count -gt 0) { "Success" } else { "NoData" }
     }
+}
 
