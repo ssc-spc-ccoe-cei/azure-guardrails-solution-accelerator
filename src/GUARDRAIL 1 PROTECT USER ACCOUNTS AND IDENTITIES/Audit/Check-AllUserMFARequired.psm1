@@ -46,7 +46,7 @@ function Check-AllUserMFARequired {
       #  Write-Warning $response.Content.value
 
         $allUsers = @($response.Content.value)
-        $allusers
+        #$allusers
         Write-Host "[DEBUG] response.Content: $($response.Content | ConvertTo-Json -Depth 5)"
         Write-Host "[DEBUG] allUsers: $($allUsers | ConvertTo-Json -Depth 5)"
          Write-Warning "[ERROR] Exception details: $($_ | ConvertTo-Json -Depth 5)"
@@ -67,6 +67,8 @@ function Check-AllUserMFARequired {
             Write-Warning "[ERROR] Exception.StackTrace: $($_.Exception.StackTrace)"
         }
     }
+    $allUsers.Count
+    <#
     # Check all users for MFA
     $allUsers = $allUsers | Where-Object {$_.accountEnabled -ne $false}
     $allUserUPNs = $allUsers.userPrincipalName
@@ -254,6 +256,6 @@ function Check-AllUserMFARequired {
             itsgcode         = $itsgcode
         }
     }
-    return $moduleOutput   
+    return $moduleOutput   #>
 }
 
