@@ -838,6 +838,62 @@ function add-documentFileExtensions {
     return $DocumentName_new
 }
 
+function Get-UserSignInPreferences {
+    [CmdletBinding()]
+    param (      
+        [Parameter(Mandatory = $true)]
+        [string]$UserUPN
+    )
+    
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $signInPreferences = $null
+    
+    # Handle guest accounts (external users)
+    $pattern = "*#EXT#*"
+    if($UserUPN -like $pattern){
+        # for guest accounts
+        $userEmail = $UserUPN
+        if(!$null -eq $userEmail){
+            $urlPath = '/users/' + $userEmail + '/authentication/signInPreferences'
+        }else{
+            Write-Host "userEmail is null for $UserUPN"
+            $extractedEmail = (($UserUPN -split '#')[0]) -replace '_', '@'
+            $urlPath = '/users/' + $extractedEmail + '/authentication/signInPreferences'
+        }
+    }else{
+        # for member accounts
+        $urlPath = '/users/' + $UserUPN + '/authentication/signInPreferences'
+    }
+    
+    try {
+        # Use beta endpoint for signInPreferences
+        $uri = "https://graph.microsoft.com/beta$urlPath" -as [uri]
+        
+        $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
+        
+        if ($response.StatusCode -eq 200) {
+            $signInPreferences = $response.Content | ConvertFrom-Json
+            Write-Host "Successfully retrieved sign-in preferences for $UserUPN" -ForegroundColor Green
+        } else {
+            $errorMsg = "Failed to retrieve sign-in preferences for $UserUPN. Status code: $($response.StatusCode)"
+            $ErrorList.Add($errorMsg)
+            Write-Warning $errorMsg
+        }
+    }
+    catch {
+        $errorMsg = "Failed to call Microsoft Graph Beta API at URL '$urlPath'; returned error message: $_"
+        $ErrorList.Add($errorMsg)
+        Write-Warning "Error: $errorMsg"
+    }
+    
+    $PsObject = [PSCustomObject]@{
+        SignInPreferences = $signInPreferences
+        ErrorList = $ErrorList
+    }
+    
+    return $PsObject
+}
+
 
 
 function Get-AllUserAuthInformation{
@@ -854,32 +910,58 @@ function Get-AllUserAuthInformation{
 
     ForEach ($user in $allUserList) {
         $userAccount = $user.userPrincipalName
-            
-        if($userAccount -like $pattern){
-            # for guest accounts
-            $userEmail = $user.mail
-            if(!$null -eq  $userEmail){
-                $urlPath = '/users/' + $userEmail + '/authentication/methods'
-            }else{
-                Write-Host "userEmail is null for $userAccount"
-                $extractedEmail = (($userAccount -split '#')[0]) -replace '_', '@'
-                $urlPath = '/users/' + $extractedEmail + '/authentication/methods'
-            }
-            
-        }else{
-            # for member accounts
-            $urlPath = '/users/' + $userAccount + '/authentication/methods'
-        }
+        $authFound = $false
         
+        # First, check if user has FIDO2 or HardwareOTP as system preferred authentication method
         try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-
+            $signInPrefsResult = Get-UserSignInPreferences -UserUPN $userAccount
+            
+            if ($signInPrefsResult.ErrorList.Count -eq 0 -and $null -ne $signInPrefsResult.SignInPreferences) {
+                $preferences = $signInPrefsResult.SignInPreferences
+                $isSystemPreferredEnabled = $preferences.isSystemPreferredAuthenticationMethodEnabled
+                $systemPreferredMethod = $preferences.systemPreferredAuthenticationMethod
+                
+                # Check if system preferred is enabled and set to FIDO2 or HardwareOTP
+                if ($isSystemPreferredEnabled -eq $true -and 
+                    ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
+                    $authFound = $true
+                    Write-Host "✅ $userAccount - System preferred authentication method is $systemPreferredMethod" -ForegroundColor Green
+                }
+            }
         }
         catch {
-            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+            $errorMsg = "Failed to check sign-in preferences for $userAccount: $_"
             $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"
+            Write-Warning "Warning: $errorMsg"
         }
+        
+        # If system preferred authentication is not FIDO2 or HardwareOTP, check authentication methods
+        if (-not $authFound) {
+            if($userAccount -like $pattern){
+                # for guest accounts
+                $userEmail = $user.mail
+                if(!$null -eq  $userEmail){
+                    $urlPath = '/users/' + $userEmail + '/authentication/methods'
+                }else{
+                    Write-Host "userEmail is null for $userAccount"
+                    $extractedEmail = (($userAccount -split '#')[0]) -replace '_', '@'
+                    $urlPath = '/users/' + $extractedEmail + '/authentication/methods'
+                }
+                
+            }else{
+                # for member accounts
+                $urlPath = '/users/' + $userAccount + '/authentication/methods'
+            }
+            
+            try {
+                $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+
+            }
+            catch {
+                $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+                $ErrorList.Add($errorMsg)
+                Write-Error "Error: $errorMsg"
+            }
 
         # # To check if MFA is setup for a user, we're checking various authentication methods:
         # # 1. #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
@@ -899,7 +981,6 @@ function Get-AllUserAuthInformation{
             if ($null -ne $data -and $null -ne $data.value) {
                 $authenticationmethods = $data.value
                 
-                $authFound = $false
                 foreach ($authmeth in $authenticationmethods) {    
                   
                     switch ($authmeth.'@odata.type') {
@@ -911,48 +992,42 @@ function Get-AllUserAuthInformation{
                         "#microsoft.graph.softwareOathAuthenticationMethod" { $authFound = $true; break }
                     }
                 }
-                if($authFound){
-                    #need to keep track of user account mfa in a counter and compare it with the total user count   
-                    $userValidMFACounter += 1
-                    Write-Host "Auth method found for $userAccount"
-                    # Create an instance of valid MFA inner list object
-                    $userValidUPNtemplate = [PSCustomObject]@{
-                        UPN  = $userAccount
-                        MFAStatus   = $true
-                    }
-                    $userUPNsValidMFA +=  $userValidUPNtemplate
-                }
-                else{
-                    # This message is being used for debugging
-                    Write-Host "$userAccount does not have MFA enabled"
-
-                    # Create an instance of inner list object
-                    $userUPNtemplate = [PSCustomObject]@{
-                        UPN  = $userAccount
-                        MFAStatus   = $false
-                    }
-                    # Add the list to user accounts MFA list
-                    $userUPNsBadMFA += $userUPNtemplate
-                }
             }
             else {
                 $errorMsg = "No authentication methods data found for $userAccount"                
                 $ErrorList.Add($errorMsg)
                 # Write-Error "Error: $errorMsg"
-                
-                # Create an instance of inner list object
-                $userUPNtemplate = [PSCustomObject]@{
-                    UPN  = $userAccount
-                    MFAStatus   = $false
-                }
-                # Add the list to user accounts MFA list
-                $userUPNsBadMFA += $userUPNtemplate
             }
         }
         else {
             $errorMsg = "Failed to get response from Graph API for $userAccount"                
             $ErrorList.Add($errorMsg)
             Write-Error "Error: $errorMsg"
+        }
+        
+        # Process the authentication result
+        if($authFound){
+            #need to keep track of user account mfa in a counter and compare it with the total user count   
+            $userValidMFACounter += 1
+            Write-Host "Auth method found for $userAccount"
+            # Create an instance of valid MFA inner list object
+            $userValidUPNtemplate = [PSCustomObject]@{
+                UPN  = $userAccount
+                MFAStatus   = $true
+            }
+            $userUPNsValidMFA +=  $userValidUPNtemplate
+        }
+        else{
+            # This message is being used for debugging
+            Write-Host "$userAccount does not have MFA enabled"
+
+            # Create an instance of inner list object
+            $userUPNtemplate = [PSCustomObject]@{
+                UPN  = $userAccount
+                MFAStatus   = $false
+            }
+            # Add the list to user accounts MFA list
+            $userUPNsBadMFA += $userUPNtemplate
         }    
     }
 
