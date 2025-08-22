@@ -963,71 +963,72 @@ function Get-AllUserAuthInformation {
                 Write-Error "Error: $errorMsg"
             }
 
-        # # To check if MFA is setup for a user, we're checking various authentication methods:
-        # # 1. #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
-        # # 2. #microsoft.graph.phoneAuthenticationMethod
-        # # 3. #microsoft.graph.passwordAuthenticationMethod - not considered for MFA
-        # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
-        # # 5. #microsoft.graph.fido2AuthenticationMethod
-        # # 6. #microsoft.graph.softwareOathAuthenticationMethod
-        # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
-        # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
+            # # To check if MFA is setup for a user, we're checking various authentication methods:
+            # # 1. #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
+            # # 2. #microsoft.graph.phoneAuthenticationMethod
+            # # 3. #microsoft.graph.passwordAuthenticationMethod - not considered for MFA
+            # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
+            # # 5. #microsoft.graph.fido2AuthenticationMethod
+            # # 6. #microsoft.graph.softwareOathAuthenticationMethod
+            # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
+            # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
 
-        if ($null -ne $response) {
-            # portal
-            $data = $response.Content
-            # # localExecution
-            # $data = $response
-            if ($null -ne $data -and $null -ne $data.value) {
-                $authenticationmethods = $data.value
-                
-                foreach ($authmeth in $authenticationmethods) {    
-                  
-                    switch ($authmeth.'@odata.type') {
-                        "#microsoft.graph.phoneAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.fido2AuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.temporaryAccessPassAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.softwareOathAuthenticationMethod" { $authFound = $true; break }
+            if ($null -ne $response) {
+                # portal
+                $data = $response.Content
+                # # localExecution
+                # $data = $response
+                if ($null -ne $data -and $null -ne $data.value) {
+                    $authenticationmethods = $data.value
+                    
+                    foreach ($authmeth in $authenticationmethods) {    
+                    
+                        switch ($authmeth.'@odata.type') {
+                            "#microsoft.graph.phoneAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.fido2AuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.temporaryAccessPassAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.softwareOathAuthenticationMethod" { $authFound = $true; break }
+                        }
                     }
+                }
+                else {
+                    $errorMsg = "No authentication methods data found for $userAccount"                
+                    $ErrorList.Add($errorMsg)
+                    # Write-Error "Error: $errorMsg"
                 }
             }
             else {
-                $errorMsg = "No authentication methods data found for $userAccount"                
+                $errorMsg = "Failed to get response from Graph API for $userAccount"                
                 $ErrorList.Add($errorMsg)
-                # Write-Error "Error: $errorMsg"
+                Write-Error "Error: $errorMsg"
             }
-        }
-        else {
-            $errorMsg = "Failed to get response from Graph API for $userAccount"                
-            $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"
-        }
-        
-        # Process the authentication result
-        if($authFound){
-            #need to keep track of user account mfa in a counter and compare it with the total user count   
-            $userValidMFACounter += 1
-            Write-Host "Auth method found for $userAccount"
-            # Create an instance of valid MFA inner list object
-            $userValidUPNtemplate = [PSCustomObject]@{
-                UPN  = $userAccount
-                MFAStatus   = $true
+            
+            # Process the authentication result
+            if($authFound){
+                #need to keep track of user account mfa in a counter and compare it with the total user count   
+                $userValidMFACounter += 1
+                Write-Host "Auth method found for $userAccount"
+                # Create an instance of valid MFA inner list object
+                $userValidUPNtemplate = [PSCustomObject]@{
+                    UPN  = $userAccount
+                    MFAStatus   = $true
+                }
+                $userUPNsValidMFA +=  $userValidUPNtemplate
             }
-            $userUPNsValidMFA +=  $userValidUPNtemplate
-        }
-        else{
-            # This message is being used for debugging
-            Write-Host "$userAccount does not have MFA enabled"
+            else{
+                # This message is being used for debugging
+                Write-Host "$userAccount does not have MFA enabled"
 
-            # Create an instance of inner list object
-            $userUPNtemplate = [PSCustomObject]@{
-                UPN  = $userAccount
-                MFAStatus   = $false
+                # Create an instance of inner list object
+                $userUPNtemplate = [PSCustomObject]@{
+                    UPN  = $userAccount
+                    MFAStatus   = $false
+                }
+                # Add the list to user accounts MFA list
+                $userUPNsBadMFA += $userUPNtemplate
             }
-            # Add the list to user accounts MFA list
-            $userUPNsBadMFA += $userUPNtemplate
         }    
     }
 
