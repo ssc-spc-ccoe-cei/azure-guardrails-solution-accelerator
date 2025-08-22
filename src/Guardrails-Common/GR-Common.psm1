@@ -896,7 +896,7 @@ function Get-UserSignInPreferences {
 
 
 
-function Get-AllUserAuthInformation{
+function Get-AllUserAuthInformation {
     [CmdletBinding()]
     param (      
         [Parameter(Mandatory = $true)]
@@ -930,7 +930,7 @@ function Get-AllUserAuthInformation{
             }
         }
         catch {
-            $errorMsg = "Failed to check sign-in preferences for $userAccount: $_"
+            $errorMsg = "Failed to check sign-in preferences for $userAccount : $_"
             $ErrorList.Add($errorMsg)
             Write-Warning "Warning: $errorMsg"
         }
