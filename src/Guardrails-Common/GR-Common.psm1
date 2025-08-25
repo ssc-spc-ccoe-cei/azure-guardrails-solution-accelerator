@@ -925,7 +925,7 @@ function Get-AllUserAuthInformation {
                 if ($isSystemPreferredEnabled -eq $true -and 
                     ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
                     $authFound = $true
-                    Write-Host "✅ $userAccount - System preferred authentication method is $systemPreferredMethod" -ForegroundColor Green
+                    Write-Warning "✅ $userAccount - System preferred authentication method is $systemPreferredMethod" -ForegroundColor Green
                 }
             }
         }
