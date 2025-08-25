@@ -877,13 +877,13 @@ function Get-UserSignInPreferences {
         } else {
             $errorMsg = "Failed to retrieve sign-in preferences for $UserUPN. Status code: $($response.StatusCode)"
             $ErrorList.Add($errorMsg)
-            Write-Warning $errorMsg
+            Write-Error $errorMsg
         }
     }
     catch {
         $errorMsg = "Failed to call Microsoft Graph Beta API at URL '$urlPath'; returned error message: $_"
         $ErrorList.Add($errorMsg)
-        Write-Warning "Error: $errorMsg"
+        Write-Error "Error: $errorMsg"
     }
     
     $PsObject = [PSCustomObject]@{
@@ -925,14 +925,14 @@ function Get-AllUserAuthInformation {
                 if ($isSystemPreferredEnabled -eq $true -and 
                     ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
                     $authFound = $true
-                    Write-Warning "✅ $userAccount - System preferred authentication method is $systemPreferredMethod"
+                    Write-Host "✅ $userAccount - System preferred authentication method is $systemPreferredMethod"
                 }
             }
         }
         catch {
             $errorMsg = "Failed to check sign-in preferences for $userAccount : $_"
             $ErrorList.Add($errorMsg)
-            Write-Warning "Warning: $errorMsg"
+            Write-Error "Warning: $errorMsg"
         }
         
         # If system preferred authentication is not FIDO2 or HardwareOTP, check authentication methods
