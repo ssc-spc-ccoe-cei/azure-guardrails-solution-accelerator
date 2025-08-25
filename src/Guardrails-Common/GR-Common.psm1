@@ -873,7 +873,7 @@ function Get-UserSignInPreferences {
         
         if ($response.StatusCode -eq 200) {
             $signInPreferences = $response.Content | ConvertFrom-Json
-            Write-Host "Successfully retrieved sign-in preferences for $UserUPN" -ForegroundColor Green
+            Write-Host "Successfully retrieved sign-in preferences for $UserUPN"
         } else {
             $errorMsg = "Failed to retrieve sign-in preferences for $UserUPN. Status code: $($response.StatusCode)"
             $ErrorList.Add($errorMsg)
@@ -925,7 +925,7 @@ function Get-AllUserAuthInformation {
                 if ($isSystemPreferredEnabled -eq $true -and 
                     ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
                     $authFound = $true
-                    Write-Warning "✅ $userAccount - System preferred authentication method is $systemPreferredMethod" -ForegroundColor Green
+                    Write-Warning "✅ $userAccount - System preferred authentication method is $systemPreferredMethod"
                 }
             }
         }
