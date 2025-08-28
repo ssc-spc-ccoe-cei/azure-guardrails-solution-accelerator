@@ -867,7 +867,6 @@ function Get-UserSignInPreferences {
     }
     
     try {
-        Write-Warning "urlpath is $urlPath"
         # Use beta endpoint for signInPreferences
         $uri = "https://graph.microsoft.com/beta$urlPath" -as [uri]
         
