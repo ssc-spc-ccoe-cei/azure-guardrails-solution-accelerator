@@ -216,8 +216,11 @@ function Get-ServiceHealthAlerts {
         if ($EnableMultiCloudProfiles) {
             $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
             Write-Host "$result"
+            $PsObject.Add($result) | Out-Null
+        } else {
+            $PsObject.Add($C) | Out-Null
         }
-        $PsObject.Add($result) | Out-Null
+
         continue
     }
     
