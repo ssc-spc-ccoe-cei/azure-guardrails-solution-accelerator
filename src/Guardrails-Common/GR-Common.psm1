@@ -856,7 +856,7 @@ function Get-UserSignInPreferences {
         if(!$null -eq $userEmail){
             $urlPath = '/users/' + $userEmail + '/authentication/signInPreferences'
         }else{
-            Write-Host "userEmail is null for $UserUPN"
+            Write-Warning "userEmail is null for $UserUPN"
             $extractedEmail = (($UserUPN -split '#')[0]) -replace '_', '@'
             $urlPath = '/users/' + $extractedEmail + '/authentication/signInPreferences'
         }
@@ -866,6 +866,7 @@ function Get-UserSignInPreferences {
     }
     
     try {
+        Write-Warning "urlpath is $urlPath"
         # Use beta endpoint for signInPreferences
         $uri = "https://graph.microsoft.com/beta$urlPath" -as [uri]
         
