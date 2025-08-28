@@ -203,9 +203,30 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
+        "query": "let run = '{RunTime}';\nlet reqFlag = '{RequiredYesNo}';\nlet base = gr_data('GUARDRAIL 1', run, reqFlag);\n// Determine which user dataset to use (fallback to latest if none for selected run)\nlet haveUsers = toscalar(GuardrailsUserRaw_CL | where ReportTime_s == run | summarize c=count());\nlet userRun = iff(haveUsers > 0, run, toscalar(GuardrailsUserRaw_CL | summarize max(ReportTime_s)));\nlet usersRaw = GuardrailsUserRaw_CL | where ReportTime_s == userRun;\n// Normalize MFA registration across possible column variants (string/bool/int)\nlet users = usersRaw\n  | extend _regStr = tostring(coalesce(column_ifexists('isMfaRegistered_s',''), column_ifexists('isMfaRegistered',''), column_ifexists('mfaRegistered',''), column_ifexists('MfaRegistered',''))),\n           _regBool = column_ifexists('isMfaRegistered_b', bool(null)),\n           _regInt = toint(column_ifexists('isMfaRegistered_d', int(-1)))\n  | extend mfaRegistered = case(\n        _regBool == true, true,\n        _regBool == false, false,\n        _regInt == 1, true,\n        _regInt == 0, false,\n        tolower(_regStr) in ('true','1','yes'), true,\n        tolower(_regStr) in ('false','0','no'), false,\n        bool(null)\n    );\n// Aggregate: treat any user where mfaRegistered != true as not registered (null counts as not registered)\nlet mfaRow = users\n  | summarize Total=count(), NotRegistered=countif(mfaRegistered != true)\n  | extend ControlName_s='GUARDRAIL 1',\n           ItemName_s='All Cloud User Accounts MFA (IM)',\n           Comments_s=strcat('UserDataRun:', userRun, ' Total:', Total, ' NotRegistered:', NotRegistered),\n           Status = case(Total==0,'➖', NotRegistered>0,'❌','✔️'),\n           ComplianceStatus_b = case(Total==0, bool(null), NotRegistered>0, false, true),\n           Required_s='True'\n  | project-away Total, NotRegistered;\nlet baseNoMfa = base\n  | extend _Name = coalesce(tostring(column_ifexists('Item Name','')), tostring(column_ifexists('ItemName_s','')), tostring(column_ifexists('ItemName','')))\n  | where _Name !~ 'All Cloud User Accounts MFA (IM)'\n  | project-away _Name;\nbaseNoMfa\n| union mfaRow\n| extend ['Item Name'] = coalesce(tostring(column_ifexists('Item Name','')), tostring(column_ifexists('ItemName_s','')), tostring(column_ifexists('ItemName','')))\n// Derive Status only where absent for other rows\n| extend Status = coalesce(Status, case(column_ifexists('ComplianceStatus_b', bool(null)) == true,'✔️', column_ifexists('ComplianceStatus_b', bool(null)) == false,'❌','➖'))\n| project-away ItemName_s, _regStr, _regBool, _regInt, mfaRegistered\n| sort by ['Item Name'] asc",
         "size": 0,
         "title": "GR 1",
+        "timeContext": { "durationMs": 86400000 },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            { "columnMatch": "Remediation", "formatter": 7, "formatOptions": { "linkTarget": "Url" } },
+            { "columnMatch": "Link", "formatter": 7, "formatOptions": { "linkTarget": "Url" } }
+          ]
+        }
+      },
+      "conditionalVisibility": { "parameterName": "selectedTab", "comparison": "isEqualTo", "value": "gr1" },
+      "name": "Gr1"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let run = \"{RunTime}\";\nlet users = GuardrailsUserRaw_CL\n| where ReportTime_s == run\n| extend mfaCapable = tobool(column_ifexists(\"isMfaCapable_b\", false)), mfaRegistered = tobool(column_ifexists(\"isMfaRegistered_b\", false));\nusers\n| summarize Capable=countif(mfaCapable), Missing=countif(mfaCapable and not(mfaRegistered))\n| extend Compliance = Missing == 0, Status=iff(Compliance,\"✔️\",\"❌\"), ['Item Name']=\"All Cloud User Accounts MFA (IM)\", Comments=strcat(\"Capable:\",Capable,\" Missing:\",Missing)\n| project Status, ['Item Name'], Comments",
+        "size": 0,
+        "title": "All Cloud User Accounts MFA (IM) Summary",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -213,22 +234,12 @@
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "table",
         "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Remediation",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            },
-            {
-              "columnMatch": "Link",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            }
-          ]
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Status"
+            ]
+          }
         }
       },
       "conditionalVisibility": {
@@ -236,7 +247,7 @@
         "comparison": "isEqualTo",
         "value": "gr1"
       },
-      "name": "Gr1"
+      "name": "gr1-mfa-summary"
     },
     {
       "type": 9,
@@ -275,7 +286,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend \n    CreatedRaw = coalesce(\n        column_ifexists(\"CreatedTime_t\", datetime(null)), \n        todatetime(column_ifexists(\"CreatedTime_s\", \"\"))\n    ),\n    LastSignInRaw = coalesce(\n        column_ifexists(\"LastSignIn_t\", datetime(null)), \n        todatetime(column_ifexists(\"LastSignIn_s\", \"\"))\n    )\n| extend \n    CreatedTime = iff(isnull(CreatedRaw), \"N/A\", format_datetime(CreatedRaw, 'yyyy-MM-dd HH:mm:ss')),\n    LastSignIn = iff(isnull(LastSignInRaw), \"Never Signed In\", format_datetime(LastSignInRaw, 'yyyy-MM-dd HH:mm:ss'))\n| project DisplayName_s, UserPrincipalName_s, User_Type_s, CreatedTime, LastSignIn, Comments_s\n",
+        "query": "GuardrailsUserRaw_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend mfaCapable = tobool(column_ifexists(\"isMfaCapable_b\", false)),\n        mfaRegistered = tobool(column_ifexists(\"isMfaRegistered_b\", false)),\n        createdRaw = coalesce(todatetime(column_ifexists(\"createdDateTime_t\", datetime(null))), todatetime(column_ifexists(\"createdDateTime_s\", \"\"))),\n        signInRaw = tostring(column_ifexists(\"signInActivity_s\", \"\")),\n        lastSignInRaw = todatetime(extractjson(\"$.lastSignInDateTime\", signInRaw))\n| where mfaCapable and not(mfaRegistered)\n| extend CreatedTime = iff(isnull(createdRaw), \"N/A\", format_datetime(createdRaw, \"yyyy-MM-dd HH:mm:ss\")),\n         LastSignIn = iff(isnull(lastSignInRaw), \"Never Signed In\", format_datetime(lastSignInRaw, \"yyyy-MM-dd HH:mm:ss\"))\n| project DisplayName_s=coalesce(displayName_s, tostring(displayName)),\n         UserPrincipalName_s=coalesce(userPrincipalName_s, tostring(userPrincipalName)),\n         User_Type_s=coalesce(userType_s, tostring(userType)),\n         CreatedTime, LastSignIn, Comments_s=\"MFA not registered\"\n",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
@@ -860,7 +871,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 13",
         "timeContext": {
@@ -1028,5 +1039,6 @@
       "name": "information"
     }
   ],
-  "fallbackResourceIds": [
+  "fallbackResourceIds": []
+}
 
