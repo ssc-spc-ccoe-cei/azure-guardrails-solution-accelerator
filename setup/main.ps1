@@ -258,7 +258,8 @@ foreach ($module in $modules) {
         # To disable: Comment out or set to $null
         
         # === FAILURE SIMULATION ENABLED FOR TESTING ===
-        $env:GUARDRAILS_FAIL = "Check-AlertsMonitor"  # Module to fail at (see modules.json for names)
+        # Failing at module ~30 (middle of 55 total) to maximize chance of reproducing partial data issues
+        $env:GUARDRAILS_FAIL = "Check-TLSConfiguration-SQLDatabase"  # Module 30 - middle of GR7
         $env:GUARDRAILS_FAIL_MODE = "exit"            # How to fail: 'exit', 'throw', 'timeout-short'
         
         # Early modules for quick testing:
