@@ -258,8 +258,8 @@ foreach ($module in $modules) {
         # To disable: Comment out or set to $null
         
         # === FAILURE SIMULATION ENABLED FOR TESTING ===
-        # Failing at module ~30 (middle of 55 total) to maximize chance of reproducing partial data issues
-        $env:GUARDRAILS_FAIL = "Check-TLSConfiguration-SQLDatabase"  # Module 30 - middle of GR7
+        # Failing at an ENABLED module in middle of execution
+        $env:GUARDRAILS_FAIL = "Check-SecureConnectionInTransit"  # ENABLED module in GR7
         $env:GUARDRAILS_FAIL_MODE = "kill"            # 'kill' best simulates real timeout/OOM
         
         # Early modules for quick testing:
