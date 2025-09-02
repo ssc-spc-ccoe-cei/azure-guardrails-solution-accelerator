@@ -260,7 +260,7 @@ foreach ($module in $modules) {
         # === FAILURE SIMULATION ENABLED FOR TESTING ===
         # Failing at module ~30 (middle of 55 total) to maximize chance of reproducing partial data issues
         $env:GUARDRAILS_FAIL = "Check-TLSConfiguration-SQLDatabase"  # Module 30 - middle of GR7
-        $env:GUARDRAILS_FAIL_MODE = "exit"            # How to fail: 'exit', 'throw', 'timeout-short'
+        $env:GUARDRAILS_FAIL_MODE = "kill"            # 'kill' best simulates real timeout/OOM
         
         # Early modules for quick testing:
         # - "Check-CloudAccountsMFA" (module 2)
@@ -288,6 +288,11 @@ foreach ($module in $modules) {
                     Write-Output "Executing: exit 1 (Abrupt termination)"
                     Write-Output "Effect: Runbook stops immediately"
                     exit 1
+                }
+                'kill' {
+                    Write-Output "Executing: Process Kill (Simulates timeout/OOM)"
+                    Write-Output "Effect: Immediate termination, no cleanup"
+                    [System.Diagnostics.Process]::GetCurrentProcess().Kill()
                 }
                 'throw' {
                     Write-Output "Executing: throw (Exception)"
