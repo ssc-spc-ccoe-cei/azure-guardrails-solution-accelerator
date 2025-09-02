@@ -250,6 +250,68 @@ foreach ($module in $modules) {
         #Write-host $module.Script
         Write-Output "Running module with script: $module.Script"
 
+        # ===== FAILURE SIMULATION FOR TESTING ISSUE 529 =====
+        # Purpose: Simulate runbook failures to test workbook handling of partial data
+        # 
+        # TESTING CONTROLS - Set these to enable failure simulation:
+        # To enable: Uncomment the lines below and choose a module to fail at
+        # To disable: Comment out or set to $null
+        
+        # === FAILURE SIMULATION ENABLED FOR TESTING ===
+        $env:GUARDRAILS_FAIL = "Check-AlertsMonitor"  # Module to fail at (see modules.json for names)
+        $env:GUARDRAILS_FAIL_MODE = "exit"            # How to fail: 'exit', 'throw', 'timeout-short'
+        
+        # Early modules for quick testing:
+        # - "Check-CloudAccountsMFA" (module 2)
+        # - "Check-AlertsMonitor" (module 5) 
+        # - "Check-UserGroups" (module 8)
+        
+        $failModule = $env:GUARDRAILS_FAIL
+        $failMode = if ($env:GUARDRAILS_FAIL_MODE) { $env:GUARDRAILS_FAIL_MODE } else { 'exit' }
+        
+        if ($failModule -and $module.ModuleName -eq $failModule) {
+            Write-Output ""
+            Write-Output "================================================"
+            Write-Output "   ISSUE 529 TEST: SIMULATING FAILURE"
+            Write-Output "================================================"
+            Write-Output "Module: $($module.ModuleName)"
+            Write-Output "Mode: $failMode"
+            Write-Output "Purpose: Testing workbook with partial data"
+            Write-Output ""
+            Write-Output "Modules before this have written to Log Analytics."
+            Write-Output "This failure will create partial data scenario."
+            Write-Output "================================================"
+            
+            switch ($failMode) {
+                'exit' {
+                    Write-Output "Executing: exit 1 (Abrupt termination)"
+                    Write-Output "Effect: Runbook stops immediately"
+                    exit 1
+                }
+                'throw' {
+                    Write-Output "Executing: throw (Exception)"
+                    Write-Output "Effect: Module fails but runbook continues"
+                    throw "TEST FAILURE: Simulating module failure for Issue 529 testing"
+                }
+                'timeout-short' {
+                    Write-Output "Executing: 30-second sleep (Quick timeout test)"
+                    Write-Output "Sleeping for 30 seconds..."
+                    Start-Sleep -Seconds 30
+                    Write-Output "Sleep complete - continuing execution"
+                }
+                'timeout-full' {
+                    Write-Output "Executing: 3+ hour sleep (Full timeout test)"
+                    Write-Output "This will trigger Azure Automation 3-hour timeout"
+                    Start-Sleep -Seconds 11000
+                }
+                default {
+                    Write-Output "Unknown mode '$failMode' - using exit"
+                    exit 1
+                }
+            }
+        }
+        # ===== END FAILURE SIMULATION =====
+
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
