@@ -59,8 +59,8 @@ function Check-FinOpsToolStatus {
     # Add profile information if MCUP feature is enabled
     if ($EnableMultiCloudProfiles) {
         $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
+        $PsObject = $result
     }
-    $PsObject.Add($result) | Out-Null
 
     $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject

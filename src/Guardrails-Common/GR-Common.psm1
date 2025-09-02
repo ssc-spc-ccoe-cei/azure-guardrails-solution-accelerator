@@ -854,9 +854,10 @@ function Get-UserSignInPreferences {
         # for guest accounts
         $userEmail = $UserUPN
         if(!$null -eq $userEmail){
-            $urlPath = '/users/' + $userEmail + '/authentication/signInPreferences'
+            $encodedUserEmail = [System.Web.HttpUtility]::UrlEncode($userEmail)
+            $urlPath = '/users/' + $encodedUserEmail + '/authentication/signInPreferences'            
         }else{
-            Write-Host "userEmail is null for $UserUPN"
+            Write-Warning "userEmail is null for $UserUPN"
             $extractedEmail = (($UserUPN -split '#')[0]) -replace '_', '@'
             $urlPath = '/users/' + $extractedEmail + '/authentication/signInPreferences'
         }
