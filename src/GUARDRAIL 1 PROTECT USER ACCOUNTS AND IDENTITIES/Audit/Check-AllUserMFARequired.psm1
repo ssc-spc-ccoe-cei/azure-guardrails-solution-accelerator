@@ -25,120 +25,6 @@ function Check-AllUserMFARequired {
     # Initialize error list for orchestrator compatibility
     $ErrorList = @()
 
-    # Fetch users (raw)
-    $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
-    Write-Verbose "Fetching users from Microsoft Graph: $usersPath"
-    try {
-        $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
-        if ($response -is [System.Array]) {
-            $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
-        }
-        $allUsers = @($response.Content.value)
-        Write-Verbose "Retrieved $($allUsers.Count) users"
-    }
-    catch {
-        Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
-        $ErrorList += "Graph call failed for users list: $_"
-        $allUsers = @()
-    }
-
-    # For each user, fetch authentication methods and attach to the record (flattened for ingestion)
-    $augmentedUsers = @()
-    foreach ($u in $allUsers) {
-        $flatMethods = @()
-        try {
-            $authUrl = "/users/$($u.id)/authentication/methods"
-            $authResp = Invoke-GraphQueryEX -urlPath $authUrl -ErrorAction Stop
-            if ($authResp -is [System.Array]) {
-                $authResp = $authResp | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
-            }
-            $methods = @($authResp.Content.value)
-
-            foreach ($m in $methods) {
-                $flatMethods += [PSCustomObject]@{
-                    type             = $m.'@odata.type'
-                    id               = $m.id
-                    displayName      = $m.displayName
-                    phoneType        = $m.phoneType
-                    phoneNumber      = $m.phoneNumber
-                    isDefault        = $m.isDefault
-                    keyStrength      = $m.keyStrength
-                    appDisplayName   = $m.appDisplayName
-                    createdDateTime  = $m.createdDateTime
-                }
-            }
-        }
-        catch {
-            Write-Warning "Failed to get authentication methods for user $($u.userPrincipalName): $_"
-            $ErrorList += "Failed auth methods for $($u.userPrincipalName): $_"
-        }
-
-        # Build a composite object, preserving user properties and adding flattened methods
-        $augmentedUsers += [PSCustomObject]@{
-            id                     = $u.id
-            userPrincipalName      = $u.userPrincipalName
-            displayName            = $u.displayName
-            mail                   = $u.mail
-            createdDateTime        = $u.createdDateTime
-            userType               = $u.userType
-            accountEnabled         = $u.accountEnabled
-            signInActivity         = $u.signInActivity
-            authenticationMethods  = $flatMethods
-            ReportTime             = $ReportTime
-            ItemName               = $ItemName
-            itsgcode               = $itsgcode
-        }
-    }
-
-    # Prepare a minimal compliance-shaped object so main.ps1 can process uniformly
-    $PsObject = [PSCustomObject]@{
-        ComplianceStatus = "Not Evaluated"
-        ControlName      = $ControlName
-        ItemName         = $ItemName
-        Comments         = "Raw export of users and authentication methods"
-        ReportTime       = $ReportTime
-        itsgcode         = $itsgcode
-    }
-
-    # Return in the expected envelope; main.ps1 will send AdditionalResults to Log Analytics
-    $moduleOutput = [PSCustomObject]@{ 
-        ComplianceResults = @($PsObject)  # ensure array for ingestion
-        Errors            = @($ErrorList)
-        AdditionalResults = [PSCustomObject]@{
-            records = @($augmentedUsers)
-            logType = "GuardrailsUserRaw"
-        }
-    }
-    return $moduleOutput   
-}
-
-function Check-AllUserMFARequired {
-    [CmdletBinding()]
-    param (      
-        [Parameter(Mandatory=$true)]
-        [string] $ControlName,
-        [Parameter(Mandatory=$true)]
-        [string] $ItemName,
-        [Parameter(Mandatory=$true)]
-        [string] $itsgcode,
-        [Parameter(Mandatory=$false)]
-        [hashtable] $msgTable,
-        [Parameter(Mandatory=$true)]
-        [string] $ReportTime, 
-        [Parameter(Mandatory=$true)] 
-        [string] $FirstBreakGlassUPN,
-        [Parameter(Mandatory=$true)] 
-        [string] $SecondBreakGlassUPN,
-        [string] $CloudUsageProfiles = "3",  # Passed as a string
-        [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # default to false
-    )
-
-    Write-Verbose "Entered Check-AllUserMFARequired for ItemName='$ItemName' itsgcode='$itsgcode'"
-
-    # Initialize error list for orchestrator compatibility
-    $ErrorList = @()
-
     # 1) Fetch users (paged automatically by Invoke-GraphQueryEX)
     $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
     Write-Verbose "Fetching users from Microsoft Graph: $usersPath"
@@ -218,25 +104,88 @@ function Check-AllUserMFARequired {
         }
     }
 
-    # 5) Prepare a minimal compliance-shaped object so main.ps1 can process uniformly
+    # 5) Analyze MFA compliance status based on collected data
+    $totalUsers = $augmentedUsers.Count
+    $mfaCapableUsers = ($augmentedUsers | Where-Object { $_.isMfaCapable -eq $true }).Count
+    $mfaRegisteredUsers = ($augmentedUsers | Where-Object { $_.isMfaRegistered -eq $true }).Count
+    $nonCompliantUsers = $mfaCapableUsers - $mfaRegisteredUsers
+
+    # Determine compliance status and appropriate message
+    if ($ErrorList.Count -gt 0) {
+        # If there were errors during data collection, mark as not evaluated
+        $IsCompliant = "Not Evaluated"
+        $Comments = if ($msgTable) { 
+            $msgTable.evaluationError -f ($ErrorList -join "; ")
+        } else { 
+            "Evaluation failed due to errors: $($ErrorList -join '; ')" 
+        }
+    }
+    elseif ($totalUsers -eq 0) {
+        $IsCompliant = $true
+        $Comments = if ($msgTable) { $msgTable.noUsersFound } else { "No users found in tenant" }
+    }
+    elseif ($mfaCapableUsers -eq 0) {
+        $IsCompliant = "Not Applicable"
+        $Comments = if ($msgTable) { $msgTable.noMfaCapableUsers } else { "No MFA capable users found" }
+    }
+    elseif ($nonCompliantUsers -eq 0) {
+        $IsCompliant = $true
+        $Comments = if ($msgTable) { 
+            $msgTable.allUsersHaveMFA -f $mfaRegisteredUsers, $mfaCapableUsers 
+        } else { 
+            "All MFA capable users have MFA enabled ($mfaRegisteredUsers/$mfaCapableUsers)" 
+        }
+    }
+    else {
+        $IsCompliant = $false
+        $Comments = if ($msgTable) { 
+            $msgTable.usersWithoutMFA -f $nonCompliantUsers, $mfaCapableUsers 
+        } else { 
+            "$nonCompliantUsers out of $mfaCapableUsers MFA capable users do not have MFA enabled" 
+        }
+    }
+
+    Write-Verbose "MFA Compliance Summary: Total=$totalUsers, Capable=$mfaCapableUsers, Registered=$mfaRegisteredUsers, NonCompliant=$nonCompliantUsers, Status=$IsCompliant"
+
+    # 6) Prepare compliance object with proper status and messaging
     $PsObject = [PSCustomObject]@{
-        ComplianceStatus = "Not Evaluated"
+        ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
         ItemName         = $ItemName
-        Comments         = "Raw export of users + authentication registration details (report-based)"
+        Comments         = $Comments
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
 
-    # 6) Return in the expected envelope; main.ps1 will send AdditionalResults to Log Analytics
+    # 7) Add profile-based evaluation (consistent with other modules)
+    if ($EnableMultiCloudProfiles) {
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        if (!$evalResult.ShouldEvaluate) {
+            if ($evalResult.Profile -gt 0) {
+                $PsObject.ComplianceStatus = "Not Applicable"
+                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $PsObject.Comments = if ($msgTable) {
+                    $msgTable.profileNotApplicable -f $evalResult.Profile, $CloudUsageProfiles
+                } else {
+                    "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                }
+            } else {
+                $ErrorList += "Error occurred while evaluating profile configuration"
+            }
+        } else {
+            $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+        }
+    }
+
+    # 8) Return in the expected envelope; main.ps1 will send AdditionalResults to Log Analytics
     $moduleOutput = [PSCustomObject]@{ 
-        ComplianceResults = @($PsObject)  # ensure array for ingestion
-        Errors            = @($ErrorList)
+        ComplianceResults = $PsObject  # Single object, not array (consistent with other modules)
+        Errors            = $ErrorList
         AdditionalResults = [PSCustomObject]@{
             records = @($augmentedUsers)
             logType = "GuardrailsUserRaw"
         }
     }
-    return $moduleOutput   
+    return $moduleOutput
 }
 
