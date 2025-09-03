@@ -205,6 +205,7 @@ function Check-AllUserMFARequired {
     if ($EnableMultiCloudProfiles) {
         $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
         Write-Host "$result"
+        $PsObject = $result
     }
     
     $moduleOutput= [PSCustomObject]@{ 

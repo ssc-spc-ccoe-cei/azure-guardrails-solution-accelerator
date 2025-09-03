@@ -221,6 +221,8 @@ allCertificatesValid = All certificates are valid and from approved Certificate 
 approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
 approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
 appServiceHttpsConfig = Azure App Service: HTTPS Application Configuration
+keyVaultCertValidationFailed = Certificate stored in Key Vault for listener '{0}' in Application Gateway '{1}' could not be validated. The CAC solution requires 'Key Vault Secrets User' permissions on the customer Key Vault to validate certificates. If the vault is in Access Policy mode, grant the Automation Account managed identity the 'Get' permission on Secrets for this Key Vault. Contact your administrator to grant the CAC Automation Account managed identity access to this Key Vault if desired.
+keyVaultCertRetrievalFailed = Unable to retrieve certificate from Key Vault for listener '{0}' in Application Gateway '{1}'. Certificate may be stored in Key Vault and requires proper permissions to access.
 
 dataInTransit = Secure Connections for Redis Cache and Storage Accounts
 
