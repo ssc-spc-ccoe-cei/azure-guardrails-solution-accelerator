@@ -62,7 +62,8 @@
             },
             "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": "2023-01-16 19:55:14"
           }
         ],
         "style": "pills",
@@ -201,10 +202,10 @@
     {
       "type": 3,
       "content": {
-        "version": "KqlItem/1.0",
-        "query": "let run = '{RunTime}';\nlet showRec = '{RequiredYesNo}';\nlet ctrlprefix = 'GUARDRAIL 1';\nlet itsgcodes = GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == run\n| where TimeGenerated > ago(24h)\n| where showRec == 'Other' or Required_s == 'True'\n| join kind=leftouter (itsgcodes) on itsgcode_s\n| project Required_s, ['Item Name']=ItemName_s, Comments=Comments_s, Status=case(ComplianceStatus_b==true,'✔️', ComplianceStatus_b==false,'❌','❌'), ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,' ',''),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d','')), tostring(toint(column_ifexists('Profile_d',''))),'')\n| extend ['Item Name'] = strcat(['Item Name'], iff(Required_s=='False',' (R)',' (M)'))\n| sort by ['Item Name'] asc",
+    "version": "KqlItem/1.0",
+  "query": "// Custom GR1 query with MFA fallback logic (temporary until ingestion fixed)\n// Updated: Determines compliance when ALL users have MFA enabled (not only MFA-capable subset).\nlet run = '{RunTime}';\nlet showRec = '{RequiredYesNo}';\nlet ctrlprefix = 'GUARDRAIL 1';\n// Collect user MFA statistics (all users + capability + registrations)\nlet mfastats = GuardrailsUserRaw_CL\n| where ReportTime_s == run\n| summarize AllUsers=count(), Capable=countif(isMfaCapable_b==true), Registered=countif(isMfaRegistered_b==true);\nlet AllUsers = toscalar(mfastats | project AllUsers);\nlet Capable = toscalar(mfastats | project Capable);\nlet Registered = toscalar(mfastats | project Registered);\nlet AllNonRegistered = AllUsers - Registered;\n// Compliance: ✔️ if every user has MFA enabled (Registered == AllUsers and AllUsers > 0).\nlet dStatus = iff(AllUsers==0,'➖', iff(AllNonRegistered==0,'✔️','❌'));\n// Build detailed comment. Include note about users not yet MFA-capable when that reduces denominator for capability metrics.\nlet capabilityNote = iff(Capable < AllUsers and AllUsers>0, strcat(' Note: ', AllUsers-Capable, ' user(s) not yet MFA-capable.'), '');\nlet dComments = case(\n    AllUsers==0, 'No users found',\n    AllNonRegistered==0, strcat('All users have MFA enabled (', Registered, '/', AllUsers, ').', capabilityNote),\n    strcat(AllNonRegistered,' out of ', AllUsers, ' users do not have MFA enabled (', Registered,' enabled).', capabilityNote)\n);\nlet itsgcodes = GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == run and Required_s != tostring(showRec)\n| where TimeGenerated > ago(24h)\n| join kind=inner (itsgcodes) on itsgcode_s\n| extend BaseItemName = ItemName_s\n| extend ItemName = strcat(ItemName_s, iff(Required_s==\"False\", \" (R)\", \" (M)\"))\n| extend Status = case(ComplianceStatus_b == true, '✔️', ComplianceStatus_b == false, '❌', '➖')\n| extend Comments = iff(BaseItemName == 'All Cloud User Accounts MFA Check' and isempty(Comments_s) and isnotempty(dComments), dComments, Comments_s)\n| extend Status = iff(BaseItemName == 'All Cloud User Accounts MFA Check' and isnotempty(dStatus), dStatus, Status)\n| project ItemName, Comments, Status, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,' ',''),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d','')), tostring(toint(column_ifexists('Profile_d',''))),'')\n| sort by ItemName asc",
         "size": 0,
-        "title": "GR 1",
+  "title": "GR 1",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -838,123 +839,6 @@
       "conditionalVisibility": {
         "parameterName": "selectedTab",
         "comparison": "isEqualTo",
-        "value": "gr10"
-      },
-      "name": "query - 2 - Copy - Copy - Copy"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 1,
-        "title": "GR 11",
-        "timeContext": {
-          "durationMs": 86400000
-        },
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Remediation",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            },
-            {
-              "columnMatch": "Link",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            }
-          ]
-        }
-      },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr11"
-      },
-      "name": "query - 2 - Copy - Copy - Copy - Copy"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 4,
-        "title": "GR 12",
-        "timeContext": {
-          "durationMs": 86400000
-        },
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Remediation",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            },
-            {
-              "columnMatch": "Link",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            }
-          ]
-        }
-      },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr12"
-      },
-      "name": "GR11"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
-        "size": 0,
-        "title": "GR 13",
-        "timeContext": {
-          "durationMs": 86400000
-        },
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Remediation",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            },
-            {
-              "columnMatch": "Link",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            }
-          ]
-        }
-      },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
         "value": "gr13"
       },
       "name": "Gr13"
@@ -963,7 +847,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=case(\n    ComplianceStatus_b == true, 'Compliant Items',\n    ComplianceStatus_b == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n// Your automation account uses ComplianceStatus_b (boolean) field\n| extend Status=case(\n    ComplianceStatus_b == true, 'Compliant Items',\n    ComplianceStatus_b == false, 'Non-compliant Items',\n    'Unknown Status Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
         "size": 4,
         "timeContext": {
           "durationMs": 86400000
@@ -1092,8 +976,5 @@
       "name": "information"
     }
   ],
-  "fallbackResourceIds": [
-    "/subscriptions/94d351a7-84bc-4e49-b96f-ab72c566ba35/resourcegroups/guardrailscacdev-dev/providers/microsoft.operationalinsights/workspaces/logcac-dev"
-  ],
-  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+  "fallbackResourceIds": []
 }
