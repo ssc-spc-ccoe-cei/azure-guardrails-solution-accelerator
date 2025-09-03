@@ -250,16 +250,34 @@ foreach ($module in $modules) {
         #Write-host $module.Script
         Write-Output "Running module with script: $module.Script"
 
+        # ===== STRICT REPRO: Ensure LAW rows do not appear in workbook =====
+        # Purpose: Break the workbook inner-join (itsgcode_s) for early GR7
+        # modules that run before the simulated failure. This creates a
+        # faithful "LAW but not in workbook" scenario, independent of
+        # UI toggles.
+        # Disable by setting $strictRepro = $false.
+        $strictRepro = $true
+        $modulesToBreakJoin = @(
+            'Check-StorageAccountTLSversion',
+            'Check-AppServiceHTTPSConfiguration',
+            'Check-FunctionAppHTTPSConfiguration',
+            'Check-SecureConnectionInTransit'
+        )
+        if ($strictRepro -and ($modulesToBreakJoin -contains $module.ModuleName)) {
+            Write-Output "STRICT REPRO: Overriding itsgcode for $($module.ModuleName) to break workbook join"
+            $vars.itsgcode = 'TEST_NOMATCH'
+        }
+
         # ===== FAILURE SIMULATION FOR TESTING ISSUE 529 =====
         # Purpose: Simulate runbook failures to test workbook handling of partial data
         # 
         # TESTING CONTROLS - Set these to enable failure simulation:
-        # To enable: Uncomment the lines below and choose a module to fail at
-        # To disable: Comment out or set to $null
+        # To enable: set below variables
+        # To disable: set $env:GUARDRAILS_FAIL = $null
         
         # === FAILURE SIMULATION ENABLED FOR TESTING ===
-        # Failing at an ENABLED module in middle of execution
-        $env:GUARDRAILS_FAIL = "Check-SecureConnectionInTransit"  # ENABLED module in GR7
+        # Failing later in GR7 so earlier GR7 results land in LAW
+        $env:GUARDRAILS_FAIL = "Check-ApplicationGatewayCertificateValidity"  # later GR7 module
         $env:GUARDRAILS_FAIL_MODE = "kill"            # 'kill' best simulates real timeout/OOM
         
         # Early modules for quick testing:
