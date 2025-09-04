@@ -253,8 +253,7 @@ foreach ($module in $modules) {
         # ===== STRICT REPRO: Ensure LAW rows do not appear in workbook =====
         # Purpose: Break the workbook inner-join (itsgcode_s) for early GR7
         # modules that run before the simulated failure. This creates a
-        # faithful "LAW but not in workbook" scenario, independent of
-        # UI toggles.
+        # faithful "In LAW but not in workbook" scenario.
         # Disable by setting $strictRepro = $false.
         $strictRepro = $true
         $modulesToBreakJoin = @(
