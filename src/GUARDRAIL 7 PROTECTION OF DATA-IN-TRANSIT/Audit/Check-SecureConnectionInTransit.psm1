@@ -126,12 +126,22 @@ function Check-StatusDataInTransit {
             }
             
             if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $c.ComplianceStatus = "Not Applicable"
-                    $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                if(!$evalResult.ShouldAvailable ){
+                    if ($evalResult.Profile -gt 0) {
+                        $c.ComplianceStatus = "Not Applicable"
+                        $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $c.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                    }
                 } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    if ($evalResult.Profile -gt 0) {
+                        $c.ComplianceStatus = "Not Applicable"
+                        $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    }
                 }
             } else {
                 

@@ -177,6 +177,7 @@ function Check-AllUserMFARequired {
         }
     }
 
+
     # 8) Return in the expected envelope; main.ps1 will send AdditionalResults to Log Analytics
     $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject  # Single object, not array (consistent with other modules)

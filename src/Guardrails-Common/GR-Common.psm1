@@ -626,6 +626,13 @@ function Get-EvaluationProfile {
         [Parameter(Mandatory = $false)]
         [string] $SubscriptionId
     )
+    Write-Host "Config CloudUsageProfiles $CloudUsageProfiles"
+    Write-Host "MCP GR ModuleProfiles $ModuleProfiles"
+    Write-Host "SubscriptionId $SubscriptionId"
+
+    $returnProfile = ""
+    $returnShouldEvaluate = $false
+    $returnShouldAvailable = $false
 
     try {
         # Convert input strings to integer arrays  
@@ -654,29 +661,37 @@ function Get-EvaluationProfile {
             return [PSCustomObject]@{
                 Profile = $matchedProfile
                 ShouldEvaluate = ($matchedProfile -in $cloudUsageProfileArray)
+                ShouldAvailable = ($matchedProfile -in $moduleProfileArray)
             }
         }
 
         $profileTagValuesArray = ConvertTo-IntArray $profileTagValues
 
         # Get the highest profile from all sources
+        #cloudUsageProfile from config json
         $highestCloudUsageProfile = ($cloudUsageProfileArray | Measure-Object -Maximum).Maximum
+        #module profiles for the guardrail
         $highestModuleProfile = ($moduleProfileArray | Measure-Object -Maximum).Maximum
+        #subscription tag
         $highestTagProfile = ($profileTagValuesArray | Measure-Object -Maximum).Maximum
 
+
+        $returnProfile = $highestTagProfile
+        $returnShouldAvailable = ($highestTagProfile -in $moduleProfileArray)
         # Use the highest profile if it's present in the module profiles
         if ($highestTagProfile -in $moduleProfileArray) {
-            return [PSCustomObject]@{
-                Profile = $highestTagProfile
-                ShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)
-            }
+            # CONDITION: hightest sub tag is in module profile
+            $returnShouldEvaluate = ($highestTagProfile -in $cloudUsageProfileArray)   
         }
-
-        # Otherwise, use the highest matching profile that doesn't exceed the module profile
-        $highestMatchingProfile = Get-HighestMatchingProfile $cloudUsageProfileArray $moduleProfileArray
+        else{
+            # CONDITION: hightest sub tag is not in module profile
+            $returnShouldEvaluate = ($highestTagProfile -in $moduleProfileArray)
+        }
+        
         return [PSCustomObject]@{
-            Profile = $highestMatchingProfile
-            ShouldEvaluate = ($highestMatchingProfile -in $cloudUsageProfileArray)
+            Profile =  $returnProfile
+            ShouldEvaluate = $returnShouldEvaluate
+            ShouldAvailable = $returnShouldAvailable
         }
     }
     catch {
@@ -684,6 +699,7 @@ function Get-EvaluationProfile {
         return [PSCustomObject]@{
             Profile = 0
             ShouldEvaluate = $false
+            ShouldAvailable = $false
         }
     }
 }
@@ -903,9 +919,66 @@ function add-documentFileExtensions {
     return $DocumentName_new
 }
 
+function Get-UserSignInPreferences {
+    [CmdletBinding()]
+    param (      
+        [Parameter(Mandatory = $true)]
+        [string]$UserUPN
+    )
+    
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $signInPreferences = $null
+    
+    # Handle guest accounts (external users)
+    $pattern = "*#EXT#*"
+    if($UserUPN -like $pattern){
+        # for guest accounts
+        $userEmail = $UserUPN
+        if(!$null -eq $userEmail){
+            $encodedUserEmail = [System.Web.HttpUtility]::UrlEncode($userEmail)
+            $urlPath = '/users/' + $encodedUserEmail + '/authentication/signInPreferences'            
+        }else{
+            Write-Warning "userEmail is null for $UserUPN"
+            $extractedEmail = (($UserUPN -split '#')[0]) -replace '_', '@'
+            $urlPath = '/users/' + $extractedEmail + '/authentication/signInPreferences'
+        }
+    }else{
+        # for member accounts
+        $urlPath = '/users/' + $UserUPN + '/authentication/signInPreferences'
+    }
+    
+    try {
+        # Use beta endpoint for signInPreferences
+        $uri = "https://graph.microsoft.com/beta$urlPath" -as [uri]
+        
+        $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
+        
+        if ($response.StatusCode -eq 200) {
+            $signInPreferences = $response.Content | ConvertFrom-Json
+            Write-Host "Successfully retrieved sign-in preferences for $UserUPN"
+        } else {
+            $errorMsg = "Failed to retrieve sign-in preferences for $UserUPN. Status code: $($response.StatusCode)"
+            $ErrorList.Add($errorMsg)
+            Write-Error $errorMsg
+        }
+    }
+    catch {
+        $errorMsg = "Failed to call Microsoft Graph Beta API at URL '$urlPath'; returned error message: $_"
+        $ErrorList.Add($errorMsg)
+        Write-Error "Error: $errorMsg"
+    }
+    
+    $PsObject = [PSCustomObject]@{
+        SignInPreferences = $signInPreferences
+        ErrorList = $ErrorList
+    }
+    
+    return $PsObject
+}
 
 
-function Get-AllUserAuthInformation{
+
+function Get-AllUserAuthInformation {
     [CmdletBinding()]
     param (      
         [Parameter(Mandatory = $true)]
@@ -919,92 +992,117 @@ function Get-AllUserAuthInformation{
 
     ForEach ($user in $allUserList) {
         $userAccount = $user.userPrincipalName
-            
-        if($userAccount -like $pattern){
-            # for guest accounts
-            $userEmail = $user.mail
-            if(!$null -eq  $userEmail){
-                $urlPath = '/users/' + $userEmail + '/authentication/methods'
-            }else{
-                Write-Host "userEmail is null for $userAccount"
-                $extractedEmail = (($userAccount -split '#')[0]) -replace '_', '@'
-                $urlPath = '/users/' + $extractedEmail + '/authentication/methods'
-            }
-            
-        }else{
-            # for member accounts
-            $urlPath = '/users/' + $userAccount + '/authentication/methods'
-        }
+        $authFound = $false
         
+        # First, check if user has FIDO2 or HardwareOTP as system preferred authentication method
         try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-
+            $signInPrefsResult = Get-UserSignInPreferences -UserUPN $userAccount
+            
+            if ($signInPrefsResult.ErrorList.Count -eq 0 -and $null -ne $signInPrefsResult.SignInPreferences) {
+                $preferences = $signInPrefsResult.SignInPreferences
+                $isSystemPreferredEnabled = $preferences.isSystemPreferredAuthenticationMethodEnabled
+                $systemPreferredMethod = $preferences.systemPreferredAuthenticationMethod
+                
+                # Check if system preferred is enabled and set to FIDO2 or HardwareOTP
+                if ($isSystemPreferredEnabled -eq $true -and 
+                    ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
+                    $authFound = $true
+                    Write-Host "✅ $userAccount - System preferred authentication method is $systemPreferredMethod"
+                }
+            }
         }
         catch {
-            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+            $errorMsg = "Failed to check sign-in preferences for $userAccount : $_"
             $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"
+            Write-Error "Warning: $errorMsg"
         }
-
-        # # To check if MFA is setup for a user, we're checking various authentication methods:
-        # # 1. #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
-        # # 2. #microsoft.graph.phoneAuthenticationMethod
-        # # 3. #microsoft.graph.passwordAuthenticationMethod - not considered for MFA
-        # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
-        # # 5. #microsoft.graph.fido2AuthenticationMethod
-        # # 6. #microsoft.graph.softwareOathAuthenticationMethod
-        # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
-        # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
-
-        if ($null -ne $response) {
-            # portal
-            $data = $response.Content
-            # # localExecution
-            # $data = $response
-            if ($null -ne $data -and $null -ne $data.value) {
-                $authenticationmethods = $data.value
+        
+        # If system preferred authentication is not FIDO2 or HardwareOTP, check authentication methods
+        if (-not $authFound) {
+            if($userAccount -like $pattern){
+                # for guest accounts
+                $userEmail = $user.mail
+                if(!$null -eq  $userEmail){
+                    $urlPath = '/users/' + $userEmail + '/authentication/methods'
+                }else{
+                    Write-Host "userEmail is null for $userAccount"
+                    $extractedEmail = (($userAccount -split '#')[0]) -replace '_', '@'
+                    $urlPath = '/users/' + $extractedEmail + '/authentication/methods'
+                }
                 
-                $authFound = $false
-                foreach ($authmeth in $authenticationmethods) {    
-                  
-                    switch ($authmeth.'@odata.type') {
-                        "#microsoft.graph.phoneAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.fido2AuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.temporaryAccessPassAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" { $authFound = $true; break }
-                        "#microsoft.graph.softwareOathAuthenticationMethod" { $authFound = $true; break }
-                    }
-                }
-                if($authFound){
-                    #need to keep track of user account mfa in a counter and compare it with the total user count   
-                    $userValidMFACounter += 1
-                    Write-Host "Auth method found for $userAccount"
-                    # Create an instance of valid MFA inner list object
-                    $userValidUPNtemplate = [PSCustomObject]@{
-                        UPN  = $userAccount
-                        MFAStatus   = $true
-                    }
-                    $userUPNsValidMFA +=  $userValidUPNtemplate
-                }
-                else{
-                    # This message is being used for debugging
-                    Write-Host "$userAccount does not have MFA enabled"
+            }else{
+                # for member accounts
+                $urlPath = '/users/' + $userAccount + '/authentication/methods'
+            }
+            
+            try {
+                $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
 
-                    # Create an instance of inner list object
-                    $userUPNtemplate = [PSCustomObject]@{
-                        UPN  = $userAccount
-                        MFAStatus   = $false
+            }
+            catch {
+                $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+                $ErrorList.Add($errorMsg)
+                Write-Error "Error: $errorMsg"
+            }
+
+            # # To check if MFA is setup for a user, we're checking various authentication methods:
+            # # 1. #microsoft.graph.microsoftAuthenticatorAuthenticationMethod
+            # # 2. #microsoft.graph.phoneAuthenticationMethod
+            # # 3. #microsoft.graph.passwordAuthenticationMethod - not considered for MFA
+            # # 4. #microsoft.graph.emailAuthenticationMethod - not considered for MFA
+            # # 5. #microsoft.graph.fido2AuthenticationMethod
+            # # 6. #microsoft.graph.softwareOathAuthenticationMethod
+            # # 7. #microsoft.graph.temporaryAccessPassAuthenticationMethod
+            # # 8. #microsoft.graph.windowsHelloForBusinessAuthenticationMethod
+
+            if ($null -ne $response) {
+                # portal
+                $data = $response.Content
+                # # localExecution
+                # $data = $response
+                if ($null -ne $data -and $null -ne $data.value) {
+                    $authenticationmethods = $data.value
+                    
+                    foreach ($authmeth in $authenticationmethods) {    
+                    
+                        switch ($authmeth.'@odata.type') {
+                            "#microsoft.graph.phoneAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.fido2AuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.temporaryAccessPassAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" { $authFound = $true; break }
+                            "#microsoft.graph.softwareOathAuthenticationMethod" { $authFound = $true; break }
+                        }
                     }
-                    # Add the list to user accounts MFA list
-                    $userUPNsBadMFA += $userUPNtemplate
+                }
+                else {
+                    $errorMsg = "No authentication methods data found for $userAccount"                
+                    $ErrorList.Add($errorMsg)
+                    # Write-Error "Error: $errorMsg"
                 }
             }
             else {
-                $errorMsg = "No authentication methods data found for $userAccount"                
+                $errorMsg = "Failed to get response from Graph API for $userAccount"                
                 $ErrorList.Add($errorMsg)
-                # Write-Error "Error: $errorMsg"
-                
+                Write-Error "Error: $errorMsg"
+            }
+            
+            # Process the authentication result
+            if($authFound){
+                #need to keep track of user account mfa in a counter and compare it with the total user count   
+                $userValidMFACounter += 1
+                Write-Host "Auth method found for $userAccount"
+                # Create an instance of valid MFA inner list object
+                $userValidUPNtemplate = [PSCustomObject]@{
+                    UPN  = $userAccount
+                    MFAStatus   = $true
+                }
+                $userUPNsValidMFA +=  $userValidUPNtemplate
+            }
+            else{
+                # This message is being used for debugging
+                Write-Host "$userAccount does not have MFA enabled"
+
                 # Create an instance of inner list object
                 $userUPNtemplate = [PSCustomObject]@{
                     UPN  = $userAccount
@@ -1013,11 +1111,6 @@ function Get-AllUserAuthInformation{
                 # Add the list to user accounts MFA list
                 $userUPNsBadMFA += $userUPNtemplate
             }
-        }
-        else {
-            $errorMsg = "Failed to get response from Graph API for $userAccount"                
-            $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg"
         }    
     }
 
@@ -1542,12 +1635,22 @@ function Check-PBMMPolicies {
             }
             
             if (!$evalResult.ShouldEvaluate) {
-                if ($evalResult.Profile -gt 0) {
-                    $c.ComplianceStatus = "Not Applicable"
-                    $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                if(!$evalResult.ShouldAvailable ){
+                    if ($evalResult.Profile -gt 0) {
+                        $c.ComplianceStatus = "Not Applicable"
+                        $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $c.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+                    }
                 } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    if ($evalResult.Profile -gt 0) {
+                        $c.ComplianceStatus = "Not Applicable"
+                        $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                        $c.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+                    } else {
+                        $ErrorList.Add("Error occurred while evaluating profile configuration")
+                    }
                 }
             } else {
                 
@@ -1622,15 +1725,35 @@ function Add-ProfileInformation {
         [Parameter(Mandatory=$true)]
         [PSCustomObject]$Result,
         [string]$CloudUsageProfiles,
-        [string]$ModuleProfiles
+        [string]$ModuleProfiles,
+        [string]$SubscriptionId,
+        [AllowEmptyCollection()]
+        [System.Collections.ArrayList]$ErrorList
     )
     
-    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    if($null -eq $SubscriptionId){
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+    }else{
+        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID
+    }
+
     if (!$evalResult.ShouldEvaluate) {
-        if ($evalResult.Profile -gt 0) {
-            $Result.ComplianceStatus = "Not Applicable"
-            $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-            $Result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+        if(!$evalResult.ShouldAvailable ){
+            if ($evalResult.Profile -gt 0) {
+                $Result.ComplianceStatus = "Not Applicable"
+                $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $Result.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration availability")
+            }
+        } else {
+            if ($evalResult.Profile -gt 0) {
+                $Result.ComplianceStatus = "Not Applicable"
+                $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
+                $Result.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
+            } else {
+                $ErrorList.Add("Error occurred while evaluating profile configuration")
+            }
         }
     } else {
         $Result | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
@@ -1800,7 +1923,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 $results.Add($result) | Out-Null
                 continue
@@ -1843,7 +1966,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 
                 $results.Add($result) | Out-Null
@@ -1871,7 +1994,7 @@ function Check-BuiltInPolicies {
                     }
                     
                     if ($EnableMultiCloudProfiles) {
-                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                        $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                     }
                     
                     $results.Add($result) | Out-Null
@@ -1908,7 +2031,7 @@ function Check-BuiltInPolicies {
                     }
                 }
                 if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                    $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
                 }
                 $results.Add($result) | Out-Null
             }
@@ -1943,7 +2066,7 @@ function Check-BuiltInPolicies {
                 }
             }
             if ($EnableMultiCloudProfiles) {
-                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+                $result = Add-ProfileInformation -Result $result -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
             }
             $results.Add($result) | Out-Null
         }

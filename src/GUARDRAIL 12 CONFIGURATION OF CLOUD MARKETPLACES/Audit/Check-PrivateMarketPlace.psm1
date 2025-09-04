@@ -54,21 +54,12 @@ $Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $Mi
 $Object| Add-Member -MemberType NoteProperty -Name ItemName -Value $msgTable.mktPlaceCreation -Force | Out-Null
 $Object| Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode -Force | Out-Null
 
-if ($EnableMultiCloudProfiles) {        
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-        if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $Object.ComplianceStatus = "Not Applicable"
-                $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $Object.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
-            }
-        } else {
-            
-            $Object | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
-}    
+
+# Add profile information if MCUP feature is enabled
+if ($EnableMultiCloudProfiles) {
+    $result = Add-ProfileInformation -Result $Object -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+    Write-Host "$result"
+}   
 
 $moduleOutput= [PSCustomObject]@{ 
         ComplianceResults = $Object
