@@ -22,6 +22,20 @@ function Check-UserGroups {
     [string] $Comments = $null
     [PSCustomObject] $AdditionalResults = $null
 
+    # Seed AdditionalResults so the LA table always exists
+    $AdditionalResults = [PSCustomObject]@{
+        logType = "GR2UsersWithoutGroups"
+        records = @([PSCustomObject]@{
+            UserId            = "N/A"
+            DisplayName       = "N/A"
+            GivenName         = "N/A"
+            UserPrincipalName = "N/A"
+            Comments          = $msgTable.userInGroup
+            ReportTime        = $ReportTime
+            itsgcode          = $itsgcode
+        })
+    }
+
     # list all users in the tenant
     
     try {
