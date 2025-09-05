@@ -912,6 +912,7 @@ function Get-AllUserAuthInformation {
     ForEach ($user in $allUserList) {
         $userAccount = $user.userPrincipalName
         $authFound = $false
+
         # First, check if user has FIDO2 or HardwareOTP as system preferred authentication method
         try {
             $signInPrefsResult = Get-UserSignInPreferences -UserUPN $userAccount
@@ -933,6 +934,7 @@ function Get-AllUserAuthInformation {
             $ErrorList.Add($errorMsg)
             Write-Error "Warning: $errorMsg"
         }
+        
         # If system preferred authentication is not FIDO2 or HardwareOTP, check authentication methods
         if (-not $authFound) {
             if($userAccount -like $pattern){
