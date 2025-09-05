@@ -195,6 +195,8 @@ function Check-GAUserCountMFARequired {
         ## Proceed with MFA check
         $MFAresult = get-MFACount($globalAdminUserAccounts)
 
+        Write-Warning "MFAresult: '$MFAresult'"
+
         $userValidMFACounter = $MFAresult.userValidMFACounter
         $userUPNsBadMFA = $MFAresult.userUPNsBadMFA
         if($MFAresult.ErrorList){

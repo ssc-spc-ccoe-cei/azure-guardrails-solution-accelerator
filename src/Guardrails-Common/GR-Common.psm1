@@ -912,11 +912,9 @@ function Get-AllUserAuthInformation {
     ForEach ($user in $allUserList) {
         $userAccount = $user.userPrincipalName
         $authFound = $false
-        
         # First, check if user has FIDO2 or HardwareOTP as system preferred authentication method
         try {
             $signInPrefsResult = Get-UserSignInPreferences -UserUPN $userAccount
-            
             if ($signInPrefsResult.ErrorList.Count -eq 0 -and $null -ne $signInPrefsResult.SignInPreferences) {
                 $preferences = $signInPrefsResult.SignInPreferences
                 $isSystemPreferredEnabled = $preferences.isSystemPreferredAuthenticationMethodEnabled
@@ -935,7 +933,6 @@ function Get-AllUserAuthInformation {
             $ErrorList.Add($errorMsg)
             Write-Error "Warning: $errorMsg"
         }
-        
         # If system preferred authentication is not FIDO2 or HardwareOTP, check authentication methods
         if (-not $authFound) {
             if($userAccount -like $pattern){
@@ -1005,31 +1002,33 @@ function Get-AllUserAuthInformation {
                 $ErrorList.Add($errorMsg)
                 Write-Error "Error: $errorMsg"
             }
-            
-            # Process the authentication result
-            if($authFound){
-                #need to keep track of user account mfa in a counter and compare it with the total user count   
-                $userValidMFACounter += 1
-                Write-Host "Auth method found for $userAccount"
-                # Create an instance of valid MFA inner list object
-                $userValidUPNtemplate = [PSCustomObject]@{
-                    UPN  = $userAccount
-                    MFAStatus   = $true
-                }
-                $userUPNsValidMFA +=  $userValidUPNtemplate
-            }
-            else{
-                # This message is being used for debugging
-                Write-Host "$userAccount does not have MFA enabled"
+        }
+        
+        # Process the authentication result
+        if($authFound){
+            #need to keep track of user account mfa in a counter and compare it with the total user count   
+            $userValidMFACounter += 1
+            Write-Host "Auth method found for $userAccount"
 
-                # Create an instance of inner list object
-                $userUPNtemplate = [PSCustomObject]@{
-                    UPN  = $userAccount
-                    MFAStatus   = $false
-                }
-                # Add the list to user accounts MFA list
-                $userUPNsBadMFA += $userUPNtemplate
+            # Create an instance of valid MFA inner list object
+            $userValidUPNtemplate = [PSCustomObject]@{
+                UPN  = $userAccount
+                MFAStatus   = $true
             }
+            $userUPNsValidMFA +=  $userValidUPNtemplate
+        }
+        else{
+            # This message is being used for debugging
+            Write-Host "$userAccount does not have MFA enabled"
+
+            # Create an instance of inner list object
+            $userUPNtemplate = [PSCustomObject]@{
+                UPN  = $userAccount
+                MFAStatus   = $false
+            }
+            # Add the list to user accounts MFA list
+            $userUPNsBadMFA += $userUPNtemplate
+
         }    
     }
 
