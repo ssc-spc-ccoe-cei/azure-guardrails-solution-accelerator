@@ -1,375 +1,376 @@
 ConvertFrom-StringData @'
 
-# French strings
+# English strings
 
-CtrName1 = GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS
-CtrName2 = GUARDRAIL 2: GÉRER L'ACCÈS
-CtrName3 = GUARDRAIL 3: SÉCURISER LES POINTS D'EXTRÉMITÉ
-CtrName4 = GUARDRAIL 4: COMPTES DE SURVEILLANCE DE L'ORGANISATION
-CtrName5 = GUARDRAIL 5: EMPLACEMENT DES DONNÉES
-CtrName6 = GUARDRAIL 6: PROTECTION DES DONNÉES INACTIVES
-CtrName7 = GUARDRAIL 7: PROTECTION DES DONNÉES EN TRANSIT
-CtrName8 = GUARDRAIL 8: SEGMENTER ET SÉPARER
-CtrName9 = GUARDRAIL 9: SERVICES DE SÉCURITÉ DES RÉSEAUX
-CtrName10 = GUARDRAIL 10: SERVICES DE CYBER DÉFENSE
-CtrName11 = GUARDRAIL 11: JOURNALISATION ET SURVEILLANCE
-CtrName12 = GUARDRAIL 12: CONFIGURATION DES MARCHÉS DE L'INFORMATIQUE EN NUAGE
-CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
+CtrName1 = GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES
+CtrName2 = GUARDRAIL 2: MANAGE ACCESS
+CtrName3 = GUARDRAIL 3: SECURE ENDPOINTS
+CtrName4 = GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS
+CtrName5 = GUARDRAIL 5: DATA LOCATION
+CtrName6 = GUARDRAIL 6: PROTECTION OF DATA-AT-REST
+CtrName7 = GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT
+CtrName8 = GUARDRAIL 8: SEGMENT AND SEPARATE
+CtrName9 = GUARDRAIL 9: NETWORK SECURITY SERVICES
+CtrName10 = GUARDRAIL 10: CYBER DEFENSE SERVICES
+CtrName11 = GUARDRAIL 11: LOGGING AND MONITORING
+CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
+CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 
 # Global
-isCompliant = Conforme.
-isNotCompliant = Non conforme.
+isCompliant = Compliant.
+isNotCompliant = Non-compliant.
 
 # Guardrail #1
-MSEntIDLicense = Type de licence Microsoft Entra ID
-mfaEnabledFor =  L'authentication MFA ne devrait pas être activée pour le compte brise-glace: {0} 
-mfaDisabledFor =  L'authentication MFA n'est pas activée pour {0} 
-gaAccntsMFACheck = AMF et compte pour des comptes d'administrateur général
+MSEntIDLicense = Microsoft Entra ID License Type
+mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
+mfaDisabledFor =  MFA Authentication is not enabled for {0}
+gaAccntsMFACheck = MFA and Count for Global Administrator Accounts
 
-globalAdminAccntsSurplus = Il doit y avoir cinq comptes d'administrateur général ou moins.
-globalAdminAccntsMinimum = Il n'y a pas assez de comptes d'administrateur général avec un état actif. La solution présume que vous utilisez des comptes d'administrateur général éligibles.
-allGAUserHaveMFA = Tous les comptes natifs d'administrateur général Azure ont été identifiés et sécurisés à l'aide d'au moins deux méthodes d'authentification.
-gaUserMisconfiguredMFA = Certains comptes natifs d'administrateur général Azure (un ou plusieurs) n'ont pas correctement configurés l'authentification multifacteur : {0}
+alertsMonitor = Alerts to Flag Misuse and Suspicious Activities
+signInlogsNotCollected = The SignInLogs are currently not enabled. SignInLogs must be enabled to monitor and log user sign-in activities in the environment.
+auditlogsNotCollected = The AuditLogs are currently not enabled. AuditLogs must be enabled to capture and log all significant audit events within the environment.
+noAlertRules = No alert rules were found for SignInLogs or AuditLogs for the resource group "{0}". Please ensure that alert rules are created and configured to monitor these logs for suspicious activities.
+noActionGroupsForBGaccts = No action groups were identified for Break Glass account sign-in activities. Action groups must be configured to receive alerts for Break Glass account sign-in attempts.
+noActionGroupsForAuditLogs = No action groups were found for Conditional Access Policy changes and updates. Action groups must be created to receive alerts for Conditional Access Policy changes and updates.
+noActionGroups = No action groups were configured for the resource group "{0}". Ensure that action groups are set up to receive alerts for the corresponding resource group's monitored activities.
+compliantAlerts = The alerts for Break Glass accounts and audit logs are compliant. Appropriate action groups have been configured and are correctly receiving alerts for each monitored activity.
+noAlertRuleforBGaccts = Create an alert for the Breakglass accounts using the SignInLogs. Missing one of the required alerts.
+NoAlertRuleforCaps = Create an alert for the Conditional Access Policy changes and updates using the AuditLogs. Missing one of the required alerts.
 
-alertsMonitor = Alertes pour signaler l'utilisation abusive et les activités suspectes
-signInlogsNotCollected = Les journaux de connexion « SignInLogs » ne sont actuellement pas activés. Les « SignInLogs » doivent être activés pour surveiller et enregistrer les activités de connexion des utilisateurs dans l'environnement.
-auditlogsNotCollected = Les journaux d'audit « AuditLogs » ne sont actuellement pas activés. Les « AuditLogs » doivent être activés pour capturer et enregistrer tous les événements d'audit significatifs dans l'environnement.
-noAlertRules = Aucune règle d'alerte n'a été trouvée pour les journaux de connexion « SignInLogs » ou les journaux d'audit « AuditLogs » pour le groupe de ressources « {0} ». Assurez-vous que des règles d'alerte sont créées et configurées pour surveiller ces journaux à la recherche d'activités suspectes.
-noActionGroupsForBGaccts = Aucun groupe d'action n'a été identifié pour les activités de connexion au compte de bris de verre. Les groupes d'action doivent être configurés pour recevoir des alertes en cas de tentatives de connexion au compte de bris de verre.
-noActionGroupsForAuditLogs = Aucun groupe d'action n'a été trouvé pour les modifications et les mises à jour de la politique d'accès conditionnel. Des groupes d'action doivent être créés pour recevoir des alertes pour les modifications et les mises à jour de la politique d'accès conditionnel.
-noActionGroups = Aucun groupe d'action n'a été configuré pour le groupe de ressources « {0} ». Assurez-vous que les groupes d'action sont configurés pour recevoir des alertes pour les activités surveillées du groupe de ressources correspondant.
-compliantAlerts = Les alertes pour les comptes de bris de verre et les journaux d'audit « AuditLogs » sont conformes. Les groupes d'action appropriés ont été configurés et reçoivent correctement des alertes pour chaque activité surveillée.
-noAlertRuleforBGaccts = Créez une alerte pour les comptes de bris de verre en utilisant « SignInLogs ». Il manque une des alertes requises.
-noAlertRuleforCaps = Créez une alerte pour les modifications et les mises à jour de la politique d'accès conditionnel en utilisant « AuditLogs ». Il manque une des alertes requises.
+globalAdminAccntsSurplus = There must be five or fewer global administrator accounts.
+globalAdminAccntsMinimum = There are not enough Global Administrator Accounts found with an active status. The solution is assuming that you are using eligible Global Administrator Accounts.
+allGAUserHaveMFA = All Azure native global administrator accounts have been identified and secured with at least two authentication methods.
+gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator accounts have not properly configured Multi-Factor Authentication (MFA): {0}
 
-allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
-allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
-allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
-allUsersHaveMFA = Tous les utilisateurs capables d'utiliser l'AMF ont l'AMF activée ({0}/{1})
-usersWithoutMFA = {0} sur {1} utilisateurs capables d'utiliser l'AMF n'ont pas l'AMF activée
-noMfaCapableUsers = Aucun utilisateur capable d'utiliser l'AMF trouvé
-noUsersFound = Aucun utilisateur trouvé dans le locataire
-evaluationError = L'évaluation a échoué en raison d'erreurs : {0}
+allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
+allUserAccountsMFACheck = All Cloud User Accounts MFA Check
+allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 
-userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF
-nativeUserNonMfa = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM). Il y a {0} jours depuis la dernière connexion.
-nativeUserNoSignIn = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM) et il n'a jamais été utilisé pour se connecter.
+# Added keys required by updated Check-AllUserMFARequired module (Issue495)
+# Keeping existing allUserHaveMFA; module references allUsersHaveMFA (plural) so add both.
+allUsersHaveMFA = All MFA capable users have MFA enabled ({0}/{1})
+usersWithoutMFA = {0} out of {1} MFA capable users do not have MFA enabled
+noMfaCapableUsers = No MFA capable users found
+noUsersFound = No users found in tenant
+evaluationError = Evaluation failed due to errors: {0}
 
-retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
-readOnlyLaw = Il manque un verrou en lecture seule pour l'espace de travail {0} [Log Analytics Workspace (LAW)] identifié. Ajoutez le verrou en lecture seule pour éviter des suppressions accidentelles.
-nonCompliantLaw = Le LAW {0} identifié ne correspond pas au fichier config.json.
-logsNotCollected = Tous les journaux requis ne sont pas collectés.
-gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur
-gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
+userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly
+nativeUserNonMfa = This native user account has not been set up with Multi-Factor Authentication (MFA). It has been {0} days since the last sign-in.
+nativeUserNoSignIn = This native user account has not been set up with Multi-Factor Authentication (MFA) and it has never been used to sign in.
 
-dedicatedAdminAccountsCheck = Comptes d'utilisateurs dédiés pour l'administration
-invalidUserFile = Mettez à jour le fichier {0} et répertoriez les noms principaux d'utilisateurs (UPN) de rôles à privilèges élevés et leurs UPN de rôle régulier.
-invalidFileHeader = Mettez à jour les en-têtes du fichier {0} et répertoriez les noms principaux d'utilisateurs (UPN) de rôles à privilèges élevés et leurs UPN de rôle régulier.
-dedicatedAdminAccNotExist = Il y a des utilisateurs privilégiés identifiés sans rôle hautement privilégié. Examinez les attributions de rôles « Administrateur général » et « Administrateur de rôle privilégié » dans l'environnement et assurez-vous qu'il existe des comptes d'utilisateurs dédiés pour les rôles hautement privilégiés.
-regAccHasHProle = Il y a des utilisateurs non privilégiés identifiés avec un rôle hautement privilégié. Examinez les attributions de rôles « Administrateur général » et « Administrateur de rôle privilégié » dans l'environnement et assurez-vous qu'il existe des comptes d'utilisateurs dédiés pour les rôles hautement privilégiés.
-dedicatedAccExist = Tous les administrateurs infonuagiques utilisent des comptes dédiés pour des rôles hautement privilégiés.
-bgAccExistInUPNlist = Des noms principaux d'utilisateurs (UPN) de bris de verre existent dans le fichier de .csv téléchargé. Examinez les comptes d'utilisateurs .csv fichier et supprimez les UPN du compte bris de verre.
-hpAccNotGA = Un ou plusieurs administrateurs hautement privilégiés identifiés dans le fichier .csv n'utilisent pas activement leurs attributions de rôle d'administrateur général pour le moment. Confirmez que ces utilisateurs disposent d'une attribution d'administrateur général éligible.
-dupHPAccount = Examinez les noms d'utilisateur principaux [User Principal Names (UPNs)] de compte à privilèges élevés fournis pour tout doublon. Supprimez tous les UPN, qui sont répétés.
-dupRegAccount = Examinez les noms d'utilisateur principaux [User Principal Names (UPNs)] de compte réguliers fournis pour tout doublon. Supprimez tous les UPN, qui sont répétés.
-missingHPaccUPN = Données manquantes dans la colonne « HP_admin_account_UPN ». Veuillez vous assurer que cette colonne est remplie avant de continuer.
-missingRegAccUPN = Données manquantes dans la colonne « regular_account_UPN ». Veuillez vous assurer que cette colonne est remplie avant de continue.
+retentionNotMet = The LAW {0} does not meet data retention requirements
+readOnlyLaw = The {0} LAW identified is missing a read-only lock. Add the read-only lock to prevent accidental deletions.
+nonCompliantLaw = The LAW {0} does not match the config.json file.
+logsNotCollected = Not all of the required logs are being collected.
+gcEventLogging = User Account GC Event Logging Check
+gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet this control's requirements.
+
+dedicatedAdminAccountsCheck = Dedicated user accounts for administration
+invalidUserFile = Update the {0} file and list the highly privileged role User Principal Names (UPNs) and their regular role UPNs.
+invalidFileHeader = Update the {0} file headers and list the highly privileged role User Principal Names (UPNs) and their regular role UPNs.
+dedicatedAdminAccNotExist = There are privileged users identified without a highly privileged role. Review 'Global Administrator' and 'Privileged Role Administrator' role assignments in the environment and ensure that there are dedicated user accounts for highly privileged roles. 
+regAccHasHProle = There are non-privileged users identified with a highly privileged role. Review 'Global Administrator' and 'Privileged Role Administrator' role assignments in the environment and ensure that there are dedicated user accounts for highly privileged roles.
+dedicatedAccExist = All Cloud Administrators are using dedicated accounts for highly privileged roles.
+bgAccExistInUPNlist = Break Glass (BG) User Principal Names (UPNs) exist in the uploaded .csv file. Review the user accounts .csv file and remove the Break Glass (BG) account UPNs.
+hpAccNotGA = One or more highly privileged administrators identified in the .csv file are not actively using their Global Administrator role assignments at this time. Confirm that these users have an Eligible Global Administrator Assignment.
+dupHPAccount = Review the highly privileged account User Principal Names (UPNs) provided for any duplicates. Remove any UPNs that are repeated.
+dupRegAccount = Review the regular account User Principal Names (UPNs) provided for any duplicates. Remove any UPNs that are repeated.
+missingHPaccUPN = Missing data in the 'HP_admin_account_UPN' column. Please ensure that this column is filled out before proceeding.
+missingRegAccUPN = Missing data in the 'regular_account_UPN' column. Please ensure that this column is filled out before proceeding.
 
 # GuardRail #2
-MSEntIDLicenseTypeFound = Type de licence Microsoft Entra ID trouvé 
-MSEntIDLicenseTypeNotFound = Type de licence requis Microsoft Entra ID non trouvé
-accountNotDeleted = Ce compte d'utilisateur a été supprimé mais n'a pas encore été SUPPRIMÉ DÉFINITIVEMENT d'Azure Microsoft Entra ID
-MSEntIDDeletedUser = Utilisateur Microsoft Entra ID Supprimé
-MSEntIDDisabledUsers = Utilisateur Microsoft Entra ID désactivé
-apiError = Erreur API
-apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
-compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
+MSEntIDLicenseTypeFound = Found correct license type
+MSEntIDLicenseTypeNotFound = Required Microsoft Entra ID license type not found
+accountNotDeleted = This user account has been deleted but has not yet been DELETED PERMANENTLY from Microsoft Entra ID
+MSEntIDDeletedUser =  Microsoft Entra ID Deleted User
+MSEntIDDisabledUsers = Microsoft Entra ID Disabled Users
+apiError = API Error
+apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
+compliantComment = Didnt find any unsynced deprecated users
 
-mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
-noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
-noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec Microsoft Entra ID: - 
+mitigationCommands = Verify is the users reported are deprecated.
+noncompliantComment = Total Number of non-compliant users {0}. 
+noncompliantUsers = The following Users are disabled and not synchronized with Microsoft Entra ID: -
 
-removeDeletedAccount = Supprimez définitivement les comptes supprimés
-removeDeprecatedAccount = Supprimez les comptes obsolètes
+removeDeletedAccount = Permanently remove deleted accounts
+removeDeprecatedAccount = Remove deprecated accounts
 
-privilegedAccountManagementPlanLifecycle = Plan de gestion des comptes privilégiés (Cycle de vie de la gestion des comptes)
-privilegedAccountManagementPlanLPRoleAssignment = Plan de gestion des comptes privilégiés (Attribution de rôle aux privilèges minimum)
+privilegedAccountManagementPlanLifecycle = Privileged Account Management Plan (Lifecycle of Account Management)
+privilegedAccountManagementPlanLPRoleAssignment = Privileged Account Management Plan (Least Privilege Role Assignment)
 
-onlineAttackCounterMeasures = Vérification de mesures pour contrer les attaques en ligne: Verrouillage et listes de mots de passe interdits
-onlineAttackNonCompliantC1 = Le seuil de verrouillage de compte ne respecte pas l'Orientation sur les mots de passe du GC.
-onlineAttackNonCompliantC2 = La liste des mots de passe interdits n'a pas été configurée dans cet environnement. Examinez l'Orientation sur les mots de passe du GC.
-onlineAttackIsCompliant = Le seuil de verrouillage de compte et la liste des mots de passe interdits répondent à l'Orientation sur les mots de passe du GC.
-onlineAttackNonCompliantC1C2 = Ni le verrouillage de compte ni la liste des mots de passe interdits ne répondent à l'Orientation sur les mots de passe du GC. Examinez et corrigez.
+onlineAttackCounterMeasures = Measures to Counter Online Attacks Check: Lockouts and Banned Password Lists
+onlineAttackNonCompliantC1 = The account lockout threshold does not meet the GC Password Guidance.
+onlineAttackNonCompliantC2 = The banned password list does not meet the GC Password Guidance.
+onlineAttackIsCompliant = The account lockout threshold and banned password list meets the GC Password Guidance. 
+onlineAttackNonCompliantC1C2 = Neither the accounts lockouts or the banned password list meets the GC Password Guidance. Review and remediate.
 
-noGuestAccounts = Il n'y a présentement aucun compte d'utilisateur invité dans votre environnement locataire.
-guestAccountsNoPermission = Il y a des comptes d'utilisateurs invités dans l'environnement locataire et ils n'ont aucune permission dans le(s) abonnement(s) Azure du locataire.
-guestAssigned = Ce compte d'utilisateur invité a une attribution de rôle dans le(s) abonnement(s) Azure du locataire.
-guestNotAssigned = Ce compte d'utilisateur invité n'a pas d'attribution de rôle dans les abonnement(s) Azure du locataire.
-existingGuestAccounts = Comptes d'utilisateurs invités existants
-existingGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités. Supprimez les comptes d'utilisateurs invités selon les procédures et les politiques ministérielles, au besoin.
+noGuestAccounts = There are currently no GUEST User Accounts in your tenant environment.
+guestAccountsNoPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions in the tenant's Azure subscription(s).
+guestAssigned = This GUEST User Account has a role assignment in the tenant's Azure subscriptions.
+guestNotAssigned = This GUEST User Account does not have any role assignment in the tenant's Azure subscription(s).
+existingGuestAccounts = Existing Guest User Accounts
+existingGuestAccountsComment = Review and validate the provided list of GUEST User Accounts. Remove GUEST User Accounts according to your departmental procedures and policies, as needed.
 
-guestAccountsNoPrivilegedPermission =  Il existe des comptes d'utilisateurs invités dans l'environnement locataire et ils ne disposent d'aucune autorisation considérée comme « privilégiée » au niveau de l'abonnement.
-existingPrivilegedGuestAccounts = Comptes d'utilisateurs invités privilégiés
-existingPrivilegedGuestAccountsComment = Examinez et validez la liste fournie des comptes d'utilisateurs invités privilégiés. Supprimez les comptes d'utilisateurs invités privilégiés selon les procédures et les politiques de votre ministère, au besoin.
-guestHasPrivilegedRole = Ce compte d'utilisateur invité a un ou plusieurs rôles privilégiés.
+guestAccountsNoPrivilegedPermission = There are GUEST User Accounts in the tenant environment and they do not have any permissions that are considered "privileged" at the Subscription level.
+existingPrivilegedGuestAccounts = Privileged Guest User Accounts
+existingPrivilegedGuestAccountsComment = Review and validate the provided list of Privileged GUEST User Accounts. Remove Privileged GUEST User Accounts according to your departmental procedures and policies, as needed.
+guestHasPrivilegedRole = This Guest user account has one or more privileged roles
 
-accManagementUserGroupsCheck = Gestion des comptes : Groupes d'utilisateurs
-userCountGroupNoMatch = Tous les utilisateurs n'ont pas été assignés à un groupe d'utilisateurs privilégiés ou non privilégiés.
-noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référence à l'un de vos groupes d'utilisateurs (privilégiés ou non privilégiés).
-userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des groupes d'utilisateurs ne sont pas nécessaires.
-userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
-reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
-userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
 
-riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
-nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
-nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés.
-nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
-compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
+accManagementUserGroupsCheck = Account Management: User Groups
+userCountGroupNoMatch = Not all users have been assigned to a privileged or non-privileged user group.
+noCAPforAnyGroups = None of the conditional access policies refer to one of your user groups (privileged or non-privileged).
+userCountOne = There is only one user in the environment. User groups are not required. 
+userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
+reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control.
+userNotInGroup = User is not associated with any user group.
 
-automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
-noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
-noInProgressAccessReview = L'environnement a au moins une révision d'accès de rôle planifiée pour les administrateurs généraux ou un autre rôle intégré Azure. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non commencée ». Créez une nouvelle révision d'accès d'administrateur général/rôle intégré Azure pour qu'elle se reproduise et soit « en cours ».
-noScheduledUserAccessReview = Il n'y a pas de révision d'accès automatisées récurrents ou actuels pour les rôles de répertoire « Microsoft Entra ID ». Assurez-vous que des révisions sont configurées pour se reproduire.
-compliantRecurrenceReviews = Les révisions d'accès existantes répondent aux exigences du contrôle.
-nonCompliantRecurrenceReviews = Une ou plusieurs révisions d'accès existantes ne répondent pas aux exigences de récurrence du contrôle. Assurez-vous que la révision automatisée est « en cours » et planifiée pour se reproduire.
+riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
+nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
+nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
+nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
+compliantC1C2 = Both conditional access policies have been configured.
 
-automatedRoleForGuests = Révisions automatisées des utilisateurs invités : Attributions de rôles et exigences d'accès
-noAutomatedAccessReviewForGuests = Il n'y a aucune révision d'accès automatisée configurée pour les comptes d'utilisateurs invités. Configurez une révision annuelle d'accès pour les utilisateurs invités.
-noInProgressGuestAccessReview = L'environnement a au moins une révision d'accès planifiée pour les utilisateurs invités. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non démarrée ». Créez une nouvelle révision d'accès invité planifiée pour se reproduire et soit « en cours ».
-noScheduledGuestAccessReview = L'environnement n'a pas de révision d'accès planifiées pour les utilisateurs invités. Configurez une révision d'accès d'utilisateur invité pour tous les groupes d'utilisateurs.
-compliantRecurrenceGuestReviews = Les révision d'accès d'invité existantes répondent aux exigences requises pour le contrôle.
+automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
+noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
+noInProgressAccessReview = The environment has at least one scheduled role access review for Global Administrators or another Azure built-in role. However, the access review has been identified as either 'completed' or 'not started'. Create a new Global Administrator/Azure built-in role access review to reoccur and be 'in progress'.
+noScheduledUserAccessReview = There are no recurring or current automated access reviews for Microsoft Entra ID directory roles. Ensure that reviews are set to recur.
+compliantRecurrenceReviews = Existing access reviews meet the requirements for the control.
+nonCompliantRecurrenceReviews = One or more existing Access Reviews do not meet the recurrence requirements for the control. Ensure the automated review is 'in progress' and scheduled to reoccur.
+
+automatedRoleForGuests = Automated Guest User Reviews: Role Assignments and Access Requirements
+noAutomatedAccessReviewForGuests = There are no automated access reviews configured for Guest User Accounts. Set up an annual access review for Guest Users.
+noInProgressGuestAccessReview = The environment has at least one scheduled access review for guest users. However, the access review has been identified as either 'completed' or 'not started'. Create a new guest access review to reoccur and be 'in progress'.
+noScheduledGuestAccessReview = The environment has no scheduled guest user access reviews. Configure a guest user access review for all user groups. 
+compliantRecurrenceGuestReviews = Existing guest access reviews meet the requirements for the control.
 
 
 # GuardRail #3
-noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
-allPoliciesAreCompliant=Toutes les politiques sont conformes.
-adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
-noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
-consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
+consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
+adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
+noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
+allPoliciesAreCompliant=All policies are compliant.
+noLocationsCompliant=No locations have only Canada in them.
 
-mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
-noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
-noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d'appareil activés avec des ressources cibles, des rôles d'administrateur inclus et activés.
-noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d'administrateur inclus et activés.
-hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
-noCompliantPoliciesAdmin = Aucune politique conforme n'a été trouvée pour les filtres d'appareils et les emplacements nommés/approuvés. Veuillez vous assurer qu'il existe au moins une politique pour chacun. Une pour les filtres d'appareil avec une ressource cible et l'autre pour les emplacements nommés/approuvés.
-
+mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
+noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
+noDeviceFilterPolicies = Missing a required conditional access policy. At least one policy needs to have device filters enabled with target resources, administrator roles included and enabled.
+noLocationFilterPolicies = Missing a required conditional access policy. At least one policy needs to check for named/trusted locations with administrator roles included and enabled.
+hasRequiredPolicies = Required conditional access policies for administrator access exist. 
+noCompliantPoliciesAdmin = No compliant policies found for device filters and named/trusted locations. Please ensure that there is at least one policy of each. One for device filters with a target resource and another for named/trusted locations.
 
 # GuardRail #4
-monitorAccount = Surveiller la création de compte
-checkUserExistsError = L'appel API a retourné l'erreur {0}. Veuillez vérifier si l'utilisateur existe.
-checkUserExists = Veuillez vérifier si l'utilisateur existe.
-ServicePrincipalNameHasNoReaderRole = SPN n'a pas de rôle de lecteur sur le groupe de gestion ROOT.
-ServicePrincipalNameHasReaderRole = SPN a le rôle de lecteur sur le groupe de gestion ROOT.
-ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN n'a pas de rôle d'administrateur de Marketplace.
-ServicePrincipalNameHasMarketPlaceAdminRole = SPN a pas le rôle d'administrateur de Marketplace.
-NoSPN = SPN n'existe pas. 
-SPNCredentialsCompliance = Statut de conformité des clés SPN
-SPNSingleValidCredential = SPN a une seule clé valide. {0}
-SPNMultipleValidCredentials = SPN a plusieurs clés valides. {0}
-SPNNoValidCredentials = SPN n'a pas de clés valides. {0}
+monitorAccount = Monitor Account Creation
+checkUserExistsError = API call returned Error {0}. Please Check if the user exists.
+checkUserExists = Please Check if the user exists.
+ServicePrincipalNameHasNoReaderRole = SPN doesnt have Reader Role on the ROOT Management Group.
+ServicePrincipalNameHasReaderRole = SPN has Reader Role on the ROOT Management Group.
+ServicePrincipalNameHasNoMarketPlaceAdminRole = SPN doesnt have Marketplace Admin Role on the Marketplace.
+ServicePrincipalNameHasMarketPlaceAdminRole = SPN has Marketplace Admin Role on the Marketplace.
+NoSPN = SPN doesnt exist.
+SPNCredentialsCompliance = SPN Credentials Compliance
 
-FinOpsToolStatus = Statut de l'outil FinOps
-SPNNotExist = Le principal de service 'CloudabilityUtilizationDataCollector' n'existe pas.
-SPNIncorrectPermissions = Le principal de service n'a pas le rôle de Lecteur requis.
-SPNIncorrectRoles = Le principal de service n'a pas les rôles requis d'Administrateur d'application cloud et de Lecteur de rapports.
-FinOpsToolCompliant = L'outil FinOps est conforme à toutes les exigences.
-FinOpsToolNonCompliant = L'outil FinOps n'est pas conforme. Raisons: {0}
+SPNSingleValidCredential = SPN has a single valid credential. {0}
+SPNMultipleValidCredentials = SPN has multiple valid credentials. {0}
+SPNNoValidCredentials = SPN has no valid credentials. {0}
+FinOpsToolStatus = FinOps Tool Status
+SPNNotExist = Service Principal 'CloudabilityUtilizationDataCollector' does not exist
+SPNIncorrectPermissions = Service Principal 'CloudabilityUtilizationDataCollector' does not have the required Reader role
+SPNIncorrectRoles = Service Principal does not have the required Cloud Application Administrator and Reports Reader roles.
+FinOpsToolCompliant = The FinOps tool is compliant with all requirements.
+FinOpsToolNonCompliant = The FinOps tool is not compliant. Reasons: {0}
 
 # GuardRail #5
-pbmmCompliance = Conformité PBMMPolicy
-policyNotAssigned = La politique ou l'initiative n'est pas affectée au {0}
-excludeFromScope = {0} est exclu de la portée de l'affectation
+pbmmCompliance = PBMMPolicy Compliance
+policyNotAssigned = The Policy or Initiative is not assigned to the {0}
+excludedFromScope = {0} is excluded from the scope of the assignment
 
-policyNotAssignedRootMG = La politique ou l'initiative n'est pas affectée aux groupes de gestion racine
-rootMGExcluded = Ce groupe de gestion racine est exclu de la portée de l'affectation
-subscription  = abonnement
-managementGroup = Groupes de gestion
-notAllowedLocation =  L'emplacement est en dehors des emplacements autorisés. 
-allowLocationPolicy = Politique de localisation autorisée
-dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
+policyNotAssignedRootMG = The Policy or Initiative is not assigned on the Root Management Groups
+rootMGExcluded =This Root Management Groups is excluded from the scope of the assignment
+subscription = subscription
+managementGroup = Management Groups
+notAllowedLocation =  Location is outside of the allowed locations. 
+allowedLocationPolicy = AllowedLocationPolicy
+dataAtRest = PROTECTION OF DATA-AT-REST
 
 
 # GuardRail #6
-pbmmApplied = L'initiative PBMM a été appliquée.
-pbmmNotApplied = L'initiative PBMM n'a pas été appliquée. Appliquez l'initiative PBMM.
-reqPolicyApplied = Toutes les politiques requises sont appliquées.
-reqPolicyNotApplied = L'initiative PBMM manque une ou quelques-unes des politiques sélectionnées pour l'évaluation. Consultez le Livre de jeu de correction pour plus d'informations.
-grExemptionFound = Supprimez l'exemption trouvée pour {0}. 
-grExemptionNotFound = Les définitions des politiques requises ne sont pas exemptées.
-noResource = Aucune ressource applicable à l'évaluation des politiques de l'initiative PBMM sélectionnée.
-allCompliantResources = Toutes les ressources sont conformes.
-allNonCompliantResources = Toutes les ressources ne sont pas conformes.
-hasNonComplianceResource = {0} des ressources {1} applicables ne sont pas conformes aux politiques sélectionnées. Suivez les recommandations de correction de Microsoft.
+pbmmApplied = PBMM initiative has been applied.
+pbmmNotApplied = PBMM initiative has not been applied. Apply the PBMM initiative.
+reqPolicyApplied = All required policies are applied.
+reqPolicyNotApplied = The PBMM initiative is missing one or a few of the selected policies for evaluation. Consult the remediation Playbook for more information.
+grExemptionFound = Remove the exemption found for {0}. 
+grExemptionNotFound = Required Policy Definitions are not exempt.
+noResource = No applicable resources for the selected PBMM Initiative's policies to evaluate.
+allCompliantResources = All resources are compliant.
+allNonCompliantResources = All resources are non-compliant.
+hasNonComplianceResource = {0} out of the {1} applicable resources are non-compliant against the selected policies. Follow the Microsoft remediation recommendations.
 
 
 # GuardRail #7
+appGatewayCertValidity = Application Gateway Certificate Validity
+noSslListenersFound = No SSL listener found/configured for Application Gateway: {0}. 
+expiredCertificateFound = Expired certificate found for listener '{0}' in Application Gateway '{1}'.
+unapprovedCAFound = Unapproved Certificate Authority (CA) found for listener '{0}' in Application Gateway '{1}'. Issuer: {2}.
+unableToProcessCertData = Unable to process certificate data for listener '{0}' in Application Gateway '{1}'. Error: {2}.
+unableToRetrieveCertData = Unable to retrieve certificate data for listener '{0}' in Application Gateway '{1}'.
+noHttpsBackendSettingsFound = No HTTPS backend settings found/configured for Application Gateway: {0}.
+manualTrustedRootCertsFound = Manual trusted root certificates found for Application Gateway '{0}', backend setting '{1}'.
+allBackendSettingsUseWellKnownCA = All backend settings for Application Gateway '{0}' use well‑known Certificate Authority (CA) certificates.
+noAppGatewayFound = No Application Gateways found in any subscription.
+allCertificatesValid = All certificates are valid and from approved Certificate Authorities (CAs).
+approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
+approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
+appServiceHttpsConfig = Azure App Service: HTTPS Application Configuration
 
-appGatewayCertValidity = Validité du certificat : Passerelle d'application
-noSslListenersFound = Aucun écouteur Secure Socket Layer (SSL) trouvé/configuré pour la passerelle d'application : {0}. 
-expiredCertificateFound = Certificat expiré trouvé pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
-unapprovedCAFound = Autorité de certification (AC) non approuvée trouvée pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Émetteur : {2}. 
-unableToProcessCertData = Incapable de traiter les données de certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'. Erreur : {2}. 
-unableToRetrieveCertData = Incapable de récupérer les données de certificat pour l'écouteur '{0}' dans la passerelle d'application '{1}'. 
-noHttpsBackendSettingsFound = Aucun paramètre principal HTTPS n'a été trouvé/configuré pour la passerelle d'application : {0}. 
-manualTrustedRootCertsFound = Certificats racines de confiance manuels trouvés pour la passerelle d'application '{0}', paramètre principal '{1}'. 
-allBackendSettingsUseWellKnownCA = Tous les paramètres principaux de la passerelle d'application '{0}' utilisent des certificats d'autorité de certification (AC) bien connus. 
-noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonnement.
-allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
-approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
-approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification.
-appServiceHttpsConfig = « Azure App Service » : Configuration d'application HTTPS
+dataInTransit = Secure Connections for Redis Cache and Storage Accounts
 
-dataInTransit = Connexions sécurisées pour les comptes de cache et de stockage Redis
+storageAccTLS12 = Storage Accounts TLS 1.2
+storageAccValidTLS = All storage accounts are using TLS1.2 or higher. 
+storageAccNotValidTLS= One or more storage accounts are using TLS1.1 or less. Update the storage accounts to TLS1.2 or higher.
+storageAccNotValidList = The following storage accounts are not valid: {0}
 
-storageAccTLS12 = Comptes de stockage TLS 1.2
-storageAccValidTLS = Tous les comptes de stockage utilisent TLS1.2 ou version ultérieure. 
-storageAccNotValidTLS = Un ou plusieurs comptes de stockage utilisent TLS1.1 ou une version antérieure. Mettez à jour les comptes de stockage vers TLS1.2 ou version ultérieure.
-storageAccNotValidList = Les comptes de stockage suivants ne sont pas valides: {0}
+functionAppHttpsConfig = Azure Functions: HTTPS Application Configuration
 
-functionAppHttpsConfig = « Azure Functions » : Configuration d'application HTTPS
+appServiceTLSConfig = Azure App Service TLS Configuration
+functionAppTLSConfig = Azure Functions App TLS Configuration
+sqlDbTLSConfig = Azure SQL Database TLS Configuration
+appGatewayWAFConfig = Application Gateway WAF TLS Configuration
+policyNotConfigured = Required policy is not assigned at tenant level. Please assign the policy to ensure compliance.
+policyCompliant = All resources are compliant with the required policy.
+policyNotCompliant = Resource is not compliant with the required policy. Please review and remediate.
+policyHasExemptions = Policy has exemptions configured. All resources must be evaluated by this policy.
+policyNoApplicableResources = No applicable resources found. Policy is assigned at tenant level.
 
-appServiceTLSConfig = Configuration TLS pour « Azure App Service »
-functionAppTLSConfig = Configuration TLS pour « Azure Functions App »
-sqlDbTLSConfig = Configuration TLS pour « Azure SQL Database »
-appGatewayWAFConfig = Configuration TLS pour « Application Gateway WAF »
-policyNotConfigured = La politique requise n'est pas attribuée au niveau du locataire. Veuillez attribuer la politique pour assurer la conformité.
-policyCompliant = Toutes les ressources sont conformes à la politique requise.
-policyNotCompliant = La ressource n'est pas conforme à la politique requise. Veuillez la réviser et la remédier.
-policyHasExemptions = La politique a des exemptions configurées. Toutes les ressources doivent être évaluées par cette politique.
-policyNoApplicableResources = Aucune ressource applicable trouvée. La politique est attribuée au niveau du locataire.
 
 # GuardRail #8
-noNSG=Aucun NSG n'est présent.
-subnetCompliant = Le sous-réseau est conforme.
-nsgConfigDenyAll = NSG est présent mais n'est pas correctement configuré (dernière règle de refus manquante).
-nsgCustomRule = NSG est présent mais n'est pas correctement configuré (règles personnalisées manquantes).
+noNSG=No NSG is present.
+subnetCompliant = Subnet is compliant.
+nsgConfigDenyAll = NSG is present but not properly configured (Missing Deny all last Rule).
+nsgCustomRule = NSG is present but not properly configured (Missing Custom Rules).
 networkSegmentation = Segmentation
-networkSeparation = Séparation
-routeNVA = Route présente mais non dirigée vers une appliance virtuelle.
-routeNVAMitigation = Mettre à jour la route pour pointer vers une appliance virtuelle
-noUDR = Aucune route définie par l'utilisateur configurée.
-noUDRMitigation = Veuillez appliquer une route personnalisée à ce sous-réseau, pointant vers une appliance virtuelle.
+networkSeparation = Separation
+routeNVA = Route present but not directed to a Virtual Appliance.
+routeNVAMitigation = Update the route to point to a virtual appliance
+noUDR = No User defined Route configured.
+noUDRMitigation = Please apply a custom route to this subnet, pointing to a virtual appliance.
 subnetExcludedByTag = Subnet '{0}' is excluded from compliance because VNET '{1}' has tag '{2}' with a value of 'true'
 subnetExcludedByReservedName = Subnet '{0}' is excluded from compliance because its name is in the reserved subnet list '{1}'
 subnetExcludedByVNET = Subnet '{0}' is not being checked for compliance because the VNET '{1}' has tag '{2}' with a value of 'true'
-networkDiagram = Diagramme d'architecture réseau
-highLevelDesign = Documentation de Conception de haut niveau
-noSubnets = Aucun sous-réseau n'est présent.
-cloudInfrastructureDeployGuide = Guide de déploiement de l'infrastructure cloud ou détails de la zone d'atterrissage applicable
+networkDiagram = Network architecture diagram
+highLevelDesign = High level design documentation
+noSubnets = No subnets found in the subscription.
+cloudInfrastructureDeployGuide = Cloud Infrastructure Deployment Guide or Applicable Landing Zone Details
 
 # GuardRail #9
-ddosEnabled = Protection DDos activée. 
-ddosNotEnabled = Protection DDos non activée.
+ddosEnabled=DDos Protection Enabled. 
+ddosNotEnabled=DDos Protection not enabled.
 
-networkWatcherEnabled=Network Watcher existe pour la région '{0}'
-networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
-noVNets = Aucun VNet n'est présent.
-vnetDDosConfig = Configuration DDos VNet
+networkWatcherEnabled=Network Watcher exists for region '{0}'
+networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
+noVNets = No VNet found in the subscription.
 vnetExcludedByParameter = VNet '{0}' is excluded from compliance because it is in the excluded VNet list '{1}'
 vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{1}' with a value of 'true'
-networkWatcherConfig = Configuration de Network Watcher
-networkWatcherConfigNoRegions = En raison d'aucun VNETs ou de tous les VNETs étant exclus, il n'y a aucune région pour vérifier la configuration de Network Watcher
-noFirewallOrGateway = Cet abonnement n'a pas de pare-feu ni de passerelle d'application en utilisation.
-noFirewallOrGatewayCompliant = Cet abonnement est conforme en raison de la présence d'un pare-feu ou d'une passerelle d'application (avec un pare-feu d'application Web) dans un autre abonnement. Assurez-vous que cet abonnement achemine/route les adresses IP sources correctement.
-wAFNotEnabled = La passerelle d'application attribuée n'a pas de pares-feux d'application Web (WAF) configuré. Activez un WAF sur la passerelle d'application.
-firewallFound = Il y a un {0} associé à cet abonnement.
-wAFEnabled = Il y a une passerelle d'application associée à cet abonnement avec les configurations appropriées.
-networkSecurityTools = Outils utilisés pour limiter l'accès aux adresses IP sources autorisées
-networkInterfaceIPs = Politique de limitation des adresses IP publiques
-
-policyNoApplicableResourcesSub = La politique est attribuée au niveau de l'abonnement. Aucune ressource applicable n'a été trouvée. 
-policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonnement : {0}. Veuillez attribuer la politique pour assurer la conformité.
+vnetDDosConfig = VNet DDos configuration
+networkWatcherConfig = VNet Network Watcher configuration
+networkWatcherConfigNoRegions = Either due to no VNETs or all VNETs being excluded, there are no regions to check for Network Watcher configuration
+noFirewallOrGateway = This subscription does not have a firewall or an application gateway in use.
+noFirewallOrGatewayCompliant = This subscription is compliant due to the presence of a Firewall, or a Application Gateway (with a Web Application Firewall) in another subscription. Ensure that this subscription is routing source IP Addresses appropriately.
+wAFNotEnabled = The application gateway assigned does not have configured Web Application Firewalls (WAFs). Enable a WAF on the application gateway.
+firewallFound = There is a {0} associated to this subscription.
+wAFEnabled = There is an application gateway associated to this subscription with the appropriate configurations.
+networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP Addresses
+networkInterfaceIPs = Policy for Limiting Public IPs
+policyNoApplicableResourcesSub = Policy is assigned at the subscription level. No applicable resources found
+policyNotConfiguredSub = Required policy is not assigned to this subscription: {0}. Please assign the policy to ensure compliance.
 
 # GuardRail #10
-cbsSubDoesntExist = L'abonnement CBS n'existe pas
-cbcSensorsdontExist = Les capteurs CBC attendus n'existent pas
-cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
-cbssCompliant = Ressources trouvées dans ces abonnements: 
+cbsSubDoesntExist = CBS Subscription doesnt exist
+cbcSensorsdontExist = The expected CBC sensors do not exist
+cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
+cbssCompliant = Found resources in these subscriptions: 
 
 # GuardRail #11
-serviceHealthAlerts = Alertes de santé du service et vérification des événements
+serviceHealthAlerts = Service Health Alerts and Events Check
 
-createLAW = Veuillez créer un espace de travail d'analyse de journaux conformément aux directives.
-connectAutoAcct = Veuillez connecter un compte d'automatisation à l'espace de travail fourni.
-setRetention60Days = Définir la rétention de l'espace de travail sur au moins 90 jours pour l'espace de travail: 
-setRetention730Days = Définir la rétention de l'espace de travail à 730 jours pour l'espace de travail: 
-addActivityLogs = Veuillez ajouter la solution Activity Logs à l'espace de travail: 
-addUpdatesAndAntiMalware = Veuillez ajouter à la fois la solution Mises à jour et Anti-Malware à l'espace de travail: 
-configTenantDiag = Veuillez configurer les diagnostics de locataire pour qu'ils pointent vers l'espace de travail fourni: 
-addAuditAndSignInsLogs = Veuillez activer les journaux d'audit et SignInLogs dans les paramètres de Tenant Dianostics.
+createLAW = Please create a log analytics workspace according to guidelines.
+connectAutoAcct = Please connect an automation account to the provided workspace.
+setRetention730Days = Set retention of the workspace to 730 days for workspace: 
+addActivityLogs = Please add the Activity Logs solution to the workspace: 
+addUpdatesAndAntiMalware = Please add the both the Updates and Anti-Malware solution to the workspace: 
+configTenantDiag = Please configure the Tenant diagnostics to point to the provided workspace: 
+addAuditAndSignInsLogs = Please enable Audit Logs and SignInLogs in the Tenant Dianostics settings.
 
-logsAndMonitoringCompliantForDefender = Les journaux et la surveillance sont conformes pour Defender.
-createHealthLAW = Veuillez créer un espace de travail pour la surveillance de la santé conformément aux directives de Guardrails.
-enableAgentHealthSolution = Veuillez activer la solution d'évaluation de l'état de santé de l'agent dans l'espace de travail.
-lawEnvironmentCompliant = L'environnement est conforme.
+logsAndMonitoringCompliantForDefender = The Logs and Monitoring are compliant for Defender.
+createHealthLAW = Please create a workspace for Health Monitoring according to the Guardrails guidelines.
+enableAgentHealthSolution = Please enable the Agent Health Assessment solution in the workspace.
+lawEnvironmentCompliant = The environment is compliant.
 
-setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
-setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
+setSecurityContact = Please set a security contact for Defender for Cloud in the subscription. {0}
+setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 
-noServiceHealthActionGroups = Il manque un groupe d'action pour les alertes de santé du service « Service Health Alerts » associées à l'abonnement : {0}
-NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour tous les abonnements. Assurez-vous que les alertes d'état du service sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
-EventTypeMissingForAlert = L'alerte manque un type d'événement requis (problème de service, avis de santé ou avis de sécurité) « Service Issue, Health Advisory or Security Advisory » pour l'abonnement : {0}
-noServiceHealthAlerts = Ne peut pas récupérer les alertes configurées pour l'abonnement : "{0}". Assurez-vous que les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
-nonCompliantActionGroups = Toutes les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements. Par contre, tous les groupes d'action associés ne sont pas configurés correctement. Au moins deux adresses de courriel ou propriétaires d'abonnement sont requis pour le groupe d'action.
-compliantServiceHealthAlerts = Les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et le groupe d'action associé à l'alerte a au moins deux contacts différents.
+noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}
+NotAllSubsHaveAlerts = Not all subscriptions have Service Health Alerts enabled.
+EventTypeMissingForAlert = Missing a required event type (Service Issue, Health Advisory, or Security Advisory) for the subscription: {0}
+noServiceHealthAlerts = Could not retrieve any configured alerts for the subscription: "{0}". Ensure all subscriptions have Service Health Alerts configured and the action group associated to the alert  has at least two different contacts.
+nonCompliantActionGroups = All subscriptions have Service Health Alerts, but not all action groups are correctly configured. A minimum of two email addresses or subscription owners are required for the action group.
+compliantServiceHealthAlerts = All subscriptions have Service Health Alerts, and the action group has at least two different contacts.
 
-monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
+msDefenderChecks = Microsoft Defender for Cloud Alerts and Events Check
+NotAllSubsHaveDefenderPlans = The following subscription(s) lack a defender plan: {0}. Enable Defender monitoring for all subscriptions.
+errorRetrievingNotifications = Defender alert notifications for the subscription(s) are not configured. Ensure they match the Remediation Guidance requirements.
+EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription {0} do not include at least two email addresses or subscription owners. Configure this to ensure alerts are sent correctly.
+AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set the severity to Medium or Low and review the Remediation Guidance.
+AttackPathNotificationNotConfigured = Defender alerts must include attack path notifications. Ensure that the severity is set to Medium or Low for each subscription's alerts, following the guidelines provided in the Remediation Guidance.
+DefenderCompliant = MS Defender for Cloud is enabled for all subscriptions, and email notifications are properly configured.
 
-msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
-NotAllSubsHaveDefenderPlans = Le(s) abonnement(s) suivant(s) n'a/n'ont pas de plan MS Defender : {0} . Activez la surveillance MS Defender pour tous les abonnements.
-errorRetrievingNotifications = Les notifications d'alerte MS Defender pour le ou les abonnements ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
-EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement {0} n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
-AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
-AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
-DefenderCompliant = MS Defender pour l'infonuagique est activé pour tous les abonnements et les notifications par courriel sont correctement configurées.
+monitoringChecklist = Monitoring Checklist: Use Cases
 
 # GuardRail #12
-mktPlaceCreation = Création Place de marché
-mktPlaceCreatedEnabled = Le marché privé a été créé et activé.
-mktPlaceCreatedNotEnabled = Le marché privé a été créé, mais n'est pas activé.
-mktPlaceNotCreated = Le marché privé n'a pas été créé.
-enableMktPlace = Activer Azure Private MarketPlace selon: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
+mktPlaceCreation = MarketPlaceCreation
+mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
+mktPlaceCreatedNotEnabled = The Private Marketplace has been created but not enabled.
+mktPlaceNotCreated = The Private Marketplace has not been created.
+enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft.com/en-us/marketplace/create-manage-private-azure-marketplace-new
 
 # Guardrail #13
-bgMSEntID = Attribution Bris de Verre Microsoft Entra ID P2
-bgProcedure = Procédure de compte de bris de verre
-bgCreation = Création de compte Brise Glace
+bgMSEntID = Break Glass Microsoft Entra ID P2
+bgProcedure = Break Glass Account Procedure
+bgCreation = Break Glass account Creation
 
-bgAccountOwnerContact = Coordonnées des titulaires de compte Brise Glace
-bgAccountsCompliance = Statut de conformité du premier compte brise-glace = {0}, Statut de conformité du deuxième compte brise-glace = {1}
-bgAccountsCompliance2 = Les deux comptes sont identiques, veuillez vérifier le fichier config.json
-bgAuthenticationMeth =  Méthodes d'authentification 
-firstBgAccount = Premier compte brise-glace
-secondBgAccount = Deuxième compte brise-glace
-bgNoValidLicenseAssigned = Aucune licence Microsoft Entra ID P2 assignée au 
-bgValidLicenseAssigned =  a une licence Microsoft Entra ID P2 valide
-bgAccountHasManager = Le compte BG {0} a un responsable
-bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire 
-bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
+bgAccountOwnerContact = Break Glass Account Owners Contact information
+bgAccountsCompliance = First Break Glass Account Compliance status = {0}, Second Break Glass Account Compliance status = {1}
+bgAccountsCompliance2 = Both accounts are identical, please check the config.json file
+bgAuthenticationMeth =  Authentication Methods 
+firstBgAccount = First Break Glass Account
+secondBgAccount = Second Break Glass Account
+bgNoValidLicenseAssigned = No Microsoft Entra ID P2 license assigned to
+bgValidLicenseAssigned =  has a valid Microsoft Entra ID P2 assigned
+bgAccountHasManager = BG Account {0} has a Manager
+bgAccountNoManager = BG Account {0} doesn't have a Manager 
+bgBothHaveManager = Both BreakGlass accounts have manager
 
-bgValidSignature = Signatures et approbations valides pour la procédure de compte de bris de verre
-bgAccountTesting = Cadence des tests des comptes de bris de verre
-bgAccountNotExist = Un ou les deux noms d'utilisateur principal (UPN) du compte de bris de verre fournis n'existent pas dans l'environnement. Vérifiez l'exactitude des UPN du compte de bris de verre fournis.
-bgAccountLoginNotValid = La dernière connexion aux comptes de bris de verre fournis est plus qu'un an. Assurez-vous d'effectuer des tests réguliers de la procédure du compte de bris de verre et du processus de connexion.
-bgAccountLoginValid = La dernière connexion pour les comptes de bris de verre est moins d'un an. Assurez-vous d'effectuer des tests réguliers de la procédure de bris de verre et du processus de connexion.
+bgValidSignature = Valid Signatures and Approvals for Break Glass Account Procedure
+bgAccountTesting = Break Glass Account Testing Cadence
+bgAccountNotExist = One or both of the Break Glass Account User Principal Names (UPNs) provided do not exist in the environment. Review the provided Break Glass Account UPNs for accuracy.
+bgAccountLoginNotValid = Last login for the provided Break Glass Accounts is greater than a year. Ensure regular testing of the Break Glass Account procedure and login process.
+bgAccountLoginValid = Last login for the provided Break Glass Accounts is within a year. Ensure regular testing of the Break Glass Account procedure and login process.
 
 # GR-Common
-procedureFileFound = Conforme. Le fichier requis a été téléchargé pour examen par les évaluateurs de Conformité à la sécurité infonuagique. « {0} » trouvé.
-procedureFileNotFound = Non conforme. N'a pas trouvé « {0} » créer et télécharger le fichier approprié dans le conteneur « {1} » dans le compte de stockage « {2} » pour devenir conforme.
-procedureFileNotFoundWithCorrectExtension = Non conforme. Fichier « nomdeFichier » « fileName » '{0}' requis trouvé. Par contre, l'extension n'est pas prise en charge. Créez et téléchargez le fichier approprié dans le conteneur « {1} » dans le compte de stockage « {2} » pour devenir conforme.
+procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.
+procedureFileNotFound = Non-compliant. Could not find '{0}'. Create and upload the appropriate file in Container '{1}' in Storage Account '{2}' to become compliant.
+procedureFileNotFoundWithCorrectExtension = Non-compliant. Required fileName '{0}' found. However, the extension is not supported. Create and upload the appropriate file in Container '{1}' in Storage Account '{2}' to become compliant.
 
-procedureFileDataInvalid = Le(s) fichier(s) d'administrateur général contiennent des noms principaux d'utilisateur non valides. Assurez-vous que les noms principaux d'utilisateur commencent par un trait d'union et tapez chacun d'eux sur une nouvelle ligne.
-globalAdminFileFound = Fichier {0} trouvé dans le conteneur.
-globalAdminFileNotFound = N'a pas trouvé de document pour {0}, veuillez créer et télécharger un fichier avec le nom '{1}' dans le conteneur '{2}' sur le compte de stockage '{3}' pour confirmer que vous avez terminé l'élément dans le contrôle.
-globalAdminFileEmpty =  Fichier vide {0} trouvé dans le conteneur.
-globalAdminNotExist = Comptes d'administrateur général non trouvés ou déclarés dans le fichier {0}.
-globalAdminMFAPassAndMin2Accnts = Deux comptes d'administrateur général ou plus ont été identifiés et l'authentification multifacteur est activée pour chacun d'eux.
-globalAdminMinAccnts = Il doit y avoir au moins deux comptes d'administrateur général.
+procedureFileDataInvalid = The global administrator file(s) contain(s) invalid User Principal Names (UPNs). Ensure that UPNs start with a hyphen, and type each of them on a new line.
+globalAdminFileFound = File {0} found in Container.
+globalAdminFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
+globalAdminFileEmpty = Empty file {0} found in Container.
+globalAdminNotExist = Global Administrator accounts not found or declared in file {0}.
+globalAdminMFAPassAndMin2Accnts = Two or more global administrator accounts have been identified, and multi-factor authentication (MFA) is enabled for all of them.
+globalAdminMinAccnts = There must be at least two global administrator accounts.
 
-globalAdminAccntsMFADisabled1 = Le compte suivant: {0} n'a pas d'authentification multifacteur activée
-globalAdminAccntsMFADisabled2 =  Les comptes suivants: {0} n'ont pas d'authentification multifacteur activée 
-globalAdminAccntsMFADisabled3 = Aucun des comptes d'administrateur général n'a l'authentification multifacteur activée 
+globalAdminAccntsMFADisabled1 = The following account: {0} does not have multi-factor authentication (MFA) enabled
+globalAdminAccntsMFADisabled2 = The following accounts: {0} do not have multi-factor authentication (MFA) enabled 
+globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled 
 
 '@
