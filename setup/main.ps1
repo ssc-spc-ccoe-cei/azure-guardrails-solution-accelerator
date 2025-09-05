@@ -258,7 +258,7 @@ foreach ($module in $modules) {
             #$results.ComplianceResults
             #$results.Add("Required", $module.Required)
             #Write-Output "required in module: $($module.Required)."
-            $results
+            #$results
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
             
             #Write-Output "required in results: $($results.Required)."
