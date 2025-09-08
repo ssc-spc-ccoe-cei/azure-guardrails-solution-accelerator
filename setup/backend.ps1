@@ -113,9 +113,52 @@ If ($lighthouseTargetManagementGroupID) {
 
     $registerJobs = @()
     ForEach ($job in $queryJobs) {
-        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
-		Write-Output "JobData: $($jobData | convertto-json)"
-        $subscriptionId = $jobData.id.split('/')[2]
+        if ($job.JobStateInfo.State -ne 'Completed') {
+            Write-Warning "Query job not completed (state: $($job.JobStateInfo.State)); skipping"
+            continue
+        }
+
+        $content = $job | Receive-Job | Select-Object -ExpandProperty Content -ErrorAction SilentlyContinue
+        if ([string]::IsNullOrWhiteSpace([string]$content)) {
+            Write-Warning "Query job returned empty content; skipping"
+            continue
+        }
+
+        try {
+            $jobData = $content | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Query job content is not valid JSON; skipping. Error: $_"
+            continue
+        }
+
+		Write-Verbose "JobData: $($jobData | ConvertTo-Json -Depth 5)"
+        
+        # Guard against null or error responses
+        if ($null -eq $jobData) {
+            Write-Warning "Job returned null data; skipping"
+            continue
+        }
+        
+        if ($jobData.PSObject.Properties['error'] -and $jobData.error) {
+            $errMsg = $null
+            if ($jobData.error.PSObject.Properties['message'] -and $jobData.error.message) { $errMsg = $jobData.error.message }
+            Write-Warning "API returned error: $errMsg"
+            continue
+        }
+        
+        if (-not ($jobData.PSObject.Properties['id'] -and $jobData.id -and -not [string]::IsNullOrWhiteSpace([string]$jobData.id))) {
+            Write-Warning "API response missing or empty 'id'; skipping"
+            continue
+        }
+        
+        if ($jobData.id -match '^/subscriptions/([^/]+)') {
+            $subscriptionId = $Matches[1]
+        }
+        else {
+            Write-Warning "Unparsable 'id' format in API response; skipping"
+            continue
+        }
 
         If ($jobData.registrationState -notin ('Registered','Registering')) {
             Write-Warning "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register"
@@ -135,9 +178,52 @@ If ($lighthouseTargetManagementGroupID) {
     $registerJobs | Wait-Job -Timeout (New-TimeSpan -Minutes 15).TotalSeconds
 
     ForEach ($job in $registerJobs) {
-        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
-		Write-Output "JobData: $($jobData | convertto-json)"
-        $subscriptionId = $jobData.id.split('/')[2]
+        if ($job.JobStateInfo.State -ne 'Completed') {
+            Write-Warning "Registration job not completed (state: $($job.JobStateInfo.State)); skipping"
+            continue
+        }
+
+        $content = $job | Receive-Job | Select-Object -ExpandProperty Content -ErrorAction SilentlyContinue
+        if ([string]::IsNullOrWhiteSpace([string]$content)) {
+            Write-Warning "Registration job returned empty content; skipping"
+            continue
+        }
+
+        try {
+            $jobData = $content | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Registration job content is not valid JSON; skipping. Error: $_"
+            continue
+        }
+
+		Write-Verbose "JobData: $($jobData | ConvertTo-Json -Depth 5)"
+        
+        # Guard against null or error responses
+        if ($null -eq $jobData) {
+            Write-Warning "Registration job returned null data; skipping"
+            continue
+        }
+        
+        if ($jobData.PSObject.Properties['error'] -and $jobData.error) {
+            $errMsg = $null
+            if ($jobData.error.PSObject.Properties['message'] -and $jobData.error.message) { $errMsg = $jobData.error.message }
+            Write-Warning "Registration API returned error: $errMsg"
+            continue
+        }
+        
+        if (-not ($jobData.PSObject.Properties['id'] -and $jobData.id -and -not [string]::IsNullOrWhiteSpace([string]$jobData.id))) {
+            Write-Warning "Registration API response missing or empty 'id'; skipping"
+            continue
+        }
+        
+        if ($jobData.id -match '^/subscriptions/([^/]+)') {
+            $subscriptionId = $Matches[1]
+        }
+        else {
+            Write-Warning "Registration API response has unparsable 'id' format; skipping"
+            continue
+        }
 
         Write-Output "Checking on Lighthouse RP registration job status for subscription '$subscriptionId...'"
         If ($job.error) {
