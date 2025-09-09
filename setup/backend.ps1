@@ -132,7 +132,7 @@ If ($lighthouseTargetManagementGroupID) {
             continue
         }
 
-		Write-Information "JobData: $($jobData | ConvertTo-Json -Depth 5)"
+		Write-Output "JobData: $($jobData | ConvertTo-Json -Depth 5)"
         
         # Guard against null or error responses
         if ($null -eq $jobData) {
@@ -197,7 +197,7 @@ If ($lighthouseTargetManagementGroupID) {
             continue
         }
 
-		Write-Information "JobData: $($jobData | ConvertTo-Json -Depth 5)"
+		Write-Output "JobData: $($jobData | ConvertTo-Json -Depth 5)"
         
         # Guard against null or error responses
         if ($null -eq $jobData) {
