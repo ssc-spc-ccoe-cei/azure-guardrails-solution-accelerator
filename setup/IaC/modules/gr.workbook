@@ -62,8 +62,7 @@
             },
             "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "2023-01-16 19:55:14"
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
@@ -202,10 +201,10 @@
     {
       "type": 3,
       "content": {
-    "version": "KqlItem/1.0",
-  "query": "// Custom GR1 query with MFA fallback logic (temporary until ingestion fixed)\n// Updated: Determines compliance when ALL users have MFA enabled (not only MFA-capable subset).\nlet run = '{RunTime}';\nlet showRec = '{RequiredYesNo}';\nlet ctrlprefix = 'GUARDRAIL 1';\n// Collect user MFA statistics (all users + capability + registrations)\nlet mfastats = GuardrailsUserRaw_CL\n| where ReportTime_s == run\n| summarize AllUsers=count(), Capable=countif(isMfaCapable_b==true), Registered=countif(isMfaRegistered_b==true);\nlet AllUsers = toscalar(mfastats | project AllUsers);\nlet Capable = toscalar(mfastats | project Capable);\nlet Registered = toscalar(mfastats | project Registered);\nlet AllNonRegistered = AllUsers - Registered;\n// Compliance: ✔️ if every user has MFA enabled (Registered == AllUsers and AllUsers > 0).\nlet dStatus = iff(AllUsers==0,'➖', iff(AllNonRegistered==0,'✔️','❌'));\n// Build detailed comment. Include note about users not yet MFA-capable when that reduces denominator for capability metrics.\nlet capabilityNote = iff(Capable < AllUsers and AllUsers>0, strcat(' Note: ', AllUsers-Capable, ' user(s) not yet MFA-capable.'), '');\nlet dComments = case(\n    AllUsers==0, 'No users found',\n    AllNonRegistered==0, strcat('All users have MFA enabled (', Registered, '/', AllUsers, ').', capabilityNote),\n    strcat(AllNonRegistered,' out of ', AllUsers, ' users do not have MFA enabled (', Registered,' enabled).', capabilityNote)\n);\nlet itsgcodes = GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == run and Required_s != tostring(showRec)\n| where TimeGenerated > ago(24h)\n| join kind=inner (itsgcodes) on itsgcode_s\n| extend BaseItemName = ItemName_s\n| extend ItemName = strcat(ItemName_s, iff(Required_s==\"False\", \" (R)\", \" (M)\"))\n| extend Status = case(ComplianceStatus_b == true, '✔️', ComplianceStatus_b == false, '❌', '➖')\n| extend Comments = iff(BaseItemName == 'All Cloud User Accounts MFA Check' and isempty(Comments_s) and isnotempty(dComments), dComments, Comments_s)\n| extend Status = iff(BaseItemName == 'All Cloud User Accounts MFA Check' and isnotempty(dStatus), dStatus, Status)\n| project ItemName, Comments, Status, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,' ',''),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d','')), tostring(toint(column_ifexists('Profile_d',''))),'')\n| sort by ItemName asc",
+        "version": "KqlItem/1.0",
+        "query": "// Custom GR1 query with MFA fallback logic (temporary until ingestion fixed)\n// Updated: Determines compliance when ALL users have MFA enabled (not only MFA-capable subset).\nlet run = '{RunTime}';\nlet showRec = '{RequiredYesNo}';\nlet ctrlprefix = 'GUARDRAIL 1';\n// Collect user MFA statistics (all users + capability + registrations)\nlet mfastats = GuardrailsUserRaw_CL\n| where ReportTime_s == run\n| summarize AllUsers=count(), Capable=countif(isMfaCapable_b==true), Registered=countif(isMfaRegistered_b==true);\nlet AllUsers = toscalar(mfastats | project AllUsers);\nlet Capable = toscalar(mfastats | project Capable);\nlet Registered = toscalar(mfastats | project Registered);\nlet AllNonRegistered = AllUsers - Registered;\n// Compliance: ✔️ if every user has MFA enabled (Registered == AllUsers and AllUsers > 0).\nlet dStatus = iff(AllUsers==0,'➖', iff(AllNonRegistered==0,'✔️','❌'));\n// Build detailed comment. Include note about users not yet MFA-capable when that reduces denominator for capability metrics.\nlet capabilityNote = iff(Capable < AllUsers and AllUsers>0, strcat(' Note: ', AllUsers-Capable, ' user(s) not yet MFA-capable.'), '');\nlet dComments = case(\n    AllUsers==0, 'No users found',\n    AllNonRegistered==0, strcat('All users have MFA enabled (', Registered, '/', AllUsers, ').', capabilityNote),\n    strcat(AllNonRegistered,' out of ', AllUsers, ' users do not have MFA enabled (', Registered,' enabled).', capabilityNote)\n);\nlet itsgcodes = GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == run and Required_s != tostring(showRec)\n| where TimeGenerated > ago(24h)\n| join kind=inner (itsgcodes) on itsgcode_s\n| extend BaseItemName = ItemName_s\n| extend ItemName = strcat(ItemName_s, iff(Required_s==\"False\", \" (R)\", \" (M)\"))\n| extend Status = case(ComplianceStatus_b == true, '✔️', ComplianceStatus_b == false, '❌', '➖')\n| extend Comments = iff(BaseItemName == 'All Cloud User Accounts MFA Check' and isempty(Comments_s) and isnotempty(dComments), dComments, Comments_s)\n| extend Status = iff(BaseItemName == 'All Cloud User Accounts MFA Check' and isnotempty(dStatus), dStatus, Status)\n| project ItemName, Comments, Status, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,' ',''),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d','')), tostring(toint(column_ifexists('Profile_d',''))),'')\n| sort by ItemName asc",
         "size": 0,
-  "title": "GR 1",
+        "title": "GR 1",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -263,7 +262,7 @@
             "label": "Show Non-MFA Users",
             "type": 10,
             "isRequired": true,
-            "value": "no",
+            "value": "yes",
             "typeSettings": {
               "additionalResourceOptions": []
             },
@@ -288,7 +287,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsUserRaw_CL \n|where ReportTime_s == \"{RunTime}\"\n| where isMfaRegistered_b == false\n| sort by signInActivity_lastSignInDateTime_t\n| project DisplayName = displayName_s, UserPrincipalName = userPrincipalName_s, UserType = userType_s, CreatedTime = createdDateTime_t, LastSignin = signInActivity_lastSignInDateTime_t\n| take 100",
+        "query": "GuardrailsUserRaw_CL \n|where ReportTime_s == \"{RunTime}\"\n| where isMfaRegistered_b == false\n| sort by signInActivity_lastSignInDateTime_t\n| project DisplayName = displayName_s, UserPrincipalName = userPrincipalName_s, UserType = userType_s, CreatedTime= iff(isnull(createdDateTime_t), \"N/A\", format_datetime(createdDateTime_t, 'yyyy-MM-dd HH:mm:ss')), \nLastSignIn = iff(isnull(signInActivity_lastSignInDateTime_t), \"Never Signed In\", format_datetime(signInActivity_lastSignInDateTime_t, 'yyyy-MM-dd HH:mm:ss'))\n| take 100\n\n",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
