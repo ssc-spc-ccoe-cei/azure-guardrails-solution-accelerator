@@ -50,7 +50,6 @@ usersWithoutMFA = {0} sur {1} utilisateurs capables d'utiliser l'AMF n'ont pas l
 noMfaCapableUsers = Aucun utilisateur capable d'utiliser l'AMF trouvé
 noUsersFound = Aucun utilisateur trouvé dans le locataire
 evaluationError = L'évaluation a échoué en raison d'erreurs : {0}
-
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF
 nativeUserNonMfa = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM). Il y a {0} jours depuis la dernière connexion.
 nativeUserNoSignIn = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM) et il n'a jamais été utilisé pour se connecter.
@@ -61,6 +60,11 @@ nonCompliantLaw = Le LAW {0} identifié ne correspond pas au fichier config.json
 logsNotCollected = Tous les journaux requis ne sont pas collectés.
 gcEventLogging = Vérification de la journalisation des événements du GC du compte utilisateur
 gcEventLoggingCompliantComment = Les journaux sont recueillis, stockés et conservés pour répondre aux exigences de ce contrôle.
+lockLevelApproved = L'espace de travail d'analyse de journaux {0} a un niveau de verrouillage approuvé de {1}.
+lockLevelNotApproved = L'espace de travail d'analyse de journaux {0} a un niveau de verrouillage de {1} qui n'est pas approuvé. Les niveaux de verrouillage approuvés sont ' ReadOnly ' ou ''DeleteOnly '.
+tagFound = L'espace de travail d'analyse de journaux {0} a une étiquette de ressource 'sentinel' avec une valeur de 'true' qui indique qu'il est utilisé pour Sentinel. Un verrou 'DeleteOnly' est recommandé.
+sentinelTablesFound = L'espace de travail d'analyse de journaux {0} a des tables Sentinel configurées. L'espace de travail d'analyse de journaux manque l'étiquette de ressource Sentinel attendue, mettez à jour ou ajoutez l'étiquette à : sentinel=true.
+noLockNoTagNoTables = L'espace de travail d'analyse de journaux {0} n'a pas de verrou approuvé 'ReadOnly' ou 'DeleteOnly' en place. Consultez le Guide de Remédiation pour plus d'informations.
 
 dedicatedAdminAccountsCheck = Comptes d'utilisateurs dédiés pour l'administration
 invalidUserFile = Mettez à jour le fichier {0} et répertoriez les noms principaux d'utilisateurs (UPN) de rôles à privilèges élevés et leurs UPN de rôle régulier.
@@ -119,7 +123,9 @@ noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référe
 userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des groupes d'utilisateurs ne sont pas nécessaires.
 userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
 reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
+userStats = Statistiques d'utilisateur - Utilisateurs totaux : {0} ; Utilisateurs de groupe (Total - Unique) : {1} ; Membres dans les locataires : {2} ; Invités dans les locataires : {3}
 userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
+userInGroup = Pas d'utilisateurs sans groupes
 
 riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
 nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
@@ -220,6 +226,8 @@ allCertificatesValid = Tous les certificats sont valides et provenant d'autorit�
 approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
 approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification.
 appServiceHttpsConfig = « Azure App Service » : Configuration d'application HTTPS
+keyVaultCertValidationFailed = Le certificat stocké dans Key Vault pour l'écouteur « {0} » dans Application Gateway « {1} » n'a pas pu être validé. La solution CAC requiert les autorisations « Key Vault Secrets User » sur le Key Vault du client pour valider les certificats. Si le coffre est en mode Stratégies d'accès (Access Policy), accordez à l'identité managée du compte d'automatisation l'autorisation « Obtenir » (Get) sur les secrets de ce Key Vault. Contactez votre administrateur afin d'accorder à l'identité managée du compte d'automatisation CAC l'accès à ce Key Vault, si vous le souhaitez.
+keyVaultCertRetrievalFailed = Impossible de récupérer le certificat dans Key Vault pour l'écouteur « {0} » dans l'Application Gateway « {1} ». Le certificat est peut-être stocké dans Key Vault et nécessite des autorisations appropriées pour y accéder.
 
 dataInTransit = Connexions sécurisées pour les comptes de cache et de stockage Redis
 
@@ -309,21 +317,21 @@ setSecurityContact = Veuillez définir un contact de sécurité pour Defender fo
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
 
 noServiceHealthActionGroups = Il manque un groupe d'action pour les alertes de santé du service « Service Health Alerts » associées à l'abonnement : {0}
-NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour tous les abonnements. Assurez-vous que les alertes d'état du service sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
+NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour cet abonnement. Assurez-vous que les alertes d'état du service sont configurées sur cet abonnement et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
 EventTypeMissingForAlert = L'alerte manque un type d'événement requis (problème de service, avis de santé ou avis de sécurité) « Service Issue, Health Advisory or Security Advisory » pour l'abonnement : {0}
 noServiceHealthAlerts = Ne peut pas récupérer les alertes configurées pour l'abonnement : "{0}". Assurez-vous que les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
-nonCompliantActionGroups = Toutes les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements. Par contre, tous les groupes d'action associés ne sont pas configurés correctement. Au moins deux adresses de courriel ou propriétaires d'abonnement sont requis pour le groupe d'action.
-compliantServiceHealthAlerts = Les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et le groupe d'action associé à l'alerte a au moins deux contacts différents.
+nonCompliantActionGroups = Toutes les alertes de santé du service « Service Health Alerts » sont configurées sur cet abonnement. Par contre, tous les groupes d'action associés ne sont pas configurés correctement. Au moins deux adresses de courriel ou propriétaires d'abonnement sont requis pour le groupe d'action.
+compliantServiceHealthAlerts = Les alertes de santé du service « Service Health Alerts » sont configurées sur cet abonnement et le groupe d'action associé à l'alerte a au moins deux contacts différents.
 
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 
 msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
-NotAllSubsHaveDefenderPlans = Le(s) abonnement(s) suivant(s) n'a/n'ont pas de plan MS Defender : {0} . Activez la surveillance MS Defender pour tous les abonnements.
-errorRetrievingNotifications = Les notifications d'alerte MS Defender pour le ou les abonnements ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
+NotAllSubsHaveDefenderPlans = L'abonnement {0} n'a pas de plan « Defender ». Activez la surveillance « Defender » pour cet abonnement.
+errorRetrievingNotifications = Les notifications d'alerte MS Defender pour cet abonnement ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
 EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement {0} n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
 AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
-DefenderCompliant = MS Defender pour l'infonuagique est activé pour tous les abonnements et les notifications par courriel sont correctement configurées.
+DefenderCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement et les notifications par courriel sont correctement configurées.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
