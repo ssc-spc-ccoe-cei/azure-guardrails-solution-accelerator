@@ -45,7 +45,11 @@ noAlertRuleforCaps = Créez une alerte pour les modifications et les mises à jo
 allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
-
+allUsersHaveMFA = Tous les utilisateurs capables d'utiliser l'AMF ont l'AMF activée ({0}/{1})
+usersWithoutMFA = {0} sur {1} utilisateurs capables d'utiliser l'AMF n'ont pas l'AMF activée
+noMfaCapableUsers = Aucun utilisateur capable d'utiliser l'AMF trouvé
+noUsersFound = Aucun utilisateur trouvé dans le locataire
+evaluationError = L'évaluation a échoué en raison d'erreurs : {0}
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF
 nativeUserNonMfa = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM). Il y a {0} jours depuis la dernière connexion.
 nativeUserNoSignIn = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM) et il n'a jamais été utilisé pour se connecter.

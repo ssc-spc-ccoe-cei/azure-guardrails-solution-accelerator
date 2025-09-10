@@ -62,8 +62,7 @@
             },
             "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": "2023-01-16 19:55:14"
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
@@ -239,6 +238,19 @@
       "name": "Gr1"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "⚠️ Only the first 100 users without MFA are shown below.",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "users-mfa-info"
+    },
+    {
       "type": 9,
       "content": {
         "version": "KqlParameterItem/1.0",
@@ -275,7 +287,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR1NonMfaUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| extend \n    CreatedRaw = coalesce(\n        column_ifexists(\"CreatedTime_t\", datetime(null)), \n        todatetime(column_ifexists(\"CreatedTime_s\", \"\"))\n    ),\n    LastSignInRaw = coalesce(\n        column_ifexists(\"LastSignIn_t\", datetime(null)), \n        todatetime(column_ifexists(\"LastSignIn_s\", \"\"))\n    )\n| extend \n    CreatedTime = iff(isnull(CreatedRaw), \"N/A\", format_datetime(CreatedRaw, 'yyyy-MM-dd HH:mm:ss')),\n    LastSignIn = iff(isnull(LastSignInRaw), \"Never Signed In\", format_datetime(LastSignInRaw, 'yyyy-MM-dd HH:mm:ss'))\n| project DisplayName_s, UserPrincipalName_s, User_Type_s, CreatedTime, LastSignIn, Comments_s\n",
+        "query": "GuardrailsUserRaw_CL \n|where ReportTime_s == \"{RunTime}\"\n| where isMfaRegistered_b == false\n| sort by signInActivity_lastSignInDateTime_t\n| project DisplayName = displayName_s, UserPrincipalName = userPrincipalName_s, UserType = userType_s, CreatedTime= iff(isnull(createdDateTime_t), \"N/A\", format_datetime(createdDateTime_t, 'yyyy-MM-dd HH:mm:ss')), \nLastSignIn = iff(isnull(signInActivity_lastSignInDateTime_t), \"Never Signed In\", format_datetime(signInActivity_lastSignInDateTime_t, 'yyyy-MM-dd HH:mm:ss'))\n| take 100\n\n",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
@@ -677,6 +689,13 @@
               "formatOptions": {
                 "linkTarget": "Url"
               }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
             }
           ],
           "hierarchySettings": {
@@ -866,7 +885,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 13",
         "timeContext": {
@@ -905,7 +924,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=case(\n    ComplianceStatus_b == true, 'Compliant Items',\n    ComplianceStatus_b == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+         "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=case(\n    ComplianceStatus_b == true, 'Compliant Items',\n    ComplianceStatus_b == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
         "size": 4,
         "timeContext": {
           "durationMs": 86400000
@@ -1035,4 +1054,3 @@
     }
   ],
   "fallbackResourceIds": [
-

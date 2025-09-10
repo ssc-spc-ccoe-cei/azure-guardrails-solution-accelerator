@@ -1,16 +1,5 @@
-function lastLoginInDays{
-    param(
-        $LastSignIn
-    )
-
-    $lastSignInDate = Get-Date $LastSignIn
-    $todayDate = Get-Date
-    $daysLastLogin = ($todayDate - $lastSignInDate).Days
-
-    return $daysLastLogin
-}
-
 function Check-AllUserMFARequired {
+    [CmdletBinding()]
     param (      
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
@@ -18,175 +7,147 @@ function Check-AllUserMFARequired {
         [string] $ItemName,
         [Parameter(Mandatory=$true)]
         [string] $itsgcode,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime,
-        [Parameter(Mandatory=$true)]
+        [string] $ReportTime, 
+        [Parameter(Mandatory=$true)] 
         [string] $FirstBreakGlassUPN,
         [Parameter(Mandatory=$true)] 
         [string] $SecondBreakGlassUPN,
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] 
-        $EnableMultiCloudProfiles # default to false
+        [switch] $EnableMultiCloudProfiles # default to false
     )
 
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    [bool] $IsCompliant = $false
-    [string] $Comments = $null
-    [PSCustomObject] $nonMfaUsers = New-Object System.Collections.ArrayList
-    $UserComments = $null
+    Write-Verbose "Entered Check-AllUserMFARequired for ItemName='$ItemName' itsgcode='$itsgcode'"
 
-    $usersSignIn = '/users?$select=displayName,signInActivity,userPrincipalName,id,mail,createdDateTime,userType,accountEnabled'
+    # Initialize error list for orchestrator compatibility
+    $ErrorList = @()
+
+    # 1) Fetch users (paged automatically by Invoke-GraphQueryEX)
+    $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+    Write-Verbose "Fetching users from Microsoft Graph: $usersPath"
     try {
-        $response = Invoke-GraphQuery -urlPath $usersSignIn -ErrorAction Stop
-        $allUsers = $response.Content.value
+        $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
+        if ($response -is [System.Array]) {
+            $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
+        }
+        $allUsers = @($response.Content.value)
+        Write-Verbose "Retrieved $($allUsers.Count) users"
     }
     catch {
-        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_")
-        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$usersSignIn'; returned error message: $_"
-    }
-    # Check all users for MFA
-    $allUsers = $allUsers | Where-Object {$_.accountEnabled -ne $false}
-    $allUserUPNs = $allUsers.userPrincipalName
-
-    Write-Host "allUserUPNs count is $($allUserUPNs.Count)"
-
-    # list of guest users
-    $extUsers = $allUsers | Where-Object { $_.userType -eq 'Guest'}
-    if(!$null -eq $extUsers){
-        $extUserList =  $extUsers | Select-Object userPrincipalName , displayName, id, mail
+        Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
+        $ErrorList += "Graph call failed for users list: $_"
+        $allUsers = @()
     }
 
-    $extUserUPNs = $extUserList.userPrincipalName
-    Write-Host "extUsers count is $($extUsers.Count)"
-    Write-Host "extUsers UPNs are $($extUsers.userPrincipalName)"
-    
-    # List of member users
-    $memberUsers = $allUsers | Where-Object { $extUserUPNs -notcontains $_.UserPrincipalName }
-
-    # Get member users UPNs
-    $memberUserList = $memberUsers | Select-Object userPrincipalName, mail
-    # Exclude the breakglass account UPNs from the list
-    if ($memberUserList.userPrincipalName -contains $FirstBreakGlassUPN){
-        $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $FirstBreakGlassUPN }
-    }
-    if ($memberUserList.userPrincipalName -contains $SecondBreakGlassUPN){
-        $memberUserList = $memberUserList | Where-Object { $_.userPrincipalName -ne $SecondBreakGlassUPN }
-    }
-    Write-Host "memberUserList count is $($memberUserList.Count)"
-
-    # Get MFA information for member and external users
-    if(!$null -eq $memberUserList){
-        $result = Get-AllUserAuthInformation -allUserList $memberUserList
-        $memberUserUPNsBadMFA = $result.userUPNsBadMFA
-        if($result.ErrorList){
-            $ErrorList.Add($result.ErrorList)
+    # 2) Fetch tenant-wide registration details in one pass (no per-user calls)
+    #    Endpoint: GET /reports/authenticationMethods/userRegistrationDetails (paged)
+    $regPath = "/reports/authenticationMethods/userRegistrationDetails"
+    Write-Verbose "Fetching authentication registration details: $regPath"
+    $registrationDetails = @()
+    try {
+        $regResp = Invoke-GraphQueryEX -urlPath $regPath -ErrorAction Stop
+        if ($regResp -is [System.Array]) {
+            $regResp = $regResp | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
         }
-        $userValidMFACounter = $result.userValidMFACounter
+        $registrationDetails = @($regResp.Content.value)
+        Write-Verbose "Retrieved $($registrationDetails.Count) registration detail records"
     }
-    Write-Host "userValidMFACounter count from memberUsersUPNs count is $userValidMFACounter"
-    Write-Host "memberUserUPNsBadMFA count is $($memberUserUPNsBadMFA.Count)"
+    catch {
+        Write-Warning "Failed to call Microsoft Graph REST API at URL '$regPath'; error: $_"
+        $ErrorList += "Graph call failed for registration details: $_"
+        $registrationDetails = @()
+    }
 
-    if(!$null -eq $extUserList){
-        $result2 = Get-AllUserAuthInformation -allUserList $extUserList
-        $extUserUPNsBadMFA = $result2.userUPNsBadMFA
-        if($result2.ErrorList){
-            $ErrorList.Add($result2.ErrorList)
+    # 3) Index registration details by user id for fast join
+    $regById = @{}
+    foreach ($r in $registrationDetails) {
+        if ($null -ne $r.id -and -not $regById.ContainsKey($r.id)) { $regById[$r.id] = $r }
+    }
+
+    # 4) Build augmented records (user + registration summary)
+    $augmentedUsers = @()
+    foreach ($u in $allUsers) {
+        $r = $null
+        if ($null -ne $u.id -and $regById.ContainsKey($u.id)) { $r = $regById[$u.id] }
+
+        $methods = @()
+        if ($null -ne $r -and $null -ne $r.methodsRegistered) { $methods = @($r.methodsRegistered) }
+
+        $augmentedUsers += [PSCustomObject]@{
+            # User properties
+            id                = $u.id
+            userPrincipalName = $u.userPrincipalName
+            displayName       = $u.displayName
+            mail              = $u.mail
+            createdDateTime   = $u.createdDateTime
+            userType          = $u.userType
+            accountEnabled    = $u.accountEnabled
+            signInActivity    = $u.signInActivity
+            
+            # Registration summary (no PII like phone numbers)
+            isMfaRegistered       = $r.isMfaRegistered
+            isMfaCapable          = $r.isMfaCapable
+            isSsprEnabled         = $r.isSsprEnabled
+            isSsprRegistered      = $r.isSsprRegistered
+            isSsprCapable         = $r.isSsprCapable
+            isPasswordlessCapable = $r.isPasswordlessCapable
+            defaultMethod         = $r.defaultMethod
+            methodsRegistered     = $methods
+
+            # Context
+            ReportTime        = $ReportTime
+            ItemName          = $ItemName
+            itsgcode          = $itsgcode
         }
-        # combined list
-        $userValidMFACounter = $userValidMFACounter + $result2.userValidMFACounter
     }
-    Write-Host "extUserUPNsBadMFA count is $($extUserUPNsBadMFA.Count)"
-    Write-Host "accounts auth method check done"
-    Write-Host "userValidMFACounter count is $userValidMFACounter"
-    
-    if(!$null -eq $extUserUPNsBadMFA -and !$null -eq $memberUserUPNsBadMFA){
-        $userUPNsBadMFA =  $memberUserUPNsBadMFA +  $extUserUPNsBadMFA
-    }elseif($null -eq $extUserUPNsBadMFA -or $extUserUPNsBadMFA.Count -eq 0){
-        $userUPNsBadMFA =  $memberUserUPNsBadMFA 
-    }elseif($null -eq $memberUserUPNsBadMFA -or $memberUserUPNsBadMFA.Count -eq 0){
-        $userUPNsBadMFA =  $extUserUPNsBadMFA
-    }
-    Write-Host "userUPNsBadMFA count is $($userUPNsBadMFA.Count)"
-    Write-Host "userUPNsBadMFA UPNs are $($userUPNsBadMFA.UPN)"
-       
 
-    $matchingBadUsers = $allUsers | Where-Object {$userUPNsBadMFA.UPN -contains $_.userPrincipalName}
+    # 5) Analyze MFA compliance status based on collected data
+    $totalUsers = $augmentedUsers.Count
+    $mfaCapableUsers = ($augmentedUsers | Where-Object { $_.isMfaCapable -eq $true }).Count
+    $mfaRegisteredUsers = ($augmentedUsers | Where-Object { $_.isMfaRegistered -eq $true }).Count
+    $nonCompliantUsers = $mfaCapableUsers - $mfaRegisteredUsers
 
-    if($null -eq $allUsers){
-        $IsCompliant = $false
-        $commentsArray = $msgTable.MSEntIDLicenseTypeNotFound
-
-        $Customuser = [PSCustomObject] @{
-            DisplayName = "N/A"
-            UserPrincipalName = "N/A"
-            User_Enabled = "N/A"
-            User_Type = "N/A"
-            CreatedTime = "N/A"
-            LastSignIn = "N/A"
-            Comments = $commentsArray
-            ItemName= $ItemName 
-            ReportTime = $ReportTime
-            itsgcode = $itsgcode
+    # Determine compliance status and appropriate message
+    if ($ErrorList.Count -gt 0) {
+        # If there were errors during data collection, mark as not evaluated
+        $IsCompliant = "Not Evaluated"
+        $Comments = if ($msgTable) { 
+            $msgTable.evaluationError -f ($ErrorList -join "; ")
+        } else { 
+            "Evaluation failed due to errors: $($ErrorList -join '; ')" 
         }
-        $nonMfaUsers.add($Customuser)
     }
-
-    # Condition: all users are MFA enabled
-    elseif(($userValidMFACounter + 2) -eq $allUserUPNs.Count) {
-        $commentsArray = $msgTable.allUserHaveMFA
+    elseif ($totalUsers -eq 0) {
         $IsCompliant = $true
-
-        #If all users are mfa compliant, display a ghost user with mfa enabled comment displayed
-        $Customuser = [PSCustomObject] @{
-            DisplayName = "N/A"
-            UserPrincipalName = "N/A"
-            User_Enabled = "N/A"
-            User_Type = "N/A"
-            CreatedTime = "N/A"
-            LastSignIn = "N/A"
-            Comments = $commentsArray
-            ItemName= $ItemName 
-            ReportTime = $ReportTime
-            itsgcode = $itsgcode
-        }
-        $nonMfaUsers.add($Customuser)
+        $Comments = if ($msgTable) { $msgTable.noUsersFound } else { "No users found in tenant" }
     }
-    # Condition: Not all user UPNs are MFA enabled or MFA is not configured properly
+    elseif ($mfaCapableUsers -eq 0) {
+        $IsCompliant = "Not Applicable"
+        $Comments = if ($msgTable) { $msgTable.noMfaCapableUsers } else { "No MFA capable users found" }
+    }
+    elseif ($nonCompliantUsers -eq 0) {
+        $IsCompliant = $true
+        $Comments = if ($msgTable) { 
+            $msgTable.allUsersHaveMFA -f $mfaRegisteredUsers, $mfaCapableUsers 
+        } else { 
+            "All MFA capable users have MFA enabled ($mfaRegisteredUsers/$mfaCapableUsers)" 
+        }
+    }
     else {
-        $commentsArray = $msgTable.userMisconfiguredMFA
         $IsCompliant = $false
-
-        foreach($badExtUser in $matchingBadUsers){
-
-            if($null -eq $badExtUser.signInActivity.lastSignInDateTime){
-                $UserComments = $msgTable.nativeUserNoSignIn
-            }
-            elseif($null -ne $badExtUser.signInActivity.lastSignInDateTime){
-                $daysLastSignIn = lastLoginInDays -LastSignIn $badExtUser.signInActivity.lastSignInDateTime
-                $UserComments = $msgTable.nativeUserNonMfa -f $daysLastSignIn
-            }
-            $nonMfaExtUser = [PSCustomObject] @{
-                DisplayName = $badExtUser.DisplayName
-                UserPrincipalName = $badExtUser.userPrincipalName
-                User_Enabled = $badExtUser.accountEnabled
-                User_Type = $badExtUser.userType
-                CreatedTime = $badExtUser.createdDateTime
-                LastSignIn = $badExtUser.signInActivity.lastSignInDateTime
-                Comments = $UserComments
-                ItemName= $ItemName 
-                ReportTime = $ReportTime
-                itsgcode = $itsgcode
-            }
-            $nonMfaUsers.add($nonMfaExtUser)
+        $Comments = if ($msgTable) { 
+            $msgTable.usersWithoutMFA -f $nonCompliantUsers, $mfaCapableUsers 
+        } else { 
+            "$nonCompliantUsers out of $mfaCapableUsers MFA capable users do not have MFA enabled" 
         }
     }
 
-    $Comments = $commentsArray -join ";"
-    
+    Write-Verbose "MFA Compliance Summary: Total=$totalUsers, Capable=$mfaCapableUsers, Registered=$mfaRegisteredUsers, NonCompliant=$nonCompliantUsers, Status=$IsCompliant"
+
+    # 6) Prepare compliance object with proper status and messaging
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
@@ -196,23 +157,21 @@ function Check-AllUserMFARequired {
         itsgcode         = $itsgcode
     }
 
-    $AdditionalResults = [PSCustomObject]@{
-        records = $nonMfaUsers
-        logType = "GR1NonMfaUsers"
-    }
-
-    # Add profile information if MCUP feature is enabled
+      # Add profile information if MCUP feature is enabled
     if ($EnableMultiCloudProfiles) {
         $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
         Write-Host "$result"
         $PsObject = $result
     }
-    
-    $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $PsObject
-        Errors=$ErrorList
-        AdditionalResults = $AdditionalResults
-    }
-    return $moduleOutput   
-}
 
+    # 8) Return in the expected envelope; main.ps1 will send AdditionalResults to Log Analytics
+    $moduleOutput = [PSCustomObject]@{ 
+        ComplianceResults = $PsObject  # Single object, not array (consistent with other modules)
+        Errors            = $ErrorList
+        AdditionalResults = [PSCustomObject]@{
+            records = @($augmentedUsers)
+            logType = "GuardrailsUserRaw"
+        }
+    }
+    return $moduleOutput
+}
