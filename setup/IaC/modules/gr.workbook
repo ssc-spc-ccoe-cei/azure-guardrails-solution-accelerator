@@ -62,7 +62,8 @@
             },
             "defaultValue": "value::1",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
+            "resourceType": "microsoft.operationalinsights/workspaces", 
+            "value": "2023-01-16 19:55:14"
           }
         ],
         "style": "pills",
@@ -685,13 +686,6 @@
           "formatters": [
             {
               "columnMatch": "Remediation",
-              "formatter": 7,
-              "formatOptions": {
-                "linkTarget": "Url"
-              }
-            },
-            {
-              "columnMatch": "Link",
               "formatter": 7,
               "formatOptions": {
                 "linkTarget": "Url"
