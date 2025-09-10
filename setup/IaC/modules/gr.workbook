@@ -247,9 +247,9 @@
       "conditionalVisibility": {
         "parameterName": "selectedTab",
         "comparison": "isEqualTo",
-        "value": "gr2"
+        "value": "gr1"
       },
-      "name": "users-cap-info"
+      "name": "users-mfa-info"
     },
     {
       "type": 9,
