@@ -109,6 +109,15 @@ function Check-AllUserMFARequired {
     $mfaCapableUsers = ($augmentedUsers | Where-Object { $_.isMfaCapable -eq $true }).Count
     $mfaRegisteredUsers = ($augmentedUsers | Where-Object { $_.isMfaRegistered -eq $true }).Count
     $nonCompliantUsers = $mfaCapableUsers - $mfaRegisteredUsers
+    
+    "Debug ###############################################"
+    
+    Write-Warning "nonCompliantUsers : $nonCompliantUsers "
+    Write-Warning "mfaCapableUsers :$mfaCapableUsers"
+    Write-Warning "mfaRegisteredUsers: $mfaRegisteredUsers"
+
+    "Debug ###############################################"
+
 
     # Determine compliance status and appropriate message
     if ($ErrorList.Count -gt 0) {
@@ -122,7 +131,7 @@ function Check-AllUserMFARequired {
     }
     elseif ($mfaCapableUsers -eq 0) {
         $IsCompliant = "Not Applicable"
-        $Comments = if ($msgTable) { $msgTable.noMfaCapableUsers } else { "No MFA capable users found" }
+        $Comments = $msgTable.noMfaCapableUsers
     }
     elseif ($nonCompliantUsers -eq 0) {
         $IsCompliant = $true
