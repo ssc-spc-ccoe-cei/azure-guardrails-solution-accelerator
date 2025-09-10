@@ -262,7 +262,7 @@
             "label": "Show Non-MFA Users",
             "type": 10,
             "isRequired": true,
-            "value": "yes",
+            "value": "no",
             "typeSettings": {
               "additionalResourceOptions": []
             },
@@ -924,7 +924,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n// Your automation account uses ComplianceStatus_b (boolean) field\n| extend Status=case(\n    ComplianceStatus_b == true, 'Compliant Items',\n    ComplianceStatus_b == false, 'Non-compliant Items',\n    'Unknown Status Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+         "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=case(\n    ComplianceStatus_b == true, 'Compliant Items',\n    ComplianceStatus_b == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
         "size": 4,
         "timeContext": {
           "durationMs": 86400000
