@@ -47,7 +47,6 @@ allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisate
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
 allUsersHaveMFA = Tous les utilisateurs capables d'utiliser l'AMF ont l'AMF activée ({0}/{1})
 usersWithoutMFA = {0} sur {1} utilisateurs capables d'utiliser l'AMF n'ont pas l'AMF activée
-noMfaCapableUsers = Aucun utilisateur capable d'utiliser l'AMF trouvé
 noUsersFound = Aucun utilisateur trouvé dans le locataire
 evaluationError = L'évaluation a échoué en raison d'erreurs : {0}
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF

@@ -48,7 +48,6 @@ allUserHaveMFA = Native user accounts have been identified, and all users accoun
 
 allUsersHaveMFA = All MFA capable users have MFA enabled ({0}/{1})
 usersWithoutMFA = {0} out of {1} MFA capable users do not have MFA enabled
-noMfaCapableUsers = No MFA capable users found
 noUsersFound = No users found in tenant
 evaluationError = Evaluation failed due to errors: {0}
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly

@@ -106,14 +106,15 @@ function Check-AllUserMFARequired {
 
     # 5) Analyze MFA compliance status based on collected data
     $totalUsers = $augmentedUsers.Count
-    $mfaCapableUsers = ($augmentedUsers | Where-Object { $_.isMfaCapable -eq $true }).Count
+    #$mfaCapableUsers = ($augmentedUsers | Where-Object { $_.isMfaCapable -eq $true }).Count
     $mfaRegisteredUsers = ($augmentedUsers | Where-Object { $_.isMfaRegistered -eq $true }).Count
-    $nonCompliantUsers = $mfaCapableUsers - $mfaRegisteredUsers
+    #$nonCompliantUsers = $mfaCapableUsers - $mfaRegisteredUsers
+    $nonCompliantUsers = $totalUsers - $mfaRegisteredUsers
     
     "Debug ###############################################"
     
     Write-Warning "nonCompliantUsers : $nonCompliantUsers "
-    Write-Warning "mfaCapableUsers :$mfaCapableUsers"
+   # Write-Warning "mfaCapableUsers :$mfaCapableUsers"
     Write-Warning "mfaRegisteredUsers: $mfaRegisteredUsers"
 
     "Debug ###############################################"
@@ -129,20 +130,21 @@ function Check-AllUserMFARequired {
         $IsCompliant = $true
         $Comments =  $msgTable.noUsersFound 
     }
+    <#
     elseif ($mfaCapableUsers -eq 0) {
         $IsCompliant = "Not Applicable"
         $Comments = $msgTable.noMfaCapableUsers
-    }
+    }#>
     elseif ($nonCompliantUsers -eq 0) {
         $IsCompliant = $true
-        $Comments = $msgTable.allUsersHaveMFA -f $mfaRegisteredUsers, $mfaCapableUsers 
+        $Comments = $msgTable.allUsersHaveMFA -f $mfaRegisteredUsers, $totalUsers 
     }
     else {
         $IsCompliant = $false
-        $Comments = $msgTable.usersWithoutMFA -f $nonCompliantUsers, $mfaCapableUsers 
+        $Comments = $msgTable.usersWithoutMFA -f $nonCompliantUsers, $totalUsers 
     }
 
-    Write-Verbose "MFA Compliance Summary: Total=$totalUsers, Capable=$mfaCapableUsers, Registered=$mfaRegisteredUsers, NonCompliant=$nonCompliantUsers, Status=$IsCompliant"
+    Write-Verbose "MFA Compliance Summary: Total=$totalUsers , Registered=$mfaRegisteredUsers, NonCompliant=$nonCompliantUsers, Status=$IsCompliant"
 
     # 6) Prepare compliance object with proper status and messaging
     $PsObject = [PSCustomObject]@{
