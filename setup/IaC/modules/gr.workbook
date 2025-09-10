@@ -288,7 +288,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsUserRaw_CL \n|where ReportTime_s == \"{RunTime}\"\n| where isMfaRegistered_b == false\n| sort by signInActivity_lastSignInDateTime_t\n| project DisplayName = displayName_s, UserPrincipalName = userPrincipalName_s, UserType = userType_s, CreatedTime= iff(isnull(createdDateTime_t), \"N/A\", format_datetime(createdDateTime_t, 'yyyy-MM-dd HH:mm:ss')), \nLastSignIn = iff(isnull(signInActivity_lastSignInDateTime_t), \"Never Signed In\", format_datetime(signInActivity_lastSignInDateTime_t, 'yyyy-MM-dd HH:mm:ss'))\n| take 100\n\n",
+        "query": "let results = GuardrailsUserRaw_CL\n\n| where ReportTime_s == \"{RunTime}\"\n\n| where isMfaRegistered_b == false \n\n| sort by signInActivity_lastSignInDateTime_t\n\n| project \n\n    DisplayName = displayName_s, \n\n    UserPrincipalName = userPrincipalName_s, \n\n    UserType = userType_s, \n\n    CreatedTime = iff(isnull(createdDateTime_t), \"N/A\", format_datetime(createdDateTime_t, 'yyyy-MM-dd HH:mm:ss')), \n\n    LastSignIn = iff(isnull(signInActivity_lastSignInDateTime_t), \"Never Signed In\", format_datetime(signInActivity_lastSignInDateTime_t, 'yyyy-MM-dd HH:mm:ss'))\n\n| take 100;\n \nunion\n\n(\n\n    results\n\n),\n\n(\n\n    results\n\n    | summarize count() \n\n    | where count_ == 0\n\n    | project \n\n        DisplayName = \"N/A\", \n\n        UserPrincipalName = \"N/A\", \n\n        UserType = \"N/A\", \n\n        CreatedTime = \"N/A\", \n\n        LastSignIn = \"N/A\", \n\n        Comments = \"No users without MFA\"\n\n)\n\n ",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000

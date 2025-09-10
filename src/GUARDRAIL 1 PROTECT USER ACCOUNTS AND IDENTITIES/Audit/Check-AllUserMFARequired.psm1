@@ -7,7 +7,7 @@ function Check-AllUserMFARequired {
         [string] $ItemName,
         [Parameter(Mandatory=$true)]
         [string] $itsgcode,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime, 
@@ -108,7 +108,7 @@ function Check-AllUserMFARequired {
     $totalUsers = $augmentedUsers.Count
     $mfaRegisteredUsers = ($augmentedUsers | Where-Object { $_.isMfaRegistered -eq $true }).Count
     $nonCompliantUsers = $totalUsers - $mfaRegisteredUsers
-    
+
     # Determine compliance status and appropriate message
     if ($ErrorList.Count -gt 0) {
         # If there were errors during data collection, mark as not evaluated
