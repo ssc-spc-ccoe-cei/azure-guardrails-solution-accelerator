@@ -288,7 +288,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsUserRaw_CL \n|where ReportTime_s == \"{RunTime}\"\n| where isMfaRegistered_b == false\n| project DisplayName = displayName_s, UserPrincipalName = userPrincipalName_s, UserType = userType_s, CreatedTime = createdDateTime_t, LastSignin = signInActivity_lastSignInDateTime_t\n| take 100",
+        "query": "GuardrailsUserRaw_CL \n|where ReportTime_s == \"{RunTime}\"\n| where isMfaRegistered_b == false\n| sort by signInActivity_lastSignInDateTime_t\n| project DisplayName = displayName_s, UserPrincipalName = userPrincipalName_s, UserType = userType_s, CreatedTime = createdDateTime_t, LastSignin = signInActivity_lastSignInDateTime_t\n| take 100",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
