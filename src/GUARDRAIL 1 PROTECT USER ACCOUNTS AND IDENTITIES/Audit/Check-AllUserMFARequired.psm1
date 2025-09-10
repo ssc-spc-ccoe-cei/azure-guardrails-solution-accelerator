@@ -114,15 +114,11 @@ function Check-AllUserMFARequired {
     if ($ErrorList.Count -gt 0) {
         # If there were errors during data collection, mark as not evaluated
         $IsCompliant = "Not Evaluated"
-        $Comments = if ($msgTable) { 
-            $msgTable.evaluationError -f ($ErrorList -join "; ")
-        } else { 
-            "Evaluation failed due to errors: $($ErrorList -join '; ')" 
-        }
-    }
+        $Comments = $msgTable.evaluationError -f ($ErrorList -join "; ")
+    } 
     elseif ($totalUsers -eq 0) {
         $IsCompliant = $true
-        $Comments = if ($msgTable) { $msgTable.noUsersFound } else { "No users found in tenant" }
+        $Comments =  $msgTable.noUsersFound 
     }
     elseif ($mfaCapableUsers -eq 0) {
         $IsCompliant = "Not Applicable"
@@ -130,19 +126,11 @@ function Check-AllUserMFARequired {
     }
     elseif ($nonCompliantUsers -eq 0) {
         $IsCompliant = $true
-        $Comments = if ($msgTable) { 
-            $msgTable.allUsersHaveMFA -f $mfaRegisteredUsers, $mfaCapableUsers 
-        } else { 
-            "All MFA capable users have MFA enabled ($mfaRegisteredUsers/$mfaCapableUsers)" 
-        }
+        $Comments = $msgTable.allUsersHaveMFA -f $mfaRegisteredUsers, $mfaCapableUsers 
     }
     else {
         $IsCompliant = $false
-        $Comments = if ($msgTable) { 
-            $msgTable.usersWithoutMFA -f $nonCompliantUsers, $mfaCapableUsers 
-        } else { 
-            "$nonCompliantUsers out of $mfaCapableUsers MFA capable users do not have MFA enabled" 
-        }
+        $Comments = $msgTable.usersWithoutMFA -f $nonCompliantUsers, $mfaCapableUsers 
     }
 
     Write-Verbose "MFA Compliance Summary: Total=$totalUsers, Capable=$mfaCapableUsers, Registered=$mfaRegisteredUsers, NonCompliant=$nonCompliantUsers, Status=$IsCompliant"
@@ -157,7 +145,7 @@ function Check-AllUserMFARequired {
         itsgcode         = $itsgcode
     }
 
-      # Add profile information if MCUP feature is enabled
+    # Add profile information if MCUP feature is enabled
     if ($EnableMultiCloudProfiles) {
         $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
         Write-Host "$result"
