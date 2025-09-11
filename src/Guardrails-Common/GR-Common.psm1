@@ -801,12 +801,8 @@ function Invoke-GraphQueryEX {
                 $uri = $fullUri -as [uri]
                 $uri 
                 $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
-              
-  
-  
                 $data = $response.Content | ConvertFrom-Json
                 $parsedcontent = $data.value
-              
                 $statusCode = $response.StatusCode
                 $success = $true
             }
@@ -834,7 +830,6 @@ function Invoke-GraphQueryEX {
             $allResults = $data
             break
         }
-
         # Handle paging
         if ($data.'@odata.nextLink') {
             $fullUri = $data.'@odata.nextLink'
@@ -842,7 +837,7 @@ function Invoke-GraphQueryEX {
             $fullUri = $null
         }
     } while ($fullUri)
-
+    
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
     return @{
