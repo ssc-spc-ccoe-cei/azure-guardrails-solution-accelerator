@@ -52,6 +52,11 @@ evaluationError = L'évaluation a échoué en raison d'erreurs : {0}
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF
 nativeUserNonMfa = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM). Il y a {0} jours depuis la dernière connexion.
 nativeUserNoSignIn = Ce compte d'utilisateur natif n'a pas été configuré avec Authentification à facteurs multiples (AFM) et il n'a jamais été utilisé pour se connecter.
+mfaComplianceNoMfa = Aucune AMF configurée
+mfaComplianceSystemPreferred = Authentification préférée du système : {0}
+mfaComplianceMfaRegistered = AMF enregistrée avec les méthodes : {0}
+mfaComplianceOnlyOneMethod = Seulement 1 méthode AMF trouvée : {0}. Au moins 2 requises.
+mfaComplianceNoValidMethods = Aucune méthode AMF valide trouvée. Au moins 2 requises.
 
 retentionNotMet = Le {0} identifié ne répond pas aux exigences de conservation des données.
 readOnlyLaw = Il manque un verrou en lecture seule pour l'espace de travail {0} [Log Analytics Workspace (LAW)] identifié. Ajoutez le verrou en lecture seule pour éviter des suppressions accidentelles.
