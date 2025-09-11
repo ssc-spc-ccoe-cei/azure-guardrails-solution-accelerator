@@ -813,7 +813,7 @@ function Invoke-GraphQueryEX {
             catch {
                 $retryCount++
                 if ($retryCount -ge $MaxRetries) {
-                    Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message) at page $pagecounts"
+                    Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message) at page $pageCount"
                     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null
