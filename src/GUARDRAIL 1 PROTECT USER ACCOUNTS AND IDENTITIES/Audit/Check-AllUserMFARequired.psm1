@@ -34,6 +34,8 @@ function Check-AllUserMFARequired {
             $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
         }
         $allUsers = @($response.Content.value)
+     # Exclude disabled accounts from evaluation and output
+        $allUsers = $allusers | Where-Object { $_.accountEnabled -eq $true }
      # Exclude Break Glass accounts from evaluation and output (case-insensitive)
         $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
