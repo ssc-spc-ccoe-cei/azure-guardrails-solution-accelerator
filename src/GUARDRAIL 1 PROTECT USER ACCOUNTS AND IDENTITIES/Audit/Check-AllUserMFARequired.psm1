@@ -34,6 +34,15 @@ function Check-AllUserMFARequired {
             $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
         }
         $allUsers = @($response.Content.value)
+     # Exclude Break Glass accounts from evaluation and output (case-insensitive)
+        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        if ($bgUpns.Count -gt 0) {
+            $allUsers = @($allUsers | Where-Object {
+                $upn = $_.userPrincipalName
+                -not $upn -or ($bgUpns -notcontains $upn)
+            })
+        }
         Write-Verbose "Retrieved $($allUsers.Count) users"
     }
     catch {
@@ -112,7 +121,7 @@ function Check-AllUserMFARequired {
     # Determine compliance status and appropriate message
     if ($ErrorList.Count -gt 0) {
         # If there were errors during data collection, mark as not evaluated
-        $IsCompliant = "Not Evaluated"
+        $IsCompliant = $false
         $Comments = $msgTable.evaluationError -f ($ErrorList -join "; ")
     } 
     elseif ($totalUsers -eq 0) {
