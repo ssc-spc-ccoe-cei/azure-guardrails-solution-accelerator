@@ -84,7 +84,84 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_mfa_evaluation'
-    query: 'let reportTime = ReportTime;\nlet locale = toscalar(\n    GuardrailsUserRaw_CL\n    | where ReportTime_s == reportTime\n    | project Locale_s\n    | take 1\n);\nlet localizedMessages = case(\n    locale == "fr-CA", dynamic({\n        "allUsersHaveMFA": "Tous les comptes d\'utilisateurs natifs ont 2+ méthodes d\'authentification.",\n        "usersWithoutMFA": "{0} utilisateurs n\'ont pas d\'AMF appropriée configurée sur {1} utilisateurs totaux",\n        "noUsersFound": "Aucun utilisateur trouvé",\n        "evaluationError": "Erreur d\'évaluation: {0}",\n        "dataCollectedForAnalysis": "Données collectées pour {0} utilisateurs. L\'analyse détaillée de la conformité AMF sera effectuée dans le classeur."\n    }),\n    dynamic({\n        "allUsersHaveMFA": "Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.",\n        "usersWithoutMFA": "{0} users do not have proper MFA configured out of {1} total users",\n        "noUsersFound": "No users found",\n        "evaluationError": "Evaluation error: {0}",\n        "dataCollectedForAnalysis": "Data collected for {0} users. Detailed MFA compliance analysis will be performed in the workbook."\n    })\n);\nlet userData = GuardrailsUserRaw_CL\n| where ReportTime_s == reportTime\n| extend \n    systemPreferredMethodsArray = parse_json(systemPreferredAuthenticationMethods_s),\n    methodsRegisteredArray = parse_json(methodsRegistered_s);\nlet validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);\nlet validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound"]);\nlet mfaAnalysis = userData\n| extend \n    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,\n    hasValidSystemPreferred = iff(\n        isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),\n        array_length(array_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,\n        false\n    ),\n    hasMfaRegistered = isMfaRegistered_b,\n    validMfaMethodsCount = iff(\n        hasMfaRegistered == true and isnotempty(methodsRegisteredArray),\n        array_length(array_intersect(methodsRegisteredArray, validMfaMethods)),\n        0\n    ),\n    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2);\nlet summary = mfaAnalysis\n| summarize \n    TotalUsers = count(),\n    CompliantUsers = countif(isMfaCompliant == true),\n    NonCompliantUsers = countif(isMfaCompliant == false)\n| extend \n    IsCompliant = NonCompliantUsers == 0,\n    Comments = case(\n        TotalUsers == 0, localizedMessages["noUsersFound"],\n        NonCompliantUsers == 0, localizedMessages["allUsersHaveMFA"],\n        NonCompliantUsers > 0, strcat(localizedMessages["usersWithoutMFA"], " (", NonCompliantUsers, " non-compliant, ", CompliantUsers, " compliant)")\n    );\nsummary\n| project \n    ControlName_s = "GUARDRAIL 1",\n    ItemName_s = "All Cloud User Accounts MFA Check",\n    ReportTime_s = reportTime,\n    Required_s = "True",\n    ComplianceStatus_b = IsCompliant,\n    Comments_s = Comments,\n    itsgcode_s = "IA2(1)",\n    TimeGenerated = now()\n'
+    query: '''
+let reportTime = ReportTime;
+let locale = toscalar(
+    GuardrailsUserRaw_CL
+    | where ReportTime_s == reportTime
+    | project Locale_s
+    | take 1
+);
+let localizedMessages = case(
+    locale == "fr-CA", dynamic({
+        "allUsersHaveMFA": "Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.",
+        "usersWithoutMFA": "{0} utilisateurs n'ont pas d'AMF appropriée configurée sur {1} utilisateurs totaux",
+        "noUsersFound": "Aucun utilisateur trouvé",
+        "evaluationError": "Erreur d'évaluation: {0}",
+        "dataCollectedForAnalysis": "Données collectées pour {0} utilisateurs. L'analyse détaillée de la conformité AMF sera effectuée dans le classeur."
+    }),
+    dynamic({
+        "allUsersHaveMFA": "Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.",
+        "usersWithoutMFA": "{0} users do not have proper MFA configured out of {1} total users",
+        "noUsersFound": "No users found",
+        "evaluationError": "Evaluation error: {0}",
+        "dataCollectedForAnalysis": "Data collected for {0} users. Detailed MFA compliance analysis will be performed in the workbook."
+    })
+);
+let userData = GuardrailsUserRaw_CL
+| where ReportTime_s == reportTime;
+let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound"]);
+let mfaAnalysis = userData
+| extend 
+    systemPreferredMethodsArray = parse_json(systemPreferredAuthenticationMethods_s),
+    methodsRegisteredArray = parse_json(methodsRegistered_s),
+    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b
+| extend
+    hasValidSystemPreferred = iff(
+        isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
+        array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
+        false
+    ),
+    hasMfaRegistered = isMfaRegistered_b
+| extend
+    validMfaMethodsCount = iff(
+        hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
+        array_length(set_intersect(methodsRegisteredArray, validMfaMethods)),
+        0
+    )
+| extend
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2);
+let summary = mfaAnalysis
+| summarize 
+    TotalUsers = count(),
+    CompliantUsers = countif(isMfaCompliant == true),
+    NonCompliantUsers = countif(isMfaCompliant == false)
+| extend 
+    IsCompliant = NonCompliantUsers == 0,
+    Comments = case(
+        TotalUsers == 0, localizedMessages["noUsersFound"],
+        NonCompliantUsers == 0, localizedMessages["allUsersHaveMFA"],
+        NonCompliantUsers > 0, strcat(
+            iff(locale == "fr-CA", 
+                strcat(tostring(NonCompliantUsers), " utilisateurs n'ont pas d'AMF appropriée configurée sur ", tostring(TotalUsers), " utilisateurs totaux"),
+                strcat(tostring(NonCompliantUsers), " users do not have proper MFA configured out of ", tostring(TotalUsers), " total users")
+            ), 
+            " (", tostring(NonCompliantUsers), " non-compliant, ", tostring(CompliantUsers), " compliant)"
+        ),
+        "Unknown error"
+    );
+summary
+| project 
+    ControlName_s = "GUARDRAIL 1",
+    ItemName_s = "All Cloud User Accounts MFA Check",
+    ReportTime_s = reportTime,
+    Required_s = "True",
+    ComplianceStatus_b = IsCompliant,
+    Comments_s = Comments,
+    itsgcode_s = "IA2(1)",
+    TimeGenerated = now()
+'''
     functionAlias: 'gr_mfa_evaluation'
     functionParameters: 'ReportTime:string'
     version: 2
