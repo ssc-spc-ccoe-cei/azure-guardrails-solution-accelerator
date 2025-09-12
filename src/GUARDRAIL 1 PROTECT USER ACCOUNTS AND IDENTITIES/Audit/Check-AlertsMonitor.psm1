@@ -54,20 +54,17 @@ function CompareKQLQueryToPattern{
     )
 
     if ([string]::IsNullOrWhiteSpace($pattern)) {
-        Write-Error "Pattern is null or empty"
+        Write-Warning "Pattern is null or empty"
         return $false
     }
     
     if ([string]::IsNullOrWhiteSpace($targetQuery)) {
-        Write-Error "Target query is null or empty"
+        Write-Warning "Target query is null or empty"
         return $false
     }
 
-    try {
-        #Fix the formatting of KQL query
-        $normalizedTargetQuery = $targetQuery -replace '\|', ' | ' -replace '\s+', ' '
-        
-        $isMatch = $normalizedTargetQuery -imatch $pattern
+    try {        
+        $isMatch = $targetQuery -imatch $pattern
         
         Write-Verbose "Pattern matching: '$pattern' against '$normalizedTargetQuery' = $isMatch"
         
@@ -118,16 +115,26 @@ function Check-AlertsMonitor {
     $escapedSecondUPN = [regex]::Escape($SecondBreakGlassUPN)
     
     $BreakGlassAccountQueries = @(
-        # Pattern 1: Explicit OR conditions with negative lookahead to ensure different UPNs
-        "SigninLogs \| Where.*UserPrincipalName (?:==|=~|contains) `"($escapedFirstUPN|$escapedSecondUPN)`" or UserPrincipalName (?:==|=~|contains) `"(?!\1)($escapedFirstUPN|$escapedSecondUPN)`".*",
-        # Pattern 2: IN clause with negative lookahead to ensure both UPNs are included
-        "SigninLogs \| Where.*UserPrincipalName (?:in|has_any) \(`"($escapedFirstUPN|$escapedSecondUPN)`", `"(?!\1)($escapedFirstUPN|$escapedSecondUPN)`"\).*"
+        # Pattern 1: Explicit OR conditions – only matches if *both* distinct UPNs are present
+        "SigninLogs\s*\|\s*where.*UserPrincipalName\s*(?:==|=~|contains)\s+`"$escapedFirstUPN`"\s+or\s+UserPrincipalName\s*(?:==|=~|contains)\s+`"$escapedSecondUPN`".*"
+        ,
+        "SigninLogs\s*\|\s*where.*UserPrincipalName\s*(?:==|=~|contains)\s+`"$escapedSecondUPN`"\s+or\s+UserPrincipalName\s*(?:==|=~|contains)\s+`"$escapedFirstUPN`".*"
+        ,
+        # Pattern 2: IN/HAS_ANY clause – both UPNs must appear inside the list (order doesn’t matter)
+        "SigninLogs\s*\|\s*where.*UserPrincipalName\s*(?:in|has_any)\s*\((?=[^)]*`"$escapedFirstUPN`")(?=[^)]*`"$escapedSecondUPN`")[^)]*\)"
     )
     $BreakGlassAccountQueryMatchPattern = "`($($BreakGlassAccountQueries -join '|')`)"
 
     $AuditLogsQueries = @(
-        "AuditLogs \| Where.*(?:OperationName|ActivityDisplayName) (?:==|=~|contains) `"(?:Update|Add|Delete) conditional access policy`".*",
-        "AuditLogs \| Where.*(?:OperationName|ActivityDisplayName) in \(`"(Update|Add|Delete) conditional access policy`", `"(?!\1)(Update|Add|Delete) conditional access policy`", `"(?!\2)(Update|Add|Delete) conditional access policy`"\).*"
+        # 1) Single-value form (==, =~, contains) — flexible spaces
+        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:==|=~|contains)\s+`"(?:Update|Add|Delete)\s+conditional access policy`"\s*',
+
+        # 2) in()/has_any() list form — order-agnostic, requires ALL THREE present somewhere in (...)
+        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:in|has_any)\s*\(' +
+            '(?=[^)]*`"Update\s+conditional access policy`")' +
+            '(?=[^)]*`"Add\s+conditional access policy`")' +
+            '(?=[^)]*`"Delete\s+conditional access policy`")' +
+            '[^)]*\)'
     )
     $CAPQueryMatchPattern = "`($($AuditLogsQueries -join '|')`)"
 
