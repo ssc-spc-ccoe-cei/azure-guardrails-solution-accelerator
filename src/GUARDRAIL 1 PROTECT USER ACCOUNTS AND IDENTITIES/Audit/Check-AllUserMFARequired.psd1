@@ -14,7 +14,9 @@
 RootModule = 'Check-AllUserMFARequired'
 
 # Version number of this module.
-ModuleVersion = '1.0.9'
+
+ModuleVersion = '1.0.10'
+
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -131,4 +133,3 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
-
