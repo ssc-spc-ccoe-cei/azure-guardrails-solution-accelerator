@@ -101,7 +101,6 @@ function Check-AllUserMFARequired {
     
     # Pre-allocate counters to avoid repeated counting operations
     $mfaCompliantCount = 0
-    $mfaRegisteredCount = 0
     $nonCompliantCount = 0
     
     $totalUsers = $allUsers.Count
@@ -115,7 +114,7 @@ function Check-AllUserMFARequired {
         # Progress reporting for large tenants
         if ($totalUsers -gt 1000 -and ($processedCount % 1000 -eq 0 -or $processedCount -eq $totalUsers)) {
             $percentComplete = [math]::Round(($processedCount / $totalUsers) * 100, 1)
-            Write-Verbose "Progress: $processedCount/$totalUsers users processed ($percentComplete%)"
+            Write-Warning "Progress: $processedCount/$totalUsers users processed ($percentComplete%)"
         }
         
         # DEBUG: Start processing user
@@ -161,7 +160,6 @@ function Check-AllUserMFARequired {
                     if ($validSystemMethodsSet.Contains($method)) {
                         $isMfaCompliant = $true
                         $complianceReason = $msgTable.mfaComplianceSystemPreferred -f $method
-                        $matchingMethodsCount = 1
                         $matchedMethods = @($method)
                         Write-Warning "DEBUG: User $($u.userPrincipalName) - COMPLIANT via system preferred method: $method"
                         break
@@ -223,15 +221,11 @@ function Check-AllUserMFARequired {
         if ($isMfaCompliant) {
             $mfaCompliantCount++
             Write-Warning "DEBUG: User $($u.userPrincipalName) - Added to COMPLIANT count (total: $mfaCompliantCount)"
-        } elseif ($r -and $r.isMfaRegistered) {
-            $mfaRegisteredCount++
-            Write-Warning "DEBUG: User $($u.userPrincipalName) - Added to REGISTERED count (total: $mfaRegisteredCount)"
         } else {
             $nonCompliantCount++
             Write-Warning "DEBUG: User $($u.userPrincipalName) - Added to NON-COMPLIANT count (total: $nonCompliantCount)"
         }
 
-        # OPTIMIZATION: Use ArrayList.Add() instead of array concatenation
         $userObject = [PSCustomObject]@{
             # User properties
             id                = $u.id
@@ -277,7 +271,6 @@ function Check-AllUserMFARequired {
     Write-Warning "DEBUG: ===== PROCESSING COMPLETE ====="
     Write-Warning "DEBUG: Total users processed: $totalUsers"
     Write-Warning "DEBUG: Compliant users: $mfaCompliantCount"
-    Write-Warning "DEBUG: Registered users: $mfaRegisteredCount"
     Write-Warning "DEBUG: Non-compliant users: $nonCompliantCount"
     Write-Warning "DEBUG: ================================"
 
@@ -315,7 +308,7 @@ function Check-AllUserMFARequired {
     $finalMemory = [System.GC]::GetTotalMemory($false)
     $memoryUsed = ($finalMemory - $initialMemory) / 1MB
     
-    Write-Verbose "Performance Summary: Processing completed in $($stopwatch.ElapsedMilliseconds) ms, Memory used: $([math]::Round($memoryUsed, 2)) MB"
+    Write-Warning "Performance Summary: Processing completed in $($stopwatch.ElapsedMilliseconds) ms, Memory used: $([math]::Round($memoryUsed, 2)) MB"
     
     # Memory warning for very large tenants
     if ($memoryUsed -gt 200) {
