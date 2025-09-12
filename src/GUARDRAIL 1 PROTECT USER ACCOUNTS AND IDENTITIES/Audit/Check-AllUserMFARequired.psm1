@@ -85,6 +85,17 @@ function Check-AllUserMFARequired {
     $VALID_SYSTEM_METHODS = @("Fido2", "HardwareOTP")
     $VALID_MFA_METHODS = @("microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound")
     
+    # Create HashSets for O(1) lookups - created once before the loop for better performance
+    $validSystemMethodsSet = [System.Collections.Generic.HashSet[string]]::new()
+    foreach ($method in $VALID_SYSTEM_METHODS) {
+        $validSystemMethodsSet.Add($method) | Out-Null
+    }
+    
+    $validMfaMethodsSet = [System.Collections.Generic.HashSet[string]]::new()
+    foreach ($method in $VALID_MFA_METHODS) {
+        $validMfaMethodsSet.Add($method) | Out-Null
+    }
+    
     # Use ArrayList for better performance than array concatenation
     $augmentedUsers = [System.Collections.ArrayList]::new()
     
@@ -145,16 +156,14 @@ function Check-AllUserMFARequired {
             if ($isSystemPreferredEnabled -eq $true -and $null -ne $systemPreferredMethods -and $systemPreferredMethods.Count -gt 0) {
                 Write-Warning "DEBUG: User $($u.userPrincipalName) - Checking system preferred methods against valid list: $($VALID_SYSTEM_METHODS -join ', ')"
                 
-                # OPTIMIZATION: Use HashSet for O(1) lookups instead of array.Contains()
-                $systemMethodsSet = [System.Collections.Generic.HashSet[string]]::new($systemPreferredMethods)
-                
-                foreach ($validMethod in $VALID_SYSTEM_METHODS) {
-                    if ($systemMethodsSet.Contains($validMethod)) {
+                # OPTIMIZATION: Check each system preferred method against pre-created HashSet for O(1) lookups
+                foreach ($method in $systemPreferredMethods) {
+                    if ($validSystemMethodsSet.Contains($method)) {
                         $isMfaCompliant = $true
-                        $complianceReason = $msgTable.mfaComplianceSystemPreferred -f $validMethod
+                        $complianceReason = $msgTable.mfaComplianceSystemPreferred -f $method
                         $matchingMethodsCount = 1
-                        $matchedMethods = @($validMethod)
-                        Write-Warning "DEBUG: User $($u.userPrincipalName) - COMPLIANT via system preferred method: $validMethod"
+                        $matchedMethods = @($method)
+                        Write-Warning "DEBUG: User $($u.userPrincipalName) - COMPLIANT via system preferred method: $method"
                         break
                     }
                 }
@@ -173,14 +182,12 @@ function Check-AllUserMFARequired {
                 Write-Warning "DEBUG: User $($u.userPrincipalName) - MFA registered: $($r.isMfaRegistered), Methods count: $($methods.Count)"
                 Write-Warning "DEBUG: User $($u.userPrincipalName) - Valid MFA methods: $($VALID_MFA_METHODS -join ', ')"
                 
-                # OPTIMIZATION: Use HashSet for O(1) lookups instead of array.Contains()
-                $methodsSet = [System.Collections.Generic.HashSet[string]]::new($methods)
-                
-                foreach ($validMethod in $VALID_MFA_METHODS) {
-                    if ($methodsSet.Contains($validMethod)) {
+                # OPTIMIZATION: Check each user method against pre-created HashSet for O(1) lookups
+                foreach ($method in $methods) {
+                    if ($validMfaMethodsSet.Contains($method)) {
                         $matchingMethodsCount++
-                        $matchedMethods += $validMethod
-                        Write-Warning "DEBUG: User $($u.userPrincipalName) - Found valid method: $validMethod (total: $matchingMethodsCount)"
+                        $matchedMethods += $method
+                        Write-Warning "DEBUG: User $($u.userPrincipalName) - Found valid method: $method (total: $matchingMethodsCount)"
                     }
                 }
                 
@@ -343,6 +350,3 @@ function Check-AllUserMFARequired {
     }
     return $moduleOutput
 }
-
-
-
