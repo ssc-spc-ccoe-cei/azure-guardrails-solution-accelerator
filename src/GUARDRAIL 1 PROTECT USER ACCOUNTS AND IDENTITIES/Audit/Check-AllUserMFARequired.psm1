@@ -182,6 +182,7 @@ function Check-AllUserMFARequired {
             Start-Sleep -Seconds $retryDelay
             
             try {
+                Write-Warning "WorkspaceID is $WorkspaceID query is $kqlQuery"
                 $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $kqlQuery -ErrorAction Stop
                 
                 if ($queryResults.Results -and $queryResults.Results.Count -gt 0) {
