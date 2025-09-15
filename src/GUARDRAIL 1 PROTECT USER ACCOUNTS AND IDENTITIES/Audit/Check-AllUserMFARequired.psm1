@@ -149,22 +149,75 @@ function Check-AllUserMFARequired {
     # 5) Simple compliance check - detailed analysis will be done in KQL
     $totalUsers = $augmentedUsers.Count
     
-    # Determine basic compliance status
-    if ($ErrorList.Count -gt 0) {
-        $IsCompliant = $false
-        $Comments = $msgTable.evaluationError -f ($ErrorList -join "; ")
-    } 
-    elseif ($totalUsers -eq 0) {
-        $IsCompliant = $true
-        $Comments = $msgTable.noUsersFound 
-    }
-    else {
-        # Basic check - will be refined in KQL
-        $IsCompliant = $true
-        $Comments = $msgTable.dataCollectedForAnalysis -f $totalUsers
+    # Compliance logic moved to KQL function for better performance with large datasets
+    Write-Verbose "Raw data collection completed. Compliance analysis will be performed in KQL queries."
+    
+    # Send raw data to GuardrailsUserRaw_CL table
+    try {
+        Write-Verbose "Sending $($augmentedUsers.Count) user records to GuardrailsUserRaw_CL table"
+        New-LogAnalyticsData -Data $augmentedUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
+        Write-Verbose "Successfully sent raw data to Log Analytics"
+    } catch {
+        Write-Error "Failed to send raw data to Log Analytics: $_"
+        $ErrorList.Add("Failed to send raw data to GuardrailsUserRaw_CL: $_")
     }
     
-    Write-Verbose "Basic compliance check completed. Detailed analysis will be performed in KQL queries."
+    # Call KQL function to get compliance results with retry logic
+    $complianceResult = $null
+    $maxRetries = 3
+    $retryDelay = 30 # seconds
+    $success = $false
+    
+    try {
+        $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $ResourceGroupName -Name $logAnalyticsworkspaceName
+        $kqlQuery = "gr_mfa_evaluation('$ReportTime')"
+        
+        Write-Verbose "Calling KQL function with retry logic (max $maxRetries attempts, $retryDelay second delay)"
+        
+        for ($i = 1; $i -le $maxRetries; $i++) {
+            Write-Verbose "Attempt $i of $maxRetries - waiting $retryDelay seconds for data ingestion..."
+            Start-Sleep -Seconds $retryDelay
+            
+            try {
+                $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery -ErrorAction Stop
+                
+                if ($queryResults.Results -and $queryResults.Results.Count -gt 0) {
+                    $complianceResult = $queryResults.Results[0]
+                    $success = $true
+                    Write-Verbose "Successfully retrieved compliance result from KQL function on attempt $i"
+                    break
+                } else {
+                    Write-Warning "Attempt $i - KQL function returned no results, retrying..."
+                }
+            } catch {
+                Write-Warning "Attempt $i failed: $_"
+                if ($i -eq $maxRetries) {
+                    throw "All $maxRetries attempts failed. Last error: $_"
+                }
+            }
+        }
+        
+        if (-not $success) {
+            Write-Error "Failed to get compliance results after $maxRetries attempts"
+            $ErrorList.Add("Failed to call gr_mfa_evaluation KQL function after $maxRetries attempts")
+        }
+    } catch {
+        Write-Error "Failed to call KQL function: $_"
+        $ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
+    }
+    
+    # Add Profile information to compliance result if KQL function was successful
+    if ($complianceResult -and $EnableMultiCloudProfiles) {
+        try {
+            Write-Verbose "Adding Profile information to compliance result"
+            $result = Add-ProfileInformation -Result $complianceResult -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+            $complianceResult = $result
+            Write-Verbose "Profile information added successfully"
+        } catch {
+            Write-Warning "Failed to add Profile information: $_"
+            $ErrorList.Add("Failed to add Profile information: $_")
+        }
+    }
     
     # Performance reporting
     $stopwatch.Stop()
@@ -173,31 +226,14 @@ function Check-AllUserMFARequired {
     
     Write-Verbose "Performance Summary: Data collection completed in $($stopwatch.ElapsedMilliseconds) ms, Memory used: $([math]::Round($memoryUsed, 2)) MB"
 
-    # 6) Prepare compliance object with proper status and messaging
-    $PsObject = [PSCustomObject]@{
-        ComplianceStatus = $IsCompliant
-        ControlName      = $ControlName
-        ItemName         = $ItemName
-        Comments         = $Comments
-        ReportTime       = $ReportTime
-        itsgcode         = $itsgcode
-    }
-
-    # Add profile information if MCUP feature is enabled
-    if ($EnableMultiCloudProfiles) {
-        $result = Add-ProfileInformation -Result $PsObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
-        Write-Host "$result"
-        $PsObject = $result
-    }
-
-    # 8) Return in the expected envelope; main.ps1 will send AdditionalResults to Log Analytics
+    # 6) Return compliance results from KQL function
+    # Raw data already sent to GuardrailsUserRaw_CL table
+    # Compliance logic handled by KQL function for better performance
+    
+    # 7) Return in the expected envelope; main.ps1 will send ComplianceResults to Log Analytics
     $moduleOutput = [PSCustomObject]@{ 
-        ComplianceResults = $PsObject  # Single object, not array (consistent with other modules)
+        ComplianceResults = $complianceResult
         Errors            = $ErrorList
-        AdditionalResults = [PSCustomObject]@{
-            records = @($augmentedUsers)
-            logType = "GuardrailsUserRaw"
-        }
     }
     return $moduleOutput
 }

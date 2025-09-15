@@ -203,7 +203,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let mfaEvaluation = gr_mfa_evaluation(\"{RunTime}\");\nlet otherGr1Modules = gr_data(\"GUARDRAIL 1\", \"{RunTime}\", \"{RequiredYesNo}\")\n| where [\"Item Name\"] !contains \"All Cloud User Accounts MFA Check\" and [\"Item Name\"] !contains \"Vérification de l'AMF\";\nunion\n(\n    mfaEvaluation\n    | project [\"Item Name\"] = strcat(ItemName_s, \" (M)\"), Comments = Comments_s, Status = case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), [\"ITSG Control\"] = itsgcode_s, Remediation = gr_geturl(\"GUARDRAIL 1\", itsgcode_s), Profile = iff(isnotempty(Profile_d), tostring(toint(Profile_d)), \"\")\n),\n(\n    otherGr1Modules\n)",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 1",
         "timeContext": {

@@ -136,7 +136,6 @@ let summary = mfaAnalysis
     TotalUsers = count(),
     CompliantUsers = countif(isMfaCompliant == true),
     NonCompliantUsers = countif(isMfaCompliant == false), 
-    Profile_d = toscalar(GuardrailsCompliance_CL | where ControlName_s == "GUARDRAIL 1" and (ItemName_s == "All Cloud User Accounts MFA Check" or ItemName_s == "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques") and ReportTime_s == reportTime | project Profile_d | take 1)
 | extend 
     IsCompliant = NonCompliantUsers == 0,
     Comments = case(
