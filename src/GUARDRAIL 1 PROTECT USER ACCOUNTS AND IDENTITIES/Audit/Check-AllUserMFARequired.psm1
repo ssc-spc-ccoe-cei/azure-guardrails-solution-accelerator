@@ -17,9 +17,7 @@ function Check-AllUserMFARequired {
         [string] $SecondBreakGlassUPN,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles, # default to false
-        [Parameter(Mandatory=$true)]
-        [string] $Locale  # Locale for localization
+        [switch] $EnableMultiCloudProfiles # default to false
     )
 
     Write-Verbose "Entered Check-AllUserMFARequired for ItemName='$ItemName' itsgcode='$itsgcode'"
@@ -141,7 +139,6 @@ function Check-AllUserMFARequired {
             ReportTime        = $ReportTime
             ItemName          = $ItemName
             itsgcode          = $itsgcode
-            Locale            = $Locale
         }
         
         $augmentedUsers.Add($userObject) | Out-Null

@@ -87,9 +87,8 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     query: '''
 let reportTime = ReportTime;
 let locale = toscalar(
-    GuardrailsUserRaw_CL
-    | where ReportTime_s == reportTime
-    | project Locale_s
+    GR_TenantInfo_CL
+    | summarize arg_max(ReportTime_s, *) by TenantDomain_s\n    | project Locale_s
     | take 1
 );
 let localizedMessages = case(
