@@ -88,7 +88,7 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
 let reportTime = ReportTime;
 let locale = toscalar(
     GR_TenantInfo_CL
-    | summarize arg_max(ReportTime_s, *) by TenantDomain_s\n    | project Locale_s
+    | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
     | take 1
 );
 let localizedMessages = case(
@@ -135,7 +135,8 @@ let summary = mfaAnalysis
 | summarize 
     TotalUsers = count(),
     CompliantUsers = countif(isMfaCompliant == true),
-    NonCompliantUsers = countif(isMfaCompliant == false)
+    NonCompliantUsers = countif(isMfaCompliant == false), 
+    Profile_d = toscalar(GuardrailsCompliance_CL | where ControlName_s == "GUARDRAIL 1" and (ItemName_s == "All Cloud User Accounts MFA Check" or ItemName_s == "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques") and ReportTime_s == reportTime | project Profile_d | take 1)
 | extend 
     IsCompliant = NonCompliantUsers == 0,
     Comments = case(
@@ -153,7 +154,7 @@ let summary = mfaAnalysis
 summary
 | project 
     ControlName_s = "GUARDRAIL 1",
-    ItemName_s = "All Cloud User Accounts MFA Check",
+    ItemName_s = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
     ReportTime_s = reportTime,
     Required_s = "True",
     ComplianceStatus_b = IsCompliant,
