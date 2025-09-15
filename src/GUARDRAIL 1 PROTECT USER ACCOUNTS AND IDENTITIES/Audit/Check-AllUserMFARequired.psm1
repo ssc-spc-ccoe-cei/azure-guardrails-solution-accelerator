@@ -21,8 +21,7 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [string] $WorkSpaceID,  # Log Analytics Workspace ID
         [Parameter(Mandatory=$true)]
-        [string] $WorkspaceKey,  # Log Analytics Workspace Key
-        [Parameter(Mandatory=$true)]
+        [string] $WorkspaceKey  # Log Analytics Workspace Key
     )
 
     Write-Verbose "Entered Check-AllUserMFARequired for ItemName='$ItemName' itsgcode='$itsgcode'"
