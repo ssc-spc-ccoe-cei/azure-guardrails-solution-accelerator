@@ -17,7 +17,12 @@ function Check-AllUserMFARequired {
         [string] $SecondBreakGlassUPN,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # default to false
+        [switch] $EnableMultiCloudProfiles, # default to false
+        [Parameter(Mandatory=$true)]
+        [string] $WorkSpaceID,  # Log Analytics Workspace ID
+        [Parameter(Mandatory=$true)]
+        [string] $WorkspaceKey,  # Log Analytics Workspace Key
+        [Parameter(Mandatory=$true)]
     )
 
     Write-Verbose "Entered Check-AllUserMFARequired for ItemName='$ItemName' itsgcode='$itsgcode'"
@@ -169,7 +174,6 @@ function Check-AllUserMFARequired {
     $success = $false
     
     try {
-        $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $ResourceGroupName -Name $logAnalyticsworkspaceName
         $kqlQuery = "gr_mfa_evaluation('$ReportTime')"
         
         Write-Verbose "Calling KQL function with retry logic (max $maxRetries attempts, $retryDelay second delay)"
@@ -179,7 +183,7 @@ function Check-AllUserMFARequired {
             Start-Sleep -Seconds $retryDelay
             
             try {
-                $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery -ErrorAction Stop
+                $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $kqlQuery -ErrorAction Stop
                 
                 if ($queryResults.Results -and $queryResults.Results.Count -gt 0) {
                     $complianceResult = $queryResults.Results[0]
