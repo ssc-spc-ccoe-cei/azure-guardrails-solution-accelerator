@@ -16,6 +16,9 @@ function Check-AllUserMFARequired {
         [switch] $EnableMultiCloudProfiles # default to false
     )
 
+    $ErrorList = @()
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
     # Call KQL function to get compliance results with retry logic
     $complianceResult = $null
     $maxRetries = 10
@@ -79,7 +82,7 @@ function Check-AllUserMFARequired {
     $finalMemory = [System.GC]::GetTotalMemory($false)
     $memoryUsed = ($finalMemory - $initialMemory) / 1MB
     
-    Write-Verbose "Performance Summary: Data collection completed in $($stopwatch.ElapsedMilliseconds) ms, Memory used: $([math]::Round($memoryUsed, 2)) MB"
+    Write-Warning "Performance Summary: Data collection completed in $($stopwatch.ElapsedMilliseconds) ms, Memory used: $([math]::Round($memoryUsed, 2)) MB"
 
     # 6) Return compliance results from KQL function
     # Raw data already sent to GuardrailsUserRaw_CL table
