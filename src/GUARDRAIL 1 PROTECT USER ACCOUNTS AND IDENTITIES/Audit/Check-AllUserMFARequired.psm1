@@ -32,7 +32,6 @@ function Check-AllUserMFARequired {
         
         for ($i = 1; $i -le $maxRetries; $i++) {
             try {
-                Write-Warning "WorkspaceID is $WorkspaceID query is $kqlQuery"
                 $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $kqlQuery -ErrorAction Stop
                 
                 $resultsArray = @($queryResults.Results)
@@ -79,10 +78,8 @@ function Check-AllUserMFARequired {
     
     # Performance reporting
     $stopwatch.Stop()
-    $finalMemory = [System.GC]::GetTotalMemory($false)
-    $memoryUsed = ($finalMemory - $initialMemory) / 1MB
     
-    Write-Warning "Performance Summary: Data collection completed in $($stopwatch.ElapsedMilliseconds) ms, Memory used: $([math]::Round($memoryUsed, 2)) MB"
+    Write-Warning "Performance Summary: Query Executed in $($stopwatch.ElapsedMilliseconds) ms"
 
     # 6) Return compliance results from KQL function
     # Raw data already sent to GuardrailsUserRaw_CL table

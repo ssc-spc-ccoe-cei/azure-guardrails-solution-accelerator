@@ -2169,7 +2169,7 @@ function FetchAllUserRawData {
         $ErrorList.Add("Failed to send raw data to GuardrailsUserRaw_CL: $_")
     }
     # Retry loop only queries for records
-    $maxRetries = 30
+    $maxRetries = 10
     $retryDelay = 30
     $attempt = 0
     do {
