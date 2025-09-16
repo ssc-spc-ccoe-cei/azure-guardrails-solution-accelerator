@@ -1818,7 +1818,7 @@ function Check-BuiltInPolicies {
         [string]$itsgcode,
         [string]$CloudUsageProfiles = "3",
         [string]$ModuleProfiles,
-               [switch]$EnableMultiCloudProfiles,
+                                                         [switch]$EnableMultiCloudProfiles,
         [System.Collections.ArrayList]$ErrorList
     )
     
@@ -2159,6 +2159,7 @@ function FetchAllUserRawData {
         }
         $augmentedUsers.Add($userObject) | Out-Null
     }
+    # Send data once before loop
     try {
         Write-Verbose "Sending $($augmentedUsers.Count) user records to GuardrailsUserRaw_CL table"
         New-LogAnalyticsData -Data $augmentedUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
@@ -2166,6 +2167,33 @@ function FetchAllUserRawData {
     } catch {
         Write-Error "Failed to send raw data to Log Analytics: $_"
         $ErrorList.Add("Failed to send raw data to GuardrailsUserRaw_CL: $_")
+    }
+    # Retry loop only queries for records
+    $maxRetries = 30
+    $retryDelay = 30
+    $attempt = 0
+    do {
+        $query = "GuardrailsUserRaw_CL | where ReportTime == '$ReportTime' | count"
+        try {
+            $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
+            $recordCount = 0
+            if ($result.Results.Count -gt 0 -and $result.Results[0].Count) {
+                $recordCount = [int]$result.Results[0].Count
+            }
+            if ($recordCount -gt 0) {
+                break
+            } else {
+                Write-Verbose "No records found for ReportTime $ReportTime in GuardrailsUserRaw_CL. Retrying..."
+                Start-Sleep -Seconds $retryDelay
+            }
+        } catch {
+            Write-Warning "Failed to query Log Analytics for GuardrailsUserRaw_CL: $_"
+            Start-Sleep -Seconds $retryDelay
+        }
+        $attempt++
+    } while ($attempt -lt $maxRetries)
+    if ($attempt -ge $maxRetries) {
+        $ErrorList.Add("No records found in GuardrailsUserRaw_CL for ReportTime $ReportTime after $maxRetries attempts.")
     }
     return $ErrorList
 }
