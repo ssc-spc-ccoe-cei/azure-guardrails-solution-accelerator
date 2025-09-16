@@ -1818,7 +1818,7 @@ function Check-BuiltInPolicies {
         [string]$itsgcode,
         [string]$CloudUsageProfiles = "3",
         [string]$ModuleProfiles,
-                                                         [switch]$EnableMultiCloudProfiles,
+        [switch]$EnableMultiCloudProfiles,
         [System.Collections.ArrayList]$ErrorList
     )
     
