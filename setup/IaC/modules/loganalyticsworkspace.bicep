@@ -135,7 +135,7 @@ let summary = mfaAnalysis
 | summarize 
     TotalUsers = count(),
     CompliantUsers = countif(isMfaCompliant == true),
-    NonCompliantUsers = countif(isMfaCompliant == false), 
+    NonCompliantUsers = countif(isMfaCompliant == false) 
 | extend 
     IsCompliant = NonCompliantUsers == 0,
     Comments = case(

@@ -189,6 +189,14 @@ catch {
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
+
+# Ingest all user raw data before running modules
+$FirstBreakGlassUPN = Get-GSAAutomationVariable -Name "FirstBreakGlassUPN"
+$SecondBreakGlassUPN = Get-GSAAutomationVariable -Name "SecondBreakGlassUPN"
+$UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -msgTable $msgTable -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+if ($UserRawDataErrors.Count -gt 0) {
+    Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+}
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName = "GR-ComplianceChecks-Msgs"
 if (Get-Module -Name GR-ComplianceChecks) {

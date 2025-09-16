@@ -1818,7 +1818,7 @@ function Check-BuiltInPolicies {
         [string]$itsgcode,
         [string]$CloudUsageProfiles = "3",
         [string]$ModuleProfiles,
-        [switch]$EnableMultiCloudProfiles,
+               [switch]$EnableMultiCloudProfiles,
         [System.Collections.ArrayList]$ErrorList
     )
     
@@ -2074,5 +2074,99 @@ function Check-BuiltInPolicies {
 
     Write-Host "Completed policy compliance check. Found $($results.Count) results"
     return $results
+}
+
+function FetchAllUserRawData {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string] $FirstBreakGlassUPN,
+        [Parameter(Mandatory=$true)]
+        [string] $SecondBreakGlassUPN,
+        [Parameter(Mandatory=$true)]
+        [string] $WorkSpaceID,
+        [Parameter(Mandatory=$true)]
+        [string] $WorkspaceKey
+    )
+    $ErrorList = @()
+    $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+    try {
+        $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
+        if ($response -is [System.Array]) {
+            $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
+        }
+        $allUsers = @($response.Content.value)
+        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        if ($bgUpns.Count -gt 0) {
+            $allUsers = @($allUsers | Where-Object {
+                $upn = $_.userPrincipalName
+                -not $upn -or ($bgUpns -notcontains $upn)
+            })
+        }
+    } catch {
+        Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
+        $ErrorList += "Graph call failed for users list: $_"
+        $allUsers = @()
+    }
+    $regPath = "/reports/authenticationMethods/userRegistrationDetails"
+    $registrationDetails = @()
+    try {
+        $regResp = Invoke-GraphQueryEX -urlPath $regPath -ErrorAction Stop
+        if ($regResp -is [System.Array]) {
+            $regResp = $regResp | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
+        }
+        $registrationDetails = @($regResp.Content.value)
+    } catch {
+        Write-Warning "Failed to call Microsoft Graph REST API at URL '$regPath'; error: $_"
+        $ErrorList += "Graph call failed for registration details: $_"
+        $registrationDetails = @()
+    }
+    $regById = @{
+    }
+    foreach ($r in $registrationDetails) {
+        if ($null -ne $r.id -and -not $regById.ContainsKey($r.id)) { $regById[$r.id] = $r }
+    }
+    $augmentedUsers = [System.Collections.ArrayList]::new()
+    foreach ($u in $allUsers) {
+        $r = $null
+        if ($null -ne $u.id -and $regById.ContainsKey($u.id)) { $r = $regById[$u.id] }
+        $methods = @()
+        if ($null -ne $r -and $null -ne $r.methodsRegistered) { $methods = @($r.methodsRegistered) }
+        $userObject = [PSCustomObject]@{
+            id                = $u.id
+            userPrincipalName = $u.userPrincipalName
+            displayName       = $u.displayName
+            mail              = $u.mail
+            createdDateTime   = $u.createdDateTime
+            userType          = $u.userType
+            accountEnabled    = $u.accountEnabled
+            signInActivity    = $u.signInActivity
+            isMfaRegistered       = $r.isMfaRegistered
+            isMfaCapable          = $r.isMfaCapable
+            isSsprEnabled         = $r.isSsprEnabled
+            isSsprRegistered      = $r.isSsprRegistered
+            isSsprCapable         = $r.isSsprCapable
+            isPasswordlessCapable = $r.isPasswordlessCapable
+            defaultMethod         = $r.defaultMethod
+            methodsRegistered     = $methods
+            isSystemPreferredAuthenticationMethodEnabled = $r.isSystemPreferredAuthenticationMethodEnabled
+            systemPreferredAuthenticationMethods = $r.systemPreferredAuthenticationMethods
+            userPreferredMethodForSecondaryAuthentication = $r.userPreferredMethodForSecondaryAuthentication
+            ReportTime        = $ReportTime
+        }
+        $augmentedUsers.Add($userObject) | Out-Null
+    }
+    try {
+        Write-Verbose "Sending $($augmentedUsers.Count) user records to GuardrailsUserRaw_CL table"
+        New-LogAnalyticsData -Data $augmentedUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
+        Write-Verbose "Successfully sent raw data to Log Analytics"
+    } catch {
+        Write-Error "Failed to send raw data to Log Analytics: $_"
+        $ErrorList.Add("Failed to send raw data to GuardrailsUserRaw_CL: $_")
+    }
+    return $ErrorList
 }
 
