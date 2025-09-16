@@ -46,18 +46,9 @@ allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Po
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
 
-allUsersHaveMFA = All MFA capable users have MFA enabled ({0}/{1})
-usersWithoutMFA = {0} out of {1} MFA capable users do not have MFA enabled
-noUsersFound = No users found in tenant
-evaluationError = Evaluation failed due to errors: {0}
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly
 nativeUserNonMfa = This native user account has not been set up with Multi-Factor Authentication (MFA). It has been {0} days since the last sign-in.
 nativeUserNoSignIn = This native user account has not been set up with Multi-Factor Authentication (MFA) and it has never been used to sign in.
-mfaComplianceNoMfa = No MFA configured
-mfaComplianceSystemPreferred = System preferred authentication: {0}
-mfaComplianceMfaRegistered = MFA registered with methods: {0}
-mfaComplianceOnlyOneMethod = Only 1 MFA method found: {0}. At least 2 required.
-mfaComplianceNoValidMethods = No valid MFA methods found. At least 2 required.
 
 
 retentionNotMet = The LAW {0} does not meet data retention requirements
