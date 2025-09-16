@@ -28,25 +28,26 @@ function Check-AllUserMFARequired {
         Write-Verbose "Calling KQL function with retry logic (max $maxRetries attempts, $retryDelay second delay)"
         
         for ($i = 1; $i -le $maxRetries; $i++) {
-            Write-Verbose "Attempt $i of $maxRetries - waiting $retryDelay seconds for data ingestion..."
-            Start-Sleep -Seconds $retryDelay
-            
             try {
                 Write-Warning "WorkspaceID is $WorkspaceID query is $kqlQuery"
                 $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $kqlQuery -ErrorAction Stop
                 
-                if ($queryResults.Results -and $queryResults.Results.Count -gt 0) {
-                    $complianceResult = $queryResults.Results[0]
+                $resultsArray = @($queryResults.Results)
+                if ($resultsArray.Count -gt 0) {
+                    $complianceResult = $resultsArray[0]
                     $success = $true
                     Write-Verbose "Successfully retrieved compliance result from KQL function on attempt $i"
                     break
                 } else {
-                    Write-Warning "Attempt $i - KQL function returned no results, retrying..."
+                    Write-Warning "Attempt $i - KQL function returned no results, retrying after $retryDelay seconds..."
+                    if ($i -lt $maxRetries) { Start-Sleep -Seconds $retryDelay }
                 }
             } catch {
                 Write-Warning "Attempt $i failed: $_"
                 if ($i -eq $maxRetries) {
                     throw "All $maxRetries attempts failed. Last error: $_"
+                } else {
+                    Start-Sleep -Seconds $retryDelay
                 }
             }
         }
