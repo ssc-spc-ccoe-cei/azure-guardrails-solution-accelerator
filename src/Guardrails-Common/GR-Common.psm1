@@ -2173,7 +2173,7 @@ function FetchAllUserRawData {
     $retryDelay = 30
     $attempt = 0
     do {
-        $query = "GuardrailsUserRaw_CL | where ReportTime == '$ReportTime' | count"
+        $query = "GuardrailsUserRaw_CL | where ReportTime_s == '$ReportTime' | count"
         try {
             $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
             $recordCount = 0
