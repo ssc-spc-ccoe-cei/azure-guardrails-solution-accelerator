@@ -2183,11 +2183,12 @@ function FetchAllUserRawData {
             if ($recordCount -gt 0) {
                 break
             } else {
-                Write-Verbose "No records found for ReportTime $ReportTime in GuardrailsUserRaw_CL. Retrying..."
+                Write-Warning "No records found for ReportTime $ReportTime in GuardrailsUserRaw_CL. Retrying..."
                 Start-Sleep -Seconds $retryDelay
             }
         } catch {
-            Write-Warning "Failed to query Log Analytics for GuardrailsUserRaw_CL: $_"
+            Write-Error "Failed to query Log Analytics for GuardrailsUserRaw_CL: $_"
+            $ErrorList.Add("Failed to query Log Analytics for GuardrailsUserRaw_CL: $_")
             Start-Sleep -Seconds $retryDelay
         }
         $attempt++
