@@ -223,7 +223,7 @@ catch {
 }
 
 # Ingest all user raw data before running modules
-$UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+$UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
 if ($UserRawDataErrors.Count -gt 0) {
     Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
 }
