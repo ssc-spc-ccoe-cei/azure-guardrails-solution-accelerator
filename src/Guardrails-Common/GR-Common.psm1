@@ -1818,7 +1818,7 @@ function Check-BuiltInPolicies {
         [string]$itsgcode,
         [string]$CloudUsageProfiles = "3",
         [string]$ModuleProfiles,
-               [switch]$EnableMultiCloudProfiles,
+                             [switch]$EnableMultiCloudProfiles,
         [System.Collections.ArrayList]$ErrorList
     )
     
@@ -2093,20 +2093,19 @@ function FetchAllUserRawData {
     $ErrorList = @()
     $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
     try {
-        # Build $filter to exclude break glass accounts if provided
-        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-        $usersPathWithFilter = $usersPath
-        if ($bgUpns.Count -gt 0) {
-            $notClauses = $bgUpns | ForEach-Object { "userPrincipalName ne '$($_)'" }
-            $filter = ($notClauses -join " and ")
-            $usersPathWithFilter += "&`$filter=$filter"
-        }
-
-        $response = Invoke-GraphQueryEX -urlPath $usersPathWithFilter -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
         if ($response -is [System.Array]) {
             $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
         }
         $allUsers = @($response.Content.value)
+        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        if ($bgUpns.Count -gt 0) {
+            $allUsers = @($allUsers | Where-Object {
+                $upn = $_.userPrincipalName
+                -not $upn -or ($bgUpns -notcontains $upn)
+            })
+        }
     } catch {
         Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
         $ErrorList += "Graph call failed for users list: $_"
