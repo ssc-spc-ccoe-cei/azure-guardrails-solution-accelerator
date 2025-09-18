@@ -1463,7 +1463,7 @@ function Check-PBMMPolicies {
                 # All 3 required policies are applied
                 $Comment += ' ' + $msgTable.reqPolicyApplied
 
-                # PBMM is applied and not excluded. Testing if specific policies haven't been excluded.
+                # PBMM is applied and not excluded. Testing if specific policies haven't been exempted.
                 $policyExemptionList = Test-PolicyExemptionExists -ScopeId $tempId -requiredPolicyExemptionIds $requiredPolicyExemptionIds
 
                 $exemptList = $policyExemptionList.exemptionId
@@ -2172,6 +2172,7 @@ function FetchAllUserRawData {
     $maxRetries = 10
     $retryDelay = 30
     $attempt = 0
+    $recordCount = 0
     do {
         $query = "GuardrailsUserRaw_CL | where ReportTime_s == '$ReportTime' | count"
         try {
@@ -2195,6 +2196,10 @@ function FetchAllUserRawData {
     } while ($attempt -lt $maxRetries)
     if ($attempt -ge $maxRetries) {
         $ErrorList.Add("No records found in GuardrailsUserRaw_CL for ReportTime $ReportTime after $maxRetries attempts.")
+    }
+    # Compare ingested record count to augmentedUsers.Count
+    if ($recordCount -ne $augmentedUsers.Count) {
+        $ErrorList.Add("Mismatch in ingested user records: expected $($augmentedUsers.Count), found $recordCount in GuardrailsUserRaw_CL for ReportTime $ReportTime.")
     }
     return $ErrorList
 }
