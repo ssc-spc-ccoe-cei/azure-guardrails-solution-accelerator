@@ -2090,25 +2090,24 @@ function FetchAllUserRawData {
         [Parameter(Mandatory=$true)]
         [string] $WorkspaceKey
     )
-    $ErrorList = @()
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
     $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
-    # Build $filter string to exclude break glass accounts
-    $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-    $filterString = ""
-    if ($bgUpns.Count -gt 0) {
-        # Use multiple 'ne' joined by 'and' for userPrincipalName
-        $filterString = ($bgUpns | ForEach-Object { "userPrincipalName ne '$($_)'" }) -join " and "
-        $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity&`$filter=$filterString"
-    } else {
-        $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
-    }
+
+
     try {
         $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
         if ($response -is [System.Array]) {
             $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
         }
         $allUsers = @($response.Content.value)
-        # No need to filter break glass accounts locally anymore
+        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        if ($bgUpns.Count -gt 0) {
+            $allUsers = @($allUsers | Where-Object {
+                $upn = $_.userPrincipalName
+                -not [string]::IsNullOrWhiteSpace($upn) -and ($bgUpns -notcontains $upn)
+            })
+        }
     } catch {
         Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
         $ErrorList += "Graph call failed for users list: $_"
