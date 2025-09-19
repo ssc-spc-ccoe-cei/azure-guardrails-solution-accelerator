@@ -2091,8 +2091,7 @@ function FetchAllUserRawData {
         [string] $WorkspaceKey
     )
     $ErrorList = [System.Collections.Generic.List[string]]::new()
-    $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
-
+    $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity&`$filter=accountEnabled eq true"
 
     try {
         $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
@@ -2102,11 +2101,31 @@ function FetchAllUserRawData {
         $allUsers = @($response.Content.value)
         $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        
+        Write-Warning "Break-glass UPNs to filter out: $($bgUpns -join ', ')"
+        Write-Warning "Total users before filtering: $($allUsers.Count)"
+        
         if ($bgUpns.Count -gt 0) {
+            # Convert break-glass UPNs to lowercase for case-insensitive comparison
+            $bgUpnsLower = $bgUpns | ForEach-Object { $_.ToLower() }
+            
             $allUsers = @($allUsers | Where-Object {
                 $upn = $_.userPrincipalName
-                -not [string]::IsNullOrWhiteSpace($upn) -and ($bgUpns -notcontains $upn)
+                if ([string]::IsNullOrWhiteSpace($upn)) {
+                    return $false
+                }
+                # Case-insensitive comparison
+                $upnLower = $upn.ToLower()
+                $isNotBreakGlass = $bgUpnsLower -notcontains $upnLower
+                
+                if (-not $isNotBreakGlass) {
+                    Write-Warning "Filtering out break-glass account: $upn"
+                }
+                return $isNotBreakGlass
             })
+            Write-Warning "Total users after filtering: $($allUsers.Count)"
+        } else {
+            Write-Warning "No break-glass UPNs provided, no filtering applied"
         }
     } catch {
         Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
