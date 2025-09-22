@@ -2200,7 +2200,7 @@ function FetchAllUserRawData {
     
     try {
         # user query with filtering
-        $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity&`$filter=accountEnabled eq true"
+        $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity`&`$filter=accountEnabled eq true and userType eq 'Member'"
         
         $response = Invoke-GraphQueryWithMetrics -UrlPath $usersPath -Operation "Fetch Users"
         $allUsers = @($response.Content.value)
