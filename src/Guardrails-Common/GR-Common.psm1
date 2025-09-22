@@ -2124,7 +2124,8 @@ function FetchAllUserRawData {
         DataIngestionAttempts = 0
     }
     
-    Write-Verbose "=== Starting FetchAllUserRawData at $($performanceMetrics.StartTime) ==="
+    $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
+    Write-Verbose "=== Starting FetchAllUserRawData at $startTimeFormatted ==="
     
     # Helper function for centralized error handling
     function Add-FunctionError {
@@ -2134,10 +2135,10 @@ function FetchAllUserRawData {
             [string] $Category = "General"
         )
         
-        $errorMsg = if ($Exception) {
-            "$Category - $Message : $($Exception.Message)"
+        if ($Exception) {
+            $errorMsg = "$Category - $Message : $($Exception.Message)"
         } else {
-            "$Category - $Message"
+            $errorMsg = "$Category - $Message"
         }
         
         Write-Warning $errorMsg
@@ -2155,17 +2156,17 @@ function FetchAllUserRawData {
         return [int]$delay
     }
     
-    # Helper function for Graph API calls (leverages Invoke-GraphQueryEX's built-in retry)
+    # Helper function for Graph API calls
     function Invoke-GraphQueryWithMetrics {
         param(
             [string] $UrlPath,
             [string] $Operation = "Graph API Call"
         )
         
-        Write-Verbose "  → $Operation : $UrlPath"
+        Write-Verbose "  -> $Operation : $UrlPath"
         
         try {
-            # Use the existing retry logic in Invoke-GraphQueryEX with enhanced settings
+            # Use the existing retry logic in Invoke-GraphQueryEX
             $response = Invoke-GraphQueryEX -urlPath $UrlPath -MaxRetries 5 -RetryDelaySeconds 10 -ErrorAction Stop
             $performanceMetrics.GraphApiCalls++
             
@@ -2185,7 +2186,7 @@ function FetchAllUserRawData {
                 throw [System.Exception]::new("Graph API returned status code: $($response.StatusCode)")
             }
             
-            Write-Verbose "  ✓ $Operation completed successfully"
+            Write-Verbose "  Success: $Operation completed"
             return $response
         }
         catch {
@@ -2199,21 +2200,24 @@ function FetchAllUserRawData {
     $allUsers = @()
     
     try {
-        # user query with filtering
-        $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity`&`$filter=accountEnabled eq true and userType eq 'Member'"
+        # User query with filtering - simplified URL construction
+        $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+        $filterQuery = "accountEnabled eq true and userType eq 'Member'"
+        $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
         
         $response = Invoke-GraphQueryWithMetrics -UrlPath $usersPath -Operation "Fetch Users"
         $allUsers = @($response.Content.value)
         
-        Write-Verbose "  ✓ Retrieved $($allUsers.Count) active member users from Graph"
+        Write-Verbose "  Success: Retrieved $($allUsers.Count) active member users from Graph"
         
-        # Filter out break-glass accounts more efficiently
+        # Filter out break-glass accounts
         $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | 
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
             ForEach-Object { $_.ToLower() }
         
         if ($bgUpns.Count -gt 0) {
-            Write-Verbose "  → Filtering out break-glass accounts: $($bgUpns -join ', ')"
+            $bgUpnList = $bgUpns -join ', '
+            Write-Verbose "  -> Filtering out break-glass accounts: $bgUpnList"
             $originalCount = $allUsers.Count
             
             # Use hashtable for O(1) lookup performance
@@ -2222,16 +2226,19 @@ function FetchAllUserRawData {
             
             $allUsers = $allUsers | Where-Object { 
                 $upn = $_.userPrincipalName
-                if ([string]::IsNullOrWhiteSpace($upn)) { return $false }
+                if ([string]::IsNullOrWhiteSpace($upn)) { 
+                    return $false 
+                }
                 
                 $isNotBreakGlass = -not $bgUpnLookup.ContainsKey($upn.ToLower())
                 if (-not $isNotBreakGlass) { 
-                    Write-Verbose "    • Filtered out: $upn" 
+                    Write-Verbose "    Filtered out: $upn" 
                 }
                 return $isNotBreakGlass
             }
             
-            Write-Verbose "  ✓ Filtered: $originalCount → $($allUsers.Count) users (removed $($originalCount - $allUsers.Count) break-glass accounts)"
+            $removedCount = $originalCount - $allUsers.Count
+            Write-Verbose "  Success: Filtered $originalCount -> $($allUsers.Count) users (removed $removedCount break-glass accounts)"
         }
         
     } catch {
@@ -2248,11 +2255,10 @@ function FetchAllUserRawData {
         $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details"
         $registrationDetails = @($regResponse.Content.value)
         
-        Write-Verbose "  ✓ Retrieved $($registrationDetails.Count) registration records"
+        Write-Verbose "  Success: Retrieved $($registrationDetails.Count) registration records"
         
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI"
-        # Continue with empty registration data rather than failing completely
         Write-Warning "Continuing with empty registration data..."
     }
     
@@ -2264,9 +2270,9 @@ function FetchAllUserRawData {
             $regById[$_.id] = $_
         }
     }
-    Write-Verbose "  ✓ Built lookup table for $($regById.Count) registration records"
+    Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
     
-    # Step 4: Process users in batches to manage memory efficiently
+    # Step 4: Process users in batches
     Write-Verbose "Step 4: Processing users in batches of $BatchSize..."
     $augmentedUsers = [System.Collections.Generic.List[PSObject]]::new()
     $totalUsers = $allUsers.Count
@@ -2278,9 +2284,10 @@ function FetchAllUserRawData {
         $batchNumber = [Math]::Floor($batchStart / $BatchSize) + 1
         $totalBatches = [Math]::Ceiling($totalUsers / $BatchSize)
         
-        Write-Verbose "  → Processing batch $batchNumber/$totalBatches - $($currentBatch.Count) users"
+        $batchUserCount = $currentBatch.Count
+        Write-Verbose "  -> Processing batch $batchNumber/$totalBatches with $batchUserCount users"
         
-        # Process current batch using pipeline for better performance
+        # Process current batch
         $batchResults = $currentBatch | ForEach-Object {
             $user = $_
             $registration = $regById[$user.id]
@@ -2318,22 +2325,23 @@ function FetchAllUserRawData {
         $batchResults | ForEach-Object { $augmentedUsers.Add($_) }
         $processedUsers += $currentBatch.Count
         
-        Write-Verbose "  ✓ Batch $batchNumber completed. Progress: $processedUsers/$totalUsers users"
+        Write-Verbose "  Success: Batch $batchNumber completed. Progress: $processedUsers/$totalUsers users"
         
-        # Optional: Add small delay between batches to avoid overwhelming the system
+        # Small delay between batches
         if ($batchNumber -lt $totalBatches) {
             Start-Sleep -Milliseconds 100
         }
     }
     
     $performanceMetrics.UsersProcessed = $processedUsers
-    Write-Verbose "  ✓ All users processed: $($augmentedUsers.Count) augmented user records created"
+    Write-Verbose "  Success: All users processed - $($augmentedUsers.Count) augmented user records created"
     
-    # Step 5: Send data to Log Analytics with retry logic
+    # Step 5: Send data to Log Analytics
     Write-Verbose "Step 5: Sending data to Log Analytics..."
     
     try {
-        Write-Verbose "  → Uploading $($augmentedUsers.Count) records to GuardrailsUserRaw_CL table..."
+        $recordCount = $augmentedUsers.Count
+        Write-Verbose "  -> Uploading $recordCount records to GuardrailsUserRaw_CL table..."
         
         # Retry logic for data upload
         $uploadSuccessful = $false
@@ -2341,7 +2349,7 @@ function FetchAllUserRawData {
             try {
                 New-LogAnalyticsData -Data $augmentedUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
                 $uploadSuccessful = $true
-                Write-Verbose "  ✓ Data upload successful (attempt $attempt/3)"
+                Write-Verbose "  Success: Data upload successful on attempt $attempt"
                 break
             }
             catch {
@@ -2364,7 +2372,7 @@ function FetchAllUserRawData {
         return $ErrorList
     }
     
-    # Step 6: Verify data ingestion with improved logic
+    # Step 6: Verify data ingestion
     Write-Verbose "Step 6: Verifying data ingestion..."
     
     $dataIngested = $false
@@ -2376,7 +2384,8 @@ function FetchAllUserRawData {
         $query = "GuardrailsUserRaw_CL | where ReportTime_s == '$ReportTime' | count"
         
         try {
-            Write-Verbose "  → Verification attempt $attempt/$($RetryConfig.MaxRetries): Querying Log Analytics..."
+            $maxRetries = $RetryConfig.MaxRetries
+            Write-Verbose "  -> Verification attempt $attempt/$maxRetries: Querying Log Analytics..."
             
             $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
             $recordCount = 0
@@ -2386,12 +2395,12 @@ function FetchAllUserRawData {
             }
             
             if ($recordCount -gt 0) {
-                Write-Verbose "  ✓ Data ingestion verified: $recordCount records found for ReportTime '$ReportTime'"
+                Write-Verbose "  Success: Data ingestion verified - $recordCount records found for ReportTime '$ReportTime'"
                 $dataIngested = $true
                 break
             } else {
                 $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                Write-Verbose "  ⏳ Data not yet available (attempt $attempt/$($RetryConfig.MaxRetries)). Waiting $delay seconds..."
+                Write-Verbose "  -> Data not yet available (attempt $attempt/$maxRetries). Waiting $delay seconds..."
                 
                 if ($attempt -lt $RetryConfig.MaxRetries) {
                     Start-Sleep -Seconds $delay
@@ -2407,12 +2416,12 @@ function FetchAllUserRawData {
                 break
             } else {
                 $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                Write-Warning "  ⚠ Query attempt $attempt failed: $errorMessage"
+                Write-Warning "  Warning: Query attempt $attempt failed: $errorMessage"
                 
                 if ($attempt -eq $RetryConfig.MaxRetries) {
                     Add-FunctionError -Message "Query verification failed after $($RetryConfig.MaxRetries) attempts" -Exception $_.Exception -Category "DataVerification"
                 } elseif ($attempt -lt $RetryConfig.MaxRetries) {
-                    Write-Verbose "  → Retrying in $delay seconds..."
+                    Write-Verbose "  -> Retrying in $delay seconds..."
                     Start-Sleep -Seconds $delay
                 }
             }
@@ -2425,11 +2434,13 @@ function FetchAllUserRawData {
     if ($permissionError) {
         Add-FunctionError -Message "Cannot verify data ingestion due to permission error. Modules may not have access to required data." -Category "Permissions"
     } elseif (-not $dataIngested) {
-        Add-FunctionError -Message "Data ingestion verification failed after $($RetryConfig.MaxRetries) attempts. Modules may not have access to required data." -Category "DataVerification"
+        $maxRetries = $RetryConfig.MaxRetries
+        Add-FunctionError -Message "Data ingestion verification failed after $maxRetries attempts. Modules may not have access to required data." -Category "DataVerification"
     } elseif ($recordCount -ne $augmentedUsers.Count) {
-        Add-FunctionError -Message "Data count mismatch: expected $($augmentedUsers.Count), found $recordCount records. Some data may be missing." -Category "DataIntegrity"
+        $expectedCount = $augmentedUsers.Count
+        Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may be missing." -Category "DataIntegrity"
     } else {
-        Write-Verbose "  ✓ Data ingestion verification successful: $recordCount records ingested and verified"
+        Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
     }
     
     # Performance summary
@@ -2439,20 +2450,22 @@ function FetchAllUserRawData {
     $performanceMetrics.TotalDurationMin = [Math]::Round($stopwatch.ElapsedMilliseconds / 60000, 2)
     
     Write-Verbose "=== Performance Summary ==="
-    Write-Verbose "  • Total Duration: $($performanceMetrics.TotalDurationMin) minutes ($($performanceMetrics.TotalDurationMs)ms)"
-    Write-Verbose "  • Users Processed: $($performanceMetrics.UsersProcessed)"
-    Write-Verbose "  • Graph API Calls: $($performanceMetrics.GraphApiCalls)"
-    Write-Verbose "  • Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
-    Write-Verbose "  • Errors: $($ErrorList.Count)"
+    $durationMin = $performanceMetrics.TotalDurationMin
+    $durationMs = $performanceMetrics.TotalDurationMs
+    Write-Verbose "  Total Duration: $durationMin minutes ($durationMs ms)"
+    Write-Verbose "  Users Processed: $($performanceMetrics.UsersProcessed)"
+    Write-Verbose "  Graph API Calls: $($performanceMetrics.GraphApiCalls)"
+    Write-Verbose "  Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
+    Write-Verbose "  Errors: $($ErrorList.Count)"
     
     if ($ErrorList.Count -eq 0) {
-        Write-Verbose "  ✓ Function completed successfully with no errors!"
+        Write-Verbose "  Success: Function completed successfully with no errors!"
     } else {
-        Write-Verbose "  ⚠ Function completed with $($ErrorList.Count) errors/warnings"
+        $errorCount = $ErrorList.Count
+        Write-Verbose "  Warning: Function completed with $errorCount errors/warnings"
     }
     
     Write-Verbose "=== FetchAllUserRawData Complete ==="
     
     return $ErrorList
 }
-
