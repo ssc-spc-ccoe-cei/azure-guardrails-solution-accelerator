@@ -2278,7 +2278,7 @@ function FetchAllUserRawData {
         $batchNumber = [Math]::Floor($batchStart / $BatchSize) + 1
         $totalBatches = [Math]::Ceiling($totalUsers / $BatchSize)
         
-        Write-Verbose "  → Processing batch $batchNumber/$totalBatches ($($currentBatch.Count) users)..."
+        Write-Verbose "  → Processing batch $batchNumber/$totalBatches $($currentBatch.Count) users)..."
         
         # Process current batch using pipeline for better performance
         $batchResults = $currentBatch | ForEach-Object {
