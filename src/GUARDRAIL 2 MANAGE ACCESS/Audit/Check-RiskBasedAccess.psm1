@@ -129,8 +129,8 @@ function Get-RiskBasedAccess {
     # 19. includeGuestsOrExternalUsers = null
     # 20. excludeGuestsOrExternalUsers = null
     # 21. excludeUsers/excludeGroups
+
     $commonFilters = {
-        $_.state -eq 'enabled' -and
         $_.conditions.users.includeUsers -contains 'All' -and
         $_.conditions.users.excludeUsers.Count -le 2 -and
         $_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
@@ -140,7 +140,6 @@ function Get-RiskBasedAccess {
         $_.grantControls.builtInControls -contains 'mfa' -and
         $_.grantControls.builtInControls -contains 'passwordChange' -and
         $_.conditions.clientAppTypes -contains 'all' -and
-        $_.conditions.userRiskLevels -contains 'high' -and
         $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
         $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
         $_.sessionControls.signInFrequency.isEnabled -eq $true -and
@@ -158,14 +157,18 @@ function Get-RiskBasedAccess {
     }
 
     if ($null -ne $breakGlassUserGroup){
-        $validPolicies = $caps | Where-Object {
+        $validPoliciesEnabled = $caps | Where-Object {$_.state -eq 'enabled'}
+        $validPoliciesRiskyUser = $validPoliciesEnabled | Where-Object { $_.conditions.userRiskLevels -contains 'high'}
+        $validPolicies =  $validPoliciesRiskyUser | Where-Object {
             $commonFilters -and
             ($_.conditions.users.excludeGroups.Count -eq 1 -and
             $_.conditions.users.excludeGroups -contains $uniqueGroupIdBG)
         } 
     }
     else{
-        $validPolicies = $caps | Where-Object {
+        $validPoliciesEnabled = $caps | Where-Object {$_.state -eq 'enabled'}
+        $validPoliciesRiskyUser = $validPoliciesEnabled | Where-Object { $_.conditions.userRiskLevels -contains 'high'}
+        $validPolicies =  $validPoliciesRiskyUser | Where-Object {
             $commonFilters -and
             [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
         }
