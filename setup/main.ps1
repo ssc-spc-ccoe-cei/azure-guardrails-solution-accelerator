@@ -216,7 +216,7 @@ catch {
 Write-Output "Loaded $($msgTable.Count) messages." 
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
-
+$moduleCount = 0
 foreach ($module in $modules) {
     if ($module.Status -eq "Enabled") {
         if($enableMultiCloudProfiles) {
@@ -273,6 +273,22 @@ foreach ($module in $modules) {
             }
 
             Write-Output "Script running is done for $($module.modulename)"
+
+            # Clear memory after each module
+            $results = $null
+            $NewScriptBlock = $null
+            $vars = $null
+            $variables = $null
+            $secrets = $null
+            $localVariables = $null
+            
+            # Force garbage collection every 3 modules
+            if ($moduleCount % 3 -eq 0) {
+                Write-Output "Clearing memory after $moduleCount modules..."
+                [System.GC]::Collect()
+                [System.GC]::WaitForPendingFinalizers()
+                [System.GC]::Collect()
+            }
         }
         catch {
             Write-Output "Caught error while invoking result is $($results.Errors)" 
