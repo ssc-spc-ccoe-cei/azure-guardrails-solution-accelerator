@@ -2080,148 +2080,379 @@ function FetchAllUserRawData {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
         [string] $ReportTime,
-        [Parameter(Mandatory=$true)]
-        [string] $FirstBreakGlassUPN,
-        [Parameter(Mandatory=$true)]
-        [string] $SecondBreakGlassUPN,
-        [Parameter(Mandatory=$true)]
-        [string] $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
-        [string] $WorkspaceKey
-    )
-    $ErrorList = [System.Collections.Generic.List[string]]::new()
-    $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity&`$filter=accountEnabled eq true"
-
-    try {
-        $response = Invoke-GraphQueryEX -urlPath $usersPath -ErrorAction Stop
-        if ($response -is [System.Array]) {
-            $response = $response | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
-        }
-        $allUsers = @($response.Content.value)
-        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
         
-        Write-Warning "Break-glass UPNs to filter out: $($bgUpns -join ', ')"
-        Write-Warning "Total users before filtering: $($allUsers.Count)"
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $FirstBreakGlassUPN,
+        
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $SecondBreakGlassUPN,
+        
+        [Parameter(Mandatory=$true)]
+        [ValidateScript({
+            try { [System.Guid]::Parse($_); $true }
+            catch { throw "WorkSpaceID must be a valid GUID" }
+        })]
+        [string] $WorkSpaceID,
+        
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $WorkspaceKey,
+        
+        [Parameter()]
+        [int] $BatchSize = 1000,
+        
+        [Parameter()]
+        [hashtable] $RetryConfig = @{
+            MaxRetries = 12
+            BaseDelay = 5
+            MaxDelay = 60
+            BackoffMultiplier = 2
+        }
+    )
+    
+    # Initialize error tracking and performance monitoring
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $performanceMetrics = @{
+        StartTime = Get-Date
+        GraphApiCalls = 0
+        UsersProcessed = 0
+        DataIngestionAttempts = 0
+    }
+    
+    Write-Verbose "=== Starting FetchAllUserRawData at $($performanceMetrics.StartTime) ==="
+    
+    # Helper function for centralized error handling
+    function Add-FunctionError {
+        param(
+            [string] $Message,
+            [System.Exception] $Exception = $null,
+            [string] $Category = "General"
+        )
+        
+        $errorMsg = if ($Exception) {
+            "$Category - $Message : $($Exception.Message)"
+        } else {
+            "$Category - $Message"
+        }
+        
+        Write-Warning $errorMsg
+        $ErrorList.Add($errorMsg)
+    }
+    
+    # Helper function for exponential backoff
+    function Get-BackoffDelay {
+        param([int] $Attempt, [hashtable] $Config)
+        
+        $delay = [Math]::Min(
+            $Config.BaseDelay * [Math]::Pow($Config.BackoffMultiplier, $Attempt - 1),
+            $Config.MaxDelay
+        )
+        return [int]$delay
+    }
+    
+    # Helper function for Graph API calls (leverages Invoke-GraphQueryEX's built-in retry)
+    function Invoke-GraphQueryWithMetrics {
+        param(
+            [string] $UrlPath,
+            [string] $Operation = "Graph API Call"
+        )
+        
+        Write-Verbose "  → $Operation : $UrlPath"
+        
+        try {
+            # Use the existing retry logic in Invoke-GraphQueryEX with enhanced settings
+            $response = Invoke-GraphQueryEX -urlPath $UrlPath -MaxRetries 5 -RetryDelaySeconds 10 -ErrorAction Stop
+            $performanceMetrics.GraphApiCalls++
+            
+            # Handle array responses consistently
+            if ($response -is [System.Array]) {
+                $response = $response | Where-Object { 
+                    $null -ne $_.Content -or $null -ne $_.StatusCode 
+                } | Select-Object -Last 1
+            }
+            
+            # Check for successful response
+            if ($response.Error) {
+                throw [System.Exception]::new("Graph API error: $($response.Error)")
+            }
+            
+            if (-not $response.StatusCode -or $response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
+                throw [System.Exception]::new("Graph API returned status code: $($response.StatusCode)")
+            }
+            
+            Write-Verbose "  ✓ $Operation completed successfully"
+            return $response
+        }
+        catch {
+            Write-Error "$Operation failed: $($_.Exception.Message)"
+            throw $_
+        }
+    }
+    
+    # Step 1: Fetch all users with improved filtering
+    Write-Verbose "Step 1: Fetching user data from Microsoft Graph..."
+    $allUsers = @()
+    
+    try {
+        # Enhanced user query with better filtering
+        $usersPath = "/users?`$select=displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity&`$filter=accountEnabled eq true and userType eq 'Member'"
+        
+        $response = Invoke-GraphQueryWithMetrics -UrlPath $usersPath -Operation "Fetch Users"
+        $allUsers = @($response.Content.value)
+        
+        Write-Verbose "  ✓ Retrieved $($allUsers.Count) active member users from Graph"
+        
+        # Filter out break-glass accounts more efficiently
+        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | 
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            ForEach-Object { $_.ToLower() }
         
         if ($bgUpns.Count -gt 0) {
-            # Convert break-glass UPNs to lowercase for case-insensitive comparison
-            $bgUpnsLower = $bgUpns | ForEach-Object { $_.ToLower() }
+            Write-Verbose "  → Filtering out break-glass accounts: $($bgUpns -join ', ')"
+            $originalCount = $allUsers.Count
             
-            $allUsers = @($allUsers | Where-Object {
+            # Use hashtable for O(1) lookup performance
+            $bgUpnLookup = @{}
+            $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
+            
+            $allUsers = $allUsers | Where-Object { 
                 $upn = $_.userPrincipalName
-                if ([string]::IsNullOrWhiteSpace($upn)) {
-                    return $false
-                }
-                # Case-insensitive comparison
-                $upnLower = $upn.ToLower()
-                $isNotBreakGlass = $bgUpnsLower -notcontains $upnLower
+                if ([string]::IsNullOrWhiteSpace($upn)) { return $false }
                 
-                if (-not $isNotBreakGlass) {
-                    Write-Warning "Filtering out break-glass account: $upn"
+                $isNotBreakGlass = -not $bgUpnLookup.ContainsKey($upn.ToLower())
+                if (-not $isNotBreakGlass) { 
+                    Write-Verbose "    • Filtered out: $upn" 
                 }
                 return $isNotBreakGlass
-            })
-            Write-Warning "Total users after filtering: $($allUsers.Count)"
-        } else {
-            Write-Warning "No break-glass UPNs provided, no filtering applied"
+            }
+            
+            Write-Verbose "  ✓ Filtered: $originalCount → $($allUsers.Count) users (removed $($originalCount - $allUsers.Count) break-glass accounts)"
         }
+        
     } catch {
-        Write-Warning "Failed to call Microsoft Graph REST API at URL '$usersPath'; error: $_"
-        $ErrorList += "Graph call failed for users list: $_"
-        $allUsers = @()
+        Add-FunctionError -Message "Failed to fetch users from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI"
+        return $ErrorList
     }
-    $regPath = "/reports/authenticationMethods/userRegistrationDetails"
+    
+    # Step 2: Fetch registration details
+    Write-Verbose "Step 2: Fetching authentication method registration details..."
     $registrationDetails = @()
+    
     try {
-        $regResp = Invoke-GraphQueryEX -urlPath $regPath -ErrorAction Stop
-        if ($regResp -is [System.Array]) {
-            $regResp = $regResp | Where-Object { $_.Content -ne $null -or $_.StatusCode -ne $null } | Select-Object -Last 1
-        }
-        $registrationDetails = @($regResp.Content.value)
+        $regPath = "/reports/authenticationMethods/userRegistrationDetails"
+        $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details"
+        $registrationDetails = @($regResponse.Content.value)
+        
+        Write-Verbose "  ✓ Retrieved $($registrationDetails.Count) registration records"
+        
     } catch {
-        Write-Warning "Failed to call Microsoft Graph REST API at URL '$regPath'; error: $_"
-        $ErrorList += "Graph call failed for registration details: $_"
-        $registrationDetails = @()
+        Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI"
+        # Continue with empty registration data rather than failing completely
+        Write-Warning "Continuing with empty registration data..."
     }
-    $regById = @{
-    }
-    foreach ($r in $registrationDetails) {
-        if ($null -ne $r.id -and -not $regById.ContainsKey($r.id)) { $regById[$r.id] = $r }
-    }
-    $augmentedUsers = New-Object 'System.Collections.Generic.List[PSObject]'
-    foreach ($u in $allUsers) {
-        $r = $null
-        if ($null -ne $u.id -and $regById.ContainsKey($u.id)) { $r = $regById[$u.id] }
-        $methods = @()
-        if ($null -ne $r -and $null -ne $r.methodsRegistered) { $methods = @($r.methodsRegistered) }
-        $userObject = [PSCustomObject]@{
-            id                = $u.id
-            userPrincipalName = $u.userPrincipalName
-            displayName       = $u.displayName
-            mail              = $u.mail
-            createdDateTime   = $u.createdDateTime
-            userType          = $u.userType
-            accountEnabled    = $u.accountEnabled
-            signInActivity    = $u.signInActivity
-            isMfaRegistered       = $r.isMfaRegistered
-            isMfaCapable          = $r.isMfaCapable
-            isSsprEnabled         = $r.isSsprEnabled
-            isSsprRegistered      = $r.isSsprRegistered
-            isSsprCapable         = $r.isSsprCapable
-            isPasswordlessCapable = $r.isPasswordlessCapable
-            defaultMethod         = $r.defaultMethod
-            methodsRegistered     = $methods
-            isSystemPreferredAuthenticationMethodEnabled = $r.isSystemPreferredAuthenticationMethodEnabled
-            systemPreferredAuthenticationMethods = $r.systemPreferredAuthenticationMethods
-            userPreferredMethodForSecondaryAuthentication = $r.userPreferredMethodForSecondaryAuthentication
-            ReportTime        = $ReportTime
+    
+    # Step 3: Build efficient lookup for registration data
+    Write-Verbose "Step 3: Building registration data lookup..."
+    $regById = @{}
+    $registrationDetails | ForEach-Object {
+        if ($_.id -and -not $regById.ContainsKey($_.id)) {
+            $regById[$_.id] = $_
         }
-        $augmentedUsers.Add($userObject) | Out-Null
     }
-    # Send data once before loop
+    Write-Verbose "  ✓ Built lookup table for $($regById.Count) registration records"
+    
+    # Step 4: Process users in batches to manage memory efficiently
+    Write-Verbose "Step 4: Processing users in batches of $BatchSize..."
+    $augmentedUsers = [System.Collections.Generic.List[PSObject]]::new()
+    $totalUsers = $allUsers.Count
+    $processedUsers = 0
+    
+    for ($batchStart = 0; $batchStart -lt $totalUsers; $batchStart += $BatchSize) {
+        $batchEnd = [Math]::Min($batchStart + $BatchSize - 1, $totalUsers - 1)
+        $currentBatch = $allUsers[$batchStart..$batchEnd]
+        $batchNumber = [Math]::Floor($batchStart / $BatchSize) + 1
+        $totalBatches = [Math]::Ceiling($totalUsers / $BatchSize)
+        
+        Write-Verbose "  → Processing batch $batchNumber/$totalBatches ($($currentBatch.Count) users)..."
+        
+        # Process current batch using pipeline for better performance
+        $batchResults = $currentBatch | ForEach-Object {
+            $user = $_
+            $registration = $regById[$user.id]
+            $methods = @()
+            
+            if ($registration -and $registration.methodsRegistered) {
+                $methods = @($registration.methodsRegistered)
+            }
+            
+            [PSCustomObject]@{
+                id                = $user.id
+                userPrincipalName = $user.userPrincipalName
+                displayName       = $user.displayName
+                mail              = $user.mail
+                createdDateTime   = $user.createdDateTime
+                userType          = $user.userType
+                accountEnabled    = $user.accountEnabled
+                signInActivity    = $user.signInActivity
+                isMfaRegistered       = $registration.isMfaRegistered
+                isMfaCapable          = $registration.isMfaCapable
+                isSsprEnabled         = $registration.isSsprEnabled
+                isSsprRegistered      = $registration.isSsprRegistered
+                isSsprCapable         = $registration.isSsprCapable
+                isPasswordlessCapable = $registration.isPasswordlessCapable
+                defaultMethod         = $registration.defaultMethod
+                methodsRegistered     = $methods
+                isSystemPreferredAuthenticationMethodEnabled = $registration.isSystemPreferredAuthenticationMethodEnabled
+                systemPreferredAuthenticationMethods = $registration.systemPreferredAuthenticationMethods
+                userPreferredMethodForSecondaryAuthentication = $registration.userPreferredMethodForSecondaryAuthentication
+                ReportTime        = $ReportTime
+            }
+        }
+        
+        # Add batch results to main collection
+        $batchResults | ForEach-Object { $augmentedUsers.Add($_) }
+        $processedUsers += $currentBatch.Count
+        
+        Write-Verbose "  ✓ Batch $batchNumber completed. Progress: $processedUsers/$totalUsers users"
+        
+        # Optional: Add small delay between batches to avoid overwhelming the system
+        if ($batchNumber -lt $totalBatches) {
+            Start-Sleep -Milliseconds 100
+        }
+    }
+    
+    $performanceMetrics.UsersProcessed = $processedUsers
+    Write-Verbose "  ✓ All users processed: $($augmentedUsers.Count) augmented user records created"
+    
+    # Step 5: Send data to Log Analytics with retry logic
+    Write-Verbose "Step 5: Sending data to Log Analytics..."
+    
     try {
-        Write-Verbose "Sending $($augmentedUsers.Count) user records to GuardrailsUserRaw_CL table"
-        New-LogAnalyticsData -Data $augmentedUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
-        Write-Verbose "Successfully sent raw data to Log Analytics"
+        Write-Verbose "  → Uploading $($augmentedUsers.Count) records to GuardrailsUserRaw_CL table..."
+        
+        # Retry logic for data upload
+        $uploadSuccessful = $false
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+                New-LogAnalyticsData -Data $augmentedUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
+                $uploadSuccessful = $true
+                Write-Verbose "  ✓ Data upload successful (attempt $attempt/3)"
+                break
+            }
+            catch {
+                if ($attempt -eq 3) {
+                    throw $_
+                } else {
+                    $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
+                    Write-Warning "Upload attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
+                    Start-Sleep -Seconds $delay
+                }
+            }
+        }
+        
+        if (-not $uploadSuccessful) {
+            throw "Failed to upload data after 3 attempts"
+        }
+        
     } catch {
-        Write-Error "Failed to send raw data to Log Analytics: $_"
-        $ErrorList.Add("Failed to send raw data to GuardrailsUserRaw_CL: $_")
+        Add-FunctionError -Message "Failed to send data to Log Analytics" -Exception $_.Exception -Category "LogAnalytics"
+        return $ErrorList
     }
-    # Retry loop only queries for records
-    $maxRetries = 10
-    $retryDelay = 30
-    $attempt = 0
+    
+    # Step 6: Verify data ingestion with improved logic
+    Write-Verbose "Step 6: Verifying data ingestion..."
+    
+    $dataIngested = $false
     $recordCount = 0
-    do {
+    $permissionError = $false
+    
+    for ($attempt = 1; $attempt -le $RetryConfig.MaxRetries; $attempt++) {
+        $performanceMetrics.DataIngestionAttempts = $attempt
         $query = "GuardrailsUserRaw_CL | where ReportTime_s == '$ReportTime' | count"
+        
         try {
+            Write-Verbose "  → Verification attempt $attempt/$($RetryConfig.MaxRetries): Querying Log Analytics..."
+            
             $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
             $recordCount = 0
+            
             if ($result.Results.Count -gt 0 -and $result.Results[0].Count) {
                 $recordCount = [int]$result.Results[0].Count
             }
+            
             if ($recordCount -gt 0) {
+                Write-Verbose "  ✓ Data ingestion verified: $recordCount records found for ReportTime '$ReportTime'"
+                $dataIngested = $true
                 break
             } else {
-                Write-Warning "No records found for ReportTime $ReportTime in GuardrailsUserRaw_CL. Retrying..."
-                Start-Sleep -Seconds $retryDelay
+                $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
+                Write-Verbose "  ⏳ Data not yet available (attempt $attempt/$($RetryConfig.MaxRetries)). Waiting $delay seconds..."
+                
+                if ($attempt -lt $RetryConfig.MaxRetries) {
+                    Start-Sleep -Seconds $delay
+                }
             }
+            
         } catch {
-            Write-Error "Failed to query Log Analytics for GuardrailsUserRaw_CL: $_"
-            $ErrorList.Add("Failed to query Log Analytics for GuardrailsUserRaw_CL: $_")
-            Start-Sleep -Seconds $retryDelay
+            $errorMessage = $_.Exception.Message
+            
+            if ($errorMessage -like "*Forbidden*" -or $errorMessage -like "*403*" -or $errorMessage -like "*unauthorized*") {
+                $permissionError = $true
+                Add-FunctionError -Message "Permission denied when querying Log Analytics. Automation Account needs 'Log Analytics Reader' role on workspace $WorkSpaceID" -Category "Permissions"
+                break
+            } else {
+                $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
+                Write-Warning "  ⚠ Query attempt $attempt failed: $errorMessage"
+                
+                if ($attempt -eq $RetryConfig.MaxRetries) {
+                    Add-FunctionError -Message "Query verification failed after $($RetryConfig.MaxRetries) attempts" -Exception $_.Exception -Category "DataVerification"
+                } elseif ($attempt -lt $RetryConfig.MaxRetries) {
+                    Write-Verbose "  → Retrying in $delay seconds..."
+                    Start-Sleep -Seconds $delay
+                }
+            }
         }
-        $attempt++
-    } while ($attempt -lt $maxRetries)
-    if ($attempt -ge $maxRetries) {
-        $ErrorList.Add("No records found in GuardrailsUserRaw_CL for ReportTime $ReportTime after $maxRetries attempts.")
     }
-    # Compare ingested record count to augmentedUsers.Count
-    if ($recordCount -ne $augmentedUsers.Count) {
-        $ErrorList.Add("Mismatch in ingested user records: expected $($augmentedUsers.Count), found $recordCount in GuardrailsUserRaw_CL for ReportTime $ReportTime.")
+    
+    # Step 7: Final validation and reporting
+    Write-Verbose "Step 7: Final validation and reporting..."
+    
+    if ($permissionError) {
+        Add-FunctionError -Message "Cannot verify data ingestion due to permission error. Modules may not have access to required data." -Category "Permissions"
+    } elseif (-not $dataIngested) {
+        Add-FunctionError -Message "Data ingestion verification failed after $($RetryConfig.MaxRetries) attempts. Modules may not have access to required data." -Category "DataVerification"
+    } elseif ($recordCount -ne $augmentedUsers.Count) {
+        Add-FunctionError -Message "Data count mismatch: expected $($augmentedUsers.Count), found $recordCount records. Some data may be missing." -Category "DataIntegrity"
+    } else {
+        Write-Verbose "  ✓ Data ingestion verification successful: $recordCount records ingested and verified"
     }
+    
+    # Performance summary
+    $stopwatch.Stop()
+    $performanceMetrics.EndTime = Get-Date
+    $performanceMetrics.TotalDurationMs = $stopwatch.ElapsedMilliseconds
+    $performanceMetrics.TotalDurationMin = [Math]::Round($stopwatch.ElapsedMilliseconds / 60000, 2)
+    
+    Write-Verbose "=== Performance Summary ==="
+    Write-Verbose "  • Total Duration: $($performanceMetrics.TotalDurationMin) minutes ($($performanceMetrics.TotalDurationMs)ms)"
+    Write-Verbose "  • Users Processed: $($performanceMetrics.UsersProcessed)"
+    Write-Verbose "  • Graph API Calls: $($performanceMetrics.GraphApiCalls)"
+    Write-Verbose "  • Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
+    Write-Verbose "  • Errors: $($ErrorList.Count)"
+    
+    if ($ErrorList.Count -eq 0) {
+        Write-Verbose "  ✓ Function completed successfully with no errors!"
+    } else {
+        Write-Verbose "  ⚠ Function completed with $($ErrorList.Count) errors/warnings"
+    }
+    
+    Write-Verbose "=== FetchAllUserRawData Complete ==="
+    
     return $ErrorList
 }
 
