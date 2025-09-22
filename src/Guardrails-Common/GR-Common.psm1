@@ -2385,7 +2385,7 @@ function FetchAllUserRawData {
         
         try {
             $maxRetries = $RetryConfig.MaxRetries
-            Write-Verbose "  -> Verification attempt $attempt/$maxRetries: Querying Log Analytics..."
+            Write-Verbose "  -> Verification attempt $attempt/$maxRetries : Querying Log Analytics..."
             
             $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
             $recordCount = 0
