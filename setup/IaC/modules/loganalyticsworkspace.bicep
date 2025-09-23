@@ -110,7 +110,7 @@ let localizedMessages = case(
 let userData = GuardrailsUserRaw_CL
 | where ReportTime_s == reportTime;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
-let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
     systemPreferredMethodsArray = parse_json(systemPreferredAuthenticationMethods_s),
