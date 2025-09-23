@@ -1,6 +1,6 @@
 function Test-CommonFilters {
     param(
-        [System.Collections.ArrayList]$policy,
+        [PSCustomObject]$policy,
         [string] $FirstBreakGlassUPN,
         [string] $SecondBreakGlassUPN
 
@@ -29,33 +29,35 @@ function Test-CommonFilters {
     # 19. includeGuestsOrExternalUsers = null
     # 20. excludeGuestsOrExternalUsers = null
     # 21. excludeUsers/excludeGroups
-    $validPolicies = (
-        $policy.state -eq 'enabled' -and
-        $policy.conditions.users.includeUsers -contains 'All' -and
-        $policy.conditions.users.excludeUsers.Count -le 2 -and
-        $policy.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
-        $policy.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
-        ($policy.conditions.applications.includeApplications -contains 'All' -or
-        $policy.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
-        $policy.grantControls.builtInControls -contains 'mfa' -and
-        $policy.grantControls.builtInControls -contains 'passwordChange' -and
-        $policy.conditions.clientAppTypes -contains 'all' -and
-        $policy.conditions.userRiskLevels -contains 'high' -and
-        $policy.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
-        $policy.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
-        $policy.sessionControls.signInFrequency.isEnabled -eq $true -and
-        [string]::IsNullOrEmpty($policy.conditions.signInRiskLevels) -and
-        [string]::IsNullOrEmpty($policy.conditions.platforms) -and
-        [string]::IsNullOrEmpty($policy.conditions.locations) -and
-        [string]::IsNullOrEmpty($policy.conditions.devices)  -and
-        [string]::IsNullOrEmpty($policy.conditions.clientApplications) -and
-        [string]::IsNullOrEmpty($policy.conditions.users.includedGroups) -and
-        [string]::IsNullOrEmpty($policy.conditions.applications.excludeApplications) -and
-        [string]::IsNullOrEmpty($policy.conditions.users.includeRoles) -and
-        [string]::IsNullOrEmpty($policy.conditions.users.excludeRoles) -and
-        [string]::IsNullOrEmpty($policy.conditions.users.includeGuestsOrExternalUsers) -and
-        [string]::IsNullOrEmpty($policy.conditions.users.excludeGuestsOrExternalUsers)
-    )
+    $validPolicies =  $policy | Where-Object {
+        (
+            $_.state -eq "enabled" -and
+            $_.conditions.users.includeUsers -contains 'All' -and
+            $_.conditions.users.excludeUsers.Count -le 2 -and
+            $_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
+            $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
+            ($_.conditions.applications.includeApplications -contains 'All' -or
+            $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
+            $_.grantControls.builtInControls -contains 'mfa' -and
+            $_.grantControls.builtInControls -contains 'passwordChange' -and
+            $_.conditions.clientAppTypes -contains 'all' -and
+            $_.conditions.userRiskLevels -contains 'high' -and
+            $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
+            $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
+            $_.sessionControls.signInFrequency.isEnabled -eq $true -and
+            [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
+            [string]::IsNullOrEmpty($_.conditions.platforms) -and
+            [string]::IsNullOrEmpty($_.conditions.locations) -and
+            [string]::IsNullOrEmpty($_.conditions.devices)  -and
+            [string]::IsNullOrEmpty($_.conditions.clientApplications) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includedGroups) -and
+            [string]::IsNullOrEmpty($_.conditions.applications.excludeApplications) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includeRoles) -and
+            [string]::IsNullOrEmpty($_.conditions.users.excludeRoles) -and
+            [string]::IsNullOrEmpty($_.conditions.users.includeGuestsOrExternalUsers) -and
+            [string]::IsNullOrEmpty($_.conditions.users.excludeGuestsOrExternalUsers)
+        )
+    }
     return $validPolicies
 } 
     
