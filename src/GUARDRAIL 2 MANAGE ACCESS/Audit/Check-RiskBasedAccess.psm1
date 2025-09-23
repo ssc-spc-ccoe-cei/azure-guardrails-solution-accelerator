@@ -1,3 +1,64 @@
+function Test-CommonFilters {
+    param(
+        [System.Collections.ArrayList]$policy,
+        [string] $FirstBreakGlassUPN,
+        [string] $SecondBreakGlassUPN
+
+    )
+
+    
+    # check for a conditional access policy which meets these requirements:
+    # 1. state =  'enabled'
+    # 2. includedUsers = 'All'
+    # 3. applications.includedApplications = 'All'
+    # 4. grantControls.builtInControls contains 'mfa' and 'passwordChange'
+    # 5. clientAppTypes contains 'all'
+    # 6. userRiskLevels = 'high'
+    # 7. signInRiskLevels = @()
+    # 8. platforms = null
+    # 9. locations = null
+    # 10. devices = null
+    # 11. clientApplications = null
+    # 12. signInFrequency.frequencyInterval = 'everyTime'
+    # 13. signInFrequency.isEnabled = true
+    # 14. signInFrequency.authenticationType = 'primaryAndSecondaryAuthentication'
+    # 15. includeGroups = null
+    # 16. excludeApplications = null
+    # 17. includeRoles = null
+    # 18. excludeRoles = null
+    # 19. includeGuestsOrExternalUsers = null
+    # 20. excludeGuestsOrExternalUsers = null
+    # 21. excludeUsers/excludeGroups
+    $validPolicies = (
+        $policy.state -eq 'enabled' -and
+        $policy.conditions.users.includeUsers -contains 'All' -and
+        $policy.conditions.users.excludeUsers.Count -le 2 -and
+        $policy.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
+        $policy.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
+        ($policy.conditions.applications.includeApplications -contains 'All' -or
+        $policy.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
+        $policy.grantControls.builtInControls -contains 'mfa' -and
+        $policy.grantControls.builtInControls -contains 'passwordChange' -and
+        $policy.conditions.clientAppTypes -contains 'all' -and
+        $policy.conditions.userRiskLevels -contains 'high' -and
+        $policy.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
+        $policy.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
+        $policy.sessionControls.signInFrequency.isEnabled -eq $true -and
+        [string]::IsNullOrEmpty($policy.conditions.signInRiskLevels) -and
+        [string]::IsNullOrEmpty($policy.conditions.platforms) -and
+        [string]::IsNullOrEmpty($policy.conditions.locations) -and
+        [string]::IsNullOrEmpty($policy.conditions.devices)  -and
+        [string]::IsNullOrEmpty($policy.conditions.clientApplications) -and
+        [string]::IsNullOrEmpty($policy.conditions.users.includedGroups) -and
+        [string]::IsNullOrEmpty($policy.conditions.applications.excludeApplications) -and
+        [string]::IsNullOrEmpty($policy.conditions.users.includeRoles) -and
+        [string]::IsNullOrEmpty($policy.conditions.users.excludeRoles) -and
+        [string]::IsNullOrEmpty($policy.conditions.users.includeGuestsOrExternalUsers) -and
+        [string]::IsNullOrEmpty($policy.conditions.users.excludeGuestsOrExternalUsers)
+    )
+    return $validPolicies
+} 
+    
 function Get-RiskBasedAccess {
     param (      
         [Parameter(Mandatory=$true)]
@@ -20,10 +81,10 @@ function Get-RiskBasedAccess {
     )
     $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    
+
     # Check 1: Password Changes –Conditional Access Policy
     $IsCompliantPasswordCAP = $false
-    
+
     $CAPUrl = '/identity/conditionalAccess/policies'
     try {
         $response = Invoke-GraphQuery -urlPath $CAPUrl -ErrorAction Stop
@@ -105,83 +166,36 @@ function Get-RiskBasedAccess {
         $breakGlassUserGroup = $null
     }
     $uniqueGroupIdBG = $breakGlassUserGroup.groupId | select-object -unique
-
-
-    # check for a conditional access policy which meets these requirements:
-    # 1. state =  'enabled'
-    # 2. includedUsers = 'All'
-    # 3. applications.includedApplications = 'All'
-    # 4. grantControls.builtInControls contains 'mfa' and 'passwordChange'
-    # 5. clientAppTypes contains 'all'
-    # 6. userRiskLevels = 'high'
-    # 7. signInRiskLevels = @()
-    # 8. platforms = null
-    # 9. locations = null
-    # 10. devices = null
-    # 11. clientApplications = null
-    # 12. signInFrequency.frequencyInterval = 'everyTime'
-    # 13. signInFrequency.isEnabled = true
-    # 14. signInFrequency.authenticationType = 'primaryAndSecondaryAuthentication'
-    # 15. includeGroups = null
-    # 16. excludeApplications = null
-    # 17. includeRoles = null
-    # 18. excludeRoles = null
-    # 19. includeGuestsOrExternalUsers = null
-    # 20. excludeGuestsOrExternalUsers = null
-    # 21. excludeUsers/excludeGroups
-
-    $commonFilters = {
-        $_.conditions.users.includeUsers -contains 'All' -and
-        $_.conditions.users.excludeUsers.Count -le 2 -and
-        $_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
-        $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
-        ($_.conditions.applications.includeApplications -contains 'All' -or
-        $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
-        $_.grantControls.builtInControls -contains 'mfa' -and
-        $_.grantControls.builtInControls -contains 'passwordChange' -and
-        $_.conditions.clientAppTypes -contains 'all' -and
-        $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
-        $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
-        $_.sessionControls.signInFrequency.isEnabled -eq $true -and
-        [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
-        [string]::IsNullOrEmpty($_.conditions.platforms) -and
-        [string]::IsNullOrEmpty($_.conditions.locations) -and
-        [string]::IsNullOrEmpty($_.conditions.devices)  -and
-        [string]::IsNullOrEmpty($_.conditions.clientApplications) -and
-        [string]::IsNullOrEmpty($_.conditions.users.includedGroups) -and
-        [string]::IsNullOrEmpty($_.conditions.applications.excludeApplications) -and
-        [string]::IsNullOrEmpty($_.conditions.users.includeRoles) -and
-        [string]::IsNullOrEmpty($_.conditions.users.excludeRoles) -and
-        [string]::IsNullOrEmpty($_.conditions.users.includeGuestsOrExternalUsers) -and
-        [string]::IsNullOrEmpty($_.conditions.users.excludeGuestsOrExternalUsers)
-    }
-
+           
+    # check for a conditional access policy which meets the requirements
     if ($null -ne $breakGlassUserGroup){
-        $validPoliciesEnabled = $caps | Where-Object {$_.state -eq 'enabled'}
-        $validPoliciesRiskyUser = $validPoliciesEnabled | Where-Object { $_.conditions.userRiskLevels -contains 'high'}
-        $validPolicies =  $validPoliciesRiskyUser | Where-Object {
-            $commonFilters -and
-            ($_.conditions.users.excludeGroups.Count -eq 1 -and
-            $_.conditions.users.excludeGroups -contains $uniqueGroupIdBG)
+        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassUPN $FirstBreakGlassID -SecondBreakGlassUPN $SecondBreakGlassID) 
+        if ($validPolicies){
+            $validPolicies = $validPolicies | Where-Object {
+                $_.conditions.users.excludeGroups.Count -eq 1 -and
+                $_.conditions.users.excludeGroups -contains $uniqueGroupIdBG
+            }
         } 
     }
     else{
-        $validPoliciesEnabled = $caps | Where-Object {$_.state -eq 'enabled'}
-        $validPoliciesRiskyUser = $validPoliciesEnabled | Where-Object { $_.conditions.userRiskLevels -contains 'high'}
-        $validPolicies =  $validPoliciesRiskyUser | Where-Object {
-            $commonFilters -and
-            [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
+        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassUPN $FirstBreakGlassID -SecondBreakGlassUPN $SecondBreakGlassID) 
+        if ($validPolicies){
+            $validPolicies = $validPolicies | Where-Object {
+                [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
+            }
         }
     }
-    Write-Host "validPolicies.count: $($validPolicies.count)"
 
-    if ($validPolicies.count -ne 0) {
+
+    Write-Host "validPolicies.count: $($validPolicies.count)"
+    if ($validPolicies -and $validPolicies.count -ne 0){
         $IsCompliantPasswordCAP = $true
     }
     else {
         # Failed. Reason: No policies meet the requirements
         $IsCompliantPasswordCAP = $false
     }
+
 
     # Check 2: Allowed Location – Conditional Access Policy
     $PsObjectLocation = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant
@@ -204,7 +218,7 @@ function Get-RiskBasedAccess {
         $IsCompliant = $false
         $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC1C2
     }
-    
+
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
