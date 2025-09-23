@@ -789,7 +789,6 @@ function Invoke-GraphQueryEX {
 
     [string]$baseUri = "https://graph.microsoft.com/v1.0"
     $fullUri = "$baseUri$urlPath" 
-    $fullUri
     $allResults = @()
     $statusCode = $null
     $pageCount = 0
@@ -803,7 +802,6 @@ function Invoke-GraphQueryEX {
         do {
             try {
                 $uri = $fullUri -as [uri]
-                $uri 
                 $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
                 $data = $response.Content | ConvertFrom-Json
                 $parsedcontent = $data.value
