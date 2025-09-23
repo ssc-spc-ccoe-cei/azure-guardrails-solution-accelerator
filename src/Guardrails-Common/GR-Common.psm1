@@ -876,6 +876,110 @@ function Invoke-GraphQuery {
     }
 }
 
+# Utility function for centralized error handling
+function Add-FunctionError {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Message,
+        
+        [Parameter(Mandatory = $false)]
+        [System.Exception] $Exception = $null,
+        
+        [Parameter(Mandatory = $false)]
+        [string] $Category = "General",
+        
+        [Parameter(Mandatory = $false)]
+        [System.Collections.Generic.List[string]] $ErrorList = $null
+    )
+    
+    if ($Exception) {
+        $errorMsg = "$Category - $Message : $($Exception.Message)"
+    } else {
+        $errorMsg = "$Category - $Message"
+    }
+    
+    Write-Warning $errorMsg
+    
+    if ($ErrorList) {
+        $ErrorList.Add($errorMsg)
+    }
+}
+
+# Utility function for exponential backoff delay calculation
+function Get-BackoffDelay {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [int] $Attempt,
+        
+        [Parameter(Mandatory = $true)]
+        [hashtable] $Config
+    )
+    
+    $delay = [Math]::Min(
+        $Config.BaseDelay * [Math]::Pow($Config.BackoffMultiplier, $Attempt - 1),
+        $Config.MaxDelay
+    )
+    return [int]$delay
+}
+
+# Utility function for Graph API calls with metrics and error handling
+function Invoke-GraphQueryWithMetrics {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $UrlPath,
+        
+        [Parameter(Mandatory = $false)]
+        [string] $Operation = "Graph API Call",
+        
+        [Parameter(Mandatory = $false)]
+        [hashtable] $PerformanceMetrics = $null,
+        
+        [Parameter(Mandatory = $false)]
+        [int] $MaxRetries = 5,
+        
+        [Parameter(Mandatory = $false)]
+        [int] $RetryDelaySeconds = 10
+    )
+    
+    Write-Verbose "  -> $Operation : $UrlPath"
+    
+    try {
+        # Use the existing retry logic in Invoke-GraphQueryEX
+        $response = Invoke-GraphQueryEX -urlPath $UrlPath -MaxRetries $MaxRetries -RetryDelaySeconds $RetryDelaySeconds -ErrorAction Stop
+        
+        # Update performance metrics if provided
+        if ($PerformanceMetrics) {
+            $PerformanceMetrics.GraphApiCalls++
+        }
+        
+        # Handle array responses consistently
+        if ($response -is [System.Array]) {
+            $response = $response | Where-Object { 
+                $null -ne $_.Content -or $null -ne $_.StatusCode 
+            } | Select-Object -Last 1
+        }
+        
+        # Check for successful response
+        if ($response.Error) {
+            throw [System.Exception]::new("Graph API error: $($response.Error)")
+        }
+        
+        if (-not $response.StatusCode -or $response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
+            throw [System.Exception]::new("Graph API returned status code: $($response.StatusCode)")
+        }
+        
+        Write-Verbose "  Success: $Operation completed"
+        return $response
+    }
+    catch {
+        Write-Error "$Operation failed: $($_.Exception.Message)"
+        throw $_
+    }
+}
+
 
 
 # Function to add other possible file extension(s) to the module file names
@@ -2127,74 +2231,6 @@ function FetchAllUserRawData {
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData at $startTimeFormatted ==="
     
-    # Helper function for centralized error handling
-    function Add-FunctionError {
-        param(
-            [string] $Message,
-            [System.Exception] $Exception = $null,
-            [string] $Category = "General"
-        )
-        
-        if ($Exception) {
-            $errorMsg = "$Category - $Message : $($Exception.Message)"
-        } else {
-            $errorMsg = "$Category - $Message"
-        }
-        
-        Write-Warning $errorMsg
-        $ErrorList.Add($errorMsg)
-    }
-    
-    # Helper function for exponential backoff
-    function Get-BackoffDelay {
-        param([int] $Attempt, [hashtable] $Config)
-        
-        $delay = [Math]::Min(
-            $Config.BaseDelay * [Math]::Pow($Config.BackoffMultiplier, $Attempt - 1),
-            $Config.MaxDelay
-        )
-        return [int]$delay
-    }
-    
-    # Helper function for Graph API calls
-    function Invoke-GraphQueryWithMetrics {
-        param(
-            [string] $UrlPath,
-            [string] $Operation = "Graph API Call"
-        )
-        
-        Write-Verbose "  -> $Operation : $UrlPath"
-        
-        try {
-            # Use the existing retry logic in Invoke-GraphQueryEX
-            $response = Invoke-GraphQueryEX -urlPath $UrlPath -MaxRetries 5 -RetryDelaySeconds 10 -ErrorAction Stop
-            $performanceMetrics.GraphApiCalls++
-            
-            # Handle array responses consistently
-            if ($response -is [System.Array]) {
-                $response = $response | Where-Object { 
-                    $null -ne $_.Content -or $null -ne $_.StatusCode 
-                } | Select-Object -Last 1
-            }
-            
-            # Check for successful response
-            if ($response.Error) {
-                throw [System.Exception]::new("Graph API error: $($response.Error)")
-            }
-            
-            if (-not $response.StatusCode -or $response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
-                throw [System.Exception]::new("Graph API returned status code: $($response.StatusCode)")
-            }
-            
-            Write-Verbose "  Success: $Operation completed"
-            return $response
-        }
-        catch {
-            Write-Error "$Operation failed: $($_.Exception.Message)"
-            throw $_
-        }
-    }
-    
     # Step 1: Fetch all users with improved filtering
     Write-Verbose "Step 1: Fetching user data from Microsoft Graph..."
     $allUsers = @()
@@ -2205,7 +2241,7 @@ function FetchAllUserRawData {
         $filterQuery = "accountEnabled eq true and userType eq 'Member'"
         $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
         
-        $response = Invoke-GraphQueryWithMetrics -UrlPath $usersPath -Operation "Fetch Users"
+        $response = Invoke-GraphQueryWithMetrics -UrlPath $usersPath -Operation "Fetch Users" -PerformanceMetrics $performanceMetrics
         $allUsers = @($response.Content.value)
         
         Write-Verbose "  Success: Retrieved $($allUsers.Count) active member users from Graph"
@@ -2242,7 +2278,7 @@ function FetchAllUserRawData {
         }
         
     } catch {
-        Add-FunctionError -Message "Failed to fetch users from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI"
+        Add-FunctionError -Message "Failed to fetch users from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
         return $ErrorList
     }
     
@@ -2252,13 +2288,13 @@ function FetchAllUserRawData {
     
     try {
         $regPath = "/reports/authenticationMethods/userRegistrationDetails"
-        $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details"
+        $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details" -PerformanceMetrics $performanceMetrics
         $registrationDetails = @($regResponse.Content.value)
         
         Write-Verbose "  Success: Retrieved $($registrationDetails.Count) registration records"
         
     } catch {
-        Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI"
+        Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
         Write-Warning "Continuing with empty registration data..."
     }
     
@@ -2306,17 +2342,17 @@ function FetchAllUserRawData {
                 userType          = $user.userType
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
-                isMfaRegistered       = $registration.isMfaRegistered
-                isMfaCapable          = $registration.isMfaCapable
-                isSsprEnabled         = $registration.isSsprEnabled
-                isSsprRegistered      = $registration.isSsprRegistered
-                isSsprCapable         = $registration.isSsprCapable
-                isPasswordlessCapable = $registration.isPasswordlessCapable
-                defaultMethod         = $registration.defaultMethod
+                isMfaRegistered       = if ($registration) { $registration.isMfaRegistered } else { $null }
+                isMfaCapable          = if ($registration) { $registration.isMfaCapable } else { $null }
+                isSsprEnabled         = if ($registration) { $registration.isSsprEnabled } else { $null }
+                isSsprRegistered      = if ($registration) { $registration.isSsprRegistered } else { $null }
+                isSsprCapable         = if ($registration) { $registration.isSsprCapable } else { $null }
+                isPasswordlessCapable = if ($registration) { $registration.isPasswordlessCapable } else { $null }
+                defaultMethod         = if ($registration) { $registration.defaultMethod } else { $null }
                 methodsRegistered     = $methods
-                isSystemPreferredAuthenticationMethodEnabled = $registration.isSystemPreferredAuthenticationMethodEnabled
-                systemPreferredAuthenticationMethods = $registration.systemPreferredAuthenticationMethods
-                userPreferredMethodForSecondaryAuthentication = $registration.userPreferredMethodForSecondaryAuthentication
+                isSystemPreferredAuthenticationMethodEnabled = if ($registration) { $registration.isSystemPreferredAuthenticationMethodEnabled } else { $null }
+                systemPreferredAuthenticationMethods = if ($registration) { $registration.systemPreferredAuthenticationMethods } else { $null }
+                userPreferredMethodForSecondaryAuthentication = if ($registration) { $registration.userPreferredMethodForSecondaryAuthentication } else { $null }
                 ReportTime        = $ReportTime
             }
         }
@@ -2368,7 +2404,7 @@ function FetchAllUserRawData {
         }
         
     } catch {
-        Add-FunctionError -Message "Failed to send data to Log Analytics" -Exception $_.Exception -Category "LogAnalytics"
+        Add-FunctionError -Message "Failed to send data to Log Analytics" -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
         return $ErrorList
     }
     
@@ -2409,17 +2445,23 @@ function FetchAllUserRawData {
             
         } catch {
             $errorMessage = $_.Exception.Message
+            $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
             
             if ($errorMessage -like "*Forbidden*" -or $errorMessage -like "*403*" -or $errorMessage -like "*unauthorized*") {
-                $permissionError = $true
-                Add-FunctionError -Message "Permission denied when querying Log Analytics. Automation Account needs 'Log Analytics Reader' role on workspace $WorkSpaceID" -Category "Permissions"
-                break
+                Write-Warning "  Warning: Permission error on attempt $attempt : $errorMessage"
+                Write-Verbose "  -> This may be temporary during initial setup or permission propagation. Retrying in $delay seconds..."
+                
+                if ($attempt -eq $RetryConfig.MaxRetries) {
+                    $permissionError = $true
+                    Add-FunctionError -Message "Permission denied when querying Log Analytics after $($RetryConfig.MaxRetries) attempts. Automation Account needs 'Log Analytics Reader' role on workspace $WorkSpaceID" -Category "Permissions" -ErrorList $ErrorList
+                } elseif ($attempt -lt $RetryConfig.MaxRetries) {
+                    Start-Sleep -Seconds $delay
+                }
             } else {
-                $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
                 Write-Warning "  Warning: Query attempt $attempt failed: $errorMessage"
                 
                 if ($attempt -eq $RetryConfig.MaxRetries) {
-                    Add-FunctionError -Message "Query verification failed after $($RetryConfig.MaxRetries) attempts" -Exception $_.Exception -Category "DataVerification"
+                    Add-FunctionError -Message "Query verification failed after $($RetryConfig.MaxRetries) attempts" -Exception $_.Exception -Category "DataVerification" -ErrorList $ErrorList
                 } elseif ($attempt -lt $RetryConfig.MaxRetries) {
                     Write-Verbose "  -> Retrying in $delay seconds..."
                     Start-Sleep -Seconds $delay
@@ -2432,13 +2474,13 @@ function FetchAllUserRawData {
     Write-Verbose "Step 7: Final validation and reporting..."
     
     if ($permissionError) {
-        Add-FunctionError -Message "Cannot verify data ingestion due to permission error. Modules may not have access to required data." -Category "Permissions"
+        Add-FunctionError -Message "Cannot verify data ingestion due to permission error. Modules may not have access to required data." -Category "Permissions" -ErrorList $ErrorList
     } elseif (-not $dataIngested) {
         $maxRetries = $RetryConfig.MaxRetries
-        Add-FunctionError -Message "Data ingestion verification failed after $maxRetries attempts. Modules may not have access to required data." -Category "DataVerification"
+        Add-FunctionError -Message "Data ingestion verification failed after $maxRetries attempts. Modules may not have access to required data." -Category "DataVerification" -ErrorList $ErrorList
     } elseif ($recordCount -ne $augmentedUsers.Count) {
         $expectedCount = $augmentedUsers.Count
-        Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may be missing." -Category "DataIntegrity"
+        Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may be missing." -Category "DataIntegrity" -ErrorList $ErrorList
     } else {
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
     }
