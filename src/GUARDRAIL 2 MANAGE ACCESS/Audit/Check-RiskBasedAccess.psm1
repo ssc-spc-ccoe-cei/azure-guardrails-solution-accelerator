@@ -1,8 +1,8 @@
 function Test-CommonFilters {
     param(
         [PSCustomObject]$policy,
-        [string] $FirstBreakGlassUPN,
-        [string] $SecondBreakGlassUPN
+        [string] $FirstBreakGlassID,
+        [string] $SecondBreakGlassID
 
     )
 
@@ -171,7 +171,7 @@ function Get-RiskBasedAccess {
            
     # check for a conditional access policy which meets the requirements
     if ($null -ne $breakGlassUserGroup){
-        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassUPN $FirstBreakGlassID -SecondBreakGlassUPN $SecondBreakGlassID) 
+        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID) 
         if ($validPolicies){
             $validPolicies = $validPolicies | Where-Object {
                 $_.conditions.users.excludeGroups.Count -eq 1 -and
@@ -180,7 +180,7 @@ function Get-RiskBasedAccess {
         } 
     }
     else{
-        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassUPN $FirstBreakGlassID -SecondBreakGlassUPN $SecondBreakGlassID) 
+        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID) 
         if ($validPolicies){
             $validPolicies = $validPolicies | Where-Object {
                 [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
