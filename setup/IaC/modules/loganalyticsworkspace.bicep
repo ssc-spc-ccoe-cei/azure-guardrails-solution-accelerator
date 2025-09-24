@@ -113,9 +113,13 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    systemPreferredMethodsArray = parse_json(systemPreferredAuthenticationMethods_s),
-    methodsRegisteredArray = parse_json(methodsRegistered_s),
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b
+    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    systemPreferredMethodsArray = iff(
+        isnotempty(systemPreferredAuthenticationMethods_s) and startswith(systemPreferredAuthenticationMethods_s, "["),
+        parse_json(systemPreferredAuthenticationMethods_s),
+        iff(isnotempty(systemPreferredAuthenticationMethods_s), [systemPreferredAuthenticationMethods_s], [])
+    ),
+    methodsRegisteredArray = parse_json(methodsRegistered_s)
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
