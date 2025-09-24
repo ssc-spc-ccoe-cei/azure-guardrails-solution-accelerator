@@ -213,7 +213,24 @@ catch {
     Get-ChildItem $messagesBaseDirectory
     break
 }
+
+try {
+    [String] $FirstBreakGlassUPN = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'BGA1' -AsPlainText -ErrorAction Stop
+    [String] $SecondBreakGlassUPN = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'BGA2' -AsPlainText -ErrorAction Stop
+}
+catch {
+    throw "Failed to retrieve breakglass account UPN's from KeyVault '$KeyVaultName'. Error message: $_"
+}
 Write-Output "Loaded $($msgTable.Count) messages." 
+
+Write-Output "Fetching all user raw data."
+# Ingest all user raw data before running modules
+$UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+if ($UserRawDataErrors.Count -gt 0) {
+    Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+}
+Write-Output "Fetching user raw data complete."
+
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
