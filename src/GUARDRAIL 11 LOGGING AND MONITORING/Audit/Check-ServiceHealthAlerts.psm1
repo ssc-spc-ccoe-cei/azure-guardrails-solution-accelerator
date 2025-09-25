@@ -22,11 +22,20 @@ function Validate-ActionGroups {
             #Get the action group
             $actionGroups = Get-AzActionGroup -InputObject $id
 
+            Write-Warning "actionGroups: $actionGroups"
+
             $emailAddresses = $actionGroups | ForEach-Object {
                 if ($_.EmailReceiver) {
                     $_.EmailReceiver | Select-Object -ExpandProperty EmailAddress
                 }
             } | Where-Object { $_ -ne $null } # Remove any null results
+
+            if ($emailAddresses -isnot [System.Collections.IEnumerable] -or $emailAddresses -is [string]) {
+                $emailAddresses = @($emailAddresses)
+            }
+            $emailAddressesArray = [System.Collections.ArrayList]@($emailAddresses)
+
+            Write-Host "emailAddresses: $emailAddresses"
 
             $actionSubOwners += Get-AzRoleAssignment -Scope "/subscriptions/$subscriptionId" | Where-Object {
                 $_.RoleDefinitionName -eq "Owner" 
@@ -40,12 +49,14 @@ function Validate-ActionGroups {
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
 
-        if($emailAddresses -ge 2){
+        if($emailAddressesArray -ge 2){
             $actionGroupCompliant = $true
         }
-        elseif($emailAddresses -eq 1 -and $matchingOwners -ge 1){
+        elseif($emailAddressesArray -eq 1 -and $matchingOwners -ge 1){
             $actionGroupCompliant = $true
         }
+
+        Write-Host "actionGroupCompliant: $actionGroupCompliant"
     }
 
     #Return compliance state of action group
