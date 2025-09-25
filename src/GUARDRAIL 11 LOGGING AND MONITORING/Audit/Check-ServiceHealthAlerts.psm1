@@ -35,7 +35,7 @@ function Validate-ActionGroups {
             }
             $emailAddressesArray = [System.Collections.ArrayList]@($emailAddresses)
 
-            Write-Host "emailAddresses: $emailAddresses"
+            Write-warning "emailAddresses: $emailAddresses"
 
             $actionSubOwners += Get-AzRoleAssignment -Scope "/subscriptions/$subscriptionId" | Where-Object {
                 $_.RoleDefinitionName -eq "Owner" 
