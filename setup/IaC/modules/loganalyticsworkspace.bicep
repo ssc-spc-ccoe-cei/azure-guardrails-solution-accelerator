@@ -113,9 +113,13 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    systemPreferredMethodsArray = parse_json(systemPreferredAuthenticationMethods_s),
-    methodsRegisteredArray = parse_json(methodsRegistered_s),
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b
+    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    systemPreferredMethodsArray = iff(
+        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
+        parse_json(systemPreferredAuthenticationMethods_s),
+        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+    ),
+    methodsRegisteredArray = parse_json(methodsRegistered_s)
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
@@ -162,6 +166,111 @@ summary
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
+    functionParameters: 'ReportTime:string'
+    version: 2
+  }
+}
+
+resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+  name: 'gr_non_mfa_users'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_non_mfa_users'
+    query: '''
+let reportTime = ReportTime;
+let locale = toscalar(
+    GR_TenantInfo_CL
+    | summarize arg_max(ReportTime_s, *) by TenantDomain_s
+    | project Locale_s
+    | take 1
+);
+let localizedMessages = case(
+    locale == "fr-CA", dynamic({
+        "systemPreferred": "Authentification préférée du système : ",
+        "mfaRegistered": "AMF enregistrée avec les méthodes : ",
+        "onlyOneMethod": "Seulement 1 méthode AMF trouvée : ",
+        "atLeastTwoRequired": ". Au moins 2 requises.",
+        "noValidMethods": "Aucune méthode AMF valide trouvée. Au moins 2 requises.",
+        "noMfaConfigured": "Aucune AMF configurée",
+        "neverSignedIn": "Jamais connecté",
+        "noNonCompliantUsers": "Aucun utilisateur non conforme trouvé"
+    }),
+    dynamic({
+        "systemPreferred": "System preferred authentication: ",
+        "mfaRegistered": "MFA registered with methods: ",
+        "onlyOneMethod": "Only 1 MFA method found: ",
+        "atLeastTwoRequired": ". At least 2 required.",
+        "noValidMethods": "No valid MFA methods found. At least 2 required.",
+        "noMfaConfigured": "No MFA configured",
+        "neverSignedIn": "Never Signed In",
+        "noNonCompliantUsers": "No non-compliant users found"
+    })
+);
+let userData = GuardrailsUserRaw_CL
+| where ReportTime_s == reportTime;
+let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
+let mfaAnalysis = userData
+| extend 
+    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    systemPreferredMethodsArray = iff(
+        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
+        parse_json(systemPreferredAuthenticationMethods_s),
+        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+    ),
+    methodsRegisteredArray = parse_json(methodsRegistered_s)
+| extend
+    hasValidSystemPreferred = iff(
+        isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
+        array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
+        false
+    ),
+    hasMfaRegistered = isMfaRegistered_b
+| extend
+    validMfaMethodsCount = iff(
+        hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
+        array_length(set_intersect(methodsRegisteredArray, validMfaMethods)),
+        0
+    )
+| extend
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2),
+    complianceReason = case(
+        hasValidSystemPreferred, strcat(tostring(localizedMessages["systemPreferred"]), strcat_array(set_intersect(systemPreferredMethodsArray, validSystemMethods), ", ")),
+        hasMfaRegistered == true and validMfaMethodsCount >= 2, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
+        hasMfaRegistered == true and validMfaMethodsCount == 1, strcat(tostring(localizedMessages["onlyOneMethod"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", "), tostring(localizedMessages["atLeastTwoRequired"])),
+        hasMfaRegistered == true and validMfaMethodsCount == 0, tostring(localizedMessages["noValidMethods"]),
+        tostring(localizedMessages["noMfaConfigured"])
+    );
+let nonCompliantUsers = mfaAnalysis
+| where isMfaCompliant == false
+| sort by signInActivity_lastSignInDateTime_t
+| project 
+    DisplayName = displayName_s, 
+    UserPrincipalName = userPrincipalName_s, 
+    UserType = userType_s, 
+    CreatedTime = iff(isnull(createdDateTime_t), "N/A", format_datetime(createdDateTime_t, 'yyyy-MM-dd HH:mm:ss')), 
+    LastSignIn = iff(isnull(signInActivity_lastSignInDateTime_t), tostring(localizedMessages["neverSignedIn"]), format_datetime(signInActivity_lastSignInDateTime_t, 'yyyy-MM-dd HH:mm:ss')),
+    Comments = complianceReason
+| take 100;
+union
+(
+    nonCompliantUsers
+),
+(
+    nonCompliantUsers
+    | summarize count() 
+    | where count_ == 0
+    | project 
+        DisplayName = "N/A", 
+        UserPrincipalName = "N/A", 
+        UserType = "N/A", 
+        CreatedTime = "N/A", 
+        LastSignIn = "N/A",
+        Comments = tostring(localizedMessages["noNonCompliantUsers"])
+)
+'''
+    functionAlias: 'gr_non_mfa_users'
     functionParameters: 'ReportTime:string'
     version: 2
   }
