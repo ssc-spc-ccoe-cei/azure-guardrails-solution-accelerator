@@ -88,7 +88,8 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
 let reportTime = ReportTime;
 let locale = toscalar(
     GR_TenantInfo_CL
-    | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
+    | summarize arg_max(ReportTime_s, *) by TenantDomain_s
+    | project Locale_s
     | take 1
 );
 let localizedMessages = case(
@@ -107,8 +108,13 @@ let localizedMessages = case(
         "dataCollectedForAnalysis": "Data collected for {0} users. Detailed MFA compliance analysis will be performed in the workbook."
     })
 );
-let userData = GuardrailsUserRaw_CL
-| where ReportTime_s == reportTime;
+let rawUserData = GuardrailsUserRaw_CL
+| where ReportTime_s == reportTime
+| extend guardrailsExcluded = iff(isnull(guardrailsExcludedMfa_b), false, tobool(guardrailsExcludedMfa_b));
+let excludedUsers = rawUserData
+| where guardrailsExcluded == true;
+let userData = rawUserData
+| where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
@@ -135,7 +141,7 @@ let summary = mfaAnalysis
 | summarize 
     TotalUsers = count(),
     CompliantUsers = countif(isMfaCompliant == true),
-    NonCompliantUsers = countif(isMfaCompliant == false) 
+    NonCompliantUsers = countif(isMfaCompliant == false)
 | extend 
     IsCompliant = NonCompliantUsers == 0,
     Comments = case(
@@ -150,7 +156,15 @@ let summary = mfaAnalysis
         ),
         "Unknown error"
     );
-summary
+let excludedCount = toscalar(excludedUsers | summarize count());
+let finalSummary = summary
+| extend Comments = iff(coalesce(excludedCount, 0) > 0,
+        strcat(Comments, "; ", iff(locale == "fr-CA",
+            strcat("Exclusion de ", tostring(coalesce(excludedCount, 0)), " comptes de service via l'attribut de sécurité Guardrails.Excludedmfa"),
+            strcat("Excluded ", tostring(coalesce(excludedCount, 0)), " service accounts via Guardrails.Excludedmfa custom security attribute"))),
+        Comments)
+| extend ExcludedUsers = tolong(coalesce(excludedCount, 0));
+finalSummary
 | project 
     ControlName_s = "GUARDRAIL 1",
     ItemName_s = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
@@ -158,6 +172,7 @@ summary
     Required_s = "True",
     ComplianceStatus_b = IsCompliant,
     Comments_s = Comments,
+    ExcludedCount_d = ExcludedUsers,
     itsgcode_s = "IA2(1)",
     TimeGenerated = now()
 '''

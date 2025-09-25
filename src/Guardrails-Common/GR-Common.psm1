@@ -82,6 +82,33 @@ function get-rgtagValue {
     }
     return ""
 }
+
+# Returns true when the Guardrails custom security attribute marks the user as excluded from MFA.
+function Test-GuardrailsMfaExclusion {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject] $User,
+        [string] $AttributeNamespace = 'Guardrails',
+        [string] $AttributeName = 'Excludedmfa'
+    )
+
+    if ($null -eq $User) { return $false }
+
+    $customAttributes = $User.customSecurityAttributes
+    if ($null -eq $customAttributes) { return $false }
+
+    $namespaceProperty = $customAttributes.PSObject.Properties[$AttributeNamespace]
+    if ($null -eq $namespaceProperty) { return $false }
+
+    $namespaceValue = $namespaceProperty.Value
+    if ($null -eq $namespaceValue) { return $false }
+
+    $attributeProperty = $namespaceValue.PSObject.Properties[$AttributeName]
+    if ($null -eq $attributeProperty) { return $false }
+
+    return ($attributeProperty.Value -eq $true)
+}
 function copy-toBlob {
     [CmdletBinding()]
     param (
@@ -2235,7 +2262,7 @@ function FetchAllUserRawData {
     
     try {
         # User query with filtering - simplified URL construction
-        $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+        $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes"
         $filterQuery = "accountEnabled eq true"
         $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
         
@@ -2326,6 +2353,7 @@ function FetchAllUserRawData {
             $user = $_
             $registration = $regById[$user.id]
             $methods = @()
+            $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
             
             if ($registration -and $registration.methodsRegistered) {
                 $methods = @($registration.methodsRegistered)
@@ -2340,6 +2368,8 @@ function FetchAllUserRawData {
                 userType          = $user.userType
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
+                customSecurityAttributes = $user.customSecurityAttributes
+                guardrailsExcludedMfa    = $guardrailsExcluded
                 isMfaRegistered       = if ($registration) { $registration.isMfaRegistered } else { $null }
                 isMfaCapable          = if ($registration) { $registration.isMfaCapable } else { $null }
                 isSsprEnabled         = if ($registration) { $registration.isSsprEnabled } else { $null }
