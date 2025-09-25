@@ -251,8 +251,7 @@ let nonCompliantUsers = mfaAnalysis
     UserType = userType_s, 
     CreatedTime = iff(isnull(createdDateTime_t), "N/A", format_datetime(createdDateTime_t, 'yyyy-MM-dd HH:mm:ss')), 
     LastSignIn = iff(isnull(signInActivity_lastSignInDateTime_t), tostring(localizedMessages["neverSignedIn"]), format_datetime(signInActivity_lastSignInDateTime_t, 'yyyy-MM-dd HH:mm:ss')),
-    Comments = complianceReason,
-    DebugInfo = strcat("SystemPreferred: ", tostring(hasValidSystemPreferred), ", MfaRegistered: ", tostring(hasMfaRegistered), ", MethodsCount: ", tostring(validMfaMethodsCount), ", SystemMethods: ", tostring(systemPreferredMethodsArray))
+    Comments = complianceReason
 | take 100;
 union
 (
