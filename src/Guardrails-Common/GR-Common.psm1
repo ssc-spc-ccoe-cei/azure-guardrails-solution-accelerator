@@ -2306,11 +2306,11 @@ function FetchAllUserRawData {
     }
     Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
     
-    # Step 4: Process users in batches
-    Write-Verbose "Step 4: Processing users in batches of $BatchSize..."
-    $augmentedUsers = [System.Collections.Generic.List[PSObject]]::new()
+    # Step 4: Process and upload users in batches
+    Write-Verbose "Step 4: Processing and uploading users in batches of $BatchSize..."
     $totalUsers = $allUsers.Count
     $processedUsers = 0
+    $totalUploadedRecords = 0
     
     for ($batchStart = 0; $batchStart -lt $totalUsers; $batchStart += $BatchSize) {
         $batchEnd = [Math]::Min($batchStart + $BatchSize - 1, $totalUsers - 1)
@@ -2355,56 +2355,52 @@ function FetchAllUserRawData {
             }
         }
         
-        # Add batch results to main collection
-        $batchResults | ForEach-Object { $augmentedUsers.Add($_) }
         $processedUsers += $currentBatch.Count
+        Write-Verbose "  -> Batch $batchNumber processing complete. Progress: $processedUsers/$totalUsers users"
         
-        Write-Verbose "  Success: Batch $batchNumber completed. Progress: $processedUsers/$totalUsers users"
+        # Upload current batch to Log Analytics
+        Write-Verbose "  -> Uploading batch $batchNumber ($($batchResults.Count) records) to Log Analytics..."
         
-        # Small delay between batches
-        if ($batchNumber -lt $totalBatches) {
-            Start-Sleep -Milliseconds 100
-        }
-    }
-    
-    $performanceMetrics.UsersProcessed = $processedUsers
-    Write-Verbose "  Success: All users processed - $($augmentedUsers.Count) augmented user records created"
-    
-    # Step 5: Send data to Log Analytics
-    Write-Verbose "Step 5: Sending data to Log Analytics..."
-    
-    try {
-        $recordCount = $augmentedUsers.Count
-        Write-Verbose "  -> Uploading $recordCount records to GuardrailsUserRaw_CL table..."
-        
-        # Retry logic for data upload
-        $uploadSuccessful = $false
+        $batchUploadSuccessful = $false
         for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
-                New-LogAnalyticsData -Data $augmentedUsers -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
-                $uploadSuccessful = $true
-                Write-Verbose "  Success: Data upload successful on attempt $attempt"
+                New-LogAnalyticsData -Data $batchResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
+                $batchUploadSuccessful = $true
+                $totalUploadedRecords += $batchResults.Count
+                Write-Verbose "  Success: Batch $batchNumber upload successful on attempt $attempt"
                 break
             }
             catch {
                 if ($attempt -eq 3) {
-                    throw $_
+                    Add-FunctionError -Message "Failed to upload batch $batchNumber after 3 attempts: $($_.Exception.Message)" -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
+                    return $ErrorList
                 } else {
                     $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                    Write-Warning "Upload attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
+                    Write-Warning "Batch $batchNumber upload attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
                     Start-Sleep -Seconds $delay
                 }
             }
         }
         
-        if (-not $uploadSuccessful) {
-            throw "Failed to upload data after 3 attempts"
+        if (-not $batchUploadSuccessful) {
+            Add-FunctionError -Message "Failed to upload batch $batchNumber after 3 attempts" -Category "LogAnalytics" -ErrorList $ErrorList
+            return $ErrorList
         }
         
-    } catch {
-        Add-FunctionError -Message "Failed to send data to Log Analytics" -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
-        return $ErrorList
+        # Delay between batch uploads to prevent overwhelming Log Analytics
+        if ($batchNumber -lt $totalBatches) {
+            Write-Verbose "  -> Waiting 2 seconds before next batch upload..."
+            Start-Sleep -Seconds 2
+        }
     }
+    
+    $performanceMetrics.UsersProcessed = $processedUsers
+    Write-Verbose "  Success: All batches processed and uploaded - $totalUploadedRecords total records uploaded"
+    
+    # Step 5: Wait before verification to allow data ingestion
+    Write-Verbose "Step 5: Waiting for data ingestion to complete..."
+    Write-Verbose "  -> Waiting 30 seconds to allow Log Analytics to process uploaded batches..."
+    Start-Sleep -Seconds 30
     
     # Step 6: Verify data ingestion
     Write-Verbose "Step 6: Verifying data ingestion..."
@@ -2476,8 +2472,8 @@ function FetchAllUserRawData {
     } elseif (-not $dataIngested) {
         $maxRetries = $RetryConfig.MaxRetries
         Add-FunctionError -Message "Data ingestion verification failed after $maxRetries attempts. Modules may not have access to required data." -Category "DataVerification" -ErrorList $ErrorList
-    } elseif ($recordCount -ne $augmentedUsers.Count) {
-        $expectedCount = $augmentedUsers.Count
+    } elseif ($recordCount -ne $totalUploadedRecords) {
+        $expectedCount = $totalUploadedRecords
         Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may be missing." -Category "DataIntegrity" -ErrorList $ErrorList
     } else {
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
@@ -2494,6 +2490,9 @@ function FetchAllUserRawData {
     $durationMs = $performanceMetrics.TotalDurationMs
     Write-Verbose "  Total Duration: $durationMin minutes ($durationMs ms)"
     Write-Verbose "  Users Processed: $($performanceMetrics.UsersProcessed)"
+    Write-Verbose "  Records Uploaded: $totalUploadedRecords"
+    Write-Verbose "  Batch Size: $BatchSize"
+    Write-Verbose "  Total Batches: $([Math]::Ceiling($totalUsers / $BatchSize))"
     Write-Verbose "  Graph API Calls: $($performanceMetrics.GraphApiCalls)"
     Write-Verbose "  Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
     Write-Verbose "  Errors: $($ErrorList.Count)"
