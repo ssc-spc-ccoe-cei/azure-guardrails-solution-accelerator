@@ -159,7 +159,6 @@ summary
     ControlName = iff(locale == "fr-CA", "GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS", "GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES"),
     ItemName = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
     ReportTime = reportTime,
-    Required = "True",
     ComplianceStatus = IsCompliant,
     Comments = Comments,
     itsgcode = "IA2(1)",

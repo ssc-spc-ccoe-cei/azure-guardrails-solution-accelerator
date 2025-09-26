@@ -2589,7 +2589,7 @@ function FetchAllUserRawData {
             # Use more robust query with error handling
             $query = @"
 GuardrailsUserRaw_CL 
-| where TimeGenerated > ago(2h) and ReportTime_s == '$ReportTime'
+| where ReportTime_s == '$ReportTime'
 | count
 "@
             
