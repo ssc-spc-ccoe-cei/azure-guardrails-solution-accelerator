@@ -156,13 +156,13 @@ let summary = mfaAnalysis
     );
 summary
 | project 
-    ControlName_s = "GUARDRAIL 1",
-    ItemName_s = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
-    ReportTime_s = reportTime,
-    Required_s = "True",
-    ComplianceStatus_b = IsCompliant,
-    Comments_s = Comments,
-    itsgcode_s = "IA2(1)",
+    ControlName = iff(locale == "fr-CA", "GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS", "GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES"),
+    ItemName = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
+    ReportTime = reportTime,
+    Required = "True",
+    ComplianceStatus = IsCompliant,
+    Comments = Comments,
+    itsgcode = "IA2(1)",
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
