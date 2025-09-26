@@ -2556,7 +2556,7 @@ function FetchAllUserRawData {
     try {
         # Simple test query to check permissions and connectivity
         $testQuery = "Heartbeat | limit 1"
-        $testResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $testQuery -ErrorAction Stop -TimeoutSeconds 30
+        $testResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $testQuery -ErrorAction Stop
         Write-Verbose "  -> Log Analytics connectivity test successful"
     }
     catch {
@@ -2597,7 +2597,7 @@ GuardrailsUserRaw_CL
                 Write-Verbose "  -> Verification attempt $attempt/$maxVerificationAttempts : Querying Log Analytics..."
                 
                 # Use shorter timeout and explicit error handling
-                $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop -TimeoutSeconds 60
+                $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
                 $recordCount = 0
                 
                 if ($result -and $result.Results -and $result.Results.Count -gt 0) {
