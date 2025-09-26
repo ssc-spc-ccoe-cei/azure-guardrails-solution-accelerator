@@ -848,6 +848,113 @@ function Invoke-GraphQueryEX {
     }
 }
 # end of Invoke-GraphQueryEX function
+
+# Function for true streaming Graph API queries with callback processing
+function Invoke-GraphQueryStreamWithCallback {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^(?!https://graph.microsoft.com/(v1|beta)/)')]
+        [string] $urlPath,
+        
+        [Parameter(Mandatory = $true)]
+        [scriptblock] $ProcessPageCallback,
+        
+        [Parameter(Mandatory = $false)]
+        [int] $PageSize = 1000,
+        
+        [Parameter(Mandatory = $false)]
+        [int] $MaxRetries = 3,
+        
+        [Parameter(Mandatory = $false)]
+        [int] $RetryDelaySeconds = 5,
+        
+        [Parameter(Mandatory = $false)]
+        [hashtable] $PerformanceMetrics = $null
+    )
+
+    [string] $baseUri = "https://graph.microsoft.com/v1.0"
+    
+    # Add $top parameter if not already present
+    if ($urlPath -notmatch '\$top=') {
+        $separator = if ($urlPath -contains '?') { '&' } else { '?' }
+        $urlPath = "$urlPath$separator`$top=$PageSize"
+    }
+    
+    $fullUri = "$baseUri$urlPath"
+    $pageCount = 0
+    $totalProcessed = 0
+    $totalUploaded = 0
+    
+    do {
+        $pageCount++
+        $retryCount = 0
+        $success = $false
+        
+        Write-Verbose "  -> Fetching page $pageCount from Graph API..."
+        
+        do {
+            try {
+                $uri = $fullUri -as [uri]
+                $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
+                $data = $response.Content | ConvertFrom-Json
+                $statusCode = $response.StatusCode
+                $success = $true
+                
+                # Update performance metrics if provided
+                if ($PerformanceMetrics) {
+                    $PerformanceMetrics.GraphApiCalls++
+                }
+                
+            }
+            catch {
+                $retryCount++
+                if ($retryCount -ge $MaxRetries) {
+                    throw [System.Exception]::new("Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message) at page $pageCount")
+                } else {
+                    Write-Warning "Transient error calling Graph API: $($_.Exception.Message). Retrying in $RetryDelaySeconds seconds... (Attempt $retryCount of $MaxRetries)"
+                    Start-Sleep -Seconds $RetryDelaySeconds
+                }
+            }
+        } while (-not $success -and $retryCount -lt $MaxRetries)
+
+        # Process current page immediately via callback
+        $pageData = @{
+            Data = if ($null -ne $data.value) { $data.value } else { $data }
+            PageNumber = $pageCount
+            HasMore = $null -ne $data.'@odata.nextLink'
+            StatusCode = $statusCode
+        }
+        
+        # Execute callback to process this page immediately
+        $callbackResult = & $ProcessPageCallback $pageData
+        if ($callbackResult) {
+            $totalProcessed += $callbackResult.ProcessedCount
+            $totalUploaded += $callbackResult.UploadedCount
+        }
+        
+        # Update URI for next page
+        if ($data.'@odata.nextLink') {
+            $fullUri = $data.'@odata.nextLink'
+        } else {
+            $fullUri = $null
+        }
+        
+        # Rate limiting between pages
+        if ($fullUri) {
+            Write-Verbose "  -> Waiting 2 seconds before fetching next page..."
+            Start-Sleep -Seconds 2
+        }
+        
+    } while ($fullUri)
+    
+    return @{
+        TotalPages = $pageCount
+        TotalProcessed = $totalProcessed
+        TotalUploaded = $totalUploaded
+    }
+}
+
 function Invoke-GraphQuery {
     [CmdletBinding()]
     param(
@@ -2229,60 +2336,9 @@ function FetchAllUserRawData {
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData at $startTimeFormatted ==="
     
-    # Step 1: Fetch all users with improved filtering
-    Write-Verbose "Step 1: Fetching user data from Microsoft Graph..."
-    $allUsers = @()
-    
-    try {
-        # User query with filtering - simplified URL construction
-        $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
-        $filterQuery = "accountEnabled eq true"
-        $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
-        
-        $response = Invoke-GraphQueryWithMetrics -UrlPath $usersPath -Operation "Fetch Users" -PerformanceMetrics $performanceMetrics
-        $allUsers = @($response.Content.value)
-        
-        Write-Verbose "  Success: Retrieved $($allUsers.Count) active member users from Graph"
-        
-        # Filter out break-glass accounts
-        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | 
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-            ForEach-Object { $_.ToLower() }
-        
-        if ($bgUpns.Count -gt 0) {
-            $bgUpnList = $bgUpns -join ', '
-            Write-Verbose "  -> Filtering out break-glass accounts: $bgUpnList"
-            $originalCount = $allUsers.Count
-            
-            # Use hashtable for O(1) lookup performance
-            $bgUpnLookup = @{}
-            $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
-            
-            $allUsers = $allUsers | Where-Object { 
-                $upn = $_.userPrincipalName
-                if ([string]::IsNullOrWhiteSpace($upn)) { 
-                    return $false 
-                }
-                
-                $isNotBreakGlass = -not $bgUpnLookup.ContainsKey($upn.ToLower())
-                if (-not $isNotBreakGlass) { 
-                    Write-Verbose "    Filtered out: $upn" 
-                }
-                return $isNotBreakGlass
-            }
-            
-            $removedCount = $originalCount - $allUsers.Count
-            Write-Verbose "  Success: Filtered $originalCount -> $($allUsers.Count) users (removed $removedCount break-glass accounts)"
-        }
-        
-    } catch {
-        Add-FunctionError -Message "Failed to fetch users from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
-        return $ErrorList
-    }
-    
-    # Step 2: Fetch registration details
-    Write-Verbose "Step 2: Fetching authentication method registration details..."
-    $registrationDetails = @()
+    # Step 1: Fetch registration details first (needed for all users)
+    Write-Verbose "Step 1: Fetching authentication method registration details..."
+    $regById = @{}
     
     try {
         $regPath = "/reports/authenticationMethods/userRegistrationDetails"
@@ -2291,38 +2347,85 @@ function FetchAllUserRawData {
         
         Write-Verbose "  Success: Retrieved $($registrationDetails.Count) registration records"
         
+        # Build efficient lookup for registration data
+        $registrationDetails | ForEach-Object {
+            if ($_.id -and -not $regById.ContainsKey($_.id)) {
+                $regById[$_.id] = $_
+            }
+        }
+        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
+        
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
         Write-Warning "Continuing with empty registration data..."
     }
     
-    # Step 3: Build efficient lookup for registration data
-    Write-Verbose "Step 3: Building registration data lookup..."
-    $regById = @{}
-    $registrationDetails | ForEach-Object {
-        if ($_.id -and -not $regById.ContainsKey($_.id)) {
-            $regById[$_.id] = $_
-        }
+    # Step 2: Prepare break-glass account filtering
+    Write-Verbose "Step 2: Preparing break-glass account filtering..."
+    $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | 
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+        ForEach-Object { $_.ToLower() }
+    
+    # Use hashtable for O(1) lookup performance
+    $bgUpnLookup = @{}
+    $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
+    
+    if ($bgUpns.Count -gt 0) {
+        $bgUpnList = $bgUpns -join ', '
+        Write-Verbose "  -> Will filter out break-glass accounts: $bgUpnList"
     }
-    Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
     
-    # Step 4: Process and upload users in batches
-    Write-Verbose "Step 4: Processing and uploading users in batches of $BatchSize..."
-    $totalUsers = $allUsers.Count
-    $processedUsers = 0
-    $totalUploadedRecords = 0
+    # Step 3: Setup streaming user processing
+    Write-Verbose "Step 3: Starting streaming user processing..."
+    $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+    $filterQuery = "accountEnabled eq true"
+    $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
     
-    for ($batchStart = 0; $batchStart -lt $totalUsers; $batchStart += $BatchSize) {
-        $batchEnd = [Math]::Min($batchStart + $BatchSize - 1, $totalUsers - 1)
-        $currentBatch = $allUsers[$batchStart..$batchEnd]
-        $batchNumber = [Math]::Floor($batchStart / $BatchSize) + 1
-        $totalBatches = [Math]::Ceiling($totalUsers / $BatchSize)
+    # Step 4: True streaming - process and upload users page by page as they're fetched
+    Write-Verbose "Step 4: True streaming user processing with page size $BatchSize..."
+    
+    # Define the callback function that processes each page immediately
+    $processPageCallback = {
+        param($pageData)
         
-        $batchUserCount = $currentBatch.Count
-        Write-Verbose "  -> Processing batch $batchNumber/$totalBatches with $batchUserCount users"
+        $pageNumber = $pageData.PageNumber
+        $pageUsers = $pageData.Data
+        $hasMore = $pageData.HasMore
         
-        # Process current batch
-        $batchResults = $currentBatch | ForEach-Object {
+        if (-not $pageUsers -or $pageUsers.Count -eq 0) {
+            Write-Verbose "  -> Page $pageNumber: No users returned, skipping..."
+            return @{ ProcessedCount = 0; UploadedCount = 0 }
+        }
+        
+        Write-Verbose "  -> Page $pageNumber: Processing $($pageUsers.Count) users from Graph API..."
+        
+        # Filter out break-glass accounts from this page
+        $filteredPageUsers = $pageUsers | Where-Object { 
+            $upn = $_.userPrincipalName
+            if ([string]::IsNullOrWhiteSpace($upn)) { 
+                return $false 
+            }
+            
+            $isNotBreakGlass = -not $bgUpnLookup.ContainsKey($upn.ToLower())
+            if (-not $isNotBreakGlass) { 
+                Write-Verbose "    Filtered out break-glass account: $upn" 
+            }
+            return $isNotBreakGlass
+        }
+        
+        $filteredCount = $filteredPageUsers.Count
+        $removedCount = $pageUsers.Count - $filteredCount
+        if ($removedCount -gt 0) {
+            Write-Verbose "  -> Page $pageNumber: Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
+        }
+        
+        if ($filteredCount -eq 0) {
+            Write-Verbose "  -> Page $pageNumber: No users remaining after filtering, skipping upload..."
+            return @{ ProcessedCount = $pageUsers.Count; UploadedCount = 0 }
+        }
+        
+        # Process current page users
+        $batchResults = $filteredPageUsers | ForEach-Object {
             $user = $_
             $registration = $regById[$user.id]
             $methods = @()
@@ -2355,47 +2458,63 @@ function FetchAllUserRawData {
             }
         }
         
-        $processedUsers += $currentBatch.Count
-        Write-Verbose "  -> Batch $batchNumber processing complete. Progress: $processedUsers/$totalUsers users"
+        Write-Verbose "  -> Page $pageNumber: Processing complete. $filteredCount records prepared for upload"
         
-        # Upload current batch to Log Analytics
-        Write-Verbose "  -> Uploading batch $batchNumber ($($batchResults.Count) records) to Log Analytics..."
+        # Upload current page to Log Analytics
+        Write-Verbose "  -> Page $pageNumber: Uploading $($batchResults.Count) records to Log Analytics..."
         
-        $batchUploadSuccessful = $false
+        $pageUploadSuccessful = $false
         for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
                 New-LogAnalyticsData -Data $batchResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
-                $batchUploadSuccessful = $true
-                $totalUploadedRecords += $batchResults.Count
-                Write-Verbose "  Success: Batch $batchNumber upload successful on attempt $attempt"
+                $pageUploadSuccessful = $true
+                Write-Verbose "  Success: Page $pageNumber upload successful on attempt $attempt"
                 break
             }
             catch {
                 if ($attempt -eq 3) {
-                    Add-FunctionError -Message "Failed to upload batch $batchNumber after 3 attempts: $($_.Exception.Message)" -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
-                    return $ErrorList
+                    $errorMsg = "Failed to upload page $pageNumber after 3 attempts: $($_.Exception.Message)"
+                    Add-FunctionError -Message $errorMsg -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
+                    throw [System.Exception]::new($errorMsg)
                 } else {
                     $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                    Write-Warning "Batch $batchNumber upload attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
+                    Write-Warning "Page $pageNumber upload attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
                     Start-Sleep -Seconds $delay
                 }
             }
         }
         
-        if (-not $batchUploadSuccessful) {
-            Add-FunctionError -Message "Failed to upload batch $batchNumber after 3 attempts" -Category "LogAnalytics" -ErrorList $ErrorList
-            return $ErrorList
+        if (-not $pageUploadSuccessful) {
+            $errorMsg = "Failed to upload page $pageNumber after 3 attempts"
+            Add-FunctionError -Message $errorMsg -Category "LogAnalytics" -ErrorList $ErrorList
+            throw [System.Exception]::new($errorMsg)
         }
         
-        # Delay between batch uploads to prevent overwhelming Log Analytics
-        if ($batchNumber -lt $totalBatches) {
-            Write-Verbose "  -> Waiting 2 seconds before next batch upload..."
-            Start-Sleep -Seconds 2
+        # Progress reporting
+        $statusMsg = if ($hasMore) { "more pages remaining..." } else { "final page" }
+        Write-Verbose "  -> Page $pageNumber: Upload complete ($statusMsg)"
+        
+        return @{ 
+            ProcessedCount = $pageUsers.Count
+            UploadedCount = $batchResults.Count 
         }
     }
     
-    $performanceMetrics.UsersProcessed = $processedUsers
-    Write-Verbose "  Success: All batches processed and uploaded - $totalUploadedRecords total records uploaded"
+    try {
+        # Use true streaming approach with callback processing
+        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -PerformanceMetrics $performanceMetrics
+        
+        $pageNumber = $streamResult.TotalPages
+        $processedUsers = $streamResult.TotalProcessed
+        $totalUploadedRecords = $streamResult.TotalUploaded
+        
+        $performanceMetrics.UsersProcessed = $processedUsers
+        Write-Verbose "  Success: All pages processed and uploaded - $totalUploadedRecords total records uploaded from $pageNumber pages"
+        
+    } catch {
+        Add-FunctionError -Message "Failed during streaming user processing" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        return $ErrorList
+    }
     
     # Step 5: Wait before verification to allow data ingestion
     Write-Verbose "Step 5: Waiting for data ingestion to complete..."
@@ -2491,8 +2610,8 @@ function FetchAllUserRawData {
     Write-Verbose "  Total Duration: $durationMin minutes ($durationMs ms)"
     Write-Verbose "  Users Processed: $($performanceMetrics.UsersProcessed)"
     Write-Verbose "  Records Uploaded: $totalUploadedRecords"
-    Write-Verbose "  Batch Size: $BatchSize"
-    Write-Verbose "  Total Batches: $([Math]::Ceiling($totalUsers / $BatchSize))"
+    Write-Verbose "  Page Size: $BatchSize"
+    Write-Verbose "  Total Pages: $pageNumber"
     Write-Verbose "  Graph API Calls: $($performanceMetrics.GraphApiCalls)"
     Write-Verbose "  Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
     Write-Verbose "  Errors: $($ErrorList.Count)"
