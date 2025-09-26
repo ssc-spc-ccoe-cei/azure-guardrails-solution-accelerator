@@ -268,6 +268,93 @@ foreach ($module in $modules) {
         #Write-host $module.Script
         Write-Output "Running module with script: $module.Script"
 
+        # ===== STRICT REPRO: Ensure LAW rows do not appear in workbook =====
+        # Purpose: Break the workbook inner-join (itsgcode_s) for early GR2
+        # modules that run before the simulated failure. This creates a
+        # faithful "LAW but not in workbook" scenario, independent of
+        # UI toggles.
+        # Disable by setting $strictRepro = $false.
+        $strictRepro = $true
+        $modulesToBreakJoin = @(
+            'Check-UserGroups',
+            'Check-ExternalUsers',
+            'Check-PrivilegedExternalUsers',
+            'Check-DeprecatedAccounts',
+            'Check-OnlineAttackCountermeasures'
+        )
+        if ($strictRepro -and ($modulesToBreakJoin -contains $module.ModuleName)) {
+            Write-Output "STRICT REPRO: Overriding itsgcode for $($module.ModuleName) to break workbook join"
+            $vars.itsgcode = 'TEST_NOMATCH'
+        }
+
+        # ===== FAILURE SIMULATION FOR TESTING ISSUE 529 =====
+        # Purpose: Simulate runbook failures to test workbook handling of partial data
+        # 
+        # TESTING CONTROLS - Set these to enable failure simulation:
+        # To enable: set below variables
+        # To disable: set $env:GUARDRAILS_FAIL = $null
+        
+        # === FAILURE SIMULATION ENABLED FOR TESTING ===
+        # Fail at 6th GR2 module so earlier GR2 results land in LAW
+        $env:GUARDRAILS_FAIL = "Check-RiskBasedAccess"   # 6th in GR2 sequence
+        $env:GUARDRAILS_FAIL_MODE = "kill"               # 'kill' simulates abrupt termination
+        
+        # Early modules for quick testing:
+        # - "Check-CloudAccountsMFA" (module 2)
+        # - "Check-AlertsMonitor" (module 5) 
+        # - "Check-UserGroups" (module 8)
+        
+        $failModule = $env:GUARDRAILS_FAIL
+        $failMode = if ($env:GUARDRAILS_FAIL_MODE) { $env:GUARDRAILS_FAIL_MODE } else { 'exit' }
+        
+        if ($failModule -and $module.ModuleName -eq $failModule) {
+            Write-Output ""
+            Write-Output "================================================"
+            Write-Output "   ISSUE 529 TEST: SIMULATING FAILURE"
+            Write-Output "================================================"
+            Write-Output "Module: $($module.ModuleName)"
+            Write-Output "Mode: $failMode"
+            Write-Output "Purpose: Testing workbook with partial data"
+            Write-Output ""
+            Write-Output "Modules before this have written to Log Analytics."
+            Write-Output "This failure will create partial data scenario."
+            Write-Output "================================================"
+            
+            switch ($failMode) {
+                'exit' {
+                    Write-Output "Executing: exit 1 (Abrupt termination)"
+                    Write-Output "Effect: Runbook stops immediately"
+                    exit 1
+                }
+                'kill' {
+                    Write-Output "Executing: Process Kill (Simulates timeout/OOM)"
+                    Write-Output "Effect: Immediate termination, no cleanup"
+                    [System.Diagnostics.Process]::GetCurrentProcess().Kill()
+                }
+                'throw' {
+                    Write-Output "Executing: throw (Exception)"
+                    Write-Output "Effect: Module fails but runbook continues"
+                    throw "TEST FAILURE: Simulating module failure for Issue 529 testing"
+                }
+                'timeout-short' {
+                    Write-Output "Executing: 30-second sleep (Quick timeout test)"
+                    Write-Output "Sleeping for 30 seconds..."
+                    Start-Sleep -Seconds 30
+                    Write-Output "Sleep complete - continuing execution"
+                }
+                'timeout-full' {
+                    Write-Output "Executing: 3+ hour sleep (Full timeout test)"
+                    Write-Output "This will trigger Azure Automation 3-hour timeout"
+                    Start-Sleep -Seconds 11000
+                }
+                default {
+                    Write-Output "Unknown mode '$failMode' - using exit"
+                    exit 1
+                }
+            }
+        }
+        # ===== END FAILURE SIMULATION =====
+
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
