@@ -520,8 +520,10 @@ function Check-UpdateAvailable {
     {
         $updateNeeded=$true
     }
-    elseif(($deployedVersionVersion -eq $currentVersionVersion) -and ($deployedVersion -match 'beta')){
-        $updateNeeded=$true
+    elseif(($deployedVersionVersion -eq $currentVersionVersion) -and 
+        ($deployedVersion -match 'beta') -and 
+        ($currentVersion -notmatch 'beta')) {
+        $updateNeeded = $true
     }
     else {
         $updateNeeded = $false
