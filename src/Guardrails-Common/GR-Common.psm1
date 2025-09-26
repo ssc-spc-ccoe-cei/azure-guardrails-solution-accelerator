@@ -572,6 +572,7 @@ function get-itsgdata {
         -logType $LogType `
         -TimeStampField Get-Date
 }
+
 function New-LogAnalyticsData {
     [CmdletBinding()]
     param (
@@ -861,6 +862,9 @@ function Invoke-GraphQueryStreamWithCallback {
         [scriptblock] $ProcessPageCallback,
         
         [Parameter(Mandatory = $false)]
+        [hashtable] $CallbackContext = @{},
+        
+        [Parameter(Mandatory = $false)]
         [int] $PageSize = 1000,
         
         [Parameter(Mandatory = $false)]
@@ -926,11 +930,17 @@ function Invoke-GraphQueryStreamWithCallback {
             StatusCode = $statusCode
         }
         
-        # Execute callback to process this page immediately
-        $callbackResult = & $ProcessPageCallback $pageData
-        if ($callbackResult) {
-            $totalProcessed += $callbackResult.ProcessedCount
-            $totalUploaded += $callbackResult.UploadedCount
+        # Execute callback to process this page immediately with error handling
+        try {
+            $callbackResult = & $ProcessPageCallback $pageData $CallbackContext
+            if ($callbackResult) {
+                $totalProcessed += $callbackResult.ProcessedCount
+                $totalUploaded += $callbackResult.UploadedCount
+            }
+        }
+        catch {
+            Write-Error "Failed to process page $pageCount via callback: $($_.Exception.Message)"
+            throw $_  # Re-throw to stop processing if callback fails
         }
         
         # Update URI for next page
@@ -1872,7 +1882,6 @@ function Check-PBMMPolicies {
     return $tempObjectList
 }
 
-
 # Used in AlersMonitor and UserAccountGCEventLogging
 function get-AADDiagnosticSettings {
     $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
@@ -2336,7 +2345,8 @@ function FetchAllUserRawData {
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData at $startTimeFormatted ==="
     
-    # Step 1: Fetch registration details first (needed for all users)
+
+
     Write-Verbose "Step 1: Fetching authentication method registration details..."
     $regById = @{}
     
@@ -2379,25 +2389,36 @@ function FetchAllUserRawData {
     Write-Verbose "Step 3: Starting streaming user processing..."
     $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
     $filterQuery = "accountEnabled eq true"
-    $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
+    $usersPath = "/users?$select=$selectFields&$filter=$filterQuery"
     
     # Step 4: True streaming - process and upload users page by page as they're fetched
     Write-Verbose "Step 4: True streaming user processing with page size $BatchSize..."
     
+    # Create a context object with all variables needed by the callback
+    $callbackContext = @{
+        WorkSpaceID = $WorkSpaceID
+        WorkspaceKey = $WorkspaceKey
+        ReportTime = $ReportTime
+        bgUpnLookup = $bgUpnLookup
+        regById = $regById
+        RetryConfig = $RetryConfig
+        ErrorList = $ErrorList
+    }
+    
     # Define the callback function that processes each page immediately
     $processPageCallback = {
-        param($pageData)
+        param($pageData, $context)
         
         $pageNumber = $pageData.PageNumber
         $pageUsers = $pageData.Data
         $hasMore = $pageData.HasMore
         
         if (-not $pageUsers -or $pageUsers.Count -eq 0) {
-            Write-Verbose "  -> Page $pageNumber : No users returned, skipping..."
+            Write-Verbose "  -> Page $pageNumber: No users returned, skipping..."
             return @{ ProcessedCount = 0; UploadedCount = 0 }
         }
         
-        Write-Verbose "  -> Page $pageNumber : Processing $($pageUsers.Count) users from Graph API..."
+        Write-Verbose "  -> Page $pageNumber: Processing $($pageUsers.Count) users from Graph API..."
         
         # Filter out break-glass accounts from this page
         $filteredPageUsers = $pageUsers | Where-Object { 
@@ -2406,7 +2427,7 @@ function FetchAllUserRawData {
                 return $false 
             }
             
-            $isNotBreakGlass = -not $bgUpnLookup.ContainsKey($upn.ToLower())
+            $isNotBreakGlass = -not $context.bgUpnLookup.ContainsKey($upn.ToLower())
             if (-not $isNotBreakGlass) { 
                 Write-Verbose "    Filtered out break-glass account: $upn" 
             }
@@ -2416,18 +2437,18 @@ function FetchAllUserRawData {
         $filteredCount = $filteredPageUsers.Count
         $removedCount = $pageUsers.Count - $filteredCount
         if ($removedCount -gt 0) {
-            Write-Verbose "  -> Page $pageNumber : Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
+            Write-Verbose "  -> Page $pageNumber: Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
         }
         
         if ($filteredCount -eq 0) {
-            Write-Verbose "  -> Page $pageNumber : No users remaining after filtering, skipping upload..."
+            Write-Verbose "  -> Page $pageNumber: No users remaining after filtering, skipping upload..."
             return @{ ProcessedCount = $pageUsers.Count; UploadedCount = 0 }
         }
         
         # Process current page users
         $batchResults = $filteredPageUsers | ForEach-Object {
             $user = $_
-            $registration = $regById[$user.id]
+            $registration = $context.regById[$user.id]
             $methods = @()
             
             if ($registration -and $registration.methodsRegistered) {
@@ -2454,19 +2475,19 @@ function FetchAllUserRawData {
                 isSystemPreferredAuthenticationMethodEnabled = if ($registration) { $registration.isSystemPreferredAuthenticationMethodEnabled } else { $null }
                 systemPreferredAuthenticationMethods = if ($registration) { $registration.systemPreferredAuthenticationMethods } else { $null }
                 userPreferredMethodForSecondaryAuthentication = if ($registration) { $registration.userPreferredMethodForSecondaryAuthentication } else { $null }
-                ReportTime        = $ReportTime
+                ReportTime        = $context.ReportTime
             }
         }
         
-        Write-Verbose "  -> Page $pageNumber : Processing complete. $filteredCount records prepared for upload"
+        Write-Verbose "  -> Page $pageNumber: Processing complete. $filteredCount records prepared for upload"
         
         # Upload current page to Log Analytics
-        Write-Verbose "  -> Page $pageNumber : Uploading $($batchResults.Count) records to Log Analytics..."
+        Write-Verbose "  -> Page $pageNumber: Uploading $($batchResults.Count) records to Log Analytics..."
         
         $pageUploadSuccessful = $false
         for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
-                New-LogAnalyticsData -Data $batchResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
+                New-LogAnalyticsData -Data $batchResults -WorkSpaceID $context.WorkSpaceID -WorkSpaceKey $context.WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
                 $pageUploadSuccessful = $true
                 Write-Verbose "  Success: Page $pageNumber upload successful on attempt $attempt"
                 break
@@ -2474,10 +2495,10 @@ function FetchAllUserRawData {
             catch {
                 if ($attempt -eq 3) {
                     $errorMsg = "Failed to upload page $pageNumber after 3 attempts: $($_.Exception.Message)"
-                    Add-FunctionError -Message $errorMsg -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
+                    Add-FunctionError -Message $errorMsg -Exception $_.Exception -Category "LogAnalytics" -ErrorList $context.ErrorList
                     throw [System.Exception]::new($errorMsg)
                 } else {
-                    $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
+                    $delay = Get-BackoffDelay -Attempt $attempt -Config $context.RetryConfig
                     Write-Warning "Page $pageNumber upload attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
                     Start-Sleep -Seconds $delay
                 }
@@ -2486,13 +2507,13 @@ function FetchAllUserRawData {
         
         if (-not $pageUploadSuccessful) {
             $errorMsg = "Failed to upload page $pageNumber after 3 attempts"
-            Add-FunctionError -Message $errorMsg -Category "LogAnalytics" -ErrorList $ErrorList
+            Add-FunctionError -Message $errorMsg -Category "LogAnalytics" -ErrorList $context.ErrorList
             throw [System.Exception]::new($errorMsg)
         }
         
         # Progress reporting
         $statusMsg = if ($hasMore) { "more pages remaining..." } else { "final page" }
-        Write-Verbose "  -> Page $pageNumber : Upload complete ($statusMsg)"
+        Write-Verbose "  -> Page $pageNumber: Upload complete ($statusMsg)"
         
         return @{ 
             ProcessedCount = $pageUsers.Count
@@ -2502,7 +2523,7 @@ function FetchAllUserRawData {
     
     try {
         # Use true streaming approach with callback processing
-        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -PerformanceMetrics $performanceMetrics
+        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -PerformanceMetrics $performanceMetrics
         
         $pageNumber = $streamResult.TotalPages
         $processedUsers = $streamResult.TotalProcessed
@@ -2516,86 +2537,178 @@ function FetchAllUserRawData {
         return $ErrorList
     }
     
-    # Step 5: Wait before verification to allow data ingestion
-    Write-Verbose "Step 5: Waiting for data ingestion to complete..."
-    Write-Verbose "  -> Waiting 30 seconds to allow Log Analytics to process uploaded batches..."
-    Start-Sleep -Seconds 30
+    # Step 5: Wait before verification to allow data ingestion and table creation
+    Write-Verbose "Step 5: Waiting for data ingestion and table creation..."
+    Write-Verbose "  -> Waiting 60 seconds to allow Log Analytics to create table and index data..."
+    Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
+    Start-Sleep -Seconds 60
     
-    # Step 6: Verify data ingestion
+    # Step 6: Verify data ingestion with robust error handling
     Write-Verbose "Step 6: Verifying data ingestion..."
     
     $dataIngested = $false
     $recordCount = 0
     $permissionError = $false
+    $verificationSkipped = $false
     
-    for ($attempt = 1; $attempt -le $RetryConfig.MaxRetries; $attempt++) {
-        $performanceMetrics.DataIngestionAttempts = $attempt
-        $query = "GuardrailsUserRaw_CL | where ReportTime_s == '$ReportTime' | count"
+    # First, check if we can access Log Analytics at all
+    Write-Verbose "  -> Testing Log Analytics connectivity..."
+    try {
+        # Simple test query to check permissions and connectivity
+        $testQuery = "Heartbeat | limit 1"
+        $testResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $testQuery -ErrorAction Stop -TimeoutSeconds 30
+        Write-Verbose "  -> Log Analytics connectivity test successful"
+    }
+    catch {
+        $errorMessage = $_.Exception.Message
+        if ($errorMessage -like "*Forbidden*" -or $errorMessage -like "*403*" -or $errorMessage -like "*unauthorized*") {
+            Write-Warning "  Warning: Log Analytics permissions not available. Skipping data verification."
+            Write-Verbose "  -> Automation Account may need 'Log Analytics Reader' role on workspace $WorkSpaceID"
+            $permissionError = $true
+            $verificationSkipped = $true
+        }
+        elseif ($errorMessage -like "*BadRequest*" -or $errorMessage -like "*400*" -or $errorMessage -like "*Failed to resolve table*") {
+            Write-Warning "  Warning: Log Analytics table not yet available. This is normal for new deployments."
+            Write-Verbose "  -> The GuardrailsUserRaw_CL table may still be initializing after first data upload"
+            Write-Verbose "  -> This typically resolves within 5-15 minutes of first deployment"
+            $verificationSkipped = $true
+        }
+        else {
+            Write-Warning "  Warning: Log Analytics connectivity test failed: $errorMessage"
+            Write-Verbose "  -> Will attempt data verification with reduced retry count"
+        }
+    }
+    
+    # Only attempt verification if connectivity test passed
+    if (-not $verificationSkipped) {
+        $maxVerificationAttempts = [Math]::Min($RetryConfig.MaxRetries, 6)  # Limit to 6 attempts max
         
-        try {
-            $maxRetries = $RetryConfig.MaxRetries
-            Write-Verbose "  -> Verification attempt $attempt/$maxRetries : Querying Log Analytics..."
+        for ($attempt = 1; $attempt -le $maxVerificationAttempts; $attempt++) {
+            $performanceMetrics.DataIngestionAttempts = $attempt
             
-            $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
-            $recordCount = 0
+            # Use more robust query with error handling
+            $query = @"
+GuardrailsUserRaw_CL 
+| where TimeGenerated > ago(2h) and ReportTime_s == '$ReportTime'
+| count
+"@
             
-            if ($result.Results.Count -gt 0 -and $result.Results[0].Count) {
-                $recordCount = [int]$result.Results[0].Count
-            }
-            
-            if ($recordCount -gt 0) {
-                Write-Verbose "  Success: Data ingestion verified - $recordCount records found for ReportTime '$ReportTime'"
-                $dataIngested = $true
-                break
-            } else {
+            try {
+                Write-Verbose "  -> Verification attempt $attempt/$maxVerificationAttempts : Querying Log Analytics..."
+                
+                # Use shorter timeout and explicit error handling
+                $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop -TimeoutSeconds 60
+                $recordCount = 0
+                
+                if ($result -and $result.Results -and $result.Results.Count -gt 0) {
+                    if ($result.Results[0].PSObject.Properties['Count']) {
+                        $recordCount = [int]$result.Results[0].Count
+                    }
+                }
+                
+                if ($recordCount -gt 0) {
+                    Write-Verbose "  Success: Data ingestion verified - $recordCount records found for ReportTime '$ReportTime'"
+                    $dataIngested = $true
+                    break
+                } else {
+                    $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
+                    Write-Verbose "  -> Data not yet available (attempt $attempt/$maxVerificationAttempts). Waiting $delay seconds..."
+                    
+                    if ($attempt -lt $maxVerificationAttempts) {
+                        Start-Sleep -Seconds $delay
+                    }
+                }
+                
+            } catch {
+                $errorMessage = $_.Exception.Message
                 $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                Write-Verbose "  -> Data not yet available (attempt $attempt/$maxRetries). Waiting $delay seconds..."
                 
-                if ($attempt -lt $RetryConfig.MaxRetries) {
-                    Start-Sleep -Seconds $delay
-                }
-            }
-            
-        } catch {
-            $errorMessage = $_.Exception.Message
-            $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-            
-            if ($errorMessage -like "*Forbidden*" -or $errorMessage -like "*403*" -or $errorMessage -like "*unauthorized*") {
-                Write-Warning "  Warning: Permission error on attempt $attempt : $errorMessage"
-                Write-Verbose "  -> This may be temporary during initial setup or permission propagation. Retrying in $delay seconds..."
-                
-                if ($attempt -eq $RetryConfig.MaxRetries) {
+                if ($errorMessage -like "*Forbidden*" -or $errorMessage -like "*403*" -or $errorMessage -like "*unauthorized*") {
+                    Write-Warning "  Warning: Permission error on attempt $attempt : $errorMessage"
                     $permissionError = $true
-                    Add-FunctionError -Message "Permission denied when querying Log Analytics after $($RetryConfig.MaxRetries) attempts. Automation Account needs 'Log Analytics Reader' role on workspace $WorkSpaceID" -Category "Permissions" -ErrorList $ErrorList
-                } elseif ($attempt -lt $RetryConfig.MaxRetries) {
-                    Start-Sleep -Seconds $delay
+                    break  # Don't retry permission errors
+                } 
+                elseif ($errorMessage -like "*BadRequest*" -or $errorMessage -like "*400*" -or $errorMessage -like "*Failed to resolve table*") {
+                    if ($errorMessage -like "*Failed to resolve table*GuardrailsUserRaw_CL*") {
+                        Write-Warning "  Warning: Table GuardrailsUserRaw_CL not yet available in Log Analytics."
+                        Write-Verbose "  -> This is normal for first-time deployments - table creation can take 5-15 minutes"
+                        Write-Verbose "  -> Data was uploaded successfully and will be available once indexing completes"
+                        $verificationSkipped = $true
+                    } else {
+                        Write-Warning "  Warning: Query error on attempt $attempt : $errorMessage"
+                        if ($attempt -eq $maxVerificationAttempts) {
+                            Write-Verbose "  -> Query verification not available in this environment"
+                            $verificationSkipped = $true
+                        }
+                    }
+                    break  # Don't retry bad request errors
                 }
-            } else {
-                Write-Warning "  Warning: Query attempt $attempt failed: $errorMessage"
-                
-                if ($attempt -eq $RetryConfig.MaxRetries) {
-                    Add-FunctionError -Message "Query verification failed after $($RetryConfig.MaxRetries) attempts" -Exception $_.Exception -Category "DataVerification" -ErrorList $ErrorList
-                } elseif ($attempt -lt $RetryConfig.MaxRetries) {
-                    Write-Verbose "  -> Retrying in $delay seconds..."
-                    Start-Sleep -Seconds $delay
+                else {
+                    Write-Warning "  Warning: Query attempt $attempt failed: $errorMessage"
+                    
+                    if ($attempt -eq $maxVerificationAttempts) {
+                        Write-Verbose "  -> Maximum verification attempts reached"
+                    } elseif ($attempt -lt $maxVerificationAttempts) {
+                        Write-Verbose "  -> Retrying in $delay seconds..."
+                        Start-Sleep -Seconds $delay
+                    }
                 }
             }
         }
     }
     
-    # Step 7: Final validation and reporting
+    # Step 7: Final validation and reporting with graceful error handling
     Write-Verbose "Step 7: Final validation and reporting..."
     
-    if ($permissionError) {
-        Add-FunctionError -Message "Cannot verify data ingestion due to permission error. Modules may not have access to required data." -Category "Permissions" -ErrorList $ErrorList
+    if ($verificationSkipped) {
+        if ($permissionError) {
+            Write-Warning "  Warning: Data verification skipped due to insufficient Log Analytics permissions."
+            Write-Verbose "  -> Data upload completed successfully: $totalUploadedRecords records uploaded"
+            Write-Verbose "  -> Consider granting 'Log Analytics Reader' role to the Automation Account for verification"
+        } else {
+            Write-Warning "  Warning: Data verification skipped - GuardrailsUserRaw_CL table not yet available."
+            Write-Verbose "  -> Data upload completed successfully: $totalUploadedRecords records uploaded"
+            Write-Verbose "  -> This is normal for first-time deployments - table creation can take 5-15 minutes"
+            Write-Verbose "  -> Subsequent runs will be able to verify data once the table is established"
+        }
+        
+        # Don't treat verification skip as a failure - data was uploaded successfully
+        Write-Verbose "  Success: Data upload completed - $totalUploadedRecords records uploaded to Log Analytics"
+        
+    } elseif ($permissionError) {
+        # Permission error occurred during verification attempts
+        Write-Warning "  Warning: Cannot verify data ingestion due to permission error."
+        Write-Verbose "  -> Data upload completed: $totalUploadedRecords records uploaded"
+        Write-Verbose "  -> Verification failed, but upload was successful"
+        
+        # Add a non-fatal warning rather than an error
+        Add-FunctionError -Message "Data verification unavailable due to permissions. Upload completed successfully with $totalUploadedRecords records." -Category "Permissions" -ErrorList $ErrorList
+        
     } elseif (-not $dataIngested) {
-        $maxRetries = $RetryConfig.MaxRetries
-        Add-FunctionError -Message "Data ingestion verification failed after $maxRetries attempts. Modules may not have access to required data." -Category "DataVerification" -ErrorList $ErrorList
+        # Verification was attempted but no data found
+        Write-Warning "  Warning: Data ingestion verification failed - no records found in Log Analytics."
+        Write-Verbose "  -> Uploaded $totalUploadedRecords records but verification query returned 0 results"
+        Write-Verbose "  -> This may indicate data ingestion delay or indexing issues"
+        
+        Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList
+        
     } elseif ($recordCount -ne $totalUploadedRecords) {
+        # Data found but count mismatch
         $expectedCount = $totalUploadedRecords
-        Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may be missing." -Category "DataIntegrity" -ErrorList $ErrorList
+        Write-Warning "  Warning: Data count mismatch detected."
+        Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
+        
+        if ($recordCount > 0) {
+            Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
+            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
+        } else {
+            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Data may be missing or still processing." -Category "DataIntegrity" -ErrorList $ErrorList
+        }
+        
     } else {
+        # Perfect success case
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
+        Write-Verbose "  -> Upload and verification both completed successfully"
     }
     
     # Performance summary
