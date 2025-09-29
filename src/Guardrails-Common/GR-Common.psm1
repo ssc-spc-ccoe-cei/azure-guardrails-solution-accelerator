@@ -2557,7 +2557,7 @@ function FetchAllUserRawData {
     try {
         # Simple test query to check permissions and connectivity
         $testQuery = "Heartbeat | limit 1"
-        $testResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $testQuery -ErrorAction Stop -TimeoutSeconds 30
+        $testResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $testQuery -ErrorAction Stop
         Write-Verbose "  -> Log Analytics connectivity test successful"
     }
     catch {
@@ -2601,7 +2601,7 @@ GuardrailsUserRaw_CL
                 Write-Warning "  -> ReportTime: '$ReportTime'"
                 
                 # Use shorter timeout and explicit error handling
-                $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop -TimeoutSeconds 60
+                $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
                 $recordCount = 0
                 
                 Write-Warning "  -> Query executed successfully. Analyzing results..."
@@ -2656,7 +2656,7 @@ GuardrailsUserRaw_CL
                     try {
                         Write-Warning "  -> Attempting broader verification query..."
                         $broadQuery = "GuardrailsUserRaw_CL | count"
-                        $broadResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $broadQuery -ErrorAction Stop -TimeoutSeconds 30
+                        $broadResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $broadQuery -ErrorAction Stop
                         
                         if ($broadResult -and $broadResult.Results -and $broadResult.Results.Count -gt 0) {
                             $totalRecords = if ($broadResult.Results[0].PSObject.Properties['Count']) { 
@@ -2669,7 +2669,7 @@ GuardrailsUserRaw_CL
                             
                             # Try to see what ReportTime values exist
                             $reportTimeQuery = "GuardrailsUserRaw_CL | summarize by ReportTime_s | take 5"
-                            $reportTimeResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $reportTimeQuery -ErrorAction Stop -TimeoutSeconds 30
+                            $reportTimeResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $reportTimeQuery -ErrorAction Stop
                             
                             if ($reportTimeResult -and $reportTimeResult.Results) {
                                 $existingReportTimes = $reportTimeResult.Results | ForEach-Object { $_.ReportTime_s }
