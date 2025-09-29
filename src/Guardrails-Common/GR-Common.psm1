@@ -572,7 +572,6 @@ function get-itsgdata {
         -logType $LogType `
         -TimeStampField Get-Date
 }
-
 function New-LogAnalyticsData {
     [CmdletBinding()]
     param (
@@ -964,6 +963,7 @@ function Invoke-GraphQueryStreamWithCallback {
         TotalUploaded = $totalUploaded
     }
 }
+
 
 function Invoke-GraphQuery {
     [CmdletBinding()]
@@ -1882,6 +1882,7 @@ function Check-PBMMPolicies {
     return $tempObjectList
 }
 
+
 # Used in AlersMonitor and UserAccountGCEventLogging
 function get-AADDiagnosticSettings {
     $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
@@ -2389,7 +2390,7 @@ function FetchAllUserRawData {
     Write-Verbose "Step 3: Starting streaming user processing..."
     $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
     $filterQuery = "accountEnabled eq true"
-    $usersPath = "/users?$select=$selectFields&$filter=$filterQuery"
+    $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
     
     # Step 4: True streaming - process and upload users page by page as they're fetched
     Write-Verbose "Step 4: True streaming user processing with page size $BatchSize..."
@@ -2414,11 +2415,11 @@ function FetchAllUserRawData {
         $hasMore = $pageData.HasMore
         
         if (-not $pageUsers -or $pageUsers.Count -eq 0) {
-            Write-Verbose "  -> Page $pageNumber : No users returned, skipping..."
+            Write-Verbose "  -> Page $pageNumber: No users returned, skipping..."
             return @{ ProcessedCount = 0; UploadedCount = 0 }
         }
         
-        Write-Verbose "  -> Page $pageNumber : Processing $($pageUsers.Count) users from Graph API..."
+        Write-Verbose "  -> Page $pageNumber: Processing $($pageUsers.Count) users from Graph API..."
         
         # Filter out break-glass accounts from this page
         $filteredPageUsers = $pageUsers | Where-Object { 
@@ -2437,11 +2438,11 @@ function FetchAllUserRawData {
         $filteredCount = $filteredPageUsers.Count
         $removedCount = $pageUsers.Count - $filteredCount
         if ($removedCount -gt 0) {
-            Write-Verbose "  -> Page $pageNumber : Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
+            Write-Verbose "  -> Page $pageNumber: Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
         }
         
         if ($filteredCount -eq 0) {
-            Write-Verbose "  -> Page $pageNumber : No users remaining after filtering, skipping upload..."
+            Write-Verbose "  -> Page $pageNumber: No users remaining after filtering, skipping upload..."
             return @{ ProcessedCount = $pageUsers.Count; UploadedCount = 0 }
         }
         
@@ -2479,10 +2480,10 @@ function FetchAllUserRawData {
             }
         }
         
-        Write-Verbose "  -> Page $pageNumber : Processing complete. $filteredCount records prepared for upload"
+        Write-Verbose "  -> Page $pageNumber: Processing complete. $filteredCount records prepared for upload"
         
         # Upload current page to Log Analytics
-        Write-Verbose "  -> Page $pageNumber : Uploading $($batchResults.Count) records to Log Analytics..."
+        Write-Verbose "  -> Page $pageNumber: Uploading $($batchResults.Count) records to Log Analytics..."
         
         $pageUploadSuccessful = $false
         for ($attempt = 1; $attempt -le 3; $attempt++) {
@@ -2513,7 +2514,7 @@ function FetchAllUserRawData {
         
         # Progress reporting
         $statusMsg = if ($hasMore) { "more pages remaining..." } else { "final page" }
-        Write-Verbose "  -> Page $pageNumber : Upload complete ($statusMsg)"
+        Write-Verbose "  -> Page $pageNumber: Upload complete ($statusMsg)"
         
         return @{ 
             ProcessedCount = $pageUsers.Count
@@ -2556,7 +2557,7 @@ function FetchAllUserRawData {
     try {
         # Simple test query to check permissions and connectivity
         $testQuery = "Heartbeat | limit 1"
-        $testResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $testQuery -ErrorAction Stop
+        $testResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $testQuery -ErrorAction Stop -TimeoutSeconds 30
         Write-Verbose "  -> Log Analytics connectivity test successful"
     }
     catch {
@@ -2594,15 +2595,89 @@ GuardrailsUserRaw_CL
 "@
             
             try {
-                Write-Verbose "  -> Verification attempt $attempt/$maxVerificationAttempts : Querying Log Analytics..."
+                Write-Warning "  -> Verification attempt $attempt/$maxVerificationAttempts : Querying Log Analytics..."
+                Write-Warning "  -> Query: $query"
+                Write-Warning "  -> WorkspaceId: $WorkSpaceID"
+                Write-Warning "  -> ReportTime: '$ReportTime'"
                 
                 # Use shorter timeout and explicit error handling
-                $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
+                $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop -TimeoutSeconds 60
                 $recordCount = 0
                 
+                Write-Warning "  -> Query executed successfully. Analyzing results..."
+                Write-Warning "  -> Result object type: $($result.GetType().Name)"
+                
+                # Debug: Show complete result structure
+                Write-Warning "  -> Complete result object properties:"
+                $result.PSObject.Properties | ForEach-Object {
+                    Write-Warning "    - $($_.Name): $($_.Value) (Type: $($_.TypeNameOfValue))"
+                }
+                
+                if ($result.Results) {
+                    Write-Warning "  -> Results array count: $($result.Results.Count)"
+                    Write-Warning "  -> Results array type: $($result.Results.GetType().Name)"
+                    
+                    if ($result.Results.Count -gt 0) {
+                        Write-Warning "  -> First result object:"
+                        $result.Results[0].PSObject.Properties | ForEach-Object {
+                            Write-Warning "    - $($_.Name): $($_.Value) (Type: $($_.TypeNameOfValue))"
+                        }
+                        
+                        # Also try to convert to JSON for complete visibility
+                        try {
+                            $resultJson = $result.Results[0] | ConvertTo-Json -Depth 3
+                            Write-Warning "  -> First result as JSON: $resultJson"
+                        } catch {
+                            Write-Warning "  -> Could not convert first result to JSON: $($_.Exception.Message)"
+                        }
+                    }
+                } else {
+                    Write-Warning "  -> No Results property found in result object"
+                }
+                
                 if ($result -and $result.Results -and $result.Results.Count -gt 0) {
+                    Write-Warning "  -> First result properties: $($result.Results[0].PSObject.Properties.Name -join ', ')"
+                    
                     if ($result.Results[0].PSObject.Properties['Count']) {
                         $recordCount = [int]$result.Results[0].Count
+                        Write-Warning "  -> Found Count property: $recordCount"
+                    } else {
+                        Write-Warning "  -> No 'Count' property found in result"
+                        # Try alternative ways to get count
+                        if ($result.Results[0].PSObject.Properties['count']) {
+                            $recordCount = [int]$result.Results[0].count
+                            Write-Warning "  -> Found lowercase 'count' property: $recordCount"
+                        }
+                    }
+                } else {
+                    Write-Warning "  -> No results returned from query"
+                    
+                    # Try a broader query to see if table exists and has any data
+                    try {
+                        Write-Warning "  -> Attempting broader verification query..."
+                        $broadQuery = "GuardrailsUserRaw_CL | count"
+                        $broadResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $broadQuery -ErrorAction Stop -TimeoutSeconds 30
+                        
+                        if ($broadResult -and $broadResult.Results -and $broadResult.Results.Count -gt 0) {
+                            $totalRecords = if ($broadResult.Results[0].PSObject.Properties['Count']) { 
+                                [int]$broadResult.Results[0].Count 
+                            } elseif ($broadResult.Results[0].PSObject.Properties['count']) { 
+                                [int]$broadResult.Results[0].count 
+                            } else { 0 }
+                            
+                            Write-Warning "  -> Table exists with $totalRecords total records"
+                            
+                            # Try to see what ReportTime values exist
+                            $reportTimeQuery = "GuardrailsUserRaw_CL | summarize by ReportTime_s | take 5"
+                            $reportTimeResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $reportTimeQuery -ErrorAction Stop -TimeoutSeconds 30
+                            
+                            if ($reportTimeResult -and $reportTimeResult.Results) {
+                                $existingReportTimes = $reportTimeResult.Results | ForEach-Object { $_.ReportTime_s }
+                                Write-Warning "  -> Existing ReportTime values in table: $($existingReportTimes -join ', ')"
+                            }
+                        }
+                    } catch {
+                        Write-Warning "  -> Broader verification failed: $($_.Exception.Message)"
                     }
                 }
                 
