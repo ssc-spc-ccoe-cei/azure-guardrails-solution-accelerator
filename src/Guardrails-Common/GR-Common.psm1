@@ -2415,11 +2415,11 @@ function FetchAllUserRawData {
         $hasMore = $pageData.HasMore
         
         if (-not $pageUsers -or $pageUsers.Count -eq 0) {
-            Write-Verbose "  -> Page $pageNumber: No users returned, skipping..."
+            Write-Verbose "  -> Page $pageNumber : No users returned, skipping..."
             return @{ ProcessedCount = 0; UploadedCount = 0 }
         }
         
-        Write-Verbose "  -> Page $pageNumber: Processing $($pageUsers.Count) users from Graph API..."
+        Write-Verbose "  -> Page $pageNumber : Processing $($pageUsers.Count) users from Graph API..."
         
         # Filter out break-glass accounts from this page
         $filteredPageUsers = $pageUsers | Where-Object { 
@@ -2438,11 +2438,11 @@ function FetchAllUserRawData {
         $filteredCount = $filteredPageUsers.Count
         $removedCount = $pageUsers.Count - $filteredCount
         if ($removedCount -gt 0) {
-            Write-Verbose "  -> Page $pageNumber: Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
+            Write-Verbose "  -> Page $pageNumber : Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
         }
         
         if ($filteredCount -eq 0) {
-            Write-Verbose "  -> Page $pageNumber: No users remaining after filtering, skipping upload..."
+            Write-Verbose "  -> Page $pageNumber : No users remaining after filtering, skipping upload..."
             return @{ ProcessedCount = $pageUsers.Count; UploadedCount = 0 }
         }
         
@@ -2480,10 +2480,10 @@ function FetchAllUserRawData {
             }
         }
         
-        Write-Verbose "  -> Page $pageNumber: Processing complete. $filteredCount records prepared for upload"
+        Write-Verbose "  -> Page $pageNumber : Processing complete. $filteredCount records prepared for upload"
         
         # Upload current page to Log Analytics
-        Write-Verbose "  -> Page $pageNumber: Uploading $($batchResults.Count) records to Log Analytics..."
+        Write-Verbose "  -> Page $pageNumber : Uploading $($batchResults.Count) records to Log Analytics..."
         
         $pageUploadSuccessful = $false
         for ($attempt = 1; $attempt -le 3; $attempt++) {
@@ -2514,7 +2514,7 @@ function FetchAllUserRawData {
         
         # Progress reporting
         $statusMsg = if ($hasMore) { "more pages remaining..." } else { "final page" }
-        Write-Verbose "  -> Page $pageNumber: Upload complete ($statusMsg)"
+        Write-Verbose "  -> Page $pageNumber : Upload complete ($statusMsg)"
         
         return @{ 
             ProcessedCount = $pageUsers.Count
