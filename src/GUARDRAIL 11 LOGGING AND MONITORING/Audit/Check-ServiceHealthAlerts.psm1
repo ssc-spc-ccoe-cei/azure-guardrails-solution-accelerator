@@ -4,23 +4,18 @@ function Validate-ActionGroups {
         [Object[]] $subOwners
     )
 
-    $actionGroupCompliant = $false
-
     #Retrieve action group IDs
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
     if ($actionGroupIds -isnot [System.Collections.IEnumerable] -or $actionGroupIds -is [string]) {
         $actionGroupIds = @($actionGroupIds)
     }
     $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds)
-    $actionSubOwners = @()
+    $actionGroupResults = [System.Collections.ArrayList]::new()
 
     foreach ($id in $actionGroupIdsArray){
 
-        #Get sub id from action group
-        $subscriptionId = ($id -split '/')[2]
-
-        $emailAddressCount = 0
-        $matchingOwnersCount = 0
+        # Build a list of distinct action-group contacts (emails + owner receivers).
+        $contactTokens = @()
 
         try{
             #Get the action group
@@ -32,35 +27,35 @@ function Validate-ActionGroups {
                 }
             } | Where-Object { $_ -ne $null }
 
-            $emailAddresses = @($emailAddresses) | Where-Object { $_ -ne $null } | Sort-Object -Unique
-            $emailAddressCount = $emailAddresses.Count
+            $emailAddresses = @($emailAddresses) | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 } | Sort-Object -Unique
 
-            $actionSubOwners += Get-AzRoleAssignment -Scope "/subscriptions/$subscriptionId" | Where-Object {
-                $_.RoleDefinitionName -eq "Owner" 
-            } | Select-Object -ExpandProperty SignInName
+            # ArmRoleReceiver entries represent dynamic contacts (e.g., subscription owners).
+            $ownerReceivers = $actionGroups | ForEach-Object {
+                if ($_.ArmRoleReceiver) {
+                    $_.ArmRoleReceiver | Where-Object { $_.RoleName -eq 'Owner' }
+                }
+            } | ForEach-Object { $_.Name } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
 
-            $actionSubOwners = @($actionSubOwners) | Where-Object { $_ -ne $null } | Sort-Object -Unique
+            $ownerReceivers = @($ownerReceivers) | Sort-Object -Unique
 
-            #Find and collect all the matching owners of this sub
-            $matchingOwners = $actionSubOwners | Where-Object {$subOwners -contains $_}
-            $matchingOwners = @($matchingOwners) | Where-Object { $_ -ne $null } | Sort-Object -Unique
-            $matchingOwnersCount = $matchingOwners.Count
+            # Tokenize contacts so counting treats emails and owner receivers uniformly.
+            $contactTokens = @($emailAddresses + ($ownerReceivers | ForEach-Object { "Owner::" + $_ })) | Sort-Object -Unique
         }
         catch{
             $Comments += $msgTable.noServiceHealthActionGroups -f $subscription
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
 
-        if($emailAddressCount -ge 2){
-            $actionGroupCompliant = $true
+        $isCurrentGroupCompliant = $false
+        if(@($contactTokens).Count -ge 2){
+            $isCurrentGroupCompliant = $true
         }
-        elseif($emailAddressCount -eq 1 -and $matchingOwnersCount -ge 1){
-            $actionGroupCompliant = $true
-        }
+
+        $actionGroupResults.Add($isCurrentGroupCompliant) | Out-Null
     }
 
     #Return compliance state of action group
-    return $actionGroupCompliant
+    return $actionGroupResults
 }
 
 
