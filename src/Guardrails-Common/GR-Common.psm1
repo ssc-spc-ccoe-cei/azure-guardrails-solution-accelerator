@@ -572,6 +572,7 @@ function get-itsgdata {
         -logType $LogType `
         -TimeStampField Get-Date
 }
+
 function New-LogAnalyticsData {
     [CmdletBinding()]
     param (
@@ -864,7 +865,7 @@ function Invoke-GraphQueryStreamWithCallback {
         [hashtable] $CallbackContext = @{},
         
         [Parameter(Mandatory = $false)]
-        [int] $PageSize = 1000,
+        [int] $PageSize = 999,
         
         [Parameter(Mandatory = $false)]
         [int] $MaxRetries = 3,
@@ -880,43 +881,76 @@ function Invoke-GraphQueryStreamWithCallback {
     
     # Add $top parameter if not already present
     if ($urlPath -notmatch '\$top=') {
-        $separator = if ($urlPath -contains '?') { '&' } else { '?' }
+        $separator = if ($urlPath -match '\?') { '&' } else { '?' }
         $urlPath = "$urlPath$separator`$top=$PageSize"
     }
+
     
     $fullUri = "$baseUri$urlPath"
     $pageCount = 0
     $totalProcessed = 0
     $totalUploaded = 0
-    
+        
     do {
         $pageCount++
         $retryCount = 0
         $success = $false
         
-        Write-Verbose "  -> Fetching page $pageCount from Graph API..."
-        
+        Write-Verbose "  -> Fetching page $pageCount from Graph API..."        
         do {
             try {
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
-                $data = $response.Content | ConvertFrom-Json
                 $statusCode = $response.StatusCode
-                $success = $true
-                
-                # Update performance metrics if provided
-                if ($PerformanceMetrics) {
-                    $PerformanceMetrics.GraphApiCalls++
+                                
+                # Check for successful status codes (200-299)
+                if ($statusCode -ge 200 -and $statusCode -lt 300) {
+                    $data = $response.Content | ConvertFrom-Json
+                    $success = $true
+                                        
+                    # Update performance metrics if provided
+                    if ($PerformanceMetrics) {
+                        $PerformanceMetrics.GraphApiCalls++
+                    }
+                } else {
+                    # Handle non-success status codes
+                    $errorContent = $response.Content
+
+                    # Determine if this is a retryable error
+                    $isRetryable = switch ($statusCode) {
+                        429 { $true }   # Too Many Requests - always retry
+                        500 { $true }   # Internal Server Error - retry
+                        502 { $true }   # Bad Gateway - retry  
+                        503 { $true }   # Service Unavailable - retry
+                        504 { $true }   # Gateway Timeout - retry
+                        400 { $false }  # Bad Request - don't retry (client error)
+                        401 { $false }  # Unauthorized - don't retry (auth error)
+                        403 { $false }  # Forbidden - don't retry (permission error)
+                        404 { $false }  # Not Found - don't retry (resource error)
+                        default { $statusCode -ge 500 }  # Retry on 5xx errors, not 4xx
+                    }
+                    
+                    if (-not $isRetryable) {
+                        throw [System.Exception]::new("Graph API returned non-retryable error $statusCode at page $pageCount. Content: $errorContent")
+                    } else {
+                        throw [System.Exception]::new("Graph API returned retryable error $statusCode at page $pageCount. Content: $errorContent")
+                    }
                 }
                 
             }
             catch {
                 $retryCount++
+                $errorMessage = $_.Exception.Message
+                                
                 if ($retryCount -ge $MaxRetries) {
-                    throw [System.Exception]::new("Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $($_.Exception.Message) at page $pageCount")
-                } else {
-                    Write-Warning "Transient error calling Graph API: $($_.Exception.Message). Retrying in $RetryDelaySeconds seconds... (Attempt $retryCount of $MaxRetries)"
+                    Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $errorMessage at page $pageCount"
+                    throw [System.Exception]::new("Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $errorMessage at page $pageCount")
+                } elseif ($isRetryable) {
+                    Write-Warning "Retryable error calling Graph API (attempt $retryCount/$MaxRetries): $errorMessage. Retrying in $RetryDelaySeconds seconds..."
                     Start-Sleep -Seconds $RetryDelaySeconds
+                } else {
+                    Write-Error "Non-retryable error calling Graph API: $errorMessage"
+                    throw [System.Exception]::new("Non-retryable error calling Graph API: $errorMessage")
                 }
             }
         } while (-not $success -and $retryCount -lt $MaxRetries)
@@ -963,7 +997,6 @@ function Invoke-GraphQueryStreamWithCallback {
         TotalUploaded = $totalUploaded
     }
 }
-
 
 function Invoke-GraphQuery {
     [CmdletBinding()]
@@ -1882,7 +1915,6 @@ function Check-PBMMPolicies {
     return $tempObjectList
 }
 
-
 # Used in AlersMonitor and UserAccountGCEventLogging
 function get-AADDiagnosticSettings {
     $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
@@ -2322,7 +2354,7 @@ function FetchAllUserRawData {
         [string] $WorkspaceKey,
         
         [Parameter()]
-        [int] $BatchSize = 1000,
+        [int] $BatchSize = 999,
         
         [Parameter()]
         [hashtable] $RetryConfig = @{
@@ -2344,10 +2376,7 @@ function FetchAllUserRawData {
     }
     
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
-    Write-Verbose "=== Starting FetchAllUserRawData at $startTimeFormatted ==="
-    
-
-
+    Write-Verbose "=== Starting FetchAllUserRawData with ReportTime: $ReportTime  at $startTimeFormatted ==="
     Write-Verbose "Step 1: Fetching authentication method registration details..."
     $regById = @{}
     
@@ -2364,23 +2393,21 @@ function FetchAllUserRawData {
                 $regById[$_.id] = $_
             }
         }
-        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
-        
+        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"        
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
-        Write-Warning "Continuing with empty registration data..."
     }
     
     # Step 2: Prepare break-glass account filtering
     Write-Verbose "Step 2: Preparing break-glass account filtering..."
-    $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | 
-        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-        ForEach-Object { $_.ToLower() }
-    
-    # Use hashtable for O(1) lookup performance
-    $bgUpnLookup = @{}
-    $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
-    
+        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | 
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            ForEach-Object { $_.ToLower() }
+            
+            # Use hashtable for O(1) lookup performance
+            $bgUpnLookup = @{}
+            $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
+            
     if ($bgUpns.Count -gt 0) {
         $bgUpnList = $bgUpns -join ', '
         Write-Verbose "  -> Will filter out break-glass accounts: $bgUpnList"
@@ -2390,8 +2417,8 @@ function FetchAllUserRawData {
     Write-Verbose "Step 3: Starting streaming user processing..."
     $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
     $filterQuery = "accountEnabled eq true"
-    $usersPath = "/users?`$select=$selectFields`&`$filter=$filterQuery"
-    
+    $usersPath = "/users?$" + "select=$selectFields&$" + "filter=$filterQuery"
+
     # Step 4: True streaming - process and upload users page by page as they're fetched
     Write-Verbose "Step 4: True streaming user processing with page size $BatchSize..."
     
@@ -2420,7 +2447,7 @@ function FetchAllUserRawData {
         }
         
         Write-Verbose "  -> Page $pageNumber : Processing $($pageUsers.Count) users from Graph API..."
-        
+                
         # Filter out break-glass accounts from this page
         $filteredPageUsers = $pageUsers | Where-Object { 
             $upn = $_.userPrincipalName
@@ -2480,8 +2507,7 @@ function FetchAllUserRawData {
             }
         }
         
-        Write-Verbose "  -> Page $pageNumber : Processing complete. $filteredCount records prepared for upload"
-        
+        Write-Verbose "  -> Page $pageNumber : Processing complete. $filteredCount records prepared for upload"        
         # Upload current page to Log Analytics
         Write-Verbose "  -> Page $pageNumber : Uploading $($batchResults.Count) records to Log Analytics..."
         
@@ -2500,7 +2526,6 @@ function FetchAllUserRawData {
                     throw [System.Exception]::new($errorMsg)
                 } else {
                     $delay = Get-BackoffDelay -Attempt $attempt -Config $context.RetryConfig
-                    Write-Warning "Page $pageNumber upload attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
                     Start-Sleep -Seconds $delay
                 }
             }
@@ -2523,13 +2548,12 @@ function FetchAllUserRawData {
     }
     
     try {
-        # Use true streaming approach with callback processing
-        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -PerformanceMetrics $performanceMetrics
-        
+        # Use true streaming approach with callback processing        
+        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -PerformanceMetrics $performanceMetrics        
         $pageNumber = $streamResult.TotalPages
         $processedUsers = $streamResult.TotalProcessed
         $totalUploadedRecords = $streamResult.TotalUploaded
-        
+                
         $performanceMetrics.UsersProcessed = $processedUsers
         Write-Verbose "  Success: All pages processed and uploaded - $totalUploadedRecords total records uploaded from $pageNumber pages"
         
@@ -2563,19 +2587,16 @@ function FetchAllUserRawData {
     catch {
         $errorMessage = $_.Exception.Message
         if ($errorMessage -like "*Forbidden*" -or $errorMessage -like "*403*" -or $errorMessage -like "*unauthorized*") {
-            Write-Warning "  Warning: Log Analytics permissions not available. Skipping data verification."
             Write-Verbose "  -> Automation Account may need 'Log Analytics Reader' role on workspace $WorkSpaceID"
             $permissionError = $true
             $verificationSkipped = $true
         }
         elseif ($errorMessage -like "*BadRequest*" -or $errorMessage -like "*400*" -or $errorMessage -like "*Failed to resolve table*") {
-            Write-Warning "  Warning: Log Analytics table not yet available. This is normal for new deployments."
             Write-Verbose "  -> The GuardrailsUserRaw_CL table may still be initializing after first data upload"
             Write-Verbose "  -> This typically resolves within 5-15 minutes of first deployment"
             $verificationSkipped = $true
         }
         else {
-            Write-Warning "  Warning: Log Analytics connectivity test failed: $errorMessage"
             Write-Verbose "  -> Will attempt data verification with reduced retry count"
         }
     }
@@ -2585,7 +2606,7 @@ function FetchAllUserRawData {
         $maxVerificationAttempts = [Math]::Min($RetryConfig.MaxRetries, 6)  # Limit to 6 attempts max
         
         for ($attempt = 1; $attempt -le $maxVerificationAttempts; $attempt++) {
-            $performanceMetrics.DataIngestionAttempts = $attempt
+        $performanceMetrics.DataIngestionAttempts = $attempt
             
             # Use more robust query with error handling
             $query = @"
@@ -2595,105 +2616,35 @@ GuardrailsUserRaw_CL
 "@
             
             try {
-                Write-Warning "  -> Verification attempt $attempt/$maxVerificationAttempts : Querying Log Analytics..."
-                Write-Warning "  -> Query: $query"
-                Write-Warning "  -> WorkspaceId: $WorkSpaceID"
-                Write-Warning "  -> ReportTime: '$ReportTime'"
+                Write-Verbose "  -> Verification attempt $attempt/$maxVerificationAttempts : Querying Log Analytics..."
                 
                 # Use shorter timeout and explicit error handling
                 $result = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $query -ErrorAction Stop
                 $recordCount = 0
-                
-                Write-Warning "  -> Query executed successfully. Analyzing results..."
-                Write-Warning "  -> Result object type: $($result.GetType().Name)"
-                
-                # Debug: Show complete result structure
-                Write-Warning "  -> Complete result object properties:"
-                $result.PSObject.Properties | ForEach-Object {
-                    Write-Warning "    - $($_.Name): $($_.Value) (Type: $($_.TypeNameOfValue))"
-                }
-                
-                if ($result.Results) {
-                    Write-Warning "  -> Results array count: $($result.Results.Count)"
-                    Write-Warning "  -> Results array type: $($result.Results.GetType().Name)"
-                    
-                    if ($result.Results.Count -gt 0) {
-                        Write-Warning "  -> First result object:"
-                        $result.Results[0].PSObject.Properties | ForEach-Object {
-                            Write-Warning "    - $($_.Name): $($_.Value) (Type: $($_.TypeNameOfValue))"
-                        }
-                        
-                        # Also try to convert to JSON for complete visibility
-                        try {
-                            $resultJson = $result.Results[0] | ConvertTo-Json -Depth 3
-                            Write-Warning "  -> First result as JSON: $resultJson"
-                        } catch {
-                            Write-Warning "  -> Could not convert first result to JSON: $($_.Exception.Message)"
-                        }
-                    }
-                } else {
-                    Write-Warning "  -> No Results property found in result object"
-                }
-                
-                if ($result -and $result.Results -and $result.Results.Count -gt 0) {
-                    Write-Warning "  -> First result properties: $($result.Results[0].PSObject.Properties.Name -join ', ')"
-                    
-                    if ($result.Results[0].PSObject.Properties['Count']) {
-                        $recordCount = [int]$result.Results[0].Count
-                        Write-Warning "  -> Found Count property: $recordCount"
-                    } else {
-                        Write-Warning "  -> No 'Count' property found in result"
-                        # Try alternative ways to get count
-                        if ($result.Results[0].PSObject.Properties['count']) {
-                            $recordCount = [int]$result.Results[0].count
-                            Write-Warning "  -> Found lowercase 'count' property: $recordCount"
-                        }
-                    }
-                } else {
-                    Write-Warning "  -> No results returned from query"
-                    
-                    # Try a broader query to see if table exists and has any data
+            
+                if ($result -and $result.Results) {
                     try {
-                        Write-Warning "  -> Attempting broader verification query..."
-                        $broadQuery = "GuardrailsUserRaw_CL | count"
-                        $broadResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $broadQuery -ErrorAction Stop
-                        
-                        if ($broadResult -and $broadResult.Results -and $broadResult.Results.Count -gt 0) {
-                            $totalRecords = if ($broadResult.Results[0].PSObject.Properties['Count']) { 
-                                [int]$broadResult.Results[0].Count 
-                            } elseif ($broadResult.Results[0].PSObject.Properties['count']) { 
-                                [int]$broadResult.Results[0].count 
-                            } else { 0 }
-                            
-                            Write-Warning "  -> Table exists with $totalRecords total records"
-                            
-                            # Try to see what ReportTime values exist
-                            $reportTimeQuery = "GuardrailsUserRaw_CL | summarize by ReportTime_s | take 5"
-                            $reportTimeResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $reportTimeQuery -ErrorAction Stop
-                            
-                            if ($reportTimeResult -and $reportTimeResult.Results) {
-                                $existingReportTimes = $reportTimeResult.Results | ForEach-Object { $_.ReportTime_s }
-                                Write-Warning "  -> Existing ReportTime values in table: $($existingReportTimes -join ', ')"
-                            }
-                        }
+                        # Direct access - if Count property exists, this will work
+                        $recordCount = [int]$result.Results[0].Count
                     } catch {
-                        Write-Warning "  -> Broader verification failed: $($_.Exception.Message)"
+                        # If direct access fails, the Count property doesn't exist as expected
+                        $recordCount = 0
                     }
                 }
-                
+            
                 if ($recordCount -gt 0) {
                     Write-Verbose "  Success: Data ingestion verified - $recordCount records found for ReportTime '$ReportTime'"
                     $dataIngested = $true
                     break
                 } else {
                     $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                    Write-Verbose "  -> Data not yet available (attempt $attempt/$maxVerificationAttempts). Waiting $delay seconds..."
+                        Write-Verbose "  -> Data not yet available (attempt $attempt/$maxVerificationAttempts). Waiting $delay seconds..."
                     
-                    if ($attempt -lt $maxVerificationAttempts) {
+                        if ($attempt -lt $maxVerificationAttempts) {
                         Start-Sleep -Seconds $delay
                     }
                 }
-                
+            
             } catch {
                 $errorMessage = $_.Exception.Message
                 $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
@@ -2719,8 +2670,7 @@ GuardrailsUserRaw_CL
                     break  # Don't retry bad request errors
                 }
                 else {
-                    Write-Warning "  Warning: Query attempt $attempt failed: $errorMessage"
-                    
+                    Write-Warning "  Warning: Query attempt $attempt failed: $errorMessage"                    
                     if ($attempt -eq $maxVerificationAttempts) {
                         Write-Verbose "  -> Maximum verification attempts reached"
                     } elseif ($attempt -lt $maxVerificationAttempts) {
@@ -2737,25 +2687,24 @@ GuardrailsUserRaw_CL
     
     if ($verificationSkipped) {
         if ($permissionError) {
-            Write-Warning "  Warning: Data verification skipped due to insufficient Log Analytics permissions."
-            Write-Verbose "  -> Data upload completed successfully: $totalUploadedRecords records uploaded"
-            Write-Verbose "  -> Consider granting 'Log Analytics Reader' role to the Automation Account for verification"
-        } else {
-            Write-Warning "  Warning: Data verification skipped - GuardrailsUserRaw_CL table not yet available."
-            Write-Verbose "  -> Data upload completed successfully: $totalUploadedRecords records uploaded"
-            Write-Verbose "  -> This is normal for first-time deployments - table creation can take 5-15 minutes"
-            Write-Verbose "  -> Subsequent runs will be able to verify data once the table is established"
-        }
-        
+                Write-Warning "  Warning: Data verification skipped due to insufficient Log Analytics permissions."
+                Write-Verbose "  -> Data upload completed successfully: $totalUploadedRecords records uploaded"
+                Write-Verbose "  -> Consider granting 'Log Analytics Reader' role to the Automation Account for verification"
+            } else {
+                Write-Warning "  Warning: Data verification skipped - GuardrailsUserRaw_CL table not yet available."
+                Write-Verbose "  -> Data upload completed successfully: $totalUploadedRecords records uploaded"
+                Write-Verbose "  -> This is normal for first-time deployments - table creation can take 5-15 minutes"
+                Write-Verbose "  -> Subsequent runs will be able to verify data once the table is established"
+            }
+            
         # Don't treat verification skip as a failure - data was uploaded successfully
-        Write-Verbose "  Success: Data upload completed - $totalUploadedRecords records uploaded to Log Analytics"
-        
+        Write-Verbose "  Success: Data upload completed - $totalUploadedRecords records uploaded to Log Analytics"        
     } elseif ($permissionError) {
         # Permission error occurred during verification attempts
         Write-Warning "  Warning: Cannot verify data ingestion due to permission error."
         Write-Verbose "  -> Data upload completed: $totalUploadedRecords records uploaded"
         Write-Verbose "  -> Verification failed, but upload was successful"
-        
+            
         # Add a non-fatal warning rather than an error
         Add-FunctionError -Message "Data verification unavailable due to permissions. Upload completed successfully with $totalUploadedRecords records." -Category "Permissions" -ErrorList $ErrorList
         
@@ -2764,22 +2713,20 @@ GuardrailsUserRaw_CL
         Write-Warning "  Warning: Data ingestion verification failed - no records found in Log Analytics."
         Write-Verbose "  -> Uploaded $totalUploadedRecords records but verification query returned 0 results"
         Write-Verbose "  -> This may indicate data ingestion delay or indexing issues"
-        
-        Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList
-        
+            
+        Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList        
     } elseif ($recordCount -ne $totalUploadedRecords) {
-        # Data found but count mismatch
+            # Data found but count mismatch
         $expectedCount = $totalUploadedRecords
         Write-Warning "  Warning: Data count mismatch detected."
         Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
-        
+            
         if ($recordCount > 0) {
             Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
             Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
         } else {
             Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Data may be missing or still processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        }
-        
+        }    
     } else {
         # Perfect success case
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
