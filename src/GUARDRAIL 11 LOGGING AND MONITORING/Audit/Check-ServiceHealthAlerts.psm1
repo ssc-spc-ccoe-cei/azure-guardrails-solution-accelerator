@@ -49,10 +49,10 @@ function Validate-ActionGroups {
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
 
-        if($emailAddressesArray -ge 2){
+        if($emailAddressesArray.Count -ge 2){
             $actionGroupCompliant = $true
         }
-        elseif($emailAddressesArray -eq 1 -and $matchingOwners -ge 1){
+        elseif($emailAddressesArray.Count -eq 1 -and $matchingOwners -ge 1){
             $actionGroupCompliant = $true
         }
 
