@@ -12,51 +12,51 @@ function Validate-ActionGroups {
         $actionGroupIds = @($actionGroupIds)
     }
     $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds)
+    $actionSubOwners = @()
 
     foreach ($id in $actionGroupIdsArray){
 
         #Get sub id from action group
         $subscriptionId = ($id -split '/')[2]
 
+        $emailAddressCount = 0
+        $matchingOwnersCount = 0
+
         try{
             #Get the action group
             $actionGroups = Get-AzActionGroup -InputObject $id
-
-            Write-Warning "actionGroups: $actionGroups"
 
             $emailAddresses = $actionGroups | ForEach-Object {
                 if ($_.EmailReceiver) {
                     $_.EmailReceiver | Select-Object -ExpandProperty EmailAddress
                 }
-            } | Where-Object { $_ -ne $null } # Remove any null results
+            } | Where-Object { $_ -ne $null }
 
-            if ($emailAddresses -isnot [System.Collections.IEnumerable] -or $emailAddresses -is [string]) {
-                $emailAddresses = @($emailAddresses)
-            }
-            $emailAddressesArray = [System.Collections.ArrayList]@($emailAddresses)
-
-            Write-warning "emailAddresses: $emailAddresses"
+            $emailAddresses = @($emailAddresses) | Where-Object { $_ -ne $null } | Sort-Object -Unique
+            $emailAddressCount = $emailAddresses.Count
 
             $actionSubOwners += Get-AzRoleAssignment -Scope "/subscriptions/$subscriptionId" | Where-Object {
                 $_.RoleDefinitionName -eq "Owner" 
             } | Select-Object -ExpandProperty SignInName
 
+            $actionSubOwners = @($actionSubOwners) | Where-Object { $_ -ne $null } | Sort-Object -Unique
+
             #Find and collect all the matching owners of this sub
             $matchingOwners = $actionSubOwners | Where-Object {$subOwners -contains $_}
+            $matchingOwners = @($matchingOwners) | Where-Object { $_ -ne $null } | Sort-Object -Unique
+            $matchingOwnersCount = $matchingOwners.Count
         }
         catch{
             $Comments += $msgTable.noServiceHealthActionGroups -f $subscription
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
 
-        if($emailAddressesArray.Count -ge 2){
+        if($emailAddressCount -ge 2){
             $actionGroupCompliant = $true
         }
-        elseif($emailAddressesArray.Count -eq 1 -and $matchingOwners -ge 1){
+        elseif($emailAddressCount -eq 1 -and $matchingOwnersCount -ge 1){
             $actionGroupCompliant = $true
         }
-
-        Write-Host "actionGroupCompliant: $actionGroupCompliant"
     }
 
     #Return compliance state of action group
