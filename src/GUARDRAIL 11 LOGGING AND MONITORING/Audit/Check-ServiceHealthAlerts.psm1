@@ -68,6 +68,9 @@ function Validate-ActionGroups {
             $isCurrentGroupCompliant = $true
         }
 
+        # Returning the collection means Get-ServiceHealthAlerts can call
+        # "Validate-ActionGroups ... | -contains $false" and correctly flag any non-compliant group.
+        # In Powershell every scalar behaves like a single-item array.
         $actionGroupResults.Add($isCurrentGroupCompliant) | Out-Null
     }
 
