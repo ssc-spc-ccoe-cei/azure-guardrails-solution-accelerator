@@ -4,6 +4,9 @@ function Validate-ActionGroups {
         [Object[]] $subOwners
     )
 
+    # Explicitly gather every notification contact and count
+    # them, eliminating that false positive path and making the two-contact check transparent.
+
     #Retrieve action group IDs
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
     if ($actionGroupIds -isnot [System.Collections.IEnumerable] -or $actionGroupIds -is [string]) {
@@ -15,6 +18,8 @@ function Validate-ActionGroups {
     foreach ($id in $actionGroupIdsArray){
 
         # Build a list of distinct action-group contacts (emails + owner receivers).
+        # Returning tokens instead of a single bool lets the caller spot which group failed by
+        # looking for -contains $false rather than re-running the whole lookup.
         $contactTokens = @()
 
         try{
@@ -27,9 +32,16 @@ function Validate-ActionGroups {
                 }
             } | Where-Object { $_ -ne $null }
 
+            # 1) Normalise the email receivers to a trimmed, unique list. This replaces the old
+            #    "string compared to number" shortcut and guarantees we know exactly how many
+            #    distinct email contacts exist.
             $emailAddresses = @($emailAddresses) | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 } | Sort-Object -Unique
 
-            # ArmRoleReceiver entries represent dynamic contacts (e.g., subscription owners).
+            # 2) Collect any ArmRoleReceiver entries that fan out to subscription owners.
+            #    Action groups can target built-in Azure roles in addition to direct
+            #    email addresses. We include Owner role receivers here so the guardrail honours the
+            #    requirement of "two different contacts" when one of those contacts is an owner
+            #    picked up dynamically at alert runtime.
             $ownerReceivers = $actionGroups | ForEach-Object {
                 if ($_.ArmRoleReceiver) {
                     $_.ArmRoleReceiver | Where-Object { $_.RoleName -eq 'Owner' }
@@ -38,7 +50,9 @@ function Validate-ActionGroups {
 
             $ownerReceivers = @($ownerReceivers) | Sort-Object -Unique
 
-            # Tokenize contacts so counting treats emails and owner receivers uniformly.
+            # 3) Turn everything into "contact tokens" so we can count them with one rule. By
+            #    prefixing Owner receivers we avoid collisions with email addresses and can perform
+            #    a single distinct count across all contact types.
             $contactTokens = @($emailAddresses + ($ownerReceivers | ForEach-Object { "Owner::" + $_ })) | Sort-Object -Unique
         }
         catch{
@@ -46,6 +60,9 @@ function Validate-ActionGroups {
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
 
+        # 4) Evaluate compliance for this specific action group. We default to non-compliant and
+        #    mark it compliant only when the contact token list contains two or more distinct
+        #    entries (matching the guardrail's policy). 
         $isCurrentGroupCompliant = $false
         if(@($contactTokens).Count -ge 2){
             $isCurrentGroupCompliant = $true
