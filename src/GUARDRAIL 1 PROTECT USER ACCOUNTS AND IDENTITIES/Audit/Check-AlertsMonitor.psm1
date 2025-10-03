@@ -76,6 +76,18 @@ function CompareKQLQueryToPattern{
     }
 }
 
+function CompareKQLQueryToPattern{
+    param (
+        [string] $pattern,
+        [string] $targetQuery
+    )
+
+    #Fix the formatting of KQL query
+    $normalizedTargetQuery = $targetQuery -replace '\|', ' | ' -replace '\s+', ' '
+
+    return $normalizedTargetQuery -imatch $pattern
+}
+
 function Check-AlertsMonitor {
     [CmdletBinding()]
     param (
@@ -330,6 +342,19 @@ function Check-AlertsMonitor {
             $ErrorList += "Error processing conditional access policy alert rules: $_"
             Write-Error "Error processing conditional access policy alert rules: $_"
         }
+        # Select the action groups of the CAP alert rules if they are also in the list of action groups with receivers
+        $capActionGroupIds = ($capAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
+        if ($capActionGroupIds.Count -gt 0) {
+            $auditLogsCompliance = $true # we found alert rules with a query that matches the CAP query pattern and with action groups with configured receivers
+        }
+        else {
+            $Comments += $msgTable.noActionGroupsForAuditLogs
+        }
+    }
+
+    # CONDITION: If both checks are compliant then set the control as compliant
+    if($signInLogsCompliance -and $auditLogsCompliance){
+        $IsCompliant = $true
     }
 
     # CONDITION: If both checks are compliant then set the control as compliant
