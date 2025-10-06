@@ -9,6 +9,7 @@ function Get-ActionGroupContactTokens {
     #   check. The output is a set of "contact tokens" (emails plus owner-role tokens).
 
     # Azure built-in Owner role ID (constant across all Azure tenants)
+    # Used as fallback when RoleName property is not populated
     $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 
     $emailTokens = @(
@@ -61,6 +62,17 @@ function Validate-ActionGroups {
     $results = [System.Collections.ArrayList]::new()
     $comments = [System.Collections.ArrayList]::new()
     $errors = [System.Collections.ArrayList]::new()
+
+    if ($actionGroupIdsArray.Count -eq 0) {
+        $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
+        $errors.Add("No action groups were returned for this Service Health alert evaluation.") | Out-Null
+        $results.Add($false) | Out-Null
+        return [PSCustomObject]@{
+            Results = $results
+            Comments = $comments
+            Errors = $errors
+        }
+    }
 
     foreach ($id in $actionGroupIdsArray){
         # Build a list of distinct action-group contacts (emails + owner receivers) so caller logic
