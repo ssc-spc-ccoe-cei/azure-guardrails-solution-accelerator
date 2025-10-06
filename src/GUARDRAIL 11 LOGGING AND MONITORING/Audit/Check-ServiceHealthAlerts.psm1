@@ -232,8 +232,12 @@ function Get-ServiceHealthAlerts {
 
                     if ($evaluation.Comments.Count -gt 0) {
                         # Merge any helper-supplied context (e.g., missing action group) with existing comments.
-                        $Comments = ($Comments, $evaluation.Comments) -join "`n"
-                        $Comments = $Comments.Trim()
+                        $commentItems = @()
+                        if (-not [string]::IsNullOrWhiteSpace($Comments)) {
+                            $commentItems += $Comments
+                        }
+                        $commentItems += $evaluation.Comments
+                        $Comments = ($commentItems | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`n"
                     }
                     foreach ($err in $evaluation.Errors) {
                         # Preserve detailed errors so downstream diagnostics remain intact.
