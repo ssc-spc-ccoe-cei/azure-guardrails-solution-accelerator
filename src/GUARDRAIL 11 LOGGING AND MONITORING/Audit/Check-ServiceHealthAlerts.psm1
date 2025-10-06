@@ -42,7 +42,9 @@ function Get-ActionGroupContactTokens {
 
 function Validate-ActionGroups {
     param (
-        [Object[]] $alerts
+        [Object[]] $alerts,
+        [Parameter(Mandatory=$true)][string] $SubscriptionName,
+        [Parameter(Mandatory=$true)][hashtable] $MsgTable
     )
 
     # Evaluate each action group's contacts and return a boolean per group indicating whether the
@@ -54,10 +56,13 @@ function Validate-ActionGroups {
         $actionGroupIds = @($actionGroupIds)
     }
     $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds)
-    $actionGroupResults = [System.Collections.ArrayList]::new()
+
+    # Each collection captures the evaluation outcome so the caller can surface messages or errors as needed.
+    $results = [System.Collections.ArrayList]::new()
+    $comments = [System.Collections.ArrayList]::new()
+    $errors = [System.Collections.ArrayList]::new()
 
     foreach ($id in $actionGroupIdsArray){
-
         # Build a list of distinct action-group contacts (emails + owner receivers) so caller logic
         # can inspect each group independently and continue to flag failures via "-contains $false".
         $contactTokens = @()
@@ -68,28 +73,20 @@ function Validate-ActionGroups {
             $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroups
         }
         catch{
-            $Comments += $msgTable.noServiceHealthActionGroups -f $subscription
-            $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
+            # Surface the missing action group condition to the caller instead of relying on outer-scope variables.
+            $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
+            $errors.Add("Error retrieving service health alerts for the following subscription: $_") | Out-Null
         }
 
-        # Evaluate compliance for this specific action group. We default to non-compliant and
-        # mark it compliant only when the contact token list contains two or more distinct
-        # entries (matching the guardrail's policy). Keeping a boolean per group mirrors the
-        # original intent while preserving the full picture for the caller.
-        $isCurrentGroupCompliant = $false
-        if(@($contactTokens).Count -ge 2){
-            $isCurrentGroupCompliant = $true
-        }
-
-        # NOTE: The previous implementation returned a single boolean. In cases where one group was
-        # non-compliant and another was compliant, that value could be overwritten and turn a failing
-        # subscription into a pass. Returning the collection means Get-ServiceHealthAlerts can call
-        # "Validate-ActionGroups ... | -contains $false" and correctly flag any non-compliant group.
-        $actionGroupResults.Add($isCurrentGroupCompliant) | Out-Null
+        $results.Add((@($contactTokens).Count -ge 2)) | Out-Null
     }
 
-    # Return compliance state of action group
-    return $actionGroupResults
+    # Return a structured payload so the caller can merge comments/log errors without extra ref parameters.
+    return [PSCustomObject]@{
+        Results = $results
+        Comments = $comments
+        Errors = $errors
+    }
 }
 
 
@@ -219,17 +216,30 @@ function Get-ServiceHealthAlerts {
                 
                 if($checkActionGroupNext){
                     # Store compliance state of each action group
-                    $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts
+                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -MsgTable $msgTable
 
+                    if ($evaluation.Comments.Count -gt 0) {
+                        # Merge any helper-supplied context (e.g., missing action group) with existing comments.
+                        $Comments = ($Comments, $evaluation.Comments) -join "`n"
+                        $Comments = $Comments.Trim()
+                    }
+                    foreach ($err in $evaluation.Errors) {
+                        # Preserve detailed errors so downstream diagnostics remain intact.
+                        $ErrorList.Add($err) | Out-Null
+                    }
                     # All action groups are compliant
-                    if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
+                    if ($evaluation.Results -notcontains $false -and $null -ne $evaluation.Results){
                         $isCompliant = $true
-                        $Comments = $msgTable.compliantServiceHealthAlerts
+                        if ([string]::IsNullOrWhiteSpace($Comments)) {
+                            $Comments = $msgTable.compliantServiceHealthAlerts
+                        }
                     }
                     # Even if one is non-compliant
-                    elseif ($actionGroupsCompliance -contains $false) {
+                    elseif ($evaluation.Results -contains $false) {
                         $isCompliant = $false
-                        $Comments = $msgTable.nonCompliantActionGroups
+                        if ([string]::IsNullOrWhiteSpace($Comments)) {
+                            $Comments = $msgTable.nonCompliantActionGroups
+                        }
                     }
                 }
             }
