@@ -48,8 +48,7 @@ function Validate-ActionGroups {
         [Parameter(Mandatory=$true)][hashtable] $MsgTable
     )
 
-    # Evaluate each action group's contacts and return a boolean per group indicating whether the
-    # "two distinct contacts" requirement is met.
+    # Evaluate each action group's contacts and surface aggregate results back to the caller.
 
     # Retrieve action group IDs
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
@@ -58,44 +57,35 @@ function Validate-ActionGroups {
     }
     $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds)
 
-    # Each collection captures the evaluation outcome so the caller can surface messages or errors as needed.
-    $results = [System.Collections.ArrayList]::new()
+    # Track aggregate outcomes.
+    $uniqueContacts = New-Object 'System.Collections.Generic.HashSet[string]'
     $comments = [System.Collections.ArrayList]::new()
     $errors = [System.Collections.ArrayList]::new()
 
     if ($actionGroupIdsArray.Count -eq 0) {
         $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
-        $errors.Add("No action groups were returned for this Service Health alert evaluation.") | Out-Null
-        $results.Add($false) | Out-Null
+        $errors.Add('No action groups were returned for this Service Health alert evaluation.') | Out-Null
         return [PSCustomObject]@{
-            Results = $results
+            UniqueContacts = @()
             Comments = $comments
             Errors = $errors
         }
     }
 
     foreach ($id in $actionGroupIdsArray){
-        # Build a list of distinct action-group contacts (emails + owner receivers) so caller logic
-        # can inspect each group independently and continue to flag failures via "-contains $false".
-        $contactTokens = @()
-
         try{
-            # Retrieve action group details and extract all notification contacts (emails + owner receivers)
             $actionGroups = Get-AzActionGroup -InputObject $id
             $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroups
+            foreach ($token in $contactTokens) { $uniqueContacts.Add($token) | Out-Null }
         }
         catch{
-            # Surface the missing action group condition to the caller instead of relying on outer-scope variables.
             $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
             $errors.Add("Error retrieving service health alerts for the following subscription: $_") | Out-Null
         }
-
-        $results.Add((@($contactTokens).Count -ge 2)) | Out-Null
     }
 
-    # Return a structured payload so the caller can merge comments/log errors without extra ref parameters.
     return [PSCustomObject]@{
-        Results = $results
+        UniqueContacts = @($uniqueContacts)
         Comments = $comments
         Errors = $errors
     }
@@ -137,17 +127,12 @@ function Get-ServiceHealthAlerts {
         # Initialize
         $isCompliant = $false
         $Comments = ""
-        $actionGroupsCompliance = @()
         $checkActionGroupNext = $false
 
         # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
 
-        # Get subscription owners
-        $subOwners = Get-AzRoleAssignment -Scope "/subscriptions/$subId" | Where-Object {
-            $_.RoleDefinitionName -eq "Owner" 
-        } | Select-Object -ExpandProperty SignInName
 
         try{
             # Get all service health alerts
@@ -243,15 +228,14 @@ function Get-ServiceHealthAlerts {
                         # Preserve detailed errors so downstream diagnostics remain intact.
                         $ErrorList.Add($err) | Out-Null
                     }
-                    # All action groups are compliant
-                    if ($evaluation.Results -notcontains $false -and $null -ne $evaluation.Results){
+                    $totalContacts = $evaluation.UniqueContacts.Count
+                    if ($totalContacts -ge 2) {
                         $isCompliant = $true
                         if ([string]::IsNullOrWhiteSpace($Comments)) {
                             $Comments = $msgTable.compliantServiceHealthAlerts
                         }
                     }
-                    # Even if one is non-compliant
-                    elseif ($evaluation.Results -contains $false) {
+                    else {
                         $isCompliant = $false
                         if ([string]::IsNullOrWhiteSpace($Comments)) {
                             $Comments = $msgTable.nonCompliantActionGroups
@@ -287,7 +271,6 @@ function Get-ServiceHealthAlerts {
             $PsObject.Add($C) | Out-Null
         }
 
-        continue
     }
     
     $moduleOutput = [PSCustomObject]@{
