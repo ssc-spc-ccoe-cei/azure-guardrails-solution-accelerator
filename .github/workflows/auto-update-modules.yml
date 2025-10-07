@@ -22,7 +22,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
       - name: Install AzureSignTool
-        run: dotnet tool install --no-cache --global AzureSignTool --version 4.0.1
+        run: dotnet tool install --no-cache --global AzureSignTool --version 6.0.1
       - name: AZ Login
         uses: azure/login@v1
         with:
