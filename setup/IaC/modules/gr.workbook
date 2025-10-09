@@ -50,7 +50,7 @@
             "label": "Report Time (UTC)",
             "type": 2,
             "isRequired": true,
-            "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s \n| sort by ReportTime_s desc",
+            "query": "GuardrailsCompliance_CL\n| extend ReportTime = column_ifexists(\"ReportTime_s\", \"\"),\n         ControlName = column_ifexists(\"ControlName_s\", \"\")\n| where ReportTime != \"\"\n| summarize TotalRecords = count(), DistinctControls = dcount(ControlName) by ReportTime\n| project Value = ReportTime,\n         Label = iff(DistinctControls < 13, strcat(ReportTime, \" (Partial)\"), ReportTime)\n| sort by Value desc",
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::1"
@@ -386,7 +386,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR2ExternalUsers_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, Mail_s, Subscription_s, Role_s, PrivilegedRole_s, Comments_s",
+        "query": "GR2ExternalUsers_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    Mail_s = column_ifexists(\"Mail_s\", \"\"),\n    Subscription_s = column_ifexists(\"Subscription_s\", \"\"),\n    Role_s = column_ifexists(\"Role_s\", \"\"),\n    PrivilegedRole_s = column_ifexists(\"PrivilegedRole_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
@@ -458,7 +458,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR2UsersWithoutGroups_CL \n| where ReportTime_s == \"{RunTime}\"\n| project DisplayName_s, UserPrincipalName_s, Comments_s",
+        "query": "GR2UsersWithoutGroups_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    UserPrincipalName_s = column_ifexists(\"UserPrincipalName_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
@@ -674,7 +674,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['Subnet Name']=SubnetName_s, Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s,[\"ITSG Control\"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = column_ifexists(\"ItemName_s\", \"\"),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
         "title": "GR 8",
         "timeContext": {
@@ -711,7 +711,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where ControlName_s has ctrlprefix  and ReportTime_s == \"{RunTime}\" and Required_s !=tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=ItemName_s, ['Subscription Name']=SubscriptionName_s, ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(ComplianceStatus_b == true, \"✔️\", ComplianceStatus_b == false, \"❌\", \"➖\"), Comments=Comments_s, ['ITSG Control']=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),itsgcode_s), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=column_ifexists(\"ItemName_s\", \"\"), ['Subscription Name']=column_ifexists(\"SubscriptionName_s\", \"\"), ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"), Comments=column_ifexists(\"Comments_s\", \"\"), ['ITSG Control']=column_ifexists(\"itsgcode_s\", \"\"), Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),column_ifexists(\"itsgcode_s\", \"\")), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
         "size": 0,
         "title": "GR 9",
         "timeContext": {
@@ -918,7 +918,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where ReportTime_s == '{RunTime}' and Required_s ==\"True\"\n| extend Status=case(\n    ComplianceStatus_b == true, 'Compliant Items',\n    ComplianceStatus_b == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
         "size": 4,
         "timeContext": {
           "durationMs": 86400000
@@ -959,7 +959,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\n| where ReportTime_s == '{RunTime}'\n| summarize by ControlName_s\n| count \n| extend Title=\"Total # of Controls\"",
+        "query": "GuardrailsCompliance_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}'\n| summarize by column_ifexists(\"ControlName_s\", \"\")\n| count \n| extend Title=\"Total # of Controls\"",
         "size": 4,
         "timeContext": {
           "durationMs": 86400000
@@ -996,7 +996,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let dt = GR_VersionInfo_CL | summarize max(ReportTime_s);\nGR_VersionInfo_CL\n| where ReportTime_s == toscalar (dt)\n|project [\"Deployed Version\"]= DeployedVersion_s, [\"Version Available\"]=AvailableVersion_s, [\"Update Required\"]=iff(UpdateNeeded_b==true,\"Yes\",\"No\"),[\"Check date\"]=toscalar (dt)",
+        "query": "let dt = GR_VersionInfo_CL | summarize max(column_ifexists(\"ReportTime_s\", \"\"));\nGR_VersionInfo_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == toscalar (dt)\n| project [\"Deployed Version\"]= column_ifexists(\"DeployedVersion_s\", \"\"), [\"Version Available\"]=column_ifexists(\"AvailableVersion_s\", \"\"), [\"Update Required\"]=iff(column_ifexists(\"UpdateNeeded_b\", bool(false))==true,\"Yes\",\"No\"),[\"Check date\"]=toscalar (dt)",
         "size": 4,
         "title": "Guardrails Version Information",
         "timeContext": {
@@ -1016,7 +1016,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let dt = GR_TenantInfo_CL | summarize max(ReportTime_s);\r\nGR_TenantInfo_CL\r\n| where ReportTime_s == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(cloudUsageProfiles_s == 'default',toscalar(\"Cloud Usage Profile not specified or 'default'\"),cloudUsageProfiles_s),[\"Report Time (UTC)\"]=toscalar (dt)",
+        "query": "let dt = GR_TenantInfo_CL | summarize max(column_ifexists(\"ReportTime_s\", \"\"));\r\nGR_TenantInfo_CL\r\n| where column_ifexists(\"ReportTime_s\", \"\") == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(column_ifexists(\"cloudUsageProfiles_s\", \"\") == 'default',toscalar(\"Cloud Usage Profile not specified or 'default'\"),column_ifexists(\"cloudUsageProfiles_s\", \"\")),[\"Report Time (UTC)\"]=toscalar (dt)",
         "size": 0,
         "title": "Cloud Usage Profile Configuration",
         "timeContext": {
