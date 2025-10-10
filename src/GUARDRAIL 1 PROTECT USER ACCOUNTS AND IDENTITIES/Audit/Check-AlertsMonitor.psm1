@@ -127,14 +127,16 @@ function Check-AlertsMonitor {
 
     $AuditLogsQueries = @(
         # 1) Single-value form (==, =~, contains) — flexible spaces
-        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:==|=~|contains)\s+`"(?:Update|Add|Delete)\s+conditional access policy`"\s*',
+        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:==|=~|contains)\s+"(?:Update|Add|Delete)\s+conditional access policy"\s*',
 
         # 2) in()/has_any() list form — order-agnostic, requires ALL THREE present somewhere in (...)
-        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:in|has_any)\s*\(' +
-            '(?=[^)]*`"Update\s+conditional access policy`")' +
-            '(?=[^)]*`"Add\s+conditional access policy`")' +
-            '(?=[^)]*`"Delete\s+conditional access policy`")' +
+        (
+            'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:in|has_any)\s*\(' +
+            '(?=[^)]*"Update\s+conditional access policy")' +
+            '(?=[^)]*"Add\s+conditional access policy")' +
+            '(?=[^)]*"Delete\s+conditional access policy")' +
             '[^)]*\)'
+        )
     )
     $CAPQueryMatchPattern = "`($($AuditLogsQueries -join '|')`)"
 
