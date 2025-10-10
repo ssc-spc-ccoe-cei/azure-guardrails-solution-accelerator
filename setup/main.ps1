@@ -390,7 +390,7 @@ if ($runSummary.Summaries.Count -gt 0) {
     Write-Output ""
     Write-Output "Module Breakdown:"
     foreach ($summary in $runSummary.Summaries) {
-        $line = " - {0} | Status={1} | Duration={2:N2}s | Items={3} | Errors={4} | Warnings={5}" -f \
+        $line = " - {0} | Status={1} | Duration={2:N2}s | Items={3} | Errors={4} | Warnings={5}" -f `
             $summary.ModuleName,
             $summary.Status,
             $summary.DurationSeconds,
