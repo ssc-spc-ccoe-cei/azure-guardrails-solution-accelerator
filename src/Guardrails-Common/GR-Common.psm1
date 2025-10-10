@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot 'GR-Telemetry.psm1')
+
 function get-tagValue {
     [CmdletBinding()]
     param (
