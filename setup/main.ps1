@@ -372,19 +372,56 @@ foreach ($module in $modules) {
 
 $runSummary = Complete-GuardrailRunState -RunState $runState
 
+function Get-DebugStatValue {
+    param(
+        [Parameter(Mandatory = $false)]
+        $StatsObject,
+        [Parameter(Mandatory = $true)]
+        [string]$Key
+    )
+
+    if ($null -eq $StatsObject) {
+        return 0
+    }
+
+    if ($StatsObject -is [System.Collections.IDictionary]) {
+        if ($StatsObject.Contains($Key)) {
+            $value = $StatsObject[$Key]
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace($value.ToString())) {
+                return $value
+            }
+        }
+    }
+
+    return 0
+}
+
+$statusDisplay = if ([string]::IsNullOrWhiteSpace($runSummary.Status)) { 'Unknown' } else { $runSummary.Status }
+$durationDisplay = if ($null -eq $runSummary.Duration) { '00:00:00' } else { $runSummary.Duration.ToString() }
+
+$modulesEnabled = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'ModulesEnabled'
+$modulesSucceeded = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'ModulesSucceeded'
+$modulesFailed = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'ModulesFailed'
+$modulesDisabled = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'ModulesDisabled'
+$totalItems = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'TotalItems'
+$compliantItems = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'CompliantItems'
+$nonCompliantItems = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'NonCompliantItems'
+$errorCount = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'Errors'
+$warningCount = Get-DebugStatValue -StatsObject $runSummary.Stats -Key 'Warnings'
+
 Write-Output ""
 Write-Output ("========== {0} Debug Summary ==========" -f $guardrailId)
-Write-Output ("Run Status           : {0}" -f $runSummary.Status)
-Write-Output ("Total Duration      : {0}" -f $runSummary.Duration.ToString())
-Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
-Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
-Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
-Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
-Write-Output ("Total items          : {0}" -f $runSummary.Stats.TotalItems)
-Write-Output ("Compliant items      : {0}" -f $runSummary.Stats.CompliantItems)
-Write-Output ("Non-compliant items  : {0}" -f $runSummary.Stats.NonCompliantItems)
-Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
-Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
+Write-Output ("Run Status           : {0}" -f $statusDisplay)
+Write-Output ("Total Duration      : {0}" -f $durationDisplay)
+Write-Output ("Modules (enabled)   : {0}" -f $modulesEnabled)
+Write-Output ("Modules succeeded    : {0}" -f $modulesSucceeded)
+Write-Output ("Modules failed       : {0}" -f $modulesFailed)
+Write-Output ("Modules disabled     : {0}" -f $modulesDisabled)
+Write-Output ("Total items          : {0}" -f $totalItems)
+Write-Output ("Compliant items      : {0}" -f $compliantItems)
+Write-Output ("Non-compliant items  : {0}" -f $nonCompliantItems)
+Write-Output ("Errors               : {0}" -f $errorCount)
+Write-Output ("Warnings             : {0}" -f $warningCount)
 
 if ($runSummary.Summaries.Count -gt 0) {
     Write-Output ""
