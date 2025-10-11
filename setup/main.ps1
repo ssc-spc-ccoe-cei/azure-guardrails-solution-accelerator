@@ -232,12 +232,32 @@ catch {
 Write-Output "Loaded $($msgTable.Count) messages." 
 
 Write-Output "Fetching all user raw data."
-# Ingest all user raw data before running modules
-$UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
-if ($UserRawDataErrors.Count -gt 0) {
-    Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+$userRawDataContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.FetchAllUserRawData'
+$userRawDataRecordCount = 0
+
+try {
+    # Ingest all user raw data before running modules
+    $UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+
+    if ($UserRawDataErrors.Count -gt 0) {
+        Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Failed' -ErrorCount $UserRawDataErrors.Count -Message 'FetchAllUserRawData reported errors.' | Out-Null
+    }
+    else {
+        if ($Global:AllUsersCache -and $Global:AllUsersCache.PSObject.Properties.Match('users').Count -gt 0) {
+            $userRawDataRecordCount = @($Global:AllUsersCache.users).Count
+        }
+
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Succeeded' -ItemCount $userRawDataRecordCount -Message 'FetchAllUserRawData completed.' | Out-Null
+    }
 }
-Write-Output "Fetching user raw data complete."
+catch {
+    Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Failed' -ErrorCount 1 -Message 'FetchAllUserRawData threw an exception.' | Out-Null
+    throw
+}
+finally {
+    Write-Output "Fetching user raw data complete."
+}
 
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
@@ -373,7 +393,7 @@ foreach ($module in $modules) {
 $runSummary = Complete-GuardrailRunState -RunState $runState
 
 Write-Output ""
-Write-Output ("========== {0} Debug Summary ==========" -f $guardrailId)
+Write-Output "========== Guardrail Run Debug Summary =========="
 Write-Output ("Run Status           : {0}" -f $runSummary.Status)
 Write-Output ("Total Duration      : {0}" -f $runSummary.Duration.ToString())
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
@@ -383,6 +403,7 @@ Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
 Write-Output ("Total items          : {0}" -f $runSummary.Stats.TotalItems)
 Write-Output ("Compliant items      : {0}" -f $runSummary.Stats.CompliantItems)
 Write-Output ("Non-compliant items  : {0}" -f $runSummary.Stats.NonCompliantItems)
+Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
 
