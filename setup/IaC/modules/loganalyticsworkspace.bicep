@@ -134,7 +134,7 @@ let mfaAnalysis = userData
         0
     )
 | extend
-    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2);
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 1);
 let summary = mfaAnalysis
 | summarize 
     TotalUsers = count(),
@@ -233,11 +233,10 @@ let mfaAnalysis = userData
         0
     )
 | extend
-    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2),
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 1),
     complianceReason = case(
         hasValidSystemPreferred, strcat(tostring(localizedMessages["systemPreferred"]), strcat_array(set_intersect(systemPreferredMethodsArray, validSystemMethods), ", ")),
-        hasMfaRegistered == true and validMfaMethodsCount >= 2, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
-        hasMfaRegistered == true and validMfaMethodsCount == 1, strcat(tostring(localizedMessages["onlyOneMethod"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", "), tostring(localizedMessages["atLeastTwoRequired"])),
+        hasMfaRegistered == true and validMfaMethodsCount >= 1, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
         hasMfaRegistered == true and validMfaMethodsCount == 0, tostring(localizedMessages["noValidMethods"]),
         tostring(localizedMessages["noMfaConfigured"])
     );
