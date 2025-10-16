@@ -660,7 +660,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     name: 'ENABLE_DEBUG_METRICS'
     properties: {
         isEncrypted: false
-        value: '"false"'
+        value: '"true"'
     }
   }
 }
