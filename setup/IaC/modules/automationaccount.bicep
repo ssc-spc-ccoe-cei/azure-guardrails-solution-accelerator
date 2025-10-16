@@ -141,7 +141,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.3.7'
+        version: '1.3.8'
       }
     }
   }
@@ -654,6 +654,13 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
         isEncrypted: true
         value: '"${AllowedLocationInitiativeId}"'
+    }
+  }
+  resource variable23 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'ENABLE_DEBUG_METRICS'
+    properties: {
+        isEncrypted: false
+        value: '"false"'
     }
   }
 }

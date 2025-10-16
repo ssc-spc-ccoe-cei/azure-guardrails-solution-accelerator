@@ -28,6 +28,16 @@ function Get-GSAAutomationVariable {
     }
 }
 
+try {
+    $enableDebugMetricsSetting = Get-AutomationVariable -Name 'ENABLE_DEBUG_METRICS'
+    if ($enableDebugMetricsSetting) {
+        [Environment]::SetEnvironmentVariable('ENABLE_DEBUG_METRICS', $enableDebugMetricsSetting, 'Process') | Out-Null
+    }
+}
+catch {
+    Write-Verbose "ENABLE_DEBUG_METRICS automation variable not found or not accessible; telemetry remains disabled."
+}
+
 # Connects to Azure using the Automation Account's managed identity
 If (!$localExecution.IsPresent) {
     try {
@@ -187,6 +197,13 @@ catch {
     throw "Failed to retrieve workspace key with secret name '$GuardrailWorkspaceIDKeyName' from KeyVault '$KeyVaultName'. Error message: $_"
 }
 
+$automationJobId = $env:AUTOMATION_JOBID
+if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
+    $automationJobId = $PSPrivateMetadata.JobId.ToString()
+}
+
+$runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
+
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
@@ -224,34 +241,61 @@ catch {
 Write-Output "Loaded $($msgTable.Count) messages." 
 
 Write-Output "Fetching all user raw data."
-# Ingest all user raw data before running modules
-$UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
-if ($UserRawDataErrors.Count -gt 0) {
-    Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+$userRawDataContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.FetchAllUserRawData'
+$userRawDataRecordCount = 0
+function Convert-SecondsToTimespanString {
+    param([double]$Seconds)
+    $span = [TimeSpan]::FromSeconds($Seconds)
+    return $span.ToString("c")
 }
-Write-Output "Fetching user raw data complete."
+
+try {
+    # Ingest all user raw data before running modules
+    $UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+
+    if ($UserRawDataErrors.Count -gt 0) {
+        Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Failed' -ErrorCount $UserRawDataErrors.Count -Message 'FetchAllUserRawData reported errors.' | Out-Null
+    }
+    else {
+        if ($Global:AllUsersCache -and $Global:AllUsersCache.PSObject.Properties.Match('users').Count -gt 0) {
+            $userRawDataRecordCount = @($Global:AllUsersCache.users).Count
+        }
+
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Succeeded' -ItemCount $userRawDataRecordCount -Message 'FetchAllUserRawData completed.' | Out-Null
+    }
+}
+catch {
+    Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Failed' -ErrorCount 1 -Message 'FetchAllUserRawData threw an exception.' | Out-Null
+    throw
+}
+finally {
+    Write-Output "Fetching user raw data complete."
+}
 
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
 foreach ($module in $modules) {
     $moduleCount++
+    $moduleName = $module.ModuleName
     if ($module.Status -eq "Enabled") {
         if($enableMultiCloudProfiles) {
             $module.Script += " -EnableMultiCloudProfiles"
             $ModuleProfilesString = $module.Profiles -join ','
         }
-        $NewScriptBlock = [scriptblock]::Create($module.Script)
+        $moduleScript = $module.Script
+        $NewScriptBlock = [scriptblock]::Create($moduleScript)
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
         $secrets = $module.secrets
         $localVariables = $module.localVariables
-        $vars = [PSCustomObject]@{}          
+        $vars = [PSCustomObject]@{}
         if ($null -ne $variables) {
             foreach ($v in $variables) {
                 $tempvarvalue = Get-GSAAutomationVariable -Name $v.value
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
-            }      
+            }
         }
         if ($null -ne $secrets) {
             foreach ($v in $secrets) {
@@ -264,34 +308,79 @@ foreach ($module in $modules) {
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $v.value
             }
         }
-        #$vars
-        #Write-host $module.Script
-        Write-Output "Running module with script: $module.Script"
+
+        Write-Output "Running module with script: $moduleScript"
+
+        $moduleContext = Start-GuardrailModuleState -RunState $runState -ModuleName $moduleName
+        $moduleErrors = 0
+        $moduleWarnings = 0
+        $itemCount = 0
+        $compliantCount = 0
+        $nonCompliantCount = 0
 
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
-            #Write-Output "Result for invoking is $($results.ComplianceResults)" 
 
-            #$results.ComplianceResults
-            #$results.Add("Required", $module.Required)
-            #Write-Output "required in module: $($module.Required)."
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
-            
-            #Write-Output "required in results: $($results.Required)."
+
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
+
             if ($null -ne $results.Errors) {
-                "Module $($module.modulename) failed with $($results.Errors.count) errors. $($results.Errors)"
+                $moduleErrors = @($results.Errors).Count
+                "Module $($module.modulename) failed with $moduleErrors errors. $($results.Errors)"
                 New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
             }
+
             if ($null -ne $results.AdditionalResults) {
                 # There is more data!
                 "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
             }
 
+            if ($null -ne $results.Warnings) {
+                $moduleWarnings = @($results.Warnings).Count
+            }
+
+            if ($null -ne $results.ComplianceResults) {
+                $complianceRecords = @($results.ComplianceResults)
+                $itemCount = $complianceRecords.Count
+                foreach ($record in $complianceRecords) {
+                    if ($null -ne $record -and $record.PSObject.Properties.Match('ComplianceStatus').Count -gt 0) {
+                        if ($record.ComplianceStatus -eq $true) {
+                            $compliantCount++
+                        }
+                        elseif ($record.ComplianceStatus -eq $false) {
+                            $nonCompliantCount++
+                        }
+                    }
+                }
+            }
+
             Write-Output "Script running is done for $($module.modulename)"
 
+            $moduleStatus = if ($moduleErrors -gt 0) { 'Failed' } elseif ($moduleWarnings -gt 0) { 'CompletedWithWarnings' } else { 'Succeeded' }
+
+            $messageParts = @("Items=$itemCount")
+            if ($moduleErrors -gt 0) { $messageParts += "Errors=$moduleErrors" }
+            if ($moduleWarnings -gt 0) { $messageParts += "Warnings=$moduleWarnings" }
+            $telemetryMessage = $messageParts -join '; '
+
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status $moduleStatus -ErrorCount $moduleErrors -WarningCount $moduleWarnings -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
+        }
+        catch {
+            if ($moduleErrors -lt 1) {
+                $moduleErrors = 1
+            }
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status 'Failed' -ErrorCount $moduleErrors -WarningCount $moduleWarnings -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
+
+            Write-Output "Caught error while invoking result is $($results.Errors)"
+            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
+
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
+        }
+        finally {
             # Clear memory after each module
             $results = $null
             $NewScriptBlock = $null
@@ -299,7 +388,7 @@ foreach ($module in $modules) {
             $variables = $null
             $secrets = $null
             $localVariables = $null
-            
+
             # Force garbage collection every 3 modules
             if ($moduleCount % 3 -eq 0) {
                 Write-Output "Clearing memory after $moduleCount modules..."
@@ -308,18 +397,47 @@ foreach ($module in $modules) {
                 [System.GC]::Collect()
             }
         }
-        catch {
-            Write-Output "Caught error while invoking result is $($results.Errors)" 
-            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
-            
-            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
-        }
     }
     else {
+        Skip-GuardrailModuleState -RunState $runState -ModuleName $module.ModuleName | Out-Null
         Write-Output "Skipping module $($module.ModuleName). Disabled in the configuration file (modules.json)."
     }
 }
+
+$runSummary = Complete-GuardrailRunState -RunState $runState
+
+Write-Output ""
+Write-Output "========== Guardrail Run Debug Summary =========="
+Write-Output ("Run Status           : {0}" -f $runSummary.Status)
+Write-Output ("Total Duration      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
+Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
+Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
+Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
+Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
+Write-Output ("Total items          : {0}" -f $runSummary.Stats.TotalItems)
+Write-Output ("Compliant items      : {0}" -f $runSummary.Stats.CompliantItems)
+Write-Output ("Non-compliant items  : {0}" -f $runSummary.Stats.NonCompliantItems)
+Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
+Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
+Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
+
+if ($runSummary.Summaries.Count -gt 0) {
+    Write-Output ""
+    Write-Output "Module Breakdown:"
+    foreach ($summary in $runSummary.Summaries) {
+        $durationFormatted = Convert-SecondsToTimespanString -Seconds $summary.DurationSeconds
+        $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5}" -f `
+            $summary.ModuleName,
+            $summary.Status,
+            $durationFormatted,
+            $summary.Items,
+            $summary.Errors,
+            $summary.Warnings
+        Write-Output $line
+    }
+}
+
+Write-Output "========================================"
 
 Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
