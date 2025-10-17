@@ -276,6 +276,9 @@ finally {
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
+$optionalItemTotal = 0
+$optionalCompliantTotal = 0
+$optionalNonCompliantTotal = 0
 foreach ($module in $modules) {
     $moduleCount++
     $moduleName = $module.ModuleName
@@ -317,6 +320,9 @@ foreach ($module in $modules) {
         $itemCount = 0
         $compliantCount = 0
         $nonCompliantCount = 0
+        $moduleOptionalItemCount = 0
+        $moduleOptionalCompliantCount = 0
+        $moduleOptionalNonCompliantCount = 0
 
         try {
             Write-Output "Invoking Script for $($module.modulename)"
@@ -344,14 +350,47 @@ foreach ($module in $modules) {
 
             if ($null -ne $results.ComplianceResults) {
                 $complianceRecords = @($results.ComplianceResults)
-                $itemCount = $complianceRecords.Count
+                $itemCount = 0
                 foreach ($record in $complianceRecords) {
-                    if ($null -ne $record -and $record.PSObject.Properties.Match('ComplianceStatus').Count -gt 0) {
+                    if (-not $record) {
+                        continue
+                    }
+
+                    $hasComplianceStatus = $record.PSObject.Properties.Match('ComplianceStatus').Count -gt 0
+                    if (-not $hasComplianceStatus) {
+                        continue
+                    }
+
+                    $isRequired = $true
+                    if ($record.PSObject.Properties.Match('Required').Count -gt 0) {
+                        try {
+                            $isRequired = [System.Convert]::ToBoolean($record.Required)
+                        }
+                        catch {
+                            $isRequired = $true
+                        }
+                    }
+
+                    if ($isRequired) {
+                        $itemCount++
                         if ($record.ComplianceStatus -eq $true) {
                             $compliantCount++
                         }
                         elseif ($record.ComplianceStatus -eq $false) {
                             $nonCompliantCount++
+                        }
+                    }
+                    else {
+                        $moduleOptionalItemCount++
+                        $optionalItemTotal++
+
+                        if ($record.ComplianceStatus -eq $true) {
+                            $moduleOptionalCompliantCount++
+                            $optionalCompliantTotal++
+                        }
+                        elseif ($record.ComplianceStatus -eq $false) {
+                            $moduleOptionalNonCompliantCount++
+                            $optionalNonCompliantTotal++
                         }
                     }
                 }
@@ -364,6 +403,11 @@ foreach ($module in $modules) {
             $messageParts = @("Items=$itemCount")
             if ($moduleErrors -gt 0) { $messageParts += "Errors=$moduleErrors" }
             if ($moduleWarnings -gt 0) { $messageParts += "Warnings=$moduleWarnings" }
+            if ($moduleOptionalItemCount -gt 0) {
+                $messageParts += "OptionalItems=$moduleOptionalItemCount"
+                if ($moduleOptionalCompliantCount -gt 0) { $messageParts += "OptionalCompliant=$moduleOptionalCompliantCount" }
+                if ($moduleOptionalNonCompliantCount -gt 0) { $messageParts += "OptionalNonCompliant=$moduleOptionalNonCompliantCount" }
+            }
             $telemetryMessage = $messageParts -join '; '
 
             Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status $moduleStatus -ErrorCount $moduleErrors -WarningCount $moduleWarnings -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
@@ -408,6 +452,7 @@ $runSummary = Complete-GuardrailRunState -RunState $runState
 
 Write-Output ""
 Write-Output "========== Guardrail Run Debug Summary =========="
+Write-Output ("Run Status           : {0}" -f $runSummary.Status)
 Write-Output ("Total Duration      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
@@ -417,6 +462,9 @@ Write-Output ("Total items          : {0}" -f $runSummary.Stats.TotalItems)
 Write-Output ("Compliant items      : {0}" -f $runSummary.Stats.CompliantItems)
 Write-Output ("Non-compliant items  : {0}" -f $runSummary.Stats.NonCompliantItems)
 Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
+Write-Output ("Optional items       : {0}" -f $optionalItemTotal)
+Write-Output ("Optional compliant   : {0}" -f $optionalCompliantTotal)
+Write-Output ("Optional non-compliant: {0}" -f $optionalNonCompliantTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
 
