@@ -26,6 +26,7 @@ function Measure-PreRunStep {
             ItemCount    = 0
             Message      = $SkipMessage
             ErrorRecord  = $null
+            Result       = $null
         }
     }
 
@@ -34,9 +35,10 @@ function Measure-PreRunStep {
     $errors = 0
     $message = $SuccessMessage
     $errorRecord = $null
+    $result = $null
     try {
         if ($Action) {
-            & $Action
+            $result = & $Action
         }
     }
     catch {
@@ -58,6 +60,7 @@ function Measure-PreRunStep {
         ItemCount    = 0
         Message      = $message
         ErrorRecord  = $errorRecord
+        Result       = $result
     }
 }
 
@@ -230,7 +233,7 @@ $runtimeMetric = Measure-PreRunStep -ModuleName 'SYSTEM.LoadRuntimeConfig' -Succ
 }
 $preRunMetrics.Add($runtimeMetric) | Out-Null
 if ($runtimeMetric.Status -eq 'Failed') { throw $runtimeMetric.ErrorRecord }
-$RuntimeConfig = $runtimeMetric.AdditionalData
+$RuntimeConfig = $runtimeMetric.Result
 
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
@@ -289,7 +292,7 @@ $workspaceMetric = Measure-PreRunStep -ModuleName 'SYSTEM.LoadWorkspaceKey' -Suc
 }
 $preRunMetrics.Add($workspaceMetric) | Out-Null
 if ($workspaceMetric.Status -eq 'Failed') { throw $workspaceMetric.ErrorRecord }
-$WorkspaceKey = $workspaceMetric.AdditionalData
+$WorkspaceKey = $workspaceMetric.Result
 
 $automationJobId = $env:AUTOMATION_JOBID
 if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
