@@ -279,6 +279,7 @@ $moduleCount = 0
 $optionalItemTotal = 0
 $optionalCompliantTotal = 0
 $optionalNonCompliantTotal = 0
+$optionalWithoutStatusTotal = 0
 foreach ($module in $modules) {
     $moduleCount++
     $moduleName = $module.ModuleName
@@ -323,6 +324,7 @@ foreach ($module in $modules) {
         $moduleOptionalItemCount = 0
         $moduleOptionalCompliantCount = 0
         $moduleOptionalNonCompliantCount = 0
+        $moduleOptionalWithoutStatusCount = 0
 
         try {
             Write-Output "Invoking Script for $($module.modulename)"
@@ -392,6 +394,10 @@ foreach ($module in $modules) {
                             $moduleOptionalNonCompliantCount++
                             $optionalNonCompliantTotal++
                         }
+                        else {
+                            $moduleOptionalWithoutStatusCount++
+                            $optionalWithoutStatusTotal++
+                        }
                     }
                 }
             }
@@ -407,6 +413,7 @@ foreach ($module in $modules) {
                 $messageParts += "OptionalItems=$moduleOptionalItemCount"
                 if ($moduleOptionalCompliantCount -gt 0) { $messageParts += "OptionalCompliant=$moduleOptionalCompliantCount" }
                 if ($moduleOptionalNonCompliantCount -gt 0) { $messageParts += "OptionalNonCompliant=$moduleOptionalNonCompliantCount" }
+                if ($moduleOptionalWithoutStatusCount -gt 0) { $messageParts += "OptionalNoStatus=$moduleOptionalWithoutStatusCount" }
             }
             $telemetryMessage = $messageParts -join '; '
 
@@ -457,13 +464,15 @@ Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
 Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
 Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
-Write-Output ("Total items          : {0}" -f $runSummary.Stats.TotalItems)
+Write-Output ("Required items       : {0}" -f $runSummary.Stats.TotalItems)
 Write-Output ("Compliant items      : {0}" -f $runSummary.Stats.CompliantItems)
 Write-Output ("Non-compliant items  : {0}" -f $runSummary.Stats.NonCompliantItems)
 Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
+Write-Output "Optional items (Required=false entries from modules.json):"
 Write-Output ("Optional items       : {0}" -f $optionalItemTotal)
 Write-Output ("Optional compliant   : {0}" -f $optionalCompliantTotal)
 Write-Output ("Optional non-compliant: {0}" -f $optionalNonCompliantTotal)
+Write-Output ("Optional without status: {0}" -f $optionalWithoutStatusTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
 
