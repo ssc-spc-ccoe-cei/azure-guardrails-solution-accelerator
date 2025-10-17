@@ -452,7 +452,6 @@ $runSummary = Complete-GuardrailRunState -RunState $runState
 
 Write-Output ""
 Write-Output "========== Guardrail Run Debug Summary =========="
-Write-Output ("Run Status           : {0}" -f $runSummary.Status)
 Write-Output ("Total Duration      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
