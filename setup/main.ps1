@@ -224,11 +224,13 @@ If ($Locale -eq $null) {
 }
 
 $runtimeMetric = Measure-PreRunStep -ModuleName 'SYSTEM.LoadRuntimeConfig' -SuccessMessage 'Retrieved runtime configuration from KeyVault.' -Action {
-    $RuntimeConfig = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop | ConvertFrom-Json | Select-Object -Expand runtime
-    Set-AzContext -SubscriptionId $RuntimeConfig.subscriptionId
+    $config = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop | ConvertFrom-Json | Select-Object -Expand runtime
+    Set-AzContext -SubscriptionId $config.subscriptionId
+    $config
 }
 $preRunMetrics.Add($runtimeMetric) | Out-Null
 if ($runtimeMetric.Status -eq 'Failed') { throw $runtimeMetric.ErrorRecord }
+$RuntimeConfig = $runtimeMetric.AdditionalData
 
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
@@ -283,10 +285,11 @@ If ($localExecution.IsPresent -and $modulesToExecute.IsPresent) {
 
 Write-Output "Reading required secrets."
 $workspaceMetric = Measure-PreRunStep -ModuleName 'SYSTEM.LoadWorkspaceKey' -SuccessMessage "Retrieved workspace key '$GuardrailWorkspaceIDKeyName'." -Action {
-    [String] $WorkspaceKey = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
+    Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
 }
 $preRunMetrics.Add($workspaceMetric) | Out-Null
 if ($workspaceMetric.Status -eq 'Failed') { throw $workspaceMetric.ErrorRecord }
+$WorkspaceKey = $workspaceMetric.AdditionalData
 
 $automationJobId = $env:AUTOMATION_JOBID
 if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
