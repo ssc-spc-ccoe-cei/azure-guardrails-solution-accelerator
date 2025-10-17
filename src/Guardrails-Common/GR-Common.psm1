@@ -712,7 +712,9 @@ function Write-GuardrailTelemetry {
         [Parameter(Mandatory = $false)]
         [string]$Message,
         [Parameter(Mandatory = $false)]
-        [string]$ReportTime
+        [string]$ReportTime,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailIdOverride
     )
 
     if (-not $Context -or -not $Context.Enabled) {
@@ -721,7 +723,7 @@ function Write-GuardrailTelemetry {
 
     try {
         $record = [ordered]@{
-            GuardrailId        = $Context.GuardrailId
+            GuardrailId        = if (-not [string]::IsNullOrWhiteSpace($GuardrailIdOverride)) { $GuardrailIdOverride } else { $Context.GuardrailId }
             RunbookName        = $Context.RunbookName
             ModuleName         = $ModuleName
             ExecutionScope     = $ExecutionScope
@@ -813,7 +815,9 @@ function Start-GuardrailModuleState {
         [Parameter(Mandatory = $true)]
         [psobject]$RunState,
         [Parameter(Mandatory = $true)]
-        [string]$ModuleName
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailId
     )
 
     $RunState.Stats.ModulesEnabled++
@@ -821,9 +825,10 @@ function Start-GuardrailModuleState {
     $moduleState = [pscustomobject]@{
         ModuleName = $ModuleName
         Stopwatch  = [System.Diagnostics.Stopwatch]::StartNew()
+        GuardrailId = $GuardrailId
     }
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -Status 'Running' -ReportTime $RunState.ReportTime
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -Status 'Running' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId
 
     return $moduleState
 }
@@ -883,7 +888,7 @@ function Complete-GuardrailModuleState {
         $Message = $parts -join '; '
     }
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -Status $Status -DurationMs $durationMs -ErrorCount $ErrorCount -WarningCount $WarningCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -Status $Status -DurationMs $durationMs -ErrorCount $ErrorCount -WarningCount $WarningCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleState.ModuleName
@@ -892,6 +897,7 @@ function Complete-GuardrailModuleState {
         Items           = $ItemCount
         Errors          = $ErrorCount
         Warnings        = $WarningCount
+        GuardrailId     = $ModuleState.GuardrailId
     }
     $null = $RunState.Summaries.Add($summary)
 
@@ -904,12 +910,14 @@ function Skip-GuardrailModuleState {
         [Parameter(Mandatory = $true)]
         [psobject]$RunState,
         [Parameter(Mandatory = $true)]
-        [string]$ModuleName
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailId
     )
 
     $RunState.Stats.ModulesDisabled++
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -Status 'Skipped' -ReportTime $RunState.ReportTime
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -Status 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleName
@@ -918,6 +926,7 @@ function Skip-GuardrailModuleState {
         Items           = 0
         Errors          = 0
         Warnings        = 0
+        GuardrailId     = $GuardrailId
     }
     $null = $RunState.Summaries.Add($summary)
 

@@ -3,101 +3,7 @@ param (
     [string]$keyVaultName
 )
 
-$overallStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-$preRunMetrics = [System.Collections.Generic.List[psobject]]::new()
-
 Disable-AzContextAutosave -Scope Process | Out-Null
-
-function Measure-PreRunStep {
-    param (
-        [Parameter(Mandatory = $true)][string]$ModuleName,
-        [Parameter()][scriptblock]$Action,
-        [Parameter()][string]$SuccessMessage = 'Completed step.',
-        [Parameter()][string]$SkipMessage = $null
-    )
-
-    if ($SkipMessage) {
-        return [pscustomobject]@{
-            ModuleName   = $ModuleName
-            DurationMs   = 0
-            Status       = 'Skipped'
-            ErrorCount   = 0
-            WarningCount = 0
-            ItemCount    = 0
-            Message      = $SkipMessage
-            ErrorRecord  = $null
-            Result       = $null
-        }
-    }
-
-    $stepStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-    $status = 'Succeeded'
-    $errors = 0
-    $message = $SuccessMessage
-    $errorRecord = $null
-    $result = $null
-    try {
-        if ($Action) {
-            $result = & $Action
-        }
-    }
-    catch {
-        $status = 'Failed'
-        $errors = 1
-        $message = $_.Exception.Message
-        $errorRecord = $_
-    }
-    finally {
-        $stepStopwatch.Stop()
-    }
-
-    return [pscustomobject]@{
-        ModuleName   = $ModuleName
-        DurationMs   = $stepStopwatch.Elapsed.TotalMilliseconds
-        Status       = $status
-        ErrorCount   = $errors
-        WarningCount = 0
-        ItemCount    = 0
-        Message      = $message
-        ErrorRecord  = $errorRecord
-        Result       = $result
-    }
-}
-
-function Publish-PreRunMetrics {
-    param (
-        [Parameter(Mandatory = $true)][psobject]$RunState,
-        [Parameter(Mandatory = $true)][System.Collections.Generic.List[psobject]]$Metrics
-    )
-
-    foreach ($metric in $Metrics) {
-        if (-not $metric) { continue }
-
-        Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $metric.ModuleName -EventType 'Start' -Status 'Running' -ReportTime $RunState.ReportTime
-
-        if ($metric.Status -eq 'Skipped') {
-            Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $metric.ModuleName -EventType 'Skipped' -Status 'Skipped' -ReportTime $RunState.ReportTime -Message $metric.Message
-            $RunState.Stats.ModulesDisabled++
-        }
-        else {
-            Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $metric.ModuleName -EventType 'End' -Status $metric.Status -DurationMs $metric.DurationMs -ErrorCount $metric.ErrorCount -WarningCount $metric.WarningCount -ItemCount $metric.ItemCount -ReportTime $RunState.ReportTime -Message $metric.Message
-            if ($metric.Status -eq 'Failed') { $RunState.Stats.ModulesFailed++ } else { $RunState.Stats.ModulesSucceeded++ }
-        }
-
-        $RunState.Stats.ModulesEnabled++
-        $RunState.Stats.Errors += $metric.ErrorCount
-        $RunState.Stats.Warnings += $metric.WarningCount
-
-        $RunState.Summaries.Add([pscustomobject]@{
-            ModuleName      = $metric.ModuleName
-            Status          = $metric.Status
-            DurationSeconds = if ($metric.DurationMs) { [Math]::Round($metric.DurationMs / 1000, 2) } else { 0 }
-            Items           = $metric.ItemCount
-            Errors          = $metric.ErrorCount
-            Warnings        = $metric.WarningCount
-        }) | Out-Null
-    }
-}
 
 function Get-GSAAutomationVariable {
     param ([parameter(Mandatory = $true)]$name)
@@ -133,14 +39,15 @@ catch {
 }
 
 # Connects to Azure using the Automation Account's managed identity
-if (!$localExecution.IsPresent) {
-    $connectMetric = Measure-PreRunStep -ModuleName 'SYSTEM.ConnectAzure' -SuccessMessage 'Connected to Azure using managed identity.' -Action {
+If (!$localExecution.IsPresent) {
+    try {
         Connect-AzAccount -Identity -ErrorAction Stop
     }
-    $preRunMetrics.Add($connectMetric) | Out-Null
-    if ($connectMetric.Status -eq 'Failed') { throw $connectMetric.ErrorRecord }
+    catch {
+        throw "Critical: Failed to connect to Azure with the 'Connect-AzAccount' command and '-identity' (MSI) parameter; verify that Azure Automation identity is configured. Error message: $_"
+    }
 }
-else {
+Else {
     Write-Output "Running locally, skipping Azure connection."
 
     Update-AzConfig -Scope Process -DisplayBreakingChangeWarning:$false
@@ -178,9 +85,6 @@ else {
     [System.Environment]::SetEnvironmentVariable('WorkSpaceID', (Get-AzOperationalInsightsWorkspace -ResourceGroupName $env:ResourceGroup -Name $env:logAnalyticsworkspaceName).CustomerId, [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('ContainerName', 'guardrailsstorage', [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('ReservedSubnetList', "GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet", [System.EnvironmentVariableTarget]::Process)
-
-    $connectMetric = Measure-PreRunStep -ModuleName 'SYSTEM.ConnectAzure' -SkipMessage 'Local execution - Azure connection skipped.'
-    $preRunMetrics.Add($connectMetric) | Out-Null
 }
 
 
@@ -226,14 +130,13 @@ If ($Locale -eq $null) {
     $Locale = "en-CA"
 }
 
-$runtimeMetric = Measure-PreRunStep -ModuleName 'SYSTEM.LoadRuntimeConfig' -SuccessMessage 'Retrieved runtime configuration from KeyVault.' -Action {
-    $config = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop | ConvertFrom-Json | Select-Object -Expand runtime
-    Set-AzContext -SubscriptionId $config.subscriptionId
-    $config
+try {
+    $RuntimeConfig = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop | ConvertFrom-Json | Select-Object -Expand runtime
+    Set-AzContext -SubscriptionId $RuntimeConfig.subscriptionId
 }
-$preRunMetrics.Add($runtimeMetric) | Out-Null
-if ($runtimeMetric.Status -eq 'Failed') { throw $runtimeMetric.ErrorRecord }
-$RuntimeConfig = $runtimeMetric.Result
+catch {
+    throw "Failed to retrieve config json with secret name gsaConfigExportLatest from KeyVault '$KeyVaultName'. Error message: $_"
+}
 
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
@@ -287,12 +190,12 @@ If ($localExecution.IsPresent -and $modulesToExecute.IsPresent) {
 }
 
 Write-Output "Reading required secrets."
-$workspaceMetric = Measure-PreRunStep -ModuleName 'SYSTEM.LoadWorkspaceKey' -SuccessMessage "Retrieved workspace key '$GuardrailWorkspaceIDKeyName'." -Action {
-    Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
+try {
+    [String] $WorkspaceKey = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
 }
-$preRunMetrics.Add($workspaceMetric) | Out-Null
-if ($workspaceMetric.Status -eq 'Failed') { throw $workspaceMetric.ErrorRecord }
-$WorkspaceKey = $workspaceMetric.Result
+catch {
+    throw "Failed to retrieve workspace key with secret name '$GuardrailWorkspaceIDKeyName' from KeyVault '$KeyVaultName'. Error message: $_"
+}
 
 $automationJobId = $env:AUTOMATION_JOBID
 if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
@@ -300,10 +203,6 @@ if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
 }
 
 $runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
-if ($runState.RunStopwatch -and $runState.RunStopwatch.IsRunning) { $runState.RunStopwatch.Stop() }
-$runState.RunStopwatch = $overallStopwatch
-
-Publish-PreRunMetrics -RunState $runState -Metrics $preRunMetrics
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
@@ -384,6 +283,12 @@ $optionalWithoutStatusTotal = 0
 foreach ($module in $modules) {
     $moduleCount++
     $moduleName = $module.ModuleName
+    $moduleGuardrailId = $null
+    if ($module.PSObject.Properties.Match('Control').Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($module.Control)) {
+        if ($module.Control -match '(\d+)') {
+            $moduleGuardrailId = $Matches[1]
+        }
+    }
     if ($module.Status -eq "Enabled") {
         if($enableMultiCloudProfiles) {
             $module.Script += " -EnableMultiCloudProfiles"
@@ -416,7 +321,7 @@ foreach ($module in $modules) {
 
         Write-Output "Running module with script: $moduleScript"
 
-        $moduleContext = Start-GuardrailModuleState -RunState $runState -ModuleName $moduleName
+        $moduleContext = Start-GuardrailModuleState -RunState $runState -ModuleName $moduleName -GuardrailId $moduleGuardrailId
         $moduleErrors = 0
         $moduleWarnings = 0
         $itemCount = 0
@@ -551,7 +456,7 @@ foreach ($module in $modules) {
         }
     }
     else {
-        Skip-GuardrailModuleState -RunState $runState -ModuleName $module.ModuleName | Out-Null
+        Skip-GuardrailModuleState -RunState $runState -ModuleName $module.ModuleName -GuardrailId $moduleGuardrailId | Out-Null
         Write-Output "Skipping module $($module.ModuleName). Disabled in the configuration file (modules.json)."
     }
 }
