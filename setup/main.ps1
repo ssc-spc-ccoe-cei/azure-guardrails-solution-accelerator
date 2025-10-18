@@ -3,11 +3,6 @@ param (
     [string]$keyVaultName
 )
 
-$diagnosticRunbookStart = Get-Date
-$diagnosticJobStart = $diagnosticRunbookStart
-$diagnosticJobStartSource = 'AttemptStart'
-Write-Verbose ("Diagnostics: Runbook entry at {0}" -f $diagnosticRunbookStart)
-
 Disable-AzContextAutosave -Scope Process | Out-Null
 
 function Get-GSAAutomationVariable {
@@ -31,146 +26,6 @@ function Get-GSAAutomationVariable {
             return $secretValue.trim('"')
         }
     }
-}
-
-function ConvertToLocalTimeSafe {
-    param (
-        [Parameter(Mandatory = $true)]
-        [DateTime]$DateTime
-    )
-
-    if ($DateTime.Kind -eq [System.DateTimeKind]::Utc) {
-        return $DateTime.ToLocalTime()
-    }
-
-    if ($DateTime.Kind -eq [System.DateTimeKind]::Local) {
-        return $DateTime
-    }
-
-    # Azure Automation often returns DateTime objects with Kind==Unspecified that
-    # are already expressed in the automation account's local time. In that case
-    # we keep the timestamp as-is to avoid introducing an artificial offset.
-    return $DateTime
-}
-
-function Resolve-GuardrailAutomationJobMetadata {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$JobId,
-        [Parameter(Mandatory = $false)]
-        [string]$ResourceGroupName,
-        [Parameter(Mandatory = $false)]
-        [string]$AutomationAccountName
-    )
-
-    if ([string]::IsNullOrWhiteSpace($JobId)) {
-        return $null
-    }
-
-    $availableModule = Get-Module -ListAvailable -Name Az.Automation | Select-Object -First 1
-    if (-not $availableModule) {
-        Write-Verbose "Az.Automation module not available; skipping automation job metadata lookup."
-        return $null
-    }
-
-    if (-not (Get-Module -Name Az.Automation)) {
-        try {
-            Import-Module Az.Automation -ErrorAction Stop | Out-Null
-        }
-        catch {
-            Write-Verbose "Failed to import Az.Automation module: $_"
-            return $null
-        }
-    }
-
-    $targets = @()
-
-    if ($AutomationAccountName -and $ResourceGroupName) {
-        $targets += [pscustomobject]@{
-            Name              = $AutomationAccountName
-            ResourceGroupName = $ResourceGroupName
-        }
-    }
-    elseif ($ResourceGroupName) {
-        try {
-            $accountsInResourceGroup = Get-AzAutomationAccount -ResourceGroupName $ResourceGroupName -ErrorAction Stop
-            foreach ($acct in $accountsInResourceGroup) {
-                if (-not $acct.Name) {
-                    continue
-                }
-                if ($AutomationAccountName -and $acct.Name -ne $AutomationAccountName) {
-                    continue
-                }
-                $targets += [pscustomobject]@{
-                    Name              = $acct.Name
-                    ResourceGroupName = $acct.ResourceGroupName
-                }
-            }
-        }
-        catch {
-            Write-Verbose "Failed to enumerate automation accounts in resource group '$ResourceGroupName': $_"
-        }
-    }
-    elseif ($AutomationAccountName) {
-        try {
-            $accountsMatchingName = Get-AzAutomationAccount -ErrorAction Stop | Where-Object { $_.Name -eq $AutomationAccountName }
-            foreach ($acct in $accountsMatchingName) {
-                if (-not $acct.Name -or -not $acct.ResourceGroupName) {
-                    continue
-                }
-                $targets += [pscustomobject]@{
-                    Name              = $acct.Name
-                    ResourceGroupName = $acct.ResourceGroupName
-                }
-            }
-        }
-        catch {
-            Write-Verbose "Failed to enumerate automation accounts by name '$AutomationAccountName': $_"
-        }
-    }
-
-    if (-not $targets -or $targets.Count -eq 0) {
-        try {
-            $allAccounts = Get-AzAutomationAccount -ErrorAction Stop
-            foreach ($acct in $allAccounts) {
-                if (-not $acct.Name -or -not $acct.ResourceGroupName) {
-                    continue
-                }
-                $targets += [pscustomobject]@{
-                    Name              = $acct.Name
-                    ResourceGroupName = $acct.ResourceGroupName
-                }
-            }
-        }
-        catch {
-            Write-Verbose "Failed to enumerate automation accounts in subscription: $_"
-        }
-    }
-
-    foreach ($target in $targets) {
-        $accountName = $target.Name
-        $rgName = $target.ResourceGroupName
-        if ([string]::IsNullOrWhiteSpace($accountName) -or [string]::IsNullOrWhiteSpace($rgName)) {
-            continue
-        }
-
-        try {
-            $job = Get-AzAutomationJob -ResourceGroupName $rgName -AutomationAccountName $accountName -Id $JobId -ErrorAction Stop
-            if ($job) {
-                return [pscustomobject]@{
-                    AutomationAccountName = $accountName
-                    ResourceGroupName     = $rgName
-                    Job                   = $job
-                }
-            }
-        }
-        catch {
-            Write-Verbose "Automation job lookup failed in account '$accountName' (resource group '$rgName'): $_"
-        }
-    }
-
-    return $null
 }
 
 try {
@@ -347,71 +202,6 @@ if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
     $automationJobId = $PSPrivateMetadata.JobId.ToString()
 }
 
-$automationAccountNameFromConfig = $null
-if ($RuntimeConfig -and $RuntimeConfig.PSObject.Properties.Name -contains 'automationAccountName') {
-    $automationAccountNameFromConfig = $RuntimeConfig.automationAccountName
-}
-
-$automationAccountResourceGroup = $null
-if ($RuntimeConfig -and $RuntimeConfig.PSObject.Properties.Name -contains 'automationAccountResourceGroup') {
-    $automationAccountResourceGroup = $RuntimeConfig.automationAccountResourceGroup
-}
-if (-not $automationAccountResourceGroup -and $RuntimeConfig -and $RuntimeConfig.PSObject.Properties.Name -contains 'resourceGroup') {
-    $automationAccountResourceGroup = $RuntimeConfig.resourceGroup
-}
-if (-not $automationAccountResourceGroup) {
-    $automationAccountResourceGroup = $ResourceGroupName
-}
-
-$diagnosticAutomationJobMetadata = $null
-$jobMetadataResolved = $false
-if ($automationJobId) {
-    $metadataParams = @{
-        JobId = $automationJobId
-    }
-    if ($automationAccountResourceGroup) {
-        $metadataParams['ResourceGroupName'] = $automationAccountResourceGroup
-    }
-    if ($automationAccountNameFromConfig) {
-        $metadataParams['AutomationAccountName'] = $automationAccountNameFromConfig
-    }
-
-    try {
-        $diagnosticAutomationJobMetadata = Resolve-GuardrailAutomationJobMetadata @metadataParams
-        if ($diagnosticAutomationJobMetadata -and $diagnosticAutomationJobMetadata.Job) {
-            $jobStartCandidate = $diagnosticAutomationJobMetadata.Job.CreationTime
-            if (-not $jobStartCandidate) {
-                $jobStartCandidate = $diagnosticAutomationJobMetadata.Job.StartTime
-            }
-
-            if ($jobStartCandidate) {
-                $jobStartCandidateLocal = ConvertToLocalTimeSafe -DateTime $jobStartCandidate
-                if ($jobStartCandidateLocal -le $diagnosticRunbookStart) {
-                    $diagnosticJobStart = $jobStartCandidateLocal
-                    $diagnosticJobStartSource = "AutomationJob:$($diagnosticAutomationJobMetadata.AutomationAccountName)"
-                    $jobMetadataResolved = $true
-                    Write-Verbose ("Diagnostics: Automation job start resolved to {0} via {1}" -f $diagnosticJobStart, $diagnosticJobStartSource)
-                }
-                else {
-                    Write-Verbose ("Diagnostics: Automation job start candidate {0} is later than attempt start {1}; retaining attempt start." -f $jobStartCandidateLocal, $diagnosticRunbookStart)
-                    $diagnosticJobStartSource = 'AutomationJobStartLaterThanRunbook'
-                }
-            }
-            else {
-                Write-Verbose "Diagnostics: Automation job metadata returned without a CreationTime/StartTime."
-            }
-        }
-    }
-    catch {
-        Write-Verbose "Failed to resolve automation job metadata: $_"
-        $diagnosticJobStartSource = 'AutomationJobMetadataLookupFailed'
-    }
-
-    if (-not $jobMetadataResolved -and $diagnosticJobStartSource -eq 'AttemptStart') {
-        $diagnosticJobStartSource = 'AutomationJobMetadataUnavailable'
-    }
-}
-
 $runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
@@ -481,13 +271,9 @@ catch {
 }
 finally {
     Write-Output "Fetching user raw data complete."
-    $diagnosticFetchComplete = Get-Date
-    Write-Verbose ("Diagnostics: FetchAllUserRawData completed at {0}, elapsed {1}" -f $diagnosticFetchComplete, ($diagnosticFetchComplete - $diagnosticRunbookStart))
 }
 
 Write-Output "Starting modules loop."
-$diagnosticModuleLoopStart = Get-Date
-Write-Verbose ("Diagnostics: Pre-module stage elapsed {0}" -f ($diagnosticModuleLoopStart - $diagnosticRunbookStart))
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
 $optionalItemTotal = 0
@@ -676,70 +462,10 @@ foreach ($module in $modules) {
 }
 
 $runSummary = Complete-GuardrailRunState -RunState $runState
-$diagnosticBeforeSummary = Get-Date
-Write-Verbose ("Diagnostics: Module loop elapsed {0}" -f ($diagnosticBeforeSummary - $diagnosticModuleLoopStart))
-Write-Verbose ("Diagnostics: Elapsed before summary {0}" -f ($diagnosticBeforeSummary - $diagnosticRunbookStart))
 
 Write-Output ""
 Write-Output "========== Guardrail Run Debug Summary =========="
-
-$diagnosticSummaryEnd = Get-Date
-Write-Verbose ("Diagnostics: Summary printed at {0}" -f $diagnosticSummaryEnd)
-
-$attemptWallClock = $diagnosticSummaryEnd - $diagnosticRunbookStart
-if ($attemptWallClock.TotalMilliseconds -lt 0) {
-    $attemptWallClock = [TimeSpan]::Zero
-}
-
-$jobWallClock = $diagnosticSummaryEnd - $diagnosticJobStart
-if ($jobWallClock.TotalMilliseconds -lt 0) {
-    Write-Verbose ("Diagnostics: Computed job wall clock {0} is negative; falling back to attempt scope." -f $jobWallClock)
-    $diagnosticJobStart = $diagnosticRunbookStart
-    $jobWallClock = $attemptWallClock
-    $diagnosticJobStartSource = 'AttemptStartFallback'
-}
-
-Write-Verbose ("Diagnostics: Attempt wall clock {0}" -f $attemptWallClock)
-Write-Verbose ("Diagnostics: Job wall clock {0} (source {1})" -f $jobWallClock, $diagnosticJobStartSource)
-
-$executionDuration = $runSummary.Duration
-$attemptInitializationOverhead = $attemptWallClock - $executionDuration
-if ($attemptInitializationOverhead.TotalMilliseconds -lt 0) {
-    $attemptInitializationOverhead = [TimeSpan]::Zero
-}
-
-$jobOtherDuration = $jobWallClock - $executionDuration
-if ($jobOtherDuration.TotalMilliseconds -lt 0) {
-    $jobOtherDuration = [TimeSpan]::Zero
-}
-
-$preAttemptDuration = $jobWallClock - $attemptWallClock
-if ($preAttemptDuration.TotalMilliseconds -lt 0) {
-    $preAttemptDuration = [TimeSpan]::Zero
-}
-
-$queueDuration = $preAttemptDuration
-$jobMetadataAvailable = $diagnosticJobStartSource -like 'AutomationJob:*'
-
-if ($jobMetadataAvailable) {
-    Write-Output ("Total job duration (Automation portal)        : {0} (Automation job creation through completion)" -f (Convert-SecondsToTimespanString -Seconds $jobWallClock.TotalSeconds))
-    Write-Output ("Pre-attempt queue / worker warmup             : {0} (Azure Automation queue time and sandbox warmup before the runbook logged anything)" -f (Convert-SecondsToTimespanString -Seconds $queueDuration.TotalSeconds))
-}
-else {
-    if ($automationJobId) {
-        Write-Output "Total job duration (Automation portal)        : unavailable (job metadata not accessible; showing attempt timings below)"
-        Write-Output "Pre-attempt queue / worker warmup             : unavailable (ensure Az.Automation is installed and the runbook identity can read job metadata)"
-    }
-    else {
-        Write-Output "Total job duration (Automation portal)        : unavailable (runbook is executing outside Azure Automation)"
-        Write-Output "Pre-attempt queue / worker warmup             : unavailable (queue time only applies to Azure Automation jobs)"
-    }
-}
-
-Write-Output ("Execution duration (modules + user data)      : {0} (FetchAllUserRawData plus guardrail modules executed this attempt)" -f (Convert-SecondsToTimespanString -Seconds $executionDuration.TotalSeconds))
-Write-Output ("Current attempt wall clock                    : {0} (first runbook log through summary for this attempt)" -f (Convert-SecondsToTimespanString -Seconds $attemptWallClock.TotalSeconds))
-Write-Output (" - Init/teardown (this attempt)               : {0} (connect/auth setup and end-of-run cleanup outside the module loop)" -f (Convert-SecondsToTimespanString -Seconds $attemptInitializationOverhead.TotalSeconds))
-
+Write-Output ("Total Duration      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
 Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
@@ -755,28 +481,6 @@ Write-Output ("Optional non-compliant: {0}" -f $optionalNonCompliantTotal)
 Write-Output ("Optional without status: {0}" -f $optionalWithoutStatusTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
-
-Write-GuardrailTelemetry -Context $runState.TelemetryContext `
-    -ExecutionScope 'Runbook' `
-    -EventType 'Timing' `
-    -ModuleName 'RUNBOOK' `
-    -Status $runSummary.Status `
-    -DurationMs $executionDuration.TotalMilliseconds `
-    -WallClockDurationMs $attemptWallClock.TotalMilliseconds `
-    -InitializationDurationMs $attemptInitializationOverhead.TotalMilliseconds `
-    -JobWallClockDurationMs $jobWallClock.TotalMilliseconds `
-    -JobOtherDurationMs $jobOtherDuration.TotalMilliseconds `
-    -PreAttemptDurationMs $preAttemptDuration.TotalMilliseconds `
-    -ReportTime $ReportTime `
-    -GuardrailIdOverride 'ALL' `
-    -Message ('Runbook timing captured; execution={0}; attemptWallClock={1}; attemptInit={2}; jobWallClock={3}; jobNonModule={4}; jobQueue={5}; jobStartSource={6}' -f `
-        (Convert-SecondsToTimespanString -Seconds $executionDuration.TotalSeconds), `
-        (Convert-SecondsToTimespanString -Seconds $attemptWallClock.TotalSeconds), `
-        (Convert-SecondsToTimespanString -Seconds $attemptInitializationOverhead.TotalSeconds), `
-        (Convert-SecondsToTimespanString -Seconds $jobWallClock.TotalSeconds), `
-        (Convert-SecondsToTimespanString -Seconds $jobOtherDuration.TotalSeconds), `
-        (Convert-SecondsToTimespanString -Seconds $preAttemptDuration.TotalSeconds), `
-        $diagnosticJobStartSource)
 
 if ($runSummary.Summaries.Count -gt 0) {
     Write-Output ""

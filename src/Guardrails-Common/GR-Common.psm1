@@ -700,16 +700,6 @@ function Write-GuardrailTelemetry {
         [Parameter(Mandatory = $false)]
         [Nullable[double]]$DurationMs,
         [Parameter(Mandatory = $false)]
-        [Nullable[double]]$WallClockDurationMs,
-        [Parameter(Mandatory = $false)]
-        [Nullable[double]]$InitializationDurationMs,
-        [Parameter(Mandatory = $false)]
-        [Nullable[double]]$JobWallClockDurationMs,
-        [Parameter(Mandatory = $false)]
-        [Nullable[double]]$JobOtherDurationMs,
-        [Parameter(Mandatory = $false)]
-        [Nullable[double]]$PreAttemptDurationMs,
-        [Parameter(Mandatory = $false)]
         [double]$ErrorCount,
         [Parameter(Mandatory = $false)]
         [double]$WarningCount,
@@ -763,26 +753,6 @@ function Write-GuardrailTelemetry {
             # Seed schema so the LAW table creates duration columns as double on first record.
             $record['DurationMsReal'] = [double]0.01
             $Context.DurationColumnInitialized = $true
-        }
-
-        if ($PSBoundParameters.ContainsKey('WallClockDurationMs') -and $null -ne $WallClockDurationMs) {
-            $record['WallClockDurationMs'] = [double][Math]::Round($WallClockDurationMs, 2)
-        }
-
-        if ($PSBoundParameters.ContainsKey('InitializationDurationMs') -and $null -ne $InitializationDurationMs) {
-            $record['InitializationDurationMs'] = [double][Math]::Round($InitializationDurationMs, 2)
-        }
-
-        if ($PSBoundParameters.ContainsKey('JobWallClockDurationMs') -and $null -ne $JobWallClockDurationMs) {
-            $record['JobWallClockDurationMs'] = [double][Math]::Round($JobWallClockDurationMs, 2)
-        }
-
-        if ($PSBoundParameters.ContainsKey('JobOtherDurationMs') -and $null -ne $JobOtherDurationMs) {
-            $record['JobOtherDurationMs'] = [double][Math]::Round($JobOtherDurationMs, 2)
-        }
-
-        if ($PSBoundParameters.ContainsKey('PreAttemptDurationMs') -and $null -ne $PreAttemptDurationMs) {
-            $record['PreAttemptDurationMs'] = [double][Math]::Round($PreAttemptDurationMs, 2)
         }
 
         $data = @([pscustomobject]$record)
