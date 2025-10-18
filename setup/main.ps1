@@ -3,6 +3,9 @@ param (
     [string]$keyVaultName
 )
 
+$diagnosticRunbookStart = Get-Date
+Write-Verbose ("Diagnostics: Runbook entry at {0}" -f $diagnosticRunbookStart)
+
 Disable-AzContextAutosave -Scope Process | Out-Null
 
 function Get-GSAAutomationVariable {
@@ -271,9 +274,13 @@ catch {
 }
 finally {
     Write-Output "Fetching user raw data complete."
+    $diagnosticFetchComplete = Get-Date
+    Write-Verbose ("Diagnostics: FetchAllUserRawData completed at {0}, elapsed {1}" -f $diagnosticFetchComplete, ($diagnosticFetchComplete - $diagnosticRunbookStart))
 }
 
 Write-Output "Starting modules loop."
+$diagnosticModuleLoopStart = Get-Date
+Write-Verbose ("Diagnostics: Pre-module stage elapsed {0}" -f ($diagnosticModuleLoopStart - $diagnosticRunbookStart))
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
 $optionalItemTotal = 0
@@ -462,10 +469,13 @@ foreach ($module in $modules) {
 }
 
 $runSummary = Complete-GuardrailRunState -RunState $runState
+$diagnosticBeforeSummary = Get-Date
+Write-Verbose ("Diagnostics: Module loop elapsed {0}" -f ($diagnosticBeforeSummary - $diagnosticModuleLoopStart))
+Write-Verbose ("Diagnostics: Elapsed before summary {0}" -f ($diagnosticBeforeSummary - $diagnosticRunbookStart))
 
 Write-Output ""
 Write-Output "========== Guardrail Run Debug Summary =========="
-Write-Output ("Total Duration      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
+Write-Output ("Execution duration (modules only) : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
 Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
@@ -481,6 +491,32 @@ Write-Output ("Optional non-compliant: {0}" -f $optionalNonCompliantTotal)
 Write-Output ("Optional without status: {0}" -f $optionalWithoutStatusTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
+
+$diagnosticSummaryEnd = Get-Date
+Write-Verbose ("Diagnostics: Summary printed at {0}" -f $diagnosticSummaryEnd)
+$diagnosticWallClock = $diagnosticSummaryEnd - $diagnosticRunbookStart
+Write-Verbose ("Diagnostics: Total wall-clock duration {0}" -f $diagnosticWallClock)
+$initializationOverhead = $diagnosticWallClock - $runSummary.Duration
+if ($initializationOverhead.TotalMilliseconds -lt 0) {
+    $initializationOverhead = [TimeSpan]::Zero
+}
+Write-Output ("Overall job duration (wall clock) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
+Write-Output ("Initialization + teardown overhead : {0}" -f (Convert-SecondsToTimespanString -Seconds $initializationOverhead.TotalSeconds))
+
+Write-GuardrailTelemetry -Context $runState.TelemetryContext `
+    -ExecutionScope 'Runbook' `
+    -EventType 'Timing' `
+    -ModuleName 'RUNBOOK' `
+    -Status $runSummary.Status `
+    -DurationMs $runSummary.Duration.TotalMilliseconds `
+    -WallClockDurationMs $diagnosticWallClock.TotalMilliseconds `
+    -InitializationDurationMs $initializationOverhead.TotalMilliseconds `
+    -ReportTime $ReportTime `
+    -GuardrailIdOverride 'ALL' `
+    -Message ('Runbook timing captured; execution={0}; wallClock={1}; overhead={2}' -f `
+        (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds), `
+        (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds), `
+        (Convert-SecondsToTimespanString -Seconds $initializationOverhead.TotalSeconds))
 
 if ($runSummary.Summaries.Count -gt 0) {
     Write-Output ""
