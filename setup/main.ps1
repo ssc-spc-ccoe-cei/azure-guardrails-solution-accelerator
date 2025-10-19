@@ -3,6 +3,9 @@ param (
     [string]$keyVaultName
 )
 
+$diagnosticRunbookStart = Get-Date
+Write-Verbose ("Diagnostics: Runbook entry at {0}" -f $diagnosticRunbookStart)
+
 Disable-AzContextAutosave -Scope Process | Out-Null
 
 function Get-GSAAutomationVariable {
@@ -462,10 +465,13 @@ foreach ($module in $modules) {
 }
 
 $runSummary = Complete-GuardrailRunState -RunState $runState
+$diagnosticSummaryEnd = Get-Date
+$diagnosticWallClock = $diagnosticSummaryEnd - $diagnosticRunbookStart
 
 Write-Output ""
 Write-Output "========== Guardrail Run Debug Summary =========="
-Write-Output ("Total Duration      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
+Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
+Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
 Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
