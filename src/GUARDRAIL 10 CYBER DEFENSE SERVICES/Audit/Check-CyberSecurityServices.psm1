@@ -21,10 +21,9 @@ function Check-CBSSensors {
 
     $FirstTokenInTenantID = $TenantID.Split("-")[0]
     $CBSResourceNames = @(
-        "cbs-$FirstTokenInTenantID",
         "cbs-$FirstTokenInTenantID-CanadaCentral",
         "cbs-$FirstTokenInTenantID-CanadaEast",
-        "cbs-vault-$FirstTokenInTenantID"
+        "cbsstate$FirstTokenInTenantID",
     )
     
     if ($debug) { Write-Output $CBSResourceNames }
