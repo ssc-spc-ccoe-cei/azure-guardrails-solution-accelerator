@@ -472,6 +472,9 @@ Write-Output ""
 Write-Output "========== Guardrail Run Debug Summary =========="
 Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
 Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
+if ($runState -and $runState.PSObject.Properties.Match('PerformanceMetrics') -and $runState.PerformanceMetrics.GraphApiCalls -gt 0) {
+    Write-Output ("Graph API calls (total)                      : {0}" -f $runState.PerformanceMetrics.GraphApiCalls)
+}
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
 Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
@@ -493,13 +496,28 @@ if ($runSummary.Summaries.Count -gt 0) {
     Write-Output "Module Breakdown:"
     foreach ($summary in $runSummary.Summaries) {
         $durationFormatted = Convert-SecondsToTimespanString -Seconds $summary.DurationSeconds
-        $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5}" -f `
-            $summary.ModuleName,
-            $summary.Status,
-            $durationFormatted,
-            $summary.Items,
-            $summary.Errors,
-            $summary.Warnings
+        $hasGraphMetric = $summary.PSObject.Properties.Match('GraphApiCalls').Count -gt 0 -and $summary.GraphApiCalls -gt 0
+
+        if ($hasGraphMetric) {
+            $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5} | GraphCalls={6}" -f `
+                $summary.ModuleName,
+                $summary.Status,
+                $durationFormatted,
+                $summary.Items,
+                $summary.Errors,
+                $summary.Warnings,
+                $summary.GraphApiCalls
+        }
+        else {
+            $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5}" -f `
+                $summary.ModuleName,
+                $summary.Status,
+                $durationFormatted,
+                $summary.Items,
+                $summary.Errors,
+                $summary.Warnings
+        }
+
         Write-Output $line
     }
 }

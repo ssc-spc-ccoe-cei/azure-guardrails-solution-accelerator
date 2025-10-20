@@ -714,7 +714,9 @@ function Write-GuardrailTelemetry {
         [Parameter(Mandatory = $false)]
         [string]$ReportTime,
         [Parameter(Mandatory = $false)]
-        [string]$GuardrailIdOverride
+        [string]$GuardrailIdOverride,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$GraphApiCalls
     )
 
     if (-not $Context -or -not $Context.Enabled) {
@@ -753,6 +755,10 @@ function Write-GuardrailTelemetry {
             # Seed schema so the LAW table creates duration columns as double on first record.
             $record['DurationMsReal'] = [double]0.01
             $Context.DurationColumnInitialized = $true
+        }
+
+        if ($PSBoundParameters.ContainsKey('GraphApiCalls') -and $null -ne $GraphApiCalls) {
+            $record['GraphApiCalls'] = [double]$GraphApiCalls
         }
 
         $data = @([pscustomobject]$record)
@@ -802,11 +808,70 @@ function New-GuardrailRunState {
             Warnings          = 0
         }
         Summaries        = [System.Collections.Generic.List[psobject]]::new()
+        PerformanceMetrics = [ordered]@{
+            GraphApiCalls = 0
+        }
     }
+
+    $script:CurrentGuardrailRunState = $runState
 
     Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -Status 'Running' -ReportTime $ReportTime
 
     return $runState
+}
+
+function Add-GuardrailPerformanceMetric {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [int]$Increment = 1
+    )
+
+    if (-not $RunState) {
+        $RunState = $script:CurrentGuardrailRunState
+    }
+
+    if (-not $RunState -or -not $RunState.PSObject.Properties.Match('PerformanceMetrics')) {
+        return
+    }
+
+    if (-not $RunState.PerformanceMetrics.Contains($Name)) {
+        $RunState.PerformanceMetrics[$Name] = 0
+    }
+
+    $RunState.PerformanceMetrics[$Name] += $Increment
+
+    if ($script:CurrentGuardrailModuleState -and $script:CurrentGuardrailModuleState.PSObject.Properties.Match('PerformanceMetrics')) {
+        $moduleMetrics = $script:CurrentGuardrailModuleState.PerformanceMetrics
+        if ($moduleMetrics) {
+            if (-not $moduleMetrics.Contains($Name)) {
+                $moduleMetrics[$Name] = 0
+            }
+            $moduleMetrics[$Name] += $Increment
+        }
+    }
+}
+
+function Resolve-GuardrailPerformanceMetrics {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [hashtable]$PerformanceMetrics
+    )
+
+    if ($PerformanceMetrics) {
+        return $PerformanceMetrics
+    }
+
+    if ($script:CurrentGuardrailRunState -and $script:CurrentGuardrailRunState.PSObject.Properties.Match('PerformanceMetrics')) {
+        return $script:CurrentGuardrailRunState.PerformanceMetrics
+    }
+
+    return $null
 }
 
 function Start-GuardrailModuleState {
@@ -826,7 +891,12 @@ function Start-GuardrailModuleState {
         ModuleName = $ModuleName
         Stopwatch  = [System.Diagnostics.Stopwatch]::StartNew()
         GuardrailId = $GuardrailId
+        PerformanceMetrics = [ordered]@{
+            GraphApiCalls = 0
+        }
     }
+
+    $script:CurrentGuardrailModuleState = $moduleState
 
     Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -Status 'Running' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId
 
@@ -860,6 +930,8 @@ function Complete-GuardrailModuleState {
         $ModuleState.Stopwatch.Stop()
     }
 
+    $script:CurrentGuardrailModuleState = $null
+
     $durationMs = $null
     if ($ModuleState.Stopwatch) {
         $durationMs = $ModuleState.Stopwatch.Elapsed.TotalMilliseconds
@@ -888,7 +960,12 @@ function Complete-GuardrailModuleState {
         $Message = $parts -join '; '
     }
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -Status $Status -DurationMs $durationMs -ErrorCount $ErrorCount -WarningCount $WarningCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId
+    $moduleGraphCalls = 0
+    if ($ModuleState.PerformanceMetrics -and $ModuleState.PerformanceMetrics.Contains('GraphApiCalls')) {
+        $moduleGraphCalls = [int]$ModuleState.PerformanceMetrics.GraphApiCalls
+    }
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -Status $Status -DurationMs $durationMs -ErrorCount $ErrorCount -WarningCount $WarningCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -GraphApiCalls $moduleGraphCalls
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleState.ModuleName
@@ -898,6 +975,7 @@ function Complete-GuardrailModuleState {
         Errors          = $ErrorCount
         Warnings        = $WarningCount
         GuardrailId     = $ModuleState.GuardrailId
+        GraphApiCalls   = $moduleGraphCalls
     }
     $null = $RunState.Summaries.Add($summary)
 
@@ -917,6 +995,8 @@ function Skip-GuardrailModuleState {
 
     $RunState.Stats.ModulesDisabled++
 
+    $script:CurrentGuardrailModuleState = $null
+
     Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -Status 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId
 
     $summary = [pscustomobject]@{
@@ -927,6 +1007,7 @@ function Skip-GuardrailModuleState {
         Errors          = 0
         Warnings        = 0
         GuardrailId     = $GuardrailId
+        GraphApiCalls   = 0
     }
     $null = $RunState.Summaries.Add($summary)
 
@@ -966,7 +1047,16 @@ function Complete-GuardrailRunState {
     )
     $runMessage = $messageParts -join '; '
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -Status $status -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -WarningCount $RunState.Stats.Warnings -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage
+    $runGraphApiCalls = 0
+    if ($RunState.PSObject.Properties.Match('PerformanceMetrics')) {
+        if ($RunState.PerformanceMetrics.Contains('GraphApiCalls')) {
+            $runGraphApiCalls = [int]$RunState.PerformanceMetrics.GraphApiCalls
+        }
+    }
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -Status $status -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -WarningCount $RunState.Stats.Warnings -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -GraphApiCalls $runGraphApiCalls
+
+    $script:CurrentGuardrailRunState = $null
 
     return [pscustomobject]@{
         Status    = $status
@@ -1166,6 +1256,7 @@ function Invoke-GraphQueryEX {
                 $parsedcontent = $data.value
                 $statusCode = $response.StatusCode
                 $success = $true
+                Add-GuardrailPerformanceMetric -Name 'GraphApiCalls'
             }
             catch {
                 $retryCount++
@@ -1230,10 +1321,21 @@ function Invoke-GraphQueryStreamWithCallback {
         
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 5,
-        
+
         [Parameter(Mandatory = $false)]
         [hashtable] $PerformanceMetrics = $null
     )
+
+    $PerformanceMetrics = Resolve-GuardrailPerformanceMetrics -PerformanceMetrics $PerformanceMetrics
+    $usingCentralMetrics = $false
+    if ($PerformanceMetrics) {
+        if ($script:CurrentGuardrailRunState -and $PerformanceMetrics -eq $script:CurrentGuardrailRunState.PerformanceMetrics) {
+            $usingCentralMetrics = $true
+        }
+        if (-not $PerformanceMetrics.ContainsKey('GraphApiCalls')) {
+            $PerformanceMetrics.GraphApiCalls = 0
+        }
+    }
 
     [string] $baseUri = "https://graph.microsoft.com/v1.0"
     
@@ -1267,9 +1369,10 @@ function Invoke-GraphQueryStreamWithCallback {
                     $success = $true
                                         
                     # Update performance metrics if provided
-                    if ($PerformanceMetrics) {
+                    if ($PerformanceMetrics -and -not $usingCentralMetrics) {
                         $PerformanceMetrics.GraphApiCalls++
                     }
+                    Add-GuardrailPerformanceMetric -Name 'GraphApiCalls'
                 } else {
                     # Handle non-success status codes
                     $errorContent = $response.Content
@@ -1449,17 +1552,29 @@ function Invoke-GraphQueryWithMetrics {
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 10
     )
-    
+
+    $PerformanceMetrics = Resolve-GuardrailPerformanceMetrics -PerformanceMetrics $PerformanceMetrics
+    $usingCentralMetrics = $false
+    if ($PerformanceMetrics) {
+        if ($script:CurrentGuardrailRunState -and $PerformanceMetrics -eq $script:CurrentGuardrailRunState.PerformanceMetrics) {
+            $usingCentralMetrics = $true
+        }
+        if (-not $PerformanceMetrics.ContainsKey('GraphApiCalls')) {
+            $PerformanceMetrics.GraphApiCalls = 0
+        }
+    }
+
     Write-Verbose "  -> $Operation : $UrlPath"
-    
+
     try {
         # Use the existing retry logic in Invoke-GraphQueryEX
         $response = Invoke-GraphQueryEX -urlPath $UrlPath -MaxRetries $MaxRetries -RetryDelaySeconds $RetryDelaySeconds -ErrorAction Stop
-        
+
         # Update performance metrics if provided
-        if ($PerformanceMetrics) {
+        if ($PerformanceMetrics -and -not $usingCentralMetrics) {
             $PerformanceMetrics.GraphApiCalls++
         }
+        Add-GuardrailPerformanceMetric -Name 'GraphApiCalls'
         
         # Handle array responses consistently
         if ($response -is [System.Array]) {
