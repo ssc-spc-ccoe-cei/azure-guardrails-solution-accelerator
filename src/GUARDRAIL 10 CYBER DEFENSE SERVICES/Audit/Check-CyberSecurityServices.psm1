@@ -23,7 +23,7 @@ function Check-CBSSensors {
     $CBSResourceNames = @(
         "cbs-$FirstTokenInTenantID-CanadaCentral",
         "cbs-$FirstTokenInTenantID-CanadaEast",
-        "cbsstate$FirstTokenInTenantID",
+        "cbsstate$FirstTokenInTenantID"
     )
     
     if ($debug) { Write-Output $CBSResourceNames }
