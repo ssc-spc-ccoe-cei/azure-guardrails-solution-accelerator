@@ -684,6 +684,26 @@ function Initialize-GuardrailTelemetry {
     }
 }
 
+# Returns the current PowerShell worker memory usage in MB (rounded to two decimals).
+function Get-GuardrailProcessMemory {
+    [CmdletBinding()]
+    param ()
+
+    $process = [System.Diagnostics.Process]::GetCurrentProcess()
+    try {
+        $workingSetMb = [Math]::Round(($process.WorkingSet64 / 1MB), 2)
+        $peakWorkingSetMb = [Math]::Round(($process.PeakWorkingSet64 / 1MB), 2)
+
+        return [pscustomobject]@{
+            WorkingSetMb     = $workingSetMb
+            PeakWorkingSetMb = $peakWorkingSetMb
+        }
+    }
+    finally {
+        $process.Dispose()
+    }
+}
+
 function Write-GuardrailTelemetry {
     [CmdletBinding()]
     param (
@@ -716,7 +736,13 @@ function Write-GuardrailTelemetry {
         [Parameter(Mandatory = $false)]
         [string]$GuardrailIdOverride,
         [Parameter(Mandatory = $false)]
-        [Nullable[double]]$GraphApiCalls
+        [Nullable[double]]$MemoryStartMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryEndMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryPeakMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryDeltaMb
     )
 
     if (-not $Context -or -not $Context.Enabled) {
@@ -757,8 +783,17 @@ function Write-GuardrailTelemetry {
             $Context.DurationColumnInitialized = $true
         }
 
-        if ($PSBoundParameters.ContainsKey('GraphApiCalls') -and $null -ne $GraphApiCalls) {
-            $record['GraphApiCalls'] = [double]$GraphApiCalls
+        if ($PSBoundParameters.ContainsKey('MemoryStartMb') -and $null -ne $MemoryStartMb) {
+            $record['MemoryStartMb'] = [double][Math]::Round($MemoryStartMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryEndMb') -and $null -ne $MemoryEndMb) {
+            $record['MemoryEndMb'] = [double][Math]::Round($MemoryEndMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryPeakMb') -and $null -ne $MemoryPeakMb) {
+            $record['MemoryPeakMb'] = [double][Math]::Round($MemoryPeakMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryDeltaMb') -and $null -ne $MemoryDeltaMb) {
+            $record['MemoryDeltaMb'] = [double][Math]::Round($MemoryDeltaMb, 2)
         }
 
         $data = @([pscustomobject]$record)
@@ -806,72 +841,23 @@ function New-GuardrailRunState {
             NonCompliantItems = 0
             Errors            = 0
             Warnings          = 0
+            MemoryStartMb     = 0
+            MemoryEndMb       = 0
+            MemoryPeakMb      = 0
+            MemoryDeltaMb     = 0
         }
         Summaries        = [System.Collections.Generic.List[psobject]]::new()
-        PerformanceMetrics = [ordered]@{
-            GraphApiCalls = 0
-        }
     }
 
-    $script:CurrentGuardrailRunState = $runState
+    $initialMemory = Get-GuardrailProcessMemory
+    $runState.Stats.MemoryStartMb = $initialMemory.WorkingSetMb
+    $runState.Stats.MemoryEndMb = $initialMemory.WorkingSetMb
+    $runState.Stats.MemoryPeakMb = $initialMemory.PeakWorkingSetMb
+    $runState.Stats.MemoryDeltaMb = 0
 
-    Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -Status 'Running' -ReportTime $ReportTime
+    Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -Status 'Running' -ReportTime $ReportTime -MemoryStartMb $initialMemory.WorkingSetMb -MemoryPeakMb $initialMemory.PeakWorkingSetMb
 
     return $runState
-}
-
-function Add-GuardrailPerformanceMetric {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [psobject]$RunState,
-        [Parameter(Mandatory = $true)]
-        [string]$Name,
-        [Parameter(Mandatory = $false)]
-        [int]$Increment = 1
-    )
-
-    if (-not $RunState) {
-        $RunState = $script:CurrentGuardrailRunState
-    }
-
-    if (-not $RunState -or -not $RunState.PSObject.Properties.Match('PerformanceMetrics')) {
-        return
-    }
-
-    if (-not $RunState.PerformanceMetrics.Contains($Name)) {
-        $RunState.PerformanceMetrics[$Name] = 0
-    }
-
-    $RunState.PerformanceMetrics[$Name] += $Increment
-
-    if ($script:CurrentGuardrailModuleState -and $script:CurrentGuardrailModuleState.PSObject.Properties.Match('PerformanceMetrics')) {
-        $moduleMetrics = $script:CurrentGuardrailModuleState.PerformanceMetrics
-        if ($moduleMetrics) {
-            if (-not $moduleMetrics.Contains($Name)) {
-                $moduleMetrics[$Name] = 0
-            }
-            $moduleMetrics[$Name] += $Increment
-        }
-    }
-}
-
-function Resolve-GuardrailPerformanceMetrics {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [hashtable]$PerformanceMetrics
-    )
-
-    if ($PerformanceMetrics) {
-        return $PerformanceMetrics
-    }
-
-    if ($script:CurrentGuardrailRunState -and $script:CurrentGuardrailRunState.PSObject.Properties.Match('PerformanceMetrics')) {
-        return $script:CurrentGuardrailRunState.PerformanceMetrics
-    }
-
-    return $null
 }
 
 function Start-GuardrailModuleState {
@@ -887,18 +873,22 @@ function Start-GuardrailModuleState {
 
     $RunState.Stats.ModulesEnabled++
 
+    $memorySnapshot = Get-GuardrailProcessMemory
+    $RunState.Stats.MemoryEndMb = $memorySnapshot.WorkingSetMb
+    if ($memorySnapshot.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
+        $RunState.Stats.MemoryPeakMb = $memorySnapshot.PeakWorkingSetMb
+    }
+    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+
     $moduleState = [pscustomobject]@{
-        ModuleName = $ModuleName
-        Stopwatch  = [System.Diagnostics.Stopwatch]::StartNew()
-        GuardrailId = $GuardrailId
-        PerformanceMetrics = [ordered]@{
-            GraphApiCalls = 0
-        }
+        ModuleName        = $ModuleName
+        Stopwatch         = [System.Diagnostics.Stopwatch]::StartNew()
+        GuardrailId       = $GuardrailId
+        MemoryStartMb     = $memorySnapshot.WorkingSetMb
+        MemoryStartPeakMb = $memorySnapshot.PeakWorkingSetMb
     }
 
-    $script:CurrentGuardrailModuleState = $moduleState
-
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -Status 'Running' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -Status 'Running' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb
 
     return $moduleState
 }
@@ -930,8 +920,6 @@ function Complete-GuardrailModuleState {
         $ModuleState.Stopwatch.Stop()
     }
 
-    $script:CurrentGuardrailModuleState = $null
-
     $durationMs = $null
     if ($ModuleState.Stopwatch) {
         $durationMs = $ModuleState.Stopwatch.Elapsed.TotalMilliseconds
@@ -960,12 +948,19 @@ function Complete-GuardrailModuleState {
         $Message = $parts -join '; '
     }
 
-    $moduleGraphCalls = 0
-    if ($ModuleState.PerformanceMetrics -and $ModuleState.PerformanceMetrics.Contains('GraphApiCalls')) {
-        $moduleGraphCalls = [int]$ModuleState.PerformanceMetrics.GraphApiCalls
-    }
+    $memoryEnd = Get-GuardrailProcessMemory
+    $memoryStartMb = if ($ModuleState.PSObject.Properties.Match('MemoryStartMb').Count -gt 0) { $ModuleState.MemoryStartMb } else { $memoryEnd.WorkingSetMb }
+    $memoryStartPeakMb = if ($ModuleState.PSObject.Properties.Match('MemoryStartPeakMb').Count -gt 0) { $ModuleState.MemoryStartPeakMb } else { $memoryEnd.PeakWorkingSetMb }
+    $modulePeakMb = [Math]::Round(([Math]::Max($memoryEnd.PeakWorkingSetMb, $memoryStartPeakMb)), 2)
+    $memoryDeltaMb = [Math]::Round(($memoryEnd.WorkingSetMb - $memoryStartMb), 2)
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -Status $Status -DurationMs $durationMs -ErrorCount $ErrorCount -WarningCount $WarningCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -GraphApiCalls $moduleGraphCalls
+    $RunState.Stats.MemoryEndMb = $memoryEnd.WorkingSetMb
+    if ($memoryEnd.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
+        $RunState.Stats.MemoryPeakMb = $memoryEnd.PeakWorkingSetMb
+    }
+    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -Status $Status -DurationMs $durationMs -ErrorCount $ErrorCount -WarningCount $WarningCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -MemoryStartMb $memoryStartMb -MemoryEndMb $memoryEnd.WorkingSetMb -MemoryPeakMb $modulePeakMb -MemoryDeltaMb $memoryDeltaMb
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleState.ModuleName
@@ -975,7 +970,10 @@ function Complete-GuardrailModuleState {
         Errors          = $ErrorCount
         Warnings        = $WarningCount
         GuardrailId     = $ModuleState.GuardrailId
-        GraphApiCalls   = $moduleGraphCalls
+        MemoryStartMb   = $memoryStartMb
+        MemoryEndMb     = $memoryEnd.WorkingSetMb
+        MemoryDeltaMb   = $memoryDeltaMb
+        MemoryPeakMb    = $modulePeakMb
     }
     $null = $RunState.Summaries.Add($summary)
 
@@ -995,9 +993,14 @@ function Skip-GuardrailModuleState {
 
     $RunState.Stats.ModulesDisabled++
 
-    $script:CurrentGuardrailModuleState = $null
+    $memorySnapshot = Get-GuardrailProcessMemory
+    $RunState.Stats.MemoryEndMb = $memorySnapshot.WorkingSetMb
+    if ($memorySnapshot.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
+        $RunState.Stats.MemoryPeakMb = $memorySnapshot.PeakWorkingSetMb
+    }
+    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -Status 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -Status 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryEndMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb -MemoryDeltaMb 0
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleName
@@ -1007,7 +1010,10 @@ function Skip-GuardrailModuleState {
         Errors          = 0
         Warnings        = 0
         GuardrailId     = $GuardrailId
-        GraphApiCalls   = 0
+        MemoryStartMb   = $memorySnapshot.WorkingSetMb
+        MemoryEndMb     = $memorySnapshot.WorkingSetMb
+        MemoryDeltaMb   = 0
+        MemoryPeakMb    = $memorySnapshot.PeakWorkingSetMb
     }
     $null = $RunState.Summaries.Add($summary)
 
@@ -1047,16 +1053,9 @@ function Complete-GuardrailRunState {
     )
     $runMessage = $messageParts -join '; '
 
-    $runGraphApiCalls = 0
-    if ($RunState.PSObject.Properties.Match('PerformanceMetrics')) {
-        if ($RunState.PerformanceMetrics.Contains('GraphApiCalls')) {
-            $runGraphApiCalls = [int]$RunState.PerformanceMetrics.GraphApiCalls
-        }
-    }
+    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -Status $status -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -WarningCount $RunState.Stats.Warnings -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -GraphApiCalls $runGraphApiCalls
-
-    $script:CurrentGuardrailRunState = $null
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -Status $status -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -WarningCount $RunState.Stats.Warnings -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -MemoryStartMb $RunState.Stats.MemoryStartMb -MemoryEndMb $RunState.Stats.MemoryEndMb -MemoryPeakMb $RunState.Stats.MemoryPeakMb -MemoryDeltaMb $RunState.Stats.MemoryDeltaMb
 
     return [pscustomobject]@{
         Status    = $status
@@ -1256,7 +1255,6 @@ function Invoke-GraphQueryEX {
                 $parsedcontent = $data.value
                 $statusCode = $response.StatusCode
                 $success = $true
-                Add-GuardrailPerformanceMetric -Name 'GraphApiCalls'
             }
             catch {
                 $retryCount++
@@ -1321,21 +1319,10 @@ function Invoke-GraphQueryStreamWithCallback {
         
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 5,
-
+        
         [Parameter(Mandatory = $false)]
         [hashtable] $PerformanceMetrics = $null
     )
-
-    $PerformanceMetrics = Resolve-GuardrailPerformanceMetrics -PerformanceMetrics $PerformanceMetrics
-    $usingCentralMetrics = $false
-    if ($PerformanceMetrics) {
-        if ($script:CurrentGuardrailRunState -and $PerformanceMetrics -eq $script:CurrentGuardrailRunState.PerformanceMetrics) {
-            $usingCentralMetrics = $true
-        }
-        if (-not $PerformanceMetrics.ContainsKey('GraphApiCalls')) {
-            $PerformanceMetrics.GraphApiCalls = 0
-        }
-    }
 
     [string] $baseUri = "https://graph.microsoft.com/v1.0"
     
@@ -1369,10 +1356,9 @@ function Invoke-GraphQueryStreamWithCallback {
                     $success = $true
                                         
                     # Update performance metrics if provided
-                    if ($PerformanceMetrics -and -not $usingCentralMetrics) {
+                    if ($PerformanceMetrics) {
                         $PerformanceMetrics.GraphApiCalls++
                     }
-                    Add-GuardrailPerformanceMetric -Name 'GraphApiCalls'
                 } else {
                     # Handle non-success status codes
                     $errorContent = $response.Content
@@ -1552,29 +1538,17 @@ function Invoke-GraphQueryWithMetrics {
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 10
     )
-
-    $PerformanceMetrics = Resolve-GuardrailPerformanceMetrics -PerformanceMetrics $PerformanceMetrics
-    $usingCentralMetrics = $false
-    if ($PerformanceMetrics) {
-        if ($script:CurrentGuardrailRunState -and $PerformanceMetrics -eq $script:CurrentGuardrailRunState.PerformanceMetrics) {
-            $usingCentralMetrics = $true
-        }
-        if (-not $PerformanceMetrics.ContainsKey('GraphApiCalls')) {
-            $PerformanceMetrics.GraphApiCalls = 0
-        }
-    }
-
+    
     Write-Verbose "  -> $Operation : $UrlPath"
-
+    
     try {
         # Use the existing retry logic in Invoke-GraphQueryEX
         $response = Invoke-GraphQueryEX -urlPath $UrlPath -MaxRetries $MaxRetries -RetryDelaySeconds $RetryDelaySeconds -ErrorAction Stop
-
+        
         # Update performance metrics if provided
-        if ($PerformanceMetrics -and -not $usingCentralMetrics) {
+        if ($PerformanceMetrics) {
             $PerformanceMetrics.GraphApiCalls++
         }
-        Add-GuardrailPerformanceMetric -Name 'GraphApiCalls'
         
         # Handle array responses consistently
         if ($response -is [System.Array]) {

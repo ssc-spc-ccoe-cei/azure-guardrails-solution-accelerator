@@ -472,9 +472,6 @@ Write-Output ""
 Write-Output "========== Guardrail Run Debug Summary =========="
 Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
 Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
-if ($runState -and $runState.PSObject.Properties.Match('PerformanceMetrics') -and $runState.PerformanceMetrics.GraphApiCalls -gt 0) {
-    Write-Output ("Graph API calls (total)                      : {0}" -f $runState.PerformanceMetrics.GraphApiCalls)
-}
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
 Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
@@ -490,34 +487,32 @@ Write-Output ("Optional non-compliant: {0}" -f $optionalNonCompliantTotal)
 Write-Output ("Optional without status: {0}" -f $optionalWithoutStatusTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
+$runMemoryStart = [Math]::Round($runSummary.Stats.MemoryStartMb)
+$runMemoryEnd = [Math]::Round($runSummary.Stats.MemoryEndMb)
+$runMemoryPeak = [Math]::Round($runSummary.Stats.MemoryPeakMb)
+$runMemoryDeltaRounded = [Math]::Round($runSummary.Stats.MemoryDeltaMb)
+$runMemoryDelta = if ($runMemoryDeltaRounded -ge 0) { "+$runMemoryDeltaRounded" } else { "$runMemoryDeltaRounded" }
+Write-Output ("MemoryMb (run)      : {0} -> {1} (peak {2}, Δ {3})" -f $runMemoryStart, $runMemoryEnd, $runMemoryPeak, $runMemoryDelta)
 
 if ($runSummary.Summaries.Count -gt 0) {
     Write-Output ""
     Write-Output "Module Breakdown:"
     foreach ($summary in $runSummary.Summaries) {
         $durationFormatted = Convert-SecondsToTimespanString -Seconds $summary.DurationSeconds
-        $hasGraphMetric = $summary.PSObject.Properties.Match('GraphApiCalls').Count -gt 0 -and $summary.GraphApiCalls -gt 0
-
-        if ($hasGraphMetric) {
-            $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5} | GraphCalls={6}" -f `
-                $summary.ModuleName,
-                $summary.Status,
-                $durationFormatted,
-                $summary.Items,
-                $summary.Errors,
-                $summary.Warnings,
-                $summary.GraphApiCalls
-        }
-        else {
-            $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5}" -f `
-                $summary.ModuleName,
-                $summary.Status,
-                $durationFormatted,
-                $summary.Items,
-                $summary.Errors,
-                $summary.Warnings
-        }
-
+        $moduleMemoryStart = [Math]::Round($summary.MemoryStartMb)
+        $moduleMemoryEnd = [Math]::Round($summary.MemoryEndMb)
+        $moduleMemoryDeltaRounded = [Math]::Round($summary.MemoryDeltaMb)
+        $moduleMemoryDelta = if ($moduleMemoryDeltaRounded -ge 0) { "+$moduleMemoryDeltaRounded" } else { "$moduleMemoryDeltaRounded" }
+        $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5} | Mem={6} -> {7} MB (Δ {8})" -f `
+            $summary.ModuleName,
+            $summary.Status,
+            $durationFormatted,
+            $summary.Items,
+            $summary.Errors,
+            $summary.Warnings,
+            $moduleMemoryStart,
+            $moduleMemoryEnd,
+            $moduleMemoryDelta
         Write-Output $line
     }
 }
