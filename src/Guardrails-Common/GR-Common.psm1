@@ -892,6 +892,8 @@ function Complete-GuardrailModuleState {
         [Parameter(Mandatory = $true)]
         [psobject]$ModuleState,
         [Parameter(Mandatory = $false)]
+        [string]$Status = '',
+        [Parameter(Mandatory = $false)]
         [int]$ErrorCount = 0,
         [Parameter(Mandatory = $false)]
         [int]$ItemCount = 0,

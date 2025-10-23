@@ -467,8 +467,6 @@ Write-Output "========== Guardrail Run Debug Summary =========="
 Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
 Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
-Write-Output ("Modules succeeded    : {0}" -f $runSummary.Stats.ModulesSucceeded)
-Write-Output ("Modules failed       : {0}" -f $runSummary.Stats.ModulesFailed)
 Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
 Write-Output ("Required items       : {0}" -f $runSummary.Stats.TotalItems)
 Write-Output ("Compliant items      : {0}" -f $runSummary.Stats.CompliantItems)
