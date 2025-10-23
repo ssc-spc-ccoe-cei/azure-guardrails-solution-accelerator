@@ -892,8 +892,6 @@ function Complete-GuardrailModuleState {
         [Parameter(Mandatory = $true)]
         [psobject]$ModuleState,
         [Parameter(Mandatory = $false)]
-        [string]$Status = '',
-        [Parameter(Mandatory = $false)]
         [int]$ErrorCount = 0,
         [Parameter(Mandatory = $false)]
         [int]$ItemCount = 0,
@@ -941,7 +939,7 @@ function Complete-GuardrailModuleState {
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleState.ModuleName
-        Status          = $Status
+        IsSkipped       = $false
         DurationSeconds = if ($null -ne $durationMs) { [Math]::Round($durationMs / 1000, 2) } else { 0 }
         Items           = $ItemCount
         Errors          = $ErrorCount
@@ -980,7 +978,7 @@ function Skip-GuardrailModuleState {
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleName
-        Status          = 'Skipped'
+        IsSkipped       = $true
         DurationSeconds = 0
         Items           = 0
         Errors          = 0
@@ -1008,7 +1006,6 @@ function Complete-GuardrailRunState {
 
     $duration = if ($RunState.RunStopwatch) { $RunState.RunStopwatch.Elapsed } else { [TimeSpan]::Zero }
 
-    $status = 'Succeeded'
     $messageParts = @(
         "ModulesEnabled=$($RunState.Stats.ModulesEnabled)",
         "ModulesDisabled=$($RunState.Stats.ModulesDisabled)",
@@ -1021,7 +1018,6 @@ function Complete-GuardrailRunState {
     Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -MemoryStartMb $RunState.Stats.MemoryStartMb -MemoryEndMb $RunState.Stats.MemoryEndMb -MemoryPeakMb $RunState.Stats.MemoryPeakMb -MemoryDeltaMb $RunState.Stats.MemoryDeltaMb
 
     return [pscustomobject]@{
-        Status    = $status
         Duration  = $duration
         Stats     = $RunState.Stats
         Summaries = $RunState.Summaries

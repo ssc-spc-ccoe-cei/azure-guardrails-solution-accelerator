@@ -258,18 +258,18 @@ try {
 
     if ($UserRawDataErrors.Count -gt 0) {
         Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
-        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Failed' -ErrorCount $UserRawDataErrors.Count -Message 'FetchAllUserRawData reported errors.' | Out-Null
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount $UserRawDataErrors.Count -Message 'FetchAllUserRawData reported errors.' | Out-Null
     }
     else {
         if ($Global:AllUsersCache -and $Global:AllUsersCache.PSObject.Properties.Match('users').Count -gt 0) {
             $userRawDataRecordCount = @($Global:AllUsersCache.users).Count
         }
 
-        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Succeeded' -ItemCount $userRawDataRecordCount -Message 'FetchAllUserRawData completed.' | Out-Null
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ItemCount $userRawDataRecordCount -Message 'FetchAllUserRawData completed.' | Out-Null
     }
 }
 catch {
-    Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -Status 'Failed' -ErrorCount 1 -Message 'FetchAllUserRawData threw an exception.' | Out-Null
+    Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -Message 'FetchAllUserRawData threw an exception.' | Out-Null
     throw
 }
 finally {
@@ -408,8 +408,6 @@ foreach ($module in $modules) {
 
             Write-Output "Script running is done for $($module.modulename)"
 
-            $moduleStatus = if ($moduleErrors -gt 0) { 'Failed' } else { 'Succeeded' }
-
             $messageParts = @("Items=$itemCount")
             if ($moduleErrors -gt 0) { $messageParts += "Errors=$moduleErrors" }
             if ($moduleOptionalItemCount -gt 0) {
@@ -420,13 +418,13 @@ foreach ($module in $modules) {
             }
             $telemetryMessage = $messageParts -join '; '
 
-            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status $moduleStatus -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
         }
         catch {
             if ($moduleErrors -lt 1) {
                 $moduleErrors = 1
             }
-            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status 'Failed' -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
 
             Write-Output "Caught error while invoking result is $($results.Errors)"
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
@@ -494,7 +492,7 @@ if ($runSummary.Summaries.Count -gt 0) {
         $moduleMemoryEnd = [Math]::Round($summary.MemoryEndMb)
         $moduleMemoryDeltaRounded = [Math]::Round($summary.MemoryDeltaMb)
         $moduleMemoryDelta = if ($moduleMemoryDeltaRounded -ge 0) { "+$moduleMemoryDeltaRounded" } else { "$moduleMemoryDeltaRounded" }
-        $statusSuffix = if ($summary.Status -eq 'Skipped') { " | Status=Skipped" } else { "" }
+        $statusSuffix = if ($summary.PSObject.Properties.Match('IsSkipped').Count -gt 0 -and $summary.IsSkipped) { " | Status=Skipped" } else { " | Status=Executed" }
         $line = " - {0}{1} | Duration={2} | Items={3} | Errors={4} | Mem={5} -> {6} MB (Δ {7})" -f `
             $summary.ModuleName,
             $statusSuffix,
