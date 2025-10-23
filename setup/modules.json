@@ -1,20 +1,5 @@
 [
   {
-    "ModuleName": "Check-AllUserMFARequired",
-    "Control": "Guardrails1",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Profiles": [1, 2, 3, 4, 5, 6],
-    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
-    "localVariables": [
-      {
-        "Name": "itsgcode",
-        "Value": "IA2(1)"
-      }
-    ]
-  },
-  {
     "ModuleName": "Check-CloudAccountsMFA",
     "Control": "Guardrails1",
     "ModuleType": "Builtin",
@@ -1123,6 +1108,21 @@
       {
         "Name": "itsgcode",
         "Value": "AC2"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-AllUserMFARequired",
+    "Control": "Guardrails1",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Profiles": [1, 2, 3, 4, 5, 6],
+    "Script": "Check-AllUserMFARequired -ControlName $msgTable.CtrName1 -ItemName $msgTable.allUserAccountsMFACheck -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "IA2(1)"
       }
     ]
   },
