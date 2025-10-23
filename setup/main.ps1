@@ -326,7 +326,6 @@ foreach ($module in $modules) {
 
         $moduleContext = Start-GuardrailModuleState -RunState $runState -ModuleName $moduleName -GuardrailId $moduleGuardrailId
         $moduleErrors = 0
-        $moduleWarnings = 0
         $itemCount = 0
         $compliantCount = 0
         $nonCompliantCount = 0
@@ -353,10 +352,6 @@ foreach ($module in $modules) {
                 # There is more data!
                 "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
-            }
-
-            if ($null -ne $results.Warnings) {
-                $moduleWarnings = @($results.Warnings).Count
             }
 
             if ($null -ne $results.ComplianceResults) {
@@ -413,11 +408,10 @@ foreach ($module in $modules) {
 
             Write-Output "Script running is done for $($module.modulename)"
 
-            $moduleStatus = if ($moduleErrors -gt 0) { 'Failed' } elseif ($moduleWarnings -gt 0) { 'CompletedWithWarnings' } else { 'Succeeded' }
+            $moduleStatus = if ($moduleErrors -gt 0) { 'Failed' } else { 'Succeeded' }
 
             $messageParts = @("Items=$itemCount")
             if ($moduleErrors -gt 0) { $messageParts += "Errors=$moduleErrors" }
-            if ($moduleWarnings -gt 0) { $messageParts += "Warnings=$moduleWarnings" }
             if ($moduleOptionalItemCount -gt 0) {
                 $messageParts += "OptionalItems=$moduleOptionalItemCount"
                 if ($moduleOptionalCompliantCount -gt 0) { $messageParts += "OptionalCompliant=$moduleOptionalCompliantCount" }
@@ -426,13 +420,13 @@ foreach ($module in $modules) {
             }
             $telemetryMessage = $messageParts -join '; '
 
-            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status $moduleStatus -ErrorCount $moduleErrors -WarningCount $moduleWarnings -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status $moduleStatus -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
         }
         catch {
             if ($moduleErrors -lt 1) {
                 $moduleErrors = 1
             }
-            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status 'Failed' -ErrorCount $moduleErrors -WarningCount $moduleWarnings -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -Status 'Failed' -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
 
             Write-Output "Caught error while invoking result is $($results.Errors)"
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
@@ -486,7 +480,6 @@ Write-Output ("Optional compliant   : {0}" -f $optionalCompliantTotal)
 Write-Output ("Optional non-compliant: {0}" -f $optionalNonCompliantTotal)
 Write-Output ("Optional without status: {0}" -f $optionalWithoutStatusTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
-Write-Output ("Warnings             : {0}" -f $runSummary.Stats.Warnings)
 $runMemoryStart = [Math]::Round($runSummary.Stats.MemoryStartMb)
 $runMemoryEnd = [Math]::Round($runSummary.Stats.MemoryEndMb)
 $runMemoryPeak = [Math]::Round($runSummary.Stats.MemoryPeakMb)
@@ -503,13 +496,13 @@ if ($runSummary.Summaries.Count -gt 0) {
         $moduleMemoryEnd = [Math]::Round($summary.MemoryEndMb)
         $moduleMemoryDeltaRounded = [Math]::Round($summary.MemoryDeltaMb)
         $moduleMemoryDelta = if ($moduleMemoryDeltaRounded -ge 0) { "+$moduleMemoryDeltaRounded" } else { "$moduleMemoryDeltaRounded" }
-        $line = " - {0} | Status={1} | Duration={2} | Items={3} | Errors={4} | Warnings={5} | Mem={6} -> {7} MB (Δ {8})" -f `
+        $statusSuffix = if ($summary.Status -eq 'Skipped') { " | Status=Skipped" } else { "" }
+        $line = " - {0}{1} | Duration={2} | Items={3} | Errors={4} | Mem={5} -> {6} MB (Δ {7})" -f `
             $summary.ModuleName,
-            $summary.Status,
+            $statusSuffix,
             $durationFormatted,
             $summary.Items,
             $summary.Errors,
-            $summary.Warnings,
             $moduleMemoryStart,
             $moduleMemoryEnd,
             $moduleMemoryDelta

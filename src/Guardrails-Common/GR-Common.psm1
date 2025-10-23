@@ -716,13 +716,9 @@ function Write-GuardrailTelemetry {
         [Parameter(Mandatory = $false)]
         [string]$ModuleName,
         [Parameter(Mandatory = $false)]
-        [string]$Status,
-        [Parameter(Mandatory = $false)]
         [Nullable[double]]$DurationMs,
         [Parameter(Mandatory = $false)]
         [double]$ErrorCount,
-        [Parameter(Mandatory = $false)]
-        [double]$WarningCount,
         [Parameter(Mandatory = $false)]
         [double]$ItemCount,
         [Parameter(Mandatory = $false)]
@@ -756,13 +752,11 @@ function Write-GuardrailTelemetry {
             ModuleName         = $ModuleName
             ExecutionScope     = $ExecutionScope
             EventType          = $EventType
-            Status             = $Status
             CorrelationId      = [string]$Context.CorrelationId
             JobId              = [string]$Context.JobId
             RunSubscriptionId  = [string]$Context.SubscriptionId
             RunTenantId        = [string]$Context.TenantId
             ErrorCount         = if ($null -ne $ErrorCount) { [double]$ErrorCount } else { 0d }
-            WarningCount       = if ($null -ne $WarningCount) { [double]$WarningCount } else { 0d }
             ItemCount          = if ($null -ne $ItemCount) { [double]$ItemCount } else { 0d }
             CompliantCount     = if ($null -ne $CompliantCount) { [double]$CompliantCount } else { 0d }
             NonCompliantCount  = if ($null -ne $NonCompliantCount) { [double]$NonCompliantCount } else { 0d }
@@ -834,13 +828,10 @@ function New-GuardrailRunState {
         Stats            = [ordered]@{
             ModulesEnabled    = 0
             ModulesDisabled   = 0
-            ModulesSucceeded  = 0
-            ModulesFailed     = 0
             TotalItems        = 0
             CompliantItems    = 0
             NonCompliantItems = 0
             Errors            = 0
-            Warnings          = 0
             MemoryStartMb     = 0
             MemoryEndMb       = 0
             MemoryPeakMb      = 0
@@ -855,7 +846,7 @@ function New-GuardrailRunState {
     $runState.Stats.MemoryPeakMb = $initialMemory.PeakWorkingSetMb
     $runState.Stats.MemoryDeltaMb = 0
 
-    Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -Status 'Running' -ReportTime $ReportTime -MemoryStartMb $initialMemory.WorkingSetMb -MemoryPeakMb $initialMemory.PeakWorkingSetMb
+    Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -ReportTime $ReportTime -MemoryStartMb $initialMemory.WorkingSetMb -MemoryPeakMb $initialMemory.PeakWorkingSetMb
 
     return $runState
 }
@@ -888,7 +879,7 @@ function Start-GuardrailModuleState {
         MemoryStartPeakMb = $memorySnapshot.PeakWorkingSetMb
     }
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -Status 'Running' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb
 
     return $moduleState
 }
@@ -900,12 +891,8 @@ function Complete-GuardrailModuleState {
         [psobject]$RunState,
         [Parameter(Mandatory = $true)]
         [psobject]$ModuleState,
-        [Parameter(Mandatory = $true)]
-        [string]$Status,
         [Parameter(Mandatory = $false)]
         [int]$ErrorCount = 0,
-        [Parameter(Mandatory = $false)]
-        [int]$WarningCount = 0,
         [Parameter(Mandatory = $false)]
         [int]$ItemCount = 0,
         [Parameter(Mandatory = $false)]
@@ -925,18 +912,7 @@ function Complete-GuardrailModuleState {
         $durationMs = $ModuleState.Stopwatch.Elapsed.TotalMilliseconds
     }
 
-    if ($Status -eq 'Failed') {
-        $RunState.Stats.ModulesFailed++
-    }
-    elseif ($Status -eq 'Skipped') {
-        # handled in Skip helper
-    }
-    else {
-        $RunState.Stats.ModulesSucceeded++
-    }
-
     $RunState.Stats.Errors += $ErrorCount
-    $RunState.Stats.Warnings += $WarningCount
     $RunState.Stats.TotalItems += $ItemCount
     $RunState.Stats.CompliantItems += $CompliantCount
     $RunState.Stats.NonCompliantItems += $NonCompliantCount
@@ -944,7 +920,6 @@ function Complete-GuardrailModuleState {
     if (-not $Message) {
         $parts = @("Items=$ItemCount")
         if ($ErrorCount -gt 0) { $parts += "Errors=$ErrorCount" }
-        if ($WarningCount -gt 0) { $parts += "Warnings=$WarningCount" }
         $Message = $parts -join '; '
     }
 
@@ -960,7 +935,7 @@ function Complete-GuardrailModuleState {
     }
     $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -Status $Status -DurationMs $durationMs -ErrorCount $ErrorCount -WarningCount $WarningCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -MemoryStartMb $memoryStartMb -MemoryEndMb $memoryEnd.WorkingSetMb -MemoryPeakMb $modulePeakMb -MemoryDeltaMb $memoryDeltaMb
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -DurationMs $durationMs -ErrorCount $ErrorCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -MemoryStartMb $memoryStartMb -MemoryEndMb $memoryEnd.WorkingSetMb -MemoryPeakMb $modulePeakMb -MemoryDeltaMb $memoryDeltaMb
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleState.ModuleName
@@ -968,7 +943,6 @@ function Complete-GuardrailModuleState {
         DurationSeconds = if ($null -ne $durationMs) { [Math]::Round($durationMs / 1000, 2) } else { 0 }
         Items           = $ItemCount
         Errors          = $ErrorCount
-        Warnings        = $WarningCount
         GuardrailId     = $ModuleState.GuardrailId
         MemoryStartMb   = $memoryStartMb
         MemoryEndMb     = $memoryEnd.WorkingSetMb
@@ -1000,7 +974,7 @@ function Skip-GuardrailModuleState {
     }
     $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -Status 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryEndMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb -MemoryDeltaMb 0
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryEndMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb -MemoryDeltaMb 0
 
     $summary = [pscustomobject]@{
         ModuleName      = $ModuleName
@@ -1008,7 +982,6 @@ function Skip-GuardrailModuleState {
         DurationSeconds = 0
         Items           = 0
         Errors          = 0
-        Warnings        = 0
         GuardrailId     = $GuardrailId
         MemoryStartMb   = $memorySnapshot.WorkingSetMb
         MemoryEndMb     = $memorySnapshot.WorkingSetMb
@@ -1034,20 +1007,8 @@ function Complete-GuardrailRunState {
     $duration = if ($RunState.RunStopwatch) { $RunState.RunStopwatch.Elapsed } else { [TimeSpan]::Zero }
 
     $status = 'Succeeded'
-    if ($RunState.Stats.ModulesFailed -gt 0) {
-        $status = 'Failed'
-    }
-    elseif ($RunState.Stats.Errors -gt 0) {
-        $status = 'CompletedWithErrors'
-    }
-    elseif ($RunState.Stats.Warnings -gt 0) {
-        $status = 'CompletedWithWarnings'
-    }
-
     $messageParts = @(
         "ModulesEnabled=$($RunState.Stats.ModulesEnabled)",
-        "ModulesSucceeded=$($RunState.Stats.ModulesSucceeded)",
-        "ModulesFailed=$($RunState.Stats.ModulesFailed)",
         "ModulesDisabled=$($RunState.Stats.ModulesDisabled)",
         "TotalItems=$($RunState.Stats.TotalItems)"
     )
@@ -1055,7 +1016,7 @@ function Complete-GuardrailRunState {
 
     $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
 
-    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -Status $status -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -WarningCount $RunState.Stats.Warnings -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -MemoryStartMb $RunState.Stats.MemoryStartMb -MemoryEndMb $RunState.Stats.MemoryEndMb -MemoryPeakMb $RunState.Stats.MemoryPeakMb -MemoryDeltaMb $RunState.Stats.MemoryDeltaMb
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -MemoryStartMb $RunState.Stats.MemoryStartMb -MemoryEndMb $RunState.Stats.MemoryEndMb -MemoryPeakMb $RunState.Stats.MemoryPeakMb -MemoryDeltaMb $RunState.Stats.MemoryDeltaMb
 
     return [pscustomobject]@{
         Status    = $status
