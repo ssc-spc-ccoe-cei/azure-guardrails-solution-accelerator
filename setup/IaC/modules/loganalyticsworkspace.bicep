@@ -134,7 +134,7 @@ let mfaAnalysis = userData
         0
     )
 | extend
-    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2);
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 1);
 let summary = mfaAnalysis
 | summarize 
     TotalUsers = count(),
@@ -156,13 +156,12 @@ let summary = mfaAnalysis
     );
 summary
 | project 
-    ControlName_s = "GUARDRAIL 1",
-    ItemName_s = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
-    ReportTime_s = reportTime,
-    Required_s = "True",
-    ComplianceStatus_b = IsCompliant,
-    Comments_s = Comments,
-    itsgcode_s = "IA2(1)",
+    ControlName = iff(locale == "fr-CA", "GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS", "GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES"),
+    ItemName = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
+    ReportTime = reportTime,
+    ComplianceStatus = IsCompliant,
+    Comments = Comments,
+    itsgcode = "IA2(1)",
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
@@ -234,11 +233,10 @@ let mfaAnalysis = userData
         0
     )
 | extend
-    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2),
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 1),
     complianceReason = case(
         hasValidSystemPreferred, strcat(tostring(localizedMessages["systemPreferred"]), strcat_array(set_intersect(systemPreferredMethodsArray, validSystemMethods), ", ")),
-        hasMfaRegistered == true and validMfaMethodsCount >= 2, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
-        hasMfaRegistered == true and validMfaMethodsCount == 1, strcat(tostring(localizedMessages["onlyOneMethod"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", "), tostring(localizedMessages["atLeastTwoRequired"])),
+        hasMfaRegistered == true and validMfaMethodsCount >= 1, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
         hasMfaRegistered == true and validMfaMethodsCount == 0, tostring(localizedMessages["noValidMethods"]),
         tostring(localizedMessages["noMfaConfigured"])
     );
