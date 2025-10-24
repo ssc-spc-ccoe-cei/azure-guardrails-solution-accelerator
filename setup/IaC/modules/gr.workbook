@@ -50,7 +50,7 @@
             "label": "Report Time (UTC)",
             "type": 2,
             "isRequired": true,
-            "query": "GuardrailsCompliance_CL\n| extend ReportTime = column_ifexists(\"ReportTime_s\", \"\"),\n         ControlName = column_ifexists(\"ControlName_s\", \"\")\n| where ReportTime != \"\"\n| summarize TotalRecords = count(), DistinctControls = dcount(ControlName) by ReportTime\n| project Value = ReportTime,\n         Label = iff(DistinctControls < 13, strcat(ReportTime, \" (Partial)\"), ReportTime)\n| sort by Value desc",
+            "query": "GuardrailsCompliance_CL\n| extend ReportTime = column_ifexists(\"ReportTime_s\", \"\"),\n         ControlName = column_ifexists(\"ControlName_s\", \"\")\n| where ReportTime != \"\"\n| summarize DistinctControls = dcount(ControlName) by ReportTime\n| project Value = ReportTime,\n         Label = iff(DistinctControls < 13, strcat(ReportTime, \" (Partial)\"), ReportTime)\n| sort by Value desc",
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::1"
