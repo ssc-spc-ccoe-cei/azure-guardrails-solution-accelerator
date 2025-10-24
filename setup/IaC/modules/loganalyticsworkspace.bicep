@@ -35,7 +35,7 @@ resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime and Required_s != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(ItemName_s, iff(Required_s=="False"," (R)", " (M)")), Comments=Comments_s, Status=case(ComplianceStatus_b == true, \'✔️\', ComplianceStatus_b == false, \'❌\', \'➖\'),["ITSG Control"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -60,7 +60,7 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data567'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime and Required_s != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(ItemName_s, iff(Required_s=="False"," (R)", " (M)")), ["Subscription Name"]=DisplayName_s, Comments=Comments_s, Status=case(ComplianceStatus_b == true, \'✔️\', ComplianceStatus_b == false, \'❌\', \'➖\'),["ITSG Control"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")),\n    ["Subscription Name"]=column_ifexists("DisplayName_s", ""),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data567'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -72,7 +72,7 @@ resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data11'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where ControlName_s has ctrlprefix and ReportTime_s == ReportTime and Required_s != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=inner (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(ItemName_s, iff(Required_s=="False"," (R)", " (M)")), ["Subscription Name"] = SubscriptionName_s, Comments=Comments_s, Status=case(ComplianceStatus_b == true, \'✔️\', ComplianceStatus_b == false, \'❌\', \'➖\'),["ITSG Control"]=itsgcode_s, Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")), ["Subscription Name"] = column_ifexists("SubscriptionName_s", ""), Comments=column_ifexists("Comments_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data11'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -108,7 +108,7 @@ let localizedMessages = case(
     })
 );
 let userData = GuardrailsUserRaw_CL
-| where ReportTime_s == reportTime;
+| where column_ifexists("ReportTime_s", "") == reportTime;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
@@ -134,7 +134,7 @@ let mfaAnalysis = userData
         0
     )
 | extend
-    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2);
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 1);
 let summary = mfaAnalysis
 | summarize 
     TotalUsers = count(),
@@ -156,13 +156,12 @@ let summary = mfaAnalysis
     );
 summary
 | project 
-    ControlName_s = "GUARDRAIL 1",
-    ItemName_s = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
-    ReportTime_s = reportTime,
-    Required_s = "True",
-    ComplianceStatus_b = IsCompliant,
-    Comments_s = Comments,
-    itsgcode_s = "IA2(1)",
+    ControlName = iff(locale == "fr-CA", "GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS", "GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES"),
+    ItemName = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
+    ReportTime = reportTime,
+    ComplianceStatus = IsCompliant,
+    Comments = Comments,
+    itsgcode = "IA2(1)",
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
@@ -234,11 +233,10 @@ let mfaAnalysis = userData
         0
     )
 | extend
-    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 2),
+    isMfaCompliant = hasValidSystemPreferred or (hasMfaRegistered == true and validMfaMethodsCount >= 1),
     complianceReason = case(
         hasValidSystemPreferred, strcat(tostring(localizedMessages["systemPreferred"]), strcat_array(set_intersect(systemPreferredMethodsArray, validSystemMethods), ", ")),
-        hasMfaRegistered == true and validMfaMethodsCount >= 2, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
-        hasMfaRegistered == true and validMfaMethodsCount == 1, strcat(tostring(localizedMessages["onlyOneMethod"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", "), tostring(localizedMessages["atLeastTwoRequired"])),
+        hasMfaRegistered == true and validMfaMethodsCount >= 1, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
         hasMfaRegistered == true and validMfaMethodsCount == 0, tostring(localizedMessages["noValidMethods"]),
         tostring(localizedMessages["noMfaConfigured"])
     );
@@ -246,12 +244,15 @@ let nonCompliantUsers = mfaAnalysis
 | where isMfaCompliant == false
 | sort by signInActivity_lastSignInDateTime_t
 | project 
-    DisplayName = displayName_s, 
-    UserPrincipalName = userPrincipalName_s, 
-    UserType = userType_s, 
-    CreatedTime = iff(isnull(createdDateTime_t), "N/A", format_datetime(createdDateTime_t, 'yyyy-MM-dd HH:mm:ss')), 
-    LastSignIn = iff(isnull(signInActivity_lastSignInDateTime_t), tostring(localizedMessages["neverSignedIn"]), format_datetime(signInActivity_lastSignInDateTime_t, 'yyyy-MM-dd HH:mm:ss')),
+    DisplayName = column_ifexists("displayName_s", ""), 
+    UserPrincipalName = column_ifexists("userPrincipalName_s", ""), 
+    UserType = column_ifexists("userType_s", ""), 
+    CreatedTimeRaw = column_ifexists("createdDateTime_t", datetime(null)), 
+    LastSignInRaw = column_ifexists("signInActivity_lastSignInDateTime_t", datetime(null)),
     Comments = complianceReason
+| extend CreatedTime = iff(isnull(CreatedTimeRaw), "N/A", format_datetime(CreatedTimeRaw, 'yyyy-MM-dd HH:mm:ss')),
+        LastSignIn = iff(isnull(LastSignInRaw), tostring(localizedMessages["neverSignedIn"]), format_datetime(LastSignInRaw, 'yyyy-MM-dd HH:mm:ss'))
+| project DisplayName, UserPrincipalName, UserType, CreatedTime, LastSignIn, Comments
 | take 100;
 union
 (

@@ -1,55 +1,94 @@
+function Get-ActionGroupContactTokens {
+    param (
+        [Parameter(Mandatory=$true)]
+        [Object[]] $ActionGroup
+    )
+
+    # Helper purpose:
+    #   Gather every notification target for an action group so the caller can apply a simple count
+    #   check. The output is a set of "contact tokens" (emails plus owner-role tokens).
+
+    # Azure built-in Owner role ID (constant across all Azure tenants)
+    # Used as fallback when RoleName property is not populated
+    $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+
+    $emailTokens = @(
+        $ActionGroup | ForEach-Object {
+            if ($_.EmailReceiver) {
+                $_.EmailReceiver | ForEach-Object { $_.EmailAddress }
+            }
+        } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
+    ) | ForEach-Object { $_.Trim() } | Sort-Object -Unique
+
+    $ownerTokens = @(
+        $ActionGroup | ForEach-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
+                    $_.RoleName -eq 'Owner' -or $_.RoleId -eq $ownerRoleId
+                } | ForEach-Object {
+                    if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
+                        $_.Name.Trim()
+                    }
+                    elseif ($_.RoleId -is [string] -and $_.RoleId.Trim().Length -gt 0) {
+                        $_.RoleId.Trim()
+                    }
+                }
+            }
+        } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
+    ) | Sort-Object -Unique
+
+    # Return array as single object (leading comma prevents PowerShell from unrolling the array)
+    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }))
+}
+
 function Validate-ActionGroups {
     param (
         [Object[]] $alerts,
-        [Object[]] $subOwners
+        [Parameter(Mandatory=$true)][string] $SubscriptionName,
+        [Parameter(Mandatory=$true)][hashtable] $MsgTable
     )
 
-    $actionGroupCompliant = $false
+    # Evaluate each action group's contacts and surface aggregate results back to the caller.
 
-    #Retrieve action group IDs
+    # Retrieve action group IDs
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
     if ($actionGroupIds -isnot [System.Collections.IEnumerable] -or $actionGroupIds -is [string]) {
         $actionGroupIds = @($actionGroupIds)
     }
     $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds)
 
-    foreach ($id in $actionGroupIdsArray){
+    # Track aggregate outcomes.
+    $uniqueContacts = New-Object 'System.Collections.Generic.HashSet[string]'
+    $comments = [System.Collections.ArrayList]::new()
+    $errors = [System.Collections.ArrayList]::new()
 
-        #Get sub id from action group
-        $subscriptionId = ($id -split '/')[2]
-
-        try{
-            #Get the action group
-            $actionGroups = Get-AzActionGroup -InputObject $id
-
-            $emailAddresses = $actionGroups | ForEach-Object {
-                if ($_.EmailReceiver) {
-                    $_.EmailReceiver | Select-Object -ExpandProperty EmailAddress
-                }
-            } | Where-Object { $_ -ne $null } # Remove any null results
-
-            $actionSubOwners += Get-AzRoleAssignment -Scope "/subscriptions/$subscriptionId" | Where-Object {
-                $_.RoleDefinitionName -eq "Owner" 
-            } | Select-Object -ExpandProperty SignInName
-
-            #Find and collect all the matching owners of this sub
-            $matchingOwners = $actionSubOwners | Where-Object {$subOwners -contains $_}
-        }
-        catch{
-            $Comments += $msgTable.noServiceHealthActionGroups -f $subscription
-            $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
-        }
-
-        if($emailAddresses -ge 2){
-            $actionGroupCompliant = $true
-        }
-        elseif($emailAddresses -eq 1 -and $matchingOwners -ge 1){
-            $actionGroupCompliant = $true
+    if ($actionGroupIdsArray.Count -eq 0) {
+        $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
+        $errors.Add('No action groups were returned for this Service Health alert evaluation.') | Out-Null
+        return [PSCustomObject]@{
+            UniqueContacts = @()
+            Comments = $comments
+            Errors = $errors
         }
     }
 
-    #Return compliance state of action group
-    return $actionGroupCompliant
+    foreach ($id in $actionGroupIdsArray){
+        try{
+            $actionGroups = Get-AzActionGroup -InputObject $id
+            $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroups
+            foreach ($token in $contactTokens) { $uniqueContacts.Add($token) | Out-Null }
+        }
+        catch{
+            $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
+            $errors.Add("Error retrieving service health alerts for the following subscription: $_") | Out-Null
+        }
+    }
+
+    return [PSCustomObject]@{
+        UniqueContacts = @($uniqueContacts)
+        Comments = $comments
+        Errors = $errors
+    }
 }
 
 
@@ -88,17 +127,12 @@ function Get-ServiceHealthAlerts {
         # Initialize
         $isCompliant = $false
         $Comments = ""
-        $actionGroupsCompliance = @()
         $checkActionGroupNext = $false
 
         # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
 
-        # Get subscription owners
-        $subOwners = Get-AzRoleAssignment -Scope "/subscriptions/$subId" | Where-Object {
-            $_.RoleDefinitionName -eq "Owner" 
-        } | Select-Object -ExpandProperty SignInName
 
         try{
             # Get all service health alerts
@@ -179,17 +213,33 @@ function Get-ServiceHealthAlerts {
                 
                 if($checkActionGroupNext){
                     # Store compliance state of each action group
-                    $actionGroupsCompliance = Validate-ActionGroups -alerts $filteredAlerts -subOwners $subOwners
+                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -MsgTable $msgTable
 
-                    # All action groups are compliant
-                    if ($actionGroupsCompliance -notcontains $false -and $null -ne $actionGroupsCompliance){
-                        $isCompliant = $true
-                        $Comments = $msgTable.compliantServiceHealthAlerts
+                    if ($evaluation.Comments.Count -gt 0) {
+                        # Merge any helper-supplied context (e.g., missing action group) with existing comments.
+                        $commentItems = @()
+                        if (-not [string]::IsNullOrWhiteSpace($Comments)) {
+                            $commentItems += $Comments
+                        }
+                        $commentItems += $evaluation.Comments
+                        $Comments = ($commentItems | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`n"
                     }
-                    # Even if one is non-compliant
-                    elseif ($actionGroupsCompliance -contains $false) {
+                    foreach ($err in $evaluation.Errors) {
+                        # Preserve detailed errors so downstream diagnostics remain intact.
+                        $ErrorList.Add($err) | Out-Null
+                    }
+                    $totalContacts = $evaluation.UniqueContacts.Count
+                    if ($totalContacts -ge 2) {
+                        $isCompliant = $true
+                        if ([string]::IsNullOrWhiteSpace($Comments)) {
+                            $Comments = $msgTable.compliantServiceHealthAlerts
+                        }
+                    }
+                    else {
                         $isCompliant = $false
-                        $Comments = $msgTable.nonCompliantActionGroups
+                        if ([string]::IsNullOrWhiteSpace($Comments)) {
+                            $Comments = $msgTable.nonCompliantActionGroups
+                        }
                     }
                 }
             }
@@ -221,7 +271,6 @@ function Get-ServiceHealthAlerts {
             $PsObject.Add($C) | Out-Null
         }
 
-        continue
     }
     
     $moduleOutput = [PSCustomObject]@{

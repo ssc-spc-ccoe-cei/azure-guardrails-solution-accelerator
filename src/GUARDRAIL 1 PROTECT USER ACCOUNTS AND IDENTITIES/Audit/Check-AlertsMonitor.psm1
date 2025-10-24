@@ -127,14 +127,16 @@ function Check-AlertsMonitor {
 
     $AuditLogsQueries = @(
         # 1) Single-value form (==, =~, contains) — flexible spaces
-        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:==|=~|contains)\s+`"(?:Update|Add|Delete)\s+conditional access policy`"\s*',
+        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:==|=~|contains)\s+"(?:Update|Add|Delete)\s+conditional access policy"\s*',
 
         # 2) in()/has_any() list form — order-agnostic, requires ALL THREE present somewhere in (...)
-        'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:in|has_any)\s*\(' +
-            '(?=[^)]*`"Update\s+conditional access policy`")' +
-            '(?=[^)]*`"Add\s+conditional access policy`")' +
-            '(?=[^)]*`"Delete\s+conditional access policy`")' +
+        (
+            'AuditLogs\s*\|\s*where\s+(?:OperationName|ActivityDisplayName)\s+(?:in|has_any)\s*\(' +
+            '(?=[^)]*"Update\s+conditional access policy")' +
+            '(?=[^)]*"Add\s+conditional access policy")' +
+            '(?=[^)]*"Delete\s+conditional access policy")' +
             '[^)]*\)'
+        )
     )
     $CAPQueryMatchPattern = "`($($AuditLogsQueries -join '|')`)"
 
@@ -261,8 +263,14 @@ function Check-AlertsMonitor {
                 Write-Verbose "No alert rules found matching break glass account patterns"
             }
             else {
-                # Select the action groups of the BG alert rules if they are also in the list of action groups with receivers
-                $bgActionGroupIds = ($bgAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
+                # Normalize the action group IDs for BG alerts (guarding against null/empty values) so missing groups trigger the right comment
+                $bgActionGroupIds = foreach ($rule in $bgAlertRules) {
+                    foreach ($actionGroupId in @($rule.ActionGroup)) {
+                        if ([string]::IsNullOrWhiteSpace($actionGroupId)) { continue }
+                        $actionGroupId.ToLower()
+                    }
+                }
+                $bgActionGroupIds = $bgActionGroupIds | Where-Object { $_ -in $actionGroupIds }
                 
                 Write-Verbose "Found $($bgActionGroupIds.Count) action groups with receivers for break glass alert rules"
                 
@@ -299,8 +307,14 @@ function Check-AlertsMonitor {
                 Write-Verbose "No alert rules found matching conditional access policy patterns"
             }
             else {
-                # Select the action groups of the CAP alert rules if they are also in the list of action groups with receivers
-                $capActionGroupIds = ($capAlertRules.ActionGroup).ToLower() | Where-Object { $_ -in $actionGroupIds }
+                # Apply the same normalization for CAP alerts so missing action groups surface the expected comment
+                $capActionGroupIds = foreach ($rule in $capAlertRules) {
+                    foreach ($actionGroupId in @($rule.ActionGroup)) {
+                        if ([string]::IsNullOrWhiteSpace($actionGroupId)) { continue }
+                        $actionGroupId.ToLower()
+                    }
+                }
+                $capActionGroupIds = $capActionGroupIds | Where-Object { $_ -in $actionGroupIds }
                 
                 Write-Verbose "Found $($capActionGroupIds.Count) action groups with receivers for conditional access policy alert rules"
                 
