@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: test
     steps:
-      - name: Check Out
+      - name: Check out repository at specific tag
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.version_tag }}
