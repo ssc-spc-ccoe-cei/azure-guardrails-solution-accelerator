@@ -38,8 +38,13 @@ function Test-CommonFilters {
             $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
             ($_.conditions.applications.includeApplications -contains 'All' -or
             $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
-            $_.grantControls.builtInControls -contains 'mfa' -and
-            $_.grantControls.builtInControls -contains 'passwordChange' -and
+            (
+                (
+                    $_.grantControls.builtInControls -contains 'mfa' -and
+                    $_.grantControls.builtInControls -contains 'passwordChange'
+                ) -or
+                $_.grantControls.builtInControls -contains 'block'
+            ) -and
             $_.conditions.clientAppTypes -contains 'all' -and
             $_.conditions.userRiskLevels -contains 'high' -and
             $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
@@ -168,7 +173,7 @@ function Get-RiskBasedAccess {
         $breakGlassUserGroup = $null
     }
     $uniqueGroupIdBG = $breakGlassUserGroup.groupId | select-object -unique
-           
+    
     # check for a conditional access policy which meets the requirements
     if ($null -ne $breakGlassUserGroup){
         $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID) 
