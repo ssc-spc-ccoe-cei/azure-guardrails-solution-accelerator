@@ -411,10 +411,10 @@ foreach ($module in $modules) {
             $messageParts = @("Items=$itemCount")
             if ($moduleErrors -gt 0) { $messageParts += "Errors=$moduleErrors" }
             if ($moduleOptionalItemCount -gt 0) {
-                $messageParts += "OptionalItems=$moduleOptionalItemCount"
-                if ($moduleOptionalCompliantCount -gt 0) { $messageParts += "OptionalCompliant=$moduleOptionalCompliantCount" }
-                if ($moduleOptionalNonCompliantCount -gt 0) { $messageParts += "OptionalNonCompliant=$moduleOptionalNonCompliantCount" }
-                if ($moduleOptionalWithoutStatusCount -gt 0) { $messageParts += "OptionalNoStatus=$moduleOptionalWithoutStatusCount" }
+                $messageParts += "RecommendedItems=$moduleOptionalItemCount"
+                if ($moduleOptionalCompliantCount -gt 0) { $messageParts += "RecommendedCompliant=$moduleOptionalCompliantCount" }
+                if ($moduleOptionalNonCompliantCount -gt 0) { $messageParts += "RecommendedNonCompliant=$moduleOptionalNonCompliantCount" }
+                if ($moduleOptionalWithoutStatusCount -gt 0) { $messageParts += "RecommendedNoStatus=$moduleOptionalWithoutStatusCount" }
             }
             $telemetryMessage = $messageParts -join '; '
 
@@ -461,20 +461,20 @@ $diagnosticSummaryEnd = Get-Date
 $diagnosticWallClock = $diagnosticSummaryEnd - $diagnosticRunbookStart
 
 Write-Output ""
-Write-Output "========== Guardrail Run Debug Summary =========="
+Write-Output "========== Main Runbook Debug Summary =========="
 Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
 Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
 Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
 Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
-Write-Output ("Required items       : {0}" -f $runSummary.Stats.TotalItems)
-Write-Output ("Compliant items      : {0}" -f $runSummary.Stats.CompliantItems)
-Write-Output ("Non-compliant items  : {0}" -f $runSummary.Stats.NonCompliantItems)
+Write-Output ("Mandatory items        : {0}" -f $runSummary.Stats.TotalItems)
+Write-Output ("Mandatory compliant    : {0}" -f $runSummary.Stats.CompliantItems)
+Write-Output ("Mandatory non-compliant: {0}" -f $runSummary.Stats.NonCompliantItems)
 Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
-Write-Output "Optional items (Required=false entries from modules.json):"
-Write-Output ("Optional items       : {0}" -f $optionalItemTotal)
-Write-Output ("Optional compliant   : {0}" -f $optionalCompliantTotal)
-Write-Output ("Optional non-compliant: {0}" -f $optionalNonCompliantTotal)
-Write-Output ("Optional without status: {0}" -f $optionalWithoutStatusTotal)
+Write-Output "Recommended items (Required=false entries from modules.json):"
+Write-Output ("Recommended items       : {0}" -f $optionalItemTotal)
+Write-Output ("Recommended compliant   : {0}" -f $optionalCompliantTotal)
+Write-Output ("Recommended non-compliant: {0}" -f $optionalNonCompliantTotal)
+Write-Output ("Recommended without status: {0}" -f $optionalWithoutStatusTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 $runMemoryStart = [Math]::Round($runSummary.Stats.MemoryStartMb)
 $runMemoryEnd = [Math]::Round($runSummary.Stats.MemoryEndMb)
