@@ -279,10 +279,10 @@ finally {
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
-$optionalItemTotal = 0
-$optionalCompliantTotal = 0
-$optionalNonCompliantTotal = 0
-$optionalWithoutStatusTotal = 0
+$recommendedItemTotal = 0
+$recommendedCompliantTotal = 0
+$recommendedNonCompliantTotal = 0
+$recommendedWithoutStatusTotal = 0
 foreach ($module in $modules) {
     $moduleCount++
     $moduleName = $module.ModuleName
@@ -329,10 +329,10 @@ foreach ($module in $modules) {
         $itemCount = 0
         $compliantCount = 0
         $nonCompliantCount = 0
-        $moduleOptionalItemCount = 0
-        $moduleOptionalCompliantCount = 0
-        $moduleOptionalNonCompliantCount = 0
-        $moduleOptionalWithoutStatusCount = 0
+        $moduleRecommendedItemCount = 0
+        $moduleRecommendedCompliantCount = 0
+        $moduleRecommendedNonCompliantCount = 0
+        $moduleRecommendedWithoutStatusCount = 0
 
         try {
             Write-Output "Invoking Script for $($module.modulename)"
@@ -387,20 +387,20 @@ foreach ($module in $modules) {
                         }
                     }
                     else {
-                        $moduleOptionalItemCount++
-                        $optionalItemTotal++
+                        $moduleRecommendedItemCount++
+                        $recommendedItemTotal++
 
                         if ($record.ComplianceStatus -eq $true) {
-                            $moduleOptionalCompliantCount++
-                            $optionalCompliantTotal++
+                            $moduleRecommendedCompliantCount++
+                            $recommendedCompliantTotal++
                         }
                         elseif ($record.ComplianceStatus -eq $false) {
-                            $moduleOptionalNonCompliantCount++
-                            $optionalNonCompliantTotal++
+                            $moduleRecommendedNonCompliantCount++
+                            $recommendedNonCompliantTotal++
                         }
                         else {
-                            $moduleOptionalWithoutStatusCount++
-                            $optionalWithoutStatusTotal++
+                            $moduleRecommendedWithoutStatusCount++
+                            $recommendedWithoutStatusTotal++
                         }
                     }
                 }
@@ -410,11 +410,11 @@ foreach ($module in $modules) {
 
             $messageParts = @("Items=$itemCount")
             if ($moduleErrors -gt 0) { $messageParts += "Errors=$moduleErrors" }
-            if ($moduleOptionalItemCount -gt 0) {
-                $messageParts += "RecommendedItems=$moduleOptionalItemCount"
-                if ($moduleOptionalCompliantCount -gt 0) { $messageParts += "RecommendedCompliant=$moduleOptionalCompliantCount" }
-                if ($moduleOptionalNonCompliantCount -gt 0) { $messageParts += "RecommendedNonCompliant=$moduleOptionalNonCompliantCount" }
-                if ($moduleOptionalWithoutStatusCount -gt 0) { $messageParts += "RecommendedNoStatus=$moduleOptionalWithoutStatusCount" }
+            if ($moduleRecommendedItemCount -gt 0) {
+                $messageParts += "RecommendedItems=$moduleRecommendedItemCount"
+                if ($moduleRecommendedCompliantCount -gt 0) { $messageParts += "RecommendedCompliant=$moduleRecommendedCompliantCount" }
+                if ($moduleRecommendedNonCompliantCount -gt 0) { $messageParts += "RecommendedNonCompliant=$moduleRecommendedNonCompliantCount" }
+                if ($moduleRecommendedWithoutStatusCount -gt 0) { $messageParts += "RecommendedNoStatus=$moduleRecommendedWithoutStatusCount" }
             }
             $telemetryMessage = $messageParts -join '; '
 
@@ -471,10 +471,10 @@ Write-Output ("Mandatory compliant    : {0}" -f $runSummary.Stats.CompliantItems
 Write-Output ("Mandatory non-compliant: {0}" -f $runSummary.Stats.NonCompliantItems)
 Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
 Write-Output "Recommended items (Required=false entries from modules.json):"
-Write-Output ("Recommended items       : {0}" -f $optionalItemTotal)
-Write-Output ("Recommended compliant   : {0}" -f $optionalCompliantTotal)
-Write-Output ("Recommended non-compliant: {0}" -f $optionalNonCompliantTotal)
-Write-Output ("Recommended without status: {0}" -f $optionalWithoutStatusTotal)
+Write-Output ("Recommended items       : {0}" -f $recommendedItemTotal)
+Write-Output ("Recommended compliant   : {0}" -f $recommendedCompliantTotal)
+Write-Output ("Recommended non-compliant: {0}" -f $recommendedNonCompliantTotal)
+Write-Output ("Recommended without status: {0}" -f $recommendedWithoutStatusTotal)
 Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
 $runMemoryStart = [Math]::Round($runSummary.Stats.MemoryStartMb)
 $runMemoryEnd = [Math]::Round($runSummary.Stats.MemoryEndMb)
