@@ -659,7 +659,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
   resource variable23 'variables' = if (newDeployment || updateCoreResources) {
     name: 'ENABLE_DEBUG_METRICS'
     properties: {
-        isEncrypted: false
+        isEncrypted: true
         value: '"true"'
     }
   }
