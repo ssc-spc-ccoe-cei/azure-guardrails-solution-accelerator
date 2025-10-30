@@ -697,6 +697,22 @@ function Get-GuardrailProcessMemory {
     }
 }
 
+function Update-RunStateMemoryStats {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [psobject]$CurrentSnapshot
+    )
+
+    $RunState.Stats.MemoryEndMb = $CurrentSnapshot.WorkingSetMb
+    if ($CurrentSnapshot.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
+        $RunState.Stats.MemoryPeakMb = $CurrentSnapshot.PeakWorkingSetMb
+    }
+    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+}
+
 function Write-GuardrailTelemetry {
     [CmdletBinding()]
     param (
@@ -765,7 +781,8 @@ function Write-GuardrailTelemetry {
             $Context.DurationColumnInitialized = $true
         }
         elseif (-not $Context.DurationColumnInitialized) {
-            # Seed schema so the LAW table creates duration columns as double on first record.
+            # LAW infers DurationMsReal as string when the first ingested
+            # record omits duration. Seed with a tiny double to force the column type once.
             $record['DurationMsReal'] = [double]0.01
             $Context.DurationColumnInitialized = $true
         }
@@ -835,9 +852,7 @@ function New-GuardrailRunState {
 
     $initialMemory = Get-GuardrailProcessMemory
     $runState.Stats.MemoryStartMb = $initialMemory.WorkingSetMb
-    $runState.Stats.MemoryEndMb = $initialMemory.WorkingSetMb
-    $runState.Stats.MemoryPeakMb = $initialMemory.PeakWorkingSetMb
-    $runState.Stats.MemoryDeltaMb = 0
+    Update-RunStateMemoryStats -RunState $runState -CurrentSnapshot $initialMemory
 
     Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -ReportTime $ReportTime -MemoryStartMb $initialMemory.WorkingSetMb -MemoryPeakMb $initialMemory.PeakWorkingSetMb
 
@@ -858,11 +873,7 @@ function Start-GuardrailModuleState {
     $RunState.Stats.ModulesEnabled++
 
     $memorySnapshot = Get-GuardrailProcessMemory
-    $RunState.Stats.MemoryEndMb = $memorySnapshot.WorkingSetMb
-    if ($memorySnapshot.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
-        $RunState.Stats.MemoryPeakMb = $memorySnapshot.PeakWorkingSetMb
-    }
-    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memorySnapshot
 
     $moduleState = [pscustomobject]@{
         ModuleName        = $ModuleName
@@ -922,11 +933,7 @@ function Complete-GuardrailModuleState {
     $modulePeakMb = [Math]::Round(([Math]::Max($memoryEnd.PeakWorkingSetMb, $memoryStartPeakMb)), 2)
     $memoryDeltaMb = [Math]::Round(($memoryEnd.WorkingSetMb - $memoryStartMb), 2)
 
-    $RunState.Stats.MemoryEndMb = $memoryEnd.WorkingSetMb
-    if ($memoryEnd.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
-        $RunState.Stats.MemoryPeakMb = $memoryEnd.PeakWorkingSetMb
-    }
-    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memoryEnd
 
     Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -DurationMs $durationMs -ErrorCount $ErrorCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -MemoryStartMb $memoryStartMb -MemoryEndMb $memoryEnd.WorkingSetMb -MemoryPeakMb $modulePeakMb -MemoryDeltaMb $memoryDeltaMb
 
@@ -961,11 +968,7 @@ function Skip-GuardrailModuleState {
     $RunState.Stats.ModulesDisabled++
 
     $memorySnapshot = Get-GuardrailProcessMemory
-    $RunState.Stats.MemoryEndMb = $memorySnapshot.WorkingSetMb
-    if ($memorySnapshot.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
-        $RunState.Stats.MemoryPeakMb = $memorySnapshot.PeakWorkingSetMb
-    }
-    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memorySnapshot
 
     Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryEndMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb -MemoryDeltaMb 0
 
@@ -1006,7 +1009,10 @@ function Complete-GuardrailRunState {
     )
     $runMessage = $messageParts -join '; '
 
-    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot ([pscustomobject]@{
+            WorkingSetMb     = $RunState.Stats.MemoryEndMb
+            PeakWorkingSetMb = $RunState.Stats.MemoryPeakMb
+        })
 
     Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -MemoryStartMb $RunState.Stats.MemoryStartMb -MemoryEndMb $RunState.Stats.MemoryEndMb -MemoryPeakMb $RunState.Stats.MemoryPeakMb -MemoryDeltaMb $RunState.Stats.MemoryDeltaMb
 
