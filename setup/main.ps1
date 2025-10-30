@@ -258,18 +258,19 @@ try {
 
     if ($UserRawDataErrors.Count -gt 0) {
         Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
-        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount $UserRawDataErrors.Count -Message 'FetchAllUserRawData reported errors.' | Out-Null
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount $UserRawDataErrors.Count -ItemCount 0 -Message 'FetchAllUserRawData reported errors. UsersLoaded=0' | Out-Null
     }
     else {
         if ($Global:AllUsersCache -and $Global:AllUsersCache.PSObject.Properties.Match('users').Count -gt 0) {
             $userRawDataRecordCount = @($Global:AllUsersCache.users).Count
         }
 
-        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ItemCount $userRawDataRecordCount -Message 'FetchAllUserRawData completed.' | Out-Null
+        $completionMessage = "FetchAllUserRawData completed. UsersLoaded=$userRawDataRecordCount"
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ItemCount 0 -Message $completionMessage | Out-Null
     }
 }
 catch {
-    Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -Message 'FetchAllUserRawData threw an exception.' | Out-Null
+    Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -ItemCount 0 -Message 'FetchAllUserRawData threw an exception. UsersLoaded=0' | Out-Null
     throw
 }
 finally {

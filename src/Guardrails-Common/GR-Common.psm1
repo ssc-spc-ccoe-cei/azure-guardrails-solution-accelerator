@@ -593,13 +593,6 @@ function New-LogAnalyticsData {
     )
     $JsonObject = convertTo-Json -inputObject $Data -Depth 3
 
-    # Debug output to verify JSON payload (can be removed after testing)
-    if ($VerbosePreference -eq 'Continue' -or $env:ENABLE_DEBUG_METRICS -eq 'true') {
-        Write-Verbose "=== JSON Payload for $LogType ===" -Verbose
-        Write-Verbose $JsonObject -Verbose
-        Write-Verbose "===================================" -Verbose
-    }
-
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
         -sharedkey $workspaceKey `
         -body $JsonObject `
