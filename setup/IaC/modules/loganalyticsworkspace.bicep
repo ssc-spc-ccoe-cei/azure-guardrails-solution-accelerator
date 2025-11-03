@@ -115,9 +115,14 @@ let mfaAnalysis = userData
 | extend 
     isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
     systemPreferredMethodsArray = iff(
-        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
-        parse_json(systemPreferredAuthenticationMethods_s),
-        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+        isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))) 
+            and tostring(column_ifexists("systemPreferredAuthenticationMethods_s", "")) startswith "[",
+        todynamic(column_ifexists("systemPreferredAuthenticationMethods_s", "[]")),
+        iff(
+            isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
+            pack_array(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
+            dynamic([])
+        )
     ),
     methodsRegisteredArray = parse_json(methodsRegistered_s)
 | extend
@@ -214,9 +219,14 @@ let mfaAnalysis = userData
 | extend 
     isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
     systemPreferredMethodsArray = iff(
-        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
-        parse_json(systemPreferredAuthenticationMethods_s),
-        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+        isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))) 
+            and tostring(column_ifexists("systemPreferredAuthenticationMethods_s", "")) startswith "[",
+        todynamic(column_ifexists("systemPreferredAuthenticationMethods_s", "[]")),
+        iff(
+            isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
+            pack_array(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
+            dynamic([])
+        )
     ),
     methodsRegisteredArray = parse_json(methodsRegistered_s)
 | extend
