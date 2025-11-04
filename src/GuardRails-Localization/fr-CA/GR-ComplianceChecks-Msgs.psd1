@@ -122,12 +122,13 @@ userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
 userInGroup = Pas d'utilisateurs sans groupes
 
 riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
+locationBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les emplacements
 nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
 nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés.
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
-compliantC1 = The conditional access policy to force password changes based on user risk has been configured.
-compliantC2 = The conditional access policy to prevent sign-in's from unapproved named locations has been configured.
+compliantC1 = La politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur a été configurée.
+compliantC2 = La politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés a été configurée.
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.

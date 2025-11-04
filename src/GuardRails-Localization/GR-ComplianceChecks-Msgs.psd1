@@ -123,6 +123,7 @@ userNotInGroup = User is not associated with any user group.
 userInGroup = No users without groups
 
 riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
+locationBasedConditionalPolicy = Authentication Mechanisms: Location Based Conditional Access Policies
 nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
 nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
