@@ -107,8 +107,14 @@ let localizedMessages = case(
         "dataCollectedForAnalysis": "Data collected for {0} users. Detailed MFA compliance analysis will be performed in the workbook."
     })
 );
-let userData = GuardrailsUserRaw_CL
-| where column_ifexists("ReportTime_s", "") == reportTime;
+let rawUserData = GuardrailsUserRaw_CL
+| extend ReportTime = column_ifexists("ReportTime_s", ""),
+         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false))
+| where ReportTime == reportTime;
+let excludedUsers = rawUserData
+| where guardrailsExcluded == true;
+let userData = rawUserData
+| where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
@@ -159,7 +165,14 @@ let summary = mfaAnalysis
         ),
         "Unknown error"
     );
-summary
+let excludedCount = toscalar(excludedUsers | summarize count());
+let finalSummary = summary
+| extend Comments = iff(coalesce(excludedCount, 0) > 0,
+        strcat(Comments, "; ", iff(locale == "fr-CA",
+            strcat("Exclusion de ", tostring(coalesce(excludedCount, 0)), " comptes de service via l'attribut de sécurité GCCloudGuardrails.ExcludeFromMFA"),
+            strcat("Excluded ", tostring(coalesce(excludedCount, 0)), " service accounts via GCCloudGuardrails.ExcludeFromMFA custom security attribute"))),
+        Comments);
+finalSummary
 | project 
     ControlName = iff(locale == "fr-CA", "GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS", "GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES"),
     ItemName = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
@@ -212,7 +225,10 @@ let localizedMessages = case(
     })
 );
 let userData = GuardrailsUserRaw_CL
-| where ReportTime_s == reportTime;
+| extend ReportTime = column_ifexists("ReportTime_s", ""),
+         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false))
+| where ReportTime == reportTime
+| where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
