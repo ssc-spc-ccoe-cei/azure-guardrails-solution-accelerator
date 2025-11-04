@@ -121,7 +121,8 @@ let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
     methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
-    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false")),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+| extend
     systemPreferredMethodsArray = iff(
         isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
         parse_json(sysPreferredValue),
@@ -232,7 +233,8 @@ let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
     methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
-    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false")),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+| extend
     systemPreferredMethodsArray = iff(
         isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
         parse_json(sysPreferredValue),
