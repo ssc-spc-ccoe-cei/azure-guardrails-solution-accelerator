@@ -119,25 +119,22 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false")),
     systemPreferredMethodsArray = iff(
-        isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))) 
-            and tostring(column_ifexists("systemPreferredAuthenticationMethods_s", "")) startswith "[",
-        todynamic(column_ifexists("systemPreferredAuthenticationMethods_s", "[]")),
-        iff(
-            isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
-            pack_array(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
-            dynamic([])
-        )
+        isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
+        parse_json(sysPreferredValue),
+        iff(isnotempty(sysPreferredValue), pack_array(sysPreferredValue), dynamic([]))
     ),
-    methodsRegisteredArray = parse_json(methodsRegistered_s)
+    methodsRegisteredArray = iff(isnotempty(methodsRegisteredValue), parse_json(methodsRegisteredValue), dynamic([]))
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = isMfaRegistered_b
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
@@ -233,25 +230,22 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false")),
     systemPreferredMethodsArray = iff(
-        isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))) 
-            and tostring(column_ifexists("systemPreferredAuthenticationMethods_s", "")) startswith "[",
-        todynamic(column_ifexists("systemPreferredAuthenticationMethods_s", "[]")),
-        iff(
-            isnotempty(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
-            pack_array(tostring(column_ifexists("systemPreferredAuthenticationMethods_s", ""))),
-            dynamic([])
-        )
+        isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
+        parse_json(sysPreferredValue),
+        iff(isnotempty(sysPreferredValue), pack_array(sysPreferredValue), dynamic([]))
     ),
-    methodsRegisteredArray = parse_json(methodsRegistered_s)
+    methodsRegisteredArray = iff(isnotempty(methodsRegisteredValue), parse_json(methodsRegisteredValue), dynamic([]))
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = isMfaRegistered_b
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
