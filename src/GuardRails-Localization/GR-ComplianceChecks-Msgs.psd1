@@ -126,11 +126,10 @@ riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional A
 locationBasedConditionalPolicy = Authentication Mechanisms: Location Based Conditional Access Policies
 nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
 nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
-nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
-compliantC1C2 = Both conditional access policies have been configured.
 compliantC1 = The conditional access policy to force password changes based on user risk has been configured.
 compliantC2 = The conditional access policy to prevent sign-in's from unapproved named locations has been configured.
 
+nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
 noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
 noInProgressAccessReview = The environment has at least one scheduled role access review for Global Administrators or another Azure built-in role. However, the access review has been identified as either 'completed' or 'not started'. Create a new Global Administrator/Azure built-in role access review to reoccur and be 'in progress'.
