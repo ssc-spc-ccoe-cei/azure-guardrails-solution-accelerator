@@ -127,6 +127,8 @@ nonCompliantC1= Configure the conditional access policy to force password change
 nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
 compliantC1C2 = Both conditional access policies have been configured.
+compliantC1 = The conditional access policy to force password changes based on user risk has been configured.
+compliantC2 = The conditional access policy to prevent sign-in's from unapproved named locations has been configured.
 
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
 noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
