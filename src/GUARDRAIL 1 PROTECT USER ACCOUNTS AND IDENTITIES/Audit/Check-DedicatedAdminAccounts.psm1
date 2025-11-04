@@ -154,9 +154,9 @@ function Check-DedicatedAdminAccounts {
     $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
     if ($null -eq $blobs) {            
         # a blob with the name $DocumentName was not located in the specified storage account
-        $errorMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it. Error: $_"
-        $ErrorList.Add($errorMsg) 
+        $warningMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it."
+        Write-Warning $warningMsg
             
         $blobFound = $false
     }
