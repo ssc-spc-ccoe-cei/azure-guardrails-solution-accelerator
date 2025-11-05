@@ -82,6 +82,33 @@ function get-rgtagValue {
     }
     return ""
 }
+
+# Returns true when the GCCloudGuardrails custom security attribute marks the user as excluded from MFA.
+function Test-GuardrailsMfaExclusion {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject] $User,
+        [string] $AttributeNamespace = 'GCCloudGuardrails',
+        [string] $AttributeName = 'ExcludeFromMFA'
+    )
+
+    if ($null -eq $User) { return $false }
+
+    $customAttributes = $User.customSecurityAttributes
+    if ($null -eq $customAttributes) { return $false }
+
+    $namespaceProperty = $customAttributes.PSObject.Properties[$AttributeNamespace]
+    if ($null -eq $namespaceProperty) { return $false }
+
+    $namespaceValue = $namespaceProperty.Value
+    if ($null -eq $namespaceValue) { return $false }
+
+    $attributeProperty = $namespaceValue.PSObject.Properties[$AttributeName]
+    if ($null -eq $attributeProperty) { return $false }
+
+    return ($attributeProperty.Value -eq $true)
+}
 function copy-toBlob {
     [CmdletBinding()]
     param (
@@ -118,7 +145,9 @@ function copy-toBlob {
         else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
     }
     catch {
-        Write-Error $_.Exception.Message
+        $errorMessage = "Failed to upload blob '$($FilePath | Split-Path -Leaf)' to storage account '$storageaccountName' container '$containerName'. Error: $($_.Exception.Message)"
+        Write-Error $errorMessage
+        throw $errorMessage
     }
 }
 function get-blobs {
@@ -2417,7 +2446,7 @@ function FetchAllUserRawData {
     
     # Step 3: Setup streaming user processing
     Write-Verbose "Step 3: Starting streaming user processing..."
-    $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity"
+    $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes"
     $filterQuery = "accountEnabled eq true"
     $usersPath = "/users?$" + "select=$selectFields&$" + "filter=$filterQuery"
 
@@ -2480,6 +2509,7 @@ function FetchAllUserRawData {
             $user = $_
             $registration = $context.regById[$user.id]
             $methods = @()
+            $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
             
             if ($registration -and $registration.methodsRegistered) {
                 $methods = @($registration.methodsRegistered)
@@ -2494,6 +2524,8 @@ function FetchAllUserRawData {
                 userType          = $user.userType
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
+                customSecurityAttributes = $user.customSecurityAttributes
+                guardrailsExcludedMfa    = $guardrailsExcluded
                 isMfaRegistered       = if ($registration) { $registration.isMfaRegistered } else { $null }
                 isMfaCapable          = if ($registration) { $registration.isMfaCapable } else { $null }
                 isSsprEnabled         = if ($registration) { $registration.isSsprEnabled } else { $null }
