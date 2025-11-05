@@ -103,11 +103,9 @@ function Test-BreakGlassAccounts {
       ReportTime       = $ReportTime
       itsgcode         = $itsgcode
     }
-
-    goto BuildOutput
   }
   # Validate unique BG accounts
-  if(($bgCountConfig -eq 2) -and $FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
+  elseif(($bgCountConfig -eq 2) -and $FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
       $IsCompliant = $false
       $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
@@ -117,94 +115,93 @@ function Test-BreakGlassAccounts {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
       }
+  }
+  else{
+    # Step 1: Validate listed BG accounts as members
+    $FirstBreakGlassAcct = [PSCustomObject]@{
+      UserPrincipalName  = $FirstBreakGlassUPN
+      apiUrl             = $FirstBreakGlassUPNUrl
+      existStatus        = $false
+    }
+    $SecondBreakGlassAcct = [PSCustomObject]@{
+      UserPrincipalName   = $SecondBreakGlassUPN
+      apiUrl              = $SecondBreakGlassUPNUrl
+      existStatus         = $false
+    }
+    # get 1st break glass account
+    try {
+      if($FirstBreakGlassUPN -ne ""){
+        $response = Invoke-GraphQuery -urlPath $FirstBreakGlassAcct.apiURL -ErrorAction Stop
+        $data = $response.Content
+        
+        if ($null -ne  $data) {
+          $FirstBreakGlassAcct.existStatus = $true
+        } 
+      }
+    }
+    catch {
+      $ErrorList.Add("Failed to call Microsoft Graph for '$($FirstBreakGlassAcct.UserPrincipalName)': $_")
+      Write-Warning "Graph error for BG1 '$($FirstBreakGlassAcct.UserPrincipalName)': $_"
+    }
 
-      goto BuildOutput
-  }
+    # get 2nd break glass account
+    try {
+      if($SecondBreakGlassUPN -ne ""){
+        $response2 = Invoke-GraphQuery -urlPath $SecondBreakGlassAcct.apiURL -ErrorAction Stop
+        $data2 = $response2.Content
+        
+        if ($null -ne  $data2) {
+          $SecondBreakGlassAcct.existStatus = $true
+        } 
+      }
+    }
+    catch {
+      $ErrorList.Add("Failed to call Microsoft Graph for '$($SecondBreakGlassAcct.UserPrincipalName)': $_")
+      Write-Warning "Graph error for BG1 '$($SecondBreakGlassAcct.UserPrincipalName)': $_"
+    }
 
-  # Step 1: Validate listed BG accounts as members
-  $FirstBreakGlassAcct = [PSCustomObject]@{
-    UserPrincipalName  = $FirstBreakGlassUPN
-    apiUrl             = $FirstBreakGlassUPNUrl
-    existStatus        = $false
-  }
-  $SecondBreakGlassAcct = [PSCustomObject]@{
-    UserPrincipalName   = $SecondBreakGlassUPN
-    apiUrl              = $SecondBreakGlassUPNUrl
-    existStatus         = $false
-  }
-  # get 1st break glass account
-  try {
-    if($FirstBreakGlassUPN -ne ""){
-      $response = Invoke-GraphQuery -urlPath $FirstBreakGlassAcct.apiURL -ErrorAction Stop
-      $data = $response.Content
-      
-      if ($null -ne  $data) {
-        $FirstBreakGlassAcct.existStatus = $true
+    [bool] $validBG =
+      if ($bgCountConfig -eq 2){
+        $FirstBreakGlassAcct.existStatus -and $SecondBreakGlassAcct.existStatus
+      }
+      else {
+        $FirstBreakGlassAcct.existStatus -or $SecondBreakGlassAcct.existStatus
       } 
-    }
-  }
-  catch {
-    $ErrorList.Add("Failed to call Microsoft Graph for '$($FirstBreakGlassAcct.UserPrincipalName)': $_")
-    Write-Warning "Graph error for BG1 '$($FirstBreakGlassAcct.UserPrincipalName)': $_"
-  }
-
-  # get 2nd break glass account
-  try {
-    if($SecondBreakGlassUPN -ne ""){
-      $response2 = Invoke-GraphQuery -urlPath $SecondBreakGlassAcct.apiURL -ErrorAction Stop
-      $data2 = $response2.Content
       
-      if ($null -ne  $data2) {
-        $SecondBreakGlassAcct.existStatus = $true
-      } 
-    }
-  }
-  catch {
-    $ErrorList.Add("Failed to call Microsoft Graph for '$($SecondBreakGlassAcct.UserPrincipalName)': $_")
-    Write-Warning "Graph error for BG1 '$($SecondBreakGlassAcct.UserPrincipalName)': $_"
-  }
-
-  [bool] $validBG =
-    if ($bgCountConfig -eq 2){
-      $FirstBreakGlassAcct.existStatus -and $SecondBreakGlassAcct.existStatus
+    Write-Host "step 1 validate listed BG accounts compliance status:  $validBG"
+    # if not compliant
+    if(-not $validBG){
+      $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $validBG
+        ControlName      = $ControlName
+        ItemName         = $ItemName
+        Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
+        ReportTime       = $ReportTime
+        itsgcode = $itsgcode
+      }
     }
     else {
-      $FirstBreakGlassAcct.existStatus -or $SecondBreakGlassAcct.existStatus
-    } 
-    
-  Write-Host "step 1 validate listed BG accounts compliance status:  $validBG"
-  # if not compliant
-  if(-not $validBG){
-    $PsObject = [PSCustomObject]@{
-      ComplianceStatus = $validBG
-      ControlName      = $ControlName
-      ItemName         = $ItemName
-      Comments         = $msgTable.isNotCompliant + " " + $msgTable.bgAccountNotExist
-      ReportTime       = $ReportTime
-      itsgcode = $itsgcode
-    }
-  }
-  else {
-    $firstLastSuccess = Get-LastSuccessfulSignIn -UserPrincipalName $FirstBreakGlassUPN
-    $secondLastSuccess = Get-LastSuccessfulSignIn -UserPrincipalName $SecondBreakGlassUPN
+      $firstLastSuccess = Get-LastSuccessfulSignIn -UserPrincipalName $FirstBreakGlassUPN
+      $secondLastSuccess = Get-LastSuccessfulSignIn -UserPrincipalName $SecondBreakGlassUPN
 
-    $firstCompliant = Check-DateWithinDays -dateToCheck $firstLastSuccess
-    $secondCompliant = Check-DateWithinDays -dateToCheck $secondLastSuccess
+      $firstCompliant = Check-DateWithinDays -dateToCheck $firstLastSuccess
+      $secondCompliant = Check-DateWithinDays -dateToCheck $secondLastSuccess
 
-    if($bgCountConfig -eq 2){
-      $IsCompliant = $firstCompliant -and $secondCompliant
-    }
-    else {
-      $IsCompliant = $false
-    }
+      if($bgCountConfig -eq 2){
+        $IsCompliant = $firstCompliant -and $secondCompliant
+      }
+      else {
+        $IsCompliant = $false
+      }
 
-    if($IsCompliant){
-      Write-Host "step 2 validate BG accounts last login compliance status:  $IsCompliant"
-      $commentsArray += $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
-    }
-    else {
-      Write-Host "step 2 validate BG accounts last login compliance status:  $IsCompliant"
-      $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
+      if($IsCompliant){
+        Write-Host "step 2 validate BG accounts last login compliance status:  $IsCompliant"
+        $commentsArray += $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
+      }
+      else {
+        Write-Host "step 2 validate BG accounts last login compliance status:  $IsCompliant"
+        $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
+      }
     }
   }
   
