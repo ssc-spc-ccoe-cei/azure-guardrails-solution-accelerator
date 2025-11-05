@@ -53,10 +53,10 @@ function Test-BreakGlassAccounts {
     try{
       #Getting Last SignIn info from MS Graph
       $userID = "/users/{0}?`$select=id" -f $upn #This is required to get last sign in info
-      $response1 = Invoke-GraphQuery -urlPath $userID -ErrorAction Stop
+      $response1 = Invoke-GraphQueryEX -urlPath $userID -ErrorAction Stop
 
       $lastUserSignIn = "/users/{0}?`$select=userPrincipalName,signInActivity" -f $response1.Content.id
-      $response = Invoke-GraphQuery -urlPath $lastUserSignIn -ErrorAction Stop
+      $response = Invoke-GraphQueryEX -urlPath $lastUserSignIn -ErrorAction Stop
       $userData = $response.Content
 
       if($null -ne $userData -and $null -ne $userData.signInActivity){
