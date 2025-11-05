@@ -69,7 +69,7 @@ Function Update-GSAAutomationRunbooks {
         }
 
         # Verify the blob was updated today (for upgrade scenario)
-        $today = (Get-Date).Date
+        $today = (Get-Date).ToUniversalTime().Date
         $blobLastModifiedDate = $blob.LastModified.UtcDateTime.Date
         
         if ($blobLastModifiedDate -lt $today) {
