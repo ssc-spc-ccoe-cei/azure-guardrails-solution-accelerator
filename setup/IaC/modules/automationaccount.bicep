@@ -353,7 +353,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
-        version: '1.0.3'
+        version: '1.1.0'
       }
     }
   }
