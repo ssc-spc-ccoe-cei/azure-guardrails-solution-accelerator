@@ -119,20 +119,23 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+| extend
     systemPreferredMethodsArray = iff(
-        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
-        parse_json(systemPreferredAuthenticationMethods_s),
-        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+        isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
+        parse_json(sysPreferredValue),
+        iff(isnotempty(sysPreferredValue), pack_array(sysPreferredValue), dynamic([]))
     ),
-    methodsRegisteredArray = parse_json(methodsRegistered_s)
+    methodsRegisteredArray = iff(isnotempty(methodsRegisteredValue), parse_json(methodsRegisteredValue), dynamic([]))
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = isMfaRegistered_b
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
@@ -228,20 +231,23 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+| extend
     systemPreferredMethodsArray = iff(
-        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
-        parse_json(systemPreferredAuthenticationMethods_s),
-        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+        isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
+        parse_json(sysPreferredValue),
+        iff(isnotempty(sysPreferredValue), pack_array(sysPreferredValue), dynamic([]))
     ),
-    methodsRegisteredArray = parse_json(methodsRegistered_s)
+    methodsRegisteredArray = iff(isnotempty(methodsRegisteredValue), parse_json(methodsRegisteredValue), dynamic([]))
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = isMfaRegistered_b
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
