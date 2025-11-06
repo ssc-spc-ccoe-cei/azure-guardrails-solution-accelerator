@@ -107,26 +107,35 @@ let localizedMessages = case(
         "dataCollectedForAnalysis": "Data collected for {0} users. Detailed MFA compliance analysis will be performed in the workbook."
     })
 );
-let userData = GuardrailsUserRaw_CL
-| where column_ifexists("ReportTime_s", "") == reportTime;
+let rawUserData = GuardrailsUserRaw_CL
+| extend ReportTime = column_ifexists("ReportTime_s", ""),
+         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false))
+| where ReportTime == reportTime;
+let excludedUsers = rawUserData
+| where guardrailsExcluded == true;
+let userData = rawUserData
+| where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+| extend
     systemPreferredMethodsArray = iff(
-        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
-        parse_json(systemPreferredAuthenticationMethods_s),
-        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+        isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
+        parse_json(sysPreferredValue),
+        iff(isnotempty(sysPreferredValue), pack_array(sysPreferredValue), dynamic([]))
     ),
-    methodsRegisteredArray = parse_json(methodsRegistered_s)
+    methodsRegisteredArray = iff(isnotempty(methodsRegisteredValue), parse_json(methodsRegisteredValue), dynamic([]))
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = isMfaRegistered_b
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
@@ -154,7 +163,14 @@ let summary = mfaAnalysis
         ),
         "Unknown error"
     );
-summary
+let excludedCount = toscalar(excludedUsers | summarize count());
+let finalSummary = summary
+| extend Comments = iff(coalesce(excludedCount, 0) > 0,
+        strcat(Comments, "; ", iff(locale == "fr-CA",
+            strcat("Exclusion de ", tostring(coalesce(excludedCount, 0)), " comptes de service via l'attribut de sécurité GCCloudGuardrails.ExcludeFromMFA"),
+            strcat("Excluded ", tostring(coalesce(excludedCount, 0)), " service accounts via GCCloudGuardrails.ExcludeFromMFA custom security attribute"))),
+        Comments);
+finalSummary
 | project 
     ControlName = iff(locale == "fr-CA", "GUARDRAIL 1: PROTÉGER LES COMPTES ET LES IDENTITÉS DES UTILISATEURS", "GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES"),
     ItemName = iff(locale == "fr-CA", "Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques", "All Cloud User Accounts MFA Check"),
@@ -207,25 +223,31 @@ let localizedMessages = case(
     })
 );
 let userData = GuardrailsUserRaw_CL
-| where ReportTime_s == reportTime;
+| extend ReportTime = column_ifexists("ReportTime_s", ""),
+         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false))
+| where ReportTime == reportTime
+| where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    isSystemPreferredEnabled = isSystemPreferredAuthenticationMethodEnabled_b,
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+| extend
     systemPreferredMethodsArray = iff(
-        isnotempty(systemPreferredAuthenticationMethods_s) and systemPreferredAuthenticationMethods_s startswith "[",
-        parse_json(systemPreferredAuthenticationMethods_s),
-        iff(isnotempty(systemPreferredAuthenticationMethods_s), pack_array(systemPreferredAuthenticationMethods_s), dynamic([]))
+        isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
+        parse_json(sysPreferredValue),
+        iff(isnotempty(sysPreferredValue), pack_array(sysPreferredValue), dynamic([]))
     ),
-    methodsRegisteredArray = parse_json(methodsRegistered_s)
+    methodsRegisteredArray = iff(isnotempty(methodsRegisteredValue), parse_json(methodsRegisteredValue), dynamic([]))
 | extend
     hasValidSystemPreferred = iff(
         isSystemPreferredEnabled == true and isnotempty(systemPreferredMethodsArray),
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = isMfaRegistered_b
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
