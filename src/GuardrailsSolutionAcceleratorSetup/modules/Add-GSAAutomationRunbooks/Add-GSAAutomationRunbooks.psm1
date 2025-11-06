@@ -19,7 +19,32 @@ Function Add-GSAAutomationRunbooks {
 
     import-module "$PSScriptRoot/../../../../src/Guardrails-Common/GR-Common.psm1"
     $modulesJsonPath = "$PSScriptRoot/../../../../setup/modules.json"
-    copy-toBlob -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration"
+    # Verify the modules.json file exists
+    if (-not (Test-Path $modulesJsonPath)) {
+        throw "Critical: modules.json file not found at path: $modulesJsonPath"
+    }
+    
+    Write-Verbose "Uploading modules.json to blob storage container 'configuration'..."
+    try {
+        copy-toBlob -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration" -ErrorAction Stop
+        
+        # Verify the upload succeeded by checking the blob exists
+        Write-Verbose "Verifying modules.json was successfully uploaded to blob storage..."
+        $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageAccountName'] -ErrorAction Stop
+        $blob = Get-AzStorageBlob -Container "configuration" -Blob "modules.json" -Context $storageAccount.Context -ErrorAction SilentlyContinue
+        
+        if ($null -eq $blob) {
+            throw "Critical: modules.json upload verification failed - blob not found in storage account after upload"
+        }
+        
+        Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified)"
+        Write-Host "Successfully uploaded modules.json to blob storage container 'configuration'" -ForegroundColor Green
+    }
+    catch {
+        $errorMessage = "Critical: Failed to upload modules.json to blob storage. This will cause runbook execution to fail. Error: $_"
+        Write-Error $errorMessage
+        throw $errorMessage
+    }
 
     Write-Verbose "Importing runbook definitions..."
     #region Import main runbook
