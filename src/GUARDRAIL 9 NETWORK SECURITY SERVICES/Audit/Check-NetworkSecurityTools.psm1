@@ -38,6 +38,7 @@ function Get-SubscriptionNetworkSecurityStatus {
         [Parameter(Mandatory=$true)]
         [object]$Subscription,
         [Parameter(Mandatory=$true)]
+        [AllowEmptyCollection()]
         [System.Collections.ArrayList]$ErrorList
     )
     
