@@ -41,6 +41,11 @@ catch {
     Write-Verbose "ENABLE_DEBUG_METRICS automation variable not found or not accessible; telemetry remains disabled."
 }
 
+$enableDebugMetrics = $false
+if ($env:ENABLE_DEBUG_METRICS) {
+    $enableDebugMetrics = [string]::Equals($env:ENABLE_DEBUG_METRICS, 'true', [System.StringComparison]::InvariantCultureIgnoreCase)
+}
+
 # Connects to Azure using the Automation Account's managed identity
 If (!$localExecution.IsPresent) {
     try {
@@ -205,7 +210,10 @@ if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
     $automationJobId = $PSPrivateMetadata.JobId.ToString()
 }
 
-$runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
+$runState = $null
+if ($enableDebugMetrics) {
+    $runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
+}
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
@@ -244,7 +252,10 @@ catch {
 Write-Output "Loaded $($msgTable.Count) messages." 
 
 Write-Output "Fetching all user raw data."
-$userRawDataContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.FetchAllUserRawData'
+$userRawDataContext = $null
+if ($runState) {
+    $userRawDataContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.FetchAllUserRawData'
+}
 $userRawDataRecordCount = 0
 function Convert-SecondsToTimespanString {
     param([double]$Seconds)
@@ -258,19 +269,25 @@ try {
 
     if ($UserRawDataErrors.Count -gt 0) {
         Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
-        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount $UserRawDataErrors.Count -ItemCount 0 -Message 'FetchAllUserRawData reported errors. UsersLoaded=0' | Out-Null
+        if ($runState -and $userRawDataContext) {
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount $UserRawDataErrors.Count -ItemCount 0 -Message 'FetchAllUserRawData reported errors. UsersLoaded=0' | Out-Null
+        }
     }
     else {
         if ($Global:AllUsersCache -and $Global:AllUsersCache.PSObject.Properties.Match('users').Count -gt 0) {
             $userRawDataRecordCount = @($Global:AllUsersCache.users).Count
         }
 
-        $completionMessage = "FetchAllUserRawData completed. UsersLoaded=$userRawDataRecordCount"
-        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ItemCount 0 -Message $completionMessage | Out-Null
+        if ($runState -and $userRawDataContext) {
+            $completionMessage = "FetchAllUserRawData completed. UsersLoaded=$userRawDataRecordCount"
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ItemCount 0 -Message $completionMessage | Out-Null
+        }
     }
 }
 catch {
-    Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -ItemCount 0 -Message 'FetchAllUserRawData threw an exception. UsersLoaded=0' | Out-Null
+    if ($runState -and $userRawDataContext) {
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -ItemCount 0 -Message 'FetchAllUserRawData threw an exception. UsersLoaded=0' | Out-Null
+    }
     throw
 }
 finally {
@@ -325,7 +342,10 @@ foreach ($module in $modules) {
 
         Write-Output "Running module with script: $moduleScript"
 
-        $moduleContext = Start-GuardrailModuleState -RunState $runState -ModuleName $moduleName -GuardrailId $moduleGuardrailId
+        $moduleContext = $null
+        if ($runState) {
+            $moduleContext = Start-GuardrailModuleState -RunState $runState -ModuleName $moduleName -GuardrailId $moduleGuardrailId
+        }
         $moduleErrors = 0
         $itemCount = 0
         $compliantCount = 0
@@ -419,13 +439,17 @@ foreach ($module in $modules) {
             }
             $telemetryMessage = $messageParts -join '; '
 
-            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
+            if ($runState -and $moduleContext) {
+                Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
+            }
         }
         catch {
             if ($moduleErrors -lt 1) {
                 $moduleErrors = 1
             }
-            Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
+            if ($runState -and $moduleContext) {
+                Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
+            }
 
             Write-Output "Caught error while invoking result is $($results.Errors)"
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
@@ -452,62 +476,66 @@ foreach ($module in $modules) {
         }
     }
     else {
-        Skip-GuardrailModuleState -RunState $runState -ModuleName $module.ModuleName -GuardrailId $moduleGuardrailId | Out-Null
+        if ($runState) {
+            Skip-GuardrailModuleState -RunState $runState -ModuleName $module.ModuleName -GuardrailId $moduleGuardrailId | Out-Null
+        }
         Write-Output "Skipping module $($module.ModuleName). Disabled in the configuration file (modules.json)."
     }
 }
 
-$runSummary = Complete-GuardrailRunState -RunState $runState
-$diagnosticSummaryEnd = Get-Date
-$diagnosticWallClock = $diagnosticSummaryEnd - $diagnosticRunbookStart
+if ($runState) {
+    $runSummary = Complete-GuardrailRunState -RunState $runState
+    $diagnosticSummaryEnd = Get-Date
+    $diagnosticWallClock = $diagnosticSummaryEnd - $diagnosticRunbookStart
 
-Write-Output ""
-Write-Output "========== Main Runbook Debug Summary =========="
-Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
-Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
-Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
-Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
-Write-Output ("Mandatory items        : {0}" -f $runSummary.Stats.TotalItems)
-Write-Output ("Mandatory compliant    : {0}" -f $runSummary.Stats.CompliantItems)
-Write-Output ("Mandatory non-compliant: {0}" -f $runSummary.Stats.NonCompliantItems)
-Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
-Write-Output "Recommended items (Required=false entries from modules.json):"
-Write-Output ("Recommended items       : {0}" -f $recommendedItemTotal)
-Write-Output ("Recommended compliant   : {0}" -f $recommendedCompliantTotal)
-Write-Output ("Recommended non-compliant: {0}" -f $recommendedNonCompliantTotal)
-Write-Output ("Recommended without status: {0}" -f $recommendedWithoutStatusTotal)
-Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
-$runMemoryStart = [Math]::Round($runSummary.Stats.MemoryStartMb)
-$runMemoryEnd = [Math]::Round($runSummary.Stats.MemoryEndMb)
-$runMemoryPeak = [Math]::Round($runSummary.Stats.MemoryPeakMb)
-$runMemoryDeltaRounded = [Math]::Round($runSummary.Stats.MemoryDeltaMb)
-$runMemoryDelta = if ($runMemoryDeltaRounded -ge 0) { "+$runMemoryDeltaRounded" } else { "$runMemoryDeltaRounded" }
-Write-Output ("MemoryMb (run)      : {0} -> {1} (peak {2}, Δ {3})" -f $runMemoryStart, $runMemoryEnd, $runMemoryPeak, $runMemoryDelta)
-
-if ($runSummary.Summaries.Count -gt 0) {
     Write-Output ""
-    Write-Output "Module Breakdown:"
-    foreach ($summary in $runSummary.Summaries) {
-        $durationFormatted = Convert-SecondsToTimespanString -Seconds $summary.DurationSeconds
-        $moduleMemoryStart = [Math]::Round($summary.MemoryStartMb)
-        $moduleMemoryEnd = [Math]::Round($summary.MemoryEndMb)
-        $moduleMemoryDeltaRounded = [Math]::Round($summary.MemoryDeltaMb)
-        $moduleMemoryDelta = if ($moduleMemoryDeltaRounded -ge 0) { "+$moduleMemoryDeltaRounded" } else { "$moduleMemoryDeltaRounded" }
-        $statusSuffix = if ($summary.PSObject.Properties.Match('IsSkipped').Count -gt 0 -and $summary.IsSkipped) { " | Status=Skipped" } else { " | Status=Executed" }
-        $line = " - {0}{1} | Duration={2} | Items={3} | Errors={4} | Mem={5} -> {6} MB (Δ {7})" -f `
-            $summary.ModuleName,
-            $statusSuffix,
-            $durationFormatted,
-            $summary.Items,
-            $summary.Errors,
-            $moduleMemoryStart,
-            $moduleMemoryEnd,
-            $moduleMemoryDelta
-        Write-Output $line
-    }
-}
+    Write-Output "========== Main Runbook Debug Summary =========="
+    Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
+    Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
+    Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
+    Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
+    Write-Output ("Mandatory items        : {0}" -f $runSummary.Stats.TotalItems)
+    Write-Output ("Mandatory compliant    : {0}" -f $runSummary.Stats.CompliantItems)
+    Write-Output ("Mandatory non-compliant: {0}" -f $runSummary.Stats.NonCompliantItems)
+    Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
+    Write-Output "Recommended items (Required=false entries from modules.json):"
+    Write-Output ("Recommended items       : {0}" -f $recommendedItemTotal)
+    Write-Output ("Recommended compliant   : {0}" -f $recommendedCompliantTotal)
+    Write-Output ("Recommended non-compliant: {0}" -f $recommendedNonCompliantTotal)
+    Write-Output ("Recommended without status: {0}" -f $recommendedWithoutStatusTotal)
+    Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
+    $runMemoryStart = [Math]::Round($runSummary.Stats.MemoryStartMb)
+    $runMemoryEnd = [Math]::Round($runSummary.Stats.MemoryEndMb)
+    $runMemoryPeak = [Math]::Round($runSummary.Stats.MemoryPeakMb)
+    $runMemoryDeltaRounded = [Math]::Round($runSummary.Stats.MemoryDeltaMb)
+    $runMemoryDelta = if ($runMemoryDeltaRounded -ge 0) { "+$runMemoryDeltaRounded" } else { "$runMemoryDeltaRounded" }
+    Write-Output ("MemoryMb (run)      : {0} -> {1} (peak {2}, Δ {3})" -f $runMemoryStart, $runMemoryEnd, $runMemoryPeak, $runMemoryDelta)
 
-Write-Output "========================================"
+    if ($runSummary.Summaries.Count -gt 0) {
+        Write-Output ""
+        Write-Output "Module Breakdown:"
+        foreach ($summary in $runSummary.Summaries) {
+            $durationFormatted = Convert-SecondsToTimespanString -Seconds $summary.DurationSeconds
+            $moduleMemoryStart = [Math]::Round($summary.MemoryStartMb)
+            $moduleMemoryEnd = [Math]::Round($summary.MemoryEndMb)
+            $moduleMemoryDeltaRounded = [Math]::Round($summary.MemoryDeltaMb)
+            $moduleMemoryDelta = if ($moduleMemoryDeltaRounded -ge 0) { "+$moduleMemoryDeltaRounded" } else { "$moduleMemoryDeltaRounded" }
+            $statusSuffix = if ($summary.PSObject.Properties.Match('IsSkipped').Count -gt 0 -and $summary.IsSkipped) { " | Status=Skipped" } else { " | Status=Executed" }
+            $line = " - {0}{1} | Duration={2} | Items={3} | Errors={4} | Mem={5} -> {6} MB (Δ {7})" -f `
+                $summary.ModuleName,
+                $statusSuffix,
+                $durationFormatted,
+                $summary.Items,
+                $summary.Errors,
+                $moduleMemoryStart,
+                $moduleMemoryEnd,
+                $moduleMemoryDelta
+            Write-Output $line
+        }
+    }
+
+    Write-Output "========================================"
+}
 
 Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
