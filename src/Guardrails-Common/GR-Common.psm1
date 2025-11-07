@@ -1647,7 +1647,7 @@ function Test-ComplianceForSubscription {
     if ($filterExpression) {
         $filteredQueryFailed = $false
         try {
-            Write-Information "Querying policy state with filter: $filterExpression"
+            Write-Host "Querying policy state with filter: $filterExpression"
             $complianceDetails = @(Get-AzPolicyState -Filter $filterExpression | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) })
         }
         catch {
