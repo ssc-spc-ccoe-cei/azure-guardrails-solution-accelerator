@@ -145,7 +145,9 @@ function copy-toBlob {
         else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
     }
     catch {
-        Write-Error $_.Exception.Message
+        $errorMessage = "Failed to upload blob '$($FilePath | Split-Path -Leaf)' to storage account '$storageaccountName' container '$containerName'. Error: $($_.Exception.Message)"
+        Write-Error $errorMessage
+        throw $errorMessage
     }
 }
 function get-blobs {

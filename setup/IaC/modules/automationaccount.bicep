@@ -338,12 +338,23 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     }
   }
 
-  resource module37 'modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-RiskBasedAccess'
+  // Splitting Module37
+  resource module37a 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-UserRiskBasedCAP'
     properties: {
       contentLink: {
-        uri: '${ModuleBaseURL}/Check-RiskBasedAccess.zip'
-        version: '1.0.4'
+        uri: '${ModuleBaseURL}/Check-UserRiskBasedCAP.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+
+  resource module37b 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-LocationBasedCAP'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-LocationBasedCAP.zip'
+        version: '1.0.0'
       }
     }
   }
@@ -353,7 +364,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
-        version: '1.0.3'
+        version: '1.1.0'
       }
     }
   }
@@ -497,6 +508,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
+
+  // Variables for Runbooks
 
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'

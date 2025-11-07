@@ -35,10 +35,59 @@ function Test-BreakGlassAccounts {
   [bool] $IsCompliant = $false
   $commentsArray = @()
   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-
   [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
   [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
   
+
+  function Get-LastSuccessfulSignIn {
+    param (
+      [string] $UserPrincipalName
+    )
+
+    if([string]::IsNullOrWhiteSpace($UserPrincipalName)){
+      return $null
+    }
+
+    $upn = $UserPrincipalName.Trim()
+
+    try{
+      #Getting Last SignIn info from MS Graph
+      $userID = "/users/{0}?`$select=id" -f $upn #This is required to get last sign in info
+      $response1 = Invoke-GraphQueryEX -urlPath $userID -ErrorAction Stop
+
+      $lastUserSignIn = "/users/{0}?`$select=userPrincipalName,signInActivity" -f $response1.Content.id
+      $response = Invoke-GraphQueryEX -urlPath $lastUserSignIn -ErrorAction Stop
+      $userData = $response.Content
+
+      if($null -ne $userData -and $null -ne $userData.signInActivity){
+        return $userData.signInActivity.lastSuccessfulSignInDateTime
+      }
+      else{
+        return $null
+      }
+    }
+    catch{
+      $ErrorList.Add("Failed to query lastSuccessfulSignInDateTime for '$upn': $_")
+      return $null
+    }
+  }
+
+  function Check-DateWithinDays {
+    param (
+      [string] $dateToCheck
+    )
+
+    if([string]::IsNullOrEmpty($dateToCheck)){
+      return $false
+    }
+
+    $lastSignIn = [System.DateTimeOffset]$dateToCheck
+    $currentDate = [System.DateTimeOffset]::UtcNow
+    $difference = ($currentDate - $lastSignIn).TotalDays
+
+    return ($difference -le 365)
+  }
+
   $bgCountConfig = 0
   if ($FirstBreakGlassUPN -ne ""){$bgCountConfig += 1}
   if ($SecondBreakGlassUPN -ne ""){$bgCountConfig += 1}
@@ -55,7 +104,8 @@ function Test-BreakGlassAccounts {
       itsgcode         = $itsgcode
     }
   }
-  elseif (($bgCountConfig -eq 2) -and $FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
+  # Validate unique BG accounts
+  elseif(($bgCountConfig -eq 2) -and $FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
       $IsCompliant = $false
       $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
@@ -80,43 +130,44 @@ function Test-BreakGlassAccounts {
     }
     # get 1st break glass account
     try {
-      $urlPath = $FirstBreakGlassAcct.apiUrl
-      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-
-      $data = $response.Content
-      
-      if ($null -ne  $data) {
-        $FirstBreakGlassAcct.existStatus = $true
-      } 
+      if($FirstBreakGlassUPN -ne ""){
+        $response = Invoke-GraphQuery -urlPath $FirstBreakGlassAcct.apiURL -ErrorAction Stop
+        $data = $response.Content
+        
+        if ($null -ne  $data) {
+          $FirstBreakGlassAcct.existStatus = $true
+        } 
+      }
     }
     catch {
-      $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
-      Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+      $ErrorList.Add("Failed to call Microsoft Graph for '$($FirstBreakGlassAcct.UserPrincipalName)': $_")
+      Write-Warning "Graph error for BG1 '$($FirstBreakGlassAcct.UserPrincipalName)': $_"
     }
 
     # get 2nd break glass account
     try {
-      $urlPath = $SecondBreakGlassAcct.apiURL
-      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-
-      $data = $response.Content
-
-      if ($null -ne  $data) {
-        $SecondBreakGlassAcct.existStatus = $true
-      } 
+      if($SecondBreakGlassUPN -ne ""){
+        $response2 = Invoke-GraphQuery -urlPath $SecondBreakGlassAcct.apiURL -ErrorAction Stop
+        $data2 = $response2.Content
+        
+        if ($null -ne  $data2) {
+          $SecondBreakGlassAcct.existStatus = $true
+        } 
+      }
     }
     catch {
-      $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
-      Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+      $ErrorList.Add("Failed to call Microsoft Graph for '$($SecondBreakGlassAcct.UserPrincipalName)': $_")
+      Write-Warning "Graph error for BG1 '$($SecondBreakGlassAcct.UserPrincipalName)': $_"
     }
 
-    if ($bgCountConfig -eq 2){
-      $validBG = $FirstBreakGlassAcct.existStatus -and $SecondBreakGlassAcct.existStatus
-    }
-    else {
-      $validBG = $FirstBreakGlassAcct.existStatus -or $SecondBreakGlassAcct.existStatus
-    }
-    
+    [bool] $validBG =
+      if ($bgCountConfig -eq 2){
+        $FirstBreakGlassAcct.existStatus -and $SecondBreakGlassAcct.existStatus
+      }
+      else {
+        $FirstBreakGlassAcct.existStatus -or $SecondBreakGlassAcct.existStatus
+      } 
+      
     Write-Host "step 1 validate listed BG accounts compliance status:  $validBG"
     # if not compliant
     if(-not $validBG){
@@ -130,122 +181,41 @@ function Test-BreakGlassAccounts {
       }
     }
     else {
-      # Step 2: Validate BG account Sign-in activity
-      # Parse LAW Resource ID
-      $lawParts = $LAWResourceId -split '/'
-      $subscriptionId = $lawParts[2]
-      $resourceGroupName = $lawParts[4] 
-      $workspaceId = $lawParts[8] 
+      $firstLastSuccess = Get-LastSuccessfulSignIn -UserPrincipalName $FirstBreakGlassUPN
+      $secondLastSuccess = Get-LastSuccessfulSignIn -UserPrincipalName $SecondBreakGlassUPN
 
-      # get context
-      try{
-        Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
+      $firstCompliant = Check-DateWithinDays -dateToCheck $firstLastSuccess
+      $secondCompliant = Check-DateWithinDays -dateToCheck $secondLastSuccess
+
+      if($bgCountConfig -eq 2){
+        $IsCompliant = $firstCompliant -and $secondCompliant
       }
-      catch {
-          $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
-              ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-              error message: $_")
-          throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
-              you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
-      }
-
-      # Validate signIn log is enabled
-      try {
-        # the log name to validate
-        $SignInLogs = @('SignInLogs')
-
-        # Retrieve diagnostic settings to check for logs
-        $diagnosticSettings = get-AADDiagnosticSettings
-        $matchingSetting = $diagnosticSettings | Where-Object { $_.properties.workspaceId -eq $LAWResourceId } | Select-Object -First 1
-
-        if($matchingSetting){
-          $enabledLogs = $matchingSetting.properties.logs | Where-Object { $_.enabled -eq $true } | Select-Object -ExpandProperty category
-          $missingSignInLogs = $SignInLogs | Where-Object { $_ -notin $enabledLogs }
-        }
-        else{
-          $missingSignInLogs = $SignInLogs
-        }
-
-        # Check missing logs for SignInLogs, if missing/not enabled, non-compliant
-        if ($missingSignInLogs.Count -gt 0) {
-          $IsCompliant = $false
-          $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.signInlogsNotCollected
-        }
-      }
-      catch {
-        # catch exceptions
-        if ($_.Exception.Message -like "*ResourceNotFound*") {
-          $IsCompliant = $false
-          $commentsArray += $msgTable.nonCompliantLaw -f $workspaceId
-          $ErrorList += "Log Analytics Workspace not found: $_"
-        }
-        else {
-          $IsCompliant = $false
-          $ErrorList += "Error accessing Log Analytics Workspace: $_"
-        }
-      }
-    }
-
-    # Retrieve the log data and check the data retention period for sign in
-    $kqlQuery = @"
-SigninLogs
-| where UserPrincipalName in ('$($FirstBreakGlassUPN)', '$($SecondBreakGlassUPN)')
-| project TimeGenerated, UserPrincipalName, CreatedDateTime
-| where TimeGenerated > ago(365d)
-| order by TimeGenerated desc
-"@
-
-    try {
-        $workspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceId
-        $queryResults = Invoke-AzOperationalInsightsQuery -WorkspaceId $workspace.CustomerId -Query $kqlQuery -ErrorAction Stop
-        
-        # Access the Results property of the query output
-        $results = $queryResults.Results
-
-        # check break glass account signin
-        $dataMostRecentSignInFirstBG = $results | Where-Object {$_.UserPrincipalName -eq $FirstBreakGlassUPN} | Select-Object -First 1
-        $dataMostRecentSignInSecondBG = $results | Where-Object {$_.UserPrincipalName -eq $SecondBreakGlassUPN} | Select-Object -First 1
-    
-        if ($null -ne $dataMostRecentSignInFirstBG -or $null -ne $dataMostRecentSignInSecondBG) {
-            $IsCompliant = $true
-        }
-    }
-    catch {
-      if ($null -eq $workspace) {
+      else {
         $IsCompliant = $false
-        $commentsArray += "Workspace not found in the specified resource group"
-        $ErrorList += "Workspace not found in the specified resource group: $_"
       }
-      if($_.Exception.Message -like "*ResourceNotFound*"){
 
+      if($IsCompliant){
+        Write-Host "step 2 validate BG accounts last login compliance status:  $IsCompliant"
+        $commentsArray += $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
       }
-      else{
-        # Handle errors and exceptions
-        $IsCompliant = $false
-        Write-Host "Error occurred retrieving the sign-in log data: $_"
+      else {
+        Write-Host "step 2 validate BG accounts last login compliance status:  $IsCompliant"
+        $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
       }
     }
-    
-
-    if($IsCompliant){
-      $commentsArray = $msgTable.isCompliant + " " + $msgTable.bgAccountLoginValid
-    }
-    else {
-      $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.bgAccountLoginNotValid
-    }
-    
-    $Comments = $commentsArray -join ";"
-
-    $PsObject = [PSCustomObject]@{
-      ComplianceStatus = $IsCompliant
-      ControlName      = $ControlName
-      ItemName         = $ItemName
-      Comments         = $Comments
-      ReportTime       = $ReportTime
-      itsgcode         = $itsgcode
-    }
-    
   }
+  
+  $Comments = $commentsArray -join ";"
+
+  $PsObject = [PSCustomObject]@{
+    ComplianceStatus = $IsCompliant
+    ControlName      = $ControlName
+    ItemName         = $ItemName
+    Comments         = $Comments
+    ReportTime       = $ReportTime
+    itsgcode         = $itsgcode
+  }
+    
 
   # Add profile information if MCUP feature is enabled
   if ($EnableMultiCloudProfiles) {

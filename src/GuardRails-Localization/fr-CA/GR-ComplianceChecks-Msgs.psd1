@@ -121,12 +121,14 @@ userStats = Statistiques d'utilisateur - Utilisateurs totaux : {0} ; Utilisateur
 userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
 userInGroup = Pas d'utilisateurs sans groupes
 
-riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
-nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
-nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés.
-nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
-compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
+riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'risques
+locationBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'emplacement
+nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur.
+nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir d'emplacements nommés non approuvés.
+compliantC1 = La politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur a été configurée.
+compliantC2 = La politique d'accès conditionnel visant à empêcher les connexions à partir d'emplacements nommés non approuvés a été configurée.
 
+nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
 noInProgressAccessReview = L'environnement a au moins une révision d'accès de rôle planifiée pour les administrateurs généraux ou un autre rôle intégré Azure. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non commencée ». Créez une nouvelle révision d'accès d'administrateur général/rôle intégré Azure pour qu'elle se reproduise et soit « en cours ».

@@ -66,7 +66,7 @@ function Test-CommonFilters {
     return $validPolicies
 } 
     
-function Get-RiskBasedAccess {
+function Get-UserRiskBasedCAP {
     param (      
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
@@ -203,27 +203,12 @@ function Get-RiskBasedAccess {
         $IsCompliantPasswordCAP = $false
     }
 
-
-    # Check 2: Allowed Location – Conditional Access Policy
-    $PsObjectLocation = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant
-    $ErrorList = $PsObjectLocation.Errors
-
-    # Combine status
-    if ($IsCompliantPasswordCAP -eq $true -and $PsObjectLocation.ComplianceStatus -eq $true){
-        $IsCompliant = $true
-        $Comments = $msgTable.isCompliant + " " + $msgTable.compliantC1C2
-    }
-    elseif($PsObjectLocation.ComplianceStatus -eq $true -and $IsCompliantPasswordCAP -eq $false){
-        $IsCompliant = $false
-        $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC1
-    }
-    elseif ($IsCompliantPasswordCAP -eq $true -and $PsObjectLocation.ComplianceStatus -eq $false){
-        $IsCompliant = $false
-        $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC2
+    if ($IsCompliantPasswordCAP -eq $true){
+        $IsCompliant = $IsCompliantPasswordCAP
+        $Comments = $msgTable.isCompliant + " " + $msgTable.compliantC1
     }
     else{
-        $IsCompliant = $false
-        $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC1C2
+        $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC1
     }
 
     $PsObject = [PSCustomObject]@{
