@@ -1647,11 +1647,11 @@ function Test-ComplianceForSubscription {
     if ($filterExpression) {
         $filteredQueryFailed = $false
         try {
-            Write-Verbose "Querying policy state with filter: $filterExpression"
+            Write-Information "Querying policy state with filter: $filterExpression"
             $complianceDetails = @(Get-AzPolicyState -Filter $filterExpression | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) })
         }
         catch {
-            Write-Verbose "Filtered Get-AzPolicyState call failed, falling back to unfiltered query. Error: $_"
+            Write-Warning "Filtered Get-AzPolicyState call failed, falling back to unfiltered query. Error: $_"
             $filteredQueryFailed = $true
         }
     }
@@ -1774,7 +1774,7 @@ function Check-PBMMPolicies {
                     $policySetDefinitionCache[$policySetCacheKey] = $policySetDefinition
                 }
                 catch {
-                    Write-Verbose "Direct lookup for policy set '$policySetCacheKey' failed. Falling back to tenant scan. Error: $_"
+                    Write-Warning "Direct lookup for policy set '$policySetCacheKey' failed. Falling back to tenant scan. Error: $_"
                     $policySetDefinition = Get-AzPolicySetDefinition | `
                         Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" }
                 }
