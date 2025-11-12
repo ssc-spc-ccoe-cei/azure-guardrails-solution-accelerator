@@ -3,6 +3,9 @@ param (
     [string]$keyVaultName
 )
 
+$diagnosticRunbookStart = Get-Date
+Write-Verbose ("Diagnostics: Runbook entry at {0}" -f $diagnosticRunbookStart)
+
 Disable-AzContextAutosave -Scope Process | Out-Null
 
 function Get-GSAAutomationVariable {
@@ -26,6 +29,21 @@ function Get-GSAAutomationVariable {
             return $secretValue.trim('"')
         }
     }
+}
+
+try {
+    $enableDebugMetricsSetting = Get-AutomationVariable -Name 'ENABLE_DEBUG_METRICS'
+    if ($enableDebugMetricsSetting) {
+        [Environment]::SetEnvironmentVariable('ENABLE_DEBUG_METRICS', $enableDebugMetricsSetting, 'Process') | Out-Null
+    }
+}
+catch {
+    Write-Verbose "ENABLE_DEBUG_METRICS automation variable not found or not accessible; telemetry remains disabled."
+}
+
+$enableDebugMetrics = $false
+if ($env:ENABLE_DEBUG_METRICS) {
+    $enableDebugMetrics = [string]::Equals($env:ENABLE_DEBUG_METRICS, 'true', [System.StringComparison]::InvariantCultureIgnoreCase)
 }
 
 # Connects to Azure using the Automation Account's managed identity
@@ -187,6 +205,16 @@ catch {
     throw "Failed to retrieve workspace key with secret name '$GuardrailWorkspaceIDKeyName' from KeyVault '$KeyVaultName'. Error message: $_"
 }
 
+$automationJobId = $env:AUTOMATION_JOBID
+if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
+    $automationJobId = $PSPrivateMetadata.JobId.ToString()
+}
+
+$runState = $null
+if ($enableDebugMetrics) {
+    $runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
+}
+
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
@@ -224,34 +252,81 @@ catch {
 Write-Output "Loaded $($msgTable.Count) messages." 
 
 Write-Output "Fetching all user raw data."
-# Ingest all user raw data before running modules
-$UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
-if ($UserRawDataErrors.Count -gt 0) {
-    Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+$userRawDataContext = $null
+if ($runState) {
+    $userRawDataContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.FetchAllUserRawData'
 }
-Write-Output "Fetching user raw data complete."
+$userRawDataRecordCount = 0
+function Convert-SecondsToTimespanString {
+    param([double]$Seconds)
+    $span = [TimeSpan]::FromSeconds($Seconds)
+    return $span.ToString("c")
+}
+
+try {
+    # Ingest all user raw data before running modules
+    $UserRawDataErrors = FetchAllUserRawData -ReportTime $ReportTime -FirstBreakGlassUPN $FirstBreakGlassUPN -SecondBreakGlassUPN $SecondBreakGlassUPN -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+
+    if ($UserRawDataErrors.Count -gt 0) {
+        Write-Error "Errors occurred during user raw data ingestion: $($UserRawDataErrors -join '; ')"
+        if ($runState -and $userRawDataContext) {
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount $UserRawDataErrors.Count -ItemCount 0 -Message 'FetchAllUserRawData reported errors. UsersLoaded=0' | Out-Null
+        }
+    }
+    else {
+        if ($Global:AllUsersCache -and $Global:AllUsersCache.PSObject.Properties.Match('users').Count -gt 0) {
+            $userRawDataRecordCount = @($Global:AllUsersCache.users).Count
+        }
+
+        if ($runState -and $userRawDataContext) {
+            $completionMessage = "FetchAllUserRawData completed. UsersLoaded=$userRawDataRecordCount"
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ItemCount 0 -Message $completionMessage | Out-Null
+        }
+    }
+}
+catch {
+    if ($runState -and $userRawDataContext) {
+        Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -ItemCount 0 -Message 'FetchAllUserRawData threw an exception. UsersLoaded=0' | Out-Null
+    }
+    throw
+}
+finally {
+    Write-Output "Fetching user raw data complete."
+}
 
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
+$recommendedItemTotal = 0
+$recommendedCompliantTotal = 0
+$recommendedNonCompliantTotal = 0
+$recommendedWithoutStatusTotal = 0
 foreach ($module in $modules) {
     $moduleCount++
+    $moduleName = $module.ModuleName
+    $moduleGuardrailId = $null
+    if ($module.PSObject.Properties.Match('Control').Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($module.Control)) {
+        if ($module.Control -match '(\d+)') {
+            $moduleGuardrailId = $Matches[1]
+        }
+    }
     if ($module.Status -eq "Enabled") {
         if($enableMultiCloudProfiles) {
             $module.Script += " -EnableMultiCloudProfiles"
             $ModuleProfilesString = $module.Profiles -join ','
         }
-        $NewScriptBlock = [scriptblock]::Create($module.Script)
+        $moduleScript = $module.Script
+        $NewScriptBlock = [scriptblock]::Create($moduleScript)
         Write-Output "Processing Module $($module.modulename)" 
         $variables = $module.variables
         $secrets = $module.secrets
         $localVariables = $module.localVariables
-        $vars = [PSCustomObject]@{}          
+        $vars = [PSCustomObject]@{}
         if ($null -ne $variables) {
             foreach ($v in $variables) {
                 $tempvarvalue = Get-GSAAutomationVariable -Name $v.value
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
-            }      
+            }
         }
         if ($null -ne $secrets) {
             foreach ($v in $secrets) {
@@ -264,34 +339,125 @@ foreach ($module in $modules) {
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $v.value
             }
         }
-        #$vars
-        #Write-host $module.Script
-        Write-Output "Running module with script: $module.Script"
+
+        Write-Output "Running module with script: $moduleScript"
+
+        $moduleContext = $null
+        if ($runState) {
+            $moduleContext = Start-GuardrailModuleState -RunState $runState -ModuleName $moduleName -GuardrailId $moduleGuardrailId
+        }
+        $moduleErrors = 0
+        $itemCount = 0
+        $compliantCount = 0
+        $nonCompliantCount = 0
+        $moduleRecommendedItemCount = 0
+        $moduleRecommendedCompliantCount = 0
+        $moduleRecommendedNonCompliantCount = 0
+        $moduleRecommendedWithoutStatusCount = 0
 
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
-            #Write-Output "Result for invoking is $($results.ComplianceResults)" 
 
-            #$results.ComplianceResults
-            #$results.Add("Required", $module.Required)
-            #Write-Output "required in module: $($module.Required)."
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
-            
-            #Write-Output "required in results: $($results.Required)."
+
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
+
             if ($null -ne $results.Errors) {
-                "Module $($module.modulename) failed with $($results.Errors.count) errors. $($results.Errors)"
+                $moduleErrors = @($results.Errors).Count
+                "Module $($module.modulename) failed with $moduleErrors errors. $($results.Errors)"
                 New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
             }
+
             if ($null -ne $results.AdditionalResults) {
                 # There is more data!
                 "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
             }
 
+            if ($null -ne $results.ComplianceResults) {
+                $complianceRecords = @($results.ComplianceResults)
+                $itemCount = 0
+                foreach ($record in $complianceRecords) {
+                    if (-not $record) {
+                        continue
+                    }
+
+                    $hasComplianceStatus = $record.PSObject.Properties.Match('ComplianceStatus').Count -gt 0
+                    if (-not $hasComplianceStatus) {
+                        continue
+                    }
+
+                    $isRequired = $true
+                    if ($record.PSObject.Properties.Match('Required').Count -gt 0) {
+                        try {
+                            $isRequired = [System.Convert]::ToBoolean($record.Required)
+                        }
+                        catch {
+                            $isRequired = $true
+                        }
+                    }
+
+                    if ($isRequired) {
+                        $itemCount++
+                        if ($record.ComplianceStatus -eq $true) {
+                            $compliantCount++
+                        }
+                        elseif ($record.ComplianceStatus -eq $false) {
+                            $nonCompliantCount++
+                        }
+                    }
+                    else {
+                        $moduleRecommendedItemCount++
+                        $recommendedItemTotal++
+
+                        if ($record.ComplianceStatus -eq $true) {
+                            $moduleRecommendedCompliantCount++
+                            $recommendedCompliantTotal++
+                        }
+                        elseif ($record.ComplianceStatus -eq $false) {
+                            $moduleRecommendedNonCompliantCount++
+                            $recommendedNonCompliantTotal++
+                        }
+                        else {
+                            $moduleRecommendedWithoutStatusCount++
+                            $recommendedWithoutStatusTotal++
+                        }
+                    }
+                }
+            }
+
             Write-Output "Script running is done for $($module.modulename)"
 
+            $messageParts = @("Items=$itemCount")
+            if ($moduleErrors -gt 0) { $messageParts += "Errors=$moduleErrors" }
+            if ($moduleRecommendedItemCount -gt 0) {
+                $messageParts += "RecommendedItems=$moduleRecommendedItemCount"
+                if ($moduleRecommendedCompliantCount -gt 0) { $messageParts += "RecommendedCompliant=$moduleRecommendedCompliantCount" }
+                if ($moduleRecommendedNonCompliantCount -gt 0) { $messageParts += "RecommendedNonCompliant=$moduleRecommendedNonCompliantCount" }
+                if ($moduleRecommendedWithoutStatusCount -gt 0) { $messageParts += "RecommendedNoStatus=$moduleRecommendedWithoutStatusCount" }
+            }
+            $telemetryMessage = $messageParts -join '; '
+
+            if ($runState -and $moduleContext) {
+                Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message $telemetryMessage | Out-Null
+            }
+        }
+        catch {
+            if ($moduleErrors -lt 1) {
+                $moduleErrors = 1
+            }
+            if ($runState -and $moduleContext) {
+                Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
+            }
+
+            Write-Output "Caught error while invoking result is $($results.Errors)"
+            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
+
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
+        }
+        finally {
             # Clear memory after each module
             $results = $null
             $NewScriptBlock = $null
@@ -299,7 +465,7 @@ foreach ($module in $modules) {
             $variables = $null
             $secrets = $null
             $localVariables = $null
-            
+
             # Force garbage collection every 3 modules
             if ($moduleCount % 3 -eq 0) {
                 Write-Output "Clearing memory after $moduleCount modules..."
@@ -308,17 +474,67 @@ foreach ($module in $modules) {
                 [System.GC]::Collect()
             }
         }
-        catch {
-            Write-Output "Caught error while invoking result is $($results.Errors)" 
-            $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
-            
-            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
-        }
     }
     else {
+        if ($runState) {
+            Skip-GuardrailModuleState -RunState $runState -ModuleName $module.ModuleName -GuardrailId $moduleGuardrailId | Out-Null
+        }
         Write-Output "Skipping module $($module.ModuleName). Disabled in the configuration file (modules.json)."
     }
+}
+
+if ($runState) {
+    $runSummary = Complete-GuardrailRunState -RunState $runState
+    $diagnosticSummaryEnd = Get-Date
+    $diagnosticWallClock = $diagnosticSummaryEnd - $diagnosticRunbookStart
+
+    Write-Output ""
+    Write-Output "========== Main Runbook Debug Summary =========="
+    Write-Output ("Overall run duration (connect + configuration + secrets + user data + modules) : {0}" -f (Convert-SecondsToTimespanString -Seconds $diagnosticWallClock.TotalSeconds))
+    Write-Output ("Modules run duration (module loop only)      : {0}" -f (Convert-SecondsToTimespanString -Seconds $runSummary.Duration.TotalSeconds))
+    Write-Output ("Modules (enabled)   : {0}" -f $runSummary.Stats.ModulesEnabled)
+    Write-Output ("Modules disabled     : {0}" -f $runSummary.Stats.ModulesDisabled)
+    Write-Output ("Mandatory items        : {0}" -f $runSummary.Stats.TotalItems)
+    Write-Output ("Mandatory compliant    : {0}" -f $runSummary.Stats.CompliantItems)
+    Write-Output ("Mandatory non-compliant: {0}" -f $runSummary.Stats.NonCompliantItems)
+    Write-Output ("Items without status : {0}" -f ($runSummary.Stats.TotalItems - ($runSummary.Stats.CompliantItems + $runSummary.Stats.NonCompliantItems)))
+    Write-Output "Recommended items (Required=false entries from modules.json):"
+    Write-Output ("Recommended items       : {0}" -f $recommendedItemTotal)
+    Write-Output ("Recommended compliant   : {0}" -f $recommendedCompliantTotal)
+    Write-Output ("Recommended non-compliant: {0}" -f $recommendedNonCompliantTotal)
+    Write-Output ("Recommended without status: {0}" -f $recommendedWithoutStatusTotal)
+    Write-Output ("Errors               : {0}" -f $runSummary.Stats.Errors)
+    $runMemoryStart = [Math]::Round($runSummary.Stats.MemoryStartMb)
+    $runMemoryEnd = [Math]::Round($runSummary.Stats.MemoryEndMb)
+    $runMemoryPeak = [Math]::Round($runSummary.Stats.MemoryPeakMb)
+    $runMemoryDeltaRounded = [Math]::Round($runSummary.Stats.MemoryDeltaMb)
+    $runMemoryDelta = if ($runMemoryDeltaRounded -ge 0) { "+$runMemoryDeltaRounded" } else { "$runMemoryDeltaRounded" }
+    Write-Output ("MemoryMb (run)      : {0} -> {1} (peak {2}, Δ {3})" -f $runMemoryStart, $runMemoryEnd, $runMemoryPeak, $runMemoryDelta)
+
+    if ($runSummary.Summaries.Count -gt 0) {
+        Write-Output ""
+        Write-Output "Module Breakdown:"
+        foreach ($summary in $runSummary.Summaries) {
+            $durationFormatted = Convert-SecondsToTimespanString -Seconds $summary.DurationSeconds
+            $moduleMemoryStart = [Math]::Round($summary.MemoryStartMb)
+            $moduleMemoryEnd = [Math]::Round($summary.MemoryEndMb)
+            $moduleMemoryDeltaRounded = [Math]::Round($summary.MemoryDeltaMb)
+            $moduleMemoryDelta = if ($moduleMemoryDeltaRounded -ge 0) { "+$moduleMemoryDeltaRounded" } else { "$moduleMemoryDeltaRounded" }
+            $statusSuffix = if ($summary.PSObject.Properties.Match('IsSkipped').Count -gt 0 -and $summary.IsSkipped) { " | Status=Skipped" } else { " | Status=Executed" }
+            $line = " - {0}{1} | Duration={2} | Items={3} | Errors={4} | Mem={5} -> {6} MB (Δ {7})" -f `
+                $summary.ModuleName,
+                $statusSuffix,
+                $durationFormatted,
+                $summary.Items,
+                $summary.Errors,
+                $moduleMemoryStart,
+                $moduleMemoryEnd,
+                $moduleMemoryDelta
+            Write-Output $line
+        }
+    }
+
+    Write-Output "========================================"
 }
 
 Add-LogEntry 'Information' "Completed execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
