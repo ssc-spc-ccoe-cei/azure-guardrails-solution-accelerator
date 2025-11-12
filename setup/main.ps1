@@ -121,6 +121,7 @@ Write-Output  "LogType: $(Get-GSAAutomationVariable -Name "LogType")"
 Write-Output  "reservedSubnetList: $(Get-GSAAutomationVariable -Name "reservedSubnetList")"
 Write-Output  "TenantDomainUPN: $(Get-GSAAutomationVariable -Name "TenantDomainUPN")"
 Write-Output  "WorkSpaceID: $(Get-GSAAutomationVariable -Name "WorkSpaceID")"
+Write-Output  "GuardrailsAutomationAccountMSI: $(Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI")"
 
 
 #Standard variables
@@ -129,10 +130,15 @@ $LogType = Get-GSAAutomationVariable -Name "LogType"
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
 $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
+$AutomationAccountMsiId = Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
 $Locale = Get-GSAAutomationVariable -Name "GuardRailsLocale"
+
+if ($AutomationAccountMsiId) {
+    [Environment]::SetEnvironmentVariable('AUTOMATION_ACCOUNT_ID', $AutomationAccountMsiId, 'Process') | Out-Null
+}
 
 If ($Locale -eq $null) {
     $Locale = "en-CA"
