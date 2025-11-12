@@ -364,37 +364,37 @@ function Get-GuardrailIdentityPermissions {
     $principal = $null
     $principalLookupErrors = [System.Collections.Generic.List[string]]::new()
 
-    $applicationGuid = [Guid]::Empty
-    if ([Guid]::TryParse($context.Account.Id, [ref]$applicationGuid)) {
-        try {
-            $principal = Get-AzADServicePrincipal -ApplicationId $applicationGuid -ErrorAction Stop
-        }
-        catch {
-            $principalLookupErrors.Add("ApplicationId lookup failed: $($_.Exception.Message)") | Out-Null
-        }
-    }
-    else {
-        $principalLookupErrors.Add("Context.Account.Id '$($context.Account.Id)' is not a GUID.") | Out-Null
-    }
-
-    if (-not $principal) {
-        $automationAccountObjectId = $env:AUTOMATION_ACCOUNT_ID
-        if (-not [string]::IsNullOrWhiteSpace($automationAccountObjectId)) {
-            $objectGuid = [Guid]::Empty
-            if ([Guid]::TryParse($automationAccountObjectId, [ref]$objectGuid)) {
-                try {
-                    $principal = Get-AzADServicePrincipal -ObjectId $objectGuid -ErrorAction Stop
-                }
-                catch {
-                    $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID lookup failed: $($_.Exception.Message)") | Out-Null
-                }
+    $automationAccountObjectId = $env:AUTOMATION_ACCOUNT_ID
+    if (-not [string]::IsNullOrWhiteSpace($automationAccountObjectId)) {
+        $objectGuid = [Guid]::Empty
+        if ([Guid]::TryParse($automationAccountObjectId, [ref]$objectGuid)) {
+            try {
+                $principal = Get-AzADServicePrincipal -ObjectId $objectGuid -ErrorAction Stop
             }
-            else {
-                $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID value '$automationAccountObjectId' is not a GUID.") | Out-Null
+            catch {
+                $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID lookup failed: $($_.Exception.Message)") | Out-Null
             }
         }
         else {
-            $principalLookupErrors.Add('AUTOMATION_ACCOUNT_ID environment variable not set.') | Out-Null
+            $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID value '$automationAccountObjectId' is not a GUID.") | Out-Null
+        }
+    }
+    else {
+        $principalLookupErrors.Add('AUTOMATION_ACCOUNT_ID environment variable not set.') | Out-Null
+    }
+
+    if (-not $principal) {
+        $applicationGuid = [Guid]::Empty
+        if ([Guid]::TryParse($context.Account.Id, [ref]$applicationGuid)) {
+            try {
+                $principal = Get-AzADServicePrincipal -ApplicationId $applicationGuid -ErrorAction Stop
+            }
+            catch {
+                $principalLookupErrors.Add("ApplicationId lookup failed: $($_.Exception.Message)") | Out-Null
+            }
+        }
+        else {
+            $principalLookupErrors.Add("Context.Account.Id '$($context.Account.Id)' is not a GUID.") | Out-Null
         }
     }
 

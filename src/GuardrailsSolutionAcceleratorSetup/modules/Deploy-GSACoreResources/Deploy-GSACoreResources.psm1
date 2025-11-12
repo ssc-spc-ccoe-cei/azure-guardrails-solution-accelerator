@@ -35,6 +35,23 @@ Function Deploy-GSACoreResources {
     }
     # add automation account msi to config object
     $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
+
+    # persist MSI object id as automation variable for runbooks
+    $automationVariableName = 'GuardrailsAutomationAccountMSI'
+    $automationAccountName = $config['runtime']['automationAccountName']
+    $automationAccountResourceGroup = $config['runtime']['resourceGroup']
+    try {
+        $existingVariable = Get-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -ErrorAction SilentlyContinue
+        if ($existingVariable) {
+            Set-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$false | Out-Null
+        }
+        else {
+            New-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$false | Out-Null
+        }
+    }
+    catch {
+        throw "Failed to persist automation account MSI id to variable '$automationVariableName'. $_"
+    }
     Write-Verbose "Core resource bicep deployment complete!"
 
     Write-Verbose "Granting Automation Account MSI permission to the Graph API"
