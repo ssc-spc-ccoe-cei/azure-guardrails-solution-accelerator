@@ -345,6 +345,107 @@ function Add-LogAnalyticsResults {
         -TimeStampField Get-Date 
 }
 
+function Get-GuardrailIdentityPermissions {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$TenantRootManagementGroupId
+    )
+
+    if ([string]::IsNullOrWhiteSpace($TenantRootManagementGroupId)) {
+        throw "TenantRootManagementGroupId is required."
+    }
+
+    $context = Get-AzContext
+    if (-not $context -or -not $context.Account -or [string]::IsNullOrWhiteSpace($context.Account.Id)) {
+        throw "Azure context is not initialized; unable to resolve automation account identity."
+    }
+
+    $principal = $null
+    $principalLookupErrors = [System.Collections.Generic.List[string]]::new()
+
+    $applicationGuid = [Guid]::Empty
+    if ([Guid]::TryParse($context.Account.Id, [ref]$applicationGuid)) {
+        try {
+            $principal = Get-AzADServicePrincipal -ApplicationId $applicationGuid -ErrorAction Stop
+        }
+        catch {
+            $principalLookupErrors.Add("ApplicationId lookup failed: $($_.Exception.Message)") | Out-Null
+        }
+    }
+    else {
+        $principalLookupErrors.Add("Context.Account.Id '$($context.Account.Id)' is not a GUID.") | Out-Null
+    }
+
+    if (-not $principal) {
+        $automationAccountObjectId = $env:AUTOMATION_ACCOUNT_ID
+        if (-not [string]::IsNullOrWhiteSpace($automationAccountObjectId)) {
+            $objectGuid = [Guid]::Empty
+            if ([Guid]::TryParse($automationAccountObjectId, [ref]$objectGuid)) {
+                try {
+                    $principal = Get-AzADServicePrincipal -ObjectId $objectGuid -ErrorAction Stop
+                }
+                catch {
+                    $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID lookup failed: $($_.Exception.Message)") | Out-Null
+                }
+            }
+            else {
+                $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID value '$automationAccountObjectId' is not a GUID.") | Out-Null
+            }
+        }
+        else {
+            $principalLookupErrors.Add('AUTOMATION_ACCOUNT_ID environment variable not set.') | Out-Null
+        }
+    }
+
+    if (-not $principal) {
+        $details = if ($principalLookupErrors.Count -gt 0) { ' Details: ' + ($principalLookupErrors -join ' | ') } else { '' }
+        throw "Failed to resolve automation account service principal.$details"
+    }
+
+    $principalDisplayName = $principal.DisplayName
+    if ([string]::IsNullOrWhiteSpace($principalDisplayName)) {
+        $principalDisplayName = $principal.AppId
+    }
+
+    $assignments = [System.Collections.Generic.List[psobject]]::new()
+    $errors = [System.Collections.Generic.List[string]]::new()
+
+    try {
+        $rbacAssignments = Get-AzRoleAssignment -ObjectId $principal.Id -ExpandPrincipalGroups:$false -ErrorAction Stop
+    }
+    catch {
+        $errors.Add("RBAC enumeration failed: $($_.Exception.Message)") | Out-Null
+        $rbacAssignments = @()
+    }
+
+    foreach ($assignment in $rbacAssignments) {
+        $assignments.Add([pscustomobject]@{
+                PrincipalType        = 'AutomationAccountMSI'
+                PermissionType       = 'RBAC'
+                PrincipalName        = $principalDisplayName
+                PrincipalId          = $principal.Id
+                Role                 = $assignment.RoleDefinitionName
+                RoleDefinitionId     = $assignment.RoleDefinitionId
+                Scope                = $assignment.Scope
+                AssignmentId         = $assignment.Id
+                TenantRootManagementGroupId        = $TenantRootManagementGroupId
+                TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
+            }) | Out-Null
+    }
+
+    return [pscustomobject]@{
+        PrincipalType                     = 'AutomationAccountMSI'
+        PrincipalId                       = $principal.Id
+        PrincipalAppId                    = $principal.AppId
+        PrincipalName                     = $principalDisplayName
+        TenantRootManagementGroupId       = $TenantRootManagementGroupId
+        TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
+        Assignments                       = $assignments
+        Errors                            = $errors
+    }
+}
+
 function Check-DocumentExistsInStorage {
     [Alias('Check-DocumentsExistInStorage')]
     [CmdletBinding()]
