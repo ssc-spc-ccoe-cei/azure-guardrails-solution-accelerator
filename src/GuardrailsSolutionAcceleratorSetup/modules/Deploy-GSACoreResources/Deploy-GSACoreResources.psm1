@@ -43,10 +43,10 @@ Function Deploy-GSACoreResources {
     try {
         $existingVariable = Get-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -ErrorAction SilentlyContinue
         if ($existingVariable) {
-            Set-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$false | Out-Null
+            Set-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$true | Out-Null
         }
         else {
-            New-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$false | Out-Null
+            New-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$true | Out-Null
         }
     }
     catch {
