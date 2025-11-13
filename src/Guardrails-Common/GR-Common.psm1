@@ -1944,47 +1944,121 @@ function Get-allowedLocationCAPCompliance {
     # get named locations
     $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
     try {
-        $response = Invoke-GraphQuery -urlPath $locationsBaseAPIUrl -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $locationsBaseAPIUrl -ErrorAction Stop
         $data = $response.Content
-        $locations = $data.value
+        $locations = if ($data -and $data.value) { $data.value } else { @() }
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
+        $locations = @()
     }
 
     # get conditional access policies
     $CABaseAPIUrl = '/identity/conditionalAccess/policies'
     try {
-        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $CABaseAPIUrl -ErrorAction Stop
 
-        $caps = $response.Content.value
+        $caps = if ($response.Content -and $response.Content.value) { $response.Content.value } else { @() }
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
+        $caps = @()
     }
-    
+
     # check that a named location for Canada exists and that a policy exists that uses it
     $validLocations = @()
-
     foreach ($location in $locations) {
         #Determine location conditions
         #get all valid locations: needs to have Canada Only
-        if ($location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions[0] -eq "CA") {
+        if ($null -ne $location.countriesAndRegions -and $location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions[0] -eq "CA") {
             $validLocations += $location
         }
     }
 
-    $locationBasedPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $_.state -eq 'enabled' }
+    
+    # Prepare canonical id list for comparisons
+    $validLocationIds = @()
+    if ($validLocations.Count -gt 0) {
+        foreach ($vl in $validLocations) {
+            $id = $null
+            if ($vl.PSObject.Properties.Match('id').Count -gt 0) { $id = $vl.id }
+            elseif ($vl.PSObject.Properties.Match('Id').Count -gt 0) { $id = $vl.Id }
+            if ($id) { $validLocationIds += $id.ToString().ToLower() }
+        }
+    }
+    
+    # Evaluate CAPs for patterns that effectively restrict access to Canada
+    # Acceptable patterns:
+    #  A) Policy explicitly includes the Canada named-location id in includeLocations.
+    #  B) Policy includes 'All' (applies to all locations) but excludes the Canada named-location id (i.e. block-all-except-Canada style).
+    #  C) Policy excludes Canada id and has no explicit includeLocations (conservative treat as location-based).
+    # #$locationBasedPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $_.state -eq 'enabled' }
+    $locationBasedPolicies = @()
+    foreach ($cap in $caps) {
+        try {
+            if ($null -eq $cap.conditions -or $null -eq $cap.conditions.locations) { 
+                continue 
+            }
 
+            $locCond = $cap.conditions.locations
+
+            # Normalize include/exclude into arrays of lowercase strings
+            $includes = @()
+            $excludes = @()
+            if ($locCond.PSObject.Properties.Match('includeLocations').Count -gt 0 -and $locCond.includeLocations) {
+                # ensure array
+                $incVals = @( $locCond.includeLocations )
+                $includes = $incVals | ForEach-Object { $_.ToString().ToLower() }
+            }
+            if ($locCond.PSObject.Properties.Match('excludeLocations').Count -gt 0 -and $locCond.excludeLocations) {
+                $excVals = @( $locCond.excludeLocations )
+                $excludes = $excVals | ForEach-Object { $_.ToString().ToLower() }
+            }
+
+            $matched = $false
+            # If we have no Canada named location defined, skip matching (handled later)
+            if ($validLocationIds.Count -gt 0) {
+                foreach ($validId in $validLocationIds) {
+                    $vID = $validId.ToLower()
+
+                    # Pattern A: explicit inclusion of Canada named location
+                    if ($includes -contains $vID) {
+                        $matched = $true; break
+                    }
+
+                    # Pattern B: include 'all' (or equivalent) but exclude Canada named location -> can represent "block all except Canada"
+                    if (($includes -contains 'all' -or $includes -contains 'any') -and ($excludes -contains $validId)) {
+                        $matched = $true; break
+                    }
+
+                    # Pattern C: no includes but exclude contains Canada (conservative detection)
+                    if ($includes.Count -eq 0 -and ($excludes -contains $validId)) {
+                        $matched = $true; break
+                    }
+                }
+            }
+
+            if ($matched -and ($cap.state -eq 'enabled')) {
+                $locationBasedPolicies += $cap
+            }
+        }
+        catch {
+            # non-fatal: record and continue
+            $ErrorList.Add("Error evaluating CAP '$($cap.id)' : $_")
+            continue
+        }
+    }
+
+    # Determine compliance based on presence of Canada named-location and matching policies
     if ($validLocations.count -ne 0) {
         #if there is at least one location with Canada only, we are good. If no Canada Only policy, not compliant.
         # Conditional access Policies
         # Need a location based policy, for admins (owners, contributors) that uses one of the valid locations above.
         # If there is no policy or the policy doesn't use one of the locations above, not compliant.
 
-        if (!$locationBasedPolicies) {
+        if (-not $locationBasedPolicies -or $locationBasedPolicies.Count -eq 0) {
             #failed. No policies have valid locations.
             $Comments = $msgTable.noCompliantPoliciesfound
             $IsCompliant = $false
