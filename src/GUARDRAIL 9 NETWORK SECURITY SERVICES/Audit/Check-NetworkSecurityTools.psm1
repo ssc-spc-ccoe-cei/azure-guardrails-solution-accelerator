@@ -1,38 +1,3 @@
-function Add-ProfileEvaluationResult {
-    param (
-        [Parameter(Mandatory=$true)]
-        [PSCustomObject]$ResultObject,
-        [Parameter(Mandatory=$true)]
-        [PSCustomObject]$EvalResult,
-        [Parameter(Mandatory=$true)]
-        [AllowEmptyCollection()]
-        [System.Collections.ArrayList]$ErrorList
-    )
-    
-    if (!$EvalResult.ShouldEvaluate) {
-        if(!$EvalResult.ShouldAvailable ){
-            if ($EvalResult.Profile -gt 0) {
-                $ResultObject.ComplianceStatus = "Not Applicable"
-                $ResultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $EvalResult.Profile -Force
-                $ResultObject.Comments = "Not available - Profile $($EvalResult.Profile) not applicable for this guardrail"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration availability") | Out-Null
-            }
-        } else {
-            if ($EvalResult.Profile -gt 0) {
-                $ResultObject.ComplianceStatus = "Not Applicable"
-                $ResultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $EvalResult.Profile -Force
-                $ResultObject.Comments = "Not evaluated - Profile $($EvalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration") | Out-Null
-            }
-        }
-    }
-    else {
-        $ResultObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $EvalResult.Profile -Force
-    }
-}
-
 function Get-SubscriptionNetworkSecurityStatus {
     param (
         [Parameter(Mandatory=$true)]
@@ -207,17 +172,8 @@ function Check-NetworkSecurityTools {
             }
 
             if ($EnableMultiCloudProfiles) {
-                try {
-                    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-                    if ($null -ne $evalResult) {
-                        Add-ProfileEvaluationResult -ResultObject $resultObject -EvalResult $evalResult -ErrorList $ErrorList
-                    } else {
-                        $ErrorList.Add("Get-EvaluationProfile returned null for subscription $($sub.Name)") | Out-Null
-                    }
-                }
-                catch {
-                    $ErrorList.Add("Error evaluating profile for subscription $($sub.Name): $_") | Out-Null
-                }
+                $resultObject = Add-ProfileInformation -Result $resultObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id -ErrorList $ErrorList
+                Write-Host "Compliance Output: $resultObject"
             }
 
             $ResultsList.Add($resultObject) | Out-Null
