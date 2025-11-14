@@ -131,7 +131,7 @@ function Test-BreakGlassAccounts {
     # get 1st break glass account
     try {
       if($FirstBreakGlassUPN -ne ""){
-        $response = Invoke-GraphQuery -urlPath $FirstBreakGlassAcct.apiURL -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $FirstBreakGlassAcct.apiURL -ErrorAction Stop
         $data = $response.Content
         
         if ($null -ne  $data) {
@@ -147,7 +147,7 @@ function Test-BreakGlassAccounts {
     # get 2nd break glass account
     try {
       if($SecondBreakGlassUPN -ne ""){
-        $response2 = Invoke-GraphQuery -urlPath $SecondBreakGlassAcct.apiURL -ErrorAction Stop
+        $response2 = Invoke-GraphQueryEX -urlPath $SecondBreakGlassAcct.apiURL -ErrorAction Stop
         $data2 = $response2.Content
         
         if ($null -ne  $data2) {
