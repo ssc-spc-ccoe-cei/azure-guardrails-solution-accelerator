@@ -3761,12 +3761,16 @@ function FetchAllUserRawData {
 
             # Get home tenant ID for guest users using cache
             $homeTenantId = $null
+<<<<<<< HEAD
             $homeTenantResolved = $false
+=======
+>>>>>>> c12aeed (Add hometenant id)
             if ($user.userType -eq "Guest") {
                 $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
                 
                 if ($domain) {
                     # Get from cache or resolve (with automatic caching)
+<<<<<<< HEAD
                     $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
                     $homeTenantId = $resolutionResult.TenantId
                     $homeTenantResolved = $resolutionResult.ResolutionSucceeded
@@ -3774,6 +3778,10 @@ function FetchAllUserRawData {
                 }
                 else {
                     Write-Verbose "    Guest user $($user.displayName) → could not extract domain from UPN/mail"
+=======
+                    $homeTenantId = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
+                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId"
+>>>>>>> c12aeed (Add hometenant id)
                 }
             }            
             
@@ -3788,7 +3796,11 @@ function FetchAllUserRawData {
                 mail              = $user.mail
                 createdDateTime   = $user.createdDateTime
                 userType          = $user.userType
+<<<<<<< HEAD
                 homeTenantResolved = $homeTenantResolved
+=======
+                homeTenantId      = $homeTenantId
+>>>>>>> c12aeed (Add hometenant id)
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
                 customSecurityAttributes = $user.customSecurityAttributes
