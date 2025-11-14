@@ -2914,6 +2914,18 @@ function FetchAllUserRawData {
             $registration = $context.regById[$user.id]
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
+
+            # Get home tenant ID for guest users using cache
+            $homeTenantId = $null
+            if ($user.userType -eq "Guest") {
+                $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
+                
+                if ($domain) {
+                    # Get from cache or resolve (with automatic caching)
+                    $homeTenantId = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
+                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId"
+                }
+            }            
             
             if ($registration -and $registration.methodsRegistered) {
                 $methods = @($registration.methodsRegistered)
@@ -2926,6 +2938,7 @@ function FetchAllUserRawData {
                 mail              = $user.mail
                 createdDateTime   = $user.createdDateTime
                 userType          = $user.userType
+                homeTenantId      = $homeTenantId
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
                 customSecurityAttributes = $user.customSecurityAttributes
