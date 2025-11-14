@@ -249,7 +249,7 @@
       }
     ]
   },
-    {
+  {
     "ModuleName": "Check-LocationBasedCAP",
     "Control": "Guardrails2",
     "ModuleType": "Builtin",
