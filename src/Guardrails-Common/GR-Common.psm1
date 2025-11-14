@@ -145,7 +145,9 @@ function copy-toBlob {
         else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
     }
     catch {
-        Write-Error $_.Exception.Message
+        $errorMessage = "Failed to upload blob '$($FilePath | Split-Path -Leaf)' to storage account '$storageaccountName' container '$containerName'. Error: $($_.Exception.Message)"
+        Write-Error $errorMessage
+        throw $errorMessage
     }
 }
 function get-blobs {
@@ -648,6 +650,409 @@ function Hide-Email {
         return "Invalid email format"
     }
 }
+
+#region Guardrail Telemetry Helpers
+
+function Initialize-GuardrailTelemetry {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$GuardrailId,
+        [Parameter(Mandatory = $true)]
+        [string]$RunbookName,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkSpaceID,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkspaceKey,
+        [Parameter(Mandatory = $false)]
+        [string]$SubscriptionId,
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId,
+        [Parameter(Mandatory = $false)]
+        [string]$JobId,
+        [Parameter(Mandatory = $false)]
+        [string]$CorrelationId
+    )
+
+    $telemetryEnabled = $false
+    if ($env:ENABLE_DEBUG_METRICS) {
+        $telemetryEnabled = [string]::Equals($env:ENABLE_DEBUG_METRICS, 'true', [System.StringComparison]::InvariantCultureIgnoreCase)
+    }
+
+    if (-not $telemetryEnabled) {
+        return [pscustomobject]@{ Enabled = $false }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($WorkSpaceID) -or [string]::IsNullOrWhiteSpace($WorkspaceKey)) {
+        Write-Verbose "Guardrail telemetry disabled due to missing workspace configuration."
+        return [pscustomobject]@{ Enabled = $false }
+    }
+
+    if (-not $CorrelationId) {
+        $CorrelationId = [guid]::NewGuid().ToString()
+    }
+
+    return [pscustomobject]@{
+        Enabled        = $true
+        GuardrailId    = $GuardrailId
+        RunbookName    = $RunbookName
+        WorkspaceId    = $WorkSpaceID
+        WorkspaceKey   = $WorkspaceKey
+        SubscriptionId = $SubscriptionId
+        TenantId       = $TenantId
+        JobId          = $JobId
+        CorrelationId  = $CorrelationId
+        DurationColumnInitialized = $false
+    }
+}
+
+# Returns the current PowerShell worker memory usage in MB (rounded to two decimals).
+function Get-GuardrailProcessMemory {
+    [CmdletBinding()]
+    param ()
+
+    $process = [System.Diagnostics.Process]::GetCurrentProcess()
+    try {
+        $workingSetMb = [Math]::Round(($process.WorkingSet64 / 1MB), 2)
+        $peakWorkingSetMb = [Math]::Round(($process.PeakWorkingSet64 / 1MB), 2)
+
+        return [pscustomobject]@{
+            WorkingSetMb     = $workingSetMb
+            PeakWorkingSetMb = $peakWorkingSetMb
+        }
+    }
+    finally {
+        $process.Dispose()
+    }
+}
+
+function Update-RunStateMemoryStats {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [psobject]$CurrentSnapshot
+    )
+
+    $RunState.Stats.MemoryEndMb = $CurrentSnapshot.WorkingSetMb
+    if ($CurrentSnapshot.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
+        $RunState.Stats.MemoryPeakMb = $CurrentSnapshot.PeakWorkingSetMb
+    }
+    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+}
+
+function Write-GuardrailTelemetry {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$Context,
+        [Parameter(Mandatory = $true)]
+        [string]$ExecutionScope,
+        [Parameter(Mandatory = $true)]
+        [string]$EventType,
+        [Parameter(Mandatory = $false)]
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$DurationMs,
+        [Parameter(Mandatory = $false)]
+        [double]$ErrorCount,
+        [Parameter(Mandatory = $false)]
+        [double]$ItemCount,
+        [Parameter(Mandatory = $false)]
+        [double]$CompliantCount,
+        [Parameter(Mandatory = $false)]
+        [double]$NonCompliantCount,
+        [Parameter(Mandatory = $false)]
+        [string]$Message,
+        [Parameter(Mandatory = $false)]
+        [string]$ReportTime,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailIdOverride,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryStartMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryEndMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryPeakMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryDeltaMb
+    )
+
+    if (-not $Context -or -not $Context.Enabled) {
+        return
+    }
+
+    try {
+        $record = [ordered]@{
+            GuardrailId        = if (-not [string]::IsNullOrWhiteSpace($GuardrailIdOverride)) { $GuardrailIdOverride } else { $Context.GuardrailId }
+            RunbookName        = $Context.RunbookName
+            ModuleName         = $ModuleName
+            ExecutionScope     = $ExecutionScope
+            EventType          = $EventType
+            CorrelationId      = [string]$Context.CorrelationId
+            JobId              = [string]$Context.JobId
+            RunSubscriptionId  = [string]$Context.SubscriptionId
+            RunTenantId        = [string]$Context.TenantId
+            ErrorCount         = if ($null -ne $ErrorCount) { [double]$ErrorCount } else { 0d }
+            ItemCount          = if ($null -ne $ItemCount) { [double]$ItemCount } else { 0d }
+            CompliantCount     = if ($null -ne $CompliantCount) { [double]$CompliantCount } else { 0d }
+            NonCompliantCount  = if ($null -ne $NonCompliantCount) { [double]$NonCompliantCount } else { 0d }
+            ReportTime         = if ($ReportTime) { $ReportTime } else { $null }
+            Message            = if (-not [string]::IsNullOrWhiteSpace($Message)) { $Message } else { $null }
+        }
+
+        $hasDurationValue = $PSBoundParameters.ContainsKey('DurationMs') -and $null -ne $DurationMs
+
+        if ($hasDurationValue) {
+            $durationRounded = [double][Math]::Round($DurationMs, 2)
+            $record['DurationMsReal'] = $durationRounded
+            $Context.DurationColumnInitialized = $true
+        }
+        elseif (-not $Context.DurationColumnInitialized) {
+            # LAW infers DurationMsReal as string when the first ingested
+            # record omits duration. Seed with a tiny double to force the column type once.
+            $record['DurationMsReal'] = [double]0.01
+            $Context.DurationColumnInitialized = $true
+        }
+
+        if ($PSBoundParameters.ContainsKey('MemoryStartMb') -and $null -ne $MemoryStartMb) {
+            $record['MemoryStartMb'] = [double][Math]::Round($MemoryStartMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryEndMb') -and $null -ne $MemoryEndMb) {
+            $record['MemoryEndMb'] = [double][Math]::Round($MemoryEndMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryPeakMb') -and $null -ne $MemoryPeakMb) {
+            $record['MemoryPeakMb'] = [double][Math]::Round($MemoryPeakMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryDeltaMb') -and $null -ne $MemoryDeltaMb) {
+            $record['MemoryDeltaMb'] = [double][Math]::Round($MemoryDeltaMb, 2)
+        }
+
+        $data = @([pscustomobject]$record)
+        New-LogAnalyticsData -Data $data -WorkSpaceID $Context.WorkspaceId -WorkSpaceKey $Context.WorkspaceKey -LogType 'CaCDebugMetrics' | Out-Null
+    }
+    catch {
+        Write-Verbose "Failed to write guardrail telemetry: $_"
+    }
+}
+
+function New-GuardrailRunState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$GuardrailId,
+        [Parameter(Mandatory = $true)]
+        [string]$RunbookName,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkSpaceID,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkspaceKey,
+        [Parameter(Mandatory = $false)]
+        [string]$SubscriptionId,
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId,
+        [Parameter(Mandatory = $false)]
+        [string]$JobId,
+        [Parameter(Mandatory = $false)]
+        [string]$ReportTime
+    )
+
+    $telemetryContext = Initialize-GuardrailTelemetry -GuardrailId $GuardrailId -RunbookName $RunbookName -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubscriptionId -TenantId $TenantId -JobId $JobId -CorrelationId $null
+
+    $runState = [pscustomobject]@{
+        TelemetryContext = $telemetryContext
+        ReportTime       = $ReportTime
+        RunStopwatch     = [System.Diagnostics.Stopwatch]::StartNew()
+        Stats            = [ordered]@{
+            ModulesEnabled    = 0
+            ModulesDisabled   = 0
+            TotalItems        = 0
+            CompliantItems    = 0
+            NonCompliantItems = 0
+            Errors            = 0
+            MemoryStartMb     = 0
+            MemoryEndMb       = 0
+            MemoryPeakMb      = 0
+            MemoryDeltaMb     = 0
+        }
+        Summaries        = [System.Collections.Generic.List[psobject]]::new()
+    }
+
+    $initialMemory = Get-GuardrailProcessMemory
+    $runState.Stats.MemoryStartMb = $initialMemory.WorkingSetMb
+    Update-RunStateMemoryStats -RunState $runState -CurrentSnapshot $initialMemory
+
+    Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -ReportTime $ReportTime -MemoryStartMb $initialMemory.WorkingSetMb -MemoryPeakMb $initialMemory.PeakWorkingSetMb
+
+    return $runState
+}
+
+function Start-GuardrailModuleState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailId
+    )
+
+    $RunState.Stats.ModulesEnabled++
+
+    $memorySnapshot = Get-GuardrailProcessMemory
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memorySnapshot
+
+    $moduleState = [pscustomobject]@{
+        ModuleName        = $ModuleName
+        Stopwatch         = [System.Diagnostics.Stopwatch]::StartNew()
+        GuardrailId       = $GuardrailId
+        MemoryStartMb     = $memorySnapshot.WorkingSetMb
+        MemoryStartPeakMb = $memorySnapshot.PeakWorkingSetMb
+    }
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb
+
+    return $moduleState
+}
+
+function Complete-GuardrailModuleState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [psobject]$ModuleState,
+        [Parameter(Mandatory = $false)]
+        [int]$ErrorCount = 0,
+        [Parameter(Mandatory = $false)]
+        [int]$ItemCount = 0,
+        [Parameter(Mandatory = $false)]
+        [int]$CompliantCount = 0,
+        [Parameter(Mandatory = $false)]
+        [int]$NonCompliantCount = 0,
+        [Parameter(Mandatory = $false)]
+        [string]$Message
+    )
+
+    if ($ModuleState.Stopwatch -and $ModuleState.Stopwatch.IsRunning) {
+        $ModuleState.Stopwatch.Stop()
+    }
+
+    $durationMs = $null
+    if ($ModuleState.Stopwatch) {
+        $durationMs = $ModuleState.Stopwatch.Elapsed.TotalMilliseconds
+    }
+
+    $RunState.Stats.Errors += $ErrorCount
+    $RunState.Stats.TotalItems += $ItemCount
+    $RunState.Stats.CompliantItems += $CompliantCount
+    $RunState.Stats.NonCompliantItems += $NonCompliantCount
+
+    if (-not $Message) {
+        $parts = @("Items=$ItemCount")
+        if ($ErrorCount -gt 0) { $parts += "Errors=$ErrorCount" }
+        $Message = $parts -join '; '
+    }
+
+    $memoryEnd = Get-GuardrailProcessMemory
+    $memoryStartMb = if ($ModuleState.PSObject.Properties.Match('MemoryStartMb').Count -gt 0) { $ModuleState.MemoryStartMb } else { $memoryEnd.WorkingSetMb }
+    $memoryStartPeakMb = if ($ModuleState.PSObject.Properties.Match('MemoryStartPeakMb').Count -gt 0) { $ModuleState.MemoryStartPeakMb } else { $memoryEnd.PeakWorkingSetMb }
+    $modulePeakMb = [Math]::Round(([Math]::Max($memoryEnd.PeakWorkingSetMb, $memoryStartPeakMb)), 2)
+    $memoryDeltaMb = [Math]::Round(($memoryEnd.WorkingSetMb - $memoryStartMb), 2)
+
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memoryEnd
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -DurationMs $durationMs -ErrorCount $ErrorCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -MemoryStartMb $memoryStartMb -MemoryEndMb $memoryEnd.WorkingSetMb -MemoryPeakMb $modulePeakMb -MemoryDeltaMb $memoryDeltaMb
+
+    $summary = [pscustomobject]@{
+        ModuleName      = $ModuleState.ModuleName
+        IsSkipped       = $false
+        DurationSeconds = if ($null -ne $durationMs) { [Math]::Round($durationMs / 1000, 2) } else { 0 }
+        Items           = $ItemCount
+        Errors          = $ErrorCount
+        GuardrailId     = $ModuleState.GuardrailId
+        MemoryStartMb   = $memoryStartMb
+        MemoryEndMb     = $memoryEnd.WorkingSetMb
+        MemoryDeltaMb   = $memoryDeltaMb
+        MemoryPeakMb    = $modulePeakMb
+    }
+    $null = $RunState.Summaries.Add($summary)
+
+    return $summary
+}
+
+function Skip-GuardrailModuleState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailId
+    )
+
+    $RunState.Stats.ModulesDisabled++
+
+    $memorySnapshot = Get-GuardrailProcessMemory
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memorySnapshot
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryEndMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb -MemoryDeltaMb 0
+
+    $summary = [pscustomobject]@{
+        ModuleName      = $ModuleName
+        IsSkipped       = $true
+        DurationSeconds = 0
+        Items           = 0
+        Errors          = 0
+        GuardrailId     = $GuardrailId
+        MemoryStartMb   = $memorySnapshot.WorkingSetMb
+        MemoryEndMb     = $memorySnapshot.WorkingSetMb
+        MemoryDeltaMb   = 0
+        MemoryPeakMb    = $memorySnapshot.PeakWorkingSetMb
+    }
+    $null = $RunState.Summaries.Add($summary)
+
+    return $summary
+}
+
+function Complete-GuardrailRunState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState
+    )
+
+    if ($RunState.RunStopwatch -and $RunState.RunStopwatch.IsRunning) {
+        $RunState.RunStopwatch.Stop()
+    }
+
+    $duration = if ($RunState.RunStopwatch) { $RunState.RunStopwatch.Elapsed } else { [TimeSpan]::Zero }
+
+    $messageParts = @(
+        "ModulesEnabled=$($RunState.Stats.ModulesEnabled)",
+        "ModulesDisabled=$($RunState.Stats.ModulesDisabled)",
+        "TotalItems=$($RunState.Stats.TotalItems)"
+    )
+    $runMessage = $messageParts -join '; '
+
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot ([pscustomobject]@{
+            WorkingSetMb     = $RunState.Stats.MemoryEndMb
+            PeakWorkingSetMb = $RunState.Stats.MemoryPeakMb
+        })
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -MemoryStartMb $RunState.Stats.MemoryStartMb -MemoryEndMb $RunState.Stats.MemoryEndMb -MemoryPeakMb $RunState.Stats.MemoryPeakMb -MemoryDeltaMb $RunState.Stats.MemoryDeltaMb
+
+    return [pscustomobject]@{
+        Duration  = $duration
+        Stats     = $RunState.Stats
+        Summaries = $RunState.Summaries
+    }
+}
+
+#endregion Guardrail Telemetry Helpers
 
 function Get-EvaluationProfile {
     [OutputType([PSCustomObject])]
@@ -2510,18 +2915,6 @@ function FetchAllUserRawData {
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
             
-            # Get home tenant ID for guest users using cache
-            $homeTenantId = $null
-            if ($user.userType -eq "Guest") {
-                $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
-                
-                if ($domain) {
-                    # Get from cache or resolve (with automatic caching)
-                    $homeTenantId = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
-                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId"
-                }
-            }
-            
             if ($registration -and $registration.methodsRegistered) {
                 $methods = @($registration.methodsRegistered)
             }
@@ -2533,7 +2926,6 @@ function FetchAllUserRawData {
                 mail              = $user.mail
                 createdDateTime   = $user.createdDateTime
                 userType          = $user.userType
-                homeTenantId      = $homeTenantId
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
                 customSecurityAttributes = $user.customSecurityAttributes
