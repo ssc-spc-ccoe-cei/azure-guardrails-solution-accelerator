@@ -107,14 +107,74 @@ let localizedMessages = case(
         "dataCollectedForAnalysis": "Data collected for {0} users. Detailed MFA compliance analysis will be performed in the workbook."
     })
 );
+// Cross-tenant MFA trust: Check if table exists and has data
+let crossTenantDataExists = toscalar(
+    union isfuzzy=true (
+        GuardrailsCrossTenantAccess_CL | take 1 | summarize count()
+    ), (
+        print count_ = 0
+    )
+    | summarize sum(count_) > 0
+);
+let crossTenantRawData = union isfuzzy=true (
+    GuardrailsCrossTenantAccess_CL
+    | where column_ifexists("ReportTime_s", "") == reportTime
+    | summarize arg_max(TimeGenerated, *) by PartnerTenantId_s = column_ifexists("PartnerTenantId_s", "")
+), (
+    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
+    | where 1 == 0  // Empty result if table doesn't exist
+);
+let crossTenantSettings = crossTenantRawData
+| extend 
+    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
+    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
+    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
+| where isnotempty(PartnerTenantId);
+let defaultMfaTrustSetting = toscalar(
+    crossTenantSettings
+    | where PartnerTenantId == "default"
+    | project InboundMfaTrust
+    | union (print InboundMfaTrust = false)
+    | take 1
+);
+let hasGuestMfaPolicyConfigured = toscalar(
+    crossTenantSettings
+    | summarize HasPolicy = max(HasGuestMfaPolicy)
+    | extend HasPolicy = coalesce(HasPolicy, false)
+    | project HasPolicy
+);
+let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
 let rawUserData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
-         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false))
+         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
+         userType = column_ifexists("userType_s", ""),
+         homeTenantId = column_ifexists("homeTenantId_s", "")
 | where ReportTime == reportTime;
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
-let userData = rawUserData
-| where guardrailsExcluded == false;
+let guestUsers = rawUserData
+| where guardrailsExcluded == false and userType == "Guest";
+let memberUsers = rawUserData
+| where guardrailsExcluded == false and userType != "Guest";
+// Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
+let guestsWithTrustInfo = guestUsers
+| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| join kind=leftouter (
+    crossTenantSettings
+    | project PartnerTenantId, InboundMfaTrust
+) on $left.guestHomeTenantId == $right.PartnerTenantId
+| extend 
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled, 
+        hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), 
+        false);
+let guestsToExclude = guestsWithTrustInfo
+| where shouldExcludeGuest == true;
+let guestsToEvaluate = guestsWithTrustInfo
+| where shouldExcludeGuest == false
+| project-away PartnerTenantId, InboundMfaTrust, effectiveMfaTrust, shouldExcludeGuest, guestHomeTenantId;
+let excludedGuestCount = toscalar(guestsToExclude | summarize count());
+let userData = union memberUsers, guestsToEvaluate;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
@@ -169,6 +229,11 @@ let finalSummary = summary
         strcat(Comments, "; ", iff(locale == "fr-CA",
             strcat("Exclusion de ", tostring(coalesce(excludedCount, 0)), " comptes de service via l'attribut de sécurité GCCloudGuardrails.ExcludeFromMFA"),
             strcat("Excluded ", tostring(coalesce(excludedCount, 0)), " service accounts via GCCloudGuardrails.ExcludeFromMFA custom security attribute"))),
+        Comments)
+| extend Comments = iff(crossTenantFeatureEnabled and excludedGuestCount > 0,
+        strcat(Comments, "; ", iff(locale == "fr-CA",
+            strcat("Exclusion de ", tostring(excludedGuestCount), " comptes invités avec confiance AMF inter-locataire et politique d'accès conditionnel"),
+            strcat("Excluded ", tostring(excludedGuestCount), " guest accounts with cross-tenant MFA trust and conditional access policy"))),
         Comments);
 finalSummary
 | project 
@@ -222,9 +287,48 @@ let localizedMessages = case(
         "noNonCompliantUsers": "No non-compliant users found"
     })
 );
+// Cross-tenant MFA trust: Check if table exists and has data
+let crossTenantDataExists = toscalar(
+    union isfuzzy=true (
+        GuardrailsCrossTenantAccess_CL | take 1 | summarize count()
+    ), (
+        print count_ = 0
+    )
+    | summarize sum(count_) > 0
+);
+let crossTenantRawData = union isfuzzy=true (
+    GuardrailsCrossTenantAccess_CL
+    | where column_ifexists("ReportTime_s", "") == reportTime
+    | summarize arg_max(TimeGenerated, *) by PartnerTenantId_s = column_ifexists("PartnerTenantId_s", "")
+), (
+    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
+    | where 1 == 0  // Empty result if table doesn't exist
+);
+let crossTenantSettings = crossTenantRawData
+| extend 
+    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
+    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
+    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
+| where isnotempty(PartnerTenantId);
+let defaultMfaTrustSetting = toscalar(
+    crossTenantSettings
+    | where PartnerTenantId == "default"
+    | project InboundMfaTrust
+    | union (print InboundMfaTrust = false)
+    | take 1
+);
+let hasGuestMfaPolicyConfigured = toscalar(
+    crossTenantSettings
+    | summarize HasPolicy = max(HasGuestMfaPolicy)
+    | extend HasPolicy = coalesce(HasPolicy, false)
+    | project HasPolicy
+);
+let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
 let userData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
-         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false))
+         guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
+         userType = column_ifexists("userType_s", ""),
+         homeTenantId = column_ifexists("homeTenantId_s", "")
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
@@ -264,6 +368,17 @@ let mfaAnalysis = userData
     );
 let nonCompliantUsers = mfaAnalysis
 | where isMfaCompliant == false
+| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| join kind=leftouter (
+    crossTenantSettings
+    | project PartnerTenantId, InboundMfaTrust
+) on $left.guestHomeTenantId == $right.PartnerTenantId
+| extend 
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest",
+        hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false),
+        false)
+| where shouldExcludeGuest == false
 | sort by signInActivity_lastSignInDateTime_t
 | project 
     DisplayName = column_ifexists("displayName_s", ""), 
@@ -313,4 +428,3 @@ resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((dep
 
 output logAnalyticsWorkspaceId string = guardrailsLogAnalytics.properties.customerId 
 output logAnalyticsResourceId string = guardrailsLogAnalytics.id
-
