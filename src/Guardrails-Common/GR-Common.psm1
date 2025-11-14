@@ -3788,7 +3788,6 @@ function FetchAllUserRawData {
                 mail              = $user.mail
                 createdDateTime   = $user.createdDateTime
                 userType          = $user.userType
-                homeTenantId      = $homeTenantId
                 homeTenantResolved = $homeTenantResolved
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
