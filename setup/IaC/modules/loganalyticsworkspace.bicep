@@ -116,20 +116,22 @@ let crossTenantDataExists = toscalar(
     )
     | summarize sum(count_) > 0
 );
-let crossTenantRawData = union isfuzzy=true (
+let crossTenantSettings = union isfuzzy=true (
     GuardrailsCrossTenantAccess_CL
     | where column_ifexists("ReportTime_s", "") == reportTime
-    | summarize arg_max(TimeGenerated, *) by PartnerTenantId_s = column_ifexists("PartnerTenantId_s", "")
+    | extend 
+        PartnerTenantId = coalesce(
+            tostring(column_ifexists("PartnerTenantId_g", "")),
+            column_ifexists("PartnerTenantId_s", "")
+        ),
+        InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
+        HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
+    | where isnotempty(PartnerTenantId)
+    | summarize arg_max(TimeGenerated, *) by PartnerTenantId
 ), (
-    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
+    print PartnerTenantId = "", InboundMfaTrust = false, HasGuestMfaPolicy = false, TimeGenerated = datetime(null)
     | where 1 == 0  // Empty result if table doesn't exist
 );
-let crossTenantSettings = crossTenantRawData
-| extend 
-    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
-    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
-    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
-| where isnotempty(PartnerTenantId);
 let defaultMfaTrustSetting = toscalar(
     crossTenantSettings
     | where PartnerTenantId == "default"
@@ -139,8 +141,7 @@ let defaultMfaTrustSetting = toscalar(
 );
 let hasGuestMfaPolicyConfigured = toscalar(
     crossTenantSettings
-    | summarize HasPolicy = max(HasGuestMfaPolicy)
-    | extend HasPolicy = coalesce(HasPolicy, false)
+    | summarize HasPolicy = coalesce(max(HasGuestMfaPolicy), false)
     | project HasPolicy
 );
 let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
@@ -148,7 +149,10 @@ let rawUserData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = column_ifexists("homeTenantId_s", "")
+         homeTenantId = coalesce(
+             tostring(column_ifexists("homeTenantId_g", "")),
+             column_ifexists("homeTenantId_s", "")
+         )
 | where ReportTime == reportTime;
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
@@ -296,20 +300,22 @@ let crossTenantDataExists = toscalar(
     )
     | summarize sum(count_) > 0
 );
-let crossTenantRawData = union isfuzzy=true (
+let crossTenantSettings = union isfuzzy=true (
     GuardrailsCrossTenantAccess_CL
     | where column_ifexists("ReportTime_s", "") == reportTime
-    | summarize arg_max(TimeGenerated, *) by PartnerTenantId_s = column_ifexists("PartnerTenantId_s", "")
+    | extend 
+        PartnerTenantId = coalesce(
+            tostring(column_ifexists("PartnerTenantId_g", "")),
+            column_ifexists("PartnerTenantId_s", "")
+        ),
+        InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
+        HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
+    | where isnotempty(PartnerTenantId)
+    | summarize arg_max(TimeGenerated, *) by PartnerTenantId
 ), (
-    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
+    print PartnerTenantId = "", InboundMfaTrust = false, HasGuestMfaPolicy = false, TimeGenerated = datetime(null)
     | where 1 == 0  // Empty result if table doesn't exist
 );
-let crossTenantSettings = crossTenantRawData
-| extend 
-    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
-    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
-    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
-| where isnotempty(PartnerTenantId);
 let defaultMfaTrustSetting = toscalar(
     crossTenantSettings
     | where PartnerTenantId == "default"
@@ -319,8 +325,7 @@ let defaultMfaTrustSetting = toscalar(
 );
 let hasGuestMfaPolicyConfigured = toscalar(
     crossTenantSettings
-    | summarize HasPolicy = max(HasGuestMfaPolicy)
-    | extend HasPolicy = coalesce(HasPolicy, false)
+    | summarize HasPolicy = coalesce(max(HasGuestMfaPolicy), false)
     | project HasPolicy
 );
 let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
@@ -328,7 +333,10 @@ let userData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = column_ifexists("homeTenantId_s", "")
+         homeTenantId = coalesce(
+             tostring(column_ifexists("homeTenantId_g", "")),
+             column_ifexists("homeTenantId_s", "")
+         )
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
