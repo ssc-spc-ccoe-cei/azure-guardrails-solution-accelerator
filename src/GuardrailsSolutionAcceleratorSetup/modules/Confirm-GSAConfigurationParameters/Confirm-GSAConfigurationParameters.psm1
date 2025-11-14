@@ -156,7 +156,7 @@ Function Confirm-GSAConfigurationParameters {
         }
         storageaccountName                = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-z0-9][a-z0-9]{2,11}$'
+            ValidationPattern = '^[a-z0-9][a-z0-9]{2,14}$'
         }
         logAnalyticsworkspaceName         = @{
             IsRequired        = $true
