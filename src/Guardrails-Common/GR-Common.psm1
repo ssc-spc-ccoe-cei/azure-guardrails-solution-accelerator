@@ -2019,108 +2019,121 @@ function Get-allowedLocationCAPCompliance {
         }
     }
 
-    # Evaluate CAPs for patterns that effectively restrict access to Canada
-    # Acceptable patterns:
-    #  A) Policy explicitly includes a named location that represents 'all countries except Canada' AND action is Block
-    #  B) Policy includes 'all' locations and explicitely excludes the Canada named-location id AND action is Block (i.e. block all except Canada)
-    #  C) Policy has no includeLocations but EXCLUDES the Canada-only named-location id (conservative treat as location-based)
-    
-    # Common synonyms for "all" locations in various CAP outputs
-    $allLocationsSym = @('all','any','alltrusted','alltrustedlocations','alllocations')
-
+    # Filter enabled CAPs
     $enabledCAPs = $caps | Where-Object { $_.state -eq 'enabled' }
-    $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions.locations) -and ($validLocations.id -in $_.conditions.locations.includeLocations) -or ($validLocations.id -in $_.conditions.locations.excludeLocations ) }
-    
-
-    $validlocationBasedPolicies = @()
-    foreach ($cap in $locationBasedPolicies) {
-        try {
-            if ($null -eq $cap.conditions -or $null -eq $cap.conditions.locations) { 
-                continue
-            }
-            $locationCondition = $cap.conditions.locations
-            # include/exclude lists
-            $includes = @()
-            $excludes = @()
-            if ($locationCondition.includeLocations -and $locationCondition.PSObject.Properties.Match('includeLocations').Count -gt 0 ) {
-                $inccludeVals = @( $locationCondition.includeLocations )
-                $includes = $inccludeVals | ForEach-Object { $_.ToString().ToLower() }
-            }  
-            if ($locationCondition.excludeLocations -and $locationCondition.PSObject.Properties.Match('excludeLocations').Count -gt 0) {
-                $excludeVals = @( $locationCondition.excludeLocations )
-                $excludes = $excludeVals | ForEach-Object { $_.ToString().ToLower() }
-            }
-            # Determine the CAP's grant controls
-            $grantControls = @()
-            if ($cap.grantControls -and $cap.PSObject.Properties.Match('grantControls').Count -gt 0) {
-                $grantControls = @($cap.grantControls.buildInControls )
-                try {
-                    if ($cap.grantControls.PSObject.Properties.Match('builtInControls').Count -gt 0 -and $cap.grantControls.builtInControls) {
-                        $grantBuiltIns = @($cap.grantControls.builtInControls) | ForEach-Object { $_.ToString().ToLower() }
-                    }
-                } catch { 
-                    Write-Warning "Warning: Unable to process grantControls builtInControls for CAP '$($cap.id)': $_"
-                }
-            }
-            # Check for Grant/Block action in grant controls
-            $isBlockAction = $false
-            if ($grantControls -contains 'block' -or $grantBuiltIns -contains 'block') {
-                $isBlockAction = $true
-            }
-            # Evaluate patterns
-            $matched = $false
-            # Pattern A: explicit inclusion of Canada-only named location
-            if ($includes | Where-Object { $validLocationIds -contains $_ }) {
-                if ($isBlockAction) {
-                    $matched = $true
-                }
-            }
-            # Pattern B: include 'all' (or equivalent) but exclude Canada-only named location -> can represent "block all except Canada"
-            if (($includes | Where-Object { $allLocationsSym -contains $_ }) -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
-                if ($isBlockAction) {
-                    $matched = $true
-                }
-            }
-            # Pattern C: no includes but exclude contains Canada-only (conservative detection)
-            if ($includes.Count -eq 0 -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
-                if ($isBlockAction) {
-                    $matched = $true
-                }
-            }
-            Write-Host "CAP Found $($cap.displayName) with include and/or exclude location condition that has a match '$($matched)' with '$($grantBuiltIns)' access control"
-            if ($matched) {
-                $validlocationBasedPolicies += $cap
-                Write-Host "Valid Canada-only location CAP Found with '$($grantBuiltIns)' access control"
-            }
-
-        }
-        catch {
-            $ErrorList.Add("Error evaluating CAP '$($cap.id)' : $_") | Out-Null
-            continue
-        }
-    }
-
-    # Determine compliance based on presence of Canada-only named-location and matching policies
-    if ($validLocations.count -ne 0) {
-        # If there is at least one location with Canada-only -> compliant 
-        # If no Canada Only policy -> not compliant
-
-        if ($null -eq $validlocationBasedPolicies -or ($validlocationBasedPolicies.Count -eq 0) ){
-            # Non-complient; No policies have valid locations
-            $Comments = $msgTable.noCompliantPoliciesfound
-            $IsCompliant = $false
-        }
-        else {
-            # Compliant; valid policies found
-            $IsCompliant = $true
-            $Comments = $msgTable.allPoliciesAreCompliant
-        }      
-    }
-    else {
-        # Non-compliant; No locations have Canada-only presence.
-        $Comments = $msgTable.noLocationsCompliant
+    if ($null -eq $enabledCAPs -or $enabledCAPs.Count -eq 0) {
+        Write-Host "No enabled Conditional Access Policies found."
+        $Comments = $msgTable.noEnabledPoliciesFound
         $IsCompliant = $false
     }
+    else{
+        Write-Host "Found $($enabledCAPs.Count) enabled Conditional Access Policies."
+    
+        # Evaluate CAPs for patterns that effectively restrict access to Canada
+        # Acceptable patterns:
+        #  A) Policy explicitly includes a named location that represents 'all countries except Canada' AND action is Block
+        #  B) Policy includes 'all' locations and explicitely excludes the Canada named-location id AND action is Block (i.e. block all except Canada)
+        #  C) Policy has no includeLocations but EXCLUDES the Canada-only named-location id (conservative treat as location-based)
+
+
+        # Common synonyms for "all" locations in various CAP outputs
+        $allLocationsSym = @('all','any','alltrusted','alltrustedlocations','alllocations')
+
+        $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions.locations) -and ($validLocations.id -in $_.conditions.locations.includeLocations) -or ($validLocations.id -in $_.conditions.locations.excludeLocations ) }
+
+        $validlocationBasedPolicies = @()
+        foreach ($cap in $locationBasedPolicies) {
+            try {
+                if ($null -eq $cap.conditions -or $null -eq $cap.conditions.locations) { 
+                    continue
+                }
+                $locationCondition = $cap.conditions.locations
+                # include/exclude lists
+                $includes = @()
+                $excludes = @()
+                if ($locationCondition.includeLocations -and $locationCondition.PSObject.Properties.Match('includeLocations').Count -gt 0 ) {
+                    $inccludeVals = @( $locationCondition.includeLocations )
+                    $includes = $inccludeVals | ForEach-Object { $_.ToString().ToLower() }
+                }  
+                if ($locationCondition.excludeLocations -and $locationCondition.PSObject.Properties.Match('excludeLocations').Count -gt 0) {
+                    $excludeVals = @( $locationCondition.excludeLocations )
+                    $excludes = $excludeVals | ForEach-Object { $_.ToString().ToLower() }
+                }
+                # Determine the CAP's grant controls
+                $grantControls = @()
+                if ($cap.grantControls -and $cap.PSObject.Properties.Match('grantControls').Count -gt 0) {
+                    $grantControls = @($cap.grantControls.buildInControls )
+                    try {
+                        if ($cap.grantControls.PSObject.Properties.Match('builtInControls').Count -gt 0 -and $cap.grantControls.builtInControls) {
+                            $grantBuiltIns = @($cap.grantControls.builtInControls) | ForEach-Object { $_.ToString().ToLower() }
+                        }
+                    } catch { 
+                        Write-Warning "Warning: Unable to process grantControls builtInControls for CAP '$($cap.id)': $_"
+                    }
+                }
+                # Check for Grant/Block action in grant controls
+                $isBlockAction = $false
+                if ($grantControls -contains 'block' -or $grantBuiltIns -contains 'block') {
+                    $isBlockAction = $true
+                }
+                # Evaluate patterns
+                $matched = $false
+                # Pattern A: explicit inclusion of Canada-only named location
+                if ($includes | Where-Object { $validLocationIds -contains $_ }) {
+                    if ($isBlockAction) {
+                        $matched = $true
+                    }
+                }
+                # Pattern B: include 'all' (or equivalent) but exclude Canada-only named location -> can represent "block all except Canada"
+                if (($includes | Where-Object { $allLocationsSym -contains $_ }) -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
+                    if ($isBlockAction) {
+                        $matched = $true
+                    }
+                }
+                # Pattern C: no includes but exclude contains Canada-only (conservative detection)
+                if ($includes.Count -eq 0 -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
+                    if ($isBlockAction) {
+                        $matched = $true
+                    }
+                }
+                Write-Host "CAP Found $($cap.displayName) with include and/or exclude location condition that has a match '$($matched)' with '$($grantBuiltIns)' access control"
+                if ($matched) {
+                    $validlocationBasedPolicies += $cap
+                    Write-Host "Valid Canada-only location CAP Found with '$($grantBuiltIns)' access control"
+                }
+
+            }
+            catch {
+                $ErrorList.Add("Error evaluating CAP '$($cap.id)' : $_") | Out-Null
+                continue
+            }
+        }
+
+        # Determine compliance based on presence of Canada-only named-location and matching policies
+        if ($validLocations.count -ne 0) {
+            # If there is at least one location with Canada-only -> compliant 
+            # If no Canada Only policy -> not compliant
+
+            if ($null -eq $validlocationBasedPolicies -or ($validlocationBasedPolicies.Count -eq 0) ){
+                # Non-complient; No policies have valid locations
+                $Comments = $msgTable.noCompliantPoliciesfound
+                $IsCompliant = $false
+            }
+            else {
+                # Compliant; valid policies found
+                $IsCompliant = $true
+                $Comments = $msgTable.allPoliciesAreCompliant
+            }      
+        }
+        else {
+            # Non-compliant; No locations have Canada-only presence.
+            $Comments = $msgTable.noLocationsCompliant
+            $IsCompliant = $false
+        }
+
+    }
+
+    
     
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
