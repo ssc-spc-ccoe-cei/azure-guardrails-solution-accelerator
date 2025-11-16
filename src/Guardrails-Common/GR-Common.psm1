@@ -1993,7 +1993,7 @@ function Get-allowedLocationCAPCompliance {
                 }
                 continue
             }
-            # Named location excluding Canada; may or may not have multiple countries; not a valid location requirement
+            # Find named location excluding Canada; may or may not have multiple countries; not a valid location requirement
             if ($countries.Count -ge 1 -and -not ($countries -contains 'CA')) {
                 Write-Host "Named Location Found: $($location.displayName) with Country/Region: $($location.countriesAndRegions -join ', ')"
                 $nonCAnamedLocations += $location
@@ -2002,7 +2002,7 @@ function Get-allowedLocationCAPCompliance {
                 }
                 continue
             }
-            # Named location contains multiple countries; includes Canada; not a valid location requirement
+            # Find named location contains multiple countries; includes Canada; not a valid location requirement
             if ($countries.Count -ge 1 -and ($countries -contains 'CA')) {
                 Write-Host "Named Location Found: $($location.displayName) with Country/Region: $($location.countriesAndRegions -join ', ')"
                 $notValidCAnamedLocations += $location
@@ -2014,7 +2014,7 @@ function Get-allowedLocationCAPCompliance {
 
         }
         catch {
-            $ErrorList.Add("Error processing named location object: $_")
+            $ErrorList.Add("Error processing named location object: $_") | Out-Null
             continue
         }
     }
@@ -2095,7 +2095,7 @@ function Get-allowedLocationCAPCompliance {
 
         }
         catch {
-            $ErrorList.Add("Error evaluating CAP '$($cap.id)' : $_")
+            $ErrorList.Add("Error evaluating CAP '$($cap.id)' : $_") | Out-Null
             continue
         }
     }
@@ -2117,7 +2117,7 @@ function Get-allowedLocationCAPCompliance {
         }      
     }
     else {
-        # Non-compliant. Reason: No locations have Canada-only presence.
+        # Non-compliant; No locations have Canada-only presence.
         $Comments = $msgTable.noLocationsCompliant
         $IsCompliant = $false
     }
