@@ -142,10 +142,10 @@ jobs:
             $DEVTENANT_ID = $env:DEVTENANT_ID
             $configContent = @"
             {
-              "keyVaultName": "kvcac-t31234567",
-              "resourcegroup": "guardrails-t3",
+              "keyVaultName": "kvcac",
+              "resourcegroup": "guardrailscacdev",
               "region": "CanadaCentral",
-              "storageaccountName": "amaguardrails01",
+              "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
               "autoMationAccountName": "aacac",
               "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
@@ -398,6 +398,7 @@ jobs:
         env:
 
           UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
+
 
 
 
