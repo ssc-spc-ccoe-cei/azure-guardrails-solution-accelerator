@@ -25,10 +25,10 @@ function Get-LocationBasedCAP {
 
     if ($PsObjectLocation.ComplianceStatus -eq $true){
         $IsCompliant = $true
-        $Comments = $msgTable.isCompliant + " " + $msgTable.compliantC2 + " " + ($CommentsArray -join "; ") 
+        $Comments = $msgTable.isCompliant + " " + $msgTable.compliantC2 + " " + $CommentsArray
     }
     else{
-        $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC2 + " " + ($CommentsArray -join "; ")
+        $Comments = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantC2 + " " + $CommentsArray
     }
 
 
