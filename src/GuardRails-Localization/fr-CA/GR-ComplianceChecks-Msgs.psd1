@@ -130,7 +130,7 @@ compliantC2 = La politique d'accès conditionnel visant à empêcher les connexi
 
 nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 noCompliantPoliciesfound = Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
-allPoliciesAreCompliant = Toutes les politiques sont conformes {0}.
+allPoliciesAreCompliant = Toutes les politiques sont conformes, {0}.
 noLocationsCompliant = Aucun endroit n'a seulement le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
 
