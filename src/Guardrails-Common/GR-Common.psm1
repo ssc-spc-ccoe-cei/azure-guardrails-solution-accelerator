@@ -3386,7 +3386,7 @@ function Test-GuestMfaConditionalAccessPolicy {
         # Check for policies that meet these criteria:
         # 1. State = 'enabled'
         # 2. Includes guest/external users OR includes all users
-        # 3. Includes all applications or specific apps
+        # 3. Does NOT explicitly exclude guest/external users
         # 4. Requires MFA
         $matchingPolicies = $policies | Where-Object {
             $_.state -eq 'enabled' -and
@@ -3397,7 +3397,10 @@ function Test-GuestMfaConditionalAccessPolicy {
                 # Or specifically targets guest/external users
                 ($null -ne $_.conditions.users.includeGuestsOrExternalUsers -and
                  $_.conditions.users.includeGuestsOrExternalUsers.guestOrExternalUserTypes -match 'b2bCollaborationGuest|b2bCollaborationMember|internalGuest')
-            )
+            ) -and
+            # Ensure guests are NOT explicitly excluded
+            ($null -eq $_.conditions.users.excludeGuestsOrExternalUsers -or
+             $_.conditions.users.excludeGuestsOrExternalUsers.guestOrExternalUserTypes -notmatch 'b2bCollaborationGuest|b2bCollaborationMember|internalGuest')
         }
         
         if ($matchingPolicies.Count -gt 0) {

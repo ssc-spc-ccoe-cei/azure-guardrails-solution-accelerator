@@ -288,6 +288,7 @@ catch {
     if ($runState -and $userRawDataContext) {
         Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -ItemCount 0 -Message 'FetchAllUserRawData threw an exception. UsersLoaded=0' | Out-Null
     }
+    throw
 }
 finally {
     Write-Output "Fetching user raw data complete."
@@ -302,7 +303,7 @@ try {
     }
 } catch {
     Write-Error "Exception occurred during cross-tenant access data collection: $_"
-
+    throw
 }
 finally {
     Write-Output "Fetching cross-tenant access settings complete."
