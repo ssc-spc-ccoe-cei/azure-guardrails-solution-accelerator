@@ -130,6 +130,12 @@ compliantC1 = The conditional access policy to force password changes based on u
 compliantC2 = The conditional access policy to prevent sign-in's from unapproved named locations has been configured.
 
 nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
+noCompliantPoliciesfound = No compliant policies found. Policies need to have a single location and that location must be Canada Only.
+allPoliciesAreCompliant = All policies are compliant {0}.
+noLocationsCompliant = No locations have only Canada in them.
+noEnabledPoliciesFound = No enabled conditional access policy found.
+
+
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
 noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
 noInProgressAccessReview = The environment has at least one scheduled role access review for Global Administrators or another Azure built-in role. However, the access review has been identified as either 'completed' or 'not started'. Create a new Global Administrator/Azure built-in role access review to reoccur and be 'in progress'.
@@ -145,12 +151,8 @@ compliantRecurrenceGuestReviews = Existing guest access reviews meet the require
 
 
 # GuardRail #3
-consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.
+consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access
 adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
-noCompliantPoliciesfound = No compliant policies found. Policies need to have a single location and that location must be Canada Only.
-allPoliciesAreCompliant = All policies are compliant.
-noLocationsCompliant = No locations have only Canada in them.
-noEnabledPoliciesFound = No enabled conditional access policy found.
 
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
 noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
