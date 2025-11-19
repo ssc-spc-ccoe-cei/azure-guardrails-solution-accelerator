@@ -128,10 +128,10 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 compliantC1 = La politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur a été configurée.
 compliantC2 = La politique d'accès conditionnel visant à empêcher les connexions à partir d'emplacements nommés non approuvés a été configurée.
 
-nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
+# nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 noCompliantPoliciesfound = Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
-allPoliciesAreCompliant = Toutes les politiques sont conformes, {0}.
-noLocationsCompliant = Aucun endroit n'a seulement le Canada en eux.
+allPoliciesAreCompliant = Toutes les politiques suivantes sont conformes; {0}.
+# noLocationsCompliant = Aucun endroit n'a seulement le Canada en eux.
 noLocationsnonCACompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
 
