@@ -3308,6 +3308,7 @@ function Get-GuestUserHomeDomain {
     # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
     if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
         return $Matches[1]
+        
     }
     # Or extract from mail
     elseif ($Mail -and $Mail -match '@(.+)$') {

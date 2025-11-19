@@ -15,11 +15,7 @@ RootModule = 'GR-Common'
 
 # Version number of this module.
 
-<<<<<<< HEAD
 ModuleVersion = '1.4.0'
-=======
-ModuleVersion = '1.3.10'
->>>>>>> 0663006b8d4d08da8d85701b3a8732f2b79e0ee4
 
 
 # Supported PSEditions
