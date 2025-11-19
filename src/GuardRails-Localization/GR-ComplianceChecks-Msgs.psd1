@@ -133,6 +133,7 @@ nonCompliantC1C2 = Configure the conditional access policies outlined in the rem
 noCompliantPoliciesfound = No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant = All policies are compliant, {0}.
 noLocationsCompliant = No locations have only Canada in them.
+noLocationsnonCACompliant = No locations have all countries except Canada in them.
 noEnabledPoliciesFound = No enabled conditional access policy found.
 
 

@@ -132,6 +132,7 @@ nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dan
 noCompliantPoliciesfound = Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant = Toutes les politiques sont conformes, {0}.
 noLocationsCompliant = Aucun endroit n'a seulement le Canada en eux.
+noLocationsnonCACompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
