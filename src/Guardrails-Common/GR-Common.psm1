@@ -1691,7 +1691,7 @@ function Get-AllUserAuthInformation {
                 if ($isSystemPreferredEnabled -eq $true -and 
                     ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
                     $authFound = $true
-                    Write-Host "✅ $userAccount - System preferred authentication method is $systemPreferredMethod"
+                    Write-Host "$userAccount - System preferred authentication method is $systemPreferredMethod"
                 }
             }
         }
@@ -2992,13 +2992,19 @@ function FetchAllUserRawData {
 
             # Get home tenant ID for guest users using cache
             $homeTenantId = $null
+            $homeTenantResolved = $false
             if ($user.userType -eq "Guest") {
                 $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
                 
                 if ($domain) {
                     # Get from cache or resolve (with automatic caching)
-                    $homeTenantId = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
-                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId"
+                    $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
+                    $homeTenantId = $resolutionResult.TenantId
+                    $homeTenantResolved = $resolutionResult.ResolutionSucceeded
+                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId → resolved: $homeTenantResolved"
+                }
+                else {
+                    Write-Verbose "    Guest user $($user.displayName) → could not extract domain from UPN/mail"
                 }
             }            
             
@@ -3014,6 +3020,7 @@ function FetchAllUserRawData {
                 createdDateTime   = $user.createdDateTime
                 userType          = $user.userType
                 homeTenantId      = $homeTenantId
+                homeTenantResolved = $homeTenantResolved
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
                 customSecurityAttributes = $user.customSecurityAttributes
@@ -3308,7 +3315,6 @@ function Get-GuestUserHomeDomain {
     # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
     if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
         return $Matches[1]
-        
     }
     # Or extract from mail
     elseif ($Mail -and $Mail -match '@(.+)$') {
@@ -3319,36 +3325,161 @@ function Get-GuestUserHomeDomain {
 }
 
 # Function to resolve tenant ID from domain (single domain)
+# Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
+# Includes retry logic for transient failures (DNS timeout, throttling, 5xx errors)
 function Resolve-TenantIdFromDomain {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
-        [string] $Domain
+        [string] $Domain,
+        
+        [Parameter(Mandatory=$false)]
+        [int] $MaxRetries = 3,
+        
+        [Parameter(Mandatory=$false)]
+        [int] $InitialDelayMs = 500
     )
     
-    try {
-        # Use OpenID Connect discovery endpoint (public, no auth required)
-        $tenantUrl = "https://login.microsoftonline.com/$Domain/.well-known/openid-configuration"
+    $attempt = 0
+    $delay = $InitialDelayMs
+    
+    while ($attempt -lt $MaxRetries) {
+        $attempt++
         
-        Write-Verbose "  Resolving tenant ID for domain: $Domain"
-        
-        $response = Invoke-RestMethod -Uri $tenantUrl -Method Get -ErrorAction Stop -TimeoutSec 10
-        
-        if ($response.token_endpoint -match 'https://login\.microsoftonline\.com/([a-f0-9-]+)/') {
-            $tenantId = $Matches[1]
-            Write-Verbose "  ✅ Resolved $Domain → $tenantId"
-            return $tenantId
+        try {
+            # Use OpenID Connect discovery endpoint (public, no auth required)
+            $tenantUrl = "https://login.microsoftonline.com/$Domain/.well-known/openid-configuration"
+            
+            if ($attempt -eq 1) {
+                Write-Verbose "  Resolving tenant ID for domain: $Domain"
+            } else {
+                Write-Verbose "  Retry attempt $attempt/$MaxRetries for domain: $Domain"
+            }
+            
+            $response = Invoke-RestMethod -Uri $tenantUrl -Method Get -ErrorAction Stop -TimeoutSec 10
+            
+            if ($response.token_endpoint -match 'https://login\.microsoftonline\.com/([a-f0-9-]+)/') {
+                $tenantId = $Matches[1]
+                Write-Verbose "Resolved $Domain → $tenantId (attempt $attempt)"
+                return [PSCustomObject]@{
+                    TenantId = $tenantId
+                    ResolutionSucceeded = $true
+                }
+            }
+            
+            # Regex didn't match - this is a permanent failure (bad response format)
+            Write-Verbose "Invalid response format for domain: $Domain"
+            return [PSCustomObject]@{
+                TenantId = $null
+                ResolutionSucceeded = $false
+            }
+            
         }
-        
-    }
-    catch {
-        Write-Verbose "  ⚠️  Unable to resolve tenant ID for domain: $Domain - $($_.Exception.Message)"
+        catch {
+            # NOTE: Invoke-RestMethod throws exceptions for HTTP error codes (4xx, 5xx) by default
+            # This catch block handles: 404, 429, 500, 503, timeouts, network errors, etc.
+            
+            $errorMessage = $_.Exception.Message
+            $statusCode = $null
+            $isTransient = $false
+            
+            # Extract HTTP status code if available (works for both PS 5.1 and PS 7+)
+            if ($_.Exception.Response) {
+                # Try direct property first (PS 7+)
+                if ($_.Exception.Response.StatusCode.Value__) {
+                    $statusCode = [int]$_.Exception.Response.StatusCode.Value__
+                }
+                # Fallback to casting (PS 5.1)
+                else {
+                    $statusCode = [int]$_.Exception.Response.StatusCode
+                }
+            }
+            elseif ($_.Exception.InnerException.Response) {
+                # Check inner exception (some network stacks wrap the exception)
+                if ($_.Exception.InnerException.Response.StatusCode.Value__) {
+                    $statusCode = [int]$_.Exception.InnerException.Response.StatusCode.Value__
+                }
+                else {
+                    $statusCode = [int]$_.Exception.InnerException.Response.StatusCode
+                }
+            }
+            
+            # Classify error based on status code (most reliable)
+            if ($statusCode) {
+                Write-Verbose "HTTP $statusCode for domain: $Domain (attempt $attempt/$MaxRetries)"
+                
+                switch ($statusCode) {
+                    # 2xx - Success (shouldn't reach here, but handle gracefully)
+                    { $_ -ge 200 -and $_ -lt 300 } {
+                        Write-Verbose "Unexpected: Got HTTP $statusCode but entered catch block"
+                        $isTransient = $false
+                    }
+                    # 4xx - Client errors (permanent, except 429)
+                    429 {
+                        # Too Many Requests - transient, should retry
+                        $isTransient = $true
+                        Write-Verbose "Rate limited (429) for domain: $Domain"
+                    }
+                    404 {
+                        # Not Found - domain/tenant doesn't exist (permanent)
+                        Write-Verbose "Domain not found (404): $Domain"
+                        return [PSCustomObject]@{
+                            TenantId = $null
+                            ResolutionSucceeded = $false
+                        }
+                    }
+                    { $_ -ge 400 -and $_ -lt 500 } {
+                        # Other 4xx - permanent errors (bad request, unauthorized, forbidden, etc.)
+                        Write-Verbose "Client error ($statusCode) for domain: $Domain"
+                        return [PSCustomObject]@{
+                            TenantId = $null
+                            ResolutionSucceeded = $false
+                        }
+                    }
+                    # 5xx - Server errors (transient, should retry)
+                    { $_ -ge 500 -and $_ -lt 600 } {
+                        $isTransient = $true
+                        Write-Verbose "Server error ($statusCode) for domain: $Domain"
+                    }
+                    # Unexpected status code
+                    default {
+                        $isTransient = $true
+                        Write-Verbose "Unexpected status code ($statusCode) for domain: $Domain"
+                    }
+                }
+            }
+            # No status code - likely network/DNS/timeout issue (transient)
+            else {
+                $isTransient = $true
+                Write-Verbose "Network/timeout error for domain $Domain (attempt $attempt/$MaxRetries): $errorMessage"
+            }
+            
+            # If this is the last attempt, fail
+            if (!$isTransient -or $attempt -ge $MaxRetries) {
+                Write-Verbose "Failed to resolve tenant ID for domain: $Domain after $attempt attempt(s)"
+                return [PSCustomObject]@{
+                    TenantId = $null
+                    ResolutionSucceeded = $false
+                }
+            }
+            
+            # Wait before retry with exponential backoff
+            Write-Verbose "Waiting ${delay}ms before retry..."
+            Start-Sleep -Milliseconds $delay
+            $delay = $delay * 2  # Exponential backoff
+        }
     }
     
-    return $null
+    # Shouldn't reach here, but handle edge case
+    Write-Verbose "Failed to resolve tenant ID for domain: $Domain (max retries exceeded)"
+    return [PSCustomObject]@{
+        TenantId = $null
+        ResolutionSucceeded = $false
+    }
 }
 
 # Function to get or resolve tenant ID with lazy caching
+# Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
 function Get-TenantIdWithCache {
     [CmdletBinding()]
     param (
@@ -3366,12 +3497,12 @@ function Get-TenantIdWithCache {
     
     # Not in cache, resolve it
     Write-Verbose "  Cache miss for domain: $Domain, resolving..."
-    $tenantId = Resolve-TenantIdFromDomain -Domain $Domain
+    $result = Resolve-TenantIdFromDomain -Domain $Domain
     
-    # Store in cache (even if null, to avoid retrying failed lookups)
-    $Cache[$Domain] = $tenantId
+    # Store in cache (even if resolution failed, to avoid retrying failed lookups)
+    $Cache[$Domain] = $result
     
-    return $tenantId
+    return $result
 }
 
 # Function to get cross-tenant access settings for B2B collaboration

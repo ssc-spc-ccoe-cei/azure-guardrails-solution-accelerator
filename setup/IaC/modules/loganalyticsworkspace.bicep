@@ -152,7 +152,8 @@ let rawUserData = GuardrailsUserRaw_CL
          homeTenantId = coalesce(
              tostring(column_ifexists("homeTenantId_g", "")),
              column_ifexists("homeTenantId_s", "")
-         )
+         ),
+         homeTenantResolved = tobool(coalesce(column_ifexists("homeTenantResolved_b", bool(null)), false))
 | where ReportTime == reportTime;
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
@@ -162,14 +163,23 @@ let memberUsers = rawUserData
 | where guardrailsExcluded == false and userType != "Guest";
 // Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
 let guestsWithTrustInfo = guestUsers
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| extend guestHomeTenantId = case(
+    // If resolution succeeded and no explicit tenant policy, use default
+    homeTenantResolved == true and (isempty(homeTenantId) or isnull(homeTenantId)), "default",
+    // If resolution succeeded and we have a tenant ID, use it
+    homeTenantResolved == true and isnotempty(homeTenantId), homeTenantId,
+    // If resolution failed, mark as unresolved (do NOT trust by default)
+    homeTenantResolved == false, "unresolved",
+    // Fallback for unexpected cases
+    "unresolved"
+)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
 ) on $left.guestHomeTenantId == $right.PartnerTenantId
 | extend 
-    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled, 
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", 
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), 
         false);
 let guestsToExclude = guestsWithTrustInfo
@@ -336,7 +346,8 @@ let userData = GuardrailsUserRaw_CL
          homeTenantId = coalesce(
              tostring(column_ifexists("homeTenantId_g", "")),
              column_ifexists("homeTenantId_s", "")
-         )
+         ),
+         homeTenantResolved = tobool(coalesce(column_ifexists("homeTenantResolved_b", bool(null)), false))
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
@@ -376,14 +387,23 @@ let mfaAnalysis = userData
     );
 let nonCompliantUsers = mfaAnalysis
 | where isMfaCompliant == false
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| extend guestHomeTenantId = case(
+    // If resolution succeeded and no explicit tenant policy, use default
+    homeTenantResolved == true and (isempty(homeTenantId) or isnull(homeTenantId)), "default",
+    // If resolution succeeded and we have a tenant ID, use it
+    homeTenantResolved == true and isnotempty(homeTenantId), homeTenantId,
+    // If resolution failed, mark as unresolved (do NOT trust by default)
+    homeTenantResolved == false, "unresolved",
+    // Fallback for unexpected cases
+    "unresolved"
+)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
 ) on $left.guestHomeTenantId == $right.PartnerTenantId
 | extend 
-    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest",
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest" and guestHomeTenantId != "unresolved",
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false),
         false)
 | where shouldExcludeGuest == false
