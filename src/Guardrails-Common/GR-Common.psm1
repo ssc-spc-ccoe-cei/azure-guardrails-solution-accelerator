@@ -2147,8 +2147,8 @@ function Get-allowedLocationCAPCompliance {
 
         # Determine compliance based on presence of Canada-only named-location and matching policies
         if ($validLocations.count -ne 0) {
-            # If there is at least one location with Canada-only -> compliant 
-            # If no Canada Only policy -> not compliant
+            # If there is at least one named location with Canada-only -> compliant 
+            # If no Canada-Only policy -> not compliant
 
             if ($null -eq $validlocationBasedPolicies -or ($validlocationBasedPolicies.Count -eq 0) ){
                 # Non-complient; No policies have valid locations
@@ -2159,12 +2159,12 @@ function Get-allowedLocationCAPCompliance {
                 # Compliant; valid policies found
                 $validCAPnames = ($validlocationBasedPolicies | Select-Object -ExpandProperty displayName) -join ', '
                 $IsCompliant = $true
-                # display names of compliant CAPs in Comments
+                # display all names of compliant CAPs in Comments
                 $Comments = $msgTable.allPoliciesAreCompliant -f $validCAPnames
             }      
         }
         else {
-            # Non-compliant; No locations have Canada-only presence.
+            # Non-compliant; No locations has Canada-only presence.
             $Comments = $msgTable.noLocationsCompliant
             $IsCompliant = $false
         }
