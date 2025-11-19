@@ -2231,7 +2231,42 @@ function Test-ComplianceForSubscription {
         $PolicyID = $matches[1]
     }
     Write-Host "Get compliance details for Subscription : $($subscription.DisplayName)"
-    $complianceDetails = Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}  
+    $complianceDetails = @()
+    $policySetDefinitionName = $PolicyID
+    $policyFilters = @()
+    $subscriptionFilter = "SubscriptionId eq '$($subscription.SubscriptionID)'"
+    foreach ($policyRef in $requiredPolicyExemptionIds) {
+        if (-not [string]::IsNullOrWhiteSpace($policyRef)) {
+            $policyFilters += "PolicyDefinitionReferenceId eq '$policyRef'"
+        }
+    }
+    if ($policyFilters.Count -gt 0) {
+        $filterExpression = "$subscriptionFilter and PolicySetDefinitionName eq '$policySetDefinitionName' and (" + ($policyFilters -join " or ") + ")"
+    }
+    else {
+        $filterExpression = "$subscriptionFilter and PolicySetDefinitionName eq '$policySetDefinitionName'"
+    }
+
+    $filteredQueryFailed = $true
+    if ($filterExpression) {
+        $filteredQueryFailed = $false
+        try {
+            Write-Verbose "Querying policy state with filter: $filterExpression"
+            $complianceDetails = @(Get-AzPolicyState -Filter $filterExpression | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) })
+        }
+        catch {
+            Write-Verbose "Filtered Get-AzPolicyState call failed, falling back to unfiltered query. Error: $_"
+            $filteredQueryFailed = $true
+        }
+    }
+
+    if ($filteredQueryFailed) {
+        $complianceDetails = @(Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID})
+    }
+
+    if ($complianceDetails.Count -eq 0) {
+        $complianceDetails = $null
+    }
     
     If ($null -eq $complianceDetails) {
         Write-Host "No compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
@@ -2274,12 +2309,19 @@ function Check-PBMMPolicies {
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
-    [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+    [System.Collections.ArrayList] $tempObjectList = New-Object System.Collections.ArrayList
+    $policyAssignmentCache = @{}
+    $policySetDefinitionCache = @{}
 
     foreach ($obj in $objList)
     {
         Write-Verbose "Checking $objType : $($obj.Name)"
         Write-Verbose "PBMM policy PolicyID is $PolicyID"
+
+        if ([string]::IsNullOrWhiteSpace($PolicyID)) {
+            Write-Error "PolicyID is null or empty. Skipping PBMM evaluation for scope '$($obj.Id)'."
+            continue
+        }
 
         # Find scope
         if ($objType -eq "subscription"){
@@ -2291,9 +2333,23 @@ function Check-PBMMPolicies {
         Write-Host "Scope is $tempId"
 
         # Find assigned policy list from PBMM policy for the scope
-        $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId | `
-            Select-Object -ExpandProperty properties | `
-            Where-Object { $_.PolicyDefinitionID -like "*$PolicyID*" } 
+        # Accept tenant, management group, or subscription scoped IDs that end with /policySetDefinitions/{id}
+        if ($PolicyID.StartsWith("/") -and $PolicyID -match "/policySetDefinitions/[^/]+$") {
+            $policyDefinitionIdFilter = $PolicyID
+        }
+        else {
+            $policyDefinitionIdFilter = "/providers/Microsoft.Authorization/policySetDefinitions/$PolicyID"
+        }
+
+        $assignmentCacheKey = "$tempId|$policyDefinitionIdFilter"
+        if ($policyAssignmentCache.ContainsKey($assignmentCacheKey)) {
+            $AssignedPolicyList = $policyAssignmentCache[$assignmentCacheKey]
+        }
+        else {
+            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter | `
+                Select-Object -ExpandProperty properties
+            $policyAssignmentCache[$assignmentCacheKey] = $AssignedPolicyList
+        }
 
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
@@ -2306,8 +2362,27 @@ function Check-PBMMPolicies {
             $Comment = $msgTable.pbmmApplied
 
             # List the policies within the PBMM initiative (policy set definition)
-            $policySetDefinition = Get-AzPolicySetDefinition | `
-                Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" } 
+            if ($PolicyID.StartsWith("/") -and $PolicyID -match "/policySetDefinitions/[^/]+$") {
+                $policySetCacheKey = $PolicyID
+            }
+            else {
+                $policySetCacheKey = "/providers/Microsoft.Authorization/policySetDefinitions/$PolicyID"
+            }
+
+            if ($policySetDefinitionCache.ContainsKey($policySetCacheKey)) {
+                $policySetDefinition = $policySetDefinitionCache[$policySetCacheKey]
+            }
+            else {
+                try {
+                    $policySetDefinition = Get-AzPolicySetDefinition -Id $policySetCacheKey
+                    $policySetDefinitionCache[$policySetCacheKey] = $policySetDefinition
+                }
+                catch {
+                    Write-Verbose "Direct lookup for policy set '$policySetCacheKey' failed. Falling back to tenant scan. Error: $_"
+                    $policySetDefinition = Get-AzPolicySetDefinition | `
+                        Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" }
+                }
+            }
 
             $listPolicies = $policySetDefinition.Properties.policyDefinitions
             # Check all 3 policies are applied for this scope
@@ -2352,8 +2427,8 @@ function Check-PBMMPolicies {
                         
                         $currentSubscription = Get-AzContext
                         if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
-                            # Set Az context to the this subscription
-                            Set-AzContext -SubscriptionId $subscription.SubscriptionID
+                            # Set Az context to this subscription
+                            Set-AzContext -SubscriptionId $subscription.SubscriptionID | Out-Null
                             Write-Host "AzContext set to $($subscription.DisplayName)"
                         }
     
@@ -2515,7 +2590,7 @@ function Check-PBMMPolicies {
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }        
-
+        
         $tempObjectList.add($c)| Out-Null
     }
     return $tempObjectList
