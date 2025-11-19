@@ -3305,7 +3305,8 @@ function Get-GuestUserHomeDomain {
     )
     
     # Extract domain from UPN (format: user_domain.com#EXT#@hosttenant.com)
-    if ($UserPrincipalName -match '_([^#]+)#EXT#') {
+    # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
+    if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
         return $Matches[1]
     }
     # Or extract from mail
