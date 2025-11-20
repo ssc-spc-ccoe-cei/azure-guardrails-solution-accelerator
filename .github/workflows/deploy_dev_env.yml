@@ -143,7 +143,7 @@ jobs:
             $configContent = @"
             {
               "keyVaultName": "kvcac",
-              "resourcegroup": "rg-guardrailscacdev",
+              "resourcegroup": "guardrailscacdev",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
               "logAnalyticsworkspaceName": "logcac",
@@ -396,9 +396,4 @@ jobs:
             }
           azPSVersion: "latest"
         env:
-
           UNIQUENAME_SUFFIX_DEV: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-
-
-
-
