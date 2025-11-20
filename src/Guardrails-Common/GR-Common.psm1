@@ -448,6 +448,10 @@ function Get-GuardrailIdentityPermissions {
     if ($graphResponse -and $graphResponse.Content -and $graphResponse.Content.value) {
         $resourceAppRoleAssignments = $graphResponse.Content.value
     }
+    elseif ($null -eq $graphResponse) {
+        # distinguish API failure from truly empty assignments
+        $errors.Add('AAD app-role enumeration did not return a response.') | Out-Null
+    }
 
     foreach ($assignment in $resourceAppRoleAssignments) {
         $assignments.Add([pscustomobject]@{

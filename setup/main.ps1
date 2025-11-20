@@ -221,13 +221,11 @@ if ($enableDebugMetrics) {
     $runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
 
     $permissionScanContext = $null
-    $rbacAssignments = @()
     $permissionTelemetryMessage = 'Permission scan (Stage 1)'
     try {
         $permissionScanContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.PermissionScan'
 
         $permissionData = Get-GuardrailIdentityPermissions -TenantRootManagementGroupId $tenantID
-        $rbacAssignments = @($permissionData.Assignments)
 
         foreach ($warning in $permissionData.Errors) {
             Write-Warning "Permission scan warning: $warning"
@@ -276,7 +274,7 @@ if ($enableDebugMetrics) {
         }
 
         if ($permissionScanContext) {
-            Complete-GuardrailModuleState -RunState $runState -ModuleState $permissionScanContext -ItemCount $rbacAssignments.Count -Message $permissionTelemetryMessage | Out-Null
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $permissionScanContext -ItemCount $permissionData.Assignments.Count -Message $permissionTelemetryMessage | Out-Null
             $permissionScanContext = $null
         }
     }
