@@ -2105,6 +2105,7 @@ function Get-allowedLocationCAPCompliance {
             }
             # Determine the CAP's grant controls
             $grantControls = @()
+            $grantBuiltIns = @()    
             if ($cap.grantControls -and $cap.PSObject.Properties.Match('grantControls').Count -gt 0) {
                 $grantControls = @($cap.grantControls.buildInControls )
                 try {
@@ -2129,7 +2130,7 @@ function Get-allowedLocationCAPCompliance {
 
             # Pattern A: explicitly includes a named location of 'All' countries but does not have Canada in it  -> can represent "block all except Canada"
             # PASS
-            if ($nonCAnamedLocationsIds -contains $includes) {
+            if ($includes | Where-Object { $nonCAnamedLocationsIds -contains $_ }) {
                 if ($isBlockAction) {
                     $matched = $true
                 }
