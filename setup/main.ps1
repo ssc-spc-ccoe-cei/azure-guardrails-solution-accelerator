@@ -233,10 +233,12 @@ if ($enableDebugMetrics) {
             Write-Warning "Permission scan warning: $warning"
         }
 
+        $rbacCount = @($permissionData.Assignments | Where-Object { $_.PermissionType -eq 'RBAC' }).Count
+        $aadCount  = @($permissionData.Assignments | Where-Object { $_.PermissionType -eq 'AADAppRole' }).Count
         $messageParts = @(
-            "Assignments=$($rbacAssignments.Count)",
-            "RBAC=$($rbacAssignments.Count)",
-            'AADAppRoles=0'
+            "Assignments=$($permissionData.Assignments.Count)",
+            "RBAC=$rbacCount",
+            "AADAppRoles=$aadCount"
         )
         if ($permissionData.Errors.Count -gt 0) {
             $messageParts += "Warnings=$($permissionData.Errors.Count)"
@@ -244,7 +246,7 @@ if ($enableDebugMetrics) {
         $permissionTelemetryMessage = $messageParts -join '; '
 
         if ($runState.TelemetryContext -and $runState.TelemetryContext.Enabled) {
-            $permissionSnapshotJson = ConvertTo-Json -InputObject $rbacAssignments -Depth 5
+            $permissionSnapshotJson = ConvertTo-Json -InputObject $permissionData.Assignments -Depth 5
             $permissionTelemetryRecord = [pscustomobject]@{
                 GuardrailId                         = $runState.TelemetryContext.GuardrailId
                 RunbookName                         = $runState.TelemetryContext.RunbookName
@@ -258,9 +260,9 @@ if ($enableDebugMetrics) {
                 TenantRootManagementGroupId         = $permissionData.TenantRootManagementGroupId
                 TenantRootManagementGroupResourceId = $permissionData.TenantRootManagementGroupResourceId
                 PermissionSnapshot                  = $permissionSnapshotJson
-                Assignments                         = $rbacAssignments.Count
-                RbacAssignments                     = $rbacAssignments.Count
-                AadAppRoleAssignments               = 0
+                Assignments                         = $permissionData.Assignments.Count
+                RbacAssignments                     = $rbacCount
+                AadAppRoleAssignments               = $aadCount
                 Message                             = $permissionTelemetryMessage
                 ReportTime                          = $runState.ReportTime
             }

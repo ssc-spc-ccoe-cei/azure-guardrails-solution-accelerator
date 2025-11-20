@@ -434,6 +434,36 @@ function Get-GuardrailIdentityPermissions {
             }) | Out-Null
     }
 
+    # Stage 3: AAD app-role assignments (GUIDs only)
+    $resourceAppRoleAssignments = @()
+    $graphPath = "/servicePrincipals/$($principal.Id)/appRoleAssignments?`$select=appRoleId,createdDateTime,principalDisplayName,principalId,resourceDisplayName,resourceId"
+    $graphResponse = $null
+    try {
+        $graphResponse = Invoke-GraphQueryEX -urlPath $graphPath -ErrorAction Stop
+    }
+    catch {
+        $errors.Add("AAD app-role enumeration failed: $($_.Exception.Message)") | Out-Null
+    }
+
+    if ($graphResponse -and $graphResponse.Content -and $graphResponse.Content.value) {
+        $resourceAppRoleAssignments = $graphResponse.Content.value
+    }
+
+    foreach ($assignment in $resourceAppRoleAssignments) {
+        $assignments.Add([pscustomobject]@{
+                PrincipalType        = 'AutomationAccountMSI'
+                PermissionType       = 'AADAppRole'
+                PrincipalName        = $principalDisplayName
+                PrincipalId          = $principal.Id
+                ResourceDisplayName  = $assignment.resourceDisplayName
+                ResourceId           = $assignment.resourceId
+                AppRoleId            = $assignment.appRoleId
+                CreatedDateTime      = $assignment.createdDateTime
+                TenantRootManagementGroupId        = $TenantRootManagementGroupId
+                TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
+            }) | Out-Null
+    }
+
     return [pscustomobject]@{
         PrincipalType                     = 'AutomationAccountMSI'
         PrincipalId                       = $principal.Id
