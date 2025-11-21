@@ -1691,7 +1691,7 @@ function Get-AllUserAuthInformation {
                 if ($isSystemPreferredEnabled -eq $true -and 
                     ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
                     $authFound = $true
-                    Write-Host "✅ $userAccount - System preferred authentication method is $systemPreferredMethod"
+                    Write-Host "$userAccount - System preferred authentication method is $systemPreferredMethod"
                 }
             }
         }
@@ -3135,6 +3135,7 @@ function FetchAllUserRawData {
         regById = $regById
         RetryConfig = $RetryConfig
         ErrorList = $ErrorList
+        domainTenantCache = @{}  # Cache for guest domain → tenant ID mapping
     }
     
     # Define the callback function that processes each page immediately
@@ -3183,6 +3184,24 @@ function FetchAllUserRawData {
             $registration = $context.regById[$user.id]
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
+
+            # Get home tenant ID for guest users using cache
+            $homeTenantId = $null
+            $homeTenantResolved = $false
+            if ($user.userType -eq "Guest") {
+                $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
+                
+                if ($domain) {
+                    # Get from cache or resolve (with automatic caching)
+                    $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
+                    $homeTenantId = $resolutionResult.TenantId
+                    $homeTenantResolved = $resolutionResult.ResolutionSucceeded
+                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId → resolved: $homeTenantResolved"
+                }
+                else {
+                    Write-Verbose "    Guest user $($user.displayName) → could not extract domain from UPN/mail"
+                }
+            }            
             
             if ($registration -and $registration.methodsRegistered) {
                 $methods = @($registration.methodsRegistered)
@@ -3195,6 +3214,8 @@ function FetchAllUserRawData {
                 mail              = $user.mail
                 createdDateTime   = $user.createdDateTime
                 userType          = $user.userType
+                homeTenantId      = $homeTenantId
+                homeTenantResolved = $homeTenantResolved
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
                 customSecurityAttributes = $user.customSecurityAttributes
@@ -3466,6 +3487,423 @@ GuardrailsUserRaw_CL
     }
     
     Write-Verbose "=== FetchAllUserRawData Complete ==="
+    
+    return $ErrorList
+}
+
+# ============================================================================
+# Guest User Cross-Tenant MFA Trust Functions
+# ============================================================================
+
+# Function to extract domain from guest user UPN or email
+function Get-GuestUserHomeDomain {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $UserPrincipalName,
+        
+        [Parameter(Mandatory=$false)]
+        [string] $Mail
+    )
+    
+    # Extract domain from UPN (format: user_domain.com#EXT#@hosttenant.com)
+    # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
+    if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
+        return $Matches[1]
+    }
+    # Or extract from mail
+    elseif ($Mail -and $Mail -match '@(.+)$') {
+        return $Matches[1]
+    }
+    
+    return $null
+}
+
+# Function to resolve tenant ID from domain (single domain)
+# Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
+# Includes retry logic for transient failures (DNS timeout, throttling, 5xx errors)
+function Resolve-TenantIdFromDomain {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $Domain,
+        
+        [Parameter(Mandatory=$false)]
+        [int] $MaxRetries = 3,
+        
+        [Parameter(Mandatory=$false)]
+        [int] $InitialDelayMs = 500
+    )
+    
+    $attempt = 0
+    $delay = $InitialDelayMs
+    
+    while ($attempt -lt $MaxRetries) {
+        $attempt++
+        
+        try {
+            # Use OpenID Connect discovery endpoint (public, no auth required)
+            $tenantUrl = "https://login.microsoftonline.com/$Domain/.well-known/openid-configuration"
+            
+            if ($attempt -eq 1) {
+                Write-Verbose "  Resolving tenant ID for domain: $Domain"
+            } else {
+                Write-Verbose "  Retry attempt $attempt/$MaxRetries for domain: $Domain"
+            }
+            
+            $response = Invoke-RestMethod -Uri $tenantUrl -Method Get -ErrorAction Stop -TimeoutSec 10
+            
+            if ($response.token_endpoint -match 'https://login\.microsoftonline\.com/([a-f0-9-]+)/') {
+                $tenantId = $Matches[1]
+                Write-Verbose "Resolved $Domain → $tenantId (attempt $attempt)"
+                return [PSCustomObject]@{
+                    TenantId = $tenantId
+                    ResolutionSucceeded = $true
+                }
+            }
+            
+            # Regex didn't match - this is a permanent failure (bad response format)
+            Write-Verbose "Invalid response format for domain: $Domain"
+            return [PSCustomObject]@{
+                TenantId = $null
+                ResolutionSucceeded = $false
+            }
+            
+        }
+        catch {
+            # NOTE: Invoke-RestMethod throws exceptions for HTTP error codes (4xx, 5xx) by default
+            # This catch block handles: 404, 429, 500, 503, timeouts, network errors, etc.
+            
+            $errorMessage = $_.Exception.Message
+            $statusCode = $null
+            $isTransient = $false
+            
+            # Extract HTTP status code if available (works for both PS 5.1 and PS 7+)
+            if ($_.Exception.Response) {
+                # Try direct property first (PS 7+)
+                if ($_.Exception.Response.StatusCode.Value__) {
+                    $statusCode = [int]$_.Exception.Response.StatusCode.Value__
+                }
+                # Fallback to casting (PS 5.1)
+                else {
+                    $statusCode = [int]$_.Exception.Response.StatusCode
+                }
+            }
+            elseif ($_.Exception.InnerException.Response) {
+                # Check inner exception (some network stacks wrap the exception)
+                if ($_.Exception.InnerException.Response.StatusCode.Value__) {
+                    $statusCode = [int]$_.Exception.InnerException.Response.StatusCode.Value__
+                }
+                else {
+                    $statusCode = [int]$_.Exception.InnerException.Response.StatusCode
+                }
+            }
+            
+            # Classify error based on status code (most reliable)
+            if ($statusCode) {
+                Write-Verbose "HTTP $statusCode for domain: $Domain (attempt $attempt/$MaxRetries)"
+                
+                switch ($statusCode) {
+                    # 2xx - Success (shouldn't reach here, but handle gracefully)
+                    { $_ -ge 200 -and $_ -lt 300 } {
+                        Write-Verbose "Unexpected: Got HTTP $statusCode but entered catch block"
+                        $isTransient = $false
+                    }
+                    # 4xx - Client errors (permanent, except 429)
+                    429 {
+                        # Too Many Requests - transient, should retry
+                        $isTransient = $true
+                        Write-Verbose "Rate limited (429) for domain: $Domain"
+                    }
+                    404 {
+                        # Not Found - domain/tenant doesn't exist (permanent)
+                        Write-Verbose "Domain not found (404): $Domain"
+                        return [PSCustomObject]@{
+                            TenantId = $null
+                            ResolutionSucceeded = $false
+                        }
+                    }
+                    { $_ -ge 400 -and $_ -lt 500 } {
+                        # Other 4xx - permanent errors (bad request, unauthorized, forbidden, etc.)
+                        Write-Verbose "Client error ($statusCode) for domain: $Domain"
+                        return [PSCustomObject]@{
+                            TenantId = $null
+                            ResolutionSucceeded = $false
+                        }
+                    }
+                    # 5xx - Server errors (transient, should retry)
+                    { $_ -ge 500 -and $_ -lt 600 } {
+                        $isTransient = $true
+                        Write-Verbose "Server error ($statusCode) for domain: $Domain"
+                    }
+                    # Unexpected status code
+                    default {
+                        $isTransient = $true
+                        Write-Verbose "Unexpected status code ($statusCode) for domain: $Domain"
+                    }
+                }
+            }
+            # No status code - likely network/DNS/timeout issue (transient)
+            else {
+                $isTransient = $true
+                Write-Verbose "Network/timeout error for domain $Domain (attempt $attempt/$MaxRetries): $errorMessage"
+            }
+            
+            # If this is the last attempt, fail
+            if (!$isTransient -or $attempt -ge $MaxRetries) {
+                Write-Verbose "Failed to resolve tenant ID for domain: $Domain after $attempt attempt(s)"
+                return [PSCustomObject]@{
+                    TenantId = $null
+                    ResolutionSucceeded = $false
+                }
+            }
+            
+            # Wait before retry with exponential backoff
+            Write-Verbose "Waiting ${delay}ms before retry..."
+            Start-Sleep -Milliseconds $delay
+            $delay = $delay * 2  # Exponential backoff
+        }
+    }
+    
+    # Shouldn't reach here, but handle edge case
+    Write-Verbose "Failed to resolve tenant ID for domain: $Domain (max retries exceeded)"
+    return [PSCustomObject]@{
+        TenantId = $null
+        ResolutionSucceeded = $false
+    }
+}
+
+# Function to get or resolve tenant ID with lazy caching
+# Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
+function Get-TenantIdWithCache {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $Domain,
+        
+        [Parameter(Mandatory=$true)]
+        [hashtable] $Cache
+    )
+    
+    # Check cache first
+    if ($Cache.ContainsKey($Domain)) {
+        return $Cache[$Domain]
+    }
+    
+    # Not in cache, resolve it
+    Write-Verbose "  Cache miss for domain: $Domain, resolving..."
+    $result = Resolve-TenantIdFromDomain -Domain $Domain
+    
+    # Store in cache (even if resolution failed, to avoid retrying failed lookups)
+    $Cache[$Domain] = $result
+    
+    return $result
+}
+
+# Function to get cross-tenant access settings for B2B collaboration
+function Get-CrossTenantAccessSettings {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$false)]
+        [hashtable] $PerformanceMetrics = $null
+    )
+    
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
+    $crossTenantSettings = @()
+    
+    try {
+        Write-Verbose "Fetching cross-tenant access settings..."
+        
+        # Get default cross-tenant access settings
+        $defaultSettingsPath = "/policies/crossTenantAccessPolicy/default"
+        try {
+            $defaultResponse = Invoke-GraphQueryWithMetrics -UrlPath $defaultSettingsPath -Operation "Fetch Default Cross-Tenant Access Settings" -PerformanceMetrics $PerformanceMetrics
+            $defaultSettings = $defaultResponse.Content
+            
+            if ($defaultSettings) {
+                Write-Verbose "  Retrieved default cross-tenant access settings"
+                $crossTenantSettings += [PSCustomObject]@{
+                    PartnerTenantId = "default"
+                    InboundTrustMfa = $defaultSettings.inboundTrust.isMfaAccepted
+                    InboundTrustCompliantDevice = $defaultSettings.inboundTrust.isCompliantDeviceAccepted
+                    InboundTrustHybridAzureADJoined = $defaultSettings.inboundTrust.isHybridAzureADJoinedDeviceAccepted
+                    IsDefault = $true
+                }
+            }
+        } catch {
+            Add-FunctionError -Message "Failed to fetch default cross-tenant access settings: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        }
+        
+        # Get partner-specific cross-tenant access settings
+        $partnerSettingsPath = "/policies/crossTenantAccessPolicy/partners"
+        try {
+            $partnerResponse = Invoke-GraphQueryWithMetrics -UrlPath $partnerSettingsPath -Operation "Fetch Partner Cross-Tenant Access Settings" -PerformanceMetrics $PerformanceMetrics
+            $partnerSettings = @($partnerResponse.Content.value)
+            
+            Write-Verbose "  Retrieved $($partnerSettings.Count) partner-specific cross-tenant access settings"
+            
+            foreach ($partner in $partnerSettings) {
+                $crossTenantSettings += [PSCustomObject]@{
+                    PartnerTenantId = $partner.tenantId
+                    InboundTrustMfa = $partner.inboundTrust.isMfaAccepted
+                    InboundTrustCompliantDevice = $partner.inboundTrust.isCompliantDeviceAccepted
+                    InboundTrustHybridAzureADJoined = $partner.inboundTrust.isHybridAzureADJoinedDeviceAccepted
+                    IsDefault = $false
+                }
+            }
+        } catch {
+            Add-FunctionError -Message "Failed to fetch partner cross-tenant access settings: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        }
+        
+    } catch {
+        Add-FunctionError -Message "Unexpected error fetching cross-tenant access settings: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+    }
+    
+    return [PSCustomObject]@{
+        Settings = $crossTenantSettings
+        ErrorList = $ErrorList
+    }
+}
+
+# Function to check if conditional access policies require MFA for guest users
+function Test-GuestMfaConditionalAccessPolicy {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$false)]
+        [hashtable] $PerformanceMetrics = $null
+    )
+    
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
+    $hasGuestMfaPolicy = $false
+    $matchingPolicies = @()
+    
+    try {
+        Write-Verbose "Checking conditional access policies for guest MFA requirements..."
+        
+        $capPath = "/identity/conditionalAccess/policies"
+        $capResponse = Invoke-GraphQueryWithMetrics -UrlPath $capPath -Operation "Fetch Conditional Access Policies" -PerformanceMetrics $PerformanceMetrics
+        $policies = @($capResponse.Content.value)
+        
+        Write-Verbose "  Analyzing $($policies.Count) conditional access policies..."
+        
+        # Check for policies that meet these criteria:
+        # 1. State = 'enabled'
+        # 2. Includes guest/external users OR includes all users
+        # 3. Does NOT explicitly exclude guest/external users
+        # 4. Requires MFA
+        $matchingPolicies = $policies | Where-Object {
+            $_.state -eq 'enabled' -and
+            $_.grantControls.builtInControls -contains 'mfa' -and
+            (
+                # Either targets all users (which includes guests)
+                ($_.conditions.users.includeUsers -contains 'All') -or
+                # Or specifically targets guest/external users
+                ($null -ne $_.conditions.users.includeGuestsOrExternalUsers -and
+                 $_.conditions.users.includeGuestsOrExternalUsers.guestOrExternalUserTypes -match 'b2bCollaborationGuest|b2bCollaborationMember|internalGuest')
+            ) -and
+            # Ensure guests are NOT explicitly excluded
+            ($null -eq $_.conditions.users.excludeGuestsOrExternalUsers -or
+             $_.conditions.users.excludeGuestsOrExternalUsers.guestOrExternalUserTypes -notmatch 'b2bCollaborationGuest|b2bCollaborationMember|internalGuest')
+        }
+        
+        if ($matchingPolicies.Count -gt 0) {
+            $hasGuestMfaPolicy = $true
+            Write-Verbose "  Found $($matchingPolicies.Count) conditional access policies requiring MFA for guest users"
+            foreach ($policy in $matchingPolicies) {
+                Write-Verbose "    - Policy: $($policy.displayName)"
+            }
+        } else {
+            Write-Verbose "  No conditional access policies found requiring MFA for guest users"
+        }
+        
+    } catch {
+        Add-FunctionError -Message "Failed to check conditional access policies for guest MFA: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+    }
+    
+    return [PSCustomObject]@{
+        HasGuestMfaPolicy = $hasGuestMfaPolicy
+        MatchingPolicies = $matchingPolicies
+        ErrorList = $ErrorList
+    }
+}
+
+# Function to collect and upload cross-tenant access and guest MFA policy data to Log Analytics
+function Upload-CrossTenantAccessData {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $ReportTime,
+        
+        [Parameter(Mandatory=$true)]
+        [string] $WorkSpaceID,
+        
+        [Parameter(Mandatory=$true)]
+        [string] $WorkspaceKey,
+        
+        [Parameter(Mandatory=$false)]
+        [hashtable] $PerformanceMetrics = $null
+    )
+    
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
+    
+    try {
+        Write-Verbose "=== Starting Cross-Tenant Access Data Collection ==="
+        
+        # Get cross-tenant access settings
+        $crossTenantResult = Get-CrossTenantAccessSettings -PerformanceMetrics $PerformanceMetrics
+        if ($crossTenantResult.ErrorList.Count -gt 0) {
+            $crossTenantResult.ErrorList | ForEach-Object { $ErrorList.Add($_) }
+        }
+        
+        # Check guest MFA conditional access policies
+        $guestMfaPolicyResult = Test-GuestMfaConditionalAccessPolicy -PerformanceMetrics $PerformanceMetrics
+        if ($guestMfaPolicyResult.ErrorList.Count -gt 0) {
+            $guestMfaPolicyResult.ErrorList | ForEach-Object { $ErrorList.Add($_) }
+        }
+        
+        # Prepare data for upload
+        $crossTenantData = @()
+        
+        # Upload cross-tenant access settings
+        foreach ($setting in $crossTenantResult.Settings) {
+            $crossTenantData += [PSCustomObject]@{
+                ReportTime = $ReportTime
+                PartnerTenantId = $setting.PartnerTenantId
+                InboundTrustMfa = $setting.InboundTrustMfa
+                InboundTrustCompliantDevice = $setting.InboundTrustCompliantDevice
+                InboundTrustHybridAzureADJoined = $setting.InboundTrustHybridAzureADJoined
+                IsDefault = $setting.IsDefault
+                HasGuestMfaPolicy = $guestMfaPolicyResult.HasGuestMfaPolicy
+            }
+        }
+        
+        # If no settings found, upload a single record indicating the state
+        if ($crossTenantData.Count -eq 0) {
+            $crossTenantData += [PSCustomObject]@{
+                ReportTime = $ReportTime
+                PartnerTenantId = "none"
+                InboundTrustMfa = $false
+                InboundTrustCompliantDevice = $false
+                InboundTrustHybridAzureADJoined = $false
+                IsDefault = $true
+                HasGuestMfaPolicy = $guestMfaPolicyResult.HasGuestMfaPolicy
+            }
+        }
+        
+        # Upload to Log Analytics
+        Write-Verbose "Uploading cross-tenant access data to Log Analytics..."
+        try {
+            New-LogAnalyticsData -Data $crossTenantData -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsCrossTenantAccess" | Out-Null
+            Write-Verbose "  Success: Cross-tenant access data uploaded successfully"
+        } catch {
+            Add-FunctionError -Message "Failed to upload cross-tenant access data: $($_.Exception.Message)" -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
+        }
+        
+        Write-Verbose "=== Cross-Tenant Access Data Collection Complete ==="
+        
+    } catch {
+        Add-FunctionError -Message "Unexpected error during cross-tenant access data collection: $($_.Exception.Message)" -Exception $_.Exception -Category "General" -ErrorList $ErrorList
+    }
     
     return $ErrorList
 }
