@@ -366,6 +366,23 @@ finally {
     Write-Output "Fetching user raw data complete."
 }
 
+try {
+    Write-Output "Fetching cross-tenant access settings and guest MFA policy data."
+    # Collect cross-tenant access settings for guest user MFA evaluation
+    $CrossTenantAccessErrors = Upload-CrossTenantAccessData -ReportTime $ReportTime -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey
+    if ($CrossTenantAccessErrors.Count -gt 0) {
+        Write-Error "Errors occurred during cross-tenant access data collection: $($CrossTenantAccessErrors -join '; ')"
+    }
+} catch {
+    Write-Error "Exception occurred during cross-tenant access data collection: $_"
+    throw
+}
+finally {
+    Write-Output "Fetching cross-tenant access settings complete."
+}
+
+
+
 Write-Output "Starting modules loop."
 $cloudUsageProfilesString = $cloudUsageProfiles -join ','
 $moduleCount = 0
