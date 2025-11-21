@@ -453,7 +453,55 @@ function Get-GuardrailIdentityPermissions {
         $errors.Add('AAD app-role enumeration did not return a response.') | Out-Null
     }
 
+    # cache appRoles per resourceId to keep calls to 1 per resource
+    $appRoleMetadataCache = @{}
+    $uniqueResourceIds = @($resourceAppRoleAssignments | Select-Object -ExpandProperty resourceId -Unique | Where-Object { $_ })
+
+    foreach ($resourceId in $uniqueResourceIds) {
+        if ($appRoleMetadataCache.ContainsKey($resourceId)) { continue }
+
+        # NOTE: Use direct Invoke-AzRestMethod here instead of Invoke-GraphQueryEX.
+        # The EX helper wraps responses under Content.value, which can mask the appRoles
+        # array and leave AppRoleValue null. Direct call + explicit parsing ensures we
+        # capture appRoles whether they are at the root or wrapped in value[0].
+        $resourceUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId?`$select=appRoles"
+        try {
+            $resourceResponse = Invoke-AzRestMethod -Method Get -Uri $resourceUri -ErrorAction Stop
+            $resourcePayload = $resourceResponse.Content | ConvertFrom-Json -ErrorAction Stop
+
+            $appRoles = $null
+            if ($resourcePayload.PSObject.Properties.Match('appRoles').Count -gt 0) {
+                $appRoles = $resourcePayload.appRoles
+            }
+            elseif ($resourcePayload.PSObject.Properties.Match('value').Count -gt 0 -and $resourcePayload.value) {
+                # in rare cases Graph may wrap the object in value[]
+                $valueObj = $resourcePayload.value
+                if ($valueObj -is [System.Array] -and $valueObj.Count -gt 0 -and $valueObj[0].PSObject.Properties.Match('appRoles').Count -gt 0) {
+                    $appRoles = $valueObj[0].appRoles
+                }
+                elseif ($valueObj.PSObject.Properties.Match('appRoles').Count -gt 0) {
+                    $appRoles = $valueObj.appRoles
+                }
+            }
+
+            $appRoleMetadataCache[$resourceId] = $appRoles
+        }
+        catch {
+            $errors.Add("AAD app-role metadata lookup failed for resource $($resourceId): $($_.Exception.Message)") | Out-Null
+            $appRoleMetadataCache[$resourceId] = $null
+        }
+    }
+
     foreach ($assignment in $resourceAppRoleAssignments) {
+        $appRoleValue = $null
+
+        if ($assignment.resourceId -and $assignment.appRoleId -and $appRoleMetadataCache.ContainsKey($assignment.resourceId) -and $appRoleMetadataCache[$assignment.resourceId]) {
+            $matchingRole = $appRoleMetadataCache[$assignment.resourceId] | Where-Object { [string]$_.id -eq [string]$assignment.appRoleId } | Select-Object -First 1
+            if ($matchingRole) {
+                $appRoleValue = $matchingRole.value
+            }
+        }
+
         $assignments.Add([pscustomobject]@{
                 PrincipalType        = 'AutomationAccountMSI'
                 PermissionType       = 'AADAppRole'
@@ -463,6 +511,7 @@ function Get-GuardrailIdentityPermissions {
                 ResourceId           = $assignment.resourceId
                 AppRoleId            = $assignment.appRoleId
                 CreatedDateTime      = $assignment.createdDateTime
+                AppRoleValue         = $appRoleValue
                 TenantRootManagementGroupId        = $TenantRootManagementGroupId
                 TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
             }) | Out-Null
