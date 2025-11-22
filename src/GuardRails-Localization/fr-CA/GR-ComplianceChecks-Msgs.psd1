@@ -128,7 +128,13 @@ nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les
 compliantC1 = La politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur a été configurée.
 compliantC2 = La politique d'accès conditionnel visant à empêcher les connexions à partir d'emplacements nommés non approuvés a été configurée.
 
-nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
+# nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
+noCompliantPoliciesfound = Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
+allPoliciesAreCompliant = Toutes les politiques suivantes sont conformes; {0}.
+# noLocationsCompliant = Aucun endroit n'a seulement le Canada en eux.
+noLocationsnonCACompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
+noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
+
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
 noInProgressAccessReview = L'environnement a au moins une révision d'accès de rôle planifiée pour les administrateurs généraux ou un autre rôle intégré Azure. Par contre, la révision d'accès a été identifiée comme « terminée » ou « non commencée ». Créez une nouvelle révision d'accès d'administrateur général/rôle intégré Azure pour qu'elle se reproduise et soit « en cours ».
@@ -144,11 +150,8 @@ compliantRecurrenceGuestReviews = Les révision d'accès d'invité existantes r�
 
 
 # GuardRail #3
-noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
-allPoliciesAreCompliant=Toutes les politiques sont conformes.
+consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console
 adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
-noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
-consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
 
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
 noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
