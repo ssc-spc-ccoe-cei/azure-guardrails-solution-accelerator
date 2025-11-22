@@ -460,10 +460,7 @@ function Get-GuardrailIdentityPermissions {
     foreach ($resourceId in $uniqueResourceIds) {
         if ($appRoleMetadataCache.ContainsKey($resourceId)) { continue }
 
-        # NOTE: Use direct Invoke-AzRestMethod here instead of Invoke-GraphQueryEX.
-        # The EX helper wraps responses under Content.value, which can mask the appRoles
-        # array and leave AppRoleValue null. Direct call + explicit parsing ensures we
-        # capture appRoles whether they are at the root or wrapped in value[0].
+        # Use direct Graph call so we can parse appRoles whether they are at root or wrapped in value[0].
         $resourceUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId"
         try {
             # Use a Graph-scoped token and Invoke-RestMethod (PS 5.1 friendly)
@@ -472,58 +469,13 @@ function Get-GuardrailIdentityPermissions {
 
             $appRoles = $null
 
-            # Attempt 1: direct by ID
-            try {
-                $resourcePayload = Invoke-RestMethod -Method Get -Uri $resourceUri -Headers $authHeader -ErrorAction Stop
-                $appRoles = if ($resourcePayload.appRoles) { $resourcePayload.appRoles }
-                           elseif ($resourcePayload.value) {
-                               $valueObj = $resourcePayload.value
-                               if ($valueObj -is [System.Array] -and $valueObj.Count -gt 0 -and $valueObj[0].appRoles) { $valueObj[0].appRoles }
-                               elseif ($valueObj.appRoles) { $valueObj.appRoles }
-                           }
-            }
-            catch {
-                # Capture detail and fall back to filter-based lookup
-                $detail = $_.Exception.Message
-                if ($_.Exception.Response) {
-                    try {
-                        $rs = $_.Exception.Response.GetResponseStream()
-                        if ($rs) {
-                            $rd = New-Object System.IO.StreamReader($rs)
-                            $body = $rd.ReadToEnd(); $rd.Close()
-                            if ($body) { $detail = "$($detail) | Response: $body" }
-                        }
-                    } catch {}
-                }
-                $errors.Add("AAD app-role metadata lookup (by id) for resource $($resourceId) failed: $detail") | Out-Null
-            }
-
-            # Attempt 2: filter by id if first attempt did not produce appRoles
-            if (-not $appRoles) {
-                # build without $select to avoid Graph 400 on encoded query params
-                $filterUri = 'https://graph.microsoft.com/v1.0/servicePrincipals?$filter=id eq ''' + $resourceId + ''''
-                try {
-                    $filterPayload = Invoke-RestMethod -Method Get -Uri $filterUri -Headers $authHeader -ErrorAction Stop
-                    if ($filterPayload.value -and $filterPayload.value.Count -gt 0) {
-                        $first = $filterPayload.value[0]
-                        if ($first.appRoles) { $appRoles = $first.appRoles }
-                    }
-                }
-                catch {
-                    $detail = $_.Exception.Message
-                    if ($_.Exception.Response) {
-                        try {
-                            $rs = $_.Exception.Response.GetResponseStream()
-                            if ($rs) {
-                                $rd = New-Object System.IO.StreamReader($rs)
-                                $body = $rd.ReadToEnd(); $rd.Close()
-                                if ($body) { $detail = "$($detail) | Response: $body" }
-                            }
-                        } catch {}
-                    }
-                    $errors.Add("AAD app-role metadata lookup (filter) for resource $($resourceId) failed: $detail") | Out-Null
-                }
-            }
+            $resourcePayload = Invoke-RestMethod -Method Get -Uri $resourceUri -Headers $authHeader -ErrorAction Stop
+            $appRoles = if ($resourcePayload.appRoles) { $resourcePayload.appRoles }
+                       elseif ($resourcePayload.value) {
+                           $valueObj = $resourcePayload.value
+                           if ($valueObj -is [System.Array] -and $valueObj.Count -gt 0 -and $valueObj[0].appRoles) { $valueObj[0].appRoles }
+                           elseif ($valueObj.appRoles) { $valueObj.appRoles }
+                       }
 
             if ($null -eq $appRoles) {
                 $errors.Add("AAD app-role metadata lookup for resource $($resourceId): appRoles property not found or empty.") | Out-Null
@@ -533,26 +485,7 @@ function Get-GuardrailIdentityPermissions {
         }
         catch {
             $statusCode = if ($_.Exception.Response -and $_.Exception.Response.StatusCode) { [int]$_.Exception.Response.StatusCode.value__ } else { 500 }
-
-            $errorDetail = $_.Exception.Message
-            if ($_.Exception.Response) {
-                try {
-                    $responseStream = $_.Exception.Response.GetResponseStream()
-                    if ($responseStream) {
-                        $reader = New-Object System.IO.StreamReader($responseStream)
-                        $errorBody = $reader.ReadToEnd()
-                        $reader.Close()
-                        if ($errorBody) {
-                            $errorDetail = "$($errorDetail) | Response: $errorBody"
-                        }
-                    }
-                }
-                catch {
-                    # ignore secondary errors while reading response
-                }
-            }
-
-            $errors.Add("AAD app-role metadata lookup for resource $($resourceId) returned status $statusCode : $errorDetail") | Out-Null
+            $errors.Add("AAD app-role metadata lookup for resource $($resourceId) returned status $statusCode : $($_.Exception.Message)") | Out-Null
             $appRoleMetadataCache[$resourceId] = $null
             continue
         }
