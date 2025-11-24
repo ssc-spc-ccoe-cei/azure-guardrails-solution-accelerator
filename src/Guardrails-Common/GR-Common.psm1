@@ -428,7 +428,8 @@ function Get-GuardrailIdentityPermissions {
                 Role                 = $assignment.RoleDefinitionName
                 RoleDefinitionId     = $assignment.RoleDefinitionId
                 Scope                = $assignment.Scope
-                AssignmentId         = $assignment.Id
+                # Some Az versions expose the GUID as RoleAssignmentId instead of Id (PS5.1 compatible)
+                AssignmentId         = if ($assignment.RoleAssignmentId) { $assignment.RoleAssignmentId } else { $assignment.Id }
                 TenantRootManagementGroupId        = $TenantRootManagementGroupId
                 TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
             }) | Out-Null
@@ -460,7 +461,7 @@ function Get-GuardrailIdentityPermissions {
     foreach ($resourceId in $uniqueResourceIds) {
         if ($appRoleMetadataCache.ContainsKey($resourceId)) { continue }
 
-        # Use direct Graph call so we can parse appRoles whether they are at root or wrapped in value[0].
+        # Use direct Graph call (not Invoke-GraphQueryEX) so appRoles aren't hidden under Content.value and AppRoleValue stays populated.
         $resourceUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId"
         try {
             # Use a Graph-scoped token and Invoke-RestMethod (PS 5.1 friendly)
