@@ -435,7 +435,7 @@ function Get-GuardrailIdentityPermissions {
             }) | Out-Null
     }
 
-    # Stage 3: AAD app-role assignments (GUIDs only)
+    # AAD app-role assignments (GUIDs only)
     $resourceAppRoleAssignments = @()
     $graphPath = "/servicePrincipals/$($principal.Id)/appRoleAssignments?`$select=appRoleId,createdDateTime,principalDisplayName,principalId,resourceDisplayName,resourceId"
     $graphResponse = $null
