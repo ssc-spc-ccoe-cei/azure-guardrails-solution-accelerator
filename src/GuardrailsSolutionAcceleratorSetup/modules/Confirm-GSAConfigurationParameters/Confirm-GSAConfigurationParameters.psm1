@@ -148,7 +148,7 @@ Function Confirm-GSAConfigurationParameters {
         }
         resourcegroup                     = @{
             IsRequired        = $true
-            ValidationPattern = '(?=.*guardrails)[a-z0-9-_]{2,64}$'
+            ValidationPattern = '^(?=.*guardrails)[a-z0-9-_]{2,64}$'
         }
         region                            = @{
             IsRequired     = $false
