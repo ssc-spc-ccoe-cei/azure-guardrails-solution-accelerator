@@ -11,25 +11,9 @@ function Get-PolicyComplianceData {
     $policyGuid = ($PolicyID -split '/')[-1]
     $initiativeGuid = if ($InitiativeID) { ($InitiativeID -split '/')[-1] } else { "" }
 
-    # Optimized Azure Resource Graph query
+    # Optimized Azure Resource Graph query to get ALL policy states across all subscriptions at once
     $query = @"
-// Get policy assignments with location configurations
-let policyAssignments = policyresources
-| where type == "microsoft.authorization/policyassignments"
-| where properties.policyDefinitionId contains "$policyGuid"
-| extend 
-    subscriptionId = tostring(split(properties.scope, "/")[2]),
-    scope = properties.scope,
-    assignmentName = name,
-    policyDefId = properties.policyDefinitionId,
-    assignedLocations = properties.parameters.listOfAllowedLocations.value,
-    notScopes = properties.notScopes,
-    assignmentId = id,
-    isInitiative = iff(properties.policyDefinitionId contains "policySetDefinitions", true, false)
-| where isnotempty(subscriptionId)
-| project subscriptionId, scope, assignmentName, policyDefId, assignedLocations, notScopes, assignmentId, isInitiative;
-// Get compliance states for the policy
-let policyComplianceStates = policyresources
+policyresources
 | where type == "microsoft.policyinsights/policystates"
 | where properties.policyDefinitionId contains "$policyGuid"
 | where isempty("$initiativeGuid") or properties.policySetDefinitionId contains "$initiativeGuid"
@@ -37,7 +21,6 @@ let policyComplianceStates = policyresources
     subscriptionId = tostring(split(properties.resourceId, "/")[2]),
     complianceState = tostring(properties.complianceState),
     resourceId = properties.resourceId,
-    policyAssignmentId = properties.policyAssignmentId,
     policySetDefId = tostring(properties.policySetDefinitionId),
     isInitiativeCompliance = isnotempty(properties.policySetDefinitionId)
 | where isnotempty(subscriptionId)
@@ -51,68 +34,18 @@ let policyComplianceStates = policyresources
     PolicyTotalResources = countif(not(isInitiativeCompliance)),
     PolicyCompliantResources = countif(not(isInitiativeCompliance) and complianceState == "Compliant"),
     PolicyNonCompliantResources = countif(not(isInitiativeCompliance) and complianceState == "NonCompliant")
-    by subscriptionId;
-// Join and create final result
-policyAssignments
-| join kind=leftouter (policyComplianceStates) on subscriptionId
-| summarize 
-    Assignments = make_list(pack(
-        "name", assignmentName,
-        "policyDefinitionId", policyDefId,
-        "scope", scope,
-        "assignedLocations", assignedLocations,
-        "notScopes", notScopes,
-        "assignmentId", assignmentId,
-        "isInitiative", isInitiative
-    )),
-    TotalResources = max(TotalResources),
-    CompliantResources = max(CompliantResources),
-    NonCompliantResources = max(NonCompliantResources),
-    InitiativeTotalResources = max(InitiativeTotalResources),
-    InitiativeCompliantResources = max(InitiativeCompliantResources),
-    InitiativeNonCompliantResources = max(InitiativeNonCompliantResources),
-    PolicyTotalResources = max(PolicyTotalResources),
-    PolicyCompliantResources = max(PolicyCompliantResources),
-    PolicyNonCompliantResources = max(PolicyNonCompliantResources),
-    HasPolicyAssigned = countif(isnotempty(assignmentName)) > 0
     by subscriptionId
-| extend 
-    TotalResources = coalesce(TotalResources, 0),
-    CompliantResources = coalesce(CompliantResources, 0),
-    NonCompliantResources = coalesce(NonCompliantResources, 0),
-    InitiativeTotalResources = coalesce(InitiativeTotalResources, 0),
-    InitiativeCompliantResources = coalesce(InitiativeCompliantResources, 0),
-    InitiativeNonCompliantResources = coalesce(InitiativeNonCompliantResources, 0),
-    PolicyTotalResources = coalesce(PolicyTotalResources, 0),
-    PolicyCompliantResources = coalesce(PolicyCompliantResources, 0),
-    PolicyNonCompliantResources = coalesce(PolicyNonCompliantResources, 0)
-| project 
-    subscriptionId,
-    HasPolicyAssigned,
-    Assignments,
-    TotalResources,
-    CompliantResources,
-    NonCompliantResources,
-    InitiativeTotalResources,
-    InitiativeCompliantResources,
-    InitiativeNonCompliantResources,
-    PolicyTotalResources,
-    PolicyCompliantResources,
-    PolicyNonCompliantResources
 | order by subscriptionId asc
 "@
 
     try {
-        Write-Verbose "Executing Azure Resource Graph query for policy compliance data..."
+        Write-Verbose "Executing Azure Resource Graph query for policy compliance states..."
         $results = Search-AzGraph -Query $query -First 1000
         
-        # Process results and validate locations
-        $processedResults = @{}
+        # Create lookup table indexed by subscription ID
+        $complianceBySubscription = @{}
         foreach ($result in $results) {
-            $subData = @{
-                SubscriptionId = $result.subscriptionId
-                HasPolicyAssigned = $result.HasPolicyAssigned
-                Assignments = $result.Assignments
+            $complianceBySubscription[$result.subscriptionId] = @{
                 TotalResources = $result.TotalResources
                 CompliantResources = $result.CompliantResources
                 NonCompliantResources = $result.NonCompliantResources
@@ -122,31 +55,10 @@ policyAssignments
                 PolicyTotalResources = $result.PolicyTotalResources
                 PolicyCompliantResources = $result.PolicyCompliantResources
                 PolicyNonCompliantResources = $result.PolicyNonCompliantResources
-                HasNotScopes = $false
-                HasInvalidLocations = $false
-                InvalidLocations = @()
             }
-
-            # Check assignments for notScopes and invalid locations
-            foreach ($assignment in $result.Assignments) {
-                if ($assignment.notScopes -and $assignment.notScopes.Count -gt 0) {
-                    $subData.HasNotScopes = $true
-                }
-                
-                if ($AllowedLocations -and $AllowedLocations.Count -gt 0 -and $assignment.assignedLocations) {
-                    foreach ($assignedLoc in $assignment.assignedLocations) {
-                        if ($assignedLoc -notin $AllowedLocations) {
-                            $subData.HasInvalidLocations = $true
-                            $subData.InvalidLocations += $assignedLoc
-                        }
-                    }
-                }
-            }
-
-            $processedResults[$result.subscriptionId] = $subData
         }
 
-        return $processedResults
+        return $complianceBySubscription
     }
     catch {
         Write-Error "Failed to execute Azure Resource Graph query: $_"
@@ -180,80 +92,131 @@ function Check-PolicyStatus {
     {
         Write-Verbose "Processing $objType : $($obj.Name)"
         
+        if ($objType -eq "subscription") {
+            $tempId="/subscriptions/$($obj.Id)"
+        }
+        else {
+            $tempId=$obj.Id
+        }
+
+        # Check for policy assignments using cmdlet (fast, handles inheritance)
+        try {
+            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $PolicyID -ErrorAction SilentlyContinue
+            $AssignedInitiatives = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $InitiativeID -ErrorAction SilentlyContinue
+        }
+        catch {
+            Write-Warning "Failed to retrieve policy assignments for $($obj.Name): $_"
+            $AssignedPolicyList = $null
+            $AssignedInitiatives = $null
+        }
+
         $ComplianceStatus = $true
         $Comment = ""
         
-        # Get cached compliance data for this subscription
-        $complianceData = $ComplianceDataCache[$obj.Id]
-        
-        if ($null -eq $complianceData -or -not $complianceData.HasPolicyAssigned) {
-            # Policy not assigned
+        # Check if policy/initiative is assigned
+        If (($null -eq $AssignedPolicyList -and ($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")) -or `
+            ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
+        {
             $Comment = $($msgTable.policyNotAssigned -f $objType)
             $ComplianceStatus = $false
-        }
-        elseif ($complianceData.HasNotScopes) {
-            # Has notScopes configured
-            $Comment = $($msgTable.policyNotAssigned -f $objType)
-            $ComplianceStatus = $false
-        }
-        elseif ($complianceData.HasInvalidLocations) {
-            # Has locations that are not in allowed list
-            $ComplianceStatus = $false
-            $Comment = $msgTable.notAllowedLocation
         }
         else {
-            # Policy is assigned correctly, check resource compliance
-            $TotalInitResources = $complianceData.InitiativeTotalResources
-            $InitCompliantResources = $complianceData.InitiativeCompliantResources
-            $InitNonCompliantResources = $complianceData.InitiativeNonCompliantResources
-            $TotalPolicyResources = $complianceData.PolicyTotalResources
-            $PolicyCompliantResources = $complianceData.PolicyCompliantResources
-            $PolicyNonCompliantResources = $complianceData.PolicyNonCompliantResources
-
-            if (($TotalInitResources -gt 0 -and $TotalPolicyResources -eq 0) -or ($TotalPolicyResources -gt 0 -and $TotalInitResources -eq 0)) {
-                # Case 1: Only Initiative has resources, check initiative compliance
-                # Case 2: Only Policy has resources, check policy compliance
-                
-                if ($TotalInitResources -gt 0 -and $TotalInitResources -eq $InitNonCompliantResources) {
-                    $ComplianceStatus = $false
-                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
-                } 
-                elseif ($TotalPolicyResources -gt 0 -and $TotalPolicyResources -eq $PolicyNonCompliantResources) {
-                    $ComplianceStatus = $false
-                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
-                } 
-                elseif($InitNonCompliantResources -gt 0 -and ($InitNonCompliantResources -lt $TotalInitResources)){
-                    $ComplianceStatus = $false
-                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $InitNonCompliantResources, $TotalInitResources
-                }
-                elseif($PolicyNonCompliantResources -gt 0 -and ($PolicyNonCompliantResources -lt $TotalPolicyResources)){
-                    $ComplianceStatus = $false
-                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $PolicyNonCompliantResources, $TotalPolicyResources
-                }
-                else{
-                    $ComplianceStatus = $true
-                    $Comment = $msgTable.isCompliant + ' ' + $msgTable.allCompliantResources
-                }
-            }
-            elseif ($TotalInitResources -gt 0 -and $TotalPolicyResources -gt 0) {
-                # Case 3: Both Initiative and Policy have assigned resources, so check both
+            # Test for allowed locations in policies if not null
+            $ComplianceStatus = $true
             
-                if ($TotalInitResources -eq $InitCompliantResources -and $TotalPolicyResources -eq $PolicyCompliantResources) {
-                    $ComplianceStatus = $true
-                    $Comment = $msgTable.isCompliant + ' ' + $msgTable.allCompliantResources
-                } 
-                elseif($InitNonCompliantResources -gt 0 -and ($InitNonCompliantResources -lt $TotalInitResources)){
-                    $ComplianceStatus = $false
-                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $InitNonCompliantResources, $TotalInitResources
-                }
-                elseif($PolicyNonCompliantResources -gt 0 -and ($PolicyNonCompliantResources -lt $TotalPolicyResources)){
-                    $ComplianceStatus = $false
-                    $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $PolicyNonCompliantResources, $TotalPolicyResources
+            if ($null -ne $AssignedPolicyList){
+                if (!([string]::IsNullOrEmpty($AllowedLocations)))
+                {
+                    $AssignedLocations = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value
+                    foreach ($AssignedLocation in $AssignedLocations) {
+                        if ( $AssignedLocation -notin $AllowedLocations) {
+                            $ComplianceStatus = $false
+                            $Comment = $msgTable.notAllowedLocation
+                        }
+                    }
                 }
             }
-            elseif($TotalInitResources -eq 0 -and $TotalPolicyResources -eq 0){
-                $ComplianceStatus = $true
-                $Comment = $msgTable.isCompliant + ' ' + $msgTable.noResource
+
+            if ($null -ne $AssignedInitiatives -and $AssignedInitiatives -ne "N/A"){
+                if (!([string]::IsNullOrEmpty($AllowedLocations)))
+                {
+                    $AssignedLocations = $AssignedInitiatives.Properties.Parameters.listOfAllowedLocations.value
+                    foreach ($AssignedLocation in $AssignedLocations) {
+                        if ( $AssignedLocation -notin $AllowedLocations) {
+                            $ComplianceStatus = $false
+                            $Comment = $msgTable.notAllowedLocation
+                        }
+                    }
+                }
+            }
+            
+            # If locations are valid, check resource compliance using cached data
+            if ($ComplianceStatus -eq $true) {
+                # Get cached compliance data for this subscription
+                $complianceData = $ComplianceDataCache[$obj.Id]
+                
+                if ($null -ne $complianceData) {
+                    $TotalInitResources = $complianceData.InitiativeTotalResources
+                    $InitCompliantResources = $complianceData.InitiativeCompliantResources
+                    $InitNonCompliantResources = $complianceData.InitiativeNonCompliantResources
+                    $TotalPolicyResources = $complianceData.PolicyTotalResources
+                    $PolicyCompliantResources = $complianceData.PolicyCompliantResources
+                    $PolicyNonCompliantResources = $complianceData.PolicyNonCompliantResources
+                } else {
+                    # No compliance data means no resources
+                    $TotalInitResources = 0
+                    $InitCompliantResources = 0
+                    $InitNonCompliantResources = 0
+                    $TotalPolicyResources = 0
+                    $PolicyCompliantResources = 0
+                    $PolicyNonCompliantResources = 0
+                }
+
+                if (($TotalInitResources -gt 0 -and $TotalPolicyResources -eq 0) -or ($TotalPolicyResources -gt 0 -and $TotalInitResources -eq 0)) {
+                    # Case 1: Only Initiative has resources, check initiative compliance
+                    # Case 2: Only Policy has resources, check policy compliance
+                    
+                    if ($TotalInitResources -gt 0 -and $TotalInitResources -eq $InitNonCompliantResources) {
+                        $ComplianceStatus = $false
+                        $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
+                    } 
+                    elseif ($TotalPolicyResources -gt 0 -and $TotalPolicyResources -eq $PolicyNonCompliantResources) {
+                        $ComplianceStatus = $false
+                        $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.allNonCompliantResources
+                    } 
+                    elseif($InitNonCompliantResources -gt 0 -and ($InitNonCompliantResources -lt $TotalInitResources)){
+                        $ComplianceStatus = $false
+                        $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $InitNonCompliantResources, $TotalInitResources
+                    }
+                    elseif($PolicyNonCompliantResources -gt 0 -and ($PolicyNonCompliantResources -lt $TotalPolicyResources)){
+                        $ComplianceStatus = $false
+                        $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $PolicyNonCompliantResources, $TotalPolicyResources
+                    }
+                    else{
+                        $ComplianceStatus = $true
+                        $Comment = $msgTable.isCompliant + ' ' + $msgTable.allCompliantResources
+                    }
+                }
+                elseif ($TotalInitResources -gt 0 -and $TotalPolicyResources -gt 0) {
+                    # Case 3: Both Initiative and Policy have assigned resources, so check both
+                
+                    if ($TotalInitResources -eq $InitCompliantResources -and $TotalPolicyResources -eq $PolicyCompliantResources) {
+                        $ComplianceStatus = $true
+                        $Comment = $msgTable.isCompliant + ' ' + $msgTable.allCompliantResources
+                    } 
+                    elseif($InitNonCompliantResources -gt 0 -and ($InitNonCompliantResources -lt $TotalInitResources)){
+                        $ComplianceStatus = $false
+                        $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $InitNonCompliantResources, $TotalInitResources
+                    }
+                    elseif($PolicyNonCompliantResources -gt 0 -and ($PolicyNonCompliantResources -lt $TotalPolicyResources)){
+                        $ComplianceStatus = $false
+                        $Comment = $msgTable.isNotCompliant + ' ' + $msgTable.hasNonComplianceResource -f $PolicyNonCompliantResources, $TotalPolicyResources
+                    }
+                }
+                elseif($TotalInitResources -eq 0 -and $TotalPolicyResources -eq 0){
+                    $ComplianceStatus = $true
+                    $Comment = $msgTable.isCompliant + ' ' + $msgTable.noResource
+                }
             }
         }
 
@@ -354,15 +317,15 @@ function Verify-AllowedLocationPolicy {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
 
-    # Fetch all compliance data using Azure Resource Graph (single efficient query)
-    Write-Host "Fetching policy compliance data using Azure Resource Graph..."
+    # Fetch all policy compliance states using Azure Resource Graph (single efficient query)
+    Write-Host "Fetching policy compliance states across all subscriptions using Azure Resource Graph..."
     try {
         $ComplianceDataCache = Get-PolicyComplianceData -PolicyID $PolicyID -InitiativeID $InitiativeID -AllowedLocations $AllowedLocations -msgTable $msgTable
-        Write-Host "Successfully retrieved compliance data for $($ComplianceDataCache.Count) subscriptions"
+        Write-Host "Successfully retrieved compliance states for $($ComplianceDataCache.Count) subscription(s) with resources"
     }
     catch {
-        $Errorlist.Add("Failed to retrieve policy compliance data using Azure Resource Graph: $_")
-        Write-Warning "Failed to retrieve policy compliance data using Azure Resource Graph. Error: $_"
+        $Errorlist.Add("Failed to retrieve policy compliance states using Azure Resource Graph: $_")
+        Write-Warning "Failed to retrieve policy compliance states using Azure Resource Graph. Error: $_"
         # Initialize empty cache to allow processing to continue
         $ComplianceDataCache = @{}
     }
