@@ -144,11 +144,11 @@ Function Confirm-GSAConfigurationParameters {
     $paramsValidationTable = @{
         keyVaultName                      = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-z0-9][a-z0-9-]{3,12}$'
+            ValidationPattern = '^[a-z0-9][a-z0-9-]{2,14}$'
         }
         resourcegroup                     = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-z0-9][a-z0-9-_]{2,64}$'
+            ValidationPattern = '^(?=.*guardrails)[a-z0-9-_]{2,64}$'
         }
         region                            = @{
             IsRequired     = $false
