@@ -651,6 +651,409 @@ function Hide-Email {
     }
 }
 
+#region Guardrail Telemetry Helpers
+
+function Initialize-GuardrailTelemetry {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$GuardrailId,
+        [Parameter(Mandatory = $true)]
+        [string]$RunbookName,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkSpaceID,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkspaceKey,
+        [Parameter(Mandatory = $false)]
+        [string]$SubscriptionId,
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId,
+        [Parameter(Mandatory = $false)]
+        [string]$JobId,
+        [Parameter(Mandatory = $false)]
+        [string]$CorrelationId
+    )
+
+    $telemetryEnabled = $false
+    if ($env:ENABLE_DEBUG_METRICS) {
+        $telemetryEnabled = [string]::Equals($env:ENABLE_DEBUG_METRICS, 'true', [System.StringComparison]::InvariantCultureIgnoreCase)
+    }
+
+    if (-not $telemetryEnabled) {
+        return [pscustomobject]@{ Enabled = $false }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($WorkSpaceID) -or [string]::IsNullOrWhiteSpace($WorkspaceKey)) {
+        Write-Verbose "Guardrail telemetry disabled due to missing workspace configuration."
+        return [pscustomobject]@{ Enabled = $false }
+    }
+
+    if (-not $CorrelationId) {
+        $CorrelationId = [guid]::NewGuid().ToString()
+    }
+
+    return [pscustomobject]@{
+        Enabled        = $true
+        GuardrailId    = $GuardrailId
+        RunbookName    = $RunbookName
+        WorkspaceId    = $WorkSpaceID
+        WorkspaceKey   = $WorkspaceKey
+        SubscriptionId = $SubscriptionId
+        TenantId       = $TenantId
+        JobId          = $JobId
+        CorrelationId  = $CorrelationId
+        DurationColumnInitialized = $false
+    }
+}
+
+# Returns the current PowerShell worker memory usage in MB (rounded to two decimals).
+function Get-GuardrailProcessMemory {
+    [CmdletBinding()]
+    param ()
+
+    $process = [System.Diagnostics.Process]::GetCurrentProcess()
+    try {
+        $workingSetMb = [Math]::Round(($process.WorkingSet64 / 1MB), 2)
+        $peakWorkingSetMb = [Math]::Round(($process.PeakWorkingSet64 / 1MB), 2)
+
+        return [pscustomobject]@{
+            WorkingSetMb     = $workingSetMb
+            PeakWorkingSetMb = $peakWorkingSetMb
+        }
+    }
+    finally {
+        $process.Dispose()
+    }
+}
+
+function Update-RunStateMemoryStats {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [psobject]$CurrentSnapshot
+    )
+
+    $RunState.Stats.MemoryEndMb = $CurrentSnapshot.WorkingSetMb
+    if ($CurrentSnapshot.PeakWorkingSetMb -gt $RunState.Stats.MemoryPeakMb) {
+        $RunState.Stats.MemoryPeakMb = $CurrentSnapshot.PeakWorkingSetMb
+    }
+    $RunState.Stats.MemoryDeltaMb = [Math]::Round(($RunState.Stats.MemoryEndMb - $RunState.Stats.MemoryStartMb), 2)
+}
+
+function Write-GuardrailTelemetry {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$Context,
+        [Parameter(Mandatory = $true)]
+        [string]$ExecutionScope,
+        [Parameter(Mandatory = $true)]
+        [string]$EventType,
+        [Parameter(Mandatory = $false)]
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$DurationMs,
+        [Parameter(Mandatory = $false)]
+        [double]$ErrorCount,
+        [Parameter(Mandatory = $false)]
+        [double]$ItemCount,
+        [Parameter(Mandatory = $false)]
+        [double]$CompliantCount,
+        [Parameter(Mandatory = $false)]
+        [double]$NonCompliantCount,
+        [Parameter(Mandatory = $false)]
+        [string]$Message,
+        [Parameter(Mandatory = $false)]
+        [string]$ReportTime,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailIdOverride,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryStartMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryEndMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryPeakMb,
+        [Parameter(Mandatory = $false)]
+        [Nullable[double]]$MemoryDeltaMb
+    )
+
+    if (-not $Context -or -not $Context.Enabled) {
+        return
+    }
+
+    try {
+        $record = [ordered]@{
+            GuardrailId        = if (-not [string]::IsNullOrWhiteSpace($GuardrailIdOverride)) { $GuardrailIdOverride } else { $Context.GuardrailId }
+            RunbookName        = $Context.RunbookName
+            ModuleName         = $ModuleName
+            ExecutionScope     = $ExecutionScope
+            EventType          = $EventType
+            CorrelationId      = [string]$Context.CorrelationId
+            JobId              = [string]$Context.JobId
+            RunSubscriptionId  = [string]$Context.SubscriptionId
+            RunTenantId        = [string]$Context.TenantId
+            ErrorCount         = if ($null -ne $ErrorCount) { [double]$ErrorCount } else { 0d }
+            ItemCount          = if ($null -ne $ItemCount) { [double]$ItemCount } else { 0d }
+            CompliantCount     = if ($null -ne $CompliantCount) { [double]$CompliantCount } else { 0d }
+            NonCompliantCount  = if ($null -ne $NonCompliantCount) { [double]$NonCompliantCount } else { 0d }
+            ReportTime         = if ($ReportTime) { $ReportTime } else { $null }
+            Message            = if (-not [string]::IsNullOrWhiteSpace($Message)) { $Message } else { $null }
+        }
+
+        $hasDurationValue = $PSBoundParameters.ContainsKey('DurationMs') -and $null -ne $DurationMs
+
+        if ($hasDurationValue) {
+            $durationRounded = [double][Math]::Round($DurationMs, 2)
+            $record['DurationMsReal'] = $durationRounded
+            $Context.DurationColumnInitialized = $true
+        }
+        elseif (-not $Context.DurationColumnInitialized) {
+            # LAW infers DurationMsReal as string when the first ingested
+            # record omits duration. Seed with a tiny double to force the column type once.
+            $record['DurationMsReal'] = [double]0.01
+            $Context.DurationColumnInitialized = $true
+        }
+
+        if ($PSBoundParameters.ContainsKey('MemoryStartMb') -and $null -ne $MemoryStartMb) {
+            $record['MemoryStartMb'] = [double][Math]::Round($MemoryStartMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryEndMb') -and $null -ne $MemoryEndMb) {
+            $record['MemoryEndMb'] = [double][Math]::Round($MemoryEndMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryPeakMb') -and $null -ne $MemoryPeakMb) {
+            $record['MemoryPeakMb'] = [double][Math]::Round($MemoryPeakMb, 2)
+        }
+        if ($PSBoundParameters.ContainsKey('MemoryDeltaMb') -and $null -ne $MemoryDeltaMb) {
+            $record['MemoryDeltaMb'] = [double][Math]::Round($MemoryDeltaMb, 2)
+        }
+
+        $data = @([pscustomobject]$record)
+        New-LogAnalyticsData -Data $data -WorkSpaceID $Context.WorkspaceId -WorkSpaceKey $Context.WorkspaceKey -LogType 'CaCDebugMetrics' | Out-Null
+    }
+    catch {
+        Write-Verbose "Failed to write guardrail telemetry: $_"
+    }
+}
+
+function New-GuardrailRunState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$GuardrailId,
+        [Parameter(Mandatory = $true)]
+        [string]$RunbookName,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkSpaceID,
+        [Parameter(Mandatory = $true)]
+        [string]$WorkspaceKey,
+        [Parameter(Mandatory = $false)]
+        [string]$SubscriptionId,
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId,
+        [Parameter(Mandatory = $false)]
+        [string]$JobId,
+        [Parameter(Mandatory = $false)]
+        [string]$ReportTime
+    )
+
+    $telemetryContext = Initialize-GuardrailTelemetry -GuardrailId $GuardrailId -RunbookName $RunbookName -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubscriptionId -TenantId $TenantId -JobId $JobId -CorrelationId $null
+
+    $runState = [pscustomobject]@{
+        TelemetryContext = $telemetryContext
+        ReportTime       = $ReportTime
+        RunStopwatch     = [System.Diagnostics.Stopwatch]::StartNew()
+        Stats            = [ordered]@{
+            ModulesEnabled    = 0
+            ModulesDisabled   = 0
+            TotalItems        = 0
+            CompliantItems    = 0
+            NonCompliantItems = 0
+            Errors            = 0
+            MemoryStartMb     = 0
+            MemoryEndMb       = 0
+            MemoryPeakMb      = 0
+            MemoryDeltaMb     = 0
+        }
+        Summaries        = [System.Collections.Generic.List[psobject]]::new()
+    }
+
+    $initialMemory = Get-GuardrailProcessMemory
+    $runState.Stats.MemoryStartMb = $initialMemory.WorkingSetMb
+    Update-RunStateMemoryStats -RunState $runState -CurrentSnapshot $initialMemory
+
+    Write-GuardrailTelemetry -Context $telemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'Start' -ReportTime $ReportTime -MemoryStartMb $initialMemory.WorkingSetMb -MemoryPeakMb $initialMemory.PeakWorkingSetMb
+
+    return $runState
+}
+
+function Start-GuardrailModuleState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailId
+    )
+
+    $RunState.Stats.ModulesEnabled++
+
+    $memorySnapshot = Get-GuardrailProcessMemory
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memorySnapshot
+
+    $moduleState = [pscustomobject]@{
+        ModuleName        = $ModuleName
+        Stopwatch         = [System.Diagnostics.Stopwatch]::StartNew()
+        GuardrailId       = $GuardrailId
+        MemoryStartMb     = $memorySnapshot.WorkingSetMb
+        MemoryStartPeakMb = $memorySnapshot.PeakWorkingSetMb
+    }
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Start' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb
+
+    return $moduleState
+}
+
+function Complete-GuardrailModuleState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [psobject]$ModuleState,
+        [Parameter(Mandatory = $false)]
+        [int]$ErrorCount = 0,
+        [Parameter(Mandatory = $false)]
+        [int]$ItemCount = 0,
+        [Parameter(Mandatory = $false)]
+        [int]$CompliantCount = 0,
+        [Parameter(Mandatory = $false)]
+        [int]$NonCompliantCount = 0,
+        [Parameter(Mandatory = $false)]
+        [string]$Message
+    )
+
+    if ($ModuleState.Stopwatch -and $ModuleState.Stopwatch.IsRunning) {
+        $ModuleState.Stopwatch.Stop()
+    }
+
+    $durationMs = $null
+    if ($ModuleState.Stopwatch) {
+        $durationMs = $ModuleState.Stopwatch.Elapsed.TotalMilliseconds
+    }
+
+    $RunState.Stats.Errors += $ErrorCount
+    $RunState.Stats.TotalItems += $ItemCount
+    $RunState.Stats.CompliantItems += $CompliantCount
+    $RunState.Stats.NonCompliantItems += $NonCompliantCount
+
+    if (-not $Message) {
+        $parts = @("Items=$ItemCount")
+        if ($ErrorCount -gt 0) { $parts += "Errors=$ErrorCount" }
+        $Message = $parts -join '; '
+    }
+
+    $memoryEnd = Get-GuardrailProcessMemory
+    $memoryStartMb = if ($ModuleState.PSObject.Properties.Match('MemoryStartMb').Count -gt 0) { $ModuleState.MemoryStartMb } else { $memoryEnd.WorkingSetMb }
+    $memoryStartPeakMb = if ($ModuleState.PSObject.Properties.Match('MemoryStartPeakMb').Count -gt 0) { $ModuleState.MemoryStartPeakMb } else { $memoryEnd.PeakWorkingSetMb }
+    $modulePeakMb = [Math]::Round(([Math]::Max($memoryEnd.PeakWorkingSetMb, $memoryStartPeakMb)), 2)
+    $memoryDeltaMb = [Math]::Round(($memoryEnd.WorkingSetMb - $memoryStartMb), 2)
+
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memoryEnd
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleState.ModuleName -EventType 'End' -DurationMs $durationMs -ErrorCount $ErrorCount -ItemCount $ItemCount -CompliantCount $CompliantCount -NonCompliantCount $NonCompliantCount -ReportTime $RunState.ReportTime -Message $Message -GuardrailIdOverride $ModuleState.GuardrailId -MemoryStartMb $memoryStartMb -MemoryEndMb $memoryEnd.WorkingSetMb -MemoryPeakMb $modulePeakMb -MemoryDeltaMb $memoryDeltaMb
+
+    $summary = [pscustomobject]@{
+        ModuleName      = $ModuleState.ModuleName
+        IsSkipped       = $false
+        DurationSeconds = if ($null -ne $durationMs) { [Math]::Round($durationMs / 1000, 2) } else { 0 }
+        Items           = $ItemCount
+        Errors          = $ErrorCount
+        GuardrailId     = $ModuleState.GuardrailId
+        MemoryStartMb   = $memoryStartMb
+        MemoryEndMb     = $memoryEnd.WorkingSetMb
+        MemoryDeltaMb   = $memoryDeltaMb
+        MemoryPeakMb    = $modulePeakMb
+    }
+    $null = $RunState.Summaries.Add($summary)
+
+    return $summary
+}
+
+function Skip-GuardrailModuleState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState,
+        [Parameter(Mandatory = $true)]
+        [string]$ModuleName,
+        [Parameter(Mandatory = $false)]
+        [string]$GuardrailId
+    )
+
+    $RunState.Stats.ModulesDisabled++
+
+    $memorySnapshot = Get-GuardrailProcessMemory
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot $memorySnapshot
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Module' -ModuleName $ModuleName -EventType 'Skipped' -ReportTime $RunState.ReportTime -GuardrailIdOverride $GuardrailId -MemoryStartMb $memorySnapshot.WorkingSetMb -MemoryEndMb $memorySnapshot.WorkingSetMb -MemoryPeakMb $memorySnapshot.PeakWorkingSetMb -MemoryDeltaMb 0
+
+    $summary = [pscustomobject]@{
+        ModuleName      = $ModuleName
+        IsSkipped       = $true
+        DurationSeconds = 0
+        Items           = 0
+        Errors          = 0
+        GuardrailId     = $GuardrailId
+        MemoryStartMb   = $memorySnapshot.WorkingSetMb
+        MemoryEndMb     = $memorySnapshot.WorkingSetMb
+        MemoryDeltaMb   = 0
+        MemoryPeakMb    = $memorySnapshot.PeakWorkingSetMb
+    }
+    $null = $RunState.Summaries.Add($summary)
+
+    return $summary
+}
+
+function Complete-GuardrailRunState {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$RunState
+    )
+
+    if ($RunState.RunStopwatch -and $RunState.RunStopwatch.IsRunning) {
+        $RunState.RunStopwatch.Stop()
+    }
+
+    $duration = if ($RunState.RunStopwatch) { $RunState.RunStopwatch.Elapsed } else { [TimeSpan]::Zero }
+
+    $messageParts = @(
+        "ModulesEnabled=$($RunState.Stats.ModulesEnabled)",
+        "ModulesDisabled=$($RunState.Stats.ModulesDisabled)",
+        "TotalItems=$($RunState.Stats.TotalItems)"
+    )
+    $runMessage = $messageParts -join '; '
+
+    Update-RunStateMemoryStats -RunState $RunState -CurrentSnapshot ([pscustomobject]@{
+            WorkingSetMb     = $RunState.Stats.MemoryEndMb
+            PeakWorkingSetMb = $RunState.Stats.MemoryPeakMb
+        })
+
+    Write-GuardrailTelemetry -Context $RunState.TelemetryContext -ExecutionScope 'Runbook' -ModuleName 'RUNBOOK' -EventType 'End' -DurationMs $duration.TotalMilliseconds -ErrorCount $RunState.Stats.Errors -ItemCount $RunState.Stats.TotalItems -CompliantCount $RunState.Stats.CompliantItems -NonCompliantCount $RunState.Stats.NonCompliantItems -ReportTime $RunState.ReportTime -Message $runMessage -MemoryStartMb $RunState.Stats.MemoryStartMb -MemoryEndMb $RunState.Stats.MemoryEndMb -MemoryPeakMb $RunState.Stats.MemoryPeakMb -MemoryDeltaMb $RunState.Stats.MemoryDeltaMb
+
+    return [pscustomobject]@{
+        Duration  = $duration
+        Stats     = $RunState.Stats
+        Summaries = $RunState.Summaries
+    }
+}
+
+#endregion Guardrail Telemetry Helpers
+
 function Get-EvaluationProfile {
     [OutputType([PSCustomObject])]
     [CmdletBinding()]
@@ -1288,7 +1691,7 @@ function Get-AllUserAuthInformation {
                 if ($isSystemPreferredEnabled -eq $true -and 
                     ($systemPreferredMethod -eq "Fido2" -or $systemPreferredMethod -eq "HardwareOTP")) {
                     $authFound = $true
-                    Write-Host "✅ $userAccount - System preferred authentication method is $systemPreferredMethod"
+                    Write-Host "$userAccount - System preferred authentication method is $systemPreferredMethod"
                 }
             }
         }
@@ -1534,69 +1937,264 @@ function CompareKQLQueries{
 # Function used for V2.0 GR2V7(M) andV1.0  GR3(R) cloud console access
 function Get-allowedLocationCAPCompliance {
     param (
-        [array]$ErrorList,
+        [AllowEmptyCollection()]
+        [array] $ErrorList,
         [string] $IsCompliant
     )
 
-    # get named locations
+    # Find named locations
     $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
     try {
-        $response = Invoke-GraphQuery -urlPath $locationsBaseAPIUrl -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $locationsBaseAPIUrl -ErrorAction Stop
         $data = $response.Content
-        $locations = $data.value
+        $locationData = if ($data -and $data.value) { $data.value } else { @() }
+        # Filter for country NamedLocation only
+        $locations = $locationData | Where-Object { $_.'@odata.type' -and $_.'@odata.type' -eq '#microsoft.graph.countryNamedLocation'}
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
+        $locations = @()
     }
 
-    # get conditional access policies
+    # Find conditional access policies
     $CABaseAPIUrl = '/identity/conditionalAccess/policies'
     try {
-        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $CABaseAPIUrl -ErrorAction Stop
 
-        $caps = $response.Content.value
+        $caps = if ($response.Content -and $response.Content.value) { $response.Content.value } else { @() }
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
+        $caps = @()
     }
-    
-    # check that a named location for Canada exists and that a policy exists that uses it
-    $validLocations = @()
+
+    # Group named locations and find location Ids
+    $validLocations = @()               # Canada-only named locations
+    $validLocationIds = @()             
+    $nonCAnamedLocations = @()          # named locations that represent 'all countries except Canada-only
+    $nonCAnamedLocationsIds = @()
+    $someNonCAnamedLocations = @()      # named locations that represent 'some countries except Canada-only'
+    $someNonCAnamedLocationsIds = @()       
+    $notValidCAnamedLocations = @()     # named locations that includes Canada + other countries
+    $notValidCAnamedLocationsIds = @()  
 
     foreach ($location in $locations) {
-        #Determine location conditions
-        #get all valid locations: needs to have Canada Only
-        if ($location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions[0] -eq "CA") {
-            $validLocations += $location
+        try {
+            $countries = @()
+            if ($null -ne $location.countriesAndRegions) { 
+                $countries = @($location.countriesAndRegions) 
+            }
+            # Find all valid locations: Canada-Only; a valid location requirement i.e. Canada
+            if ($countries.Count -eq 1 -and $countries[0] -eq 'CA') {
+                Write-Host "Named Location Found: $($location.displayName) with Country/Region: $($location.countriesAndRegions -join ', ')"
+                $validLocations += $location
+                if ($location.PSObject.Properties.Match('id').Count -gt 0) { 
+                    $validLocationIds += $location.id.ToString().ToLower()
+                }
+                continue
+            }
+            # Find named location contains ALL countries except Canada; a valid location requirement i.e. 'RestOfTheWorld'
+            if ($countries.Count -eq 249 -and -not ($countries -contains 'CA')) {
+                Write-Host "Named Location Found: $($location.displayName) with Country/Region: $($location.countriesAndRegions -join ', ')"
+                $nonCAnamedLocations += $location
+                if ($location.PSObject.Properties.Match('id').Count -gt 0){
+                    $nonCAnamedLocationsIds += $location.id.ToString().ToLower()
+                }
+                continue
+            }
+            # Find named location contains multiple countries; includes Canada; not a valid location requirement i.e. 'TestLocation'
+            if ($countries.Count -ge 1 -and ($countries -contains 'CA')) {
+                Write-Host "Named Location Found: $($location.displayName) with Country/Region: $($location.countriesAndRegions -join ', ')"
+                $notValidCAnamedLocations += $location
+                if ($location.PSObject.Properties.Match('id').Count -gt 0){
+                    $notValidCAnamedLocationsIds += $location.id.ToString().ToLower()
+                }
+                continue
+            }
+            # Find named location contains countries (may or may not multiple but not 'ALL') except Canada; not a valid location requirement i.e. 'SelectedCountriesExclCanada'
+            if ($countries.Count -lt 249 -and -not ($countries -contains 'CA')) {
+                Write-Host "Named Location Found: $($location.displayName) with Country/Region: $($location.countriesAndRegions -join ', ')"
+                $someNonCAnamedLocations += $location
+                if ($location.PSObject.Properties.Match('id').Count -gt 0){
+                    $someNonCAnamedLocationsIds += $location.id.ToString().ToLower()
+                }
+                continue
+            }
+        }
+        catch {
+            $ErrorList.Add("Error processing named location object: $_") | Out-Null
+            continue
         }
     }
+    # If no Canada-only named locations or no non-Canada all-country named locations found, return non-compliant
+    if ($validLocations.Count -eq 0 -or $nonCAnamedLocations.Count -eq 0) {
+        Write-Warning "Warning: No Canada-only named locations found or no non-Canada all-country named locations found. Cannot evaluate Conditional Access Policies for compliance."
+        $ErrorList.Add("No Canada-only named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
+        $IsCompliant = $false
+        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noLocationsnonCACompliant
 
-    $locationBasedPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $_.state -eq 'enabled' }
+        $PsObject = [PSCustomObject]@{
+            ComplianceStatus = $IsCompliant
+            ControlName      = $ControlName
+            Comments         = $Comments
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+            Errors           = $ErrorList
+        }
+        return
+    }
+    
 
-    if ($validLocations.count -ne 0) {
-        #if there is at least one location with Canada only, we are good. If no Canada Only policy, not compliant.
-        # Conditional access Policies
-        # Need a location based policy, for admins (owners, contributors) that uses one of the valid locations above.
-        # If there is no policy or the policy doesn't use one of the locations above, not compliant.
+    # Filter enabled CAPs
+    $enabledCAPs = $caps | Where-Object { $_.state -eq 'enabled' }
+    # If no enabled CAPs found, return non-compliant
+    if ($null -eq $enabledCAPs -or $enabledCAPs.Count -eq 0) {
+        Write-Host "No enabled Conditional Access Policies found."
+        $ErrorList.Add("No enabled Conditional Access Policies found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
+        $Comments = $msgTable.noEnabledPoliciesFound
+        $IsCompliant = $false
 
-        if (!$locationBasedPolicies) {
-            #failed. No policies have valid locations.
+        $PsObject = [PSCustomObject]@{
+            ComplianceStatus = $IsCompliant
+            ControlName      = $ControlName
+            Comments         = $Comments
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+            Errors           = $ErrorList
+        }
+        return
+    }
+    
+    Write-Host "Found $($enabledCAPs.Count) enabled Conditional Access Policies."
+
+    #  ---------Evaluate CAPs for patterns that effectively restrict access to Canada ---------------#
+    # Compliant Patterns: Compliant if CAPs found that match the patterns below:
+    #  A) Pattern A: Policy explicitly includes a named location that represents 'all countries except Canada' (make sure all countries are included) AND action is Block
+    #  B) Pattern B: Policy includes 'all' locations and explicitely excludes the Canada-only named-location id AND action is Block (i.e. block all except Canada)
+    #  C) Pattern C: Policy has no includeLocations but EXCLUDES the Canada-only named-location id (conservative treat as location-based)
+    
+    # Non-Compliant Patterns: Non-Compliant if CAPs found that match the patterns below:
+    #  D) Pattern D: Policy explicitly includes the Canada-only named-location id AND action is Grant, but none in exclusion (i.e. allow only Canada)
+    #  E) Pattern E: Policy explicitly includes a named location that represents some countries except Canada AND action is Block
+
+    # Common synonyms for "all" locations in various CAP outputs
+    $allLocationsSym = @('all','any','alltrusted','alltrustedlocations','alllocations')
+
+    # $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions.locations) -and ($validLocations.id -in $_.conditions.locations.includeLocations) -or ($validLocations.id -in $_.conditions.locations.excludeLocations ) }
+    # Find CAPs with Location conditions
+    $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions) -and ($null -ne $_.conditions.locations) }
+
+    $validlocationBasedPolicies = @()
+    foreach ($cap in $locationBasedPolicies) {
+        try {
+            $locationCondition = $cap.conditions.locations
+            # include/exclude lists
+            $includes = @()
+            $excludes = @()
+            if ($locationCondition.includeLocations -and $locationCondition.PSObject.Properties.Match('includeLocations').Count -gt 0 ) {
+                $inccludeVals = @( $locationCondition.includeLocations )
+                $includes = $inccludeVals | ForEach-Object { $_.ToString().ToLower() }
+            }  
+            if ($locationCondition.excludeLocations -and $locationCondition.PSObject.Properties.Match('excludeLocations').Count -gt 0) {
+                $excludeVals = @( $locationCondition.excludeLocations )
+                $excludes = $excludeVals | ForEach-Object { $_.ToString().ToLower() }
+            }
+            # Determine the CAP's grant controls
+            $grantControls = @()
+            $grantBuiltIns = @()    
+            if ($cap.grantControls -and $cap.PSObject.Properties.Match('grantControls').Count -gt 0) {
+                $grantControls = @($cap.grantControls.buildInControls )
+                try {
+                    if ($cap.grantControls.PSObject.Properties.Match('builtInControls').Count -gt 0 -and $cap.grantControls.builtInControls) {
+                        $grantBuiltIns = @($cap.grantControls.builtInControls) | ForEach-Object { $_.ToString().ToLower() }
+                    }
+                } catch { 
+                    Write-Warning "Warning: Unable to process grantControls builtInControls for CAP '$($cap.id)': $_"
+                }
+            }
+            # Check for Grant/Block action in grant controls
+            $isBlockAction = $false
+            $isGrantAction = $false
+            if ($grantControls -contains 'block' -or $grantBuiltIns -contains 'block') {
+                $isBlockAction = $true
+            }
+            else{
+                $isGrantAction = $true
+            }
+            # Evaluate patterns
+            $matched = $false
+
+            # Pattern A: explicitly includes a named location of 'All' countries but does not have Canada in it  -> can represent "block all except Canada"
+            # PASS
+            if ($includes | Where-Object { $nonCAnamedLocationsIds -contains $_ }) {
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
+
+            # Pattern B: includes 'all' (or equivalent) but explicitely excludes Canada-only named location -> can represent "block all except Canada"
+            # PASS
+            if (($includes | Where-Object { $allLocationsSym -contains $_ }) -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
+            # Pattern C: no includes but explicitely exclude Canada-only named locations(conservative detection)
+            # PASS
+            if ($includes.Count -eq 0 -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
+            # Pattern D: explicit inclusion of Canada-only named location, no exclusion -> can represent "allow only Canada but other countries not excluded
+            # FAIL
+            if ($includes | Where-Object { $validLocationIds -contains $_ }) {
+                if ($isGrantAction) {
+                    $matched = $false
+                }
+            }
+            # Pattern E: explicit inclusion of some countries except Canada -> can represent "block some countries except Canada"
+            # FAIL
+            if ($someNonCAnamedLocationsIds | Where-Object { $includes -contains $_ }) {
+                if ($isBlockAction) {
+                    $matched = $false
+                }
+            }
+
+            Write-Host "CAP Found $($cap.displayName) with include and/or exclude location condition that has a match '$($matched)' with '$($grantBuiltIns)' access control"
+            if ($matched) {
+                $validlocationBasedPolicies += $cap
+                Write-Host "Valid Canada-only location CAP Found: $($cap.displayName)"
+            }
+
+        }
+        catch {
+            $ErrorList.Add("Error evaluating CAP '$($cap.id)' : $_") | Out-Null
+            continue
+        }
+        
+        # Determine compliance based on presence of named-location and matching policies
+        if ($null -eq $validlocationBasedPolicies -or ($validlocationBasedPolicies.Count -eq 0) ){
+            # Non-complient; No policies have valid locations
             $Comments = $msgTable.noCompliantPoliciesfound
             $IsCompliant = $false
         }
-        else {
-            #"Compliant Policies."
+        elseif ($validlocationBasedPolicies.count -ne 0) {
+            # Compliant; valid policies found
+            $validCAPnames = ($validlocationBasedPolicies | Select-Object -ExpandProperty displayName) -join ', '
             $IsCompliant = $true
-            $Comments = $msgTable.allPoliciesAreCompliant
-        }      
+            # display all names of compliant CAPs in Comments
+            $Comments = $msgTable.allPoliciesAreCompliant -f $validCAPnames
+        }
+        else{
+            # Do nothing; all use cases are covered
+        }
     }
-    else {
-        # Failed. Reason: No locations have only Canada.
-        $Comments = $msgTable.noLocationsCompliant
-        $IsCompliant = $false
-    }
+    
     
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
@@ -1656,7 +2254,42 @@ function Test-ComplianceForSubscription {
         $PolicyID = $matches[1]
     }
     Write-Host "Get compliance details for Subscription : $($subscription.DisplayName)"
-    $complianceDetails = Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID}  
+    $complianceDetails = @()
+    $policySetDefinitionName = $PolicyID
+    $policyFilters = @()
+    $subscriptionFilter = "SubscriptionId eq '$($subscription.SubscriptionID)'"
+    foreach ($policyRef in $requiredPolicyExemptionIds) {
+        if (-not [string]::IsNullOrWhiteSpace($policyRef)) {
+            $policyFilters += "PolicyDefinitionReferenceId eq '$policyRef'"
+        }
+    }
+    if ($policyFilters.Count -gt 0) {
+        $filterExpression = "$subscriptionFilter and PolicySetDefinitionName eq '$policySetDefinitionName' and (" + ($policyFilters -join " or ") + ")"
+    }
+    else {
+        $filterExpression = "$subscriptionFilter and PolicySetDefinitionName eq '$policySetDefinitionName'"
+    }
+
+    $filteredQueryFailed = $true
+    if ($filterExpression) {
+        $filteredQueryFailed = $false
+        try {
+            Write-Verbose "Querying policy state with filter: $filterExpression"
+            $complianceDetails = @(Get-AzPolicyState -Filter $filterExpression | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) })
+        }
+        catch {
+            Write-Verbose "Filtered Get-AzPolicyState call failed, falling back to unfiltered query. Error: $_"
+            $filteredQueryFailed = $true
+        }
+    }
+
+    if ($filteredQueryFailed) {
+        $complianceDetails = @(Get-AzPolicyState | Where-Object{ $_.SubscriptionId -eq $($subscription.SubscriptionID) } | Where-Object{ $_.PolicySetDefinitionName -eq $PolicyID})
+    }
+
+    if ($complianceDetails.Count -eq 0) {
+        $complianceDetails = $null
+    }
     
     If ($null -eq $complianceDetails) {
         Write-Host "No compliance details found for Management Group : $($obj.DisplayName) and subscription: $($subscription.DisplayName)"
@@ -1699,12 +2332,19 @@ function Check-PBMMPolicies {
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
-    [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+    [System.Collections.ArrayList] $tempObjectList = New-Object System.Collections.ArrayList
+    $policyAssignmentCache = @{}
+    $policySetDefinitionCache = @{}
 
     foreach ($obj in $objList)
     {
         Write-Verbose "Checking $objType : $($obj.Name)"
         Write-Verbose "PBMM policy PolicyID is $PolicyID"
+
+        if ([string]::IsNullOrWhiteSpace($PolicyID)) {
+            Write-Error "PolicyID is null or empty. Skipping PBMM evaluation for scope '$($obj.Id)'."
+            continue
+        }
 
         # Find scope
         if ($objType -eq "subscription"){
@@ -1716,9 +2356,23 @@ function Check-PBMMPolicies {
         Write-Host "Scope is $tempId"
 
         # Find assigned policy list from PBMM policy for the scope
-        $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId | `
-            Select-Object -ExpandProperty properties | `
-            Where-Object { $_.PolicyDefinitionID -like "*$PolicyID*" } 
+        # Accept tenant, management group, or subscription scoped IDs that end with /policySetDefinitions/{id}
+        if ($PolicyID.StartsWith("/") -and $PolicyID -match "/policySetDefinitions/[^/]+$") {
+            $policyDefinitionIdFilter = $PolicyID
+        }
+        else {
+            $policyDefinitionIdFilter = "/providers/Microsoft.Authorization/policySetDefinitions/$PolicyID"
+        }
+
+        $assignmentCacheKey = "$tempId|$policyDefinitionIdFilter"
+        if ($policyAssignmentCache.ContainsKey($assignmentCacheKey)) {
+            $AssignedPolicyList = $policyAssignmentCache[$assignmentCacheKey]
+        }
+        else {
+            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter | `
+                Select-Object -ExpandProperty properties
+            $policyAssignmentCache[$assignmentCacheKey] = $AssignedPolicyList
+        }
 
         If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
@@ -1731,8 +2385,27 @@ function Check-PBMMPolicies {
             $Comment = $msgTable.pbmmApplied
 
             # List the policies within the PBMM initiative (policy set definition)
-            $policySetDefinition = Get-AzPolicySetDefinition | `
-                Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" } 
+            if ($PolicyID.StartsWith("/") -and $PolicyID -match "/policySetDefinitions/[^/]+$") {
+                $policySetCacheKey = $PolicyID
+            }
+            else {
+                $policySetCacheKey = "/providers/Microsoft.Authorization/policySetDefinitions/$PolicyID"
+            }
+
+            if ($policySetDefinitionCache.ContainsKey($policySetCacheKey)) {
+                $policySetDefinition = $policySetDefinitionCache[$policySetCacheKey]
+            }
+            else {
+                try {
+                    $policySetDefinition = Get-AzPolicySetDefinition -Id $policySetCacheKey
+                    $policySetDefinitionCache[$policySetCacheKey] = $policySetDefinition
+                }
+                catch {
+                    Write-Verbose "Direct lookup for policy set '$policySetCacheKey' failed. Falling back to tenant scan. Error: $_"
+                    $policySetDefinition = Get-AzPolicySetDefinition | `
+                        Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" }
+                }
+            }
 
             $listPolicies = $policySetDefinition.Properties.policyDefinitions
             # Check all 3 policies are applied for this scope
@@ -1777,8 +2450,8 @@ function Check-PBMMPolicies {
                         
                         $currentSubscription = Get-AzContext
                         if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
-                            # Set Az context to the this subscription
-                            Set-AzContext -SubscriptionId $subscription.SubscriptionID
+                            # Set Az context to this subscription
+                            Set-AzContext -SubscriptionId $subscription.SubscriptionID | Out-Null
                             Write-Host "AzContext set to $($subscription.DisplayName)"
                         }
     
@@ -1940,7 +2613,7 @@ function Check-PBMMPolicies {
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
         }        
-
+        
         $tempObjectList.add($c)| Out-Null
     }
     return $tempObjectList
@@ -2462,6 +3135,7 @@ function FetchAllUserRawData {
         regById = $regById
         RetryConfig = $RetryConfig
         ErrorList = $ErrorList
+        domainTenantCache = @{}  # Cache for guest domain → tenant ID mapping
     }
     
     # Define the callback function that processes each page immediately
@@ -2510,6 +3184,24 @@ function FetchAllUserRawData {
             $registration = $context.regById[$user.id]
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
+
+            # Get home tenant ID for guest users using cache
+            $homeTenantId = $null
+            $homeTenantResolved = $false
+            if ($user.userType -eq "Guest") {
+                $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
+                
+                if ($domain) {
+                    # Get from cache or resolve (with automatic caching)
+                    $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
+                    $homeTenantId = $resolutionResult.TenantId
+                    $homeTenantResolved = $resolutionResult.ResolutionSucceeded
+                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId → resolved: $homeTenantResolved"
+                }
+                else {
+                    Write-Verbose "    Guest user $($user.displayName) → could not extract domain from UPN/mail"
+                }
+            }            
             
             if ($registration -and $registration.methodsRegistered) {
                 $methods = @($registration.methodsRegistered)
@@ -2522,6 +3214,8 @@ function FetchAllUserRawData {
                 mail              = $user.mail
                 createdDateTime   = $user.createdDateTime
                 userType          = $user.userType
+                homeTenantId      = $homeTenantId
+                homeTenantResolved = $homeTenantResolved
                 accountEnabled    = $user.accountEnabled
                 signInActivity    = $user.signInActivity
                 customSecurityAttributes = $user.customSecurityAttributes
@@ -2793,6 +3487,423 @@ GuardrailsUserRaw_CL
     }
     
     Write-Verbose "=== FetchAllUserRawData Complete ==="
+    
+    return $ErrorList
+}
+
+# ============================================================================
+# Guest User Cross-Tenant MFA Trust Functions
+# ============================================================================
+
+# Function to extract domain from guest user UPN or email
+function Get-GuestUserHomeDomain {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $UserPrincipalName,
+        
+        [Parameter(Mandatory=$false)]
+        [string] $Mail
+    )
+    
+    # Extract domain from UPN (format: user_domain.com#EXT#@hosttenant.com)
+    # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
+    if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
+        return $Matches[1]
+    }
+    # Or extract from mail
+    elseif ($Mail -and $Mail -match '@(.+)$') {
+        return $Matches[1]
+    }
+    
+    return $null
+}
+
+# Function to resolve tenant ID from domain (single domain)
+# Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
+# Includes retry logic for transient failures (DNS timeout, throttling, 5xx errors)
+function Resolve-TenantIdFromDomain {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $Domain,
+        
+        [Parameter(Mandatory=$false)]
+        [int] $MaxRetries = 3,
+        
+        [Parameter(Mandatory=$false)]
+        [int] $InitialDelayMs = 500
+    )
+    
+    $attempt = 0
+    $delay = $InitialDelayMs
+    
+    while ($attempt -lt $MaxRetries) {
+        $attempt++
+        
+        try {
+            # Use OpenID Connect discovery endpoint (public, no auth required)
+            $tenantUrl = "https://login.microsoftonline.com/$Domain/.well-known/openid-configuration"
+            
+            if ($attempt -eq 1) {
+                Write-Verbose "  Resolving tenant ID for domain: $Domain"
+            } else {
+                Write-Verbose "  Retry attempt $attempt/$MaxRetries for domain: $Domain"
+            }
+            
+            $response = Invoke-RestMethod -Uri $tenantUrl -Method Get -ErrorAction Stop -TimeoutSec 10
+            
+            if ($response.token_endpoint -match 'https://login\.microsoftonline\.com/([a-f0-9-]+)/') {
+                $tenantId = $Matches[1]
+                Write-Verbose "Resolved $Domain → $tenantId (attempt $attempt)"
+                return [PSCustomObject]@{
+                    TenantId = $tenantId
+                    ResolutionSucceeded = $true
+                }
+            }
+            
+            # Regex didn't match - this is a permanent failure (bad response format)
+            Write-Verbose "Invalid response format for domain: $Domain"
+            return [PSCustomObject]@{
+                TenantId = $null
+                ResolutionSucceeded = $false
+            }
+            
+        }
+        catch {
+            # NOTE: Invoke-RestMethod throws exceptions for HTTP error codes (4xx, 5xx) by default
+            # This catch block handles: 404, 429, 500, 503, timeouts, network errors, etc.
+            
+            $errorMessage = $_.Exception.Message
+            $statusCode = $null
+            $isTransient = $false
+            
+            # Extract HTTP status code if available (works for both PS 5.1 and PS 7+)
+            if ($_.Exception.Response) {
+                # Try direct property first (PS 7+)
+                if ($_.Exception.Response.StatusCode.Value__) {
+                    $statusCode = [int]$_.Exception.Response.StatusCode.Value__
+                }
+                # Fallback to casting (PS 5.1)
+                else {
+                    $statusCode = [int]$_.Exception.Response.StatusCode
+                }
+            }
+            elseif ($_.Exception.InnerException.Response) {
+                # Check inner exception (some network stacks wrap the exception)
+                if ($_.Exception.InnerException.Response.StatusCode.Value__) {
+                    $statusCode = [int]$_.Exception.InnerException.Response.StatusCode.Value__
+                }
+                else {
+                    $statusCode = [int]$_.Exception.InnerException.Response.StatusCode
+                }
+            }
+            
+            # Classify error based on status code (most reliable)
+            if ($statusCode) {
+                Write-Verbose "HTTP $statusCode for domain: $Domain (attempt $attempt/$MaxRetries)"
+                
+                switch ($statusCode) {
+                    # 2xx - Success (shouldn't reach here, but handle gracefully)
+                    { $_ -ge 200 -and $_ -lt 300 } {
+                        Write-Verbose "Unexpected: Got HTTP $statusCode but entered catch block"
+                        $isTransient = $false
+                    }
+                    # 4xx - Client errors (permanent, except 429)
+                    429 {
+                        # Too Many Requests - transient, should retry
+                        $isTransient = $true
+                        Write-Verbose "Rate limited (429) for domain: $Domain"
+                    }
+                    404 {
+                        # Not Found - domain/tenant doesn't exist (permanent)
+                        Write-Verbose "Domain not found (404): $Domain"
+                        return [PSCustomObject]@{
+                            TenantId = $null
+                            ResolutionSucceeded = $false
+                        }
+                    }
+                    { $_ -ge 400 -and $_ -lt 500 } {
+                        # Other 4xx - permanent errors (bad request, unauthorized, forbidden, etc.)
+                        Write-Verbose "Client error ($statusCode) for domain: $Domain"
+                        return [PSCustomObject]@{
+                            TenantId = $null
+                            ResolutionSucceeded = $false
+                        }
+                    }
+                    # 5xx - Server errors (transient, should retry)
+                    { $_ -ge 500 -and $_ -lt 600 } {
+                        $isTransient = $true
+                        Write-Verbose "Server error ($statusCode) for domain: $Domain"
+                    }
+                    # Unexpected status code
+                    default {
+                        $isTransient = $true
+                        Write-Verbose "Unexpected status code ($statusCode) for domain: $Domain"
+                    }
+                }
+            }
+            # No status code - likely network/DNS/timeout issue (transient)
+            else {
+                $isTransient = $true
+                Write-Verbose "Network/timeout error for domain $Domain (attempt $attempt/$MaxRetries): $errorMessage"
+            }
+            
+            # If this is the last attempt, fail
+            if (!$isTransient -or $attempt -ge $MaxRetries) {
+                Write-Verbose "Failed to resolve tenant ID for domain: $Domain after $attempt attempt(s)"
+                return [PSCustomObject]@{
+                    TenantId = $null
+                    ResolutionSucceeded = $false
+                }
+            }
+            
+            # Wait before retry with exponential backoff
+            Write-Verbose "Waiting ${delay}ms before retry..."
+            Start-Sleep -Milliseconds $delay
+            $delay = $delay * 2  # Exponential backoff
+        }
+    }
+    
+    # Shouldn't reach here, but handle edge case
+    Write-Verbose "Failed to resolve tenant ID for domain: $Domain (max retries exceeded)"
+    return [PSCustomObject]@{
+        TenantId = $null
+        ResolutionSucceeded = $false
+    }
+}
+
+# Function to get or resolve tenant ID with lazy caching
+# Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
+function Get-TenantIdWithCache {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $Domain,
+        
+        [Parameter(Mandatory=$true)]
+        [hashtable] $Cache
+    )
+    
+    # Check cache first
+    if ($Cache.ContainsKey($Domain)) {
+        return $Cache[$Domain]
+    }
+    
+    # Not in cache, resolve it
+    Write-Verbose "  Cache miss for domain: $Domain, resolving..."
+    $result = Resolve-TenantIdFromDomain -Domain $Domain
+    
+    # Store in cache (even if resolution failed, to avoid retrying failed lookups)
+    $Cache[$Domain] = $result
+    
+    return $result
+}
+
+# Function to get cross-tenant access settings for B2B collaboration
+function Get-CrossTenantAccessSettings {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$false)]
+        [hashtable] $PerformanceMetrics = $null
+    )
+    
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
+    $crossTenantSettings = @()
+    
+    try {
+        Write-Verbose "Fetching cross-tenant access settings..."
+        
+        # Get default cross-tenant access settings
+        $defaultSettingsPath = "/policies/crossTenantAccessPolicy/default"
+        try {
+            $defaultResponse = Invoke-GraphQueryWithMetrics -UrlPath $defaultSettingsPath -Operation "Fetch Default Cross-Tenant Access Settings" -PerformanceMetrics $PerformanceMetrics
+            $defaultSettings = $defaultResponse.Content
+            
+            if ($defaultSettings) {
+                Write-Verbose "  Retrieved default cross-tenant access settings"
+                $crossTenantSettings += [PSCustomObject]@{
+                    PartnerTenantId = "default"
+                    InboundTrustMfa = $defaultSettings.inboundTrust.isMfaAccepted
+                    InboundTrustCompliantDevice = $defaultSettings.inboundTrust.isCompliantDeviceAccepted
+                    InboundTrustHybridAzureADJoined = $defaultSettings.inboundTrust.isHybridAzureADJoinedDeviceAccepted
+                    IsDefault = $true
+                }
+            }
+        } catch {
+            Add-FunctionError -Message "Failed to fetch default cross-tenant access settings: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        }
+        
+        # Get partner-specific cross-tenant access settings
+        $partnerSettingsPath = "/policies/crossTenantAccessPolicy/partners"
+        try {
+            $partnerResponse = Invoke-GraphQueryWithMetrics -UrlPath $partnerSettingsPath -Operation "Fetch Partner Cross-Tenant Access Settings" -PerformanceMetrics $PerformanceMetrics
+            $partnerSettings = @($partnerResponse.Content.value)
+            
+            Write-Verbose "  Retrieved $($partnerSettings.Count) partner-specific cross-tenant access settings"
+            
+            foreach ($partner in $partnerSettings) {
+                $crossTenantSettings += [PSCustomObject]@{
+                    PartnerTenantId = $partner.tenantId
+                    InboundTrustMfa = $partner.inboundTrust.isMfaAccepted
+                    InboundTrustCompliantDevice = $partner.inboundTrust.isCompliantDeviceAccepted
+                    InboundTrustHybridAzureADJoined = $partner.inboundTrust.isHybridAzureADJoinedDeviceAccepted
+                    IsDefault = $false
+                }
+            }
+        } catch {
+            Add-FunctionError -Message "Failed to fetch partner cross-tenant access settings: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        }
+        
+    } catch {
+        Add-FunctionError -Message "Unexpected error fetching cross-tenant access settings: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+    }
+    
+    return [PSCustomObject]@{
+        Settings = $crossTenantSettings
+        ErrorList = $ErrorList
+    }
+}
+
+# Function to check if conditional access policies require MFA for guest users
+function Test-GuestMfaConditionalAccessPolicy {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$false)]
+        [hashtable] $PerformanceMetrics = $null
+    )
+    
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
+    $hasGuestMfaPolicy = $false
+    $matchingPolicies = @()
+    
+    try {
+        Write-Verbose "Checking conditional access policies for guest MFA requirements..."
+        
+        $capPath = "/identity/conditionalAccess/policies"
+        $capResponse = Invoke-GraphQueryWithMetrics -UrlPath $capPath -Operation "Fetch Conditional Access Policies" -PerformanceMetrics $PerformanceMetrics
+        $policies = @($capResponse.Content.value)
+        
+        Write-Verbose "  Analyzing $($policies.Count) conditional access policies..."
+        
+        # Check for policies that meet these criteria:
+        # 1. State = 'enabled'
+        # 2. Includes guest/external users OR includes all users
+        # 3. Does NOT explicitly exclude guest/external users
+        # 4. Requires MFA
+        $matchingPolicies = $policies | Where-Object {
+            $_.state -eq 'enabled' -and
+            $_.grantControls.builtInControls -contains 'mfa' -and
+            (
+                # Either targets all users (which includes guests)
+                ($_.conditions.users.includeUsers -contains 'All') -or
+                # Or specifically targets guest/external users
+                ($null -ne $_.conditions.users.includeGuestsOrExternalUsers -and
+                 $_.conditions.users.includeGuestsOrExternalUsers.guestOrExternalUserTypes -match 'b2bCollaborationGuest|b2bCollaborationMember|internalGuest')
+            ) -and
+            # Ensure guests are NOT explicitly excluded
+            ($null -eq $_.conditions.users.excludeGuestsOrExternalUsers -or
+             $_.conditions.users.excludeGuestsOrExternalUsers.guestOrExternalUserTypes -notmatch 'b2bCollaborationGuest|b2bCollaborationMember|internalGuest')
+        }
+        
+        if ($matchingPolicies.Count -gt 0) {
+            $hasGuestMfaPolicy = $true
+            Write-Verbose "  Found $($matchingPolicies.Count) conditional access policies requiring MFA for guest users"
+            foreach ($policy in $matchingPolicies) {
+                Write-Verbose "    - Policy: $($policy.displayName)"
+            }
+        } else {
+            Write-Verbose "  No conditional access policies found requiring MFA for guest users"
+        }
+        
+    } catch {
+        Add-FunctionError -Message "Failed to check conditional access policies for guest MFA: $($_.Exception.Message)" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+    }
+    
+    return [PSCustomObject]@{
+        HasGuestMfaPolicy = $hasGuestMfaPolicy
+        MatchingPolicies = $matchingPolicies
+        ErrorList = $ErrorList
+    }
+}
+
+# Function to collect and upload cross-tenant access and guest MFA policy data to Log Analytics
+function Upload-CrossTenantAccessData {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $ReportTime,
+        
+        [Parameter(Mandatory=$true)]
+        [string] $WorkSpaceID,
+        
+        [Parameter(Mandatory=$true)]
+        [string] $WorkspaceKey,
+        
+        [Parameter(Mandatory=$false)]
+        [hashtable] $PerformanceMetrics = $null
+    )
+    
+    $ErrorList = [System.Collections.Generic.List[string]]::new()
+    
+    try {
+        Write-Verbose "=== Starting Cross-Tenant Access Data Collection ==="
+        
+        # Get cross-tenant access settings
+        $crossTenantResult = Get-CrossTenantAccessSettings -PerformanceMetrics $PerformanceMetrics
+        if ($crossTenantResult.ErrorList.Count -gt 0) {
+            $crossTenantResult.ErrorList | ForEach-Object { $ErrorList.Add($_) }
+        }
+        
+        # Check guest MFA conditional access policies
+        $guestMfaPolicyResult = Test-GuestMfaConditionalAccessPolicy -PerformanceMetrics $PerformanceMetrics
+        if ($guestMfaPolicyResult.ErrorList.Count -gt 0) {
+            $guestMfaPolicyResult.ErrorList | ForEach-Object { $ErrorList.Add($_) }
+        }
+        
+        # Prepare data for upload
+        $crossTenantData = @()
+        
+        # Upload cross-tenant access settings
+        foreach ($setting in $crossTenantResult.Settings) {
+            $crossTenantData += [PSCustomObject]@{
+                ReportTime = $ReportTime
+                PartnerTenantId = $setting.PartnerTenantId
+                InboundTrustMfa = $setting.InboundTrustMfa
+                InboundTrustCompliantDevice = $setting.InboundTrustCompliantDevice
+                InboundTrustHybridAzureADJoined = $setting.InboundTrustHybridAzureADJoined
+                IsDefault = $setting.IsDefault
+                HasGuestMfaPolicy = $guestMfaPolicyResult.HasGuestMfaPolicy
+            }
+        }
+        
+        # If no settings found, upload a single record indicating the state
+        if ($crossTenantData.Count -eq 0) {
+            $crossTenantData += [PSCustomObject]@{
+                ReportTime = $ReportTime
+                PartnerTenantId = "none"
+                InboundTrustMfa = $false
+                InboundTrustCompliantDevice = $false
+                InboundTrustHybridAzureADJoined = $false
+                IsDefault = $true
+                HasGuestMfaPolicy = $guestMfaPolicyResult.HasGuestMfaPolicy
+            }
+        }
+        
+        # Upload to Log Analytics
+        Write-Verbose "Uploading cross-tenant access data to Log Analytics..."
+        try {
+            New-LogAnalyticsData -Data $crossTenantData -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsCrossTenantAccess" | Out-Null
+            Write-Verbose "  Success: Cross-tenant access data uploaded successfully"
+        } catch {
+            Add-FunctionError -Message "Failed to upload cross-tenant access data: $($_.Exception.Message)" -Exception $_.Exception -Category "LogAnalytics" -ErrorList $ErrorList
+        }
+        
+        Write-Verbose "=== Cross-Tenant Access Data Collection Complete ==="
+        
+    } catch {
+        Add-FunctionError -Message "Unexpected error during cross-tenant access data collection: $($_.Exception.Message)" -Exception $_.Exception -Category "General" -ErrorList $ErrorList
+    }
     
     return $ErrorList
 }

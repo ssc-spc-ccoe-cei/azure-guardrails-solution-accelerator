@@ -121,11 +121,19 @@ userStats = Statistiques d'utilisateur - Utilisateurs totaux : {0} ; Utilisateur
 userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
 userInGroup = Pas d'utilisateurs sans groupes
 
-riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur les risques
-nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque utilisateur.
-nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir des emplacements nommés non approuvés.
-nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
-compliantC1C2 = Les deux politiques d'accès conditionnel ont été configurées.
+riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'risques
+locationBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'emplacement
+nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur.
+nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir d'emplacements nommés non approuvés.
+compliantC1 = La politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur a été configurée.
+compliantC2 = La politique d'accès conditionnel visant à empêcher les connexions à partir d'emplacements nommés non approuvés a été configurée.
+
+# nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
+noCompliantPoliciesfound = Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
+allPoliciesAreCompliant = Toutes les politiques suivantes sont conformes; {0}.
+# noLocationsCompliant = Aucun endroit n'a seulement le Canada en eux.
+noLocationsnonCACompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
+noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
@@ -142,11 +150,8 @@ compliantRecurrenceGuestReviews = Les révision d'accès d'invité existantes r�
 
 
 # GuardRail #3
-noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
-allPoliciesAreCompliant=Toutes les politiques sont conformes.
+consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console
 adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
-noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
-consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
 
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
 noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
