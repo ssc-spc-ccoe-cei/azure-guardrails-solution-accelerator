@@ -5,46 +5,37 @@ function Get-PolicyComplianceDataOptimized {
         [string] $InitiativeID
     )
 
-    # Extract policy GUID and full IDs for exact matching
-    $policyGuid = ($PolicyID -split '/')[-1]
+    # Simple, reliable ARG query
+    # Keep Get-AzPolicyAssignment for assignments (handles MG inheritance correctly)
+    $queryParts = @()
+    $queryParts += "policyresources"
+    $queryParts += "| where type == 'microsoft.policyinsights/policystates'"
+    $queryParts += "| where properties.policyDefinitionId contains '$PolicyID'"
     
-    # Optimized Azure Resource Graph query - EXACT same filtering as original Get-AzPolicyState
-    $query = @"
-policyresources
-| where type == "microsoft.policyinsights/policystates"
-| where properties.policyDefinitionId endswith "/$policyGuid"
-| extend 
-    subscriptionId = tostring(split(properties.resourceId, "/")[2]),
-    complianceState = tostring(properties.complianceState),
-    policySetDefId = tostring(properties.policySetDefinitionId),
-    policyDefId = tostring(properties.policyDefinitionId),
-    isCompliant = properties.complianceState == "Compliant"
-| where isnotempty(subscriptionId)
-"@
-
-    # Add initiative filter if provided - EXACT match like original
+    $queryParts += "| extend subscriptionId = tostring(split(properties.resourceId, '/')[2])"
+    $queryParts += "| extend complianceState = tostring(properties.complianceState)"
+    $queryParts += "| extend policySetDefId = tostring(properties.policySetDefinitionId)"
+    $queryParts += "| extend policyDefId = tostring(properties.policyDefinitionId)"
+    $queryParts += "| extend isCompliant = (properties.complianceState == 'Compliant')"
+    $queryParts += "| where isnotempty(subscriptionId)"
+    
+    # Match original filtering logic
     if (![string]::IsNullOrEmpty($InitiativeID)) {
-        $query += @"
-
-| where policySetDefId == "$InitiativeID"
-"@
+        # Initiative: PolicySetDefinitionId == InitiativeID AND PolicyDefinitionId contains PolicyID
+        # Standalone: PolicySetDefinitionId == PolicyID
+        $queryParts += "| summarize InitiativeCompliantCount = countif(policySetDefId == '$InitiativeID' and policyDefId contains '$PolicyID' and isCompliant), InitiativeNonCompliantCount = countif(policySetDefId == '$InitiativeID' and policyDefId contains '$PolicyID' and not(isCompliant)), InitiativeTotalCount = countif(policySetDefId == '$InitiativeID' and policyDefId contains '$PolicyID'), PolicyCompliantCount = countif(policySetDefId == '$PolicyID' and isCompliant), PolicyNonCompliantCount = countif(policySetDefId == '$PolicyID' and not(isCompliant)), PolicyTotalCount = countif(policySetDefId == '$PolicyID') by subscriptionId"
+    } else {
+        # No initiative specified - only check standalone: PolicySetDefinitionId == PolicyID
+        $queryParts += "| summarize InitiativeCompliantCount = 0, InitiativeNonCompliantCount = 0, InitiativeTotalCount = 0, PolicyCompliantCount = countif(policySetDefId == '$PolicyID' and isCompliant), PolicyNonCompliantCount = countif(policySetDefId == '$PolicyID' and not(isCompliant)), PolicyTotalCount = countif(policySetDefId == '$PolicyID') by subscriptionId"
     }
-
-    $query += @"
-
-| summarize 
-    InitiativeCompliantCount = countif(isnotempty(policySetDefId) and isCompliant),
-    InitiativeNonCompliantCount = countif(isnotempty(policySetDefId) and not(isCompliant)),
-    InitiativeTotalCount = countif(isnotempty(policySetDefId)),
-    PolicyCompliantCount = countif(isempty(policySetDefId) and isCompliant),
-    PolicyNonCompliantCount = countif(isempty(policySetDefId) and not(isCompliant)),
-    PolicyTotalCount = countif(isempty(policySetDefId))
-    by subscriptionId
-"@
+    
+    $query = $queryParts -join " "
 
     try {
-        Write-Verbose "Executing Azure Resource Graph query for policy states..."
+        Write-Verbose "Executing Azure Resource Graph query for policy compliance states..."
         $results = Search-AzGraph -Query $query -First 1000
+        
+        Write-Verbose "ARG query returned compliance data for $($results.Count) subscription(s)"
         
         $cache = @{}
         foreach ($result in $results) {
@@ -174,26 +165,17 @@ function Check-PolicyStatus {
                     $PolicyNonCompliantResources = $cached.PolicyNonCompliantCount
                 }
                 else {
-                    # Fallback to original method if not in cache
+                    # Fallback to Get-AzPolicyState if not in cache (no context switching needed!)
                     Write-Verbose "No cached data, using Get-AzPolicyState for subscription $($obj.Name)"
-                    $subscription = @()
-                    $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
-                    
-                    $currentSubscription = Get-AzContext
-                    if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
-                        # Set Az context to the this subscription
-                        Set-AzContext -SubscriptionId $subscription.SubscriptionID
-                        Write-Verbose "AzContext set to $($subscription.DisplayName)"
-                    }
 
                     if(!($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")){
-                        $InitiativeState = Get-AzPolicyState | Where-Object { ($_.PolicySetDefinitionId -eq $InitiativeID)  -and ($_.PolicyDefinitionId -like "*$PolicyID*")} 
+                        $InitiativeState = Get-AzPolicyState -SubscriptionId $obj.Id | Where-Object { ($_.PolicySetDefinitionId -eq $InitiativeID)  -and ($_.PolicyDefinitionId -like "*$PolicyID*")} 
                         $TotalInitResources = $InitiativeState.Count
                         $InitCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $true}).Count
                         $InitNonCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $false}).Count
                     }
                     if(!($null -eq $AssignedPolicyList)){
-                        $PolicyState = Get-AzPolicyState | Where-Object { $_.PolicySetDefinitionId -eq $PolicyID }
+                        $PolicyState = Get-AzPolicyState -SubscriptionId $obj.Id | Where-Object { $_.PolicySetDefinitionId -eq $PolicyID }
                         $TotalPolicyResources = $PolicyState.Count
                         $PolicyCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $true}).Count
                         $PolicyNonCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $false}).Count
@@ -337,7 +319,6 @@ function Verify-AllowedLocationPolicy {
         throw "No allowed locations were provided. Please provide a list of allowed locations separated by commas."
         break
     }
-    # @("canada" , "canadaeast" , "canadacentral")
     #Check Subscriptions
     try {
         $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
