@@ -1,68 +1,67 @@
-function Get-PolicyComplianceData {
+function Get-PolicyComplianceDataOptimized {
     param (
         [Parameter(Mandatory=$true)]
         [string] $PolicyID,
-        [string] $InitiativeID,
-        [array] $AllowedLocations,
-        [hashtable] $msgTable
+        [string] $InitiativeID
     )
 
-    # Extract policy GUID from full ID
+    # Extract policy GUID and full IDs for exact matching
     $policyGuid = ($PolicyID -split '/')[-1]
-    $initiativeGuid = if ($InitiativeID) { ($InitiativeID -split '/')[-1] } else { "" }
-
-    # Optimized Azure Resource Graph query to get ALL policy states across all subscriptions at once
+    
+    # Optimized Azure Resource Graph query - EXACT same filtering as original Get-AzPolicyState
     $query = @"
 policyresources
 | where type == "microsoft.policyinsights/policystates"
-| where properties.policyDefinitionId contains "$policyGuid"
-| where isempty("$initiativeGuid") or properties.policySetDefinitionId contains "$initiativeGuid"
+| where properties.policyDefinitionId endswith "/$policyGuid"
 | extend 
     subscriptionId = tostring(split(properties.resourceId, "/")[2]),
     complianceState = tostring(properties.complianceState),
-    resourceId = properties.resourceId,
     policySetDefId = tostring(properties.policySetDefinitionId),
-    isInitiativeCompliance = isnotempty(properties.policySetDefinitionId)
+    policyDefId = tostring(properties.policyDefinitionId),
+    isCompliant = properties.complianceState == "Compliant"
 | where isnotempty(subscriptionId)
+"@
+
+    # Add initiative filter if provided - EXACT match like original
+    if (![string]::IsNullOrEmpty($InitiativeID)) {
+        $query += @"
+
+| where policySetDefId == "$InitiativeID"
+"@
+    }
+
+    $query += @"
+
 | summarize 
-    TotalResources = count(),
-    CompliantResources = countif(complianceState == "Compliant"),
-    NonCompliantResources = countif(complianceState == "NonCompliant"),
-    InitiativeTotalResources = countif(isInitiativeCompliance),
-    InitiativeCompliantResources = countif(isInitiativeCompliance and complianceState == "Compliant"),
-    InitiativeNonCompliantResources = countif(isInitiativeCompliance and complianceState == "NonCompliant"),
-    PolicyTotalResources = countif(not(isInitiativeCompliance)),
-    PolicyCompliantResources = countif(not(isInitiativeCompliance) and complianceState == "Compliant"),
-    PolicyNonCompliantResources = countif(not(isInitiativeCompliance) and complianceState == "NonCompliant")
+    InitiativeCompliantCount = countif(isnotempty(policySetDefId) and isCompliant),
+    InitiativeNonCompliantCount = countif(isnotempty(policySetDefId) and not(isCompliant)),
+    InitiativeTotalCount = countif(isnotempty(policySetDefId)),
+    PolicyCompliantCount = countif(isempty(policySetDefId) and isCompliant),
+    PolicyNonCompliantCount = countif(isempty(policySetDefId) and not(isCompliant)),
+    PolicyTotalCount = countif(isempty(policySetDefId))
     by subscriptionId
-| order by subscriptionId asc
 "@
 
     try {
-        Write-Verbose "Executing Azure Resource Graph query for policy compliance states..."
+        Write-Verbose "Executing Azure Resource Graph query for policy states..."
         $results = Search-AzGraph -Query $query -First 1000
         
-        # Create lookup table indexed by subscription ID
-        $complianceBySubscription = @{}
+        $cache = @{}
         foreach ($result in $results) {
-            $complianceBySubscription[$result.subscriptionId] = @{
-                TotalResources = $result.TotalResources
-                CompliantResources = $result.CompliantResources
-                NonCompliantResources = $result.NonCompliantResources
-                InitiativeTotalResources = $result.InitiativeTotalResources
-                InitiativeCompliantResources = $result.InitiativeCompliantResources
-                InitiativeNonCompliantResources = $result.InitiativeNonCompliantResources
-                PolicyTotalResources = $result.PolicyTotalResources
-                PolicyCompliantResources = $result.PolicyCompliantResources
-                PolicyNonCompliantResources = $result.PolicyNonCompliantResources
+            $cache[$result.subscriptionId] = @{
+                InitiativeTotalCount = $result.InitiativeTotalCount
+                InitiativeCompliantCount = $result.InitiativeCompliantCount
+                InitiativeNonCompliantCount = $result.InitiativeNonCompliantCount
+                PolicyTotalCount = $result.PolicyTotalCount
+                PolicyCompliantCount = $result.PolicyCompliantCount
+                PolicyNonCompliantCount = $result.PolicyNonCompliantCount
             }
         }
-
-        return $complianceBySubscription
+        return $cache
     }
     catch {
-        Write-Error "Failed to execute Azure Resource Graph query: $_"
-        throw
+        Write-Verbose "ARG query failed, will use per-subscription method: $_"
+        return @{}
     }
 }
 
@@ -70,28 +69,35 @@ function Check-PolicyStatus {
     param (
         [System.Object] $objList,
         [Parameter(Mandatory=$true)]
-        [string] $objType,
-        [string] $PolicyID,
+        [string] $objType, #subscription or management Group
+        [string] $PolicyID, # full policy id, not just the GUID
         [string] $InitiativeID,
         [string] $ControlName,
         [string] $ItemName,
         [string] $itsgcode,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime,
+        [string]
+        $ReportTime,
         [array] $AllowedLocations,
-        [string] $CloudUsageProfiles = "3",
+        [string] 
+        $CloudUsageProfiles = "3",
         [string] $ModuleProfiles,
-        [switch] $EnableMultiCloudProfiles,
-        [hashtable] $ComplianceDataCache
+        [switch] $EnableMultiCloudProfiles, # default to false
+        [hashtable] $ComplianceCache = @{}
     )
 
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+    $TotalInitResources = 0
+    $TotalPolicyResources = 0
+    $InitNonCompliantResources = 0
+    $InitCompliantResources = 0
+    $PolicyNonCompliantResources = 0
+    $PolicyCompliantResources = 0
 
     foreach ($obj in $objList)
     {
-        Write-Verbose "Processing $objType : $($obj.Name)"
-        
+        Write-Verbose "Checking $objType : $($obj.Name)"
         if ($objType -eq "subscription") {
             $tempId="/subscriptions/$($obj.Id)"
         }
@@ -99,39 +105,35 @@ function Check-PolicyStatus {
             $tempId=$obj.Id
         }
 
-        # Check for policy assignments using cmdlet (fast, handles inheritance)
-        try {
-            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $PolicyID -ErrorAction SilentlyContinue
-            $AssignedInitiatives = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $InitiativeID -ErrorAction SilentlyContinue
+        #Retrieving policies and initiatives
+        try{
+            $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID 
+            $AssignedInitiatives = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $InitiativeID
         }
-        catch {
-            Write-Warning "Failed to retrieve policy assignments for $($obj.Name): $_"
-            $AssignedPolicyList = $null
-            $AssignedInitiatives = $null
+        catch{
+            $Errorlist.Add("Failed to retrieve policy or initiative assignments for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+            Write-Error "Error: Failed to retrieve policy or initiative assignments for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" 
         }
 
-        $ComplianceStatus = $true
-        $Comment = ""
-        
-        # Check if policy/initiative is assigned
         If (($null -eq $AssignedPolicyList -and ($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")) -or `
             ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
         {
-            $Comment = $($msgTable.policyNotAssigned -f $objType)
-            $ComplianceStatus = $false
+            $Comment=$($msgTable.policyNotAssigned -f $objType)
+            $ComplianceStatus=$false
         }
         else {
+
             # Test for allowed locations in policies if not null
-            $ComplianceStatus = $true
+            $ComplianceStatus=$true # should be true unless we find a non-compliant location
             
             if ($null -ne $AssignedPolicyList){
                 if (!([string]::IsNullOrEmpty($AllowedLocations)))
                 {
-                    $AssignedLocations = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value
+                    $AssignedLocations = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
                     foreach ($AssignedLocation in $AssignedLocations) {
                         if ( $AssignedLocation -notin $AllowedLocations) {
-                            $ComplianceStatus = $false
-                            $Comment = $msgTable.notAllowedLocation
+                            $ComplianceStatus=$false
+                            $Comment=$msgTable.notAllowedLocation
                         }
                     }
                 }
@@ -140,36 +142,62 @@ function Check-PolicyStatus {
             if ($null -ne $AssignedInitiatives -and $AssignedInitiatives -ne "N/A"){
                 if (!([string]::IsNullOrEmpty($AllowedLocations)))
                 {
-                    $AssignedLocations = $AssignedInitiatives.Properties.Parameters.listOfAllowedLocations.value
+                    $AssignedLocations = $AssignedInitiatives.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
                     foreach ($AssignedLocation in $AssignedLocations) {
                         if ( $AssignedLocation -notin $AllowedLocations) {
-                            $ComplianceStatus = $false
-                            $Comment = $msgTable.notAllowedLocation
+                            $ComplianceStatus=$false
+                            $Comment=$msgTable.notAllowedLocation
                         }
                     }
                 }
-            }
-            
-            # If locations are valid, check resource compliance using cached data
-            if ($ComplianceStatus -eq $true) {
-                # Get cached compliance data for this subscription
-                $complianceData = $ComplianceDataCache[$obj.Id]
+            }     
+        }
+
+        
+        if($ComplianceStatus -eq $true){
+            # Check the number of resources and compliance for the required policies in applied PBMM initiative
+            # ----------------#
+            # Subscription
+            # ----------------#
+            if ($objType -eq "subscription"){
+                Write-Verbose "Find compliance details for Subscription : $($obj.Name)"
                 
-                if ($null -ne $complianceData) {
-                    $TotalInitResources = $complianceData.InitiativeTotalResources
-                    $InitCompliantResources = $complianceData.InitiativeCompliantResources
-                    $InitNonCompliantResources = $complianceData.InitiativeNonCompliantResources
-                    $TotalPolicyResources = $complianceData.PolicyTotalResources
-                    $PolicyCompliantResources = $complianceData.PolicyCompliantResources
-                    $PolicyNonCompliantResources = $complianceData.PolicyNonCompliantResources
-                } else {
-                    # No compliance data means no resources
-                    $TotalInitResources = 0
-                    $InitCompliantResources = 0
-                    $InitNonCompliantResources = 0
-                    $TotalPolicyResources = 0
-                    $PolicyCompliantResources = 0
-                    $PolicyNonCompliantResources = 0
+                # Try to use cached data first (from ARG query)
+                if ($ComplianceCache.ContainsKey($obj.Id)) {
+                    Write-Verbose "Using cached compliance data for subscription $($obj.Name)"
+                    $cached = $ComplianceCache[$obj.Id]
+                    $TotalInitResources = $cached.InitiativeTotalCount
+                    $InitCompliantResources = $cached.InitiativeCompliantCount
+                    $InitNonCompliantResources = $cached.InitiativeNonCompliantCount
+                    $TotalPolicyResources = $cached.PolicyTotalCount
+                    $PolicyCompliantResources = $cached.PolicyCompliantCount
+                    $PolicyNonCompliantResources = $cached.PolicyNonCompliantCount
+                }
+                else {
+                    # Fallback to original method if not in cache
+                    Write-Verbose "No cached data, using Get-AzPolicyState for subscription $($obj.Name)"
+                    $subscription = @()
+                    $subscription += New-Object -TypeName psobject -Property ([ordered]@{'DisplayName'=$obj.Name;'SubscriptionID'=$obj.Id})
+                    
+                    $currentSubscription = Get-AzContext
+                    if($currentSubscription.Subscription.Id -ne $subscription.SubscriptionId){
+                        # Set Az context to the this subscription
+                        Set-AzContext -SubscriptionId $subscription.SubscriptionID
+                        Write-Verbose "AzContext set to $($subscription.DisplayName)"
+                    }
+
+                    if(!($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")){
+                        $InitiativeState = Get-AzPolicyState | Where-Object { ($_.PolicySetDefinitionId -eq $InitiativeID)  -and ($_.PolicyDefinitionId -like "*$PolicyID*")} 
+                        $TotalInitResources = $InitiativeState.Count
+                        $InitCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $true}).Count
+                        $InitNonCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $false}).Count
+                    }
+                    if(!($null -eq $AssignedPolicyList)){
+                        $PolicyState = Get-AzPolicyState | Where-Object { $_.PolicySetDefinitionId -eq $PolicyID }
+                        $TotalPolicyResources = $PolicyState.Count
+                        $PolicyCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $true}).Count
+                        $PolicyNonCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $false}).Count
+                    }
                 }
 
                 if (($TotalInitResources -gt 0 -and $TotalPolicyResources -eq 0) -or ($TotalPolicyResources -gt 0 -and $TotalInitResources -eq 0)) {
@@ -217,15 +245,17 @@ function Check-PolicyStatus {
                     $ComplianceStatus = $true
                     $Comment = $msgTable.isCompliant + ' ' + $msgTable.noResource
                 }
+
             }
+   
         }
 
         if ($null -eq $obj.DisplayName)
         {
-            $DisplayName = $obj.Name
+            $DisplayName=$obj.Name
         }
         else {
-            $DisplayName = $obj.DisplayName
+            $DisplayName=$obj.DisplayName
         }
 
         $c = New-Object -TypeName PSCustomObject -Property @{ 
@@ -269,6 +299,8 @@ function Check-PolicyStatus {
             } else {
                 $c | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
             }
+
+            
         }       
         
         $tempObjectList.add($c)| Out-Null
@@ -299,15 +331,13 @@ function Verify-AllowedLocationPolicy {
 
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $AllowedLocations = $AllowedLocationsString.Split(",") | ForEach-Object { $_.Trim() }
+    $AllowedLocations = $AllowedLocationsString.Split(",")
     if ($AllowedLocations.Count -eq 0 -or $null -eq $AllowedLocations) {
         $Errorlist.Add("No allowed locations were provided. Please provide a list of allowed locations separated by commas.")
         throw "No allowed locations were provided. Please provide a list of allowed locations separated by commas."
         break
     }
-    
-    Write-Host "Allowed locations for validation: $($AllowedLocations -join ', ')"
-    
+    # @("canada" , "canadaeast" , "canadacentral")
     #Check Subscriptions
     try {
         $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
@@ -317,26 +347,28 @@ function Verify-AllowedLocationPolicy {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
 
-    # Fetch all policy compliance states using Azure Resource Graph (single efficient query)
-    Write-Host "Fetching policy compliance states across all subscriptions using Azure Resource Graph..."
+    # Try to fetch compliance data using optimized ARG query first
+    Write-Verbose "Attempting to fetch compliance data using Azure Resource Graph..."
     try {
-        $ComplianceDataCache = Get-PolicyComplianceData -PolicyID $PolicyID -InitiativeID $InitiativeID -AllowedLocations $AllowedLocations -msgTable $msgTable
-        Write-Host "Successfully retrieved compliance states for $($ComplianceDataCache.Count) subscription(s) with resources"
+        $ComplianceCache = Get-PolicyComplianceDataOptimized -PolicyID $PolicyID -InitiativeID $InitiativeID
+        if ($ComplianceCache.Count -gt 0) {
+            Write-Verbose "Successfully cached compliance data for $($ComplianceCache.Count) subscriptions"
+        } else {
+            Write-Verbose "No compliance data found in ARG, will use per-subscription method"
+        }
     }
     catch {
-        $Errorlist.Add("Failed to retrieve policy compliance states using Azure Resource Graph: $_")
-        Write-Warning "Failed to retrieve policy compliance states using Azure Resource Graph. Error: $_"
-        # Initialize empty cache to allow processing to continue
-        $ComplianceDataCache = @{}
+        Write-Verbose "ARG query failed, will use per-subscription method: $_"
+        $ComplianceCache = @{}
     }
 
     try {
         $ErrorActionPreference = 'Stop'
         $type = "subscription"
         if ($EnableMultiCloudProfiles) {
-            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ComplianceDataCache $ComplianceDataCache
+            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ComplianceCache $ComplianceCache
         } else {
-            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ComplianceDataCache $ComplianceDataCache
+            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ComplianceCache $ComplianceCache
         }
     }
     catch {
