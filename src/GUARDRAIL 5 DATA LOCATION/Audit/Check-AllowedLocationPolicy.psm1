@@ -5,31 +5,42 @@ function Get-PolicyComplianceDataOptimized {
         [string] $InitiativeID
     )
 
-    # Simple, reliable ARG query
-    # Keep Get-AzPolicyAssignment for assignments (handles MG inheritance correctly)
-    $queryParts = @()
-    $queryParts += "policyresources"
-    $queryParts += "| where type == 'microsoft.policyinsights/policystates'"
-    $queryParts += "| where properties.policyDefinitionId contains '$PolicyID'"
+    # ARG query matching Get-AzPolicyState behavior:
+    # - Include Exempt resources in total count
+    # - Only count explicitly 'Compliant' as compliant, explicitly 'NonCompliant' as non-compliant
+    # - When InitiativeID is "N/A", only check standalone policies
     
-    $queryParts += "| extend subscriptionId = tostring(split(properties.resourceId, '/')[2])"
-    $queryParts += "| extend complianceState = tostring(properties.complianceState)"
-    $queryParts += "| extend policySetDefId = tostring(properties.policySetDefinitionId)"
-    $queryParts += "| extend policyDefId = tostring(properties.policyDefinitionId)"
-    $queryParts += "| extend isCompliant = (properties.complianceState == 'Compliant')"
-    $queryParts += "| where isnotempty(subscriptionId)"
+    $checkInitiative = ![string]::IsNullOrEmpty($InitiativeID) -and $InitiativeID -ne "N/A"
     
-    # Match original filtering logic
-    if (![string]::IsNullOrEmpty($InitiativeID)) {
-        # Initiative: PolicySetDefinitionId == InitiativeID AND PolicyDefinitionId contains PolicyID
-        # Standalone: PolicySetDefinitionId == PolicyID
-        $queryParts += "| summarize InitiativeCompliantCount = countif(policySetDefId == '$InitiativeID' and policyDefId contains '$PolicyID' and isCompliant), InitiativeNonCompliantCount = countif(policySetDefId == '$InitiativeID' and policyDefId contains '$PolicyID' and not(isCompliant)), InitiativeTotalCount = countif(policySetDefId == '$InitiativeID' and policyDefId contains '$PolicyID'), PolicyCompliantCount = countif(policySetDefId == '$PolicyID' and isCompliant), PolicyNonCompliantCount = countif(policySetDefId == '$PolicyID' and not(isCompliant)), PolicyTotalCount = countif(policySetDefId == '$PolicyID') by subscriptionId"
-    } else {
-        # No initiative specified - only check standalone: PolicySetDefinitionId == PolicyID
-        $queryParts += "| summarize InitiativeCompliantCount = 0, InitiativeNonCompliantCount = 0, InitiativeTotalCount = 0, PolicyCompliantCount = countif(policySetDefId == '$PolicyID' and isCompliant), PolicyNonCompliantCount = countif(policySetDefId == '$PolicyID' and not(isCompliant)), PolicyTotalCount = countif(policySetDefId == '$PolicyID') by subscriptionId"
-    }
+    # When InitiativeID is N/A, filter to only standalone policies
+    $standaloneOnlyFilter = if (!$checkInitiative) { "| where isempty(policySetDefId)" } else { "" }
     
-    $query = $queryParts -join " "
+    $query = @"
+policyresources
+| where type == 'microsoft.policyinsights/policystates'
+| where properties.policyDefinitionId contains '$PolicyID'
+| extend subscriptionId = tostring(split(properties.resourceId, '/')[2])
+| extend resourceId = tostring(properties.resourceId)
+| extend timestamp = todatetime(properties.timestamp)
+| extend complianceState = tostring(properties.complianceState)
+| extend policySetDefId = tostring(properties.policySetDefinitionId)
+| extend policyDefId = tostring(properties.policyDefinitionId)
+| where isnotempty(subscriptionId)
+$standaloneOnlyFilter
+| summarize arg_max(timestamp, complianceState, policySetDefId, policyDefId, subscriptionId) by resourceId
+| extend isCompliant = (complianceState == 'Compliant')
+| extend isNonCompliant = (complianceState == 'NonCompliant')
+| extend matchesInitiative = (policySetDefId == '$InitiativeID' and policyDefId contains '$PolicyID')
+| extend matchesStandalone = (isempty(policySetDefId) and policyDefId contains '$PolicyID')
+| summarize 
+    InitiativeCompliantCount = countif(matchesInitiative and isCompliant),
+    InitiativeNonCompliantCount = countif(matchesInitiative and isNonCompliant),
+    InitiativeTotalCount = countif(matchesInitiative),
+    PolicyCompliantCount = countif(matchesStandalone and isCompliant),
+    PolicyNonCompliantCount = countif(matchesStandalone and isNonCompliant),
+    PolicyTotalCount = countif(matchesStandalone)
+    by subscriptionId
+"@
 
     try {
         Write-Verbose "Executing Azure Resource Graph query for policy compliance states..."
@@ -165,17 +176,24 @@ function Check-PolicyStatus {
                     $PolicyNonCompliantResources = $cached.PolicyNonCompliantCount
                 }
                 else {
-                    # Fallback to Get-AzPolicyState if not in cache (no context switching needed!)
+                    # Fallback: no cached data, use Get-AzPolicyState
                     Write-Verbose "No cached data, using Get-AzPolicyState for subscription $($obj.Name)"
+                    
+                    $currentSubscription = Get-AzContext
+                    if($currentSubscription.Subscription.Id -ne $obj.Id){
+                        Set-AzContext -SubscriptionId $obj.Id | Out-Null
+                        Write-Verbose "AzContext set to $($obj.Name)"
+                    }
 
                     if(!($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")){
-                        $InitiativeState = Get-AzPolicyState -SubscriptionId $obj.Id | Where-Object { ($_.PolicySetDefinitionId -eq $InitiativeID)  -and ($_.PolicyDefinitionId -like "*$PolicyID*")} 
+                        $InitiativeState = Get-AzPolicyState | Where-Object { ($_.PolicySetDefinitionId -eq $InitiativeID) -and ($_.PolicyDefinitionId -like "*$PolicyID*")} 
                         $TotalInitResources = $InitiativeState.Count
                         $InitCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $true}).Count
                         $InitNonCompliantResources = ($InitiativeState | Where-Object {$_.IsCompliant -eq $false}).Count
                     }
                     if(!($null -eq $AssignedPolicyList)){
-                        $PolicyState = Get-AzPolicyState -SubscriptionId $obj.Id | Where-Object { $_.PolicySetDefinitionId -eq $PolicyID }
+                        # FIXED: Correct filter for standalone policies (empty PolicySetDefinitionId)
+                        $PolicyState = Get-AzPolicyState | Where-Object { [string]::IsNullOrEmpty($_.PolicySetDefinitionId) -and ($_.PolicyDefinitionId -like "*$PolicyID*") }
                         $TotalPolicyResources = $PolicyState.Count
                         $PolicyCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $true}).Count
                         $PolicyNonCompliantResources = ($PolicyState | Where-Object {$_.IsCompliant -eq $false}).Count
