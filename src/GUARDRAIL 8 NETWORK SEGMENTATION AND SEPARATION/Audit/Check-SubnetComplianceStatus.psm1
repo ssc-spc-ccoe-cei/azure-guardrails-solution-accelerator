@@ -113,33 +113,14 @@ function Get-SubnetComplianceInformation {
                             $ComplianceStatus = $false
                             $Comments = ''
                             if ($null -ne $subnet.NetworkSecurityGroup) {
-                                Write-Debug "Found $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) NSG"
-                                #Add routine to analyze NSG regarding standard rules.
-                                $nsg = Get-AzNetworkSecurityGroup -Name $subnet.NetworkSecurityGroup.Id.Split("/")[8] -ResourceGroupName $subnet.NetworkSecurityGroup.Id.Split("/")[4]
-                                if ($nsg.SecurityRules.count -ne 0) { #NSG has other rules on top of standard rules.
-
-                                    $LastInboundSecurityRule = $nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object { $_.Direction -eq 'Inbound' } | Select-Object -First 1
-                                    $LastOutboundSecurityRule = $nsg.SecurityRules | Sort-Object Priority -Descending | Where-Object { $_.Direction -eq 'Outbound' } | Select-Object -First 1
-
-                                    if ($LastInboundSecurityRule -and $LastOutboundSecurityRule -and
-                                        $LastInboundSecurityRule.SourceAddressPrefix -eq '*' -and $LastInboundSecurityRule.destinationPortRange -eq '*' -and $LastInboundSecurityRule.sourcePortRange -eq '*' -and $LastInboundSecurityRule.Access -eq "Deny" -and 
-                                        $LastOutboundSecurityRule.DestinationAddressPrefix -eq '*' -and $LastOutboundSecurityRule.destinationPortRange -eq '*' -and $LastOutboundSecurityRule.sourcePortRange -eq '*' -and $LastOutboundSecurityRule.Access -eq "Deny") {
-                                        $ComplianceStatus = $true
-                                        $Comments = $msgTable.subnetCompliant
-                                    }
-                                    else {
-                                        $ComplianceStatus = $false
-                                        $Comments = $msgTable.nsgConfigDenyAll
-                                    }
-                                }
-                                else {
-                                    #NSG is present but has no custom rules at all.
-                                    $ComplianceStatus = $false
-                                    $Comments = $msgTable.nsgCustomRule
-
-                                }
+                                $nsgName = ($subnet.NetworkSecurityGroup.Id -split '/')[ -1 ]
+                                Write-Debug "Found $nsgName NSG"
+                                # GR8 Issue 566: only require NSG association; rule inspection removed.
+                                $ComplianceStatus = $true
+                                $Comments = $msgTable.subnetCompliant
                             }
                             else {
+                                $ComplianceStatus = $false
                                 $Comments = $msgTable.noNSG
                             }
                             $SubnetObject = [PSCustomObject]@{ 
@@ -278,4 +259,3 @@ function Get-SubnetComplianceInformation {
     }
     return $moduleOutput
 }
-
