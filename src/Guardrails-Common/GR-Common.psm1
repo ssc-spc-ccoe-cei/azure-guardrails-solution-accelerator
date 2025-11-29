@@ -345,6 +345,190 @@ function Add-LogAnalyticsResults {
         -TimeStampField Get-Date 
 }
 
+function Get-GuardrailIdentityPermissions {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$TenantRootManagementGroupId
+    )
+
+    if ([string]::IsNullOrWhiteSpace($TenantRootManagementGroupId)) {
+        throw "TenantRootManagementGroupId is required."
+    }
+
+    $context = Get-AzContext
+    if (-not $context -or -not $context.Account -or [string]::IsNullOrWhiteSpace($context.Account.Id)) {
+        throw "Azure context is not initialized; unable to resolve automation account identity."
+    }
+
+    $principal = $null
+    $principalLookupErrors = [System.Collections.Generic.List[string]]::new()
+
+    $automationAccountObjectId = $env:AUTOMATION_ACCOUNT_ID
+    if (-not [string]::IsNullOrWhiteSpace($automationAccountObjectId)) {
+        $objectGuid = [Guid]::Empty
+        if ([Guid]::TryParse($automationAccountObjectId, [ref]$objectGuid)) {
+            try {
+                $principal = Get-AzADServicePrincipal -ObjectId $objectGuid -ErrorAction Stop
+            }
+            catch {
+                $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID lookup failed: $($_.Exception.Message)") | Out-Null
+            }
+        }
+        else {
+            $principalLookupErrors.Add("AUTOMATION_ACCOUNT_ID value '$automationAccountObjectId' is not a GUID.") | Out-Null
+        }
+    }
+    else {
+        $principalLookupErrors.Add('AUTOMATION_ACCOUNT_ID environment variable not set.') | Out-Null
+    }
+
+    if (-not $principal) {
+        $applicationGuid = [Guid]::Empty
+        if ([Guid]::TryParse($context.Account.Id, [ref]$applicationGuid)) {
+            try {
+                $principal = Get-AzADServicePrincipal -ApplicationId $applicationGuid -ErrorAction Stop
+            }
+            catch {
+                $principalLookupErrors.Add("ApplicationId lookup failed: $($_.Exception.Message)") | Out-Null
+            }
+        }
+        else {
+            $principalLookupErrors.Add("Context.Account.Id '$($context.Account.Id)' is not a GUID.") | Out-Null
+        }
+    }
+
+    if (-not $principal) {
+        $details = if ($principalLookupErrors.Count -gt 0) { ' Details: ' + ($principalLookupErrors -join ' | ') } else { '' }
+        throw "Failed to resolve automation account service principal.$details"
+    }
+
+    $principalDisplayName = $principal.DisplayName
+    if ([string]::IsNullOrWhiteSpace($principalDisplayName)) {
+        $principalDisplayName = $principal.AppId
+    }
+
+    $assignments = [System.Collections.Generic.List[psobject]]::new()
+    $errors = [System.Collections.Generic.List[string]]::new()
+
+    try {
+        $rbacAssignments = Get-AzRoleAssignment -ObjectId $principal.Id -ExpandPrincipalGroups:$false -ErrorAction Stop
+    }
+    catch {
+        $errors.Add("RBAC enumeration failed: $($_.Exception.Message)") | Out-Null
+        $rbacAssignments = @()
+    }
+
+    foreach ($assignment in $rbacAssignments) {
+        $assignments.Add([pscustomobject]@{
+                PrincipalType        = 'AutomationAccountMSI'
+                PermissionType       = 'RBAC'
+                PrincipalName        = $principalDisplayName
+                PrincipalId          = $principal.Id
+                Role                 = $assignment.RoleDefinitionName
+                RoleDefinitionId     = $assignment.RoleDefinitionId
+                Scope                = $assignment.Scope
+                # Some Az versions expose the GUID as RoleAssignmentId instead of Id (PS5.1 compatible)
+                AssignmentId         = if ($assignment.RoleAssignmentId) { $assignment.RoleAssignmentId } else { $assignment.Id }
+                TenantRootManagementGroupId        = $TenantRootManagementGroupId
+                TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
+            }) | Out-Null
+    }
+
+    # AAD app-role assignments (GUIDs only)
+    $resourceAppRoleAssignments = @()
+    $graphPath = "/servicePrincipals/$($principal.Id)/appRoleAssignments?`$select=appRoleId,createdDateTime,principalDisplayName,principalId,resourceDisplayName,resourceId"
+    $graphResponse = $null
+    try {
+        $graphResponse = Invoke-GraphQueryEX -urlPath $graphPath -ErrorAction Stop
+    }
+    catch {
+        $errors.Add("AAD app-role enumeration failed: $($_.Exception.Message)") | Out-Null
+    }
+
+    if ($graphResponse -and $graphResponse.Content -and $graphResponse.Content.value) {
+        $resourceAppRoleAssignments = $graphResponse.Content.value
+    }
+    elseif ($null -eq $graphResponse) {
+        # distinguish API failure from truly empty assignments
+        $errors.Add('AAD app-role enumeration did not return a response.') | Out-Null
+    }
+
+    # cache appRoles per resourceId to keep calls to 1 per resource
+    $appRoleMetadataCache = @{}
+    $uniqueResourceIds = @($resourceAppRoleAssignments | Select-Object -ExpandProperty resourceId -Unique | Where-Object { $_ })
+
+    foreach ($resourceId in $uniqueResourceIds) {
+        if ($appRoleMetadataCache.ContainsKey($resourceId)) { continue }
+
+        # Use direct Graph call (not Invoke-GraphQueryEX) so appRoles aren't hidden under Content.value and AppRoleValue stays populated.
+        $resourceUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId"
+        try {
+            # Use a Graph-scoped token and Invoke-RestMethod (PS 5.1 friendly)
+            $graphToken = Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com" -ErrorAction Stop
+            $authHeader = @{ 'Authorization' = "Bearer $($graphToken.Token)"; 'Content-Type' = 'application/json' }
+
+            $appRoles = $null
+
+            $resourcePayload = Invoke-RestMethod -Method Get -Uri $resourceUri -Headers $authHeader -ErrorAction Stop
+            $appRoles = if ($resourcePayload.appRoles) { $resourcePayload.appRoles }
+                       elseif ($resourcePayload.value) {
+                           $valueObj = $resourcePayload.value
+                           if ($valueObj -is [System.Array] -and $valueObj.Count -gt 0 -and $valueObj[0].appRoles) { $valueObj[0].appRoles }
+                           elseif ($valueObj.appRoles) { $valueObj.appRoles }
+                       }
+
+            if ($null -eq $appRoles) {
+                $errors.Add("AAD app-role metadata lookup for resource $($resourceId): appRoles property not found or empty.") | Out-Null
+            }
+
+            $appRoleMetadataCache[$resourceId] = $appRoles
+        }
+        catch {
+            $statusCode = if ($_.Exception.Response -and $_.Exception.Response.StatusCode) { [int]$_.Exception.Response.StatusCode.value__ } else { 500 }
+            $errors.Add("AAD app-role metadata lookup for resource $($resourceId) returned status $statusCode : $($_.Exception.Message)") | Out-Null
+            $appRoleMetadataCache[$resourceId] = $null
+            continue
+        }
+    }
+
+    foreach ($assignment in $resourceAppRoleAssignments) {
+        $appRoleValue = $null
+
+        if ($assignment.resourceId -and $assignment.appRoleId -and $appRoleMetadataCache.ContainsKey($assignment.resourceId) -and $appRoleMetadataCache[$assignment.resourceId]) {
+            $matchingRole = $appRoleMetadataCache[$assignment.resourceId] | Where-Object { [string]$_.id -eq [string]$assignment.appRoleId } | Select-Object -First 1
+            if ($matchingRole) {
+                $appRoleValue = $matchingRole.value
+            }
+        }
+
+        $assignments.Add([pscustomobject]@{
+                PrincipalType        = 'AutomationAccountMSI'
+                PermissionType       = 'AADAppRole'
+                PrincipalName        = $principalDisplayName
+                PrincipalId          = $principal.Id
+                ResourceDisplayName  = $assignment.resourceDisplayName
+                ResourceId           = $assignment.resourceId
+                AppRoleId            = $assignment.appRoleId
+                CreatedDateTime      = $assignment.createdDateTime
+                AppRoleValue         = $appRoleValue
+                TenantRootManagementGroupId        = $TenantRootManagementGroupId
+                TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
+            }) | Out-Null
+    }
+
+    return [pscustomobject]@{
+        PrincipalType                     = 'AutomationAccountMSI'
+        PrincipalId                       = $principal.Id
+        PrincipalAppId                    = $principal.AppId
+        PrincipalName                     = $principalDisplayName
+        TenantRootManagementGroupId       = $TenantRootManagementGroupId
+        TenantRootManagementGroupResourceId = "/providers/Microsoft.Management/managementGroups/$TenantRootManagementGroupId"
+        Assignments                       = $assignments
+        Errors                            = $errors
+    }
+}
+
 function Check-DocumentExistsInStorage {
     [Alias('Check-DocumentsExistInStorage')]
     [CmdletBinding()]
