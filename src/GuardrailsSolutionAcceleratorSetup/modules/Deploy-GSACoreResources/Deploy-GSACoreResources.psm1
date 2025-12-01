@@ -46,11 +46,13 @@ Function Deploy-GSACoreResources {
             Set-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$true | Out-Null
         }
         else {
-            New-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$true | Out-Null
+            try {
+                New-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $automationVariableName -Value $config['guardrailsAutomationAccountMSI'] -Encrypted:$true | Out-Null
+            }
+            catch {
+                Write-Warning "Failed to persist automation account MSI id to variable '$automationVariableName'. Telemetry MSI scan will be skipped until this is set. $_"
+            }
         }
-    }
-    catch {
-        throw "Failed to persist automation account MSI id to variable '$automationVariableName'. $_"
     }
     Write-Verbose "Core resource bicep deployment complete!"
 
