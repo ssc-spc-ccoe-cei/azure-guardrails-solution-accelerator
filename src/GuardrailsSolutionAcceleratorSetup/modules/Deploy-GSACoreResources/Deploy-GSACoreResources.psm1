@@ -54,6 +54,9 @@ Function Deploy-GSACoreResources {
             }
         }
     }
+    catch {
+        Write-Warning "Failed to persist automation account MSI id to variable '$automationVariableName'. Telemetry MSI scan will be skipped until this is set. $_"
+    }
     Write-Verbose "Core resource bicep deployment complete!"
 
     Write-Verbose "Granting Automation Account MSI permission to the Graph API"
