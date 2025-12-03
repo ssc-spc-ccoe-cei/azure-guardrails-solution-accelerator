@@ -113,7 +113,7 @@ function Get-DefenderForCloudAlerts {
             ReportTime = $ReportTime
             itsgcode = $itsgcode
         }
-        Write-Host "$EnableMultiCloudProfiles"
+        
         # Add profile information if MCUP feature is enabled
         if($EnableMultiCloudProfiles){
             $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
