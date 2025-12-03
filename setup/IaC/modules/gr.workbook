@@ -128,7 +128,7 @@
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
             "linkLabel": "GUARDRAIL 6",
-            "subTarget": "test6",
+            "subTarget": "gr6",
             "style": "link"
           },
           {
@@ -203,9 +203,9 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
+        "query": "// Original query for table\n//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 1",
+        "title": "GR 1 Table",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -237,6 +237,80 @@
         "value": "gr1"
       },
       "name": "Gr1"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 1 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "Gr1 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 1 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "Gr1 Recommended Compliance Summary"
     },
     {
       "type": 1,
@@ -348,6 +422,80 @@
         "value": "gr2"
       },
       "name": "Gr1 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 2: MANAGE ACCESS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 2 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "Gr2 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 2: MANAGE ACCESS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 2 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "Gr2 Recommended Compliance Summary"
     },
     {
       "type": 9,
@@ -523,6 +671,80 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 3: SECURE ENDPOINTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 3 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      },
+      "name": "Gr3 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 3: SECURE ENDPOINTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 3 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      },
+      "name": "Gr3 Recommended Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 4",
@@ -557,6 +779,80 @@
         "value": "gr4"
       },
       "name": "query - 6 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 4 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      },
+      "name": "Gr4 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 4 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      },
+      "name": "Gr4 Recommended Compliance Summary"
     },
     {
       "type": 3,
@@ -599,6 +895,80 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 5: DATA LOCATION\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 5 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      },
+      "name": "Gr5 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 5: DATA LOCATION\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 5 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      },
+      "name": "Gr5 Recommended Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
         "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 6",
@@ -629,9 +999,83 @@
       "conditionalVisibility": {
         "parameterName": "selectedTab",
         "comparison": "isEqualTo",
-        "value": "test6"
+        "value": "gr6"
       },
       "name": "query - 26 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 6: PROTECTION OF DATA-AT-REST\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 6 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      },
+      "name": "Gr6 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 6: PROTECTION OF DATA-AT-REST\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 6 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      },
+      "name": "Gr6 Recommended Compliance Summary"
     },
     {
       "type": 3,
@@ -674,6 +1118,80 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 7 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      },
+      "name": "Gr7 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 7 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      },
+      "name": "Gr7 Recommended Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
         "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = column_ifexists(\"ItemName_s\", \"\"),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
         "title": "GR 8",
@@ -706,6 +1224,80 @@
         "value": "gr8"
       },
       "name": "query - 2"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 8: SEGMENT AND SEPARATE\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 8 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      },
+      "name": "Gr8 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 8: SEGMENT AND SEPARATE\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 8 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      },
+      "name": "Gr8 Recommended Compliance Summary"
     },
     {
       "type": 3,
@@ -756,6 +1348,80 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 9: NETWORK SECURITY SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 9 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      },
+      "name": "Gr9 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 9: NETWORK SECURITY SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 9 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      },
+      "name": "Gr9 Recommended Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
         "title": "GR 10",
@@ -790,6 +1456,80 @@
         "value": "gr10"
       },
       "name": "query - 2 - Copy - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 10: CYBER DEFENSE SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 10 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      },
+      "name": "Gr10 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 10: CYBER DEFENSE SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 10 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      },
+      "name": "Gr10 Recommended Compliance Summary"
     },
     {
       "type": 3,
@@ -840,6 +1580,80 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 11: LOGGING AND MONITORING\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 11 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      },
+      "name": "Gr11 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 11: LOGGING AND MONITORING\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 11 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      },
+      "name": "Gr11 Recommended Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 4,
         "title": "GR 12",
@@ -873,7 +1687,81 @@
         "comparison": "isEqualTo",
         "value": "gr12"
       },
-      "name": "GR11"
+      "name": "GR12"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 12 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      },
+      "name": "Gr12 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 12 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      },
+      "name": "Gr12 Recommended Compliance Summary"
     },
     {
       "type": 3,
@@ -918,14 +1806,89 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 13: PLAN FOR CONTINUITY\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
         "size": 4,
+        "title": "Guardrail 13 Mandatory Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "color": "green"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Gr13 Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 13: PLAN FOR CONTINUITY\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "size": 4,
+        "title": "Guardrail 13 Recommended Compliance",
+        "timeContext": {
+            "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "color": "greenDark"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Gr13 Recommended Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title|extend SortOrder = case(Status == 'Compliant Items', 1,Status == 'Non-compliant Items', 2, 3)| order by SortOrder asc",
+        "size": 2,
+        "title": "Mandatory Compliance",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "tiles",
+        "visualization": "piechart",
         "tileSettings": {
           "titleContent": {
             "columnMatch": "Status",
@@ -946,6 +1909,24 @@
             }
           },
           "showBorder": true
+        },
+        "chartSettings": {
+          "showLegend": true,
+          "createOtherGroup": null,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Compliant Items",
+              "color": "green"
+            },
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Not Applicable Items",
+              "color": "gray"
+            }
+          ]
         }
       },
       "conditionalVisibility": {
@@ -953,7 +1934,67 @@
         "comparison": "isNotEqualTo",
         "value": "information"
       },
-      "name": "query - 16"
+      "name": "Mandatory Compliance Summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title|extend SortOrder = case(Status == 'Compliant Items', 1,Status == 'Non-compliant Items', 2, 3)| order by SortOrder asc",
+        "size": 2,
+        "title": "Recommended Compliance",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Status",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Total",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal",
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "showBorder": true
+        },
+        "chartSettings": {
+          "showLegend": true,
+          "createOtherGroup": null,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Compliant Items",
+              "color": "greenDark"
+            },
+            {
+              "seriesName": "Non-compliant Items",
+              "color": "redDark"
+            },
+            {
+              "seriesName": "Not Applicable Items",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
+      "name": "Recommended Compliance Summary"
     },
     {
       "type": 3,
