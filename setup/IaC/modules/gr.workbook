@@ -263,6 +263,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -300,6 +301,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -448,6 +450,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -485,6 +488,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -692,6 +696,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -729,6 +734,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -805,6 +811,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -842,6 +849,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -916,6 +924,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -953,6 +962,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1028,6 +1038,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1065,6 +1076,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1139,6 +1151,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1176,6 +1189,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1250,6 +1264,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1287,6 +1302,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1369,6 +1385,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1406,6 +1423,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1482,6 +1500,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1519,6 +1538,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1601,6 +1621,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1638,6 +1659,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1714,6 +1736,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1751,6 +1774,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1827,6 +1851,7 @@
               "color": "green"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
@@ -1864,6 +1889,7 @@
               "color": "greenDark"
             },
             {
+              "seriesName": "Not Applicable Items",
               "color": "gray"
             }
           ]
