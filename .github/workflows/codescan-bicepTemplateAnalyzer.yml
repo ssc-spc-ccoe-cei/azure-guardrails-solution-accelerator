@@ -12,7 +12,7 @@ on:
     - cron: '46 11 * * 6'
 
 env:
-  SCANNER_TOOL_URL: "https://github.com/Azure/template-analyzer/releases/download/0.8.6/TemplateAnalyzer-linux-x64.zip"
+  SCANNER_TOOL_URL: "https://github.com/Azure/template-analyzer/releases/download/0.8.1/TemplateAnalyzer-linux-x64.zip"
 
 jobs:
   scan:
