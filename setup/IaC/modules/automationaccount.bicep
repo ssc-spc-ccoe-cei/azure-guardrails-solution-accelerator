@@ -402,8 +402,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServiceHealthAlerts.zip'
-        version: '1.0.5'
-      }}
+        version: '1.0.6'
+      }
+    }
   }
   
   resource module47 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -411,8 +412,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.0.5'
-      }}
+        version: '1.0.6'
+      }
+    }
   }
 
   resource module48 'powerShell72Modules' = if (newDeployment || updatePSModules) {
