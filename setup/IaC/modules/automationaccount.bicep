@@ -53,6 +53,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: 'https://devopsgallerystorage.blob.core.windows.net/packages/omsingestionapi.1.6.0.nupkg'
         version: '1.6.0'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module1 'modules' = if (newDeployment || updatePSModules) {
@@ -61,6 +65,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
         version: '1.1.9'        
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -71,6 +79,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
         version: '1.1.9'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module3 'modules' = if (newDeployment || updatePSModules) {
@@ -79,6 +91,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DeprecatedAccounts.zip'
         version: '1.2.6'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -89,6 +105,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
         version: '1.2.10'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module5 'modules' = if (newDeployment || updatePSModules) {
@@ -97,6 +117,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
         version: '1.0.7'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -107,6 +131,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-SubnetComplianceStatus.zip'
         version: '1.1.12'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module8 'modules' = if (newDeployment || updatePSModules) {
@@ -115,6 +143,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
         version: '1.1.11'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -125,6 +157,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
         version: '1.2.7'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module10 'modules' = if (newDeployment || updatePSModules) {
@@ -133,6 +169,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Get-AzureADLicenseType.zip'
         version: '1.1.10'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -143,6 +183,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/GR-Common.zip'
         version: '1.4.3'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module12 'modules' = if (newDeployment || updatePSModules) {
@@ -151,6 +195,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
         version: '1.0.10'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -161,6 +209,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
         version: '1.2.2'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module14 'modules' = if (newDeployment || updatePSModules) {
@@ -169,6 +221,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivateMarketPlace.zip'
         version: '1.1.8'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -179,6 +235,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.marketplace.0.3.0.nupkg'
         version: '0.3.0'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module16 'modules' = if (newDeployment || updatePSModules) {
@@ -187,6 +247,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CyberSecurityServices.zip'
         version: '1.1.7'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -197,6 +261,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
         version: '1.4.17'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module19 'modules' = if (newDeployment || updatePSModules) {
@@ -205,6 +273,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
         version: '1.3.8'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -215,6 +287,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-SecureConnectionInTransit.zip'
         version: '1.2.13'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module21 'modules' = if (newDeployment || updatePSModules) {
@@ -223,6 +299,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudConsoleAccess.zip'
         version: '1.0.10'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -233,6 +313,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
         version: '1.0.7'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module26 'modules' = if (newDeployment || updatePSModules) {
@@ -241,6 +325,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
         version: '1.3.4'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -251,6 +339,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip'
         version: '1.0.4'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module28 'modules' = if (newDeployment || updatePSModules) {
@@ -259,6 +351,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
         version: '1.0.10'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -269,6 +365,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
         version: '1.0.6'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module30 'modules' = if (newDeployment || updatePSModules) {
@@ -277,6 +377,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
         version: '1.0.4'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -287,6 +391,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-UserAccountGCEventLogging.zip'
         version: '1.0.7'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module32 'modules' = if (newDeployment || updatePSModules) {
@@ -296,6 +404,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
         version: '1.0.5'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   resource module33 'modules' = if (newDeployment || updatePSModules) {
@@ -304,6 +416,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
         version: '1.0.4'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -315,6 +431,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
         version: '1.0.5'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
         
@@ -325,6 +445,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-CloudAccountsMFA.zip'
         version: '1.0.2'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -334,6 +458,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
         version: '1.0.8'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -346,6 +474,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-UserRiskBasedCAP.zip'
         version: '1.0.0'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -355,6 +487,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-LocationBasedCAP.zip'
         version: '1.0.1'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -366,6 +502,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
         version: '1.1.0'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -375,6 +515,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkSecurityTools.zip'
         version: '1.0.3'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -386,6 +530,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
         version: '1.0.9'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -395,6 +543,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
         version: '1.0.4'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -406,6 +558,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-AppServiceHTTPSConfiguration.zip'
         version: '1.0.0'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -415,6 +571,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FunctionAppHTTPSConfiguration.zip'
         version: '1.0.0'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -426,6 +586,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
         version: '1.0.3'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   
@@ -435,6 +599,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserRoleReviews.zip'
         version: '1.0.4'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -446,6 +614,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-ServiceHealthAlerts.zip'
         version: '1.0.5'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
   
@@ -455,6 +627,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
         version: '1.0.5'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -466,6 +642,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: '${ModuleBaseURL}/Check-GuestRoleReviews.zip'
         version: '1.0.4'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -475,6 +655,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-TLSConfiguration.zip'
         version: '1.0.0'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
@@ -486,6 +670,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.1.0.nupkg'
         version: '1.1.0'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -496,6 +684,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
         version: '4.0.2'
       }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
+      }
     }
   }
 
@@ -505,6 +697,10 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkInterfaceIPs.zip'
         version: '1.0.1'
+      }
+      runtime: {
+        name: 'PowerShell'
+        version: '7.2'
       }
     }
   }
