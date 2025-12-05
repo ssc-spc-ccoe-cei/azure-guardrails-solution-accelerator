@@ -121,6 +121,7 @@ Write-Output  "LogType: $(Get-GSAAutomationVariable -Name "LogType")"
 Write-Output  "reservedSubnetList: $(Get-GSAAutomationVariable -Name "reservedSubnetList")"
 Write-Output  "TenantDomainUPN: $(Get-GSAAutomationVariable -Name "TenantDomainUPN")"
 Write-Output  "WorkSpaceID: $(Get-GSAAutomationVariable -Name "WorkSpaceID")"
+Write-Output  "GuardrailsAutomationAccountMSI: $(Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI")"
 
 
 #Standard variables
@@ -129,10 +130,15 @@ $LogType = Get-GSAAutomationVariable -Name "LogType"
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
 $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
+$AutomationAccountMsiId = Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
 $Locale = Get-GSAAutomationVariable -Name "GuardRailsLocale"
+
+if ($AutomationAccountMsiId) {
+    [Environment]::SetEnvironmentVariable('AUTOMATION_ACCOUNT_ID', $AutomationAccountMsiId, 'Process') | Out-Null
+}
 
 If ($Locale -eq $null) {
     $Locale = "en-CA"
@@ -213,6 +219,72 @@ if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
 $runState = $null
 if ($enableDebugMetrics) {
     $runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
+
+    $permissionScanContext = $null
+    $permissionTelemetryMessage = 'Permission scan'
+    try {
+        $permissionScanContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.PermissionScan'
+
+        $permissionData = Get-GuardrailIdentityPermissions -TenantRootManagementGroupId $tenantID
+
+        foreach ($warning in $permissionData.Errors) {
+            Write-Warning "Permission scan warning: $warning"
+        }
+
+        $rbacCount = @($permissionData.Assignments | Where-Object { $_.PermissionType -eq 'RBAC' }).Count
+        $aadCount  = @($permissionData.Assignments | Where-Object { $_.PermissionType -eq 'AADAppRole' }).Count
+        $messageParts = @(
+            "Assignments=$($permissionData.Assignments.Count)",
+            "RBAC=$rbacCount",
+            "AADAppRoles=$aadCount"
+        )
+        if ($permissionData.Errors.Count -gt 0) {
+            $messageParts += "Warnings=$($permissionData.Errors.Count)"
+        }
+        $permissionTelemetryMessage = $messageParts -join '; '
+
+        if ($runState.TelemetryContext -and $runState.TelemetryContext.Enabled) {
+            $permissionSnapshotJson = ConvertTo-Json -InputObject $permissionData.Assignments -Depth 5
+            $permissionTelemetryRecord = [pscustomobject]@{
+                GuardrailId                         = $runState.TelemetryContext.GuardrailId
+                RunbookName                         = $runState.TelemetryContext.RunbookName
+                ModuleName                          = 'SYSTEM.PermissionScan'
+                ExecutionScope                      = 'Module'
+                EventType                           = 'PermissionScan'
+                CorrelationId                       = [string]$runState.TelemetryContext.CorrelationId
+                JobId                               = [string]$runState.TelemetryContext.JobId
+                RunSubscriptionId                   = [string]$runState.TelemetryContext.SubscriptionId
+                RunTenantId                         = [string]$runState.TelemetryContext.TenantId
+                TenantRootManagementGroupId         = $permissionData.TenantRootManagementGroupId
+                TenantRootManagementGroupResourceId = $permissionData.TenantRootManagementGroupResourceId
+                PermissionSnapshot                  = $permissionSnapshotJson
+                Assignments                         = $permissionData.Assignments.Count
+                RbacAssignments                     = $rbacCount
+                AadAppRoleAssignments               = $aadCount
+                Message                             = $permissionTelemetryMessage
+                ReportTime                          = $runState.ReportTime
+            }
+
+            try {
+                New-LogAnalyticsData -Data @($permissionTelemetryRecord) -WorkSpaceID $runState.TelemetryContext.WorkspaceId -WorkSpaceKey $runState.TelemetryContext.WorkspaceKey -LogType 'CaCDebugMetrics' | Out-Null
+            }
+            catch {
+                Write-Warning "Failed to emit permission telemetry payload: $_"
+            }
+        }
+
+        if ($permissionScanContext) {
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $permissionScanContext -ItemCount $permissionData.Assignments.Count -Message $permissionTelemetryMessage | Out-Null
+            $permissionScanContext = $null
+        }
+    }
+    catch {
+        Write-Warning "Permission scan failed: $_"
+        if ($permissionScanContext) {
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $permissionScanContext -ErrorCount 1 -ItemCount 0 -Message 'Permission scan failed.' | Out-Null
+            $permissionScanContext = $null
+        }
+    }
 }
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
