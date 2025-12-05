@@ -25,7 +25,7 @@ param updateCoreResources bool = false
 param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
 
-resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
+resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
   location: location
   tags: {
@@ -199,7 +199,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
       }
     }
   }
-  resource module19 'modules' = if (newDeployment || updatePSModules) {
+  resource module19 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionDataAtRest'
     properties: {
       contentLink: {
