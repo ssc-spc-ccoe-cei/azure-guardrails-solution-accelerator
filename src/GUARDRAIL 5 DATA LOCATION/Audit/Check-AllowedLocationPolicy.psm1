@@ -5,10 +5,10 @@ function Get-PolicyComplianceDataOptimized {
         [string] $InitiativeID
     )
 
-    # ARG query matching Get-AzPolicyState behavior:
+    # ARG query matching Get-AzPolicyState behavior exactly:
     # - Include Exempt resources in total count
     # - Only count explicitly 'Compliant' as compliant, explicitly 'NonCompliant' as non-compliant
-    # - When InitiativeID is "N/A", only check standalone policies
+    # - When InitiativeID is "N/A", only check standalone policies (correct behavior)
     
     $checkInitiative = ![string]::IsNullOrEmpty($InitiativeID) -and $InitiativeID -ne "N/A"
     
@@ -44,21 +44,39 @@ $standaloneOnlyFilter
 
     try {
         Write-Verbose "Executing Azure Resource Graph query for policy compliance states..."
-        $results = Search-AzGraph -Query $query -First 1000
-        
-        Write-Verbose "ARG query returned compliance data for $($results.Count) subscription(s)"
         
         $cache = @{}
-        foreach ($result in $results) {
-            $cache[$result.subscriptionId] = @{
-                InitiativeTotalCount = $result.InitiativeTotalCount
-                InitiativeCompliantCount = $result.InitiativeCompliantCount
-                InitiativeNonCompliantCount = $result.InitiativeNonCompliantCount
-                PolicyTotalCount = $result.PolicyTotalCount
-                PolicyCompliantCount = $result.PolicyCompliantCount
-                PolicyNonCompliantCount = $result.PolicyNonCompliantCount
+        $skipToken = $null
+        $pageCount = 0
+        
+        # Paginate through all results using SkipToken
+        do {
+            $pageCount++
+            if ($skipToken) {
+                $results = Search-AzGraph -Query $query -First 1000 -SkipToken $skipToken
+            } else {
+                $results = Search-AzGraph -Query $query -First 1000
             }
-        }
+            
+            # Process results from this page
+            foreach ($result in $results) {
+                $cache[$result.subscriptionId] = @{
+                    InitiativeTotalCount = $result.InitiativeTotalCount
+                    InitiativeCompliantCount = $result.InitiativeCompliantCount
+                    InitiativeNonCompliantCount = $result.InitiativeNonCompliantCount
+                    PolicyTotalCount = $result.PolicyTotalCount
+                    PolicyCompliantCount = $result.PolicyCompliantCount
+                    PolicyNonCompliantCount = $result.PolicyNonCompliantCount
+                }
+            }
+            
+            # Get SkipToken for next page (if any)
+            $skipToken = $results.SkipToken
+            Write-Verbose "ARG query page $pageCount returned $($results.Count) subscription(s), SkipToken: $($null -ne $skipToken)"
+            
+        } while ($skipToken)
+        
+        Write-Verbose "ARG query completed - total subscriptions cached: $($cache.Count)"
         return $cache
     }
     catch {
