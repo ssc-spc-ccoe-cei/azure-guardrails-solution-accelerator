@@ -147,8 +147,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
-        version: '1.2.2'
-      }}
+        version: '1.2.3'
+      }
+    }
   }
   resource module14 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-PrivateMarketPlace'
