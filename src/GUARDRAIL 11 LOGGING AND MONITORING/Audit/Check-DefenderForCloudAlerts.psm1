@@ -1,3 +1,44 @@
+function Get-DFCAcheckComplaicneStatus{
+    param(
+        [Parameter (Mandatory)] 
+        [pscustomobject] $apiResponse
+    )
+
+    $notificationSources = $apiResponse.properties.notificationsSources
+    $notificationEmails = $apiResponse.properties.emails
+    $ownerRole = $apiResponse.properties.notificationsByRole.roles | Where-Object {$_ -eq "Owner"}
+    $ownerState = $apiResponse.properties.notificationsByRole.State
+
+    # Filter to get required notification types
+    $alertNotification = $notificationSources | Where-Object {$_.sourceType -eq "Alert" -and $_.minimalSeverity -in @("Medium","Low")}
+    $attackPathNotification = $notificationSources | Where-Object {$_.sourceType -eq "AttackPath" -and $_.minimalRiskLevel -in @("Medium","Low")}
+
+    $emailCount = ($notificationEmails -split ";").Count
+
+    # CONDITION: Check if there is minimum two emails and owner is also notified
+    if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
+        $isCompliant = $false
+        $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
+    }
+
+    if($null -eq $alertNotification){
+        $isCompliant = $false
+        $Comments = $msgTable.AlertNotificationNotConfigured
+        
+    }
+
+    if($null -eq $attackPathNotification){
+        $isCompliant = $false
+        $Comments = $msgTable.AttackPathNotificationNotConfigured
+        
+    }
+
+    return [PSCustomObject]@{
+        Comments = $Comments 
+        isCompliant = $isCompliant
+    }
+}
+
 function Get-DefenderForCloudAlerts {
     param (
         [Parameter(Mandatory=$true)]
@@ -31,6 +72,7 @@ function Get-DefenderForCloudAlerts {
 
 
     foreach($subscription in $subs){
+
         # Initialize
         $isCompliant = $true
         $Comments = ""
@@ -38,13 +80,14 @@ function Get-DefenderForCloudAlerts {
         # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
+        Write-Host "Subscription: $($subscription.Name)"
 
         $defenderPlans = Get-AzSecurityPricing
         $defenderEnabled = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'} #A paid plan should exist on the sub resource
 
-        if(-not $defenderEnabled){
+        if(-not $defenderEnabled -or $null -eq $defenderEnabled){
             $isCompliant = $false
-            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $subscription 
+            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $subscription.Name 
         }
         else{
             $azContext = Get-AzContext
@@ -57,75 +100,36 @@ function Get-DefenderForCloudAlerts {
 
             # Retrieve notifications for alert and attack paths
             $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
-
+            $restUri2 = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts?api-version=2023-12-01-preview"
+            
             try{
                 $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
 
-                $notificationSources = $response.properties.notificationsSources
-                $notificationEmails = $response.properties.emails
-                $ownerRole = $response.properties.notificationsByRole.roles | Where-Object {$_ -eq "Owner"}
-                $ownerState = $response.properties.notificationsByRole.State
-
-                # Filter to get required notification types
-                $alertNotification = $notificationSources | Where-Object {$_.sourceType -eq "Alert" -and $_.minimalSeverity -in @("Medium","Low")}
-                $attackPathNotification = $notificationSources | Where-Object {$_.sourceType -eq "AttackPath" -and $_.minimalRiskLevel -in @("Medium","Low")}
-
-                $emailCount = ($notificationEmails -split ";").Count
-
-                # CONDITION: Check if there is minimum two emails and owner is also notified
-                if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
-                    $isCompliant = $false
-                    $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
-                }
-
-                if($null -eq $alertNotification){
-                    $isCompliant = $false
-                    $Comments = $msgTable.AlertNotificationNotConfigured
-                    
-                }
-
-                if($null -eq $attackPathNotification){
-                    $isCompliant = $false
-                    $Comments = $msgTable.AttackPathNotificationNotConfigured
-                    
-                }
+                $result = Get-DFCAcheckComplaicneStatus -apiResponse $response
+                $isCompliant = $result.isCompliant
+                $Comments = $result.Comments
             }
             catch{
-                $isCompliant = $false
-                $Comments = $msgTable.errorRetrievingNotifications
-                $ErrorList = "Error invoking $restUri for notifications for the subscription: $_"
-                
+                try{
+                    $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader
+                    if (-not $response2.value -or $response2.value.Count -eq 0){
+                        $isCompliant = $false
+                        $Comments = $msgTable.DefenderNonCompliant
+                    }
+                    else{
+                        # find use case
+                        $result2 = Get-DFCAcheckComplaicneStatus($response2)
+                        $isCompliant = $result2.isCompliant
+                        $Comments = $result2.Comments
+                    }
+
+                }
+                catch{
+                    $isCompliant = $false
+                    $Comments = $msgTable.errorRetrievingNotifications
+                    $ErrorList = "Error invoking $restUri for notifications for the subscription: $_"
+                }
             }
-            
-            # $notificationSources = $response.properties.notificationsSources
-            # $notificationEmails = $response.properties.emails
-            # $ownerRole = $response.properties.notificationsByRole.roles | Where-Object {$_ -eq "Owner"}
-            # $ownerState = $response.properties.notificationsByRole.State
-
-            # # Filter to get required notification types
-            # $alertNotification = $notificationSources | Where-Object {$_.sourceType -eq "Alert" -and $_.minimalSeverity -in @("Medium","Low")}
-            # $attackPathNotification = $notificationSources | Where-Object {$_.sourceType -eq "AttackPath" -and $_.minimalRiskLevel -in @("Medium","Low")}
-
-            # $emailCount = ($notificationEmails -split ";").Count
-
-            # # CONDITION: Check if there is minimum two emails and owner is also notified
-            # if(($emailCount -lt 2) -or ($ownerState -ne "On" -or $ownerRole -ne "Owner")){
-            #     $isCompliant = $false
-            #     $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $($subscription.Name)
-            # }
-
-            # if($null -eq $alertNotification){
-            #     $isCompliant = $false
-            #     $Comments = $msgTable.AlertNotificationNotConfigured
-                
-            # }
-
-            # if($null -eq $attackPathNotification){
-            #     $isCompliant = $false
-            #     $Comments = $msgTable.AttackPathNotificationNotConfigured
-                
-            # }
-
         }
 
         # If it reaches here, then this subscription is compliant
