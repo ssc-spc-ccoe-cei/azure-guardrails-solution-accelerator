@@ -82,8 +82,16 @@ function Get-DefenderForCloudAlerts {
         Set-AzContext -SubscriptionId $subId
         Write-Host "Subscription: $($subscription.Name)"
 
-        $defenderPlans = Get-AzSecurityPricing
-        $defenderEnabled = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'} #A paid plan should exist on the sub resource
+        # Get Azure defender plan for subscription
+        try{
+            $defenderPlans = Get-AzSecurityPricing
+            $defenderEnabled = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'} #A paid plan should exist on the sub resource
+        }
+        catch{
+            Write-Warning "Exception occured retrieving defender plan. Register to Microsoft.Security in order to view your security status for the subscription: $_"
+            
+        }
+
 
         if(-not $defenderEnabled -or $null -eq $defenderEnabled){
             $isCompliant = $false
