@@ -305,11 +305,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -505,11 +505,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -764,11 +764,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -892,11 +892,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1018,11 +1018,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1145,11 +1145,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1271,11 +1271,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1397,11 +1397,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1531,11 +1531,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1659,11 +1659,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1793,11 +1793,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -1921,11 +1921,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -2049,11 +2049,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Not Applicable Items",
@@ -2182,11 +2182,11 @@
           "seriesLabelSettings": [
             {
               "seriesName": "Compliant Items",
-              "color": "greenDark"
+              "color": "blue"
             },
             {
               "seriesName": "Non-compliant Items",
-              "color": "redDark"
+              "color": "orange"
             },
             {
               "seriesName": "Not Applicable Items",
