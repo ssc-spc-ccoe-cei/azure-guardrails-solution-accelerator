@@ -84,6 +84,14 @@
         "style": "tabs",
         "links": [
           {
+            "id": "e01ddeb8-1ffd-4088-9cb3-f4f8b8fa9eec",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "SUMMARY",
+            "subTarget": "summary",
+            "style": "link"
+          },
+          {
             "id": "6a683959-7ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
@@ -274,7 +282,10 @@
         "comparison": "isEqualTo",
         "value": "gr1"
       },
-      "name": "Gr1 Mandatory Compliance Summary"
+      "name": "Gr1 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -307,16 +318,26 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr1"
-      },
-      "name": "Gr1 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr1"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr1 Recommended Compliance Summary",
+       "styleSettings": {
+          "showBorder": true
+        }
     },
     {
       "type": 1,
-      "content": {
+        "content": {
         "json": "⚠️ Only the first 100 users without MFA are shown below.",
         "style": "info"
       },
@@ -461,7 +482,10 @@
         "comparison": "isEqualTo",
         "value": "gr2"
       },
-      "name": "Gr2 Mandatory Compliance Summary"
+      "name": "Gr2 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -494,12 +518,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr2"
-      },
-      "name": "Gr2 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr2"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr2 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 9,
@@ -707,7 +741,10 @@
         "comparison": "isEqualTo",
         "value": "gr3"
       },
-      "name": "Gr3 Mandatory Compliance Summary"
+      "name": "Gr3 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -740,12 +777,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr3"
-      },
-      "name": "Gr3 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr3"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr3 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+       }
     },
     {
       "type": 3,
@@ -822,7 +869,10 @@
         "comparison": "isEqualTo",
         "value": "gr4"
       },
-      "name": "Gr4 Mandatory Compliance Summary"
+      "name": "Gr4 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -855,12 +905,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr4"
-      },
-      "name": "Gr4 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr4"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr4 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
@@ -935,7 +995,10 @@
         "comparison": "isEqualTo",
         "value": "gr5"
       },
-      "name": "Gr5 Mandatory Compliance Summary"
+      "name": "Gr5 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -968,12 +1031,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr5"
-      },
-      "name": "Gr5 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr5"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr5 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
@@ -1049,7 +1122,10 @@
         "comparison": "isEqualTo",
         "value": "gr6"
       },
-      "name": "Gr6 Mandatory Compliance Summary"
+      "name": "Gr6 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1082,12 +1158,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr6"
-      },
-      "name": "Gr6 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr6"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr6 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
@@ -1162,7 +1248,10 @@
         "comparison": "isEqualTo",
         "value": "gr7"
       },
-      "name": "Gr7 Mandatory Compliance Summary"
+      "name": "Gr7 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1195,18 +1284,28 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr7"
-      },
-      "name": "Gr7 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr7"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr7 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = column_ifexists(\"ItemName_s\", \"\"),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = column_ifexists(\"ItemName_s\", \"\"),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"🟢\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"🔴\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
         "title": "GR 8",
         "timeContext": {
@@ -1275,7 +1374,10 @@
         "comparison": "isEqualTo",
         "value": "gr8"
       },
-      "name": "Gr8 Mandatory Compliance Summary"
+      "name": "Gr8 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1308,18 +1410,28 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr8"
-      },
-      "name": "Gr8 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr8"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr8 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=column_ifexists(\"ItemName_s\", \"\"), ['Subscription Name']=column_ifexists(\"SubscriptionName_s\", \"\"), ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"), Comments=column_ifexists(\"Comments_s\", \"\"), ['ITSG Control']=column_ifexists(\"itsgcode_s\", \"\"), Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),column_ifexists(\"itsgcode_s\", \"\")), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=column_ifexists(\"ItemName_s\", \"\"), ['Subscription Name']=column_ifexists(\"SubscriptionName_s\", \"\"), ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"🟢\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"🔴\", \"➖\"), Comments=column_ifexists(\"Comments_s\", \"\"), ['ITSG Control']=column_ifexists(\"itsgcode_s\", \"\"), Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),column_ifexists(\"itsgcode_s\", \"\")), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
         "size": 0,
         "title": "GR 9",
         "timeContext": {
@@ -1396,7 +1508,10 @@
         "comparison": "isEqualTo",
         "value": "gr9"
       },
-      "name": "Gr9 Mandatory Compliance Summary"
+      "name": "Gr9 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1429,12 +1544,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr9"
-      },
-      "name": "Gr9 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr9"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr9 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
@@ -1511,7 +1636,10 @@
         "comparison": "isEqualTo",
         "value": "gr10"
       },
-      "name": "Gr10 Mandatory Compliance Summary"
+      "name": "Gr10 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1544,12 +1672,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr10"
-      },
-      "name": "Gr10 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr10"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr10 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
@@ -1632,7 +1770,10 @@
         "comparison": "isEqualTo",
         "value": "gr11"
       },
-      "name": "Gr11 Mandatory Compliance Summary"
+      "name": "Gr11 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1665,12 +1806,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr11"
-      },
-      "name": "Gr11 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr11"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr11 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
@@ -1747,7 +1898,10 @@
         "comparison": "isEqualTo",
         "value": "gr12"
       },
-      "name": "Gr12 Mandatory Compliance Summary"
+      "name": "Gr12 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1780,12 +1934,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr12"
-      },
-      "name": "Gr12 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr12"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr12 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
@@ -1862,7 +2026,10 @@
         "comparison": "isEqualTo",
         "value": "gr13"
       },
-      "name": "Gr13 Mandatory Compliance Summary"
+      "name": "Gr13 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
@@ -1895,20 +2062,30 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isEqualTo",
-        "value": "gr13"
-      },
-      "name": "Gr13 Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "gr13"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Gr13 Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+        }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
         "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title|extend SortOrder = case(Status == 'Compliant Items', 1,Status == 'Non-compliant Items', 2, 3)| order by SortOrder asc",
-        "size": 2,
-        "title": "Mandatory Compliance",
+        "size": 3,
+        "title": "Overall Mandatory Compliance",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -1957,18 +2134,21 @@
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
-        "comparison": "isNotEqualTo",
-        "value": "information"
+        "comparison": "isEqualTo",
+        "value": "summary"
       },
-      "name": "Mandatory Compliance Summary"
+      "name": "Overall Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
         "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title|extend SortOrder = case(Status == 'Compliant Items', 1,Status == 'Non-compliant Items', 2, 3)| order by SortOrder asc",
-        "size": 2,
-        "title": "Recommended Compliance",
+        "size": 3,
+        "title": "Overall Recommended Compliance",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -2015,12 +2195,22 @@
           ]
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "selectedTab",
-        "comparison": "isNotEqualTo",
-        "value": "information"
-      },
-      "name": "Recommended Compliance Summary"
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "summary"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Overall Recommended Compliance Summary",
+       "styleSettings": {
+         "showBorder": true
+       }
     },
     {
       "type": 3,
@@ -2054,10 +2244,10 @@
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
-        "comparison": "isNotEqualTo",
-        "value": "information"
+        "comparison": "isEqualTo",
+        "value": "summary"
       },
-      "name": "group - 17"
+      "name": "total of control"
     },
     {
       "type": 3,
