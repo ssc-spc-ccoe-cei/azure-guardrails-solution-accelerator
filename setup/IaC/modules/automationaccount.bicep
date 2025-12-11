@@ -123,8 +123,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Get-AzureADLicenseType.zip'
-        version: '1.1.10'
-      }}
+        version: '1.1.11'
+      }
+    }
   }
   resource module11 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'GR-Common'
@@ -244,8 +245,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
-        version: '1.0.6'
-      }}
+        version: '1.0.7'
+      }
+    }
   }
   resource module30 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AdminAccess'
@@ -294,8 +296,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudAccountsMFA.zip'
-        version: '1.0.2'
-      }}
+        version: '1.0.3'
+      }
+    }
   }
 
   resource module36 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -303,8 +306,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
-        version: '1.0.8'
-      }}
+        version: '1.0.9'
+      }
+    }
   }
 
   // Splitting Module37
