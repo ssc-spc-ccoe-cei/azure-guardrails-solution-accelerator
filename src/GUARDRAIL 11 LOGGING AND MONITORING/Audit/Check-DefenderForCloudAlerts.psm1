@@ -172,7 +172,7 @@ function Get-DefenderForCloudAlerts {
     }
     else{
         # Get the subscription with defender plan
-        $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} #A paid plan should exist on the sub resources
+        $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} # A paid plan should exist on the sub resources
         $defenderStandard = $defenderStandardTier | Select-Object * -ExcludeProperty plan | Sort-Object * -Unique
 
         if ($defenderStandard.Count -gt 0) {
@@ -188,24 +188,26 @@ function Get-DefenderForCloudAlerts {
         $defenderNonStandardTierFiltered = $defenderNonStandardTier | Where-Object {$_.subscriptionId -notin $subsToExcl}
         
         if($defenderNonStandardTierFiltered.count -eq 0){
-            Write-Host "All subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs"
+            Write-Verbose "All subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs"
 
-            # USE CASE: Get compliant status for Subs that have defender plan enabled
+            # USE CASE: Get compliant status for Subs
             foreach($subscription in $subs){
-                # Initialize
-                $isCompliant = $true
-                $Comments = ""
-
+                
                 # find subscription information
                 $subId = $subscription.Id
                 $subscriptionName = $subscription.Name
-                Set-AzContext -SubscriptionId $subId
                 Write-Host "Subscription: $($subscriptionName)"
 
+                # Evaluation logic for subs with no defender plan is in the later foreach section
                 if($noDefenderPlanSubIds -contains $subId){
                     Write-Host "Compliance for subscription $($subscriptionName) will be evaluated later"
                     continue
                 }
+
+                # Initialize
+                $isCompliant = $true
+                $Comments = ""
+                Set-AzContext -SubscriptionId $subId
 
                 # Create auth
                 $azContext = Get-AzContext
@@ -230,10 +232,14 @@ function Get-DefenderForCloudAlerts {
                         $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader
                         if (-not ($response2.value) -or $response2.value.Count -eq 0){
                             $isCompliant = $false
+                            Write-Warning "**compliance status for $($subscriptionName)  : $($isCompliant) **"
                             $Comments = $msgTable.DefenderNonCompliant
+                            Write-Warning "**Comments : $($Comments) **"
+                            Write-Warning "********response2***********"
                         }
                         else{
                             # find use case
+                            Write-warning "find use case"
                             $result2 = Get-DFCAcheckComplaicneStatus($response2)
                             $isCompliant = $result2.isCompliant
                             $Comments = $result2.Comments
@@ -246,11 +252,6 @@ function Get-DefenderForCloudAlerts {
                         $ErrorList = "Error invoking $restUri for notifications for the subscription: $_"
                     }
                 }
-
-                # # If it reaches here, then this subscription is compliant
-                # if ($isCompliant){
-                #     $Comments = $msgTable.DefenderCompliant
-                # }
 
                 $C = [PSCustomObject]@{
                     SubscriptionName = $subscriptionName
@@ -274,7 +275,8 @@ function Get-DefenderForCloudAlerts {
             
         }
         else{
-            # Do something for this use case
+            # Keeping else condition for the use case once found
+            Write-warning "Do something for this use case"
         }
 
 
