@@ -18,11 +18,10 @@ function Check-CloudAccountsMFA {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     
 
-    # get conditional access policies
+    # get conditional access policies (using paginated query to handle >100 policies)
     $CABaseAPIUrl = '/identity/conditionalAccess/policies'
     try {
-        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
-        
+        $response = Invoke-GraphQueryEX -urlPath $CABaseAPIUrl -ErrorAction Stop
         $caps = $response.Content.value
     }
     catch {
@@ -92,4 +91,3 @@ function Check-CloudAccountsMFA {
     }
     return $moduleOutput   
 }
-

@@ -38,14 +38,11 @@ function Check-DedicatedAdminAccounts {
     # highly privileged Role names
     $highlyPrivilegedAdminRoleNames = @("Global Administrator","Privileged Role Administrator")
 
-    # Get the list of GA users (ACTIVE assignments)
+    # Get the list of GA users (ACTIVE assignments) - using paginated query
     $urlPath = "/directoryRoles"
     try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
+        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
         $data = $response.Content
-        # # localExecution
-        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $rolesResponse  = $data.value
@@ -68,14 +65,11 @@ function Check-DedicatedAdminAccounts {
 
         $roleId = $role.id
         $roleName = $role.displayName
-        # Endpoint to get members of the role
+        # Endpoint to get members of the role - using paginated query
         $urlPath = "/directoryRoles/$roleId/members"
         try{
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-            # portal
+            $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
             $data = $response.Content
-            # # localExecution
-            # $data = $response
 
             if ($null -ne $data -and $null -ne $data.value) {
                 $hpAdminRoleResponse  = $data.value
@@ -100,14 +94,11 @@ function Check-DedicatedAdminAccounts {
         }
     }
 
-    # list all users
+    # list all users - using paginated query to handle large user counts (>100)
     $urlPath = "/users"
     try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        # portal
+        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
         $data = $response.Content
-        # # localExecution
-        # $data = $response
 
         if ($null -ne $data -and $null -ne $data.value) {
             $allUsers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail

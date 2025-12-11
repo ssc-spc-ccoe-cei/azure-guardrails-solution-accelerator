@@ -5,7 +5,7 @@ The module will look for the AAD_PREMIUM_P2 service plan in all of the licences 
 
 .DESCRIPTION
     The module will look for the AAD_PREMIUM_P2 service plan in all of the licences available on the tenant, once it finds "AAD_PREMIUM_P2", the check mark status will be changed from (❌) to (✔️).
-
+    
     All details can be found here: https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference
 
 .PARAMETER Name
@@ -40,7 +40,7 @@ function Get-ADLicenseType {
 
     $urlPath = '/subscribedSkus'
     try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
     }
     catch {
         $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
@@ -81,4 +81,3 @@ function Get-ADLicenseType {
     }
     return $moduleOutput    
 }
-
