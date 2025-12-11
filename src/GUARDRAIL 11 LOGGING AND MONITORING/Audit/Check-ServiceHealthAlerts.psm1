@@ -264,7 +264,7 @@ function Get-ServiceHealthAlerts {
 
         # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
-            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscriptionId -ErrorList $ErrorList
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
             Write-Host "$result"
             $PsObject.Add($result) | Out-Null
         } else {
