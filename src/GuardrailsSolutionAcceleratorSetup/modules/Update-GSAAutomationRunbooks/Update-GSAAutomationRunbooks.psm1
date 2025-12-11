@@ -33,7 +33,7 @@ Function Update-GSAAutomationRunbooks {
     $updateRunbookParams = @{
         automationAccountName = $config['runtime']['automationAccountName']
         resourceGroupName     = $config['runtime']['resourceGroup']
-        type                  = 'PowerShell'
+        type                  = 'PowerShell72'
         tags                  = @{version = $config['runtime']['tagsTable'].ReleaseVersion; releaseDate = $config['runtime']['tagsTable'].ReleaseDate } 
         force                 = $true
         published             = $true
