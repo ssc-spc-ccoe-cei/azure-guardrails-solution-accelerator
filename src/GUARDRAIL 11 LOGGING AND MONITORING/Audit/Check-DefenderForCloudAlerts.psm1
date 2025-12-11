@@ -1,8 +1,85 @@
+
+function Get-SecurityResources{
+    param (
+        [AllowEmptyCollection()]
+        [System.Collections.ArrayList]$ErrorList
+    )
+
+    [PSCustomObject] $queryResults = New-Object System.Collections.ArrayList
+
+    $query = @"
+securityresources
+| where type =~ 'microsoft.security/pricings'
+| project subscriptionId,
+plan = name,
+tier = tostring(properties.pricingTier)
+| distinct subscriptionId, tier, plan
+| join kind=inner (
+ResourceContainers
+| where type =~ 'microsoft.resources/subscriptions'
+| project subscriptionId, subscriptionName = name, state = properties.state
+| where state == 'Enabled'
+) on subscriptionId
+| project subscriptionName, plan, tier, subscriptionId
+| order by subscriptionName asc
+"@
+
+    try{
+
+        Write-Verbose "Executing Azure Resource Graph query for retrieving security resources for defender for cloud plan"
+        $cache = @{}
+        $skipToken = $null
+        $pageCount = 0
+
+        do {
+            $pageCount++
+            if ($skipToken) {
+                $results = Search-AzGraph -Query $query -UseTenantScope -First 1000 -SkipToken $skipToken
+            } 
+            else {
+                $results = Search-AzGraph -Query $query -UseTenantScope -First 1000
+            }
+
+            # Process results from this page
+            foreach ($result in $results) {
+                $page = [PSCustomObject]@{
+                    subscriptionName = $result.subscriptionName
+                    plan = $result.plan
+                    tier = $result.tier
+                    subscriptionId = $result.subscriptionId
+                }
+                $queryResults += $page
+
+            }
+            # Get SkipToken for next page (if any)
+            $skipToken = $results.SkipToken
+            Write-Verbose "ARG query page $pageCount returned $($queryResults.Count) subscription(s), SkipToken: $($null -ne $skipToken)"
+            
+        } while ($skipToken)
+
+        Write-Verbose "ARG query completed - total subscriptions cached: $($cache.Count)"
+        return $queryResults
+        
+    }
+    catch {
+        Write-Verbose "ARG query failed: $_"
+        $Errorlist.Add("ARG query failed: $_")
+        return @()
+    }
+    Write-Host "End ARG query"
+
+}
+
+
 function Get-DFCAcheckComplaicneStatus{
     param(
         [Parameter (Mandatory)] 
         [pscustomobject] $apiResponse
     )
+
+    # Initialize
+    $isCompliant = $true
+    $Comments = ""
 
     $notificationSources = $apiResponse.properties.notificationsSources
     $notificationEmails = $apiResponse.properties.emails
@@ -32,12 +109,17 @@ function Get-DFCAcheckComplaicneStatus{
         $Comments = $msgTable.AttackPathNotificationNotConfigured
         
     }
+    #If it reaches here, then this subscription is compliant
+    if ($isCompliant){
+        $Comments = $msgTable.DefenderCompliant
+    }
 
     return [PSCustomObject]@{
         Comments = $Comments 
         isCompliant = $isCompliant
     }
 }
+
 
 function Get-DefenderForCloudAlerts {
     param (
@@ -61,7 +143,6 @@ function Get-DefenderForCloudAlerts {
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
-    # Get All the Subscriptions
     try {
         $subs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
     }
@@ -69,101 +150,168 @@ function Get-DefenderForCloudAlerts {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
+    
+    # Fetch security resources data for defender for cloud plan using ARG on All the Subscriptions in the tenant scope
+    try{
+        $defenderPlans = Get-SecurityResources -ErrorList $ErrorList
+    }
+    catch{
+        Write-Verbose "ARG query failed: $_"
+        $defenderPlans = @{}
+    }
 
+    # USE CASE: Subs with no defender plans
+    $defenderPlanSubs = $defenderPlans | Select-Object -ExpandProperty subscriptionId
+    $noDefenderPlanSubs = $subs | Where-Object {$_.SubscriptionId -notin $defenderPlanSubs}
+    $noDefenderPlanSubIds = $noDefenderPlanSubs | Select-Object -ExpandProperty subscriptionId
+    
+    if($null -eq $defenderPlans){
+        # USE CASE: No subscriptions has the security resources data
+        $isCompliant = $false
+        $Comments = $msgTable.noDefenderAtAll
+    }
+    else{
+        # Get the subscription with defender plan
+        $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} #A paid plan should exist on the sub resources
+        $defenderStandard = $defenderStandardTier | Select-Object * -ExcludeProperty plan | Sort-Object * -Unique
 
-    foreach($subscription in $subs){
-
-        # Initialize
-        $isCompliant = $true
-        $Comments = ""
-
-        # find subscription information
-        $subId = $subscription.Id
-        Set-AzContext -SubscriptionId $subId
-        Write-Host "Subscription: $($subscription.Name)"
-
-        # Get Azure defender plan for subscription
-        try{
-            $defenderPlans = Get-AzSecurityPricing
-            $defenderEnabled = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'} #A paid plan should exist on the sub resource
+        if ($defenderStandard.Count -gt 0) {
+            Write-Host "Successfully fetched all security resource data for the subscriptions"
+        } else {
+            Write-Host "No security resource data for enabled subscription found."  
         }
-        catch{
-            Write-Warning "Exception occured retrieving defender plan. Register to Microsoft.Security in order to view your security status for the subscription: $_"
-            
-        }
 
+        # Get the subs which doesn't have defender plans
+        $defenderNonStandardTier = $defenderPlans | Where-Object {$_.tier -ne 'Standard'} #A paid plan should exist on the sub resources
+        # filter out subscriptions from defenderNonStandardTier that are already has at least one standard tier plan
+        $subsToExcl = $defenderStandard | Select-Object -ExpandProperty subscriptionId
+        $defenderNonStandardTierFiltered = $defenderNonStandardTier | Where-Object {$_.subscriptionId -notin $subsToExcl}
+        
+        if($defenderNonStandardTierFiltered.count -eq 0){
+            Write-Host "All subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs"
 
-        if(-not $defenderEnabled -or $null -eq $defenderEnabled){
-            $isCompliant = $false
-            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $subscription.Name 
-        }
-        else{
-            $azContext = Get-AzContext
-            $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId 
-            
-            $authHeader = @{
-                'Content-Type'  = 'application/json'
-                'Authorization' = 'Bearer ' + $token.Token
-            }
+            # USE CASE: Get compliant status for Subs that have defender plan enabled
+            foreach($subscription in $subs){
+                # Initialize
+                $isCompliant = $true
+                $Comments = ""
 
-            # Retrieve notifications for alert and attack paths
-            $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
-            $restUri2 = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts?api-version=2023-12-01-preview"
-            
-            try{
-                $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
+                # find subscription information
+                $subId = $subscription.Id
+                $subscriptionName = $subscription.Name
+                Set-AzContext -SubscriptionId $subId
+                Write-Host "Subscription: $($subscriptionName)"
 
-                $result = Get-DFCAcheckComplaicneStatus -apiResponse $response
-                $isCompliant = $result.isCompliant
-                $Comments = $result.Comments
-            }
-            catch{
+                if($noDefenderPlanSubIds -contains $subId){
+                    Write-Host "Compliance for subscription $($subscriptionName) will be evaluated later"
+                    continue
+                }
+
+                # Create auth
+                $azContext = Get-AzContext
+                $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId 
+                
+                $authHeader = @{
+                    'Content-Type'  = 'application/json'
+                    'Authorization' = 'Bearer ' + $token.Token
+                }
+
+                # Retrieve notifications for alert and attack paths
+                $restUri = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
                 try{
-                    $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader
-                    if (-not $response2.value -or $response2.value.Count -eq 0){
-                        $isCompliant = $false
-                        $Comments = $msgTable.DefenderNonCompliant
-                    }
-                    else{
-                        # find use case
-                        $result2 = Get-DFCAcheckComplaicneStatus($response2)
-                        $isCompliant = $result2.isCompliant
-                        $Comments = $result2.Comments
-                    }
-
+                    $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader
+                    $result = Get-DFCAcheckComplaicneStatus -apiResponse $response
+                    $isCompliant = $result.isCompliant
+                    $Comments = $result.Comments
                 }
                 catch{
-                    $isCompliant = $false
-                    $Comments = $msgTable.errorRetrievingNotifications
-                    $ErrorList = "Error invoking $restUri for notifications for the subscription: $_"
+                    $restUri2 = "https://management.azure.com/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Security/securityContacts?api-version=2023-12-01-preview"
+                    try{
+                        $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader
+                        if (-not ($response2.value) -or $response2.value.Count -eq 0){
+                            $isCompliant = $false
+                            $Comments = $msgTable.DefenderNonCompliant
+                        }
+                        else{
+                            # find use case
+                            $result2 = Get-DFCAcheckComplaicneStatus($response2)
+                            $isCompliant = $result2.isCompliant
+                            $Comments = $result2.Comments
+                        }
+
+                    }
+                    catch{
+                        $isCompliant = $false
+                        $Comments = $msgTable.errorRetrievingNotifications
+                        $ErrorList = "Error invoking $restUri for notifications for the subscription: $_"
+                    }
+                }
+
+                # # If it reaches here, then this subscription is compliant
+                # if ($isCompliant){
+                #     $Comments = $msgTable.DefenderCompliant
+                # }
+
+                $C = [PSCustomObject]@{
+                    SubscriptionName = $subscriptionName
+                    ComplianceStatus = $isCompliant
+                    ControlName = $ControlName
+                    Comments = $Comments
+                    ItemName = $ItemName
+                    ReportTime = $ReportTime
+                    itsgcode = $itsgcode
+                }
+                
+                # Add profile information if MCUP feature is enabled
+                if($EnableMultiCloudProfiles){
+                    $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
+                    Write-Host "$result"
+                    $PsObject.add($result) | Out-Null
+                } else {
+                    $PsObject.add($C) | Out-Null
                 }
             }
+            
+        }
+        else{
+            # Do something for this use case
         }
 
-        # If it reaches here, then this subscription is compliant
-        if ($isCompliant){
-            $Comments = $msgTable.DefenderCompliant
-        }
 
-        $C = [PSCustomObject]@{
-            SubscriptionName = $subscription.Name
-            ComplianceStatus = $isCompliant
-            ControlName = $ControlName
-            Comments = $Comments
-            ItemName = $ItemName
-            ReportTime = $ReportTime
-            itsgcode = $itsgcode
+        ## ****** USE CASE: Subs with no defender plans **********
+
+        # compliant output for the subs with no defender plan
+        foreach($sub in  $noDefenderPlanSubs){ 
+            # Initialize to false as they would be nonCompliant
+            $isCompliant = $false
+            $Comments = ""
+
+            # find subscription information
+            $subId = $subscription.Id
+            Set-AzContext -SubscriptionId $subId
+            Write-Host "Subscription: $($sub.Name)"
+
+            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $sub.Name 
+
+            $C = [PSCustomObject]@{
+                SubscriptionName = $sub.Name
+                ComplianceStatus = $isCompliant
+                ControlName = $ControlName
+                Comments = $Comments
+                ItemName = $ItemName
+                ReportTime = $ReportTime
+                itsgcode = $itsgcode
+            }
+            
+            # Add profile information if MCUP feature is enabled
+            if($EnableMultiCloudProfiles){
+                $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
+                Write-Host "$result"
+                $PsObject.add($result) | Out-Null
+            } else {
+                $PsObject.add($C) | Out-Null
+            }
         }
-        
-        # Add profile information if MCUP feature is enabled
-        if($EnableMultiCloudProfiles){
-            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
-            Write-Host "$result"
-            $PsObject.add($result) | Out-Null
-        } else {
-            $PsObject.add($C) | Out-Null
-        }
-        
     }
     
     $moduleOutput = [PSCustomObject]@{
