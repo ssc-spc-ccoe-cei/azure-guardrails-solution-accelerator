@@ -22,15 +22,13 @@ function Check-GuestRoleReviews {
     
     $accessReviewList = @()
 
-    # list all acces reviews in identity governance
+    # list all access reviews in identity governance (using paginated query to handle >100 reviews)
     $urlPath = "/identityGovernance/accessReviews/definitions"
 
     try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
         # portal
         $data = $response.Content
-        # # localExecution
-        # $data = $response
         
         if ($null -ne $data -and $null -ne $data.value) {
             $accessReviewsAll = $data.value 

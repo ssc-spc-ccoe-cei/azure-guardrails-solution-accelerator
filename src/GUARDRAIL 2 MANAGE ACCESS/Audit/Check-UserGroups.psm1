@@ -183,14 +183,12 @@ function Check-UserGroups {
             # User groups >= 2
             # Condition: all users count == unique users in all groups count
             if( $totalGroupUsers -eq $allUserCount){
-                # get conditional access policies
+                # get conditional access policies (using paginated query to handle >100 policies)
                 $CABaseAPIUrl = '/identity/conditionalAccess/policies'
                 try {
-                    $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
+                    $response = Invoke-GraphQueryEX -urlPath $CABaseAPIUrl -ErrorAction Stop
                     # portal
                     $data = $response.Content
-                    # # localExecution
-                    # $data = $response
                     if ($null -ne $data -and $null -ne $data.value) {
                         $caps = $data.value
                         # Check for a conditional access policy which meets the requirements:

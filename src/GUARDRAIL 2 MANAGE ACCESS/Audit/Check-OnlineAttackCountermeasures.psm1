@@ -17,11 +17,13 @@ function Check-OnlineAttackCountermeasures {
     [bool] $LockoutThresholdNonCompliant = $false
     [bool] $BannedPasswordListNonCompliant = $false
 
-    # Fetch group settings
+    # Fetch group settings (using paginated query for consistency)
     try {
-        $groupSettings = Invoke-GraphQuery -urlPath "/groupSettings" -ErrorAction Stop
+        $groupSettings = Invoke-GraphQueryEX -urlPath "/groupSettings" -ErrorAction Stop
         $groupSettingsJsonObject = $groupSettings.Content
-        $passwordRuleSettings = $groupSettingsJsonObject.value | Where-Object { $_.displayName -eq "Password Rule Settings" }
+        $passwordRuleSettings = if ($groupSettingsJsonObject -and $groupSettingsJsonObject.value) { 
+            $groupSettingsJsonObject.value | Where-Object { $_.displayName -eq "Password Rule Settings" } 
+        } else { $null }
         
         if ($null -eq $passwordRuleSettings) {
             throw "Password Rule Settings not found in group settings"
