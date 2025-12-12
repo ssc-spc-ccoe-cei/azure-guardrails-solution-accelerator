@@ -66,7 +66,6 @@ ResourceContainers
         $Errorlist.Add("ARG query failed: $_")
         return @()
     }
-    Write-Host "End ARG query"
 
 }
 
@@ -171,23 +170,29 @@ function Get-DefenderForCloudAlerts {
         $Comments = $msgTable.noDefenderAtAll
     }
     else{
-        # Get the subscription with defender plan
+        # Get the subscription with paid defender plan
         $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} # A paid plan should exist on the sub resources
-        $defenderStandard = $defenderStandardTier | Select-Object * -ExcludeProperty plan | Sort-Object * -Unique
-
-        if ($defenderStandard.Count -gt 0) {
-            Write-Host "Successfully fetched all security resource data for the subscriptions"
+        if ($defenderStandardTier.Count -gt 0) {
+            Write-Verbose "Successfully fetched the resource data for the standard tier subscriptions"
         } else {
-            Write-Host "No security resource data for enabled subscription found."  
+            Write-Verbose "No resource data found for standard tier defender subscription."
         }
 
-        # Get the subs which doesn't have defender plans
+        $defenderStandard = $defenderStandardTier | Select-Object * -ExcludeProperty plan | Sort-Object * -Unique
+
+        # Get the subs which doesn't have paid defender plans
         $defenderNonStandardTier = $defenderPlans | Where-Object {$_.tier -ne 'Standard'} #A paid plan should exist on the sub resources
-        # filter out subscriptions from defenderNonStandardTier that are already has at least one standard tier plan
+        
+        # filter out subscriptions from defenderNonStandardTier that already registered in the standard tier plan
         $subsToExcl = $defenderStandard | Select-Object -ExpandProperty subscriptionId
         $defenderNonStandardTierFiltered = $defenderNonStandardTier | Where-Object {$_.subscriptionId -notin $subsToExcl}
-        
-        if($defenderNonStandardTierFiltered.count -eq 0){
+
+        if($defenderNonStandardTierFiltered.count -ne 0){
+            # Use case: subscriptions enabled either Foundational CSPM or Defender CSPM
+            Write-warning "Do something for this use case"
+
+        }
+        elseif($defenderNonStandardTierFiltered.count -eq 0){
             Write-Verbose "All subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs"
 
             # USE CASE: Get compliant status for Subs
@@ -196,11 +201,11 @@ function Get-DefenderForCloudAlerts {
                 # find subscription information
                 $subId = $subscription.Id
                 $subscriptionName = $subscription.Name
-                Write-Host "Subscription: $($subscriptionName)"
+                Write-Verbose "Subscription: $($subscriptionName)"
 
-                # Evaluation logic for subs with no defender plan is in the later foreach section
+                # Evaluation logic for subs with no defender plan will be evaluated in the later foreach section
                 if($noDefenderPlanSubIds -contains $subId){
-                    Write-Host "Compliance for subscription $($subscriptionName) will be evaluated later"
+                    Write-Host "Compliance for subscription $($subscriptionName) will be evaluated in later section"
                     continue
                 }
 
@@ -232,17 +237,14 @@ function Get-DefenderForCloudAlerts {
                         $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader
                         if (-not ($response2.value) -or $response2.value.Count -eq 0){
                             $isCompliant = $false
-                            Write-Warning "**compliance status for $($subscriptionName)  : $($isCompliant) **"
                             $Comments = $msgTable.DefenderNonCompliant
-                            Write-Warning "**Comments : $($Comments) **"
-                            Write-Warning "********response2***********"
+                            Write-Warning "Notification alert default security contact is not configured properly"
+
                         }
                         else{
-                            # find use case
-                            Write-warning "find use case"
-                            $result2 = Get-DFCAcheckComplaicneStatus($response2)
-                            $isCompliant = $result2.isCompliant
-                            $Comments = $result2.Comments
+                            # use case:
+                            Write-Warning "Find use case"
+
                         }
 
                     }
@@ -274,10 +276,7 @@ function Get-DefenderForCloudAlerts {
             }
             
         }
-        else{
-            # Keeping else condition for the use case once found
-            Write-warning "Do something for this use case"
-        }
+        
 
 
         ## ****** USE CASE: Subs with no defender plans **********

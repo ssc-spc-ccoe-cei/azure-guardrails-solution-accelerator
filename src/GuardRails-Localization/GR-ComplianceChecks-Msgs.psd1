@@ -331,7 +331,7 @@ AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set
 AttackPathNotificationNotConfigured = Defender alerts must include attack path notifications. Ensure that the severity is set to Medium or Low for each subscription's alerts, following the guidelines provided in the Remediation Guidance.
 DefenderCompliant = MS Defender for Cloud is enabled for this subscription, and email notifications are properly configured.
 DefenderNonCompliant = MS Defender for Cloud is enabled for this subscription, but the security contact to receive email notifications are not properly configured.
-noDefenderAtAll = All subscription lack a defender plan. Enable Defender monitoring for subscriptions.
+noDefenderAtAll = All subscription lack a defender plan. Enable Defender monitoring for the subscriptions.
 
 
 # GuardRail #12
