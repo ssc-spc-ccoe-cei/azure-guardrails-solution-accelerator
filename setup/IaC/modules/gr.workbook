@@ -213,7 +213,7 @@
         "version": "KqlItem/1.0",
         "query": "// Original query for table\n//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
-        "title": "GR 1 Table",
+        "title": "GR 1",
         "timeContext": {
           "durationMs": 86400000
         },
@@ -245,6 +245,20 @@
         "value": "gr1"
       },
       "name": "Gr1"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 1</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "Title - summary of Guardrail 1",
+      "styleSettings": { "showBorder": false }
     },
     {
       "type": 3,
@@ -445,6 +459,20 @@
         "value": "gr2"
       },
       "name": "Gr1 - Copy"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 2</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "Title - summary of Guardrail 2",
+      "styleSettings": { "showBorder": false }
     },
     {
       "type": 3,
@@ -706,6 +734,20 @@
       "name": "Gr1 - Copy - Copy"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 3</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      },
+      "name": "Title - summary of Guardrail 3",
+      "styleSettings": { "showBorder": false }
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -834,6 +876,20 @@
       "name": "query - 6 - Copy"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 4</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      },
+      "name": "Title - summary of Guardrail 4",
+      "styleSettings": { "showBorder": false }
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -958,6 +1014,20 @@
         "value": "gr5"
       },
       "name": "query - 2 - Copy - Copy"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 5</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      },
+      "name": "Title - summary of Guardrail 5",
+      "styleSettings": { "showBorder": false }
     },
     {
       "type": 3,
@@ -1087,6 +1157,20 @@
       "name": "query - 26 - Copy"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 6</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      },
+      "name": "Title - summary of Guardrail 6",
+      "styleSettings": { "showBorder": false }
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -1213,6 +1297,20 @@
       "name": "query - 6 - Copy"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 7</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      },
+      "name": "Title - summary of Guardrail 7",
+      "styleSettings": { "showBorder": false }
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -1337,6 +1435,20 @@
         "value": "gr8"
       },
       "name": "query - 2"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 8</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      },
+      "name": "Title - summary of Guardrail 8",
+      "styleSettings": { "showBorder": false }
     },
     {
       "type": 3,
@@ -1473,6 +1585,20 @@
       "name": "query - 3"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 9</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      },
+      "name": "Title - summary of Guardrail 9",
+      "styleSettings": { "showBorder": false }
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -1599,6 +1725,20 @@
         "value": "gr10"
       },
       "name": "query - 2 - Copy - Copy - Copy"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 10</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      },
+      "name": "Title - summary of Guardrail 10",
+      "styleSettings": { "showBorder": false }
     },
     {
       "type": 3,
@@ -1735,6 +1875,20 @@
       "name": "query - 2 - Copy - Copy - Copy - Copy"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 11</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      },
+      "name": "Title - summary of Guardrail 11",
+      "styleSettings": { "showBorder": false }
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -1863,6 +2017,20 @@
       "name": "GR12"
     },
     {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 12</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      },
+      "name": "Title - summary of Guardrail 12",
+      "styleSettings": { "showBorder": false }
+    },
+    {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
@@ -1989,6 +2157,20 @@
         "value": "gr13"
       },
       "name": "Gr13"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Summary of controls for Guardrail 13</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Title - summary of Guardrail 13",
+      "styleSettings": { "showBorder": false }
     },
     {
       "type": 3,
