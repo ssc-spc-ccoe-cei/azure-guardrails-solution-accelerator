@@ -238,12 +238,12 @@ function Get-DefenderForCloudAlerts {
                         if (-not ($response2.value) -or $response2.value.Count -eq 0){
                             $isCompliant = $false
                             $Comments = $msgTable.DefenderNonCompliant
-                            Write-Warning "Notification alert default security contact is not configured properly"
+                            Write-Verbose "Notification alert default security contact is not configured properly"
 
                         }
                         else{
                             # use case:
-                            Write-Warning "Find use case"
+                            Write-Verbose "Find use case"
 
                         }
 
