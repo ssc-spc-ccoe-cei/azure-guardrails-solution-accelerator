@@ -165,7 +165,7 @@ function Get-DefenderForCloudAlerts {
     $noDefenderPlanSubIds = $noDefenderPlanSubs | Select-Object -ExpandProperty subscriptionId
     
     if($null -eq $defenderPlans){
-        # USE CASE: No subscriptions has the security resources data
+        # USE CASE: No subscriptions has the security resources data i.e. defender plan is not enabled for any sub
         $isCompliant = $false
         $Comments = $msgTable.noDefenderAtAll
     }
@@ -173,23 +173,25 @@ function Get-DefenderForCloudAlerts {
         # Get the subscription with paid defender plan
         $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} # A paid plan should exist on the sub resources
         if ($defenderStandardTier.Count -gt 0) {
-            Write-Verbose "Successfully fetched the resource data for the standard tier subscriptions"
+            Write-Verbose "Successfully fetched the resource data for the standard tier subscriptions."
         } else {
+            # Evaluation logic for this Use case (defenderNonStandardTier) will be evaluated in the later section
             Write-Verbose "No resource data found for standard tier defender subscription."
         }
 
+        # A paid plan exists on the sub resources 
         $defenderStandard = $defenderStandardTier | Select-Object * -ExcludeProperty plan | Sort-Object * -Unique
 
-        # Get the subs which doesn't have paid defender plans
-        $defenderNonStandardTier = $defenderPlans | Where-Object {$_.tier -ne 'Standard'} #A paid plan should exist on the sub resources
+        # Subscription with free plan on the sub resources
+        $defenderNonStandardTier = $defenderPlans | Where-Object {$_.tier -ne 'Standard'} 
         
-        # filter out subscriptions from defenderNonStandardTier that already registered in the standard tier plan
+        # Filter out subscriptions from defenderNonStandardTier that already registered in the standard (paid) tier plan
         $subsToExcl = $defenderStandard | Select-Object -ExpandProperty subscriptionId
         $defenderNonStandardTierFiltered = $defenderNonStandardTier | Where-Object {$_.subscriptionId -notin $subsToExcl}
 
         if($defenderNonStandardTierFiltered.count -ne 0){
-            # Use case: subscriptions enabled either Foundational CSPM or Defender CSPM
-            Write-warning "Do something for this use case"
+            # Use case: these subscriptions enabled either Foundational CSPM only
+            Write-Verbose "No action needed at this step with the subs that enabled Foundational CSPM only."
 
         }
         elseif($defenderNonStandardTierFiltered.count -eq 0){
