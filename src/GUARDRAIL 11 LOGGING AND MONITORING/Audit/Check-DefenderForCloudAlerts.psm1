@@ -190,15 +190,49 @@ function Get-DefenderForCloudAlerts {
         $defenderNonStandardTierFiltered = $defenderNonStandardTier | Where-Object {$_.subscriptionId -notin $subsToExcl}
 
         if($defenderNonStandardTierFiltered.count -ne 0){
-            # Use case: these subscriptions enabled either Foundational CSPM only
-            Write-Verbose "No action needed at this step with the subs that enabled Foundational CSPM only."
+            
+            Write-Verbose "Evaluating the subscriptions that enabled Foundational CSPM only."
+            foreach($subscription in $defenderNonStandardTierFiltered){
+                # Get compliant status for Subs with free tier plan
+                
+                # Initialize to false as they would be nonCompliant
+                $isCompliant = $false
+                $Comments = ""
+
+                # find subscription information
+                $subId = $sub.Id
+                Set-AzContext -SubscriptionId $subId
+                Write-Host "Subscription: $($sub.Name)"
+
+                $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $sub.Name 
+
+                $C = [PSCustomObject]@{
+                    SubscriptionName = $sub.Name
+                    ComplianceStatus = $isCompliant
+                    ControlName = $ControlName
+                    Comments = $Comments
+                    ItemName = $ItemName
+                    ReportTime = $ReportTime
+                    itsgcode = $itsgcode
+                }
+                
+                # Add profile information if MCUP feature is enabled
+                if($EnableMultiCloudProfiles){
+                    $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
+                    Write-Host "$result"
+                    $PsObject.add($result) | Out-Null
+                } else {
+                    $PsObject.add($C) | Out-Null
+                }
+            }
 
         }
         elseif($defenderNonStandardTierFiltered.count -eq 0){
+            # At this point all subs has all subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs
             Write-Verbose "All subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs"
 
-            # USE CASE: Get compliant status for Subs
-            foreach($subscription in $subs){
+            # Get compliant status for Standard plan subs
+            foreach($subscription in $defenderStandard){
                 
                 # find subscription information
                 $subId = $subscription.Id
