@@ -159,17 +159,54 @@ function Get-DefenderForCloudAlerts {
         $defenderPlans = @{}
     }
 
-    # USE CASE: Subs with no defender plans
-    $defenderPlanSubs = $defenderPlans | Select-Object -ExpandProperty subscriptionId
-    $noDefenderPlanSubs = $subs | Where-Object {$_.SubscriptionId -notin $defenderPlanSubs}
-    $noDefenderPlanSubIds = $noDefenderPlanSubs | Select-Object -ExpandProperty subscriptionId
-    
+       
     if($null -eq $defenderPlans){
-        # USE CASE: No subscriptions has the security resources data i.e. defender plan is not enabled for any sub
+        # USE CASE: No subscriptions has the security resources data i.e. defender plan is not enabled for any sub at all
         $isCompliant = $false
         $Comments = $msgTable.noDefenderAtAll
     }
     else{
+        # USE CASE: Subs with no defender plans
+        $defenderPlanSubs = $defenderPlans | Select-Object -ExpandProperty subscriptionId
+        $noDefenderPlanSubs = $subs | Where-Object {$_.SubscriptionId -notin $defenderPlanSubs}
+        if($null -ne  $noDefenderPlanSubs){
+            $noDefenderPlanSubIds = $noDefenderPlanSubs | Select-Object -ExpandProperty subscriptionId
+
+            # compliance output for the subs with no defender plan
+            foreach($sub in  $noDefenderPlanSubs){ 
+                # Initialize to false as they would be nonCompliant
+                $isCompliant = $false
+                $Comments = ""
+
+                # find subscription information
+                $subId = $sub.Id
+                Set-AzContext -SubscriptionId $subId
+                Write-Host "Subscription: $($sub.Name)"
+
+                $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $sub.Name 
+
+                $C = [PSCustomObject]@{
+                    SubscriptionName = $sub.Name
+                    ComplianceStatus = $isCompliant
+                    ControlName = $ControlName
+                    Comments = $Comments
+                    ItemName = $ItemName
+                    ReportTime = $ReportTime
+                    itsgcode = $itsgcode
+                }
+                
+                # Add profile information if MCUP feature is enabled
+                if($EnableMultiCloudProfiles){
+                    $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
+                    Write-Host "$result"
+                    $PsObject.add($result) | Out-Null
+                } else {
+                    $PsObject.add($C) | Out-Null
+                }
+            }
+        }
+        
+
         # Get the subscription with paid defender plan
         $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} # A paid plan should exist on the sub resources
         if ($defenderStandardTier.Count -gt 0) {
@@ -238,12 +275,6 @@ function Get-DefenderForCloudAlerts {
                 $subId = $subscription.Id
                 $subscriptionName = $subscription.Name
                 Write-Verbose "Subscription: $($subscriptionName)"
-
-                # Evaluation logic for subs with no defender plan will be evaluated in the later foreach section
-                if($noDefenderPlanSubIds -contains $subId){
-                    Write-Host "Compliance for subscription $($subscriptionName) will be evaluated in later section"
-                    continue
-                }
 
                 # Initialize
                 $isCompliant = $true
@@ -314,42 +345,6 @@ function Get-DefenderForCloudAlerts {
             
         }
         
-
-
-        ## ****** USE CASE: Subs with no defender plans **********
-
-        # compliant output for the subs with no defender plan
-        foreach($sub in  $noDefenderPlanSubs){ 
-            # Initialize to false as they would be nonCompliant
-            $isCompliant = $false
-            $Comments = ""
-
-            # find subscription information
-            $subId = $sub.Id
-            Set-AzContext -SubscriptionId $subId
-            Write-Host "Subscription: $($sub.Name)"
-
-            $Comments = $msgTable.NotAllSubsHaveDefenderPlans -f $sub.Name 
-
-            $C = [PSCustomObject]@{
-                SubscriptionName = $sub.Name
-                ComplianceStatus = $isCompliant
-                ControlName = $ControlName
-                Comments = $Comments
-                ItemName = $ItemName
-                ReportTime = $ReportTime
-                itsgcode = $itsgcode
-            }
-            
-            # Add profile information if MCUP feature is enabled
-            if($EnableMultiCloudProfiles){
-                $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
-                Write-Host "$result"
-                $PsObject.add($result) | Out-Null
-            } else {
-                $PsObject.add($C) | Out-Null
-            }
-        }
     }
     
     $moduleOutput = [PSCustomObject]@{
