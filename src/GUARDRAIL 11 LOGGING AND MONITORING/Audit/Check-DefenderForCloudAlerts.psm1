@@ -244,9 +244,10 @@ function Get-DefenderForCloudAlerts {
 
                         }
                         else{
-                            # use case:
-                            Write-Verbose "Find use case"
-
+                            # Keeping else open to formally identify this probable use case
+                            Write-Verbose "Identify use case requirement"
+                            $isCompliant = $false
+                            $Comments = $msgTable.DefenderNonCompliant
                         }
 
                     }
