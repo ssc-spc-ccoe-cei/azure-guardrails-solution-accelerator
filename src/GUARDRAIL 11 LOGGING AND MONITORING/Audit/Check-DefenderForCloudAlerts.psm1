@@ -290,7 +290,7 @@ function Get-DefenderForCloudAlerts {
             $Comments = ""
 
             # find subscription information
-            $subId = $subscription.Id
+            $subId = $sub.Id
             Set-AzContext -SubscriptionId $subId
             Write-Host "Subscription: $($sub.Name)"
 
