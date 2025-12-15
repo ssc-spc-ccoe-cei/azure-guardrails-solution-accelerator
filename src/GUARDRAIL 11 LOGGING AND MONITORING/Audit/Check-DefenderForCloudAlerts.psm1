@@ -166,7 +166,7 @@ function Get-DefenderForCloudAlerts {
         $Comments = $msgTable.noDefenderAtAll
     }
     else{
-        # USE CASE: Subs with no defender plans
+        # USE CASE: Find Subs with no defender plans
         $defenderPlanSubs = $defenderPlans | Select-Object -ExpandProperty subscriptionId
         $noDefenderPlanSubs = $subs | Where-Object {$_.SubscriptionId -notin $defenderPlanSubs}
         if($null -ne  $noDefenderPlanSubs){
@@ -204,17 +204,17 @@ function Get-DefenderForCloudAlerts {
                     $PsObject.add($C) | Out-Null
                 }
             }
-            Write-Warning "Completed compliance status output for Subscription: $($sub.Name)"
+            Write-Verbose "Completed compliance status output for Subscription: $($sub.Name)"
         }
         
-        Write-Warning "Completed Compliance status for subscriptions without defender plans..."
+         "Completed Compliance status for subscriptions without defender plans..."
         # Get the subscription with paid defender plan
         $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} # A paid plan should exist on the sub resources
         if ($defenderStandardTier.Count -gt 0) {
-            Write-Warning "Successfully fetched the resource data for the standard tier subscriptions."
+            Write-Verbose "Successfully fetched the resource data for the standard tier subscriptions."
         } else {
             # Evaluation logic for this Use case (defenderNonStandardTier) will be evaluated in the later section
-            Write-Warning "No resource data found for standard tier defender subscription."
+            Write-Verbose "No resource data found for standard tier defender subscription."
         }
 
         # A paid plan exists on the sub resources 
@@ -229,7 +229,7 @@ function Get-DefenderForCloudAlerts {
 
         if($defenderNonStandardTierFiltered.count -ne 0){
             
-            Write-Warning "Evaluating the subscriptions that enabled Foundational CSPM only."
+            Write-Verbose "Evaluating the subscriptions that enabled Foundational CSPM only."
             foreach($sub in $defenderNonStandardTierFiltered){
                 # Get compliant status for Subs with free tier plan
                 
@@ -263,7 +263,7 @@ function Get-DefenderForCloudAlerts {
                     $PsObject.add($C) | Out-Null
                 }
             }
-            Write-Warning "Completed compliance status output for Subscription: $($sub.Name)"
+            Write-Verbose "Completed compliance status output for Subscription: $($sub.Name)"
         }
         elseif($defenderNonStandardTierFiltered.count -eq 0){
             # At this point all subs has all subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs
@@ -273,8 +273,8 @@ function Get-DefenderForCloudAlerts {
             foreach($subscription in $defenderStandard){
                 
                 # find subscription information
-                $subId = $subscription.Id
-                $subscriptionName = $subscription.Name
+                $subId = $subscription.subscriptionId
+                $subscriptionName = $subscription.subscriptionName
                 Write-Verbose "Subscription: $($subscriptionName)"
 
                 # Initialize
@@ -306,12 +306,12 @@ function Get-DefenderForCloudAlerts {
                         if (-not ($response2.value) -or $response2.value.Count -eq 0){
                             $isCompliant = $false
                             $Comments = $msgTable.DefenderNonCompliant
-                            Write-Warning "Notification alert default security contact is not configured properly for $($subscriptionName)"
+                            Write-Verbose "Notification alert default security contact is not configured properly for $($subscriptionName)"
 
                         }
                         else{
                             # Keeping else open to formally identify this probable use case
-                            Write-Warning "Identify use case requirement"
+                            Write-Verbose "Identify use case requirement"
                             $isCompliant = $false
                             $Comments = $msgTable.DefenderNonCompliant
                         }
@@ -343,7 +343,7 @@ function Get-DefenderForCloudAlerts {
                     $PsObject.add($C) | Out-Null
                 }
 
-                Write-Warning "Completed compliance status output for Subscription: $($subscriptionName)"
+                Write-Verbose "Completed compliance status output for Subscription: $($subscriptionName)"
             }
             
         }
