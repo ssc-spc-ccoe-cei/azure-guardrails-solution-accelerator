@@ -232,7 +232,7 @@ function Get-DefenderForCloudAlerts {
             Write-Verbose "All subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs"
 
             # Get compliant status for Standard plan subs
-            foreach($subscription in $defenderStandardTier){
+            foreach($subscription in $defenderStandard){
                 
                 # find subscription information
                 $subId = $subscription.Id
