@@ -291,9 +291,11 @@ policyNotConfiguredSub = Required policy is not assigned to this subscription: {
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
-cbcSensorsdontExist = The expected CBC sensors do not exist
+cbcSensorsdontExist = The expected CBS sensors do not exist in these subscriptions:
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
 cbssCompliant = Found resources in these subscriptions: 
+cbssV3DetectedSuffix = (CBS Sensor V3 detected)
+cbssV2DeprecatedWarning = CBS Sensor V2 is deprecated. Please upgrade to CBS Sensor V3.
 
 # GuardRail #11
 serviceHealthAlerts = Service Health Alerts and Events Check

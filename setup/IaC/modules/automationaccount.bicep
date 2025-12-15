@@ -186,7 +186,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CyberSecurityServices.zip'
-        version: '1.1.7'
+        version: '1.1.8'
       }
     }
   }
