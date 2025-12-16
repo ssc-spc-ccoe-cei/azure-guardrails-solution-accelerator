@@ -270,16 +270,18 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
-        version: '1.0.5'
-      }}
+        version: '1.0.6'
+      }
+    }
   }
   resource module33 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-OnlineAttackCountermeasures'
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
-        version: '1.0.4'
-      }}
+        version: '1.0.5'
+      }
+    }
   }
 
   resource module34 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -317,8 +319,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserRiskBasedCAP.zip'
-        version: '1.0.0'
-      }}
+        version: '1.0.1'
+      }
+    }
   }
 
   resource module37b 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -398,8 +401,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserRoleReviews.zip'
-        version: '1.0.4'
-      }}
+        version: '1.0.5'
+      }
+    }
   }
 
   resource module46 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -427,8 +431,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-GuestRoleReviews.zip'
-        version: '1.0.4'
-      }}
+        version: '1.0.5'
+      }
+    }
   }
 
   resource module49 'powerShell72Modules' = if (newDeployment || updatePSModules) {
