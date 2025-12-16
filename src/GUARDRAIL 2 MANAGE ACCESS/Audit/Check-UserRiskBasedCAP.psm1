@@ -92,11 +92,11 @@ function Get-UserRiskBasedCAP {
     # Check 1: Password Changes –Conditional Access Policy
     $IsCompliantPasswordCAP = $false
 
+    # Get conditional access policies (using paginated query to handle >100 policies)
     $CAPUrl = '/identity/conditionalAccess/policies'
     try {
-        $response = Invoke-GraphQuery -urlPath $CAPUrl -ErrorAction Stop
-
-        $caps = $response.Content.value
+        $response = Invoke-GraphQueryEX -urlPath $CAPUrl -ErrorAction Stop
+        $caps = if ($response.Content -and $response.Content.value) { $response.Content.value } else { @() }
     }
     catch {
         $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CAPUrl'; returned error message: $_")
@@ -104,12 +104,12 @@ function Get-UserRiskBasedCAP {
     }
     Write-Host "Existing CAP count $($caps.count)"
 
-    # list all users in the tenant
+    # list all users in the tenant (using paginated query to handle >100 users)
     $urlPath = "/users"
     try {
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        $users = $response.Content.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
-        
+        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
+        $data = $response.Content
+        $users = if ($data -and $data.value) { $data.value | Select-Object userPrincipalName, displayName, givenName, surname, id, mail } else { @() }
     }
     catch {
         $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
@@ -120,14 +120,15 @@ function Get-UserRiskBasedCAP {
     $FirstBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}| Select-Object id).id
     $SecondBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object id).id
 
-    # List of all user groups in the environment
+    # List of all user groups in the environment (using paginated query to handle >100 groups)
     $groupsUrlPath = "/groups"
     try {
-        $response = Invoke-GraphQuery -urlPath $groupsUrlPath -ErrorAction Stop
-        $userGroups = $response.Content.value
+        $response = Invoke-GraphQueryEX -urlPath $groupsUrlPath -ErrorAction Stop
+        $data = $response.Content
+        $userGroups = if ($data -and $data.value) { $data.value } else { @() }
     }
     catch {
-        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$groupsUrlPath'; returned error message: $_"                
         $ErrorList.Add($errorMsg)
         Write-Error "Error: $errorMsg"
     }
@@ -135,12 +136,13 @@ function Get-UserRiskBasedCAP {
     $groupMemberList = @()
     foreach ($group in $userGroups){
         $groupId = $group.id
-        $urlPath = "/groups/$groupId/members"
+        $membersUrlPath = "/groups/$groupId/members"
         try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+            # Using paginated query to handle >100 members per group
+            $response = Invoke-GraphQueryEX -urlPath $membersUrlPath -ErrorAction Stop
             $data = $response.Content
             if ($null -ne $data -and $null -ne $data.value) {
-                $grMembers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
+                $grMembers = $data.value | Select-Object userPrincipalName, displayName, givenName, surname, id, mail
 
                 foreach ($grMember in $grMembers) {
                     $groupMembers = [PSCustomObject]@{
@@ -158,7 +160,7 @@ function Get-UserRiskBasedCAP {
             }
         }
         catch {
-            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$membersUrlPath'; returned error message: $_"                
             $ErrorList.Add($errorMsg)
             Write-Error "Error: $errorMsg" 
         }
