@@ -166,11 +166,11 @@ function Get-DefenderForCloudAlerts {
         $Comments = $msgTable.noDefenderAtAll
     }
     else{
-        # USE CASE: Find Subs with no defender plans
+        # USE CASE: Some subscriptions may be without defender plan
+        # Find Subs with no defender plans
         $defenderPlanSubs = $defenderPlans | Select-Object -ExpandProperty subscriptionId
         $noDefenderPlanSubs = $subs | Where-Object {$_.SubscriptionId -notin $defenderPlanSubs}
-        if($null -ne  $noDefenderPlanSubs){
-            # $noDefenderPlanSubIds = $noDefenderPlanSubs | Select-Object -ExpandProperty subscriptionId
+        if($null -ne  $noDefenderPlanSubs){           
             
             # compliance output for the subs with no defender plan
             foreach($sub in  $noDefenderPlanSubs){ 
@@ -207,8 +207,8 @@ function Get-DefenderForCloudAlerts {
             Write-Verbose "Completed compliance status output for Subscription: $($sub.Name)"
         }
         
-         "Completed Compliance status for subscriptions without defender plans..."
-        # Get the subscription with paid defender plan
+        Write-Verbose "Completed Compliance status for subscriptions without defender plans..."
+        # Get the subscriptions with paid defender plan
         $defenderStandardTier = $defenderPlans | Where-Object {$_.tier -eq 'Standard'} # A paid plan should exist on the sub resources
         if ($defenderStandardTier.Count -gt 0) {
             Write-Verbose "Successfully fetched the resource data for the standard tier subscriptions."
@@ -228,7 +228,7 @@ function Get-DefenderForCloudAlerts {
         $defenderNonStandardTierFiltered = $defenderNonStandardTier | Where-Object {$_.subscriptionId -notin $subsToExcl}
 
         if($defenderNonStandardTierFiltered.count -ne 0){
-            
+            # Free tier
             Write-Verbose "Evaluating the subscriptions that enabled Foundational CSPM only."
             foreach($sub in $defenderNonStandardTierFiltered){
                 # Get compliant status for Subs with free tier plan
@@ -264,6 +264,7 @@ function Get-DefenderForCloudAlerts {
                 }
             }
             Write-Verbose "Completed compliance status output for Subscription: $($sub.Name)"
+
         }
         elseif($defenderNonStandardTierFiltered.count -eq 0){
             # At this point all subs has all subscriptions have enabled defender plan and that a paid plan exists on the sub resources of all these subs
@@ -310,7 +311,7 @@ function Get-DefenderForCloudAlerts {
 
                         }
                         else{
-                            # Keeping else open to formally identify this probable use case
+                            # Keeping else condition open to formally identify this probable use case
                             Write-Verbose "Identify use case requirement"
                             $isCompliant = $false
                             $Comments = $msgTable.DefenderNonCompliant
