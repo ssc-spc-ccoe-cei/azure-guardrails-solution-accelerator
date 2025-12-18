@@ -291,9 +291,11 @@ policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonne
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
-cbcSensorsdontExist = Les capteurs CBC attendus n'existent pas
+cbcSensorsdontExist = Les capteurs CBS attendus n'existent pas dans ces abonnements :
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
 cbssCompliant = Ressources trouvées dans ces abonnements: 
+cbssV3DetectedSuffix = (Capteur CBS V3 détecté)
+cbssV2DeprecatedWarning = Le capteur CBS V2 est désuet. Veuillez effectuer la mise à niveau vers le capteur CBS V3.
 
 # GuardRail #11
 serviceHealthAlerts = Alertes de santé du service et vérification des événements
