@@ -291,9 +291,11 @@ policyNotConfiguredSub = Required policy is not assigned to this subscription: {
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
-cbcSensorsdontExist = The expected CBC sensors do not exist
+cbcSensorsdontExist = The expected CBS sensors do not exist in these subscriptions:
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
 cbssCompliant = Found resources in these subscriptions: 
+cbssV3DetectedSuffix = (CBS Sensor V3 detected)
+cbssV2DeprecatedWarning = CBS Sensor V2 is deprecated. Please upgrade to CBS Sensor V3.
 
 # GuardRail #11
 serviceHealthAlerts = Service Health Alerts and Events Check
@@ -321,6 +323,8 @@ noServiceHealthAlerts = Could not retrieve any configured alerts for the subscri
 nonCompliantActionGroups = This subscription has Service Health Alerts, but not all action groups are correctly configured. A minimum of two email addresses or subscription owners are required for the action group.
 compliantServiceHealthAlerts = This subscription has Service Health Alerts, and the action group has at least two different contacts.
 
+monitoringChecklist = Monitoring Checklist: Use Cases
+
 msDefenderChecks = Microsoft Defender for Cloud Alerts and Events Check
 NotAllSubsHaveDefenderPlans = The subscription {0} lack a defender plan. Enable Defender monitoring for this subscription.
 errorRetrievingNotifications = Defender alert notifications for this subscription is not configured. Ensure they match the Remediation Guidance requirements.
@@ -328,8 +332,9 @@ EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription {
 AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set the severity to Medium or Low and review the Remediation Guidance.
 AttackPathNotificationNotConfigured = Defender alerts must include attack path notifications. Ensure that the severity is set to Medium or Low for each subscription's alerts, following the guidelines provided in the Remediation Guidance.
 DefenderCompliant = MS Defender for Cloud is enabled for this subscription, and email notifications are properly configured.
+DefenderNonCompliant = MS Defender for Cloud is enabled for this subscription, but the security contact to receive email notifications are not properly configured.
+noDefenderAtAll = All subscription lack a defender plan. Enable Defender monitoring for the subscriptions.
 
-monitoringChecklist = Monitoring Checklist: Use Cases
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation

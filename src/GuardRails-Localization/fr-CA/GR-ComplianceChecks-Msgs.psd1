@@ -291,9 +291,11 @@ policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonne
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
-cbcSensorsdontExist = Les capteurs CBC attendus n'existent pas
+cbcSensorsdontExist = Les capteurs CBS attendus n'existent pas dans ces abonnements :
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
 cbssCompliant = Ressources trouvées dans ces abonnements: 
+cbssV3DetectedSuffix = (Capteur CBS V3 détecté)
+cbssV2DeprecatedWarning = Le capteur CBS V2 est désuet. Veuillez effectuer la mise à niveau vers le capteur CBS V3.
 
 # GuardRail #11
 serviceHealthAlerts = Alertes de santé du service et vérification des événements
@@ -331,6 +333,9 @@ EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonn
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
 AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
 DefenderCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement et les notifications par courriel sont correctement configurées.
+DefenderNonCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement, mais le contact de sécurité chargé de recevoir les notifications par courriel n'est pas correctement configuré.
+noDefenderAtAll = Aucun abonnement ne dispose d'un plan Defender. Activez la surveillance Defender pour les abonnements.
+
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

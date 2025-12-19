@@ -173,8 +173,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CyberSecurityServices.zip'
-        version: '1.1.7'
-      }}
+        version: '1.1.8'
+      }
+    }
   }
   resource module18 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'GR-ComplianceChecks'
@@ -421,7 +422,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.0.6'
+        version: '1.0.7'
       }
     }
   }
