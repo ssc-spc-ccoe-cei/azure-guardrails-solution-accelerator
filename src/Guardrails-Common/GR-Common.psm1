@@ -1804,7 +1804,8 @@ function Get-UserSignInPreferences {
         # for guest accounts
         $userEmail = $UserUPN
         if(!$null -eq $userEmail){
-            $encodedUserEmail = [System.Web.HttpUtility]::UrlEncode($userEmail)
+            # Use WebUtility for PS5/PS7 compatibility
+            $encodedUserEmail = [System.Net.WebUtility]::UrlEncode($userEmail)
             $urlPath = '/users/' + $encodedUserEmail + '/authentication/signInPreferences'            
         }else{
             Write-Warning "userEmail is null for $UserUPN"
