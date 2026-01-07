@@ -55,9 +55,9 @@ function Test-BreakGlassAccounts {
       $userID = "/users/{0}?`$select=id" -f $upn #This is required to get last sign in info
       $response1 = Invoke-GraphQueryEX -urlPath $userID -ErrorAction Stop
 
-      $lastUserSignIn = "/users/{0}?`$select=userPrincipalName,signInActivity" -f $response1.Content.id
+      $lastUserSignIn = "/users/{0}?`$select=userPrincipalName,signInActivity" -f $response1.Content.value.id
       $response = Invoke-GraphQueryEX -urlPath $lastUserSignIn -ErrorAction Stop
-      $userData = $response.Content
+      $userData = $response.Content.value
 
       if($null -ne $userData -and $null -ne $userData.signInActivity){
         return $userData.signInActivity.lastSuccessfulSignInDateTime

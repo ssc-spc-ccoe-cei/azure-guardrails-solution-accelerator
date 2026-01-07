@@ -14,7 +14,7 @@
 RootModule = 'Monitor-BreakGlassAccount'
 
 # Version number of this module.
-ModuleVersion = '1.1.0'
+ModuleVersion = '1.1.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
