@@ -335,7 +335,9 @@ AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des n
 DefenderCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement et les notifications par courriel sont correctement configurées.
 DefenderNonCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement, mais le contact de sécurité chargé de recevoir les notifications par courriel n'est pas correctement configuré.
 noDefenderAtAll = Aucun abonnement ne dispose d'un plan Defender. Activez la surveillance Defender pour les abonnements.
-
+NoMappedResourcesOrMappingIncomplete = Aucune ressource (c'est-à-dire machines virtuelles, serveurs, comptes de stockage, etc.) n'est directement protégée par l'offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard.
+CwpPlansNotStandard = Les plans CWP suivants en cours d'utilisation ne sont pas considérés comme appartenant au niveau Standard pour Defender pour l'infonuagique : {0}.
+CoverageOk = Tous les plans CWP utilisent une offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard et sont considérés comme conformes.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
