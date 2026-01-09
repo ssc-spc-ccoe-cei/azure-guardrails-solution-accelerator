@@ -62,8 +62,14 @@ Function Confirm-GSAPrerequisites {
         Write-Verbose "Verifying that storage account name '$($config['runtime']['storageAccountName'])' is available"
         $nameAvailability = Get-AzStorageAccountNameAvailability -Name $config['runtime']['storageaccountName']
         if (($nameAvailability).NameAvailable -eq $false) {
-            Write-Error "Storage account $($config['runtime']['storageaccountName']) is not available. Message: $($nameAvailability.Message)"
-            break
+            $existingStorageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageAccountName'] -ErrorAction SilentlyContinue
+            if ($existingStorageAccount) {
+                Write-Warning "Storage account '$($config['runtime']['storageAccountName'])' already exists in resource group '$($config['runtime']['resourceGroup'])'."
+            }
+            else {
+                Write-Error "Storage account $($config['runtime']['storageaccountName']) is not available. Message: $($nameAvailability.Message)"
+                break
+            }
         }
         Else {
             Write-Verbose "Storage account name '$($config['runtime']['storageAccountName'])' is available"
