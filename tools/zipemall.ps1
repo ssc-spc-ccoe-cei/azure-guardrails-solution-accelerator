@@ -47,11 +47,18 @@ ForEach ($moduleManifest in $moduleManifestFilesObjs) {
             Write-Host "Copied code file: $codeFile to $($tempDir.FullName)"
         }
         
-        # Copy any additional files in the same directory with the same base name
-        $additionalFiles = Get-ChildItem -Path $moduleManifest.Directory -File | Where-Object { $_.BaseName -eq $moduleManifest.BaseName -and $_.Extension -notin @('.psd1', '.psm1') }
+        # Copy any additional files in the same directory that start with the module base name (e.g., GR-ComplianceChecks-Msgs.psd1)
+        $additionalFiles = Get-ChildItem -Path $moduleManifest.Directory -File | Where-Object { $_.Name -like "$($moduleManifest.BaseName)-*" -or ($_.BaseName -eq $moduleManifest.BaseName -and $_.Extension -notin @('.psd1', '.psm1')) }
         foreach ($file in $additionalFiles) {
             Copy-Item -Path $file.FullName -Destination $tempDir -Force
             Write-Host "Copied additional file: $($file.FullName) to $($tempDir.FullName)"
+        }
+        
+        # Copy any subdirectories that match culture/locale patterns (e.g., fr-CA, en-US for localization)
+        $subDirectories = Get-ChildItem -Path $moduleManifest.Directory -Directory | Where-Object { $_.Name -match '^[a-z]{2}-[A-Z]{2}$' }
+        foreach ($subDir in $subDirectories) {
+            Copy-Item -Path $subDir.FullName -Destination $tempDir -Recurse -Force
+            Write-Host "Copied subdirectory: $($subDir.FullName) to $($tempDir.FullName)"
         }
         
         # List files in temporary directory
