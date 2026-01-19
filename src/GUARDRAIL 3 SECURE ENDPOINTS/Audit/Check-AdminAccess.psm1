@@ -38,7 +38,7 @@ function Get-AdminAccess {
             $null -ne $_.conditions.devices.deviceFilter -and 
             $null -ne $_.conditions.applications.includeApplications -and
             $_.state -eq 'enabled' -and
-            ($adminUserIds -contains $_.conditions.users.includeRoles)
+            (@($_.conditions.users.includeRoles | Where-Object { $_ -in $adminUserIds }).Count -gt 0)
         }
     )
 
@@ -47,7 +47,7 @@ function Get-AdminAccess {
         $caps | Where-Object { 
             $null -ne $_.conditions.locations.includeLocations -and 
             $_.state -eq 'enabled' -and
-            ($adminUserIds -contains $_.conditions.users.includeRoles)
+            (@($_.conditions.users.includeRoles | Where-Object { $_ -in $adminUserIds }).Count -gt 0)
         }
     )
 
