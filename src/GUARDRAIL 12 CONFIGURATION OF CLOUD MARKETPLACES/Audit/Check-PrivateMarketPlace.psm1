@@ -27,7 +27,6 @@ catch {
 }
  
 if($null -eq $PrivateMarketPlace){
-        $Object| Add-Member NoteProperty -Name ComplianceStatus  -Value $IsCompliant
         $Object| Add-Member NoteProperty -Name Comments  -Value $msgTable.mktPlaceNotCreated
         $MitigationCommands = $msgTable.enableMktPlace
 }
@@ -68,5 +67,3 @@ $moduleOutput= [PSCustomObject]@{
     }
 return $moduleOutput
 }
-
-
