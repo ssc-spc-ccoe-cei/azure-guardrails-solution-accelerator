@@ -158,6 +158,8 @@ function Get-DFCAcheckComplianceStatus {
         [pscustomobject] $apiResponse,
         [Parameter(Mandatory)]
         [hashtable] $msgTable,
+        [Parameter (Mandatory)]
+        [string] $subscriptionId,
         [Parameter(Mandatory)]
         [string] $SubscriptionName
     )
@@ -170,7 +172,7 @@ function Get-DFCAcheckComplianceStatus {
     $ownerRoles          = $apiResponse.properties.notificationsByRole.roles
     $ownerState          = $apiResponse.properties.notificationsByRole.state
 
-
+    # Filter to get required notification types
     $alertNotification = $notificationSources | Where-Object { $_.sourceType -eq "Alert" -and $_.minimalSeverity -in @("Medium","Low") }
     $attackPathNotification = $notificationSources | Where-Object { $_.sourceType -eq "AttackPath" -and $_.minimalRiskLevel -in @("Medium","Low") }
 
@@ -179,11 +181,55 @@ function Get-DFCAcheckComplianceStatus {
 
     $ownerConfigured = ($ownerState -eq "On") -and ($ownerRoles -contains "Owner")
 
-    if (($emailCount -lt 2) -or (-not $ownerConfigured)) {
-        $isCompliant = $false
-        $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $SubscriptionName
+    $ownerContactCount = 0
+    if($ownerConfigured){
+        #get the actual number of subscription owners
+        try{
+            $subsOwners = Get-AzRoleAssignment -RoleDefinitionName "Owner" -Scope "/subscriptions/$subscriptionId" -ErrorAction Stop
+            if($null -ne $subsOwners ){
+                $subsOwnerCount = $subsOwners.Count
+
+                if ($subsOwnerCount -lt 1){
+                    # No owners found, treat as not properly configured
+                    $ownerConfigured = $false
+                }
+                # If only 1 subscription owner, counts as 1 contact; if more than 1 owner, counts as 2 contacts
+                if ($subsOwnerCount -eq 1) {
+                    $ownerContactCount = 1
+                    Write-Verbose "Subscription has 1 owner, counting as 1 contact"
+                }
+                elseif ($subsOwnerCount -gt 1) {
+                    $ownerContactCount = 2
+                    Write-Verbose "Subscription has $ownerCount owners, counting as 2 contacts"
+                }
+
+            }
+        }
+        catch{
+            Write-Verbose "Failed to get owner count for subscription $subscriptionName : $_"
+            # If we can't get owner count, treat as if owner notification is not properly configured
+            $ownerContactCount = 0
+            # No owners found, treat as not properly configured
+            $ownerConfigured = $false
+        }
     }
 
+    if($ownerContactCount -eq 2){
+        Write-Verbose "Owner notification is properly configured with multiple owners for subscription $subscriptionName"
+        $isCompliant = $true
+    }
+    else{
+        # Calculate total contact count (emails + owner contact equivalent)
+        $totalContactCount = $emailCount + $ownerContactCount
+
+         # CONDITION: Check if there are at least 2 contacts total
+        if ($totalContactCount -lt 2) {
+            $isCompliant = $false
+            $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $SubscriptionName
+        }
+
+    }
+    
     if ($null -eq $alertNotification) {
         $isCompliant = $false
         $Comments = $msgTable.AlertNotificationNotConfigured
@@ -332,7 +378,7 @@ function Get-DefenderForCloudAlerts {
             $restUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
             try {
                 $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader -ErrorAction Stop
-                $r = Get-DFCAcheckComplianceStatus -apiResponse $response -msgTable $msgTable -SubscriptionName $subName
+                $r = Get-DFCAcheckComplianceStatus -apiResponse $response -msgTable $msgTable -subscriptionId $subId -SubscriptionName $subName
                 $notifOk = [bool]$r.isCompliant
                 $notifComment = $r.Comments
             }
@@ -343,9 +389,11 @@ function Get-DefenderForCloudAlerts {
                     if (-not $response2.value -or $response2.value.Count -eq 0) {
                         $notifOk = $false
                         $notifComment = $msgTable.DefenderNonCompliant
+                        Write-Verbose "Notification alert default security contact is not configured properly for $($subName)"
                     }
                     else {
-                        
+                        # Keeping else condition open to formally identify this probable use case
+                        Write-Verbose "Identify use case requirement"
                         $notifOk = $false
                         $notifComment = $msgTable.DefenderNonCompliant
                     }
