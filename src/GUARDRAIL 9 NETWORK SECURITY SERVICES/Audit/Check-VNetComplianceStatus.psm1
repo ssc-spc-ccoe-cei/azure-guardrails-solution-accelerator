@@ -21,7 +21,7 @@ function Get-VNetComplianceInformation {
 
     # Get subscriptions
     try {
-        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName }
+        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' }
     }
     catch {
         $errorMessage = "Failed to execute 'Get-AzSubscription'. Verify permissions and Az.Accounts module installation. Error: $_"

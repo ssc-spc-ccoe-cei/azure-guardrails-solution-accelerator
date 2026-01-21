@@ -32,7 +32,7 @@ function Get-NetworkWatcherStatus {
 
 
     try {
-        $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
+        $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled'}  
     }
     catch {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
