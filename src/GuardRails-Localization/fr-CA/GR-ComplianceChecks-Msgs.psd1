@@ -338,6 +338,7 @@ noDefenderAtAll = Aucun abonnement ne dispose d'un plan Defender. Activez la sur
 NoMappedResourcesOrMappingIncomplete = Aucune ressource (c'est-à-dire machines virtuelles, serveurs, comptes de stockage, etc.) n'est directement protégée par l'offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard.
 CwpPlansNotStandard = Les plans CWP suivants en cours d'utilisation ne sont pas considérés comme appartenant au niveau Standard pour Defender pour l'infonuagique : {0}.
 CoverageOk = Tous les plans CWP utilisent une offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard et sont considérés comme conformes.
+DefenderNotRegistered = Defender for Cloud is not registered in this subscription. Please register Defender for Cloud to ensure compliance.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

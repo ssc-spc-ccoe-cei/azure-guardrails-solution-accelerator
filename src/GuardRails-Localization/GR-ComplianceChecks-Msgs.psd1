@@ -337,7 +337,7 @@ noDefenderAtAll = All subscription lack a defender plan. Enable Defender monitor
 NoMappedResourcesOrMappingIncomplete = There are not any resources (i.e., virtual machines, servers, storage accounts etc.,) being directly protected by Defender for Cloud Workload Protection (CWP) Standard tier service offering.
 CwpPlansNotStandard = The following CWP plans in use are not considered Standard tier for Defender for Cloud: {0}.
 CoverageOk = All CWP pans are using a Defender for Cloud Workload Protection (CWP) Standard tier service offering and are considered compliant.
-
+DefenderNotRegistered = Defender for Cloud is not registered in this subscription. Please register Defender for Cloud to ensure compliance.
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
