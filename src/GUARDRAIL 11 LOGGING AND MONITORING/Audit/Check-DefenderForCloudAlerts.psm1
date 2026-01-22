@@ -353,6 +353,7 @@ function Get-DefenderForCloudAlerts {
         # -------------------------
         $subRegisteredOk = $true
         $subRegisteredComment = $null
+        $defenderPlansStandard = @()
         if (-not $authHeader) {
             $subRegisteredOk = $false
             $subRegisteredComment = "Unable to evaluate Defender for Cloud registration (missing auth token)."
@@ -361,7 +362,6 @@ function Get-DefenderForCloudAlerts {
             # Check if any Defender for Cloud Standard plan is enabled/registered for the subscription
             Write-Verbose "Checking Defender for Cloud registration for subscription: $subName ($subId)"
 
-            $defenderPlansStandard = @()
             $regUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security?api-version=2020-01-01"
             try{
                 $response = Invoke-RestMethod -Uri $regUri -Method Get -Headers $authHeader -ErrorAction Stop
@@ -400,7 +400,7 @@ function Get-DefenderForCloudAlerts {
                 SubscriptionName = $subName
                 ComplianceStatus = $false
                 ControlName      = $ControlName
-                Comments         = $msgTable.DefenderNotRegistered
+                Comments         = $msgTable.NotAllSubsHaveDefenderPlans
                 ItemName         = $ItemName
                 ReportTime       = $ReportTime
                 itsgcode         = $itsgcode
@@ -416,6 +416,7 @@ function Get-DefenderForCloudAlerts {
             continue
         }
         else{
+            Write-Host "Defender for Cloud (Microsoft.Security) is registered and has Standard plans for subscription $subName ($subId)."
             # -------------------------
             # B) CWP Coverage check (ARG counts + ARM pricing)
             # -------------------------
@@ -457,14 +458,14 @@ function Get-DefenderForCloudAlerts {
                         $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader -ErrorAction Stop
                         if (-not $response2.value -or $response2.value.Count -eq 0) {
                             $notifOk = $false
-                            $notifComment = $msgTable.DefenderNonCompliant
+                            $notifComment = $msgTable.DefenderEnabledNonCompliant
                             Write-Verbose "Notification alert default security contact is not configured properly for $($subName)"
                         }
                         else {
                             # Keeping else condition open to formally identify this probable use case
                             Write-Verbose "Identify use case requirement"
                             $notifOk = $false
-                            $notifComment = $msgTable.DefenderNonCompliant
+                            $notifComment = $msgTable.DefenderEnabledNonCompliant
                         }
                     }
                     catch {
@@ -474,6 +475,7 @@ function Get-DefenderForCloudAlerts {
                     }
                 }
             }
+            
 
             # -------------------------
             # Final compliance (both must pass)

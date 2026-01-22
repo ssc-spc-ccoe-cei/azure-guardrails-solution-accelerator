@@ -325,6 +325,7 @@ compliantServiceHealthAlerts = This subscription has Service Health Alerts, and 
 
 monitoringChecklist = Monitoring Checklist: Use Cases
 
+
 msDefenderChecks = Microsoft Defender for Cloud Alerts and Events Check
 NotAllSubsHaveDefenderPlans = The subscription {0} lack a defender plan. Enable Defender monitoring for this subscription.
 errorRetrievingNotifications = Defender alert notifications for this subscription is not configured. Ensure they match the Remediation Guidance requirements.
@@ -332,12 +333,11 @@ EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription {
 AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set the severity to Medium or Low and review the Remediation Guidance.
 AttackPathNotificationNotConfigured = Defender alerts must include attack path notifications. Ensure that the severity is set to Medium or Low for each subscription's alerts, following the guidelines provided in the Remediation Guidance.
 DefenderCompliant = MS Defender for Cloud is enabled for this subscription, and email notifications are properly configured.
-DefenderNonCompliant = MS Defender for Cloud is enabled for this subscription, but the security contact to receive email notifications are not properly configured.
-noDefenderAtAll = All subscription lack a defender plan. Enable Defender monitoring for the subscriptions.
+DefenderEnabledNonCompliant = MS Defender for Cloud is enabled for this subscription, but the security contact to receive email notifications are not properly configured.
 NoMappedResourcesOrMappingIncomplete = There are not any resources (i.e., virtual machines, servers, storage accounts etc.,) being directly protected by Defender for Cloud Workload Protection (CWP) Standard tier service offering.
 CwpPlansNotStandard = The following CWP plans in use are not considered Standard tier for Defender for Cloud: {0}.
 CoverageOk = All CWP pans are using a Defender for Cloud Workload Protection (CWP) Standard tier service offering and are considered compliant.
-DefenderNotRegistered = Defender for Cloud is not registered in this subscription. Please register Defender for Cloud to ensure compliance.
+
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation

@@ -333,12 +333,11 @@ EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonn
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
 AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
 DefenderCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement et les notifications par courriel sont correctement configurées.
-DefenderNonCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement, mais le contact de sécurité chargé de recevoir les notifications par courriel n'est pas correctement configuré.
-noDefenderAtAll = Aucun abonnement ne dispose d'un plan Defender. Activez la surveillance Defender pour les abonnements.
+DefenderEnabledNonCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement, mais le contact de sécurité chargé de recevoir les notifications par courriel n'est pas correctement configuré.
 NoMappedResourcesOrMappingIncomplete = Aucune ressource (c'est-à-dire machines virtuelles, serveurs, comptes de stockage, etc.) n'est directement protégée par l'offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard.
 CwpPlansNotStandard = Les plans CWP suivants en cours d'utilisation ne sont pas considérés comme appartenant au niveau Standard pour Defender pour l'infonuagique : {0}.
 CoverageOk = Tous les plans CWP utilisent une offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard et sont considérés comme conformes.
-DefenderNotRegistered = Defender for Cloud is not registered in this subscription. Please register Defender for Cloud to ensure compliance.
+
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
