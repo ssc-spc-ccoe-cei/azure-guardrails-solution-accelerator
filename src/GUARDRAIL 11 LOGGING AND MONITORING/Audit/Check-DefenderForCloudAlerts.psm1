@@ -395,8 +395,8 @@ function Get-DefenderForCloudAlerts {
         # If not registered, output non-compliant result and continue to next subscription
         if(-not $subRegisteredOk){
             Write-Host "Defender for Cloud (Microsoft.Security) is not registered for subscription $subName ($subId)."
-
             $Comments = if(subRegisteredComment){ $subRegisteredComment } else { $msgTable.NotAllSubsHaveDefenderPlans }
+            
             $C = [PSCustomObject]@{
                 SubscriptionName = $subName
                 ComplianceStatus = $false
