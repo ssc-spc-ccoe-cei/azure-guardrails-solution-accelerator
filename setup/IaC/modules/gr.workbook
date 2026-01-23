@@ -244,7 +244,7 @@
         "comparison": "isEqualTo",
         "value": "gr1"
       },
-      "name": "Gr1"
+      "name": "Query - 1"
     },
     {
       "type": 1,
@@ -426,7 +426,7 @@
       "content": {
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
-        "size": 1,
+        "size": 0,
         "title": "GR 2",
         "timeContext": {
           "durationMs": 86400000
@@ -458,7 +458,7 @@
         "comparison": "isEqualTo",
         "value": "gr2"
       },
-      "name": "Gr2"
+      "name": "Query - 2"
     },
     {
       "type": 1,
@@ -731,7 +731,7 @@
         "comparison": "isEqualTo",
         "value": "gr3"
       },
-      "name": "Gr3"
+      "name": "Query - 3"
     },
     {
       "type": 1,
@@ -873,7 +873,7 @@
         "comparison": "isEqualTo",
         "value": "gr4"
       },
-      "name": "query - 6 - Copy"
+      "name": "query - 4"
     },
     {
       "type": 1,
@@ -1013,7 +1013,7 @@
         "comparison": "isEqualTo",
         "value": "gr5"
       },
-      "name": "query - 2 - Copy - Copy"
+      "name": "query - 5"
     },
     {
       "type": 1,
@@ -1154,7 +1154,7 @@
         "comparison": "isEqualTo",
         "value": "gr6"
       },
-      "name": "query - 26 - Copy"
+      "name": "query - 6"
     },
     {
       "type": 1,
@@ -1582,7 +1582,7 @@
         "comparison": "isEqualTo",
         "value": "gr9"
       },
-      "name": "query - 3"
+      "name": "query - 9"
     },
     {
       "type": 1,
@@ -1692,7 +1692,7 @@
       "content": {
         "version": "KqlItem/1.0",
         "query": "gr_data3(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 4,
+        "size": 0,
         "title": "GR 10",
         "timeContext": {
           "durationMs": 86400000
@@ -1834,7 +1834,7 @@
       "content": {
         "version": "KqlItem/1.0",
         "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 1,
+        "size": 0,
         "title": "GR 11",
         "timeContext": {
           "durationMs": 86400000
@@ -1982,7 +1982,7 @@
       "content": {
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 4,
+        "size": 0,
         "title": "GR 12",
         "timeContext": {
           "durationMs": 86400000
@@ -2014,7 +2014,7 @@
         "comparison": "isEqualTo",
         "value": "gr12"
       },
-      "name": "GR12"
+      "name": "Query - 12"
     },
     {
       "type": 1,
@@ -2156,7 +2156,7 @@
         "comparison": "isEqualTo",
         "value": "gr13"
       },
-      "name": "Gr13"
+      "name": "Query - 13"
     },
     {
       "type": 1,
