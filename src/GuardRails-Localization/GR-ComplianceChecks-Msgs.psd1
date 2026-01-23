@@ -327,7 +327,7 @@ monitoringChecklist = Monitoring Checklist: Use Cases
 
 
 msDefenderChecks = Microsoft Defender for Cloud Alerts and Events Check
-NotAllSubsHaveDefenderPlans = The subscription {0} lack a defender plan. Enable Defender monitoring for this subscription.
+NotAllSubsHaveDefenderPlans = The subscription lack a defender plan. Enable Defender monitoring for this subscription.
 errorRetrievingNotifications = Defender alert notifications for this subscription is not configured. Ensure they match the Remediation Guidance requirements.
 EmailsOrOwnerNotConfigured = Defender alert notifications for the subscription {0} do not include at least two email addresses or subscription owners. Configure this to ensure alerts are sent correctly.
 AlertNotificationNotConfigured = Defender alert notifications are incorrect. Set the severity to Medium or Low and review the Remediation Guidance.
