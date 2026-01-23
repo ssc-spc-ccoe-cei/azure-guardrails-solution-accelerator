@@ -372,22 +372,20 @@ function Get-DefenderForCloudAlerts {
                     $defenderPlans = Get-AzSecurityPricing
                     $defenderPlansStandard = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'}
                     if ($defenderPlansStandard.Count -eq 0 -or $null -eq $defenderPlansStandard) {
-                        Write-Host"Defender for Cloud is not enabled with any Standard plan for subscription $subName ($subId)." 
                         $subRegisteredOk = $false
                     }
                     else{
-                        Write-Host "Defender for Cloud (Microsoft.Security) is registered and has Standard plans for subscription $subName ($subId)."
                         $subRegisteredOk = $true
                     }
                 }
                 else{
                     $subRegisteredOk = $false
-                    Write-Host "Defender for Cloud (Microsoft.Security) is not registered for subscription $subName ($subId)."
+                    
                 }
             }
             catch{
                 $subRegisteredOk = $false
-                Write-Host "Defender for Cloud (Microsoft.Security) is not registered for subscription $subName ($subId)."
+                
             }
 
         }
@@ -396,6 +394,7 @@ function Get-DefenderForCloudAlerts {
         
         # If not registered, output non-compliant result and continue to next subscription
         if(-not $subRegisteredOk){
+            Write-Host "Defender for Cloud (Microsoft.Security) is not registered for subscription $subName ($subId)."
             $C = [PSCustomObject]@{
                 SubscriptionName = $subName
                 ComplianceStatus = $false
