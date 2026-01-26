@@ -1,3 +1,29 @@
+function Test-IsNullOrEmptyArray {
+    <#
+    .SYNOPSIS
+        Helper function to check if a value is null or an empty array.
+        Handles both null values and empty arrays returned by Microsoft Graph API.
+    #>
+    param(
+        [AllowNull()]
+        $Value
+    )
+    
+    if ($null -eq $Value) {
+        return $true
+    }
+    
+    if ($Value -is [array] -and $Value.Count -eq 0) {
+        return $true
+    }
+    
+    if ($Value -is [string] -and [string]::IsNullOrEmpty($Value)) {
+        return $true
+    }
+    
+    return $false
+}
+
 function Test-CommonFilters {
     param(
         [PSCustomObject]$policy,
@@ -14,7 +40,7 @@ function Test-CommonFilters {
     # 4. grantControls.builtInControls contains 'mfa' and 'passwordChange'
     # 5. clientAppTypes contains 'all'
     # 6. userRiskLevels = 'high'
-    # 7. signInRiskLevels = @()
+    # 7. signInRiskLevels = @() or null
     # 8. platforms = null
     # 9. locations = null
     # 10. devices = null
@@ -22,10 +48,10 @@ function Test-CommonFilters {
     # 12. signInFrequency.frequencyInterval = 'everyTime'
     # 13. signInFrequency.isEnabled = true
     # 14. signInFrequency.authenticationType = 'primaryAndSecondaryAuthentication'
-    # 15. includeGroups = null
-    # 16. excludeApplications = null
-    # 17. includeRoles = null
-    # 18. excludeRoles = null
+    # 15. includeGroups = null or empty
+    # 16. excludeApplications = null or empty
+    # 17. includeRoles = null or empty
+    # 18. excludeRoles = null or empty
     # 19. includeGuestsOrExternalUsers = null
     # 20. excludeGuestsOrExternalUsers = null
     # 21. excludeUsers/excludeGroups
@@ -50,17 +76,17 @@ function Test-CommonFilters {
             $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
             $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
             $_.sessionControls.signInFrequency.isEnabled -eq $true -and
-            [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
-            [string]::IsNullOrEmpty($_.conditions.platforms) -and
-            [string]::IsNullOrEmpty($_.conditions.locations) -and
-            [string]::IsNullOrEmpty($_.conditions.devices)  -and
-            [string]::IsNullOrEmpty($_.conditions.clientApplications) -and
-            [string]::IsNullOrEmpty($_.conditions.users.includedGroups) -and
-            [string]::IsNullOrEmpty($_.conditions.applications.excludeApplications) -and
-            [string]::IsNullOrEmpty($_.conditions.users.includeRoles) -and
-            [string]::IsNullOrEmpty($_.conditions.users.excludeRoles) -and
-            [string]::IsNullOrEmpty($_.conditions.users.includeGuestsOrExternalUsers) -and
-            [string]::IsNullOrEmpty($_.conditions.users.excludeGuestsOrExternalUsers)
+            (Test-IsNullOrEmptyArray $_.conditions.signInRiskLevels) -and
+            (Test-IsNullOrEmptyArray $_.conditions.platforms) -and
+            (Test-IsNullOrEmptyArray $_.conditions.locations) -and
+            (Test-IsNullOrEmptyArray $_.conditions.devices) -and
+            (Test-IsNullOrEmptyArray $_.conditions.clientApplications) -and
+            (Test-IsNullOrEmptyArray $_.conditions.users.includeGroups) -and
+            (Test-IsNullOrEmptyArray $_.conditions.applications.excludeApplications) -and
+            (Test-IsNullOrEmptyArray $_.conditions.users.includeRoles) -and
+            (Test-IsNullOrEmptyArray $_.conditions.users.excludeRoles) -and
+            (Test-IsNullOrEmptyArray $_.conditions.users.includeGuestsOrExternalUsers) -and
+            (Test-IsNullOrEmptyArray $_.conditions.users.excludeGuestsOrExternalUsers)
         )
     }
     return $validPolicies
@@ -119,6 +145,16 @@ function Get-UserRiskBasedCAP {
     # get ID for BG UPNs
     $FirstBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}| Select-Object id).id
     $SecondBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object id).id
+    
+    # Diagnostic logging for break glass account resolution
+    Write-Host "Break Glass UPN 1: $FirstBreakGlassUPN -> ID: $FirstBreakGlassID"
+    Write-Host "Break Glass UPN 2: $SecondBreakGlassUPN -> ID: $SecondBreakGlassID"
+    if ([string]::IsNullOrEmpty($FirstBreakGlassID)) {
+        Write-Warning "Could not resolve FirstBreakGlassUPN '$FirstBreakGlassUPN' to a user ID"
+    }
+    if ([string]::IsNullOrEmpty($SecondBreakGlassID)) {
+        Write-Warning "Could not resolve SecondBreakGlassUPN '$SecondBreakGlassUPN' to a user ID"
+    }
 
     # List of all user groups in the environment (using paginated query to handle >100 groups)
     $groupsUrlPath = "/groups"
@@ -166,38 +202,81 @@ function Get-UserRiskBasedCAP {
         }
     }
 
-    # validate BG account user group
-    $BGAccountUserGroup = $groupMemberList | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN -or $_.userPrincipalName -eq $SecondBreakGlassUPN}
-    if($BGAccountUserGroup.Count -eq 2){
-        $breakGlassUserGroup = $BGAccountUserGroup
+    # Check if both BG accounts share at least one common group
+    # This is more robust than the previous Count -eq 2 check which could fail if:
+    # - BG accounts are in multiple groups
+    # - BG accounts are in different groups (false positive with count=2)
+    $bg1Groups = @($groupMemberList | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN} | Select-Object -ExpandProperty groupId)
+    $bg2Groups = @($groupMemberList | Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object -ExpandProperty groupId)
+    
+    # Find groups that contain BOTH BG accounts
+    $commonBGGroups = @($bg1Groups | Where-Object { $bg2Groups -contains $_ } | Select-Object -Unique)
+    
+    # Diagnostic logging for BG group membership
+    Write-Host "BG1 is in $($bg1Groups.Count) group(s): $($bg1Groups -join ', ')"
+    Write-Host "BG2 is in $($bg2Groups.Count) group(s): $($bg2Groups -join ', ')"
+    Write-Host "Common groups containing both BG accounts: $($commonBGGroups.Count)"
+    
+    if ($commonBGGroups.Count -gt 0) {
+        Write-Host "Both BG accounts share group(s): $($commonBGGroups -join ', ')"
+        $uniqueGroupIdBG = $commonBGGroups
+    } else {
+        Write-Host "BG accounts do NOT share any common group"
+        $uniqueGroupIdBG = $null
     }
-    else{
-        $breakGlassUserGroup = $null
-    }
-    $uniqueGroupIdBG = $breakGlassUserGroup.groupId | select-object -unique
     
     # check for a conditional access policy which meets the requirements
-    if ($null -ne $breakGlassUserGroup){
-        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID) 
-        if ($validPolicies){
-            $validPolicies = $validPolicies | Where-Object {
-                $_.conditions.users.excludeGroups.Count -eq 1 -and
-                $_.conditions.users.excludeGroups -contains $uniqueGroupIdBG
-            }
-        } 
-    }
-    else{
-        $validPolicies = (Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID) 
-        if ($validPolicies){
-            $validPolicies = $validPolicies | Where-Object {
-                [string]::IsNullOrEmpty($_.conditions.users.excludeGroups)
-            }
+    # Note: Test-CommonFilters already validates that BG accounts are excluded by user ID (excludeUsers)
+    # If BG accounts share a common group, we accept EITHER:
+    #   - Policy excludes one of the common BG groups (excludeGroups contains the group)
+    #   - OR Policy excludes BG users individually (excludeUsers) with no extra groups excluded
+    # This provides flexibility for customers who exclude BG accounts by user ID rather than group
+    
+    $validPolicies = @(Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID)
+    Write-Host "Policies passing common filters: $($validPolicies.Count)"
+    
+    if ($validPolicies.Count -gt 0){
+        if ($commonBGGroups.Count -gt 0){
+            # Both BG accounts share at least one group - accept either group exclusion OR user exclusion with no extra groups
+            $validPolicies = @($validPolicies | Where-Object {
+                # Option 1: Policy excludes at least one of the common BG groups
+                $policyExcludesCommonGroup = $false
+                foreach ($bgGroup in $commonBGGroups) {
+                    if ($_.conditions.users.excludeGroups -contains $bgGroup) {
+                        $policyExcludesCommonGroup = $true
+                        break
+                    }
+                }
+                # Also verify excludeGroups only contains BG groups (no extra groups)
+                $onlyBGGroupsExcluded = $true
+                if (-not (Test-IsNullOrEmptyArray $_.conditions.users.excludeGroups)) {
+                    foreach ($excludedGroup in $_.conditions.users.excludeGroups) {
+                        if ($commonBGGroups -notcontains $excludedGroup) {
+                            $onlyBGGroupsExcluded = $false
+                            break
+                        }
+                    }
+                }
+                
+                ($policyExcludesCommonGroup -and $onlyBGGroupsExcluded) -or
+                # Option 2: Policy excludes BG users individually (already validated in Test-CommonFilters)
+                #           and has no excludeGroups (to avoid excluding additional users unintentionally)
+                (Test-IsNullOrEmptyArray $_.conditions.users.excludeGroups)
+            })
+            Write-Host "Policies after BG exclusion check (group or user): $($validPolicies.Count)"
+        }
+        else{
+            # BG accounts do not share any group - excludeGroups must be empty
+            $validPolicies = @($validPolicies | Where-Object {
+                (Test-IsNullOrEmptyArray $_.conditions.users.excludeGroups)
+            })
+            Write-Host "Policies after excludeGroups empty check: $($validPolicies.Count)"
         }
     }
 
 
     Write-Host "validPolicies.count: $($validPolicies.count)"
-    if ($validPolicies -and $validPolicies.count -ne 0){
+    if ($validPolicies.Count -gt 0){
         $IsCompliantPasswordCAP = $true
     }
     else {
