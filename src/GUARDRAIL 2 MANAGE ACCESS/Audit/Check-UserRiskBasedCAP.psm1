@@ -238,7 +238,7 @@ function Get-UserRiskBasedCAP {
     if ($validPolicies.Count -gt 0){
         if ($commonBGGroups.Count -gt 0){
             # Both BG accounts share at least one group - accept either group exclusion OR user exclusion with no extra groups
-            $validPolicies = @( $validPolicies | Where-Object {
+            $validPolicies = @($validPolicies | Where-Object {
                 # Option 1: Policy excludes at least one of the common BG groups
                 $policyExcludesCommonGroup = $false
                 foreach ($bgGroup in $commonBGGroups) {
@@ -262,7 +262,7 @@ function Get-UserRiskBasedCAP {
                 # Option 2: Policy excludes BG users individually (already validated in Test-CommonFilters)
                 #           and has no excludeGroups (to avoid excluding additional users unintentionally)
                 (Test-IsNullOrEmptyArray $_.conditions.users.excludeGroups)
-            }
+            })
             Write-Host "Policies after BG exclusion check (group or user): $($validPolicies.Count)"
         }
         else{
