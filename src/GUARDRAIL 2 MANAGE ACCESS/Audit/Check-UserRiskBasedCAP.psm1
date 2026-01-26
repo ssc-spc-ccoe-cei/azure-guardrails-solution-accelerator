@@ -267,9 +267,9 @@ function Get-UserRiskBasedCAP {
         }
         else{
             # BG accounts do not share any group - excludeGroups must be empty
-            $validPolicies = @( $validPolicies | Where-Object {
+            $validPolicies = @($validPolicies | Where-Object {
                 (Test-IsNullOrEmptyArray $_.conditions.users.excludeGroups)
-            }
+            })
             Write-Host "Policies after excludeGroups empty check: $($validPolicies.Count)"
         }
     }
