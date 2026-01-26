@@ -2444,7 +2444,7 @@
       "name": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary_by_prefix_all(\"{RunTime}\", 24, \"\")",
+        "query": "gr_summary_by_prefix_alla(\"{RunTime}\", 24, \"\")",
         "size": 0,
         "title": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
         "timeContext": {
