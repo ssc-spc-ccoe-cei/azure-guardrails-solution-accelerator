@@ -1,3 +1,30 @@
+function Get-SubscriptionOwnerCount {
+    <#
+    .SYNOPSIS
+        Returns the number of owners assigned to the current subscription.
+    .DESCRIPTION
+        Queries Azure RBAC to count how many principals have the Owner role
+        at the subscription scope. This is used to determine how many contacts
+        the "Owner" notification target actually represents.
+    #>
+    [CmdletBinding()]
+    param()
+
+    # Azure built-in Owner role ID (constant across all Azure tenants)
+    $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+
+    try {
+        $ownerAssignments = Get-AzRoleAssignment -RoleDefinitionId $ownerRoleId -ErrorAction Stop | 
+            Where-Object { $_.Scope -match '^/subscriptions/[^/]+$' }
+        
+        return @($ownerAssignments).Count
+    }
+    catch {
+        Write-Warning "Failed to retrieve subscription owner assignments: $_"
+        return 0
+    }
+}
+
 function Get-ActionGroupContactTokens {
     param (
         [Parameter(Mandatory=$true)]
@@ -49,6 +76,10 @@ function Validate-ActionGroups {
     )
 
     # Evaluate each action group's contacts and surface aggregate results back to the caller.
+    # When subscription owners are used as notification targets, the effective contact count
+    # depends on the actual number of owners assigned to the subscription:
+    #   - 1 owner assigned -> counts as 1 contact
+    #   - 2+ owners assigned -> counts as 2 contacts
 
     # Retrieve action group IDs
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
@@ -67,6 +98,7 @@ function Validate-ActionGroups {
         $errors.Add('No action groups were returned for this Service Health alert evaluation.') | Out-Null
         return [PSCustomObject]@{
             UniqueContacts = @()
+            EffectiveContactCount = 0
             Comments = $comments
             Errors = $errors
         }
@@ -84,8 +116,35 @@ function Validate-ActionGroups {
         }
     }
 
+    # Separate owner tokens from other contact tokens (e.g., email addresses)
+    $ownerTokens = @($uniqueContacts | Where-Object { $_ -like 'Owner::*' })
+    $nonOwnerTokens = @($uniqueContacts | Where-Object { $_ -notlike 'Owner::*' })
+
+    # Calculate effective contact count
+    # Non-owner contacts (emails, etc.) count as 1 each
+    $effectiveContactCount = $nonOwnerTokens.Count
+
+    # If subscription owners are being used as notification targets, check actual owner count
+    if ($ownerTokens.Count -gt 0) {
+        $subscriptionOwnerCount = Get-SubscriptionOwnerCount
+        
+        if ($subscriptionOwnerCount -eq 0) {
+            # No owners found - this is unusual, log a warning
+            $errors.Add("No subscription owners found for subscription '$SubscriptionName' despite Owner role being configured as a notification target.") | Out-Null
+        }
+        elseif ($subscriptionOwnerCount -eq 1) {
+            # Only 1 owner assigned -> counts as 1 contact
+            $effectiveContactCount += 1
+        }
+        else {
+            # 2+ owners assigned -> counts as 2 contacts
+            $effectiveContactCount += 2
+        }
+    }
+
     return [PSCustomObject]@{
         UniqueContacts = @($uniqueContacts)
+        EffectiveContactCount = $effectiveContactCount
         Comments = $comments
         Errors = $errors
     }
@@ -228,7 +287,13 @@ function Get-ServiceHealthAlerts {
                         # Preserve detailed errors so downstream diagnostics remain intact.
                         $ErrorList.Add($err) | Out-Null
                     }
-                    $totalContacts = $evaluation.UniqueContacts.Count
+
+                    # $totalContacts = $evaluation.UniqueContacts.Count
+                    
+                    # Use EffectiveContactCount which accounts for subscription owner count logic:
+                    # - If owners are used and only 1 owner is assigned -> counts as 1 contact
+                    # - If owners are used and 2+ owners are assigned -> counts as 2 contacts
+                    $totalContacts = $evaluation.EffectiveContactCount
                     if ($totalContacts -ge 2) {
                         $isCompliant = $true
                         if ([string]::IsNullOrWhiteSpace($Comments)) {

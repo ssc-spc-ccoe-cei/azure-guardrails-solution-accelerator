@@ -182,6 +182,7 @@ function Get-DFCAcheckComplianceStatus {
 
     $ownerConfigured = ($ownerState -eq "On") -and ($ownerRoles -contains "Owner")
 
+
     $ownerContactCount = 0
     if($ownerConfigured){
         #get the actual number of subscription owners
@@ -190,10 +191,6 @@ function Get-DFCAcheckComplianceStatus {
             if($null -ne $subsOwners ){
                 $subsOwnerCount = $subsOwners.Count
 
-                if ($subsOwnerCount -lt 1){
-                    # No owners found, treat as not properly configured
-                    $ownerConfigured = $false
-                }
                 # If only 1 subscription owner, counts as 1 contact; if more than 1 owner, counts as 2 contacts
                 if ($subsOwnerCount -eq 1) {
                     $ownerContactCount = 1
@@ -201,34 +198,24 @@ function Get-DFCAcheckComplianceStatus {
                 }
                 elseif ($subsOwnerCount -gt 1) {
                     $ownerContactCount = 2
-                    Write-Verbose "Subscription has $ownerCount owners, counting as 2 contacts"
+                    Write-Verbose "Subscription has $subsOwnerCount owners, counting as 2 contacts"
                 }
-
+                # If $subsOwnerCount is 0, $ownerContactCount remains 0
             }
         }
         catch{
-            Write-Verbose "Failed to get owner count for subscription $subscriptionName : $_"
-            # If we can't get owner count, treat as if owner notification is not properly configured
-            $ownerContactCount = 0
-            # No owners found, treat as not properly configured
-            $ownerConfigured = $false
+            Write-Verbose "Failed to get owner count for subscription $SubscriptionName : $_"
+            # If we can't get owner count, $ownerContactCount remains 0
         }
     }
 
-    if($ownerContactCount -eq 2){
-        Write-Verbose "Owner notification is properly configured with multiple owners for subscription $subscriptionName"
-        $isCompliant = $true
-    }
-    else{
-        # Calculate total contact count (emails + owner contact equivalent)
-        $totalContactCount = $emailCount + $ownerContactCount
+    # Calculate total contact count (emails + owner contact equivalent)
+    $totalContactCount = $emailCount + $ownerContactCount
 
-         # CONDITION: Check if there are at least 2 contacts total
-        if ($totalContactCount -lt 2) {
-            $isCompliant = $false
-            $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $SubscriptionName
-        }
-
+    # CONDITION: Check if there are at least 2 contacts total
+    if ($totalContactCount -lt 2) {
+        $isCompliant = $false
+        $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $SubscriptionName
     }
     
     if ($null -eq $alertNotification) {
@@ -353,7 +340,6 @@ function Get-DefenderForCloudAlerts {
         # -------------------------
         $subRegisteredOk = $true
         $subRegisteredComment = $null
-        $defenderPlansStandard = @()
         if (-not $authHeader) {
             $subRegisteredOk = $false
             $subRegisteredComment = "Unable to evaluate Defender for Cloud registration (missing auth token)."
@@ -374,29 +360,20 @@ function Get-DefenderForCloudAlerts {
                     if ($defenderPlansStandard.Count -eq 0 -or $null -eq $defenderPlansStandard) {
                         $subRegisteredOk = $false
                     }
-                    else{
-                        $subRegisteredOk = $true
-                    }
-                }
-                else{
-                    $subRegisteredOk = $false
-                    
                 }
             }
             catch{
                 $subRegisteredOk = $false
                 
             }
-
         }
-
         
         
         # If not registered, output non-compliant result and continue to next subscription
         if(-not $subRegisteredOk){
             Write-Host "Defender for Cloud (Microsoft.Security) is not registered for subscription $subName ($subId)."
-            $Comments = if(subRegisteredComment){ $subRegisteredComment } else { $msgTable.NotAllSubsHaveDefenderPlans }
-            
+            $Comments = if($subRegisteredComment){ $subRegisteredComment } else { $msgTable.NotAllSubsHaveDefenderPlans }
+
             $C = [PSCustomObject]@{
                 SubscriptionName = $subName
                 ComplianceStatus = $false
@@ -516,7 +493,6 @@ function Get-DefenderForCloudAlerts {
             Write-Verbose "Completed compliance output for subscription: $subName"
 
         }
-        
     }
 
     return [PSCustomObject]@{
