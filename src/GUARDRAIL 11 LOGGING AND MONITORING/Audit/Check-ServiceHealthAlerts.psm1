@@ -106,7 +106,15 @@ function Validate-ActionGroups {
 
     foreach ($id in $actionGroupIdsArray){
         try{
-            $actionGroups = Get-AzActionGroup -InputObject $id
+            # # $actionGroups = Get-AzActionGroup -InputObject $id
+            # $actionGroups = Get-AzActionGroup | Where-Object { $_.Id -eq $id }
+            
+            # Get the action group and filter for enabled only
+            $actionGroups = Get-AzActionGroup | Where-Object { $_.Id -eq $id -and $_.Enabled -eq $true }
+            if ($null -eq $actionGroups) {
+                Write-Verbose "Action group '$id' is not enabled or not found, skipping."
+                continue
+            }
             $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroups
             foreach ($token in $contactTokens) { $uniqueContacts.Add($token) | Out-Null }
         }
@@ -289,7 +297,7 @@ function Get-ServiceHealthAlerts {
                     }
 
                     # $totalContacts = $evaluation.UniqueContacts.Count
-                    
+
                     # Use EffectiveContactCount which accounts for subscription owner count logic:
                     # - If owners are used and only 1 owner is assigned -> counts as 1 contact
                     # - If owners are used and 2+ owners are assigned -> counts as 2 contacts
