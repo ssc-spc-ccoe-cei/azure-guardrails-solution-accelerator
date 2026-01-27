@@ -641,6 +641,7 @@ resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSear
     //  - ReportTime: exact report timestamp (string) to match records
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
+    // status only reflects mandatory controls
     query: 'let enableMultiCloudProfile = tobool(${enableMultiCloudProfile}); \n let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where enableMultiCloudProfile == false or toint(column_ifexists("Profile_d","")) != 1 \n | where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix3a'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
@@ -675,6 +676,7 @@ resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSea
     //  - ReportTime: exact report timestamp (string) to match records
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
+    // status only reflects mandatory controls
     query: 'let enableMultiCloudProfile = tobool(${enableMultiCloudProfile}); \n let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where enableMultiCloudProfile == false or toint(column_ifexists("Profile_d","")) !in (1, 2) \n | where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix56a'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
@@ -723,6 +725,7 @@ resource grSummaryByPrefixAlla 'Microsoft.OperationalInsights/workspaces/savedSe
     // Parameters:
     //  - ReportTime: exact report timestamp (string) to match records
     //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
+    // status only reflects mandatory controls
     query: '''
 union
     gr_summary_by_prefix_a("GUARDRAIL 1", ReportTime, TimeWindowHours, showIfRequired),
@@ -745,16 +748,14 @@ union
     version: 2
   }
 }
-resource grSummary 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
-  name: 'gr_summary'
+resource grSummaryAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+  name: 'gr_summary_all'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
-    displayName: 'gr_summary'
-    // KQL function: summarize per Guardrail (e.g., GR1, GR2, ...)
-    // Parameters:
-    //  - ReportTime: exact report timestamp (string) to match records
-    //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
+    displayName: 'gr_summary_all'
+    // KQL function: summarize for all Guardrail (e.g., GR1, GR2, ...)
+    // status only reflects mandatory controls
     query: '''
 union isfuzzy=true
   (gr_summary_by_prefix_a("GUARDRAIL 1",  ReportTime, TimeWindowHours, showIfRequired)),
@@ -788,8 +789,125 @@ union isfuzzy=true
 '''
 
 
-    functionAlias: 'gr_summary'
+    functionAlias: 'gr_summary_all'
     functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    version: 2
+  }
+}
+resource grSummaryMandatory 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+  name: 'gr_summary_mandatory'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_summary_mandatory'
+    // KQL function: summarize per Guardrail (e.g., GR1, GR2, ...)
+    // Parameters:
+    //  - ReportTime: exact report timestamp (string) to match records
+    //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
+    query: '''
+union isfuzzy=true
+  (gr_summary_by_prefix("GUARDRAIL 1",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 2",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 4",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 8",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
+| project
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Controls", 0))),
+    NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
+    UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
+| summarize
+    TotalControls     = sum(TotalControls_norm),
+    NonCompliantItems = sum(NonCompliantItems_norm),
+    UnknownItems      = sum(UnknownItems_norm)
+| extend HasNonCompliance = NonCompliantItems > 0
+| extend Status = iff(HasNonCompliance, "🔴", "🟢")
+| project ["Guardrail"] = "Mandatory Guardrails",
+         ["Total # Controls"] = TotalControls,
+         ["NonCompliant Items"] = NonCompliantItems,
+         ["Unknown Items"] = UnknownItems,
+         Status
+'''
+
+
+    functionAlias: 'gr_summary_mandatory'
+    functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    version: 2
+  }
+}
+resource grSummaryRecommended 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+  name: 'gr_summary_recommended'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_summary_recommended'
+    // KQL function: summarize per Guardrail (e.g., GR1, GR2, ...)
+    // Parameters:
+    //  - ReportTime: exact report timestamp (string) to match records
+    //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
+    query: '''
+union isfuzzy=true
+  (gr_summary_by_prefix("GUARDRAIL 1",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 2",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 4",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 8",  ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
+| project
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Controls", 0))),
+    NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
+    UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
+| summarize
+    TotalControls     = sum(TotalControls_norm),
+    NonCompliantItems = sum(NonCompliantItems_norm),
+    UnknownItems      = sum(UnknownItems_norm)
+| extend HasNonCompliance = NonCompliantItems > 0
+| extend Status = iff(HasNonCompliance, "🔴", "🟢")
+| project ["Guardrail"] = "Recommended Guardrails",
+         ["Total # Controls"] = TotalControls,
+         ["NonCompliant Items"] = NonCompliantItems,
+         ["Unknown Items"] = UnknownItems,
+         Status
+'''
+
+
+    functionAlias: 'gr_summary_recommended'
+    functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    version: 2
+  }
+}
+resource grSummary 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+  name: 'gr_summary'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_summary'
+    // KQL function: summarize per Guardrail (e.g., GR1, GR2, ...)
+    // Parameters:
+    //  - ReportTime: exact report timestamp (string) to match records
+    //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
+    query: '''
+union
+    gr_summary_all(ReportTime, TimeWindowHours, ""),
+    gr_summary_mandatory(ReportTime, TimeWindowHours, true),
+    gr_summary_recommended(ReportTime, TimeWindowHours, false)
+'''
+    functionAlias: 'gr_summary'
+    functionParameters: 'ReportTime:string, TimeWindowHours:int'
     version: 2
   }
 }

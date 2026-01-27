@@ -2399,7 +2399,7 @@
       "name": "Overall Compliance Status",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary(\"{RunTime}\", 24,\"\")",
+        "query": "gr_summary(\"{RunTime}\", 24)",
         "size": 4,
         "title": "Overall Compliance Status",
         "timeContext": {
