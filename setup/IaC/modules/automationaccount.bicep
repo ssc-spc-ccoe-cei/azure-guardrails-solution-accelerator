@@ -67,7 +67,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
-        version: '1.1.9'
+        version: '1.2.0'
       }}
   }
   resource module3 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -115,7 +115,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
-        version: '1.2.7'
+        version: '1.2.8'
       }}
   }
   resource module10 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -140,7 +140,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
-        version: '1.0.10'
+        version: '1.1.0'
       }}
   }
   resource module13 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -222,7 +222,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
-        version: '1.3.4'
+        version: '1.3.5'
       }}
   }
   resource module27 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -255,7 +255,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
-        version: '1.0.5'
+        version: '1.0.6'
       }}
   }
   resource module31 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -393,7 +393,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }}
   }
   
