@@ -58,13 +58,14 @@ function Get-BreakGlassAccountLicense {
         $urlPath = '/users/' + $BGAccount.UserPrincipalName
 
         try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+            $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
         }
         catch {
             $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
         }
-        $data = $response.Content
+        # Single-object endpoint: data is in $response.Content.value
+        $data = $response.Content.value
         $BGAccount.ID = $data.id
 
         # if BGA account exists, check for license details
@@ -72,20 +73,21 @@ function Get-BreakGlassAccountLicense {
             $urlPath = '/users/' + $BGAccount.UserPrincipalName + '/licenseDetails'
 
             try {
-                $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+                $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
             }
             catch {
-                If ($response.statusCode -eq 404) { continue }
+                If ($response.StatusCode -eq 404) { continue }
                 $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_")
                 Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
             }
 
-            $data = $response.Content
+            # List endpoint: data is in $response.Content.value
+            $licenseDetails = $response.Content.value
 
             # A user can have multiple licences, so we need to look for all license sku that have AAD_PREMIUM_P2 in the service plans included
             # https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference
-            if (($data.value).Length -gt 0 ) {
-                $BGAccount.LicenseAADP2Found = $data.value.servicePlans.ServicePlanName -contains 'AAD_PREMIUM_P2'
+            if ($licenseDetails.Length -gt 0 ) {
+                $BGAccount.LicenseAADP2Found = $licenseDetails.servicePlans.ServicePlanName -contains 'AAD_PREMIUM_P2'
             }
         }
     }
@@ -124,5 +126,4 @@ function Get-BreakGlassAccountLicense {
     }
     return $moduleOutput
 }
-
 

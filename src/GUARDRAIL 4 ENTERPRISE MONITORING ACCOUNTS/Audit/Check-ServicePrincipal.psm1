@@ -78,9 +78,9 @@ function Check-DepartmentServicePrincipalName {
     else {
         $urlPath = "/servicePrincipals/" + $SPNObject.Id
         try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop 
+            $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop 
                    
-            if ($response.statusCode -eq 200) {
+            if ($response.StatusCode -eq 200) {
                 $servicePrincipalName.ServicePrincipalNameAPPID = $SPNObject.AppId
                 $servicePrincipalName.ServicePrincipalNameID = $SPNObject.Id
                 $servicePrincipalName.ComplianceComments = $msgTable.SPNExist
@@ -89,14 +89,14 @@ function Check-DepartmentServicePrincipalName {
                 Verify-Roles -ServicePrincipal $servicePrincipalName -msgTable $msgTable
            
             }
-            elseif ($response.statusCode -eq 404) {
+            elseif ($response.StatusCode -eq 404) {
                 $IsCompliant = $false
                 $ServicePrincipalName.ComplianceStatus = $IsCompliant
                 $ServicePrincipalName.ComplianceComments = $msgTable.NoSPN  
             }
             else {
-                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'$($response.statusCode)" )
-                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $($response.statusCode)"
+                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'$($response.StatusCode)" )
+                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $($response.StatusCode)"
                 $IsCompliant = $false
                 $ServicePrincipalName.ComplianceComments = $msgTable.NoSPN
             }

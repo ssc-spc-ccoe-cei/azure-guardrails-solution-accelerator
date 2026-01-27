@@ -66,9 +66,10 @@ function Get-BreakGlassAccounts {
     # get 1st break glass account
     try {
       $urlPath = $FirstBreakGlassAcct.apiUrl
-      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+      $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
 
-      $data = $response.Content
+      # Single-object endpoint: data is in $response.Content.value
+      $data = $response.Content.value
       
       if ($data.userType -eq "Member") {
         $FirstBreakGlassAcct.ComplianceStatus = $true
@@ -82,9 +83,10 @@ function Get-BreakGlassAccounts {
     # get 2nd break glass account
     try {
       $urlPath = $SecondBreakGlassAcct.apiURL
-      $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+      $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
 
-      $data = $response.Content
+      # Single-object endpoint: data is in $response.Content.value
+      $data = $response.Content.value
 
       if ($data.userType -eq "Member") {
         $SecondBreakGlassAcct.ComplianceStatus = $true
@@ -120,5 +122,4 @@ function Get-BreakGlassAccounts {
   }
   return $moduleOutput   
 }    
-
 
