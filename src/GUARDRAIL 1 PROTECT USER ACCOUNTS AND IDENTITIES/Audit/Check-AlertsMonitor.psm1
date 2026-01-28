@@ -107,7 +107,7 @@ function Check-AlertsMonitor {
     $signInLogsCompliance = $false
     $auditLogsCompliance = $false
     $Comments = ""
-    $ErrorList = @()
+    $ErrorList = New-Object System.Collections.Generic.List[string]
 
     #Queries that will be used in alert rules
     # Escape UPNs to prevent regex injection
@@ -153,12 +153,12 @@ function Check-AlertsMonitor {
         Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
     }
     catch {
-        $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+        $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscriptionId)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
             error message: $_")
         #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
         #    error message: $_"
-        throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
+        throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscriptionId)'--ensure `
             you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
     }
 
