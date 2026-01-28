@@ -317,7 +317,7 @@ setSecurityContact = Please set a security contact for Defender for Cloud in the
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 
 noServiceHealthActionGroups = Missing an action group for Service Health Alerts associated with the subscription: {0}
-NotAllSubsHaveAlerts = Service Health Alerts are not enabled for this subscription. Ensure that service health alerts are configured on this subscription and that the action group associated with the alert has at least two different contacts.
+noEnabledHealthAlert = Service Health Alerts are not enabled for this subscription. Ensure that service health alerts are configured on this subscription and that the action group associated with the alert has at least two different contacts.
 EventTypeMissingForAlert = Missing a required event type (Service Issue, Health Advisory, or Security Advisory) for the subscription: {0}
 noServiceHealthAlerts = Could not retrieve any configured alerts for the subscription: "{0}". Ensure all subscriptions have Service Health Alerts configured and the action group associated to the alert  has at least two different contacts.
 nonCompliantActionGroups = This subscription has Service Health Alerts, but not all action groups are correctly configured. A minimum of two email addresses or subscription owners are required for the action group.

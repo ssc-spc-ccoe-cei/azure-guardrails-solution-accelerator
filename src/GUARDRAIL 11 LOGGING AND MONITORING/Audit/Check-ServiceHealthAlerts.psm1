@@ -72,6 +72,7 @@ function Validate-ActionGroups {
     param (
         [Object[]] $alerts,
         [Parameter(Mandatory=$true)][string] $SubscriptionName,
+        [Parameter(Mandatory=$true)][string] $SubscriptionId,
         [Parameter(Mandatory=$true)][hashtable] $MsgTable
     )
 
@@ -81,21 +82,50 @@ function Validate-ActionGroups {
     #   - 1 owner assigned -> counts as 1 contact
     #   - 2+ owners assigned -> counts as 2 contacts
 
-    # Retrieve action group IDs
+    # Retrieve action group IDs from alerts
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
     if ($actionGroupIds -isnot [System.Collections.IEnumerable] -or $actionGroupIds -is [string]) {
         $actionGroupIds = @($actionGroupIds)
     }
-    $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds)
 
     # Track aggregate outcomes.
     $uniqueContacts = New-Object 'System.Collections.Generic.HashSet[string]'
     $comments = [System.Collections.ArrayList]::new()
     $errors = [System.Collections.ArrayList]::new()
 
-    if ($actionGroupIdsArray.Count -eq 0) {
+    # Get all enabled action groups for the subscription
+    try{
+        # $allEnabledActionGroups = Get-AzActionGroup -SubscriptionId $SubscriptionId | Where-Object { $_.Enabled -eq $true }
+        $allEnabledActionGroups = Get-AzActionGroup | Where-Object { $_.Enabled -eq $true }
+        # Get action group IDs
+        $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
+        if ($actionGroupIdsArray.Count -eq 0) {
+            $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
+            $errors.Add('No action groups were returned for this Service Health alert evaluation.') | Out-Null
+            return [PSCustomObject]@{
+                UniqueContacts = @()
+                EffectiveContactCount = 0
+                Comments = $comments
+                Errors = $errors
+            }
+        }
+        # Retrieve contacts from each action group
+        foreach ($id in $actionGroupIdsArray){
+            try{
+                $actionGroup = $allEnabledActionGroups | Where-Object { $_.Id -eq $id }
+                $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroup
+                foreach ($token in $contactTokens) { $uniqueContacts.Add($token) | Out-Null }
+            }
+            catch{
+                $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
+                $errors.Add("Error retrieving service health alerts for the following subscription: $_") | Out-Null
+            }
+        }
+        
+    }
+    catch{
         $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
-        $errors.Add('No action groups were returned for this Service Health alert evaluation.') | Out-Null
+        $errors.Add("Error retrieving service health alerts for the following subscription: $_") | Out-Null
         return [PSCustomObject]@{
             UniqueContacts = @()
             EffectiveContactCount = 0
@@ -103,26 +133,7 @@ function Validate-ActionGroups {
             Errors = $errors
         }
     }
-
-    foreach ($id in $actionGroupIdsArray){
-        try{
-            # # $actionGroups = Get-AzActionGroup -InputObject $id
-            # $actionGroups = Get-AzActionGroup | Where-Object { $_.Id -eq $id }
-            
-            # Get the action group and filter for enabled only
-            $actionGroups = Get-AzActionGroup | Where-Object { $_.Id -eq $id -and $_.Enabled -eq $true }
-            if ($null -eq $actionGroups) {
-                Write-Verbose "Action group '$id' is not enabled or not found, skipping."
-                continue
-            }
-            $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroups
-            foreach ($token in $contactTokens) { $uniqueContacts.Add($token) | Out-Null }
-        }
-        catch{
-            $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
-            $errors.Add("Error retrieving service health alerts for the following subscription: $_") | Out-Null
-        }
-    }
+    
 
     # Separate owner tokens from other contact tokens (e.g., email addresses)
     $ownerTokens = @($uniqueContacts | Where-Object { $_ -like 'Owner::*' })
@@ -202,11 +213,12 @@ function Get-ServiceHealthAlerts {
 
 
         try{
-            # Get all service health alerts
+            # List activity log alerts (service health alerts) under current subscription set by the context
             $alerts = Get-AzActivityLogAlert
+            $enabledAlerts = $alerts | Where-Object { $_.Enabled -eq $true }
 
             # Filter for Service Health Alerts with specific conditions
-            $filteredAlerts = $alerts | Where-Object {
+            $filteredAlerts = $enabledAlerts | Where-Object {
                 # Check if any condition in ConditionAllOf matches the criteria
                 $_.ConditionAllOf | Where-Object { 
                     $_.Field -eq "category" -and $_.Equal -eq "ServiceHealth" 
@@ -216,7 +228,7 @@ function Get-ServiceHealthAlerts {
             # Condition: Non-compliant if no health alert found for any sub
             if($null -eq $filteredAlerts){
                 $isCompliant = $false
-                $Comments = $msgTable.NotAllSubsHaveAlerts
+                $Comments = $msgTable.noEnabledHealthAlert
             }
             else{
                 # Case: when all the alert event types are selected from the conditions/properties.incidentType
@@ -243,7 +255,6 @@ function Get-ServiceHealthAlerts {
                     $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                 }
                 else{
-                    
                     $requiredFilteredAlerts = $filteredAlertsContions | where-object {
                         $_.ConditionAllOf | Where-Object {
                             $_.AnyOf | Where-Object { 
@@ -280,7 +291,7 @@ function Get-ServiceHealthAlerts {
                 
                 if($checkActionGroupNext){
                     # Store compliance state of each action group
-                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -MsgTable $msgTable
+                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable
 
                     if ($evaluation.Comments.Count -gt 0) {
                         # Merge any helper-supplied context (e.g., missing action group) with existing comments.
@@ -295,8 +306,6 @@ function Get-ServiceHealthAlerts {
                         # Preserve detailed errors so downstream diagnostics remain intact.
                         $ErrorList.Add($err) | Out-Null
                     }
-
-                    # $totalContacts = $evaluation.UniqueContacts.Count
 
                     # Use EffectiveContactCount which accounts for subscription owner count logic:
                     # - If owners are used and only 1 owner is assigned -> counts as 1 contact
@@ -320,7 +329,7 @@ function Get-ServiceHealthAlerts {
         }
         catch{
             $isCompliant = $false
-            $Comments = $msgTable.noServiceHealthAlerts -f $subscription
+            $Comments = $msgTable.noServiceHealthAlerts -f $subscription.Name
             $ErrorList += "Error retrieving service health alerts for the following subscription: $_"
         }
         
