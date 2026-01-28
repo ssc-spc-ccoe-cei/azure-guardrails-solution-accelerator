@@ -8,7 +8,7 @@ param deployLAW bool
 param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
-param enableMultiCloudProfile bool
+param enableMultiCloudProfile bool = true
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
