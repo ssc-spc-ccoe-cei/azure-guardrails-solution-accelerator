@@ -318,7 +318,7 @@ setSecurityContact = Veuillez définir un contact de sécurité pour Defender fo
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
 
 noServiceHealthActionGroups = Il manque un groupe d'action pour les alertes de santé du service « Service Health Alerts » associées à l'abonnement : {0}
-NotAllSubsHaveAlerts = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour cet abonnement. Assurez-vous que les alertes d'état du service sont configurées sur cet abonnement et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
+NoEnabledHealthAlert = Les alertes de santé du service « Service Health Alerts » ne sont pas activées pour cet abonnement. Assurez-vous que les alertes d'état du service sont configurées sur cet abonnement et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
 EventTypeMissingForAlert = L'alerte manque un type d'événement requis (problème de service, avis de santé ou avis de sécurité) « Service Issue, Health Advisory or Security Advisory » pour l'abonnement : {0}
 noServiceHealthAlerts = Ne peut pas récupérer les alertes configurées pour l'abonnement : "{0}". Assurez-vous que les alertes de santé du service « Service Health Alerts » sont configurées sur tous les abonnements et que le groupe d'action associé à l'alerte a au moins deux contacts différents.
 nonCompliantActionGroups = Toutes les alertes de santé du service « Service Health Alerts » sont configurées sur cet abonnement. Par contre, tous les groupes d'action associés ne sont pas configurés correctement. Au moins deux adresses de courriel ou propriétaires d'abonnement sont requis pour le groupe d'action.
@@ -327,17 +327,17 @@ compliantServiceHealthAlerts = Les alertes de santé du service « Service Healt
 monitoringChecklist = Liste de vérification de surveillance : Cas d'utilisation
 
 msDefenderChecks = Alertes infonuagiques et vérification des événements de Microsoft Defender
-NotAllSubsHaveDefenderPlans = L'abonnement {0} n'a pas de plan « Defender ». Activez la surveillance « Defender » pour cet abonnement.
+NotAllSubsHaveDefenderPlans = L'abonnement n'a pas de plan « Defender ». Activez la surveillance « Defender » pour cet abonnement.
 errorRetrievingNotifications = Les notifications d'alerte MS Defender pour cet abonnement ne sont pas configurées. Assurez-vous qu'elles correspondent aux exigences du guide de Remédiation.
 EmailsOrOwnerNotConfigured = Les notifications d'alerte MS Defender pour l'abonnement {0} n'incluent pas au moins deux adresses courriel ou propriétaires d'abonnement. Configurez les pour s'assurer que les alertes sont envoyées correctement
 AlertNotificationNotConfigured = Les notifications d'alerte MS Defender sont incorrectes. Définissez la gravité à Moyen ou Faible et passez en revue le Guide de Remédiation.
 AttackPathNotificationNotConfigured = Les alertes Defender doivent inclure des notifications de chemin d'attaque. Assurez-vous que la gravité est définie à Moyen ou Faible pour les alertes de chaque abonnement, selon les instructions fournies dans le guide de Remédiation.
 DefenderCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement et les notifications par courriel sont correctement configurées.
-DefenderNonCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement, mais le contact de sécurité chargé de recevoir les notifications par courriel n'est pas correctement configuré.
-noDefenderAtAll = Aucun abonnement ne dispose d'un plan Defender. Activez la surveillance Defender pour les abonnements.
+DefenderEnabledNonCompliant = MS Defender pour l'infonuagique est activé pour cet abonnement, mais le contact de sécurité chargé de recevoir les notifications par courriel n'est pas correctement configuré.
 NoMappedResourcesOrMappingIncomplete = Aucune ressource (c'est-à-dire machines virtuelles, serveurs, comptes de stockage, etc.) n'est directement protégée par l'offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard.
 CwpPlansNotStandard = Les plans CWP suivants en cours d'utilisation ne sont pas considérés comme appartenant au niveau Standard pour Defender pour l'infonuagique : {0}.
 CoverageOk = Tous les plans CWP utilisent une offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard et sont considérés comme conformes.
+
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

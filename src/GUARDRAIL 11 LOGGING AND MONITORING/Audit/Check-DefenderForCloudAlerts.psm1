@@ -78,6 +78,7 @@ function Get-DefenderPricingBySubscription {
         }
     }
     catch {
+        Write-Host "Failed to get Defender pricings for subscription ${SubscriptionId}: $_"
         if ($ErrorList) { [void]$ErrorList.Add("ARM Defender pricings failed for ${SubscriptionId}: $_") }
     }
 
@@ -158,6 +159,8 @@ function Get-DFCAcheckComplianceStatus {
         [pscustomobject] $apiResponse,
         [Parameter(Mandatory)]
         [hashtable] $msgTable,
+        [Parameter (Mandatory)]
+        [string] $subscriptionId,
         [Parameter(Mandatory)]
         [string] $SubscriptionName
     )
@@ -170,7 +173,7 @@ function Get-DFCAcheckComplianceStatus {
     $ownerRoles          = $apiResponse.properties.notificationsByRole.roles
     $ownerState          = $apiResponse.properties.notificationsByRole.state
 
-
+    # Filter to get required notification types
     $alertNotification = $notificationSources | Where-Object { $_.sourceType -eq "Alert" -and $_.minimalSeverity -in @("Medium","Low") }
     $attackPathNotification = $notificationSources | Where-Object { $_.sourceType -eq "AttackPath" -and $_.minimalRiskLevel -in @("Medium","Low") }
 
@@ -179,11 +182,42 @@ function Get-DFCAcheckComplianceStatus {
 
     $ownerConfigured = ($ownerState -eq "On") -and ($ownerRoles -contains "Owner")
 
-    if (($emailCount -lt 2) -or (-not $ownerConfigured)) {
+
+    $ownerContactCount = 0
+    if($ownerConfigured){
+        #get the actual number of subscription owners
+        try{
+            $subsOwners = Get-AzRoleAssignment -RoleDefinitionName "Owner" -Scope "/subscriptions/$subscriptionId" -ErrorAction Stop
+            if($null -ne $subsOwners ){
+                $subsOwnerCount = $subsOwners.Count
+
+                # If only 1 subscription owner, counts as 1 contact; if more than 1 owner, counts as 2 contacts
+                if ($subsOwnerCount -eq 1) {
+                    $ownerContactCount = 1
+                    Write-Verbose "Subscription has 1 owner, counting as 1 contact"
+                }
+                elseif ($subsOwnerCount -gt 1) {
+                    $ownerContactCount = 2
+                    Write-Verbose "Subscription has $subsOwnerCount owners, counting as 2 contacts"
+                }
+                # If $subsOwnerCount is 0, $ownerContactCount remains 0
+            }
+        }
+        catch{
+            Write-Verbose "Failed to get owner count for subscription $SubscriptionName : $_"
+            # If we can't get owner count, $ownerContactCount remains 0
+        }
+    }
+
+    # Calculate total contact count (emails + owner contact equivalent)
+    $totalContactCount = $emailCount + $ownerContactCount
+
+    # CONDITION: Check if there are at least 2 contacts total
+    if ($totalContactCount -lt 2) {
         $isCompliant = $false
         $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $SubscriptionName
     }
-
+    
     if ($null -eq $alertNotification) {
         $isCompliant = $false
         $Comments = $msgTable.AlertNotificationNotConfigured
@@ -302,98 +336,163 @@ function Get-DefenderForCloudAlerts {
         }
 
         # -------------------------
-        # A) CWP Coverage check (ARG counts + ARM pricing)
+        # A) Subscription: Defender for Cloud coverage check
         # -------------------------
-        $coverageOk = $true
-        $coverageComment = $null
-
+        $subRegisteredOk = $true
+        $subRegisteredComment = $null
         if (-not $authHeader) {
-            $coverageOk = $false
-            $coverageComment = "Unable to evaluate CWP coverage (missing auth token)."
+            $subRegisteredOk = $false
+            $subRegisteredComment = "Unable to evaluate Defender for Cloud registration (missing auth token)."
         }
-        else {
-            $pricingByPlan = Get-DefenderPricingBySubscription -SubscriptionId $subId -AuthHeader $authHeader -ErrorList $ErrorList
-            $cov = Get-CwpCoverageForSubscription -SubscriptionId $subId -CountsBySub $countsBySub -TypeToPlanMap $TypeToPlanMap -PricingByPlan $pricingByPlan -msgTable $msgTable
-            $coverageOk = [bool]$cov.coverageOk
-            $coverageComment = $cov.comment
-        }
+        else{  
+            # Check if any Defender for Cloud Standard plan is enabled/registered for the subscription
+            Write-Verbose "Checking Defender for Cloud registration for subscription: $subName ($subId)"
 
-        # -------------------------
-        # B) Notifications / securityContacts check (ARM)
-        # -------------------------
-        $notifOk = $true
-        $notifComment = $null
-
-        if (-not $authHeader) {
-            $notifOk = $false
-            $notifComment = $msgTable.errorRetrievingNotifications
-        }
-        else {
-            $restUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
-            try {
-                $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader -ErrorAction Stop
-                $r = Get-DFCAcheckComplianceStatus -apiResponse $response -msgTable $msgTable -SubscriptionName $subName
-                $notifOk = [bool]$r.isCompliant
-                $notifComment = $r.Comments
+            $regUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security?api-version=2020-01-01"
+            try{
+                $response = Invoke-RestMethod -Uri $regUri -Method Get -Headers $authHeader -ErrorAction Stop
+                
+                $subRegisteredOk = if($response.registrationState -eq "Registered"){ $true } else { $false }
+                if($subRegisteredOk){
+                    # Further check if any Standard plan is enabled
+                    $defenderPlans = Get-AzSecurityPricing
+                    $defenderPlansStandard = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'}
+                    if ($defenderPlansStandard.Count -eq 0 -or $null -eq $defenderPlansStandard) {
+                        $subRegisteredOk = $false
+                    }
+                }
             }
-            catch {
-                $restUri2 = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security/securityContacts?api-version=2023-12-01-preview"
+            catch{
+                $subRegisteredOk = $false
+                
+            }
+        }
+        
+        
+        # If not registered, output non-compliant result and continue to next subscription
+        if(-not $subRegisteredOk){
+            Write-Host "Defender for Cloud (Microsoft.Security) is not registered for subscription $subName ($subId)."
+            $Comments = if($subRegisteredComment){ $subRegisteredComment } else { $msgTable.NotAllSubsHaveDefenderPlans }
+
+            $C = [PSCustomObject]@{
+                SubscriptionName = $subName
+                ComplianceStatus = $false
+                ControlName      = $ControlName
+                Comments         = $Comments
+                ItemName         = $ItemName
+                ReportTime       = $ReportTime
+                itsgcode         = $itsgcode
+            }
+            if ($EnableMultiCloudProfiles) {
+                $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
+                [void]$PsObject.Add($result)
+            } else {
+                [void]$PsObject.Add($C)
+            }
+
+            Write-Verbose "Completed compliance output for subscription: $subName"
+            continue
+        }
+        else{
+            Write-Host "Defender for Cloud (Microsoft.Security) is registered and has Standard plans for subscription $subName ($subId)."
+            # -------------------------
+            # B) CWP Coverage check (ARG counts + ARM pricing)
+            # -------------------------
+            $coverageOk = $true
+            $coverageComment = $null
+
+            if (-not $authHeader) {
+                $coverageOk = $false
+                $coverageComment = "Unable to evaluate CWP coverage (missing auth token)."
+            }
+            else {
+                $pricingByPlan = Get-DefenderPricingBySubscription -SubscriptionId $subId -AuthHeader $authHeader -ErrorList $ErrorList
+                $cov = Get-CwpCoverageForSubscription -SubscriptionId $subId -CountsBySub $countsBySub -TypeToPlanMap $TypeToPlanMap -PricingByPlan $pricingByPlan -msgTable $msgTable
+                $coverageOk = [bool]$cov.coverageOk
+                $coverageComment = $cov.comment
+            }
+
+            # -------------------------
+            # C) Notifications / securityContacts check (ARM)
+            # -------------------------
+            $notifOk = $true
+            $notifComment = $null
+
+            if (-not $authHeader) {
+                $notifOk = $false
+                $notifComment = $msgTable.errorRetrievingNotifications
+            }
+            else {
+                $restUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
                 try {
-                    $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader -ErrorAction Stop
-                    if (-not $response2.value -or $response2.value.Count -eq 0) {
-                        $notifOk = $false
-                        $notifComment = $msgTable.DefenderNonCompliant
-                    }
-                    else {
-                        
-                        $notifOk = $false
-                        $notifComment = $msgTable.DefenderNonCompliant
-                    }
+                    $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader -ErrorAction Stop
+                    $r = Get-DFCAcheckComplianceStatus -apiResponse $response -msgTable $msgTable -subscriptionId $subId -SubscriptionName $subName
+                    $notifOk = [bool]$r.isCompliant
+                    $notifComment = $r.Comments
                 }
                 catch {
-                    $notifOk = $false
-                    $notifComment = $msgTable.errorRetrievingNotifications
-                    [void]$ErrorList.Add("Error invoking securityContacts for $subName ($subId): $_")
+                    $restUri2 = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security/securityContacts?api-version=2023-12-01-preview"
+                    try {
+                        $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader -ErrorAction Stop
+                        if (-not $response2.value -or $response2.value.Count -eq 0) {
+                            $notifOk = $false
+                            $notifComment = $msgTable.DefenderEnabledNonCompliant
+                            Write-Verbose "Notification alert default security contact is not configured properly for $($subName)"
+                        }
+                        else {
+                            # Keeping else condition open to formally identify this probable use case
+                            Write-Verbose "Identify use case requirement"
+                            $notifOk = $false
+                            $notifComment = $msgTable.DefenderEnabledNonCompliant
+                        }
+                    }
+                    catch {
+                        $notifOk = $false
+                        $notifComment = $msgTable.errorRetrievingNotifications
+                        [void]$ErrorList.Add("Error invoking securityContacts for $subName ($subId): $_")
+                    }
                 }
             }
+            
+
+            # -------------------------
+            # Final compliance (both must pass)
+            # -------------------------
+            $isCompliant = ($coverageOk -and $notifOk )
+
+            $commentsList = New-Object System.Collections.Generic.List[string]
+            if (-not $coverageOk -and $coverageComment) { $commentsList.Add($coverageComment) | Out-Null }
+            if (-not $notifOk -and $notifComment) { $commentsList.Add($notifComment) | Out-Null }
+
+            if ($isCompliant) {
+                $commentsList.Add($msgTable.DefenderCompliant) | Out-Null
+            }
+            elseif ($commentsList.Count -eq 0) {
+                $commentsList.Add($msgTable.DefenderNonCompliant) | Out-Null
+            }
+
+            $Comments = ($commentsList | Where-Object { $_ } | Select-Object -Unique) -join " | "
+
+            $C = [PSCustomObject]@{
+                SubscriptionName = $subName
+                ComplianceStatus = $isCompliant
+                ControlName      = $ControlName
+                Comments         = $Comments
+                ItemName         = $ItemName
+                ReportTime       = $ReportTime
+                itsgcode         = $itsgcode
+            }
+
+            if ($EnableMultiCloudProfiles) {
+                $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
+                [void]$PsObject.Add($result)
+            } else {
+                [void]$PsObject.Add($C)
+            }
+
+            Write-Verbose "Completed compliance output for subscription: $subName"
+
         }
-
-        # -------------------------
-        # Final compliance (both must pass)
-        # -------------------------
-        $isCompliant = ($coverageOk -and $notifOk)
-
-        $commentsList = New-Object System.Collections.Generic.List[string]
-        if (-not $coverageOk -and $coverageComment) { $commentsList.Add($coverageComment) | Out-Null }
-        if (-not $notifOk -and $notifComment) { $commentsList.Add($notifComment) | Out-Null }
-
-        if ($isCompliant) {
-            $commentsList.Add($msgTable.DefenderCompliant) | Out-Null
-        }
-        elseif ($commentsList.Count -eq 0) {
-            $commentsList.Add($msgTable.DefenderNonCompliant) | Out-Null
-        }
-
-        $Comments = ($commentsList | Where-Object { $_ } | Select-Object -Unique) -join " | "
-
-        $C = [PSCustomObject]@{
-            SubscriptionName = $subName
-            ComplianceStatus = $isCompliant
-            ControlName      = $ControlName
-            Comments         = $Comments
-            ItemName         = $ItemName
-            ReportTime       = $ReportTime
-            itsgcode         = $itsgcode
-        }
-
-        if ($EnableMultiCloudProfiles) {
-            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
-            [void]$PsObject.Add($result)
-        } else {
-            [void]$PsObject.Add($C)
-        }
-
-        Write-Verbose "Completed compliance output for subscription: $subName"
     }
 
     return [PSCustomObject]@{
