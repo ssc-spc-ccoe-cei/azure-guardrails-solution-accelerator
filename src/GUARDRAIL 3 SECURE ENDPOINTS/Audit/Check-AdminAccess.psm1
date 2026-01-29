@@ -18,11 +18,11 @@ function Get-AdminAccess {
     $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     
-    # Get conditional access policies
+    # Get conditional access policies (using paginated query to handle >100 policies)
     $CABaseAPIUrl = '/identity/conditionalAccess/policies'
     try {
-        $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
-        $caps = $response.Content.value
+        $response = Invoke-GraphQueryEX -urlPath $CABaseAPIUrl -ErrorAction Stop
+        $caps = if ($response.Content -and $response.Content.value) { $response.Content.value } else { @() }
     }
     catch {
         $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
