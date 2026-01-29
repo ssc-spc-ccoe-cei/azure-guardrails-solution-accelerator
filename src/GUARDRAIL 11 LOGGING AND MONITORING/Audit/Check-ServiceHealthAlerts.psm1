@@ -15,7 +15,6 @@ function Get-SubscriptionOwnerCount {
 
     try {
         $ownerAssignments = Get-AzRoleAssignment -RoleDefinitionId $ownerRoleId -ErrorAction Stop 
-        
         return @($ownerAssignments).Count
     }
     catch {
@@ -167,7 +166,6 @@ function Validate-ActionGroups {
         Errors = $errors
     }
 }
-
 
 function Get-ServiceHealthAlerts {
     param (
