@@ -14,8 +14,7 @@ function Get-SubscriptionOwnerCount {
     $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 
     try {
-        $ownerAssignments = Get-AzRoleAssignment -RoleDefinitionId $ownerRoleId -ErrorAction Stop | 
-            Where-Object { $_.Scope -match '^/subscriptions/[^/]+$' }
+        $ownerAssignments = Get-AzRoleAssignment -RoleDefinitionId $ownerRoleId -ErrorAction Stop 
         
         return @($ownerAssignments).Count
     }
@@ -41,16 +40,16 @@ function Get-ActionGroupContactTokens {
 
     $emailTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.EmailReceiver) {
-                $_.EmailReceiver | ForEach-Object { $_.EmailAddress }
+            if ($_.EmailReceivers) {
+                $_.EmailReceivers | ForEach-Object { $_.EmailAddress }
             }
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | ForEach-Object { $_.Trim() } | Sort-Object -Unique
 
     $ownerTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceiver) {
-                $_.ArmRoleReceiver | Where-Object {
+            if ($_.ArmRoleReceivers) {
+                $_.ArmRoleReceivers | Where-Object {
                     $_.RoleName -eq 'Owner' -or $_.RoleId -eq $ownerRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -210,7 +209,6 @@ function Get-ServiceHealthAlerts {
         # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
-
 
         try{
             # List activity log alerts (service health alerts) under current subscription set by the context
