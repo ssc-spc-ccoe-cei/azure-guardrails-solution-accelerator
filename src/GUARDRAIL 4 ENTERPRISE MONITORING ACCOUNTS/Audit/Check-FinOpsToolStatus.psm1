@@ -75,10 +75,10 @@ function Check-ServicePrincipalExists {
     )
     try {
         $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-        $data = $response.Content
+        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
+        $data = $response.Content.value
                 
-        if ($null -ne $data.value -and $data.value.Count -gt 0) {
+        if ($null -ne $data -and $data.Count -gt 0) {
             return $true
         } else {
             Write-Warning "SPN '$spnName' not found"
@@ -98,22 +98,24 @@ function Check-ServicePrincipalPermissions {
     try {
         # First, get the Service Principal
         $urlPath = "/servicePrincipals?`$filter=displayName eq '$spnName'"
-        $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
+        $spnList = $response.Content.value
         
-        if ($null -eq $response.Content.value -or $response.Content.value.Count -eq 0) {
+        if ($null -eq $spnList -or $spnList.Count -eq 0) {
             Write-Warning "Service Principal '$spnName' not found"
             return $false
         }
         
-        $spn = $response.Content.value[0]
+        $spn = $spnList[0]
 
         # Get the oauth2PermissionGrants
         $urlPath = "/servicePrincipals/{0}/oauth2PermissionGrants" -f $spn.id
-        $permissionResponse = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+        $permissionResponse = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
+        $permissionGrants = $permissionResponse.Content.value
         
         # Check delegated permissions (oauth2PermissionGrants)
         $delegatedPermissions = @()
-        foreach ($grant in $permissionResponse.Content.value) {
+        foreach ($grant in $permissionGrants) {
             $delegatedPermissions += $grant.scope -split ' '
         }
 
