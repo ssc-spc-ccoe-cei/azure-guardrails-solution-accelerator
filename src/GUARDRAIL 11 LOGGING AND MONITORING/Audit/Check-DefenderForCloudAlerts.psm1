@@ -1,5 +1,21 @@
 
+
 function Get-ResourceCountsFromARG {
+    <#
+    .SYNOPSIS
+        Retrieves resource counts by type across all subscriptions using Azure Resource Graph.
+
+    .DESCRIPTION
+        Queries Azure Resource Graph to count resources grouped by subscription ID and resource type.
+        Returns a nested hashtable where the first key is the subscription ID and the second key is
+        the resource type, with the count as the value. Supports pagination for large environments.
+
+    .PARAMETER ErrorList
+        An optional ArrayList to collect error messages encountered during execution.
+
+    .OUTPUTS
+        Hashtable - A nested hashtable with structure: countsBySub[subscriptionId][resourceType] = count
+    #>
     param(
         [AllowEmptyCollection()]
         [System.Collections.ArrayList]$ErrorList
@@ -48,9 +64,28 @@ resources
     }
 }
 
-
-#ARM: Defender pricing per subscription
 function Get-DefenderPricingBySubscription {
+    <#
+    .SYNOPSIS
+        Retrieves Microsoft Defender for Cloud pricing tiers for a specific subscription.
+
+    .DESCRIPTION
+        Calls the Azure Management REST API to retrieve the Defender for Cloud pricing configuration
+        for the specified subscription. Returns a hashtable mapping each Defender plan name to its
+        pricing tier (e.g., 'Free' or 'Standard').
+
+    .PARAMETER SubscriptionId
+        The Azure subscription ID to query for Defender pricing information.
+
+    .PARAMETER AuthHeader
+        A hashtable containing the Authorization header with a valid Bearer token for Azure REST API calls.
+
+    .PARAMETER ErrorList
+        An optional ArrayList to collect error messages encountered during execution.
+
+    .OUTPUTS
+        Hashtable - A hashtable with structure: pricingByPlan[planName] = pricingTier
+    #>
     param(
         [Parameter(Mandatory)]
         [string]$SubscriptionId,
@@ -78,7 +113,7 @@ function Get-DefenderPricingBySubscription {
         }
     }
     catch {
-        Write-Host "Failed to get Defender pricings for subscription ${SubscriptionId}: $_"
+        Write-Verbose "Failed to get Defender pricings for subscription ${SubscriptionId}: $_"
         if ($ErrorList) { [void]$ErrorList.Add("ARM Defender pricings failed for ${SubscriptionId}: $_") }
     }
 
@@ -88,6 +123,33 @@ function Get-DefenderPricingBySubscription {
 
 
 function Get-CwpCoverageForSubscription {
+    <#
+    .SYNOPSIS
+        Evaluates Cloud Workload Protection (CWP) coverage for a subscription based on deployed resources.
+
+    .DESCRIPTION
+        Determines which Defender for Cloud plans are required based on the types of resources deployed
+        in the subscription, then verifies that those plans are enabled at the 'Standard' tier.
+        Returns a coverage assessment including required plans, missing plans, and compliance status.
+
+    .PARAMETER SubscriptionId
+        The Azure subscription ID to evaluate for CWP coverage.
+
+    .PARAMETER CountsBySub
+        A hashtable from Get-ResourceCountsFromARG containing resource counts by subscription and type.
+
+    .PARAMETER TypeToPlanMap
+        A hashtable mapping Azure resource types to their corresponding Defender for Cloud plan names.
+
+    .PARAMETER PricingByPlan
+        A hashtable from Get-DefenderPricingBySubscription containing plan names and their pricing tiers.
+
+    .PARAMETER msgTable
+        A hashtable containing localized message strings for compliance comments.
+
+    .OUTPUTS
+        PSCustomObject - An object with properties: coverageOk, requiredPlans, missingPlans, and comment.
+    #>
     param(
         [Parameter(Mandatory)]
         [string]$SubscriptionId,
@@ -152,8 +214,34 @@ function Get-CwpCoverageForSubscription {
 }
 
 
-#DFCA notification compliance
 function Get-DFCAcheckComplianceStatus {
+        
+    <#
+    .SYNOPSIS
+        Checks Defender for Cloud Alerts (DFCA) notification compliance for a subscription.
+
+    .DESCRIPTION
+        Evaluates the security contact configuration for a subscription to ensure compliance with
+        notification requirements. Validates that:
+        - At least 2 contacts are configured (via email addresses and/or subscription owners)
+        - Alert notifications are configured for Medium or Low severity
+        - Attack path notifications are configured for Medium or Low risk level
+
+    .PARAMETER apiResponse
+        The API response object from the securityContacts REST API containing notification settings.
+
+    .PARAMETER msgTable
+        A hashtable containing localized message strings for compliance comments.
+
+    .PARAMETER subscriptionId
+        The Azure subscription ID being evaluated.
+
+    .PARAMETER SubscriptionName
+        The display name of the Azure subscription being evaluated.
+
+    .OUTPUTS
+        PSCustomObject - An object with properties: Comments (string) and isCompliant (boolean).
+    #>
     param(
         [Parameter(Mandatory)]
         [pscustomobject] $apiResponse,
