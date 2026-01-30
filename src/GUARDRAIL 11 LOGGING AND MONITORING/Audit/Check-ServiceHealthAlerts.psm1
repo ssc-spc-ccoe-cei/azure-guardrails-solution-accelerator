@@ -18,20 +18,26 @@ function Get-SubscriptionOwnerCount {
         return @($ownerAssignments).Count
     }
     catch {
-        Write-Warning "Failed to retrieve subscription owner assignments: $_"
+        Write-Output "Failed to retrieve subscription owner assignments: $_"
         return 0
     }
 }
 
 function Get-ActionGroupContactTokens {
+    <#
+    .SYNOPSIS
+        Extracts contact tokens from an Azure Action Group.
+    .DESCRIPTION
+        Gathers all notification targets (email addresses and owner-role tokens)
+        from the specified action group(s). Returns a unified set of "contact tokens"
+        that can be used for counting unique contacts. Email addresses are returned
+        as-is, while Owner role receivers are prefixed with "Owner::" to distinguish
+        them from direct email contacts.
+    #>
     param (
         [Parameter(Mandatory=$true)]
         [Object[]] $ActionGroup
     )
-
-    # Helper purpose:
-    #   Gather every notification target for an action group so the caller can apply a simple count
-    #   check. The output is a set of "contact tokens" (emails plus owner-role tokens).
 
     # Azure built-in Owner role ID (constant across all Azure tenants)
     # Used as fallback when RoleName property is not populated
@@ -61,12 +67,31 @@ function Get-ActionGroupContactTokens {
             }
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | Sort-Object -Unique
+    Write-Warning "ownerTokens: $ownerTokens"
+    Write-Warning "emailTokens: $emailTokens"
+
+    Write-Host "ownerTokens: $ownerTokens"
+    Write-Host "emailTokens: $emailTokens"
+
 
     # Return array as single object (leading comma prevents PowerShell from unrolling the array)
     return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }))
 }
 
 function Validate-ActionGroups {
+    <#
+    .SYNOPSIS
+        Validates action groups associated with service health alerts.
+    .DESCRIPTION
+        Evaluates each action group's notification contacts and returns aggregate
+        compliance results. When subscription owners are configured as notification
+        targets, the effective contact count depends on the actual number of owners
+        assigned to the subscription:
+        - 1 owner assigned -> counts as 1 contact
+        - 2+ owners assigned -> counts as 2 contacts
+        Returns a PSCustomObject containing unique contacts, effective contact count,
+        comments, and any errors encountered during validation.
+    #>
     param (
         [Object[]] $alerts,
         [Parameter(Mandatory=$true)][string] $SubscriptionName,
@@ -99,7 +124,7 @@ function Validate-ActionGroups {
         $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
         if ($actionGroupIdsArray.Count -eq 0) {
             $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
-            $errors.Add('No action groups were returned for this Service Health alert evaluation.') | Out-Null
+            $errors.Add('No action groups were returned for this Service Health alert evaluation for the subscription: $SubscriptionName') | Out-Null
             return [PSCustomObject]@{
                 UniqueContacts = @()
                 EffectiveContactCount = 0
@@ -112,6 +137,7 @@ function Validate-ActionGroups {
             try{
                 $actionGroup = $allEnabledActionGroups | Where-Object { $_.Id -eq $id }
                 $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroup
+                Write-Warning "above contact tokens for $SubscriptionName : $contactTokens"
                 foreach ($token in $contactTokens) { $uniqueContacts.Add($token) | Out-Null }
             }
             catch{
