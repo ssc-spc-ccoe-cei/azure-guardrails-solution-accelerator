@@ -67,12 +67,6 @@ function Get-ActionGroupContactTokens {
             }
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | Sort-Object -Unique
-    Write-Warning "ownerTokens: $ownerTokens"
-    Write-Warning "emailTokens: $emailTokens"
-
-    Write-Host "ownerTokens: $ownerTokens"
-    Write-Host "emailTokens: $emailTokens"
-
 
     # Return array as single object (leading comma prevents PowerShell from unrolling the array)
     return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }))
@@ -88,7 +82,7 @@ function Validate-ActionGroups {
         targets, the effective contact count depends on the actual number of owners
         assigned to the subscription:
         - 1 owner assigned -> counts as 1 contact
-        - 2+ owners assigned -> counts as 2 contacts
+        - 2 or more owners assigned -> counts as 2 contacts
         Returns a PSCustomObject containing unique contacts, effective contact count,
         comments, and any errors encountered during validation.
     #>
@@ -103,7 +97,7 @@ function Validate-ActionGroups {
     # When subscription owners are used as notification targets, the effective contact count
     # depends on the actual number of owners assigned to the subscription:
     #   - 1 owner assigned -> counts as 1 contact
-    #   - 2+ owners assigned -> counts as 2 contacts
+    #   - 2 or more owners assigned -> counts as 2 contacts
 
     # Retrieve action group IDs from alerts
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
@@ -118,7 +112,6 @@ function Validate-ActionGroups {
 
     # Get all enabled action groups for the subscription
     try{
-        # $allEnabledActionGroups = Get-AzActionGroup -SubscriptionId $SubscriptionId | Where-Object { $_.Enabled -eq $true }
         $allEnabledActionGroups = Get-AzActionGroup | Where-Object { $_.Enabled -eq $true }
         # Get action group IDs
         $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
@@ -137,7 +130,7 @@ function Validate-ActionGroups {
             try{
                 $actionGroup = $allEnabledActionGroups | Where-Object { $_.Id -eq $id }
                 $contactTokens = Get-ActionGroupContactTokens -ActionGroup $actionGroup
-                Write-Warning "above contact tokens for $SubscriptionName : $contactTokens"
+                
                 foreach ($token in $contactTokens) { $uniqueContacts.Add($token) | Out-Null }
             }
             catch{
@@ -180,7 +173,7 @@ function Validate-ActionGroups {
             $effectiveContactCount += 1
         }
         else {
-            # 2+ owners assigned -> counts as 2 contacts
+            # 2 or more owners assigned -> counts as 2 contacts
             $effectiveContactCount += 2
         }
     }

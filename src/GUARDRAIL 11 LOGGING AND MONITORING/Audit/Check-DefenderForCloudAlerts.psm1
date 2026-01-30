@@ -209,11 +209,11 @@ function Get-DFCAcheckComplianceStatus {
         }
     }
 
-    # Calculate total contact count (emails + owner contact equivalent)
-    $totalContactCount = $emailCount + $ownerContactCount
+    # Calculate effective contact count (emails + owner contact equivalent)
+    $effectiveContactCount = $emailCount + $ownerContactCount
 
     # CONDITION: Check if there are at least 2 contacts total
-    if ($totalContactCount -lt 2) {
+    if ($effectiveContactCount -lt 2) {
         $isCompliant = $false
         $Comments = $msgTable.EmailsOrOwnerNotConfigured -f $SubscriptionName
     }
