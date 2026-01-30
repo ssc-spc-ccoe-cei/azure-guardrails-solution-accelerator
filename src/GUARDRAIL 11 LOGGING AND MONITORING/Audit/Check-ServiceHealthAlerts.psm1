@@ -45,16 +45,16 @@ function Get-ActionGroupContactTokens {
 
     $emailTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.EmailReceivers) {
-                $_.EmailReceivers | ForEach-Object { $_.EmailAddress }
+            if ($_.EmailReceiver) {
+                $_.EmailReceiver | ForEach-Object { $_.EmailAddress }
             }
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | ForEach-Object { $_.Trim() } | Sort-Object -Unique
 
     $ownerTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceivers) {
-                $_.ArmRoleReceivers | Where-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
                     $_.RoleName -eq 'Owner' -or $_.RoleId -eq $ownerRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
