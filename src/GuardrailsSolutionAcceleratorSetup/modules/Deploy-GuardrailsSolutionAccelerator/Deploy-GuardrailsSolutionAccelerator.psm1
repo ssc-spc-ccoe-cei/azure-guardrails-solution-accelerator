@@ -44,7 +44,14 @@ Function New-GSACoreResourceDeploymentParamObject {
         [string]
         $moduleBaseURL
     )
-    
+    $enableMcp =
+        if ($config.ContainsKey('runtime') -and
+            $config['runtime'].ContainsKey('enableMultiCloudProfiles') -and
+            ($config['runtime']['enableMultiCloudProfiles'] -is [bool])) {
+            [bool]$config['runtime']['enableMultiCloudProfiles']
+        } else {
+            $false
+        }
     Write-Verbose "Creating bicep parameters file for this deployment."
     $templateParameterObject = @{
         'AllowedLocationInitiativeId'           = $config.AllowedLocationInitiativeId
@@ -74,6 +81,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'subscriptionId'                        = (Get-AzContext).Subscription.Id
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
         'securityRetentionDays'                   = $config.securityRetentionDays
+        'enableMultiCloudProfiles'              = $enableMcp
     }
     # Adding URL parameter if specified
     [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
