@@ -120,12 +120,27 @@ function get-tenantdata {
         }
         if ($TenantDomain -ne "" -and $TenantDomain -ne "N/A")
         {
-
             $ReportTimeQuery="GuardrailsCompliance_CL | where TimeGenerated > ago(24h)| summarize mrt=max(ReportTime_s)"
-            $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $ReportTimeQuery).Results)   
-            $LatestRT=$resultsArray[0].mrt
+            try {
+                $queryResult = Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $ReportTimeQuery -ErrorAction SilentlyContinue
+                if ($null -eq $queryResult -or $null -eq $queryResult.Results) {
+                    "No query results for $TenantDomain workspace $ws - table may not exist yet."
+                    continue
+                }
+                $resultsArray = [System.Linq.Enumerable]::ToArray($queryResult.Results)
+                if ($null -eq $resultsArray -or $resultsArray.Count -eq 0) {
+                    "No data found for $TenantDomain in workspace $ws."
+                    continue
+                }
+                $LatestRT = $resultsArray[0].mrt
+            }
+            catch {
+                "Error querying ReportTime for $TenantDomain in workspace $ws : $_"
+                continue
+            }
+            
             if ([string]::IsNullOrEmpty($LatestRT)) {
-                "No data found for $TenantDomain."
+                "No recent data found for $TenantDomain."
             }
             else {
                 <# Action when all if and elseif conditions are false #>               
