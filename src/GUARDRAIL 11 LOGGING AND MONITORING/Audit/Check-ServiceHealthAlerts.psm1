@@ -117,7 +117,7 @@ function Validate-ActionGroups {
         $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
         if ($actionGroupIdsArray.Count -eq 0) {
             $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
-            $errors.Add('No action groups were returned for this Service Health alert evaluation for the subscription: $SubscriptionName') | Out-Null
+            $errors.Add("No action groups were returned for this Service Health alert evaluation for the subscription: $SubscriptionName") | Out-Null
             return [PSCustomObject]@{
                 UniqueContacts = @()
                 EffectiveContactCount = 0
