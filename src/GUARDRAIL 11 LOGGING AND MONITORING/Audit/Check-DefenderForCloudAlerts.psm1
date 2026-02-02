@@ -556,7 +556,7 @@ function Get-DefenderForCloudAlerts {
                 $commentsList.Add($msgTable.DefenderCompliant) | Out-Null
             }
             elseif ($commentsList.Count -eq 0) {
-                $commentsList.Add($msgTable.DefenderNonCompliant) | Out-Null
+                $commentsList.Add($msgTable.DefenderEnabledNonCompliant) | Out-Null
             }
 
             $Comments = ($commentsList | Where-Object { $_ } | Select-Object -Unique) -join " | "
