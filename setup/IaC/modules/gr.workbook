@@ -244,7 +244,7 @@
         "comparison": "isEqualTo",
         "value": "gr1"
       },
-      "name": "Gr1"
+      "name": "Query - 1"
     },
     {
       "type": 1,
@@ -264,7 +264,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 1\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 1 Mandatory Compliance",
         "timeContext": {
@@ -305,7 +305,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 1: PROTECT USER ACCOUNTS AND IDENTITIES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 1\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 1 Recommended Compliance",
         "timeContext": {
@@ -426,7 +426,7 @@
       "content": {
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
-        "size": 1,
+        "size": 0,
         "title": "GR 2",
         "timeContext": {
           "durationMs": 86400000
@@ -458,7 +458,7 @@
         "comparison": "isEqualTo",
         "value": "gr2"
       },
-      "name": "Gr1 - Copy"
+      "name": "Query - 2"
     },
     {
       "type": 1,
@@ -478,7 +478,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 2: MANAGE ACCESS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 2\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 2 Mandatory Compliance",
         "timeContext": {
@@ -519,7 +519,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 2: MANAGE ACCESS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 2\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 2 Recommended Compliance",
         "timeContext": {
@@ -698,7 +698,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")",
+        "query": "gr_data3(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")",
         "size": 0,
         "title": "GR 3",
         "timeContext": {
@@ -731,7 +731,7 @@
         "comparison": "isEqualTo",
         "value": "gr3"
       },
-      "name": "Gr1 - Copy - Copy"
+      "name": "Query - 3"
     },
     {
       "type": 1,
@@ -751,7 +751,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 3: SECURE ENDPOINTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 3\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 3 Mandatory Compliance",
         "timeContext": {
@@ -792,7 +792,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 3: SECURE ENDPOINTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 3\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 3 Recommended Compliance",
         "timeContext": {
@@ -873,7 +873,7 @@
         "comparison": "isEqualTo",
         "value": "gr4"
       },
-      "name": "query - 6 - Copy"
+      "name": "query - 4"
     },
     {
       "type": 1,
@@ -893,7 +893,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 4\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 4 Mandatory Compliance",
         "timeContext": {
@@ -934,7 +934,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 4: ENTERPRISE MONITORING ACCOUNTS\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 4\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 4 Recommended Compliance",
         "timeContext": {
@@ -982,7 +982,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
+        "query": "gr_data56(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 5",
         "timeContext": {
@@ -1013,7 +1013,7 @@
         "comparison": "isEqualTo",
         "value": "gr5"
       },
-      "name": "query - 2 - Copy - Copy"
+      "name": "query - 5"
     },
     {
       "type": 1,
@@ -1033,7 +1033,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 5: DATA LOCATION\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie56(\"GUARDRAIL 5\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 5 Mandatory Compliance",
         "timeContext": {
@@ -1074,7 +1074,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 5: DATA LOCATION\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie56(\"GUARDRAIL 5\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 5 Recommended Compliance",
         "timeContext": {
@@ -1122,7 +1122,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
+        "query": "gr_data56(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 6",
         "timeContext": {
@@ -1154,7 +1154,7 @@
         "comparison": "isEqualTo",
         "value": "gr6"
       },
-      "name": "query - 26 - Copy"
+      "name": "query - 6"
     },
     {
       "type": 1,
@@ -1174,7 +1174,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 6: PROTECTION OF DATA-AT-REST\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie56(\"GUARDRAIL 6\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 6 Mandatory Compliance",
         "timeContext": {
@@ -1215,7 +1215,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 6: PROTECTION OF DATA-AT-REST\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie56(\"GUARDRAIL 6\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 6 Recommended Compliance",
         "timeContext": {
@@ -1263,7 +1263,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data567(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
+        "query": "gr_data7(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 7",
         "timeContext": {
@@ -1294,7 +1294,7 @@
         "comparison": "isEqualTo",
         "value": "gr7"
       },
-      "name": "query - 6 - Copy"
+      "name": "query - 7"
     },
     {
       "type": 1,
@@ -1314,7 +1314,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 7\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 7 Mandatory Compliance",
         "timeContext": {
@@ -1355,7 +1355,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 7: PROTECTION OF DATA-IN-TRANSIT\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 7\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 7 Recommended Compliance",
         "timeContext": {
@@ -1434,7 +1434,7 @@
         "comparison": "isEqualTo",
         "value": "gr8"
       },
-      "name": "query - 2"
+      "name": "query - 8"
     },
     {
       "type": 1,
@@ -1454,7 +1454,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 8: SEGMENT AND SEPARATE\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 8\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 8 Mandatory Compliance",
         "timeContext": {
@@ -1495,7 +1495,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 8: SEGMENT AND SEPARATE\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 8\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 8 Recommended Compliance",
         "timeContext": {
@@ -1543,7 +1543,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 9\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ['Item Name']=column_ifexists(\"ItemName_s\", \"\"), ['Subscription Name']=column_ifexists(\"SubscriptionName_s\", \"\"), ['VNet Name']=column_ifexists('VNETName_s', ''), Status=case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"🟢\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"🔴\", \"➖\"), Comments=column_ifexists(\"Comments_s\", \"\"), ['ITSG Control']=column_ifexists(\"itsgcode_s\", \"\"), Remediation=gr_geturl(replace_string(ctrlprefix,\" \",\"\"),column_ifexists(\"itsgcode_s\", \"\")), Profile=iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')",
+        "query": "gr_data9(\"GUARDRAIL 9\",\"{RunTime}\", \"{RequiredYesNo}\")",
         "size": 0,
         "title": "GR 9",
         "timeContext": {
@@ -1582,7 +1582,7 @@
         "comparison": "isEqualTo",
         "value": "gr9"
       },
-      "name": "query - 3"
+      "name": "query - 9"
     },
     {
       "type": 1,
@@ -1602,7 +1602,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 9: NETWORK SECURITY SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 9\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 9 Mandatory Compliance",
         "timeContext": {
@@ -1643,7 +1643,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 9: NETWORK SECURITY SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 9\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 9 Recommended Compliance",
         "timeContext": {
@@ -1691,8 +1691,8 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 4,
+        "query": "gr_data3(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")",
+        "size": 0,
         "title": "GR 10",
         "timeContext": {
           "durationMs": 86400000
@@ -1724,7 +1724,7 @@
         "comparison": "isEqualTo",
         "value": "gr10"
       },
-      "name": "query - 2 - Copy - Copy - Copy"
+      "name": "query - 10"
     },
     {
       "type": 1,
@@ -1744,7 +1744,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 10: CYBER DEFENSE SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 10\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 10 Mandatory Compliance",
         "timeContext": {
@@ -1785,7 +1785,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 10: CYBER DEFENSE SERVICES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 10\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 10 Recommended Compliance",
         "timeContext": {
@@ -1834,7 +1834,7 @@
       "content": {
         "version": "KqlItem/1.0",
         "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 1,
+        "size": 0,
         "title": "GR 11",
         "timeContext": {
           "durationMs": 86400000
@@ -1872,7 +1872,7 @@
         "comparison": "isEqualTo",
         "value": "gr11"
       },
-      "name": "query - 2 - Copy - Copy - Copy - Copy"
+      "name": "query - 11"
     },
     {
       "type": 1,
@@ -1892,7 +1892,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 11: LOGGING AND MONITORING\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 11\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 11 Mandatory Compliance",
         "timeContext": {
@@ -1933,7 +1933,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 11: LOGGING AND MONITORING\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 11\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 11 Recommended Compliance",
         "timeContext": {
@@ -1982,7 +1982,7 @@
       "content": {
         "version": "KqlItem/1.0",
         "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")",
-        "size": 4,
+        "size": 0,
         "title": "GR 12",
         "timeContext": {
           "durationMs": 86400000
@@ -2014,7 +2014,7 @@
         "comparison": "isEqualTo",
         "value": "gr12"
       },
-      "name": "GR12"
+      "name": "Query - 12"
     },
     {
       "type": 1,
@@ -2034,7 +2034,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 12\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 12 Mandatory Compliance",
         "timeContext": {
@@ -2075,7 +2075,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie(\"GUARDRAIL 12\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 12 Recommended Compliance",
         "timeContext": {
@@ -2123,7 +2123,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data3(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )",
         "size": 0,
         "title": "GR 13",
         "timeContext": {
@@ -2156,7 +2156,7 @@
         "comparison": "isEqualTo",
         "value": "gr13"
       },
-      "name": "Gr13"
+      "name": "Query - 13"
     },
     {
       "type": 1,
@@ -2176,7 +2176,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 13: PLAN FOR CONTINUITY\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 13\",\"{RunTime}\",  \"True\" )",
         "size": 4,
         "title": "Guardrail 13 Mandatory Compliance",
         "timeContext": {
@@ -2217,7 +2217,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\" and column_ifexists(\"ControlName_s\", \"\") == \"GUARDRAIL 13: PLAN FOR CONTINUITY\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title",
+        "query": "gr_pie3(\"GUARDRAIL 13\",\"{RunTime}\",  \"False\" )",
         "size": 4,
         "title": "Guardrail 13 Recommended Compliance",
         "timeContext": {
@@ -2265,7 +2265,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"True\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title|extend SortOrder = case(Status == 'Compliant Items', 1,Status == 'Non-compliant Items', 2, 3)| order by SortOrder asc",
+        "query": "gr_pie_all(\"{RunTime}\",  \"True\" )",
         "size": 3,
         "title": "Overall Mandatory Compliance",
         "timeContext": {
@@ -2328,7 +2328,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}' and column_ifexists(\"Required_s\", \"\") ==\"False\"\n| extend Status=case(\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, 'Compliant Items',\n    column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, 'Non-compliant Items',\n    'Not Applicable Items'\n    ), Title=\"Items by Compliance\"\n| summarize Total=count() by Status, Title|extend SortOrder = case(Status == 'Compliant Items', 1,Status == 'Non-compliant Items', 2, 3)| order by SortOrder asc",
+        "query": "gr_pie_all(\"{RunTime}\",  \"False\" )",
         "size": 3,
         "title": "Overall Recommended Compliance",
         "timeContext": {
@@ -2396,6 +2396,191 @@
     },
     {
       "type": 3,
+      "name": "Overall Compliance Status",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary(\"{RunTime}\", 24)",
+        "size": 4,
+        "title": "Overall Compliance Status",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "summary"
+            }
+       ],
+       "name": "Overall Compliance Status",
+       "styleSettings": {
+         "showBorder": true
+       }
+    },
+    {
+      "type": 3,
+      "name": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary_by_prefix_alla(\"{RunTime}\", 24, \"\")",
+        "size": 0,
+        "title": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "summary"
+            }
+       ],
+       "name": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
+       "styleSettings": {
+         "showBorder": true
+       }
+    },
+    {
+      "type": 3,
+      "name": "Compliance Status by Guardrail (Mandatory Controls)",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", 24, true)",
+        "size": 0,
+        "title": "Compliance Status by Guardrail (Mandatory Controls)",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "summary"
+            }
+       ],
+       "name": "Compliance Status by Guardrail (Mandatory Controls)",
+       "styleSettings": {
+         "showBorder": true
+       }
+    },
+    {
+      "type": 3,
+      "name": "Compliance Status by Guardrail (Recommended Controls)",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", 24, false)",
+        "size": 0,
+        "title": "Compliance Status by Guardrail (Recommended Controls)",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Remediation",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+            {
+            "parameterName": "selectedTab",
+            "comparison": "isEqualTo",
+            "value": "summary"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
+            }
+       ],
+       "name": "Compliance Status by Guardrail (Recommended Controls)",
+       "styleSettings": {
+         "showBorder": true
+       }
+    },
+    {
+      "type": 3,
       "content": {
         "version": "KqlItem/1.0",
         "query": "GuardrailsCompliance_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}'\n| summarize by column_ifexists(\"ControlName_s\", \"\")\n| count \n| extend Title=\"Total # of Controls\"",
@@ -2429,7 +2614,7 @@
         "comparison": "isEqualTo",
         "value": "summary"
       },
-      "name": "total of control"
+      "name": "Total of Guardrails"
     },
     {
       "type": 3,

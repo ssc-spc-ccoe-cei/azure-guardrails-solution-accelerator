@@ -40,15 +40,14 @@ function Get-UserAuthenticationMethod {
         $urlPath = '/users/' + $BGAcct + '/authentication/methods'
 
         try {
-            $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
+            $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
         }
         catch {
             $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
         }
 
-        $data = $response.Content
-        $authenticationmethods =  $Data.value
+        $authenticationmethods = $response.Content.value
 
         # To check if MFA is setup for a user, we're looking for either :
         #    #microsoft.graph.microsoftAuthenticatorAuthenticationMethod or
@@ -94,4 +93,3 @@ function Get-UserAuthenticationMethod {
     return $moduleOutput
       
    }
-

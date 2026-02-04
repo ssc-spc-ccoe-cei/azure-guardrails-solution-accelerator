@@ -67,7 +67,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
-        version: '1.1.9'
+        version: '1.2.0'
       }}
   }
   resource module3 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -99,7 +99,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SubnetComplianceStatus.zip'
-        version: '1.1.12'
+        version: '1.1.13'
       }}
   }
   resource module8 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -107,7 +107,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
-        version: '1.1.11'
+        version: '1.1.12'
       }}
   }
   resource module9 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -115,7 +115,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
-        version: '1.2.7'
+        version: '1.2.8'
       }}
   }
   resource module10 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -140,7 +140,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
-        version: '1.0.10'
+        version: '1.1.0'
       }}
   }
   resource module13 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -214,7 +214,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
-        version: '1.0.7'
+        version: '1.0.8'
       }}
   }
   resource module26 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -222,7 +222,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
-        version: '1.3.4'
+        version: '1.3.5'
       }}
   }
   resource module27 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -255,7 +255,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
-        version: '1.0.5'
+        version: '1.0.6'
       }}
   }
   resource module31 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -320,7 +320,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserRiskBasedCAP.zip'
-        version: '1.0.1'
+        version: '1.0.2'
       }
     }
   }
@@ -393,7 +393,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }}
   }
   
@@ -412,7 +412,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServiceHealthAlerts.zip'
-        version: '1.0.6'
+        version: '1.0.7'
       }
     }
   }
@@ -422,7 +422,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.1.0'
+        version: '1.1.1'
       }
     }
   }
