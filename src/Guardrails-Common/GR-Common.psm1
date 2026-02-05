@@ -2758,6 +2758,8 @@ function Check-PBMMPolicies {
         $c = New-Object -TypeName PSCustomObject -Property @{ 
             Type = [string]$objType
             Id = [string]$obj.Id
+            SubscriptionId = if ($objType -eq "subscription") { [string]$obj.Id } else { "" }
+            SubscriptionName = if ($objType -eq "subscription") { [string]$obj.Name } else { "" }
             Name = [string]$obj.Name
             DisplayName = [string]$DisplayName
             ComplianceStatus = [boolean]$ComplianceStatus
@@ -3038,6 +3040,7 @@ function Check-BuiltInPolicies {
                     $result = [PSCustomObject]@{
                         Type = "subscription"
                         Id = $subscription.Id
+                        SubscriptionId = $subscription.Id
                         SubscriptionName = $subscription.Name
                         DisplayName = $subscription.Name
                         ComplianceStatus = $false
@@ -3081,6 +3084,7 @@ function Check-BuiltInPolicies {
                     $result = [PSCustomObject]@{
                         Type = "subscription"
                         Id = $subscription.Id
+                        SubscriptionId = $subscription.Id
                         SubscriptionName = $subscription.Name
                         DisplayName = $subscription.Name
                         ComplianceStatus = $true
@@ -3146,6 +3150,8 @@ function Check-BuiltInPolicies {
                     $result = [PSCustomObject]@{
                         Type = "subscription"
                         Id = $subscription.Id
+                        SubscriptionId = $subscription.Id
+                        SubscriptionName = $subscription.Name
                         Name = "All Resources"
                         DisplayName = $subscription.Name
                         ComplianceStatus = $true
@@ -3181,6 +3187,7 @@ function Check-BuiltInPolicies {
                 $result = [PSCustomObject]@{
                     Type = "subscription"
                     Id = $subscription.Id
+                    SubscriptionId = $subscription.Id
                     SubscriptionName = $subscription.Name
                     DisplayName = $subscription.Name
                     ComplianceStatus = $false

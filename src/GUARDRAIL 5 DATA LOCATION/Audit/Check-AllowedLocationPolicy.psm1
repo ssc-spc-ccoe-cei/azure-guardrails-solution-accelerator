@@ -279,6 +279,8 @@ function Check-PolicyStatus {
         $c = New-Object -TypeName PSCustomObject -Property @{ 
             Type = [string]$objType
             Id = [string]$obj.Id
+            SubscriptionId = if ($objType -eq "subscription") { [string]$obj.Id } else { "" }
+            SubscriptionName = if ($objType -eq "subscription") { [string]$obj.Name } else { "" }
             Name = [string]$obj.Name
             DisplayName = [string]$DisplayName
             ComplianceStatus = [boolean]$ComplianceStatus
