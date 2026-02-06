@@ -281,6 +281,7 @@ function Check-PolicyStatus {
             Id = [string]$obj.Id
             Name = [string]$obj.Name
             DisplayName = [string]$DisplayName
+            SubscriptionName = $(if ($objType -eq "subscription") { [string]$obj.Name } else { "" })
             ComplianceStatus = [boolean]$ComplianceStatus
             Comments = [string]$Comment
             ItemName = [string]$ItemName
