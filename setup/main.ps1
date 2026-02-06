@@ -152,6 +152,91 @@ catch {
     throw "Failed to retrieve config json with secret name gsaConfigExportLatest from KeyVault '$KeyVaultName'. Error message: $_"
 }
 
+$subscriptionNameById = @{}
+try {
+    $subscriptions = Get-AzSubscription -ErrorAction Stop
+    foreach ($subscription in $subscriptions) {
+        if ($null -ne $subscription.Id -and $null -ne $subscription.Name) {
+            $subscriptionNameById[$subscription.Id.ToLower()] = $subscription.Name
+        }
+    }
+} catch {
+    Write-Warning "Unable to build subscription name map. Some records may lack SubscriptionName. Error: $_"
+}
+
+function Normalize-ComplianceRecords {
+    param (
+        [Parameter(Mandatory = $true)]
+        [object[]]$Records,
+        [hashtable]$SubscriptionNameById
+    )
+
+    $missingSubscriptionNameCount = 0
+    $missingSubscriptionNameSamples = New-Object System.Collections.ArrayList
+    foreach ($record in @($Records)) {
+        if ($null -eq $record) { continue }
+
+        $type = $record.PSObject.Properties['Type']?.Value
+        $name = $record.PSObject.Properties['Name']?.Value
+        $displayName = $record.PSObject.Properties['DisplayName']?.Value
+        $idValue = $record.PSObject.Properties['Id']?.Value
+        $subscriptionId = $record.PSObject.Properties['SubscriptionId']?.Value
+        $subscriptionName = $record.PSObject.Properties['SubscriptionName']?.Value
+
+        if ([string]::IsNullOrWhiteSpace([string]$subscriptionId)) {
+            if ($idValue -match "/subscriptions/([0-9a-fA-F-]{36})") {
+                $subscriptionId = $matches[1]
+                $record | Add-Member -MemberType NoteProperty -Name "SubscriptionId" -Value $subscriptionId -Force
+            }
+            elseif ($type -eq "subscription" -and $idValue -match "^[0-9a-fA-F-]{36}$") {
+                $subscriptionId = $idValue
+                $record | Add-Member -MemberType NoteProperty -Name "SubscriptionId" -Value $subscriptionId -Force
+            }
+        }
+
+        if ([string]::IsNullOrWhiteSpace([string]$subscriptionName)) {
+            $resolvedName = $null
+            if (-not [string]::IsNullOrWhiteSpace([string]$subscriptionId)) {
+                $key = $subscriptionId.ToLower()
+                if ($SubscriptionNameById.ContainsKey($key)) {
+                    $resolvedName = $SubscriptionNameById[$key]
+                }
+            }
+            if (-not $resolvedName -and $type -eq "subscription") {
+                if (-not [string]::IsNullOrWhiteSpace([string]$name)) {
+                    $resolvedName = $name
+                }
+                elseif (-not [string]::IsNullOrWhiteSpace([string]$displayName)) {
+                    $resolvedName = $displayName
+                }
+            }
+            if ($resolvedName) {
+                $record | Add-Member -MemberType NoteProperty -Name "SubscriptionName" -Value $resolvedName -Force
+            }
+        }
+
+        $finalSubscriptionName = $record.PSObject.Properties['SubscriptionName']?.Value
+        if ([string]::IsNullOrWhiteSpace([string]$finalSubscriptionName)) {
+            $missingSubscriptionNameCount++
+            if ($missingSubscriptionNameSamples.Count -lt 5) {
+                $missingSubscriptionNameSamples.Add([PSCustomObject]@{
+                    ItemName = $record.PSObject.Properties['ItemName']?.Value
+                    ControlName = $record.PSObject.Properties['ControlName']?.Value
+                    Type = $type
+                    Id = $idValue
+                    SubscriptionId = $record.PSObject.Properties['SubscriptionId']?.Value
+                    Name = $name
+                    DisplayName = $displayName
+                }) | Out-Null
+            }
+        }
+    }
+
+    if ($missingSubscriptionNameCount -gt 0) {
+        Write-Warning "Normalize-ComplianceRecords: $missingSubscriptionNameCount record(s) still missing SubscriptionName after normalization. Sample(s): $($missingSubscriptionNameSamples | ConvertTo-Json -Compress)"
+    }
+}
+
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
 Write-Output "Reading Subscription Id from context: $SubID"
@@ -449,6 +534,10 @@ foreach ($module in $modules) {
             $results = $NewScriptBlock.Invoke()
 
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
+
+            if ($null -ne $results.ComplianceResults) {
+                Normalize-ComplianceRecords -Records $results.ComplianceResults -SubscriptionNameById $subscriptionNameById
+            }
 
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
 
