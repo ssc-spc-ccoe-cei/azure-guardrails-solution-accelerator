@@ -79,6 +79,8 @@ function Get-NetworkWatcherStatus {
                 }
                 # Create PSOBject with Information.
                 $RegionObject = [PSCustomObject]@{ 
+                    Type = "subscription"
+                    SubscriptionId = $sub.Id
                     SubscriptionName  = $sub.Name 
                     ComplianceStatus = $ComplianceStatus
                     Comments = $Comments
@@ -96,6 +98,8 @@ function Get-NetworkWatcherStatus {
         else {
             $ComplianceStatus = $true
             $RegionObject = [PSCustomObject]@{ 
+                Type = "subscription"
+                SubscriptionId = $sub.Id
                 SubscriptionName  = $sub.Name 
                 ComplianceStatus = $ComplianceStatus
                 Comments = $msgTable.networkWatcherConfigNoRegions

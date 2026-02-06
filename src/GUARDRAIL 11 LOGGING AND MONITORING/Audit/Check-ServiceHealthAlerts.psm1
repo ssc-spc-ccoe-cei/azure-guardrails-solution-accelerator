@@ -350,6 +350,8 @@ function Get-ServiceHealthAlerts {
         
         # Add evaluation info for each subscription
         $C = [PSCustomObject]@{
+            Type = "subscription"
+            SubscriptionId = $subId
             SubscriptionName = $subscription.Name
             ComplianceStatus = $isCompliant
             ControlName = $ControlName

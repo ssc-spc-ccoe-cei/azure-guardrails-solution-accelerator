@@ -162,6 +162,8 @@ function Check-NetworkSecurityTools {
             }
 
             $resultObject = [PSCustomObject]@{
+                Type = "subscription"
+                SubscriptionId = $sub.Id
                 SubscriptionName = $sub.Name
                 ComplianceStatus = $IsCompliant
                 Comments = $Comments
