@@ -3125,6 +3125,7 @@ function Check-BuiltInPolicies {
                         Id = $resource.ResourceId
                         Name = $resource.ResourceGroup + "/" + ($resource.ResourceId -split '/')[-1]
                         DisplayName = $resource.ResourceGroup + "/" + ($resource.ResourceId -split '/')[-1]
+                        SubscriptionName = $(if ($subScope) { $subscription.Name } else { "" })
                         ComplianceStatus = $false
                         Comments = $msgTable.policyNotCompliant
                         ItemName = "$ItemName - $policyDisplayName"
