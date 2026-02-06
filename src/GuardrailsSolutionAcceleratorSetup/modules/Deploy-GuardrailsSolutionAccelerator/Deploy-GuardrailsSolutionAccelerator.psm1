@@ -32,6 +32,45 @@ Function Invoke-GSARunbooks {
     }
 }
 
+Function Wait-GSAAutomationModulesReady {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$ResourceGroupName,
+        [Parameter(Mandatory = $true)]
+        [string]$AutomationAccountName,
+        [Parameter(Mandatory = $false)]
+        [int]$TimeoutMinutes = 30,
+        [Parameter(Mandatory = $false)]
+        [int]$PollSeconds = 20
+    )
+
+    $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
+    do {
+        $modules = Get-AzAutomationModule -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+        $failed = $modules | Where-Object { $_.ProvisioningState -eq 'Failed' }
+        if ($failed) {
+            $failedList = ($failed | Select-Object -ExpandProperty Name) -join ', '
+            throw "Automation modules failed to import: $failedList"
+        }
+
+        $pending = $modules | Where-Object { $_.ProvisioningState -ne 'Succeeded' -and $_.ProvisioningState -ne 'Failed' }
+        if (-not $pending -or $pending.Count -eq 0) {
+            Write-Verbose "Automation modules are ready."
+            return
+        }
+
+        $pendingList = ($pending | Select-Object -ExpandProperty Name) -join ', '
+        Write-Verbose "Waiting for Automation modules to finish importing: $pendingList"
+        Start-Sleep -Seconds $PollSeconds
+    } while ((Get-Date) -lt $deadline)
+
+    $pendingFinal = Get-AzAutomationModule -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName |
+        Where-Object { $_.ProvisioningState -ne 'Succeeded' -and $_.ProvisioningState -ne 'Failed' } |
+        Select-Object -ExpandProperty Name
+    $pendingListFinal = if ($pendingFinal) { $pendingFinal -join ', ' } else { 'unknown' }
+    throw "Timed out waiting for Automation modules to finish importing. Pending: $pendingListFinal"
+}
+
 Function New-GSACoreResourceDeploymentParamObject {
     param (
         # config object
@@ -471,6 +510,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         # after successful deployment or update
         Write-Host "Invoking manual execution of Azure Automation runbooks..."
         try{
+            Wait-GSAAutomationModulesReady -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Verbose:$useVerbose
             Invoke-GSARunbooks -config $config -Verbose:$useVerbose
         }
         catch{
