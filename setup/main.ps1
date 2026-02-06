@@ -155,6 +155,13 @@ catch {
 $subscriptionNameById = @{}
 try {
     $subscriptions = Get-AzSubscription -ErrorAction Stop
+    $missingSubscriptionNames = @($subscriptions | Where-Object { [string]::IsNullOrWhiteSpace($_.Name) })
+    if ($missingSubscriptionNames.Count -gt 0) {
+        $sampleIds = $missingSubscriptionNames | Select-Object -First 5 -ExpandProperty Id
+        Write-Warning "Get-AzSubscription returned $($missingSubscriptionNames.Count) subscription(s) with empty Name. Sample Ids: $($sampleIds -join ', ')"
+    } else {
+        Write-Verbose "Get-AzSubscription returned $($subscriptions.Count) subscription(s) with non-empty names."
+    }
     foreach ($subscription in $subscriptions) {
         if ($null -ne $subscription.Id -and $null -ne $subscription.Name) {
             $subscriptionNameById[$subscription.Id.ToLower()] = $subscription.Name
@@ -211,12 +218,16 @@ function Normalize-ComplianceRecords {
                 }
             }
             if ($resolvedName) {
-                $record | Add-Member -MemberType NoteProperty -Name "SubscriptionName" -Value $resolvedName -Force
+                $subscriptionName = $resolvedName
             }
         }
 
-        $finalSubscriptionName = $record.PSObject.Properties['SubscriptionName']?.Value
-        if ([string]::IsNullOrWhiteSpace([string]$finalSubscriptionName)) {
+        if ([string]::IsNullOrWhiteSpace([string]$subscriptionName)) {
+            $subscriptionName = ""
+        }
+        $record | Add-Member -MemberType NoteProperty -Name "SubscriptionName" -Value $subscriptionName -Force
+
+        if ($type -eq "subscription" -and [string]::IsNullOrWhiteSpace([string]$subscriptionName)) {
             $missingSubscriptionNameCount++
             if ($missingSubscriptionNameSamples.Count -lt 5) {
                 $missingSubscriptionNameSamples.Add([PSCustomObject]@{
