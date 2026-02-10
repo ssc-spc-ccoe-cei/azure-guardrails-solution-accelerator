@@ -40,6 +40,10 @@ function Ensure-ComplianceRecordSchema {
     foreach ($record in @($Records)) {
         if ($null -eq $record) { continue }
 
+        # Why: On fresh deploy, early tenant-level modules emit rows without subscription fields, so LAW
+        # may not create the *_s columns on first ingestion. Later subscription-scoped values can be dropped.
+        # How this helps: force these identity fields to exist (empty string if missing) so LAW creates the
+        # columns immediately, and subscription names populate on the first run.
         $type = $record.PSObject.Properties['Type']?.Value
         if ([string]::IsNullOrWhiteSpace([string]$type)) { $type = "" }
         $record | Add-Member -MemberType NoteProperty -Name "Type" -Value $type -Force
