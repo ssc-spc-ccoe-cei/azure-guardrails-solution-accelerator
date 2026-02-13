@@ -31,6 +31,45 @@ function Get-GSAAutomationVariable {
     }
 }
 
+function Ensure-ComplianceRecordSchema {
+    param (
+        [Parameter(Mandatory = $true)]
+        [object[]]$Records
+    )
+
+    foreach ($record in @($Records)) {
+        if ($null -eq $record) { continue }
+
+        # Why: On fresh deploy, early tenant-level modules emit rows without subscription fields, so LAW
+        # may not create the *_s columns on first ingestion. Later subscription-scoped values can be dropped.
+        # How this helps: force these identity fields to exist (empty string if missing) so LAW creates the
+        # columns immediately, and subscription names populate on the first run.
+        $type = $record.PSObject.Properties['Type']?.Value
+        if ([string]::IsNullOrWhiteSpace([string]$type)) { $type = "" }
+        $record | Add-Member -MemberType NoteProperty -Name "Type" -Value $type -Force
+
+        $idValue = $record.PSObject.Properties['Id']?.Value
+        if ([string]::IsNullOrWhiteSpace([string]$idValue)) { $idValue = "" }
+        $record | Add-Member -MemberType NoteProperty -Name "Id" -Value $idValue -Force
+
+        $name = $record.PSObject.Properties['Name']?.Value
+        if ([string]::IsNullOrWhiteSpace([string]$name)) { $name = "" }
+        $record | Add-Member -MemberType NoteProperty -Name "Name" -Value $name -Force
+
+        $displayName = $record.PSObject.Properties['DisplayName']?.Value
+        if ([string]::IsNullOrWhiteSpace([string]$displayName)) { $displayName = "" }
+        $record | Add-Member -MemberType NoteProperty -Name "DisplayName" -Value $displayName -Force
+
+        $subscriptionId = $record.PSObject.Properties['SubscriptionId']?.Value
+        if ([string]::IsNullOrWhiteSpace([string]$subscriptionId)) { $subscriptionId = "" }
+        $record | Add-Member -MemberType NoteProperty -Name "SubscriptionId" -Value $subscriptionId -Force
+
+        $subscriptionName = $record.PSObject.Properties['SubscriptionName']?.Value
+        if ([string]::IsNullOrWhiteSpace([string]$subscriptionName)) { $subscriptionName = "" }
+        $record | Add-Member -MemberType NoteProperty -Name "SubscriptionName" -Value $subscriptionName -Force
+    }
+}
+
 try {
     $enableDebugMetricsSetting = Get-AutomationVariable -Name 'ENABLE_DEBUG_METRICS'
     if ($enableDebugMetricsSetting) {
@@ -449,6 +488,9 @@ foreach ($module in $modules) {
             $results = $NewScriptBlock.Invoke()
 
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
+            if ($null -ne $results.ComplianceResults) {
+                Ensure-ComplianceRecordSchema -Records $results.ComplianceResults
+            }
 
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
 
