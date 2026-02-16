@@ -49,7 +49,7 @@ function get-tenantdata {
     GuardrailsCompliance_CL
     | where ControlName_s has "{0}" and ReportTime_s == "{1}"
     | where TimeGenerated > ago (24h)
-    | project Mandatory=Required_s,ControlName_s, Type=Type_s, Name=DisplayName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
+    | project Mandatory=Required_s,ControlName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
         column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
