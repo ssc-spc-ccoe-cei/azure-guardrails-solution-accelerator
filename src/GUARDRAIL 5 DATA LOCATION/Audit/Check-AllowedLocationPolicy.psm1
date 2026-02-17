@@ -273,7 +273,6 @@ function Check-PolicyStatus {
             Id = [string]$obj.Id
             # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
             SubscriptionName = $(if ($objType -eq "subscription") { [string]$obj.Name } else { "" })
-            Name = [string]$obj.Name
             ComplianceStatus = [boolean]$ComplianceStatus
             Comments = [string]$Comment
             ItemName = [string]$ItemName
@@ -282,7 +281,8 @@ function Check-PolicyStatus {
             ReportTime = [string]$ReportTime
         }
         if ($objType -ne "subscription") {
-            # Only compute DisplayName for non-subscription rows; subscription rows omit DisplayName to avoid duplication.
+            # For non-subscription rows, keep Name/DisplayName as entity labels; subscription rows rely on SubscriptionName to avoid duplicate labels.
+            $props.Name = [string]$obj.Name
             if ($null -eq $obj.DisplayName)
             {
                 $DisplayName=$obj.Name
