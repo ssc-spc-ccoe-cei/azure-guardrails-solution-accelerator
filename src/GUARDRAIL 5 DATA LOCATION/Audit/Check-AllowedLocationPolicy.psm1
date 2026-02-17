@@ -268,7 +268,7 @@ function Check-PolicyStatus {
    
         }
 
-        $props = @{ 
+        $props = @{
             Type = [string]$objType
             Id = [string]$obj.Id
             # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
@@ -282,15 +282,9 @@ function Check-PolicyStatus {
         }
         if ($objType -ne "subscription") {
             # For non-subscription rows, keep Name/DisplayName as entity labels; subscription rows rely on SubscriptionName to avoid duplicate labels.
-            $props.Name = [string]$obj.Name
-            if ($null -eq $obj.DisplayName)
-            {
-                $DisplayName=$obj.Name
-            }
-            else {
-                $DisplayName=$obj.DisplayName
-            }
-            $props.DisplayName = [string]$DisplayName
+            $name = [string]$obj.Name
+            $props.Name = $name
+            $props.DisplayName = if ([string]::IsNullOrWhiteSpace([string]$obj.DisplayName)) { $name } else { [string]$obj.DisplayName }
         }
         $c = New-Object -TypeName PSCustomObject -Property $props
 
