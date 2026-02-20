@@ -46,61 +46,61 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
         streams: ['Custom-GuardrailsCompliance'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GuardrailsCompliance_CL' 
+        outputStream: 'GuardrailsCompliance_CL' 
       }
       { 
         streams: ['Custom-GuardrailsComplianceException'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GuardrailsComplianceException_CL' 
+        outputStream: 'GuardrailsComplianceException_CL' 
       }
       { 
         streams: ['Custom-GR_TenantInfo'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GR_TenantInfo_CL' 
+        outputStream: 'GR_TenantInfo_CL' 
       }
       { 
         streams: ['Custom-GR_Results'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GR_Results_CL' 
+        outputStream: 'GR_Results_CL' 
       }
       { 
         streams: ['Custom-GR_VersionInfo'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GR_VersionInfo_CL' 
+        outputStream: 'GR_VersionInfo_CL' 
       }
       { 
         streams: ['Custom-GRITSGControls'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GRITSGControls_CL' 
+        outputStream: 'GRITSGControls_CL' 
       }
       { 
         streams: ['Custom-GuardrailsTenantsCompliance'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GuardrailsTenantsCompliance_CL' 
+        outputStream: 'GuardrailsTenantsCompliance_CL' 
       }
       { 
         streams: ['Custom-CaCDebugMetrics'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-CaCDebugMetrics_CL' 
+        outputStream: 'CaCDebugMetrics_CL' 
       }
       { 
         streams: ['Custom-GuardrailsUserRaw'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GuardrailsUserRaw_CL' 
+        outputStream: 'GuardrailsUserRaw_CL' 
       }
       { 
         streams: ['Custom-GuardrailsCrossTenantAccess'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GuardrailsCrossTenantAccess_CL' 
+        outputStream: 'GuardrailsCrossTenantAccess_CL' 
       }
     ]
     destinations: {
@@ -212,13 +212,13 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
         streams: ['Custom-GR2UsersWithoutGroups'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GR2UsersWithoutGroups_CL' 
+        outputStream: 'GR2UsersWithoutGroups_CL' 
       }
       { 
         streams: ['Custom-GR2ExternalUsers'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'Custom-GR2ExternalUsers_CL' 
+        outputStream: 'GR2ExternalUsers_CL' 
       }
     ]
     destinations: {

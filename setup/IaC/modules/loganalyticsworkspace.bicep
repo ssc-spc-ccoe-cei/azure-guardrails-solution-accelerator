@@ -35,7 +35,7 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
 // Custom tables required by DCR-based log ingestion; must exist before DCR is created
 resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GuardrailsCompliance_CL'
+  name: 'GuardrailsCompliance_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -57,7 +57,7 @@ resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/
 }
 resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GuardrailsComplianceException_CL'
+  name: 'GuardrailsComplianceException_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -79,7 +79,7 @@ resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/wo
 }
 resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GR_TenantInfo_CL'
+  name: 'GR_TenantInfo_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -101,7 +101,7 @@ resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@
 }
 resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GR_Results_CL'
+  name: 'GR_Results_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -123,7 +123,7 @@ resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@202
 }
 resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GR_VersionInfo_CL'
+  name: 'GR_VersionInfo_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -145,7 +145,7 @@ resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables
 }
 resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GRITSGControls_CL'
+  name: 'GRITSGControls_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -167,7 +167,7 @@ resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables
 }
 resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GuardrailsTenantsCompliance_CL'
+  name: 'GuardrailsTenantsCompliance_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -189,7 +189,7 @@ resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/work
 }
 resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-CaCDebugMetrics_CL'
+  name: 'CaCDebugMetrics_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -211,7 +211,7 @@ resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/table
 }
 resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GuardrailsUserRaw_CL'
+  name: 'GuardrailsUserRaw_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -233,7 +233,7 @@ resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tab
 }
 resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GuardrailsCrossTenantAccess_CL'
+  name: 'GuardrailsCrossTenantAccess_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -255,7 +255,7 @@ resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/work
 }
 resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GR2UsersWithoutGroups_CL'
+  name: 'GR2UsersWithoutGroups_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -277,7 +277,7 @@ resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces
 }
 resource dcrTableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   parent: guardrailsLogAnalytics
-  name: 'Custom-GR2ExternalUsers_CL'
+  name: 'GR2ExternalUsers_CL'
   properties: {
     plan: 'Analytics'
     retentionInDays: 90
@@ -1115,6 +1115,7 @@ union isfuzzy=true
 resource grSummaryRecommended 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_recommended'
   parent: guardrailsLogAnalytics
+
   properties: {
     category: 'gr_functions'
     displayName: 'gr_summary_recommended'
