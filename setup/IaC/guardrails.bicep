@@ -81,6 +81,8 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
+    dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
+    dcrImmutableId: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -114,6 +116,23 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     GRDocsBaseUrl: GRDocsBaseUrl
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
+  }
+}
+
+// Data Collection Endpoint (DCE) and Data Collection Rule (DCR) for DCR-based Log Ingestion API
+// Create DCE/DCR on new deployments or when updating core resources (for migration from Data Collector API)
+module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+  name: 'guardrails-dcrdce'
+  dependsOn: [
+    LAW
+  ]
+  params: {
+    location: location
+    logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
+    releaseVersion: releaseVersion
+    releaseDate: releaseDate
+    newDeployment: newDeployment
+    updateCoreResources: updateCoreResources
   }
 }
 module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {

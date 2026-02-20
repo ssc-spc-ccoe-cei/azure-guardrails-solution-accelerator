@@ -254,12 +254,8 @@ Function Add-LogEntry {
     
     $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
 
-    # log event to Log Analytics workspace by REST API via the OMSIngestionAPI community PS module
-    Send-OMSAPIIngestionFile  -customerId $workspaceGuid `
-        -sharedkey $workspaceKey `
-        -body $entryJson `
-        -logType $exceptionLogTable `
-        -TimeStampField Get-Date 
+    # log event to Log Analytics workspace using DCR-based Log Ingestion API
+    Send-GuardrailsData -Data $entryJson -LogType $exceptionLogTable -WorkSpaceID $workspaceGuid -WorkSpaceKey $workspaceKey 
 
 }
 
@@ -312,11 +308,7 @@ Function Add-TenantInfo {
     if ($debug) { Write-Output $tenantInfo }
     $JSON = ConvertTo-Json -inputObject $object
 
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JSON `
-        -logType $LogType `
-        -TimeStampField Get-Date 
+    Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
 }
 
 function Add-LogAnalyticsResults {
@@ -338,11 +330,7 @@ function Add-LogAnalyticsResults {
 
     $JSON = ConvertTo-Json -inputObject $Results
 
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JSON `
-        -logType $LogType `
-        -TimeStampField Get-Date 
+    Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
 }
 
 function Get-GuardrailIdentityPermissions {
@@ -749,11 +737,7 @@ function Check-UpdateAvailable {
     }
     $JSON = ConvertTo-Json -inputObject $object
 
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JSON `
-        -logType $LogType `
-        -TimeStampField Get-Date 
+    Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
 }
 
 function get-itsgdata {
@@ -781,11 +765,130 @@ function get-itsgdata {
         $JSONcontrols
     }
 
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JSONcontrols `
-        -logType $LogType `
-        -TimeStampField Get-Date
+    Send-GuardrailsData -Data $JSONcontrols -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey
+}
+
+function Send-GuardrailsData {
+    <#
+    .SYNOPSIS
+    Sends data to Azure Monitor Log Analytics using DCR-based Log Ingestion API.
+    
+    .DESCRIPTION
+    This function replaces the deprecated Data Collector API with the modern DCR-based Log Ingestion API.
+    It uses Invoke-AzRestMethod for automatic Azure authentication and requires DCE_ENDPOINT and DCR_IMMUTABLE_ID environment variables.
+    
+    .PARAMETER Data
+    JSON string containing the data to send to Log Analytics.
+    
+    .PARAMETER LogType
+    The log type (table name) to send data to. This will be mapped to a DCR stream name.
+    
+    .PARAMETER WorkSpaceID
+    Optional workspace ID for backward compatibility (not used by DCR API but kept for compatibility).
+    
+    .PARAMETER WorkSpaceKey
+    Optional workspace key for backward compatibility (not used by DCR API but kept for compatibility).
+    
+    .EXAMPLE
+    Send-GuardrailsData -Data $jsonData -LogType "GuardrailsCompliance"
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Data,
+        
+        [Parameter(Mandatory = $true)]
+        [string]
+        $LogType,
+        
+        [Parameter(Mandatory = $false)]
+        [string]
+        $WorkSpaceID,
+        
+        [Parameter(Mandatory = $false)]
+        [string]
+        $WorkSpaceKey
+    )
+    
+    # Get DCE endpoint and DCR immutable ID from environment variables or automation variables
+    # Try Get-GSAAutomationVariable first (if available) for consistency with codebase pattern
+    $dceEndpoint = $null
+    $dcrImmutableId = $null
+    
+    if (Get-Command -Name Get-GSAAutomationVariable -ErrorAction SilentlyContinue) {
+        try {
+            $dceEndpoint = Get-GSAAutomationVariable -Name "DCE_ENDPOINT" -ErrorAction SilentlyContinue
+            $dcrImmutableId = Get-GSAAutomationVariable -Name "DCR_IMMUTABLE_ID" -ErrorAction SilentlyContinue
+        }
+        catch {
+            # Fall back to environment variables if automation variable retrieval fails
+        }
+    }
+    
+    # Fall back to environment variables if not found via automation variables
+    if (-not $dceEndpoint) {
+        $dceEndpoint = $env:DCE_ENDPOINT
+    }
+    if (-not $dcrImmutableId) {
+        $dcrImmutableId = $env:DCR_IMMUTABLE_ID
+    }
+    
+    # Validate required values
+    if (-not $dceEndpoint) {
+        throw "DCE_ENDPOINT is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
+    }
+    
+    if (-not $dcrImmutableId) {
+        throw "DCR_IMMUTABLE_ID is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
+    }
+    
+    try {
+        # Map log types to DCR stream names
+        # Stream names follow the pattern Custom-{LogType}
+        $streamName = switch ($LogType) {
+            'GuardrailsCompliance' { 'Custom-GuardrailsCompliance' }
+            'GuardrailsComplianceException' { 'Custom-GuardrailsComplianceException' }
+            'GR_TenantInfo' { 'Custom-GR_TenantInfo' }
+            'GR_Results' { 'Custom-GR_Results' }
+            'GR_VersionInfo' { 'Custom-GR_VersionInfo' }
+            'GRITSGControls' { 'Custom-GRITSGControls' }
+            'GuardrailsTenantsCompliance' { 'Custom-GuardrailsTenantsCompliance' }
+            'CaCDebugMetrics' { 'Custom-CaCDebugMetrics' }
+            'GuardrailsUserRaw' { 'Custom-GuardrailsUserRaw' }
+            'GuardrailsCrossTenantAccess' { 'Custom-GuardrailsCrossTenantAccess' }
+            'GR2UsersWithoutGroups' { 'Custom-GR2UsersWithoutGroups' }
+            'GR2ExternalUsers' { 'Custom-GR2ExternalUsers' }
+            default { "Custom-$LogType" }
+        }
+        
+        # Construct the DCR ingestion endpoint URI
+        $uri = "$dceEndpoint/dataCollectionRules/$dcrImmutableId/streams/$streamName" + "?api-version=2023-01-01"
+        
+        # Send data using Invoke-AzRestMethod (handles authentication automatically)
+        $response = Invoke-AzRestMethod -Uri $uri -Method POST -Payload $Data
+        
+        # Check for errors
+        if ($response.StatusCode -ge 400) {
+            $errorMessage = "Data Collection API returned status code $($response.StatusCode)"
+            if ($response.Content) {
+                try {
+                    $errorContent = $response.Content | ConvertFrom-Json
+                    $errorMessage += ": $($errorContent.error.message)"
+                }
+                catch {
+                    $errorMessage += ": $($response.Content)"
+                }
+            }
+            throw $errorMessage
+        }
+        
+        Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$streamName'"
+    }
+    catch {
+        Write-Error "Data Collection API failed: $($_.Exception.Message)"
+        throw
+    }
 }
 
 function New-LogAnalyticsData {
@@ -806,11 +909,7 @@ function New-LogAnalyticsData {
     )
     $JsonObject = convertTo-Json -inputObject $Data -Depth 3
 
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date  
+    Send-GuardrailsData -Data $JsonObject -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkSpaceKey
 }
 
 function Hide-Email {

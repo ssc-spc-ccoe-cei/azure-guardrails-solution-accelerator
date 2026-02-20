@@ -540,11 +540,16 @@ foreach ($module in $modules) {
                 Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
             }
 
-            Write-Output "Caught error while invoking result is $($results.Errors)"
+            # Use exception message only to avoid dumping script content (ErrorRecord can include InvocationInfo with full script)
+            $exceptionMessage = $_.Exception.Message
+            if ([string]::IsNullOrWhiteSpace($exceptionMessage)) {
+                $exceptionMessage = $_.ToString()
+            }
+            Write-Output "Caught error while invoking module $($module.moduleName): $exceptionMessage"
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
 
-            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $exceptionMessage" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $exceptionMessage"
         }
         finally {
             # Clear memory after each module

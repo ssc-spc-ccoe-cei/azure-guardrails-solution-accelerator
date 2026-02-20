@@ -217,11 +217,11 @@ function get-tenantdata {
             $FinalObjectList | Out-File ./debubinfo_finalobjectlist.txt
         }
         $FinalObjectListJson = $FinalObjectList | ConvertTo-Json
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $FinalObjectListJson `
-        -logType $LogType `
-        -TimeStampField Get-Date
+        # Import Send-GuardrailsData function from GR-Common module if not already available
+        if (-not (Get-Command -Name Send-GuardrailsData -ErrorAction SilentlyContinue)) {
+            Import-Module "$PSScriptRoot/../../../../src/Guardrails-Common/GR-Common.psm1" -Force
+        }
+        Send-GuardrailsData -Data $FinalObjectListJson -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey
     }
     else { "No data to send" }
 }

@@ -98,8 +98,18 @@ Function Remove-GSACoreResources {
         $guardrailsAutomationAccountMSI = $automationAccount.Identity.PrincipalId
     }
 
+    Write-Verbose "Looking for Data Collection Endpoint (DCE) and Data Collection Rule (DCR)..."
+    $dce = Get-AzDataCollectionEndpoint -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardrails-dce" -ErrorAction SilentlyContinue
+    if ($dce) {
+        Write-Verbose "Found Data Collection Endpoint 'guardrails-dce' (will be removed with resource group)."
+    }
+    $dcr = Get-AzDataCollectionRule -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardrails-dcr" -ErrorAction SilentlyContinue
+    if ($dcr) {
+        Write-Verbose "Found Data Collection Rule 'guardrails-dcr' (will be removed with resource group)."
+    }
+
     If (Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue) {
-        Write-Verbose "Removing Guardrails Solution Accelerator Resource Group..."
+        Write-Verbose "Removing Guardrails Solution Accelerator Resource Group (including DCE, DCR, and all other resources)..."
         $job = Remove-AzResourceGroup -Name $config['runtime']['resourceGroup'] -Force -AsJob 
 
         If ($wait.IsPresent) {
