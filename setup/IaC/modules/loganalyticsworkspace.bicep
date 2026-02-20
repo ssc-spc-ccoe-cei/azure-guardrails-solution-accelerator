@@ -43,8 +43,14 @@ resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/
     schema: {
       name: 'Custom-GuardrailsCompliance_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -59,8 +65,14 @@ resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/wo
     schema: {
       name: 'Custom-GuardrailsComplianceException_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -75,8 +87,14 @@ resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@
     schema: {
       name: 'Custom-GR_TenantInfo_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -91,8 +109,14 @@ resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@202
     schema: {
       name: 'Custom-GR_Results_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -107,8 +131,14 @@ resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables
     schema: {
       name: 'Custom-GR_VersionInfo_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -123,8 +153,14 @@ resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables
     schema: {
       name: 'Custom-GRITSGControls_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -139,8 +175,14 @@ resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/work
     schema: {
       name: 'Custom-GuardrailsTenantsCompliance_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -155,8 +197,14 @@ resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/table
     schema: {
       name: 'Custom-CaCDebugMetrics_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -171,8 +219,14 @@ resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tab
     schema: {
       name: 'Custom-GuardrailsUserRaw_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -187,8 +241,14 @@ resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/work
     schema: {
       name: 'Custom-GuardrailsCrossTenantAccess_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -203,8 +263,14 @@ resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces
     schema: {
       name: 'Custom-GR2UsersWithoutGroups_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
@@ -219,12 +285,20 @@ resource dcrTableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tabl
     schema: {
       name: 'Custom-GR2ExternalUsers_CL'
       columns: [
-        { name: 'TimeGenerated' type: 'dateTime' }
-        { name: 'RawData' type: 'string' }
+        { 
+          name: 'TimeGenerated' 
+          type: 'dateTime' 
+        }
+        { 
+          name: 'RawData' 
+          type: 'string' 
+        }
       ]
     }
   }
 }
+
+
 
 resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data'
