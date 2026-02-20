@@ -42,33 +42,156 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
   properties: {
     dataCollectionEndpointId: dataCollectionEndpoint.id
     dataFlows: [
-      { streams: ['Custom-GuardrailsCompliance'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GuardrailsCompliance_CL' }
-      { streams: ['Custom-GuardrailsComplianceException'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GuardrailsComplianceException_CL' }
-      { streams: ['Custom-GR_TenantInfo'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GR_TenantInfo_CL' }
-      { streams: ['Custom-GR_Results'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GR_Results_CL' }
-      { streams: ['Custom-GR_VersionInfo'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GR_VersionInfo_CL' }
-      { streams: ['Custom-GRITSGControls'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GRITSGControls_CL' }
-      { streams: ['Custom-GuardrailsTenantsCompliance'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GuardrailsTenantsCompliance_CL' }
-      { streams: ['Custom-CaCDebugMetrics'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-CaCDebugMetrics_CL' }
-      { streams: ['Custom-GuardrailsUserRaw'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GuardrailsUserRaw_CL' }
-      { streams: ['Custom-GuardrailsCrossTenantAccess'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GuardrailsCrossTenantAccess_CL' }
+      { 
+        streams: ['Custom-GuardrailsCompliance'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GuardrailsCompliance_CL' 
+      }
+      { 
+        streams: ['Custom-GuardrailsComplianceException'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GuardrailsComplianceException_CL' 
+      }
+      { 
+        streams: ['Custom-GR_TenantInfo'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GR_TenantInfo_CL' 
+      }
+      { 
+        streams: ['Custom-GR_Results'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GR_Results_CL' 
+      }
+      { 
+        streams: ['Custom-GR_VersionInfo'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GR_VersionInfo_CL' 
+      }
+      { 
+        streams: ['Custom-GRITSGControls'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GRITSGControls_CL' 
+      }
+      { 
+        streams: ['Custom-GuardrailsTenantsCompliance'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GuardrailsTenantsCompliance_CL' 
+      }
+      { 
+        streams: ['Custom-CaCDebugMetrics'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-CaCDebugMetrics_CL' 
+      }
+      { 
+        streams: ['Custom-GuardrailsUserRaw'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GuardrailsUserRaw_CL' 
+      }
+      { 
+        streams: ['Custom-GuardrailsCrossTenantAccess'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GuardrailsCrossTenantAccess_CL' 
+      }
     ]
     destinations: {
       logAnalytics: [
-        { name: 'guardrails-law' workspaceResourceId: logAnalyticsWorkspaceResourceId }
+        { 
+          name: 'guardrails-law' 
+          workspaceResourceId: logAnalyticsWorkspaceResourceId 
+        }
       ]
     }
     streamDeclarations: {
-      'Custom-GuardrailsCompliance': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GuardrailsComplianceException': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GR_TenantInfo': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GR_Results': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GR_VersionInfo': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GRITSGControls': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GuardrailsTenantsCompliance': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-CaCDebugMetrics': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GuardrailsUserRaw': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GuardrailsCrossTenantAccess': { columns: [{ name: 'RawData' type: 'string' }] }
+      'Custom-GuardrailsCompliance': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GuardrailsComplianceException': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GR_TenantInfo': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GR_Results': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GR_VersionInfo': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GRITSGControls': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GuardrailsTenantsCompliance': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-CaCDebugMetrics': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GuardrailsUserRaw': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GuardrailsCrossTenantAccess': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
     }
   }
 }
@@ -85,17 +208,44 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
   properties: {
     dataCollectionEndpointId: dataCollectionEndpoint.id
     dataFlows: [
-      { streams: ['Custom-GR2UsersWithoutGroups'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GR2UsersWithoutGroups_CL' }
-      { streams: ['Custom-GR2ExternalUsers'] destinations: ['guardrails-law'] transformKql: 'source' outputStream: 'Custom-GR2ExternalUsers_CL' }
+      { 
+        streams: ['Custom-GR2UsersWithoutGroups'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GR2UsersWithoutGroups_CL' 
+      }
+      { 
+        streams: ['Custom-GR2ExternalUsers'] 
+        destinations: ['guardrails-law'] 
+        transformKql: 'source' 
+        outputStream: 'Custom-GR2ExternalUsers_CL' 
+      }
     ]
     destinations: {
       logAnalytics: [
-        { name: 'guardrails-law' workspaceResourceId: logAnalyticsWorkspaceResourceId }
+        { 
+          name: 'guardrails-law' 
+          workspaceResourceId: logAnalyticsWorkspaceResourceId 
+        }
       ]
     }
     streamDeclarations: {
-      'Custom-GR2UsersWithoutGroups': { columns: [{ name: 'RawData' type: 'string' }] }
-      'Custom-GR2ExternalUsers': { columns: [{ name: 'RawData' type: 'string' }] }
+      'Custom-GR2UsersWithoutGroups': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
+      'Custom-GR2ExternalUsers': { 
+        columns: [
+          { 
+            name: 'RawData' 
+            type: 'string' 
+          }
+        ] 
+      }
     }
   }
 }
