@@ -118,6 +118,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     GRDocsBaseUrl: GRDocsBaseUrl
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
+    updateCoreResources: updateCoreResources
   }
 }
 

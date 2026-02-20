@@ -8,6 +8,7 @@ param deployLAW bool
 param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
+param updateCoreResources bool = false
 param enableMultiCloudProfiles bool
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
@@ -16,7 +17,7 @@ var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
 var wbConfig='${wb}${wbConfig2}'
 
-resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: logAnalyticsWorkspaceName
   location: location
   tags: {
@@ -30,7 +31,202 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
     }
   }
 }
-resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+
+// Custom tables required by DCR-based log ingestion; must exist before DCR is created
+resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GuardrailsCompliance_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GuardrailsCompliance_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GuardrailsComplianceException_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GuardrailsComplianceException_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GR_TenantInfo_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GR_TenantInfo_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GR_Results_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GR_Results_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GR_VersionInfo_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GR_VersionInfo_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GRITSGControls_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GRITSGControls_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GuardrailsTenantsCompliance_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GuardrailsTenantsCompliance_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-CaCDebugMetrics_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-CaCDebugMetrics_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GuardrailsUserRaw_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GuardrailsUserRaw_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GuardrailsCrossTenantAccess_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GuardrailsCrossTenantAccess_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GR2UsersWithoutGroups_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GR2UsersWithoutGroups_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+resource dcrTableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'Custom-GR2ExternalUsers_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'Custom-GR2ExternalUsers_CL'
+      columns: [
+        { name: 'TimeGenerated' type: 'dateTime' }
+        { name: 'RawData' type: 'string' }
+      ]
+    }
+  }
+}
+
+resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data'
   parent: guardrailsLogAnalytics
   properties: {
@@ -42,7 +238,7 @@ resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource gr3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource gr3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data3'
   parent: guardrailsLogAnalytics
   properties: {
@@ -54,7 +250,7 @@ resource gr3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01'
     version: 2
   }
 }
-resource grpie 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grpie 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_pie'
   parent: guardrailsLogAnalytics
   properties: {
@@ -79,7 +275,7 @@ GuardrailsCompliance_CL
     version: 2
   }
 } 
-resource grpie3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grpie3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_pie3'
   parent: guardrailsLogAnalytics
   properties: {
@@ -92,7 +288,7 @@ resource grpie3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-
     version: 2
   }
 } 
-resource grpie56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grpie56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_pie56'
   parent: guardrailsLogAnalytics
   properties: {
@@ -105,7 +301,7 @@ resource grpie56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     version: 2
   }
 } 
-resource grpieall 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grpieall 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_pie_all'
   parent: guardrailsLogAnalytics
   properties: {
@@ -134,7 +330,7 @@ union
     version: 2
   }
 } 
-resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_geturl'
   parent: guardrailsLogAnalytics
   properties: {
@@ -147,7 +343,7 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data567'
   parent: guardrailsLogAnalytics
   properties: {
@@ -159,7 +355,7 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data56'
   parent: guardrailsLogAnalytics
   properties: {
@@ -171,7 +367,7 @@ resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-0
     version: 2
   }
 }
-resource grdata7 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grdata7 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data7'
   parent: guardrailsLogAnalytics
   properties: {
@@ -183,7 +379,7 @@ resource grdata7 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     version: 2
   }
 }
-resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data9'
   parent: guardrailsLogAnalytics
   properties: {
@@ -195,7 +391,7 @@ resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     version: 2
   }
 }
-resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data11'
   parent: guardrailsLogAnalytics
   properties: {
@@ -207,7 +403,7 @@ resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_mfa_evaluation'
   parent: guardrailsLogAnalytics
   properties: {
@@ -394,7 +590,7 @@ finalSummary
   }
 }
 
-resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_non_mfa_users'
   parent: guardrailsLogAnalytics
   properties: {
@@ -570,7 +766,7 @@ union
     version: 2
   }
 }
-resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   location: location
   kind: 'shared'
   name: guid('guardrails')
@@ -583,7 +779,7 @@ resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((dep
   }
 }
 
-resource grSummaryByPrefix 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefix 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix'
   parent: guardrailsLogAnalytics
   properties: {
@@ -600,7 +796,7 @@ resource grSummaryByPrefix 'Microsoft.OperationalInsights/workspaces/savedSearch
     version: 2 
   }
 }
-resource grSummaryByPrefixa 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefixa 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix_a'
   parent: guardrailsLogAnalytics
   properties: {
@@ -613,7 +809,7 @@ resource grSummaryByPrefixa 'Microsoft.OperationalInsights/workspaces/savedSearc
     version: 2 
   }
 }
-resource grSummaryByPrefix3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefix3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix3'
   parent: guardrailsLogAnalytics
   properties: {
@@ -630,7 +826,7 @@ resource grSummaryByPrefix3 'Microsoft.OperationalInsights/workspaces/savedSearc
     version: 2 
   }
 }
-resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix3a'
   parent: guardrailsLogAnalytics
   properties: {
@@ -648,7 +844,7 @@ resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSear
     version: 2 
   }
 }
-resource grSummaryByPrefix56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefix56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix56'
   parent: guardrailsLogAnalytics
   properties: {
@@ -665,7 +861,7 @@ resource grSummaryByPrefix56 'Microsoft.OperationalInsights/workspaces/savedSear
     version: 2 
   }
 }
-resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix56a'
   parent: guardrailsLogAnalytics
   properties: {
@@ -683,7 +879,7 @@ resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSea
     version: 2 
   }
 }
-resource grSummaryByPrefixAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefixAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix_all'
   parent: guardrailsLogAnalytics
   properties: {
@@ -715,7 +911,7 @@ union
     version: 2
   }
 }
-resource grSummaryByPrefixAlla 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryByPrefixAlla 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_by_prefix_alla'
   parent: guardrailsLogAnalytics
   properties: {
@@ -748,7 +944,7 @@ union
     version: 2
   }
 }
-resource grSummaryAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_all'
   parent: guardrailsLogAnalytics
   properties: {
@@ -794,7 +990,7 @@ union isfuzzy=true
     version: 2
   }
 }
-resource grSummaryMandatory 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryMandatory 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_mandatory'
   parent: guardrailsLogAnalytics
   properties: {
@@ -842,7 +1038,7 @@ union isfuzzy=true
     version: 2
   }
 }
-resource grSummaryRecommended 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummaryRecommended 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary_recommended'
   parent: guardrailsLogAnalytics
   properties: {
@@ -890,7 +1086,7 @@ union isfuzzy=true
     version: 2
   }
 }
-resource grSummary 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
+resource grSummary 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_summary'
   parent: guardrailsLogAnalytics
   properties: {
