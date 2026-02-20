@@ -11,6 +11,7 @@ param DepartmentNumber string
 param DepartmentName string
 param deployKV bool = true
 param deployLAW bool = true
+#disable-next-line no-unused-params
 param DeployTelemetry bool = true
 param HealthLAWResourceId string
 param kvName string = 'guardrails-kv'
@@ -113,7 +114,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     releaseDate: releaseDate
     rg: rg
     deployLAW: deployLAW
-    subscriptionId: subscription().subscriptionId
+    subscriptionId: subscriptionId
     GRDocsBaseUrl: GRDocsBaseUrl
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
