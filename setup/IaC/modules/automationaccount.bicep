@@ -26,6 +26,7 @@ param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
 param dceEndpoint string = ''
 param dcrImmutableId string = ''
+param dcrImmutableId2 string = ''
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -657,6 +658,14 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       isEncrypted: true
       value: '"${dcrImmutableId}"'
+    }
+  }
+
+  resource variable26 'variables' = if ((newDeployment || updateCoreResources) && dcrImmutableId2 != '') {
+    name: 'DCR_IMMUTABLE_ID_2'
+    properties: {
+      isEncrypted: true
+      value: '"${dcrImmutableId2}"'
     }
   }
 }

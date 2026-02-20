@@ -811,41 +811,32 @@ function Send-GuardrailsData {
         $WorkSpaceKey
     )
     
-    # Get DCE endpoint and DCR immutable ID from environment variables or automation variables
-    # Try Get-GSAAutomationVariable first (if available) for consistency with codebase pattern
+    # Get DCE endpoint and DCR immutable IDs (two DCRs used due to 10-flows-per-rule limit)
     $dceEndpoint = $null
     $dcrImmutableId = $null
-    
+    $dcrImmutableId2 = $null
+
     if (Get-Command -Name Get-GSAAutomationVariable -ErrorAction SilentlyContinue) {
         try {
             $dceEndpoint = Get-GSAAutomationVariable -Name "DCE_ENDPOINT" -ErrorAction SilentlyContinue
             $dcrImmutableId = Get-GSAAutomationVariable -Name "DCR_IMMUTABLE_ID" -ErrorAction SilentlyContinue
+            $dcrImmutableId2 = Get-GSAAutomationVariable -Name "DCR_IMMUTABLE_ID_2" -ErrorAction SilentlyContinue
         }
-        catch {
-            # Fall back to environment variables if automation variable retrieval fails
-        }
+        catch { }
     }
-    
-    # Fall back to environment variables if not found via automation variables
-    if (-not $dceEndpoint) {
-        $dceEndpoint = $env:DCE_ENDPOINT
-    }
-    if (-not $dcrImmutableId) {
-        $dcrImmutableId = $env:DCR_IMMUTABLE_ID
-    }
-    
-    # Validate required values
+    if (-not $dceEndpoint) { $dceEndpoint = $env:DCE_ENDPOINT }
+    if (-not $dcrImmutableId) { $dcrImmutableId = $env:DCR_IMMUTABLE_ID }
+    if (-not $dcrImmutableId2) { $dcrImmutableId2 = $env:DCR_IMMUTABLE_ID_2 }
+
     if (-not $dceEndpoint) {
         throw "DCE_ENDPOINT is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
     }
-    
     if (-not $dcrImmutableId) {
         throw "DCR_IMMUTABLE_ID is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
     }
-    
+
     try {
-        # Map log types to DCR stream names
-        # Stream names follow the pattern Custom-{LogType}
+        # Map log types to DCR stream names; GR2* types use second DCR (DCR has max 10 flows)
         $streamName = switch ($LogType) {
             'GuardrailsCompliance' { 'Custom-GuardrailsCompliance' }
             'GuardrailsComplianceException' { 'Custom-GuardrailsComplianceException' }
@@ -861,9 +852,13 @@ function Send-GuardrailsData {
             'GR2ExternalUsers' { 'Custom-GR2ExternalUsers' }
             default { "Custom-$LogType" }
         }
-        
-        # Construct the DCR ingestion endpoint URI
-        $uri = "$dceEndpoint/dataCollectionRules/$dcrImmutableId/streams/$streamName" + "?api-version=2023-01-01"
+
+        $dcrId = $dcrImmutableId
+        if ($LogType -in 'GR2UsersWithoutGroups', 'GR2ExternalUsers' -and $dcrImmutableId2) {
+            $dcrId = $dcrImmutableId2
+        }
+
+        $uri = "$dceEndpoint/dataCollectionRules/$dcrId/streams/$streamName" + "?api-version=2023-01-01"
         
         # Send data using Invoke-AzRestMethod (handles authentication automatically)
         $response = Invoke-AzRestMethod -Uri $uri -Method POST -Payload $Data
