@@ -46,61 +46,61 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
         streams: ['Custom-GuardrailsCompliance'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GuardrailsCompliance_CL' 
+        outputStream: 'Custom-GuardrailsCompliance_CL' 
       }
       { 
         streams: ['Custom-GuardrailsComplianceException'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GuardrailsComplianceException_CL' 
+        outputStream: 'Custom-GuardrailsComplianceException_CL' 
       }
       { 
         streams: ['Custom-GR_TenantInfo'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GR_TenantInfo_CL' 
+        outputStream: 'Custom-GR_TenantInfo_CL' 
       }
       { 
         streams: ['Custom-GR_Results'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GR_Results_CL' 
+        outputStream: 'Custom-GR_Results_CL' 
       }
       { 
         streams: ['Custom-GR_VersionInfo'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GR_VersionInfo_CL' 
+        outputStream: 'Custom-GR_VersionInfo_CL' 
       }
       { 
         streams: ['Custom-GRITSGControls'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GRITSGControls_CL' 
+        outputStream: 'Custom-GRITSGControls_CL' 
       }
       { 
         streams: ['Custom-GuardrailsTenantsCompliance'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GuardrailsTenantsCompliance_CL' 
+        outputStream: 'Custom-GuardrailsTenantsCompliance_CL' 
       }
       { 
         streams: ['Custom-CaCDebugMetrics'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'CaCDebugMetrics_CL' 
+        outputStream: 'Custom-CaCDebugMetrics_CL' 
       }
       { 
         streams: ['Custom-GuardrailsUserRaw'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GuardrailsUserRaw_CL' 
+        outputStream: 'Custom-GuardrailsUserRaw_CL' 
       }
       { 
         streams: ['Custom-GuardrailsCrossTenantAccess'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GuardrailsCrossTenantAccess_CL' 
+        outputStream: 'Custom-GuardrailsCrossTenantAccess_CL' 
       }
     ]
     destinations: {
@@ -112,85 +112,233 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
       ]
     }
     streamDeclarations: {
-      'Custom-GuardrailsCompliance': { 
+      'Custom-GuardrailsCompliance': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+          { 
+            name: 'ControlName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ItemName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ComplianceStatus_b' 
+            type: 'bool' 
+          }
+          { 
+            name: 'Comments_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ReportTime_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'itsgcode_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'Required_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'Profile_d' 
+            type: 'real' 
+          }
+          { 
+            name: 'DisplayName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'SubscriptionName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'VNETName_s' 
+            type: 'string' 
+          }
+        ]
       }
-      'Custom-GuardrailsComplianceException': { 
+      'Custom-GuardrailsComplianceException': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+          { 
+            name: 'ControlName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ItemName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ComplianceStatus_b' 
+            type: 'bool' 
+          }
+          { 
+            name: 'Comments_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ReportTime_s' 
+            type: 'string' 
+          }
+        ]
       }
-      'Custom-GR_TenantInfo': { 
+      'Custom-GR_TenantInfo': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+          { 
+            name: 'TenantDomain_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'DepartmentTenantID_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'DepartmentTenantName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ReportTime_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'DepartmentName_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'DepartmentNumber_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'cloudUsageProfiles_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'Locale_s' 
+            type: 'string' 
+          }
+        ]
       }
-      'Custom-GR_Results': { 
+      'Custom-GR_Results': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+        ]
       }
-      'Custom-GR_VersionInfo': { 
+      'Custom-GR_VersionInfo': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+          { 
+            name: 'CurrentVersion_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'AvailableVersion_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'ReportTime_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'UpdateNeeded_b' 
+            type: 'bool' 
+          }
+        ]
       }
-      'Custom-GRITSGControls': { 
+      'Custom-GRITSGControls': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+          { 
+            name: 'Name_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'Definition_s' 
+            type: 'string' 
+          }
+          { 
+            name: 'itsgcode_s' 
+            type: 'string' 
+          }
+        ]
       }
-      'Custom-GuardrailsTenantsCompliance': { 
+      'Custom-GuardrailsTenantsCompliance': {
         columns: [
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+        ]
       }
-      'Custom-CaCDebugMetrics': { 
+      'Custom-CaCDebugMetrics': {
         columns: [
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+        ]
       }
-      'Custom-GuardrailsUserRaw': { 
+      'Custom-GuardrailsUserRaw': {
         columns: [
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+        ]
       }
-      'Custom-GuardrailsCrossTenantAccess': { 
+      'Custom-GuardrailsCrossTenantAccess': {
         columns: [
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+        ]
       }
     }
   }
@@ -212,13 +360,13 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
         streams: ['Custom-GR2UsersWithoutGroups'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GR2UsersWithoutGroups_CL' 
+        outputStream: 'Custom-GR2UsersWithoutGroups_CL' 
       }
       { 
         streams: ['Custom-GR2ExternalUsers'] 
         destinations: ['guardrails-law'] 
         transformKql: 'source' 
-        outputStream: 'GR2ExternalUsers_CL' 
+        outputStream: 'Custom-GR2ExternalUsers_CL' 
       }
     ]
     destinations: {
@@ -230,21 +378,21 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
       ]
     }
     streamDeclarations: {
-      'Custom-GR2UsersWithoutGroups': { 
+      'Custom-GR2UsersWithoutGroups': {
         columns: [
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+        ]
       }
-      'Custom-GR2ExternalUsers': { 
+      'Custom-GR2ExternalUsers': {
         columns: [
           { 
             name: 'RawData' 
             type: 'string' 
           }
-        ] 
+        ]
       }
     }
   }

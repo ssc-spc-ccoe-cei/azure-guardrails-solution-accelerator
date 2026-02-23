@@ -41,7 +41,7 @@ resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GuardrailsCompliance_CL'
+      name: 'GuardrailsCompliance_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -49,6 +49,50 @@ resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/
         }
         { 
           name: 'RawData' 
+          type: 'string' 
+        }
+        { 
+          name: 'ControlName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ItemName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ComplianceStatus_b' 
+          type: 'boolean' 
+        }
+        { 
+          name: 'Comments_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ReportTime_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'itsgcode_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'Required_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'Profile_d' 
+          type: 'real' 
+        }
+        { 
+          name: 'DisplayName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'SubscriptionName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'VNETName_s' 
           type: 'string' 
         }
       ]
@@ -63,7 +107,7 @@ resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/wo
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GuardrailsComplianceException_CL'
+      name: 'GuardrailsComplianceException_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -71,6 +115,26 @@ resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/wo
         }
         { 
           name: 'RawData' 
+          type: 'string' 
+        }
+        { 
+          name: 'ControlName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ItemName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ComplianceStatus_b' 
+          type: 'boolean' 
+        }
+        { 
+          name: 'Comments_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ReportTime_s' 
           type: 'string' 
         }
       ]
@@ -85,7 +149,7 @@ resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GR_TenantInfo_CL'
+      name: 'GR_TenantInfo_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -93,6 +157,38 @@ resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@
         }
         { 
           name: 'RawData' 
+          type: 'string' 
+        }
+        { 
+          name: 'TenantDomain_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'DepartmentTenantID_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'DepartmentTenantName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ReportTime_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'DepartmentName_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'DepartmentNumber_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'cloudUsageProfiles_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'Locale_s' 
           type: 'string' 
         }
       ]
@@ -107,7 +203,7 @@ resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@202
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GR_Results_CL'
+      name: 'GR_Results_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -129,7 +225,7 @@ resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GR_VersionInfo_CL'
+      name: 'GR_VersionInfo_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -138,6 +234,22 @@ resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables
         { 
           name: 'RawData' 
           type: 'string' 
+        }
+        { 
+          name: 'CurrentVersion_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'AvailableVersion_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'ReportTime_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'UpdateNeeded_b' 
+          type: 'boolean' 
         }
       ]
     }
@@ -151,7 +263,7 @@ resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GRITSGControls_CL'
+      name: 'GRITSGControls_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -159,6 +271,18 @@ resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables
         }
         { 
           name: 'RawData' 
+          type: 'string' 
+        }
+        { 
+          name: 'Name_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'Definition_s' 
+          type: 'string' 
+        }
+        { 
+          name: 'itsgcode_s' 
           type: 'string' 
         }
       ]
@@ -173,7 +297,7 @@ resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/work
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GuardrailsTenantsCompliance_CL'
+      name: 'GuardrailsTenantsCompliance_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -195,7 +319,7 @@ resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/table
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-CaCDebugMetrics_CL'
+      name: 'CaCDebugMetrics_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -217,7 +341,7 @@ resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tab
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GuardrailsUserRaw_CL'
+      name: 'GuardrailsUserRaw_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -239,7 +363,7 @@ resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/work
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GuardrailsCrossTenantAccess_CL'
+      name: 'GuardrailsCrossTenantAccess_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -261,7 +385,7 @@ resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GR2UsersWithoutGroups_CL'
+      name: 'GR2UsersWithoutGroups_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
@@ -283,7 +407,7 @@ resource dcrTableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tabl
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
-      name: 'Custom-GR2ExternalUsers_CL'
+      name: 'GR2ExternalUsers_CL'
       columns: [
         { 
           name: 'TimeGenerated' 
