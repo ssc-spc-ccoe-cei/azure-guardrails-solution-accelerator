@@ -132,7 +132,7 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
           }
           { 
             name: 'ComplianceStatus_b' 
-            type: 'bool' 
+            type: 'boolean' 
           }
           { 
             name: 'Comments_s' 
@@ -188,7 +188,7 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
           }
           { 
             name: 'ComplianceStatus_b' 
-            type: 'bool' 
+            type: 'boolean' 
           }
           { 
             name: 'Comments_s' 
@@ -280,7 +280,7 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
           }
           { 
             name: 'UpdateNeeded_b' 
-            type: 'bool' 
+            type: 'boolean' 
           }
         ]
       }
