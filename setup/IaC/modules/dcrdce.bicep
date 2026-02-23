@@ -311,6 +311,10 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
       'Custom-GuardrailsTenantsCompliance': {
         columns: [
           { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
+          { 
             name: 'RawData' 
             type: 'string' 
           }
@@ -318,6 +322,10 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
       }
       'Custom-CaCDebugMetrics': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
@@ -327,6 +335,10 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
       'Custom-GuardrailsUserRaw': {
         columns: [
           { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
+          { 
             name: 'RawData' 
             type: 'string' 
           }
@@ -334,6 +346,10 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
       }
       'Custom-GuardrailsCrossTenantAccess': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
@@ -381,6 +397,10 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
       'Custom-GR2UsersWithoutGroups': {
         columns: [
           { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
+          { 
             name: 'RawData' 
             type: 'string' 
           }
@@ -388,6 +408,10 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
       }
       'Custom-GR2ExternalUsers': {
         columns: [
+          { 
+            name: 'TimeGenerated' 
+            type: 'datetime' 
+          }
           { 
             name: 'RawData' 
             type: 'string' 
