@@ -172,22 +172,26 @@ $enableMultiCloudProfiles = $RuntimeConfig.enableMultiCloudProfiles
 if($enableMultiCloudProfiles) {
     Write-Output "Running enableMultiCloudProfiles True."
 
-    # Retrieve the cloudUsageProfiles and convert to an array
-    $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
-    if ($cloudUsageProfiles -is [string]) {
-        if ($cloudUsageProfiles.Contains(",")) {
-            # Handle comma-separated string case (e.g., "1,2,3")
-            $cloudUsageProfiles = $cloudUsageProfiles.Trim('[]').Split(",") | ForEach-Object { $_.Trim() }
+    # Read active profiles from cloudUsageProfiles (Automation Account variable).
+    # Examples this supports: "1", "[1]", "1,2,3", "[1,2,3]" (without the quotes)
+    $cloudUsageProfilesRaw = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
+    if ($cloudUsageProfilesRaw -is [string]) {
+        # Remove square brackets so split logic works the same for all string formats.
+        $normalizedProfiles = $cloudUsageProfilesRaw.Trim().Trim('[]')
+        if ([string]::IsNullOrWhiteSpace($normalizedProfiles)) {
+            throw "cloudUsageProfiles is empty. Provide at least one profile value."
         }
-        else {
-            # Handle single profile string case (e.g., "3")
-            $cloudUsageProfiles = @($cloudUsageProfiles.Trim())
-        }
+        $cloudUsageProfiles = $normalizedProfiles.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+    }
+    else {
+        $cloudUsageProfiles = @($cloudUsageProfilesRaw)
     }
 
-    # Ensure all profiles are integers
+    # Convert to integers once so profile comparisons are reliable.
     $cloudUsageProfiles = $cloudUsageProfiles | ForEach-Object { [int]$_ }
 
+    # Run this module only when at least one value in module.Profiles (from setup/modules.json)
+    # matches cloudUsageProfiles (AA var).
     $modules = $modules | Where-Object {
         $moduleProfiles = $_.Profiles
         $moduleProfiles -is [array] -and ($moduleProfiles | Where-Object { $cloudUsageProfiles -contains $_ })
@@ -447,6 +451,63 @@ foreach ($module in $modules) {
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
+
+            if ($enableMultiCloudProfiles -and $null -ne $results.ComplianceResults) {
+                # Some modules can return compliance rows without a Profile value.
+                # This fallback fills Profile before upload so workbook filtering stays accurate.
+                foreach ($record in @($results.ComplianceResults)) {
+                    if (-not $record) { continue }
+
+                    # Keep existing Profile values untouched.
+                    $hasProfile = $record.PSObject.Properties.Match('Profile').Count -gt 0 -and `
+                        -not [string]::IsNullOrWhiteSpace([string]$record.Profile)
+                    if ($hasProfile) { continue }
+
+                    try {
+                        # Try to find subscription id from result fields (SubscriptionId first, then Id).
+                        $subscriptionIdForEval = $null
+                        if ($record.PSObject.Properties.Match('SubscriptionId').Count -gt 0 -and $record.SubscriptionId) {
+                            $candidate = [string]$record.SubscriptionId
+                            if ($candidate -match '/subscriptions/([^/]+)') {
+                                $subscriptionIdForEval = $Matches[1]
+                            } elseif ($candidate -match '^[0-9a-fA-F-]{36}$') {
+                                $subscriptionIdForEval = $candidate
+                            }
+                        }
+                        # Fallback: some result rows do not have SubscriptionId but do have Id.
+                        # Handle both formats:
+                        # 1) full ARM id (extract subscription segment), and
+                        # 2) raw subscription GUID when Type=subscription.
+                        if (-not $subscriptionIdForEval -and $record.PSObject.Properties.Match('Id').Count -gt 0 -and $record.Id) {
+                            $candidate = [string]$record.Id
+                            if ($candidate -match '/subscriptions/([^/]+)') {
+                                $subscriptionIdForEval = $Matches[1]
+                            } elseif ($record.PSObject.Properties.Match('Type').Count -gt 0 -and `
+                                      [string]$record.Type -eq 'subscription' -and `
+                                      $candidate -match '^[0-9a-fA-F-]{36}$') {
+                                $subscriptionIdForEval = $candidate
+                            }
+                        }
+
+                        # Use Get-EvaluationProfile so profile rules stay in one place (no duplicated logic here).
+                        # Pass SubscriptionId when available so evaluation can use subscription 'profile' tags.
+                        # Without SubscriptionId, evaluation falls back to cloudUsageProfiles + module Profiles only.
+                        if ($subscriptionIdForEval) {
+                            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString -SubscriptionId $subscriptionIdForEval
+                        } else {
+                            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString
+                        }
+
+                        # Only write Profile when evaluation returns a valid profile number.
+                        if ($evalResult.Profile -gt 0) {
+                            $record | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
+                        }
+                    }
+                    catch {
+                        Write-Verbose "Unable to backfill Profile for module '$($module.modulename)': $_"
+                    }
+                }
+            }
 
             $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
 
