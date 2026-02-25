@@ -65,6 +65,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     DepartmentNumber: DepartmentNumber
     DepartmentName: DepartmentName
     guardrailsKVname: kvName
+    #disable-next-line BCP318
     guardrailsLogAnalyticscustomerId: LAW.outputs.logAnalyticsWorkspaceId
     guardrailsStoragename: storageAccountName
     HealthLAWResourceId: HealthLAWResourceId
@@ -82,8 +83,11 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
+    #disable-next-line BCP318
     dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
+    #disable-next-line BCP318
     dcrImmutableId: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
+    #disable-next-line BCP318
     dcrImmutableId2: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''
   }
 }
@@ -136,9 +140,26 @@ module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || update
     releaseDate: releaseDate
     newDeployment: newDeployment
     updateCoreResources: updateCoreResources
+  }
+}
+// Grants the automation account MSI the Monitoring Metrics Publisher role on both DCRs.
+// Separate module to avoid a circular dependency between automationaccount and dcrdce modules.
+module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+  name: 'guardrails-dcrrbac'
+  dependsOn: [
+    aa
+    DCRDCE
+  ]
+  params: {
+    #disable-next-line BCP318
+    dcrResourceId: DCRDCE.outputs.dcrResourceId
+    #disable-next-line BCP318
+    dcrResourceId2: DCRDCE.outputs.dcrResourceId2
+    #disable-next-line BCP318
     automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
   }
 }
+
 module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
   name: 'guardrails-storageaccount'
   params: {

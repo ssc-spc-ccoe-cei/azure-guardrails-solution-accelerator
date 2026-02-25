@@ -9,8 +9,6 @@ param releaseVersion string
 param releaseDate string
 param newDeployment bool = true
 param updateCoreResources bool = false
-// Managed identity principal ID of the automation account; required to grant DCR publish permissions
-param automationAccountMSI string
 
 // Data Collection Endpoint (DCE)
 // Create/update DCE on new deployments or when updating core resources (for migration)
@@ -424,34 +422,10 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
   }
 }
 
-// Grant the automation account MSI the Monitoring Metrics Publisher role on both DCRs.
-// This is required for the Logs Ingestion API (403 Forbidden without it).
-// Role: Monitoring Metrics Publisher (3913510d-42f4-4e42-8a64-420c390055eb)
-var monitoringMetricsPublisherRoleId = '3913510d-42f4-4e42-8a64-420c390055eb'
-
-resource dcrRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (newDeployment || updateCoreResources) {
-  name: guid(dataCollectionRule.id, automationAccountMSI, monitoringMetricsPublisherRoleId)
-  scope: dataCollectionRule
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', monitoringMetricsPublisherRoleId)
-    principalId: automationAccountMSI
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource dcrRoleAssignment2 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (newDeployment || updateCoreResources) {
-  name: guid(dataCollectionRule2.id, automationAccountMSI, monitoringMetricsPublisherRoleId)
-  scope: dataCollectionRule2
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', monitoringMetricsPublisherRoleId)
-    principalId: automationAccountMSI
-    principalType: 'ServicePrincipal'
-  }
-}
-
 // Outputs
 output dceEndpoint string = (newDeployment || updateCoreResources) ? dataCollectionEndpoint.properties.logsIngestion.endpoint : ''
 output dcrImmutableId string = (newDeployment || updateCoreResources) ? dataCollectionRule.properties.immutableId : ''
 output dcrImmutableId2 string = (newDeployment || updateCoreResources) ? dataCollectionRule2.properties.immutableId : ''
 output dceResourceId string = (newDeployment || updateCoreResources) ? dataCollectionEndpoint.id : ''
 output dcrResourceId string = (newDeployment || updateCoreResources) ? dataCollectionRule.id : ''
+output dcrResourceId2 string = (newDeployment || updateCoreResources) ? dataCollectionRule2.id : ''
