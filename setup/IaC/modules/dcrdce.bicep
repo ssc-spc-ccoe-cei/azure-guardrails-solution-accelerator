@@ -423,7 +423,7 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
 }
 
 // Outputs
-output dceEndpoint string = (newDeployment || updateCoreResources) ? 'https://${dataCollectionEndpoint.name}.${location}.ingest.monitor.azure.com' : ''
+output dceEndpoint string = (newDeployment || updateCoreResources) ? dataCollectionEndpoint.properties.logsIngestion.endpoint : ''
 output dcrImmutableId string = (newDeployment || updateCoreResources) ? dataCollectionRule.properties.immutableId : ''
 output dcrImmutableId2 string = (newDeployment || updateCoreResources) ? dataCollectionRule2.properties.immutableId : ''
 output dceResourceId string = (newDeployment || updateCoreResources) ? dataCollectionEndpoint.id : ''
