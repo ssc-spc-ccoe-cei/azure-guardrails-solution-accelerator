@@ -15,7 +15,7 @@ function Get-LocationBasedCAP {
         [switch] $EnableMultiCloudProfiles      # feature flag, default to false    
     )
     $IsCompliant = $false
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
 
 
     # Check 2: Allowed Location – Conditional Access Policy

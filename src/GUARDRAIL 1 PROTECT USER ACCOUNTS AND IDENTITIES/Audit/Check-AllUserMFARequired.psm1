@@ -16,7 +16,7 @@ function Check-AllUserMFARequired {
         [switch] $EnableMultiCloudProfiles # default to false
     )
 
-    $ErrorList = @()
+    [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
     # Call KQL function to get compliance results with retry logic
@@ -56,11 +56,28 @@ function Check-AllUserMFARequired {
         
         if (-not $success) {
             Write-Error "Failed to get compliance results after $maxRetries attempts"
-            $ErrorList.Add("Failed to call gr_mfa_evaluation KQL function after $maxRetries attempts")
+            # Suppress Add() return index from polluting function output.
+            [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function after $maxRetries attempts")
         }
     } catch {
         Write-Error "Failed to call KQL function: $_"
-        $ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
+        [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
+    }
+
+    # If the query fails, still return a result object so reporting does not break.
+    if (-not $complianceResult) {
+        # Put error details into one string so the failure reason is easy to read.
+        $errorSummary = if ($ErrorList.Count -gt 0) { ($ErrorList -join ' ') } else { "No compliance data returned from gr_mfa_evaluation." }
+        $complianceResult = [PSCustomObject]@{
+            # If we cannot evaluate, treat this as non-compliant.
+            ComplianceStatus = $false
+            ControlName      = $ControlName
+            ItemName         = $ItemName
+            # Keep the error message in comments so it is visible in logs/workbook.
+            Comments         = "Non-compliant. Unable to evaluate all-user MFA requirement. $errorSummary"
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+        }
     }
     
     # Add Profile information to compliance result if KQL function was successful
@@ -72,7 +89,7 @@ function Check-AllUserMFARequired {
             Write-Verbose "Profile information added successfully"
         } catch {
             Write-Warning "Failed to add Profile information: $_"
-            $ErrorList.Add("Failed to add Profile information: $_")
+            [void]$ErrorList.Add("Failed to add Profile information: $_")
         }
     }
     
