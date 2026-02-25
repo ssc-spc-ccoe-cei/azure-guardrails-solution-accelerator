@@ -136,6 +136,7 @@ module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || update
     releaseDate: releaseDate
     newDeployment: newDeployment
     updateCoreResources: updateCoreResources
+    automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
   }
 }
 module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
