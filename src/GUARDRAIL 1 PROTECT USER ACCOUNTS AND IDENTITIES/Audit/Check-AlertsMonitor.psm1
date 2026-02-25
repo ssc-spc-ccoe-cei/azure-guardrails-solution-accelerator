@@ -107,8 +107,7 @@ function Check-AlertsMonitor {
     $signInLogsCompliance = $false
     $auditLogsCompliance = $false
     $Comments = ""
-    # Local error accumulator is string-only in this module, so Generic.List[string] is sufficient.
-    $ErrorList = New-Object System.Collections.Generic.List[string]
+    [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
 
     #Queries that will be used in alert rules
     # Escape UPNs to prevent regex injection
@@ -154,7 +153,7 @@ function Check-AlertsMonitor {
         Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
     }
     catch {
-        $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscriptionId)'--`
+        [void]$ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscriptionId)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
             error message: $_")
         #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
