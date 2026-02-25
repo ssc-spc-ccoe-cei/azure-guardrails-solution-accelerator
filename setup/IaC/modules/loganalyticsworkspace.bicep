@@ -8,7 +8,7 @@ param deployLAW bool
 param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
-param updateCoreResources bool = false
+param enableMultiCloudProfiles bool
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
@@ -16,7 +16,7 @@ var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
 var wbConfig='${wb}${wbConfig2}'
 
-resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: logAnalyticsWorkspaceName
   location: location
   tags: {
@@ -30,780 +30,19 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
     }
   }
 }
-
-// Custom tables required by DCR-based log ingestion; must exist before DCR is created
-resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GuardrailsCompliance_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GuardrailsCompliance_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'ControlName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ItemName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ComplianceStatus_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'ComplianceStatus_s'
-          type: 'string'
-        }
-        { 
-          name: 'Comments_s'
-          type: 'string'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'itsgcode_s'
-          type: 'string'
-        }
-        { 
-          name: 'Required_s'
-          type: 'string'
-        }
-        { 
-          name: 'Profile_d'
-          type: 'real'
-        }
-        { 
-          name: 'DisplayName_s'
-          type: 'string'
-        }
-        { 
-          name: 'SubscriptionName_s'
-          type: 'string'
-        }
-        { 
-          name: 'VNETName_s'
-          type: 'string'
-        }
-        { 
-          name: 'DocumentName_s'
-          type: 'string'
-        }
-        { 
-          name: 'Id_g'
-          type: 'guid'
-        }
-        { 
-          name: 'MitigationCommands_s'
-          type: 'string'
-        }
-        { 
-          name: 'Name_s'
-          type: 'string'
-        }
-        { 
-          name: 'SubnetName_s'
-          type: 'string'
-        }
-        { 
-          name: 'Type_s'
-          type: 'string'
-        }
-        { 
-          name: 'ADLicenseType_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GuardrailsComplianceException_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GuardrailsComplianceException_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'Message'
-          type: 'string'
-        }
-        { 
-          name: 'moduleName_s'
-          type: 'string'
-        }
-        { 
-          name: 'severity_s'
-          type: 'string'
-        }
-        { 
-          name: 'locale_s'
-          type: 'string'
-        }
-        { 
-          name: 'reportTime_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GR_TenantInfo_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GR_TenantInfo_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'RawData'
-          type: 'string'
-        }
-        { 
-          name: 'TenantDomain_s'
-          type: 'string'
-        }
-        { 
-          name: 'DepartmentTenantID_g'
-          type: 'guid'
-        }
-        { 
-          name: 'DepartmentTenantName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'DepartmentName_s'
-          type: 'string'
-        }
-        { 
-          name: 'DepartmentNumber_s'
-          type: 'string'
-        }
-        { 
-          name: 'cloudUsageProfiles_s'
-          type: 'string'
-        }
-        { 
-          name: 'Locale_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GR_Results_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GR_Results_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'ControlName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ItemName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ComplianceStatus_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'ComplianceStatus_s'
-          type: 'string'
-        }
-        { 
-          name: 'Comments_s'
-          type: 'string'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'itsgcode_s'
-          type: 'string'
-        }
-        { 
-          name: 'Required_s'
-          type: 'string'
-        }
-        { 
-          name: 'Profile_d'
-          type: 'real'
-        }
-        { 
-          name: 'DisplayName_s'
-          type: 'string'
-        }
-        { 
-          name: 'SubscriptionName_s'
-          type: 'string'
-        }
-        { 
-          name: 'VNETName_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GR_VersionInfo_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GR_VersionInfo_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'RawData'
-          type: 'string'
-        }
-        { 
-          name: 'DeployedVersion_s'
-          type: 'string'
-        }
-        { 
-          name: 'AvailableVersion_s'
-          type: 'string'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'UpdateNeeded_b'
-          type: 'boolean'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GRITSGControls_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GRITSGControls_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'RawData'
-          type: 'string'
-        }
-        { 
-          name: 'Name_s'
-          type: 'string'
-        }
-        { 
-          name: 'Definition_s'
-          type: 'string'
-        }
-        { 
-          name: 'itsgcode_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GuardrailsTenantsCompliance_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GuardrailsTenantsCompliance_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'RawData'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'CaCDebugMetrics_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'CaCDebugMetrics_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'GuardrailId_s'
-          type: 'string'
-        }
-        { 
-          name: 'RunbookName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ModuleName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ExecutionScope_s'
-          type: 'string'
-        }
-        { 
-          name: 'EventType_s'
-          type: 'string'
-        }
-        { 
-          name: 'CorrelationId'
-          type: 'string'
-        }
-        { 
-          name: 'JobId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'RunSubscriptionId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'RunTenantId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'ErrorCount_d'
-          type: 'real'
-        }
-        { 
-          name: 'ItemCount_d'
-          type: 'real'
-        }
-        { 
-          name: 'CompliantCount_d'
-          type: 'real'
-        }
-        { 
-          name: 'NonCompliantCount_d'
-          type: 'real'
-        }
-        { 
-          name: 'DurationMsReal_d'
-          type: 'real'
-        }
-        { 
-          name: 'MemoryStartMb_d'
-          type: 'real'
-        }
-        { 
-          name: 'MemoryEndMb_d'
-          type: 'real'
-        }
-        { 
-          name: 'MemoryPeakMb_d'
-          type: 'real'
-        }
-        { 
-          name: 'MemoryDeltaMb_d'
-          type: 'real'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'Message'
-          type: 'string'
-        }
-        { 
-          name: 'TenantRootManagementGroupId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'TenantRootManagementGroupResourceId_s'
-          type: 'string'
-        }
-        { 
-          name: 'AadAppRoleAssignments_d'
-          type: 'real'
-        }
-        { 
-          name: 'Assignments_d'
-          type: 'real'
-        }
-        { 
-          name: 'RbacAssignments_d'
-          type: 'real'
-        }
-        { 
-          name: 'PermissionSnapshot_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GuardrailsUserRaw_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GuardrailsUserRaw_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'id_g'
-          type: 'guid'
-        }
-        { 
-          name: 'userPrincipalName_s'
-          type: 'string'
-        }
-        { 
-          name: 'displayName_s'
-          type: 'string'
-        }
-        { 
-          name: 'mail_s'
-          type: 'string'
-        }
-        { 
-          name: 'createdDateTime_t'
-          type: 'dateTime'
-        }
-        { 
-          name: 'userType_s'
-          type: 'string'
-        }
-        { 
-          name: 'homeTenantId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'homeTenantResolved_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'accountEnabled_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'guardrailsExcludedMfa_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'isMfaRegistered_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'isMfaCapable_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'isSsprEnabled_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'isSsprRegistered_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'isSsprCapable_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'isPasswordlessCapable_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'defaultMethod_s'
-          type: 'string'
-        }
-        { 
-          name: 'isSystemPreferredAuthenticationMethodEnabled_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'userPreferredMethodForSecondaryAuthentication_s'
-          type: 'string'
-        }
-        { 
-          name: 'methodsRegistered_s'
-          type: 'string'
-        }
-        { 
-          name: 'systemPreferredAuthenticationMethods_s'
-          type: 'string'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'signInActivity_lastSignInDateTime_t'
-          type: 'dateTime'
-        }
-        { 
-          name: 'signInActivity_lastSignInRequestId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'signInActivity_lastNonInteractiveSignInDateTime_t'
-          type: 'dateTime'
-        }
-        { 
-          name: 'signInActivity_lastNonInteractiveSignInRequestId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'signInActivity_lastSuccessfulSignInDateTime_t'
-          type: 'dateTime'
-        }
-        { 
-          name: 'signInActivity_lastSuccessfulSignInRequestId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'customSecurityAttributes_GCCloudGuardrails_ExcludeFromMFA_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'customSecurityAttributes_Guardrails_Excludedmfa_b'
-          type: 'boolean'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GuardrailsCrossTenantAccess_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GuardrailsCrossTenantAccess_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'PartnerTenantId_s'
-          type: 'string'
-        }
-        { 
-          name: 'PartnerTenantId_g'
-          type: 'guid'
-        }
-        { 
-          name: 'InboundTrustMfa_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'InboundTrustCompliantDevice_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'InboundTrustHybridAzureADJoined_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'IsDefault_b'
-          type: 'boolean'
-        }
-        { 
-          name: 'HasGuestMfaPolicy_b'
-          type: 'boolean'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GR2UsersWithoutGroups_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GR2UsersWithoutGroups_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'UserId_s'
-          type: 'string'
-        }
-        { 
-          name: 'DisplayName_s'
-          type: 'string'
-        }
-        { 
-          name: 'GivenName_s'
-          type: 'string'
-        }
-        { 
-          name: 'UserPrincipalName_s'
-          type: 'string'
-        }
-        { 
-          name: 'Comments_s'
-          type: 'string'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'itsgcode_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-resource dcrTableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
-  parent: guardrailsLogAnalytics
-  name: 'GR2ExternalUsers_CL'
-  properties: {
-    plan: 'Analytics'
-    retentionInDays: 90
-    totalRetentionInDays: 90
-    schema: {
-      name: 'GR2ExternalUsers_CL'
-      columns: [
-        { 
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        { 
-          name: 'Comments_s'
-          type: 'string'
-        }
-        { 
-          name: 'DisplayName_s'
-          type: 'string'
-        }
-        { 
-          name: 'ItemName_s'
-          type: 'string'
-        }
-        { 
-          name: 'Mail_s'
-          type: 'string'
-        }
-        { 
-          name: 'PrivilegedRole_s'
-          type: 'string'
-        }
-        { 
-          name: 'ReportTime_s'
-          type: 'string'
-        }
-        { 
-          name: 'Role_s'
-          type: 'string'
-        }
-        { 
-          name: 'Subscription_s'
-          type: 'string'
-        }
-        { 
-          name: 'itsgcode_s'
-          type: 'string'
-        }
-      ]
-    }
-  }
-}
-
-
-
-resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
   }
 }
-resource gr3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource gr3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data3'
   parent: guardrailsLogAnalytics
   properties: {
@@ -816,7 +55,7 @@ resource gr3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01'
     version: 2
   }
 }
-resource grpie 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grpie 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_pie'
   parent: guardrailsLogAnalytics
   properties: {
@@ -841,7 +80,7 @@ GuardrailsCompliance_CL
     version: 2
   }
 } 
-resource grpie3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grpie3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_pie3'
   parent: guardrailsLogAnalytics
   properties: {
@@ -855,7 +94,7 @@ resource grpie3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-
     version: 2
   }
 } 
-resource grpie56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grpie56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_pie56'
   parent: guardrailsLogAnalytics
   properties: {
@@ -869,7 +108,7 @@ resource grpie56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     version: 2
   }
 } 
-resource grpieall 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grpieall 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_pie_all'
   parent: guardrailsLogAnalytics
   properties: {
@@ -898,7 +137,7 @@ union
     version: 2
   }
 } 
-resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_geturl'
   parent: guardrailsLogAnalytics
   properties: {
@@ -911,70 +150,71 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
-resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data567'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data567'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=column_ifexists("DisplayName_s", ""),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data567'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
   }
 }
-resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data56'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data56'
     // Profile gating removed from this query so run output rows are shown as emitted.
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=column_ifexists("DisplayName_s", ""),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data56'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
   }
 }
-resource grdata7 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grdata7 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data7'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data7'
     // Profile gating removed from this query so valid profile rows are not suppressed.
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=column_ifexists("DisplayName_s", ""),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data7'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
   }
 }
-resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data9'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data9'
     // Profile gating removed from this query so valid profile rows are not suppressed.
-    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\n GuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix  and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ["Item Name"]=column_ifexists("ItemName_s", ""), ["Subscription Name"]=column_ifexists("SubscriptionName_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'), Comments=column_ifexists("Comments_s", ""), ["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\n GuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix  and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ["Item Name"]=column_ifexists("ItemName_s", ""), ["Subscription Name"]=column_ifexists("SubscriptionName_s", ""), ["VNet Name"]=column_ifexists("VNETName_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'), Comments=column_ifexists("Comments_s", ""), ["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data9'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
   }
 }
-resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_data11'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data11'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")), ["Subscription Name"] = column_ifexists("SubscriptionName_s", ""), Comments=column_ifexists("Comments_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    // Profile gating removed from this query so valid profile rows are not suppressed.
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")), ["Subscription Name"] = column_ifexists("SubscriptionName_s", ""), Comments=column_ifexists("Comments_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data11'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
   }
 }
-resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_mfa_evaluation'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1012,12 +252,12 @@ let crossTenantDataExists = toscalar(
     )
     | summarize sum(count_) > 0
 );
-let crossTenantRawData = union isfuzzy=true (
+let crossTenantSettings = union isfuzzy=true (
     GuardrailsCrossTenantAccess_CL
     | where column_ifexists("ReportTime_s", "") == reportTime
     | extend 
         PartnerTenantId = coalesce(
-            tostring(column_ifexists("PartnerTenantId_g", dynamic(null))),
+            tostring(column_ifexists("PartnerTenantId_g", "")),
             column_ifexists("PartnerTenantId_s", "")
         ),
         InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
@@ -1025,15 +265,9 @@ let crossTenantRawData = union isfuzzy=true (
     | where isnotempty(PartnerTenantId)
     | summarize arg_max(TimeGenerated, *) by PartnerTenantId
 ), (
-    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
+    print PartnerTenantId = "", InboundMfaTrust = false, HasGuestMfaPolicy = false, TimeGenerated = datetime(null)
     | where 1 == 0  // Empty result if table doesn't exist
 );
-let crossTenantSettings = crossTenantRawData
-| extend 
-    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
-    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
-    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
-| where isnotempty(PartnerTenantId);
 let defaultMfaTrustSetting = toscalar(
     crossTenantSettings
     | where PartnerTenantId == "default"
@@ -1043,8 +277,7 @@ let defaultMfaTrustSetting = toscalar(
 );
 let hasGuestMfaPolicyConfigured = toscalar(
     crossTenantSettings
-    | summarize HasPolicy = max(HasGuestMfaPolicy)
-    | extend HasPolicy = coalesce(HasPolicy, false)
+    | summarize HasPolicy = coalesce(max(HasGuestMfaPolicy), false)
     | project HasPolicy
 );
 let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
@@ -1052,7 +285,11 @@ let rawUserData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = column_ifexists("homeTenantId_g", "")
+         homeTenantId = coalesce(
+             tostring(column_ifexists("homeTenantId_g", "")),
+             column_ifexists("homeTenantId_s", "")
+         ),
+         homeTenantResolved = tobool(coalesce(column_ifexists("homeTenantResolved_b", bool(null)), false))
 | where ReportTime == reportTime;
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
@@ -1062,14 +299,23 @@ let memberUsers = rawUserData
 | where guardrailsExcluded == false and userType != "Guest";
 // Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
 let guestsWithTrustInfo = guestUsers
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| extend guestHomeTenantId = case(
+    // If resolution succeeded and no explicit tenant policy, use default
+    homeTenantResolved == true and (isempty(homeTenantId) or isnull(homeTenantId)), "default",
+    // If resolution succeeded and we have a tenant ID, use it
+    homeTenantResolved == true and isnotempty(homeTenantId), homeTenantId,
+    // If resolution failed, mark as unresolved (do NOT trust by default)
+    homeTenantResolved == false, "unresolved",
+    // Fallback for unexpected cases
+    "unresolved"
+)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
 ) on $left.guestHomeTenantId == $right.PartnerTenantId
 | extend 
-    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled, 
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", 
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), 
         false);
 let guestsToExclude = guestsWithTrustInfo
@@ -1080,7 +326,7 @@ let guestsToEvaluate = guestsWithTrustInfo
 let excludedGuestCount = toscalar(guestsToExclude | summarize count());
 let userData = union memberUsers, guestsToEvaluate;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
-let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
@@ -1155,7 +401,7 @@ finalSummary
   }
 }
 
-resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_non_mfa_users'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1200,12 +446,12 @@ let crossTenantDataExists = toscalar(
     )
     | summarize sum(count_) > 0
 );
-let crossTenantRawData = union isfuzzy=true (
+let crossTenantSettings = union isfuzzy=true (
     GuardrailsCrossTenantAccess_CL
     | where column_ifexists("ReportTime_s", "") == reportTime
     | extend 
         PartnerTenantId = coalesce(
-            tostring(column_ifexists("PartnerTenantId_g", dynamic(null))),
+            tostring(column_ifexists("PartnerTenantId_g", "")),
             column_ifexists("PartnerTenantId_s", "")
         ),
         InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
@@ -1213,15 +459,9 @@ let crossTenantRawData = union isfuzzy=true (
     | where isnotempty(PartnerTenantId)
     | summarize arg_max(TimeGenerated, *) by PartnerTenantId
 ), (
-    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
+    print PartnerTenantId = "", InboundMfaTrust = false, HasGuestMfaPolicy = false, TimeGenerated = datetime(null)
     | where 1 == 0  // Empty result if table doesn't exist
 );
-let crossTenantSettings = crossTenantRawData
-| extend 
-    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
-    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
-    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
-| where isnotempty(PartnerTenantId);
 let defaultMfaTrustSetting = toscalar(
     crossTenantSettings
     | where PartnerTenantId == "default"
@@ -1231,8 +471,7 @@ let defaultMfaTrustSetting = toscalar(
 );
 let hasGuestMfaPolicyConfigured = toscalar(
     crossTenantSettings
-    | summarize HasPolicy = max(HasGuestMfaPolicy)
-    | extend HasPolicy = coalesce(HasPolicy, false)
+    | summarize HasPolicy = coalesce(max(HasGuestMfaPolicy), false)
     | project HasPolicy
 );
 let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
@@ -1240,11 +479,15 @@ let userData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = column_ifexists("homeTenantId_g", "")
+         homeTenantId = coalesce(
+             tostring(column_ifexists("homeTenantId_g", "")),
+             column_ifexists("homeTenantId_s", "")
+         ),
+         homeTenantResolved = tobool(coalesce(column_ifexists("homeTenantResolved_b", bool(null)), false))
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
-let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
@@ -1280,14 +523,23 @@ let mfaAnalysis = userData
     );
 let nonCompliantUsers = mfaAnalysis
 | where isMfaCompliant == false
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| extend guestHomeTenantId = case(
+    // If resolution succeeded and no explicit tenant policy, use default
+    homeTenantResolved == true and (isempty(homeTenantId) or isnull(homeTenantId)), "default",
+    // If resolution succeeded and we have a tenant ID, use it
+    homeTenantResolved == true and isnotempty(homeTenantId), homeTenantId,
+    // If resolution failed, mark as unresolved (do NOT trust by default)
+    homeTenantResolved == false, "unresolved",
+    // Fallback for unexpected cases
+    "unresolved"
+)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
 ) on $left.guestHomeTenantId == $right.PartnerTenantId
 | extend 
-    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest",
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest" and guestHomeTenantId != "unresolved",
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false),
         false)
 | where shouldExcludeGuest == false
@@ -1325,7 +577,7 @@ union
     version: 2
   }
 }
-resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   location: location
   kind: 'shared'
   name: guid('guardrails')
@@ -1338,7 +590,7 @@ resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((dep
   }
 }
 
-resource grSummaryByPrefix 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefix 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1349,26 +601,26 @@ resource grSummaryByPrefix 'Microsoft.OperationalInsights/workspaces/savedSearch
     //  - ReportTime: exact report timestamp (string) to match records
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
     version: 2 
   }
 }
-resource grSummaryByPrefixa 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefixa 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix_a'
   parent: guardrailsLogAnalytics
   properties: {
     category: 'gr_functions'
     displayName: 'gr_summary_by_prefix_a'
     // KQL function: summarize per Guardrail, nonCompliant number includes both mandatory and recommended controls, but status only reflects mandatory controls
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false  and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false  and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix_a'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
     version: 2 
   }
 }
-resource grSummaryByPrefix3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefix3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix3'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1380,13 +632,13 @@ resource grSummaryByPrefix3 'Microsoft.OperationalInsights/workspaces/savedSearc
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix3'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
     version: 2 
   }
 }
-resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix3a'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1399,13 +651,13 @@ resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSear
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // status only reflects mandatory controls
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix3a'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
     version: 2 
   }
 }
-resource grSummaryByPrefix56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefix56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix56'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1417,13 +669,13 @@ resource grSummaryByPrefix56 'Microsoft.OperationalInsights/workspaces/savedSear
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix56'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
     version: 2 
   }
 }
-resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix56a'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1436,13 +688,13 @@ resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSea
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // status only reflects mandatory controls
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix56a'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
     version: 2 
   }
 }
-resource grSummaryByPrefixAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefixAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix_all'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1474,7 +726,7 @@ union
     version: 2
   }
 }
-resource grSummaryByPrefixAlla 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryByPrefixAlla 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_by_prefix_alla'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1507,7 +759,7 @@ union
     version: 2
   }
 }
-resource grSummaryAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryAll 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_all'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1531,7 +783,7 @@ union isfuzzy=true
   (gr_summary_by_prefix_a("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
   (gr_summary_by_prefix3a("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
 | project
-    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Controls", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
     UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
 | summarize
@@ -1541,7 +793,7 @@ union isfuzzy=true
 | extend HasNonCompliance = NonCompliantItems > 0
 | extend Status = iff(HasNonCompliance, "🔴", "🟢")
 | project ["Guardrail"] = "All Guardrails",
-         ["Total # Items"] = TotalControls,
+         ["Total # Controls"] = TotalControls,
          ["NonCompliant Items"] = NonCompliantItems,
          ["Unknown Items"] = UnknownItems,
          Status
@@ -1553,7 +805,7 @@ union isfuzzy=true
     version: 2
   }
 }
-resource grSummaryMandatory 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryMandatory 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_mandatory'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1579,7 +831,7 @@ union isfuzzy=true
   (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
   (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
 | project
-    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Controls", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
     UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
 | summarize
@@ -1589,7 +841,7 @@ union isfuzzy=true
 | extend HasNonCompliance = NonCompliantItems > 0
 | extend Status = iff(HasNonCompliance, "🔴", "🟢")
 | project ["Guardrail"] = "Mandatory Guardrails",
-         ["Total # Items"] = TotalControls,
+         ["Total # Controls"] = TotalControls,
          ["NonCompliant Items"] = NonCompliantItems,
          ["Unknown Items"] = UnknownItems,
          Status
@@ -1601,10 +853,9 @@ union isfuzzy=true
     version: 2
   }
 }
-resource grSummaryRecommended 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummaryRecommended 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary_recommended'
   parent: guardrailsLogAnalytics
-
   properties: {
     category: 'gr_functions'
     displayName: 'gr_summary_recommended'
@@ -1628,7 +879,7 @@ union isfuzzy=true
   (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
   (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
 | project
-    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Controls", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
     UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
 | summarize
@@ -1638,7 +889,7 @@ union isfuzzy=true
 | extend HasNonCompliance = NonCompliantItems > 0
 | extend Status = iff(HasNonCompliance, "🔴", "🟢")
 | project ["Guardrail"] = "Recommended Guardrails",
-         ["Total # Items"] = TotalControls,
+         ["Total # Controls"] = TotalControls,
          ["NonCompliant Items"] = NonCompliantItems,
          ["Unknown Items"] = UnknownItems,
          Status
@@ -1650,7 +901,7 @@ union isfuzzy=true
     version: 2
   }
 }
-resource grSummary 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource grSummary 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook) {
   name: 'gr_summary'
   parent: guardrailsLogAnalytics
   properties: {
@@ -1671,7 +922,5 @@ union
     version: 2
   }
 }
-#disable-next-line BCP318
 output logAnalyticsWorkspaceId string = guardrailsLogAnalytics.properties.customerId 
-#disable-next-line BCP318
 output logAnalyticsResourceId string = guardrailsLogAnalytics.id
