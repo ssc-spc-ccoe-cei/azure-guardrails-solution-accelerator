@@ -173,7 +173,7 @@ if($enableMultiCloudProfiles) {
     Write-Output "Running enableMultiCloudProfiles True."
 
     # Read active profiles from cloudUsageProfiles (Automation Account variable).
-    # Examples this supports: "1", "[1]", "1,2,3", "[1,2,3]".
+    # Examples this supports: "1", "[1]", "1,2,3", "[1,2,3]" (without the quotes)
     $cloudUsageProfilesRaw = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
     if ($cloudUsageProfilesRaw -is [string]) {
         # Remove square brackets so split logic works the same for all string formats.
