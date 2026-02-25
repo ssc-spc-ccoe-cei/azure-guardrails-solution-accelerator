@@ -859,25 +859,27 @@ function Send-GuardrailsData {
         }
 
         $uri = "$dceEndpoint/dataCollectionRules/$dcrId/streams/$streamName" + "?api-version=2023-01-01"
-        
-        # Send data using Invoke-AzRestMethod (handles authentication automatically)
-        $response = Invoke-AzRestMethod -Uri $uri -Method POST -Payload $Data
-        
-        # Check for errors
-        if ($response.StatusCode -ge 400) {
-            $errorMessage = "Data Collection API returned status code $($response.StatusCode)"
-            if ($response.Content) {
-                try {
-                    $errorContent = $response.Content | ConvertFrom-Json
-                    $errorMessage += ": $($errorContent.error.message)"
-                }
-                catch {
-                    $errorMessage += ": $($response.Content)"
-                }
-            }
-            throw $errorMessage
+
+        # Invoke-AzRestMethod cannot determine the authentication audience for DCE endpoints
+        # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
+        # the Azure Monitor audience and call the Logs Ingestion API with Invoke-RestMethod.
+        # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
+        try {
+            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com/" -AsSecureString -ErrorAction Stop
+            $tokenPlain = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
         }
-        
+        catch {
+            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com/"
+            $tokenPlain = $tokenResponse.Token
+        }
+        $headers = @{
+            Authorization  = "Bearer $tokenPlain"
+            'Content-Type' = 'application/json'
+        }
+
+        # Invoke-RestMethod throws on 4xx/5xx when -ErrorAction Stop is set
+        Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $Data -ErrorAction Stop | Out-Null
+
         Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$streamName'"
     }
     catch {
