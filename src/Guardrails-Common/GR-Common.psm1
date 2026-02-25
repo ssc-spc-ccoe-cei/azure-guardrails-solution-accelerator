@@ -2123,6 +2123,8 @@ function CompareKQLQueries{
 function Get-allowedLocationCAPCompliance {
     param (
         [AllowEmptyCollection()]
+        # Callers pass an ArrayList so this function can append errors in-place
+        # and return the same mutable collection in the output envelope.
         [System.Collections.ArrayList] $ErrorList,
         [bool] $IsCompliant
     )

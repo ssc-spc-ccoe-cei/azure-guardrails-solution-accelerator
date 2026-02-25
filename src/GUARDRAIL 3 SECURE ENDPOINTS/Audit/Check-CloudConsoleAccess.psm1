@@ -15,6 +15,8 @@ function Get-CloudConsoleAccess {
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     $IsCompliant = $false
+    # Keep ArrayList here because Get-allowedLocationCAPCompliance (GR-Common)
+    # expects an ArrayList object and appends to the same reference via .Add().
     [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
     
     # get named locations

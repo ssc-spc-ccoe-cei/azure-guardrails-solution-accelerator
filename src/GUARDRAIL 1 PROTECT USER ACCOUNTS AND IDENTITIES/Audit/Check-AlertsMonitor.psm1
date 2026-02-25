@@ -107,6 +107,7 @@ function Check-AlertsMonitor {
     $signInLogsCompliance = $false
     $auditLogsCompliance = $false
     $Comments = ""
+    # Local error accumulator is string-only in this module, so Generic.List[string] is sufficient.
     $ErrorList = New-Object System.Collections.Generic.List[string]
 
     #Queries that will be used in alert rules

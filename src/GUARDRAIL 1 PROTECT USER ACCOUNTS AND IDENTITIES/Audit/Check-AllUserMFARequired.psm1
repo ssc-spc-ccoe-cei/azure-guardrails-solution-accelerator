@@ -64,22 +64,6 @@ function Check-AllUserMFARequired {
         [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
     }
 
-    # If the query fails, still return a result object so reporting does not break.
-    if (-not $complianceResult) {
-        # Put error details into one string so the failure reason is easy to read.
-        $errorSummary = if ($ErrorList.Count -gt 0) { ($ErrorList -join ' ') } else { "No compliance data returned from gr_mfa_evaluation." }
-        $complianceResult = [PSCustomObject]@{
-            # If we cannot evaluate, treat this as non-compliant.
-            ComplianceStatus = $false
-            ControlName      = $ControlName
-            ItemName         = $ItemName
-            # Keep the error message in comments so it is visible in logs/workbook.
-            Comments         = "Non-compliant. Unable to evaluate all-user MFA requirement. $errorSummary"
-            ReportTime       = $ReportTime
-            itsgcode         = $itsgcode
-        }
-    }
-    
     # Add Profile information to compliance result if KQL function was successful
     if ($complianceResult -and $EnableMultiCloudProfiles) {
         try {

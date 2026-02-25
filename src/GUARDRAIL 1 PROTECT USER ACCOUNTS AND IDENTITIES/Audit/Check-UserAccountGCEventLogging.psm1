@@ -81,6 +81,7 @@ function Check-UserAccountGCEventLogging {
 
     $IsCompliant = $true
     $Comments = ""
+    # Local error accumulator is string-only in this module, so Generic.List[string] is sufficient.
     $ErrorList = New-Object System.Collections.Generic.List[string]
 
 
