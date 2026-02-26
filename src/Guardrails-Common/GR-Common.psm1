@@ -860,27 +860,43 @@ function Send-GuardrailsData {
 
         $uri = "$dceEndpoint/dataCollectionRules/$dcrId/streams/$streamName" + "?api-version=2023-01-01"
 
+        # DCR Log Ingestion API requires a JSON array body. Wrap single objects automatically
+        # so callers that send a single PSCustomObject via ConvertTo-Json still work correctly.
+        if ($Data.Trim().StartsWith('{')) {
+            $Data = "[$Data]"
+        }
+
+        if ([string]::IsNullOrWhiteSpace($Data) -or $Data.Trim() -eq '[]') {
+            Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
+            return
+        }
+
         # Invoke-AzRestMethod cannot determine the authentication audience for DCE endpoints
         # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
-        # the Azure Monitor audience and call the Logs Ingestion API with Invoke-RestMethod.
+        # the Azure Monitor audience (no trailing slash per API docs) using Invoke-RestMethod.
         # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
         try {
-            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com/" -AsSecureString -ErrorAction Stop
+            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com" -AsSecureString -ErrorAction Stop
             $tokenPlain = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
         }
         catch {
-            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com/"
+            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com"
             $tokenPlain = $tokenResponse.Token
         }
+
+        # Per API docs, encode the body explicitly as UTF-8 to prevent data transmission issues
+        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
+
         $headers = @{
-            Authorization  = "Bearer $tokenPlain"
-            'Content-Type' = 'application/json'
+            Authorization          = "Bearer $tokenPlain"
+            'Content-Type'         = 'application/json'
+            'x-ms-client-request-id' = [System.Guid]::NewGuid().ToString()
         }
 
         # Invoke-RestMethod throws on 4xx/5xx when -ErrorAction Stop is set
-        Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $Data -ErrorAction Stop | Out-Null
+        Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $bodyBytes -ErrorAction Stop | Out-Null
 
-        Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$streamName'"
+        Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$streamName' ($($bodyBytes.Length) bytes)"
     }
     catch {
         Write-Error "Data Collection API failed: $($_.Exception.Message)"

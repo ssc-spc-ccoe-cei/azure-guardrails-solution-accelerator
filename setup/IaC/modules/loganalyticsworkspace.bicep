@@ -321,13 +321,73 @@ resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/table
     schema: {
       name: 'CaCDebugMetrics_CL'
       columns: [
-        { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+        {
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
-        { 
-          name: 'RawData' 
-          type: 'string' 
+        {
+          name: 'GuardrailId_s'
+          type: 'string'
+        }
+        {
+          name: 'RunbookName_s'
+          type: 'string'
+        }
+        {
+          name: 'ModuleName_s'
+          type: 'string'
+        }
+        {
+          name: 'ExecutionScope_s'
+          type: 'string'
+        }
+        {
+          name: 'EventType_s'
+          type: 'string'
+        }
+        {
+          name: 'CorrelationId_s'
+          type: 'string'
+        }
+        {
+          name: 'JobId_s'
+          type: 'string'
+        }
+        {
+          name: 'RunSubscriptionId_s'
+          type: 'string'
+        }
+        {
+          name: 'RunTenantId_s'
+          type: 'string'
+        }
+        {
+          name: 'ErrorCount_d'
+          type: 'real'
+        }
+        {
+          name: 'ItemCount_d'
+          type: 'real'
+        }
+        {
+          name: 'CompliantCount_d'
+          type: 'real'
+        }
+        {
+          name: 'NonCompliantCount_d'
+          type: 'real'
+        }
+        {
+          name: 'DurationMsReal_d'
+          type: 'real'
+        }
+        {
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        {
+          name: 'Message_s'
+          type: 'string'
         }
       ]
     }
@@ -343,13 +403,85 @@ resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tab
     schema: {
       name: 'GuardrailsUserRaw_CL'
       columns: [
-        { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+        {
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
-        { 
-          name: 'RawData' 
-          type: 'string' 
+        {
+          name: 'userPrincipalName_s'
+          type: 'string'
+        }
+        {
+          name: 'displayName_s'
+          type: 'string'
+        }
+        {
+          name: 'mail_s'
+          type: 'string'
+        }
+        {
+          name: 'createdDateTime_s'
+          type: 'string'
+        }
+        {
+          name: 'userType_s'
+          type: 'string'
+        }
+        {
+          name: 'homeTenantId_s'
+          type: 'string'
+        }
+        {
+          name: 'homeTenantResolved_b'
+          type: 'boolean'
+        }
+        {
+          name: 'accountEnabled_b'
+          type: 'boolean'
+        }
+        {
+          name: 'guardrailsExcludedMfa_b'
+          type: 'boolean'
+        }
+        {
+          name: 'isMfaRegistered_b'
+          type: 'boolean'
+        }
+        {
+          name: 'isMfaCapable_b'
+          type: 'boolean'
+        }
+        {
+          name: 'isSsprEnabled_b'
+          type: 'boolean'
+        }
+        {
+          name: 'isSsprRegistered_b'
+          type: 'boolean'
+        }
+        {
+          name: 'isSsprCapable_b'
+          type: 'boolean'
+        }
+        {
+          name: 'isPasswordlessCapable_b'
+          type: 'boolean'
+        }
+        {
+          name: 'defaultMethod_s'
+          type: 'string'
+        }
+        {
+          name: 'isSystemPreferredAuthenticationMethodEnabled_b'
+          type: 'boolean'
+        }
+        {
+          name: 'userPreferredMethodForSecondaryAuthentication_s'
+          type: 'string'
+        }
+        {
+          name: 'ReportTime_s'
+          type: 'string'
         }
       ]
     }
@@ -365,13 +497,37 @@ resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/work
     schema: {
       name: 'GuardrailsCrossTenantAccess_CL'
       columns: [
-        { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+        {
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
-        { 
-          name: 'RawData' 
-          type: 'string' 
+        {
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        {
+          name: 'PartnerTenantId_s'
+          type: 'string'
+        }
+        {
+          name: 'InboundTrustMfa_b'
+          type: 'boolean'
+        }
+        {
+          name: 'InboundTrustCompliantDevice_b'
+          type: 'boolean'
+        }
+        {
+          name: 'InboundTrustHybridAzureADJoined_b'
+          type: 'boolean'
+        }
+        {
+          name: 'IsDefault_b'
+          type: 'boolean'
+        }
+        {
+          name: 'HasGuestMfaPolicy_b'
+          type: 'boolean'
         }
       ]
     }
