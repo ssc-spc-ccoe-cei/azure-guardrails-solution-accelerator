@@ -172,10 +172,6 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
             type: 'string'
           }
           {
-            name: 'DocumentName'
-            type: 'string'
-          }
-          {
             name: 'Id'
             type: 'string'
           }
