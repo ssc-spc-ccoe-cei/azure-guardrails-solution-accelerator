@@ -45,31 +45,33 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
       {
         streams: ['Custom-GuardrailsCompliance']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend ControlName_s = tostring(ControlName), ItemName_s = tostring(ItemName), ComplianceStatus_b = tobool(ComplianceStatus), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime), itsgcode_s = tostring(itsgcode), Required_s = tostring(Required), Profile_d = todouble(Profile), DisplayName_s = tostring(DisplayName), SubscriptionName_s = tostring(SubscriptionName), VNETName_s = tostring(VNETName) | project TimeGenerated, ControlName_s, ItemName_s, ComplianceStatus_b, Comments_s, ReportTime_s, itsgcode_s, Required_s, Profile_d, DisplayName_s, SubscriptionName_s, VNETName_s'
+        transformKql: 'source | extend ControlName_s = tostring(ControlName), ItemName_s = tostring(ItemName), ComplianceStatus_b = tobool(ComplianceStatus), ComplianceStatus_s = tostring(ComplianceStatus), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime), itsgcode_s = tostring(itsgcode), Required_s = tostring(Required), Profile_d = todouble(Profile), DisplayName_s = tostring(DisplayName), SubscriptionName_s = tostring(SubscriptionName), VNETName_s = tostring(VNETName), DocumentName_s = tostring(DocumentName), Id_g = tostring(Id), MitigationCommands_s = tostring(MitigationCommands), Name_s = tostring(Name), SubnetName_s = tostring(SubnetName), Type_s = tostring(Type), ADLicenseType_s = tostring(ADLicenseType) | project TimeGenerated, ControlName_s, ItemName_s, ComplianceStatus_b, ComplianceStatus_s, Comments_s, ReportTime_s, itsgcode_s, Required_s, Profile_d, DisplayName_s, SubscriptionName_s, VNETName_s, DocumentName_s, Id_g, MitigationCommands_s, Name_s, SubnetName_s, Type_s, ADLicenseType_s'
         outputStream: 'Custom-GuardrailsCompliance_CL'
       }
       {
+        // Exception log table: carries message/moduleName/severity/locale/reportTime — not compliance fields
         streams: ['Custom-GuardrailsComplianceException']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend ControlName_s = tostring(ControlName), ItemName_s = tostring(ItemName), ComplianceStatus_b = tobool(ComplianceStatus), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime) | project TimeGenerated, ControlName_s, ItemName_s, ComplianceStatus_b, Comments_s, ReportTime_s'
+        transformKql: 'source | extend Message = tostring(message), moduleName_s = tostring(moduleName), severity_s = tostring(severity), locale_s = tostring(locale), reportTime_s = tostring(reportTime) | project TimeGenerated, Message, moduleName_s, severity_s, locale_s, reportTime_s'
         outputStream: 'Custom-GuardrailsComplianceException_CL'
       }
       {
         streams: ['Custom-GR_TenantInfo']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend TenantDomain_s = tostring(TenantDomain), DepartmentTenantID_s = tostring(DepartmentTenantID), DepartmentTenantName_s = tostring(DepartmentTenantName), ReportTime_s = tostring(ReportTime), DepartmentName_s = tostring(DepartmentName), DepartmentNumber_s = tostring(DepartmentNumber), cloudUsageProfiles_s = tostring(cloudUsageProfiles), Locale_s = tostring(Locale) | project TimeGenerated, TenantDomain_s, DepartmentTenantID_s, DepartmentTenantName_s, ReportTime_s, DepartmentName_s, DepartmentNumber_s, cloudUsageProfiles_s, Locale_s'
+        transformKql: 'source | extend TenantDomain_s = tostring(TenantDomain), DepartmentTenantID_g = tostring(DepartmentTenantID), DepartmentTenantName_s = tostring(DepartmentTenantName), ReportTime_s = tostring(ReportTime), DepartmentName_s = tostring(DepartmentName), DepartmentNumber_s = tostring(DepartmentNumber), cloudUsageProfiles_s = tostring(cloudUsageProfiles), Locale_s = tostring(Locale) | project TimeGenerated, TenantDomain_s, DepartmentTenantID_g, DepartmentTenantName_s, ReportTime_s, DepartmentName_s, DepartmentNumber_s, cloudUsageProfiles_s, Locale_s'
         outputStream: 'Custom-GR_TenantInfo_CL'
       }
       {
         streams: ['Custom-GR_Results']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend ControlName_s = tostring(ControlName), ItemName_s = tostring(ItemName), ComplianceStatus_b = tobool(ComplianceStatus), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime), itsgcode_s = tostring(itsgcode), Required_s = tostring(Required), Profile_d = todouble(Profile), DisplayName_s = tostring(DisplayName), SubscriptionName_s = tostring(SubscriptionName), VNETName_s = tostring(VNETName) | project TimeGenerated, ControlName_s, ItemName_s, ComplianceStatus_b, Comments_s, ReportTime_s, itsgcode_s, Required_s, Profile_d, DisplayName_s, SubscriptionName_s, VNETName_s'
+        transformKql: 'source | extend ControlName_s = tostring(ControlName), ItemName_s = tostring(ItemName), ComplianceStatus_b = tobool(ComplianceStatus), ComplianceStatus_s = tostring(ComplianceStatus), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime), itsgcode_s = tostring(itsgcode), Required_s = tostring(Required), Profile_d = todouble(Profile), DisplayName_s = tostring(DisplayName), SubscriptionName_s = tostring(SubscriptionName), VNETName_s = tostring(VNETName) | project TimeGenerated, ControlName_s, ItemName_s, ComplianceStatus_b, ComplianceStatus_s, Comments_s, ReportTime_s, itsgcode_s, Required_s, Profile_d, DisplayName_s, SubscriptionName_s, VNETName_s'
         outputStream: 'Custom-GR_Results_CL'
       }
       {
+        // PS sends DeployedVersion; stored as DeployedVersion_s to match the working schema
         streams: ['Custom-GR_VersionInfo']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend CurrentVersion_s = tostring(DeployedVersion), AvailableVersion_s = tostring(AvailableVersion), ReportTime_s = tostring(ReportTime), UpdateNeeded_b = tobool(UpdateNeeded) | project TimeGenerated, CurrentVersion_s, AvailableVersion_s, ReportTime_s, UpdateNeeded_b'
+        transformKql: 'source | extend DeployedVersion_s = tostring(DeployedVersion), AvailableVersion_s = tostring(AvailableVersion), ReportTime_s = tostring(ReportTime), UpdateNeeded_b = tobool(UpdateNeeded) | project TimeGenerated, DeployedVersion_s, AvailableVersion_s, ReportTime_s, UpdateNeeded_b'
         outputStream: 'Custom-GR_VersionInfo_CL'
       }
       {
@@ -81,25 +83,28 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
       {
         streams: ['Custom-GuardrailsTenantsCompliance']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend ControlName_s = tostring(ControlName), ItemName_s = tostring(ItemName), ComplianceStatus_b = tobool(ComplianceStatus), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime), itsgcode_s = tostring(itsgcode), Required_s = tostring(Required), Profile_d = todouble(Profile), DisplayName_s = tostring(DisplayName), SubscriptionName_s = tostring(SubscriptionName), VNETName_s = tostring(VNETName) | project TimeGenerated, ControlName_s, ItemName_s, ComplianceStatus_b, Comments_s, ReportTime_s, itsgcode_s, Required_s, Profile_d, DisplayName_s, SubscriptionName_s, VNETName_s'
+        transformKql: 'source | extend ControlName_s = tostring(ControlName), ItemName_s = tostring(ItemName), ComplianceStatus_b = tobool(ComplianceStatus), ComplianceStatus_s = tostring(ComplianceStatus), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime), itsgcode_s = tostring(itsgcode), Required_s = tostring(Required), Profile_d = todouble(Profile), DisplayName_s = tostring(DisplayName), SubscriptionName_s = tostring(SubscriptionName), VNETName_s = tostring(VNETName) | project TimeGenerated, ControlName_s, ItemName_s, ComplianceStatus_b, ComplianceStatus_s, Comments_s, ReportTime_s, itsgcode_s, Required_s, Profile_d, DisplayName_s, SubscriptionName_s, VNETName_s'
         outputStream: 'Custom-GuardrailsTenantsCompliance_CL'
       }
       {
+        // CorrelationId and Message kept without suffix to match working schema; GUID fields mapped to _g
         streams: ['Custom-CaCDebugMetrics']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend GuardrailId_s = tostring(GuardrailId), RunbookName_s = tostring(RunbookName), ModuleName_s = tostring(ModuleName), ExecutionScope_s = tostring(ExecutionScope), EventType_s = tostring(EventType), CorrelationId_s = tostring(CorrelationId), JobId_s = tostring(JobId), RunSubscriptionId_s = tostring(RunSubscriptionId), RunTenantId_s = tostring(RunTenantId), ErrorCount_d = todouble(ErrorCount), ItemCount_d = todouble(ItemCount), CompliantCount_d = todouble(CompliantCount), NonCompliantCount_d = todouble(NonCompliantCount), DurationMsReal_d = todouble(DurationMsReal), ReportTime_s = tostring(ReportTime), Message_s = tostring(Message) | project TimeGenerated, GuardrailId_s, RunbookName_s, ModuleName_s, ExecutionScope_s, EventType_s, CorrelationId_s, JobId_s, RunSubscriptionId_s, RunTenantId_s, ErrorCount_d, ItemCount_d, CompliantCount_d, NonCompliantCount_d, DurationMsReal_d, ReportTime_s, Message_s'
+        transformKql: 'source | extend GuardrailId_s = tostring(GuardrailId), RunbookName_s = tostring(RunbookName), ModuleName_s = tostring(ModuleName), ExecutionScope_s = tostring(ExecutionScope), EventType_s = tostring(EventType), CorrelationId = tostring(CorrelationId), JobId_g = tostring(JobId), RunSubscriptionId_g = tostring(RunSubscriptionId), RunTenantId_g = tostring(RunTenantId), ErrorCount_d = todouble(ErrorCount), ItemCount_d = todouble(ItemCount), CompliantCount_d = todouble(CompliantCount), NonCompliantCount_d = todouble(NonCompliantCount), DurationMsReal_d = todouble(DurationMsReal), MemoryStartMb_d = todouble(MemoryStartMb), MemoryEndMb_d = todouble(MemoryEndMb), MemoryPeakMb_d = todouble(MemoryPeakMb), MemoryDeltaMb_d = todouble(MemoryDeltaMb), ReportTime_s = tostring(ReportTime), Message = tostring(Message), TenantRootManagementGroupId_g = tostring(TenantRootManagementGroupId), TenantRootManagementGroupResourceId_s = tostring(TenantRootManagementGroupResourceId), AadAppRoleAssignments_d = todouble(AadAppRoleAssignments), Assignments_d = todouble(Assignments), RbacAssignments_d = todouble(RbacAssignments), PermissionSnapshot_s = tostring(PermissionSnapshot) | project TimeGenerated, GuardrailId_s, RunbookName_s, ModuleName_s, ExecutionScope_s, EventType_s, CorrelationId, JobId_g, RunSubscriptionId_g, RunTenantId_g, ErrorCount_d, ItemCount_d, CompliantCount_d, NonCompliantCount_d, DurationMsReal_d, MemoryStartMb_d, MemoryEndMb_d, MemoryPeakMb_d, MemoryDeltaMb_d, ReportTime_s, Message, TenantRootManagementGroupId_g, TenantRootManagementGroupResourceId_s, AadAppRoleAssignments_d, Assignments_d, RbacAssignments_d, PermissionSnapshot_s'
         outputStream: 'Custom-CaCDebugMetrics_CL'
       }
       {
+        // id and homeTenantId stored as _g (guid); createdDateTime as _t (datetime); nested signInActivity and customSecurityAttributes flattened
         streams: ['Custom-GuardrailsUserRaw']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend userPrincipalName_s = tostring(userPrincipalName), displayName_s = tostring(displayName), mail_s = tostring(mail), createdDateTime_s = tostring(createdDateTime), userType_s = tostring(userType), homeTenantId_s = tostring(homeTenantId), homeTenantResolved_b = tobool(homeTenantResolved), accountEnabled_b = tobool(accountEnabled), guardrailsExcludedMfa_b = tobool(guardrailsExcludedMfa), isMfaRegistered_b = tobool(isMfaRegistered), isMfaCapable_b = tobool(isMfaCapable), isSsprEnabled_b = tobool(isSsprEnabled), isSsprRegistered_b = tobool(isSsprRegistered), isSsprCapable_b = tobool(isSsprCapable), isPasswordlessCapable_b = tobool(isPasswordlessCapable), defaultMethod_s = tostring(defaultMethod), isSystemPreferredAuthenticationMethodEnabled_b = tobool(isSystemPreferredAuthenticationMethodEnabled), userPreferredMethodForSecondaryAuthentication_s = tostring(userPreferredMethodForSecondaryAuthentication), ReportTime_s = tostring(ReportTime) | project TimeGenerated, userPrincipalName_s, displayName_s, mail_s, createdDateTime_s, userType_s, homeTenantId_s, homeTenantResolved_b, accountEnabled_b, guardrailsExcludedMfa_b, isMfaRegistered_b, isMfaCapable_b, isSsprEnabled_b, isSsprRegistered_b, isSsprCapable_b, isPasswordlessCapable_b, defaultMethod_s, isSystemPreferredAuthenticationMethodEnabled_b, userPreferredMethodForSecondaryAuthentication_s, ReportTime_s'
+        transformKql: 'source | extend id_g = tostring(id), userPrincipalName_s = tostring(userPrincipalName), displayName_s = tostring(displayName), mail_s = tostring(mail), createdDateTime_t = todatetime(createdDateTime), userType_s = tostring(userType), homeTenantId_g = tostring(homeTenantId), homeTenantResolved_b = tobool(homeTenantResolved), accountEnabled_b = tobool(accountEnabled), guardrailsExcludedMfa_b = tobool(guardrailsExcludedMfa), isMfaRegistered_b = tobool(isMfaRegistered), isMfaCapable_b = tobool(isMfaCapable), isSsprEnabled_b = tobool(isSsprEnabled), isSsprRegistered_b = tobool(isSsprRegistered), isSsprCapable_b = tobool(isSsprCapable), isPasswordlessCapable_b = tobool(isPasswordlessCapable), defaultMethod_s = tostring(defaultMethod), isSystemPreferredAuthenticationMethodEnabled_b = tobool(isSystemPreferredAuthenticationMethodEnabled), userPreferredMethodForSecondaryAuthentication_s = tostring(userPreferredMethodForSecondaryAuthentication), methodsRegistered_s = tostring(methodsRegistered), systemPreferredAuthenticationMethods_s = tostring(systemPreferredAuthenticationMethods), ReportTime_s = tostring(ReportTime), signInActivity_lastSignInDateTime_t = todatetime(signInActivity.lastSignInDateTime), signInActivity_lastSignInRequestId_g = tostring(signInActivity.lastSignInRequestId), signInActivity_lastNonInteractiveSignInDateTime_t = todatetime(signInActivity.lastNonInteractiveSignInDateTime), signInActivity_lastNonInteractiveSignInRequestId_g = tostring(signInActivity.lastNonInteractiveSignInRequestId), signInActivity_lastSuccessfulSignInDateTime_t = todatetime(signInActivity.lastSuccessfulSignInDateTime), signInActivity_lastSuccessfulSignInRequestId_g = tostring(signInActivity.lastSuccessfulSignInRequestId), customSecurityAttributes_GCCloudGuardrails_ExcludeFromMFA_b = tobool(customSecurityAttributes.GCCloudGuardrails.ExcludeFromMFA), customSecurityAttributes_Guardrails_Excludedmfa_b = tobool(customSecurityAttributes.Guardrails.Excludedmfa) | project TimeGenerated, id_g, userPrincipalName_s, displayName_s, mail_s, createdDateTime_t, userType_s, homeTenantId_g, homeTenantResolved_b, accountEnabled_b, guardrailsExcludedMfa_b, isMfaRegistered_b, isMfaCapable_b, isSsprEnabled_b, isSsprRegistered_b, isSsprCapable_b, isPasswordlessCapable_b, defaultMethod_s, isSystemPreferredAuthenticationMethodEnabled_b, userPreferredMethodForSecondaryAuthentication_s, methodsRegistered_s, systemPreferredAuthenticationMethods_s, ReportTime_s, signInActivity_lastSignInDateTime_t, signInActivity_lastSignInRequestId_g, signInActivity_lastNonInteractiveSignInDateTime_t, signInActivity_lastNonInteractiveSignInRequestId_g, signInActivity_lastSuccessfulSignInDateTime_t, signInActivity_lastSuccessfulSignInRequestId_g, customSecurityAttributes_GCCloudGuardrails_ExcludeFromMFA_b, customSecurityAttributes_Guardrails_Excludedmfa_b'
         outputStream: 'Custom-GuardrailsUserRaw_CL'
       }
       {
+        // PartnerTenantId stored as both _s and _g for workbook compatibility (coalesce pattern)
         streams: ['Custom-GuardrailsCrossTenantAccess']
         destinations: ['guardrails-law']
-        transformKql: 'source | extend ReportTime_s = tostring(ReportTime), PartnerTenantId_s = tostring(PartnerTenantId), InboundTrustMfa_b = tobool(InboundTrustMfa), InboundTrustCompliantDevice_b = tobool(InboundTrustCompliantDevice), InboundTrustHybridAzureADJoined_b = tobool(InboundTrustHybridAzureADJoined), IsDefault_b = tobool(IsDefault), HasGuestMfaPolicy_b = tobool(HasGuestMfaPolicy) | project TimeGenerated, ReportTime_s, PartnerTenantId_s, InboundTrustMfa_b, InboundTrustCompliantDevice_b, InboundTrustHybridAzureADJoined_b, IsDefault_b, HasGuestMfaPolicy_b'
+        transformKql: 'source | extend ReportTime_s = tostring(ReportTime), PartnerTenantId_s = tostring(PartnerTenantId), PartnerTenantId_g = tostring(PartnerTenantId), InboundTrustMfa_b = tobool(InboundTrustMfa), InboundTrustCompliantDevice_b = tobool(InboundTrustCompliantDevice), InboundTrustHybridAzureADJoined_b = tobool(InboundTrustHybridAzureADJoined), IsDefault_b = tobool(IsDefault), HasGuestMfaPolicy_b = tobool(HasGuestMfaPolicy) | project TimeGenerated, ReportTime_s, PartnerTenantId_s, PartnerTenantId_g, InboundTrustMfa_b, InboundTrustCompliantDevice_b, InboundTrustHybridAzureADJoined_b, IsDefault_b, HasGuestMfaPolicy_b'
         outputStream: 'Custom-GuardrailsCrossTenantAccess_CL'
       }
     ]
@@ -166,32 +171,61 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
             name: 'VNETName'
             type: 'string'
           }
+          {
+            name: 'DocumentName'
+            type: 'string'
+          }
+          {
+            name: 'Id'
+            type: 'string'
+          }
+          {
+            name: 'MitigationCommands'
+            type: 'string'
+          }
+          {
+            name: 'Name'
+            type: 'string'
+          }
+          {
+            name: 'SubnetName'
+            type: 'string'
+          }
+          {
+            name: 'Type'
+            type: 'string'
+          }
+          {
+            name: 'ADLicenseType'
+            type: 'string'
+          }
         ]
       }
       'Custom-GuardrailsComplianceException': {
+        // Exception log entries from Add-LogEntry: message/moduleName/severity/locale/reportTime (all lowercase keys)
         columns: [
           {
             name: 'TimeGenerated'
             type: 'datetime'
           }
           {
-            name: 'ControlName'
+            name: 'message'
             type: 'string'
           }
           {
-            name: 'ItemName'
+            name: 'moduleName'
             type: 'string'
           }
           {
-            name: 'ComplianceStatus'
-            type: 'dynamic'
-          }
-          {
-            name: 'Comments'
+            name: 'severity'
             type: 'string'
           }
           {
-            name: 'ReportTime'
+            name: 'locale'
+            type: 'string'
+          }
+          {
+            name: 'reportTime'
             type: 'string'
           }
         ]
@@ -470,6 +504,30 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
             name: 'Message'
             type: 'string'
           }
+          {
+            name: 'TenantRootManagementGroupId'
+            type: 'string'
+          }
+          {
+            name: 'TenantRootManagementGroupResourceId'
+            type: 'string'
+          }
+          {
+            name: 'AadAppRoleAssignments'
+            type: 'real'
+          }
+          {
+            name: 'Assignments'
+            type: 'real'
+          }
+          {
+            name: 'RbacAssignments'
+            type: 'real'
+          }
+          {
+            name: 'PermissionSnapshot'
+            type: 'string'
+          }
         ]
       }
       'Custom-GuardrailsUserRaw': {
@@ -555,6 +613,22 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
             type: 'string'
           }
           {
+            name: 'methodsRegistered'
+            type: 'dynamic'
+          }
+          {
+            name: 'systemPreferredAuthenticationMethods'
+            type: 'dynamic'
+          }
+          {
+            name: 'signInActivity'
+            type: 'dynamic'
+          }
+          {
+            name: 'customSecurityAttributes'
+            type: 'dynamic'
+          }
+          {
             name: 'ReportTime'
             type: 'string'
           }
@@ -612,49 +686,105 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
   properties: {
     dataCollectionEndpointId: dataCollectionEndpoint.id
     dataFlows: [
-      { 
-        streams: ['Custom-GR2UsersWithoutGroups'] 
-        destinations: ['guardrails-law'] 
-        transformKql: 'source' 
-        outputStream: 'Custom-GR2UsersWithoutGroups_CL' 
+      {
+        streams: ['Custom-GR2UsersWithoutGroups']
+        destinations: ['guardrails-law']
+        transformKql: 'source | extend UserId_s = tostring(UserId), DisplayName_s = tostring(DisplayName), GivenName_s = tostring(GivenName), UserPrincipalName_s = tostring(UserPrincipalName), Comments_s = tostring(Comments), ReportTime_s = tostring(ReportTime), itsgcode_s = tostring(itsgcode) | project TimeGenerated, UserId_s, DisplayName_s, GivenName_s, UserPrincipalName_s, Comments_s, ReportTime_s, itsgcode_s'
+        outputStream: 'Custom-GR2UsersWithoutGroups_CL'
       }
-      { 
-        streams: ['Custom-GR2ExternalUsers'] 
-        destinations: ['guardrails-law'] 
-        transformKql: 'source' 
-        outputStream: 'Custom-GR2ExternalUsers_CL' 
+      {
+        streams: ['Custom-GR2ExternalUsers']
+        destinations: ['guardrails-law']
+        transformKql: 'source | extend Comments_s = tostring(Comments), DisplayName_s = tostring(DisplayName), ItemName_s = tostring(ItemName), Mail_s = tostring(Mail), PrivilegedRole_s = tostring(PrivilegedRole), ReportTime_s = tostring(ReportTime), Role_s = tostring(Role), Subscription_s = tostring(Subscription), itsgcode_s = tostring(itsgcode) | project TimeGenerated, Comments_s, DisplayName_s, ItemName_s, Mail_s, PrivilegedRole_s, ReportTime_s, Role_s, Subscription_s, itsgcode_s'
+        outputStream: 'Custom-GR2ExternalUsers_CL'
       }
     ]
     destinations: {
       logAnalytics: [
-        { 
-          name: 'guardrails-law' 
-          workspaceResourceId: logAnalyticsWorkspaceResourceId 
+        {
+          name: 'guardrails-law'
+          workspaceResourceId: logAnalyticsWorkspaceResourceId
         }
       ]
     }
     streamDeclarations: {
       'Custom-GR2UsersWithoutGroups': {
         columns: [
-          { 
-            name: 'TimeGenerated' 
-            type: 'datetime' 
+          {
+            name: 'TimeGenerated'
+            type: 'datetime'
           }
-          { 
-            name: 'RawData' 
-            type: 'string' 
+          {
+            name: 'UserId'
+            type: 'string'
+          }
+          {
+            name: 'DisplayName'
+            type: 'string'
+          }
+          {
+            name: 'GivenName'
+            type: 'string'
+          }
+          {
+            name: 'UserPrincipalName'
+            type: 'string'
+          }
+          {
+            name: 'Comments'
+            type: 'string'
+          }
+          {
+            name: 'ReportTime'
+            type: 'string'
+          }
+          {
+            name: 'itsgcode'
+            type: 'string'
           }
         ]
       }
       'Custom-GR2ExternalUsers': {
         columns: [
-          { 
-            name: 'TimeGenerated' 
-            type: 'datetime' 
+          {
+            name: 'TimeGenerated'
+            type: 'datetime'
           }
-          { 
-            name: 'RawData' 
-            type: 'string' 
+          {
+            name: 'Comments'
+            type: 'string'
+          }
+          {
+            name: 'DisplayName'
+            type: 'string'
+          }
+          {
+            name: 'ItemName'
+            type: 'string'
+          }
+          {
+            name: 'Mail'
+            type: 'string'
+          }
+          {
+            name: 'PrivilegedRole'
+            type: 'string'
+          }
+          {
+            name: 'ReportTime'
+            type: 'string'
+          }
+          {
+            name: 'Role'
+            type: 'string'
+          }
+          {
+            name: 'Subscription'
+            type: 'string'
+          }
+          {
+            name: 'itsgcode'
+            type: 'string'
           }
         ]
       }

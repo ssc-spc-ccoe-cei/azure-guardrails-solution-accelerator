@@ -44,56 +44,84 @@ resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/
       name: 'GuardrailsCompliance_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'ControlName_s'
+          type: 'string'
         }
         { 
-          name: 'ControlName_s' 
-          type: 'string' 
+          name: 'ItemName_s'
+          type: 'string'
         }
         { 
-          name: 'ItemName_s' 
-          type: 'string' 
+          name: 'ComplianceStatus_b'
+          type: 'boolean'
         }
         { 
-          name: 'ComplianceStatus_b' 
-          type: 'boolean' 
+          name: 'ComplianceStatus_s'
+          type: 'string'
         }
         { 
-          name: 'Comments_s' 
-          type: 'string' 
+          name: 'Comments_s'
+          type: 'string'
         }
         { 
-          name: 'ReportTime_s' 
-          type: 'string' 
+          name: 'ReportTime_s'
+          type: 'string'
         }
         { 
-          name: 'itsgcode_s' 
-          type: 'string' 
+          name: 'itsgcode_s'
+          type: 'string'
         }
         { 
-          name: 'Required_s' 
-          type: 'string' 
+          name: 'Required_s'
+          type: 'string'
         }
         { 
-          name: 'Profile_d' 
-          type: 'real' 
+          name: 'Profile_d'
+          type: 'real'
         }
         { 
-          name: 'DisplayName_s' 
-          type: 'string' 
+          name: 'DisplayName_s'
+          type: 'string'
         }
         { 
-          name: 'SubscriptionName_s' 
-          type: 'string' 
+          name: 'SubscriptionName_s'
+          type: 'string'
         }
         { 
-          name: 'VNETName_s' 
-          type: 'string' 
+          name: 'VNETName_s'
+          type: 'string'
+        }
+        { 
+          name: 'DocumentName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Id_g'
+          type: 'guid'
+        }
+        { 
+          name: 'MitigationCommands_s'
+          type: 'string'
+        }
+        { 
+          name: 'Name_s'
+          type: 'string'
+        }
+        { 
+          name: 'SubnetName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Type_s'
+          type: 'string'
+        }
+        { 
+          name: 'ADLicenseType_s'
+          type: 'string'
         }
       ]
     }
@@ -110,32 +138,28 @@ resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/wo
       name: 'GuardrailsComplianceException_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'Message'
+          type: 'string'
         }
         { 
-          name: 'ControlName_s' 
-          type: 'string' 
+          name: 'moduleName_s'
+          type: 'string'
         }
         { 
-          name: 'ItemName_s' 
-          type: 'string' 
+          name: 'severity_s'
+          type: 'string'
         }
         { 
-          name: 'ComplianceStatus_b' 
-          type: 'boolean' 
+          name: 'locale_s'
+          type: 'string'
         }
         { 
-          name: 'Comments_s' 
-          type: 'string' 
-        }
-        { 
-          name: 'ReportTime_s' 
-          type: 'string' 
+          name: 'reportTime_s'
+          type: 'string'
         }
       ]
     }
@@ -152,44 +176,44 @@ resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@
       name: 'GR_TenantInfo_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'RawData'
+          type: 'string'
         }
         { 
-          name: 'TenantDomain_s' 
-          type: 'string' 
+          name: 'TenantDomain_s'
+          type: 'string'
         }
         { 
-          name: 'DepartmentTenantID_s' 
-          type: 'string' 
+          name: 'DepartmentTenantID_g'
+          type: 'guid'
         }
         { 
-          name: 'DepartmentTenantName_s' 
-          type: 'string' 
+          name: 'DepartmentTenantName_s'
+          type: 'string'
         }
         { 
-          name: 'ReportTime_s' 
-          type: 'string' 
+          name: 'ReportTime_s'
+          type: 'string'
         }
         { 
-          name: 'DepartmentName_s' 
-          type: 'string' 
+          name: 'DepartmentName_s'
+          type: 'string'
         }
         { 
-          name: 'DepartmentNumber_s' 
-          type: 'string' 
+          name: 'DepartmentNumber_s'
+          type: 'string'
         }
         { 
-          name: 'cloudUsageProfiles_s' 
-          type: 'string' 
+          name: 'cloudUsageProfiles_s'
+          type: 'string'
         }
         { 
-          name: 'Locale_s' 
-          type: 'string' 
+          name: 'Locale_s'
+          type: 'string'
         }
       ]
     }
@@ -206,12 +230,56 @@ resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@202
       name: 'GR_Results_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'ControlName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ItemName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ComplianceStatus_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'ComplianceStatus_s'
+          type: 'string'
+        }
+        { 
+          name: 'Comments_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
+        }
+        { 
+          name: 'Required_s'
+          type: 'string'
+        }
+        { 
+          name: 'Profile_d'
+          type: 'real'
+        }
+        { 
+          name: 'DisplayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'SubscriptionName_s'
+          type: 'string'
+        }
+        { 
+          name: 'VNETName_s'
+          type: 'string'
         }
       ]
     }
@@ -228,28 +296,28 @@ resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables
       name: 'GR_VersionInfo_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'RawData'
+          type: 'string'
         }
         { 
-          name: 'CurrentVersion_s' 
-          type: 'string' 
+          name: 'DeployedVersion_s'
+          type: 'string'
         }
         { 
-          name: 'AvailableVersion_s' 
-          type: 'string' 
+          name: 'AvailableVersion_s'
+          type: 'string'
         }
         { 
-          name: 'ReportTime_s' 
-          type: 'string' 
+          name: 'ReportTime_s'
+          type: 'string'
         }
         { 
-          name: 'UpdateNeeded_b' 
-          type: 'boolean' 
+          name: 'UpdateNeeded_b'
+          type: 'boolean'
         }
       ]
     }
@@ -266,24 +334,24 @@ resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables
       name: 'GRITSGControls_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'RawData'
+          type: 'string'
         }
         { 
-          name: 'Name_s' 
-          type: 'string' 
+          name: 'Name_s'
+          type: 'string'
         }
         { 
-          name: 'Definition_s' 
-          type: 'string' 
+          name: 'Definition_s'
+          type: 'string'
         }
         { 
-          name: 'itsgcode_s' 
-          type: 'string' 
+          name: 'itsgcode_s'
+          type: 'string'
         }
       ]
     }
@@ -300,12 +368,12 @@ resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/work
       name: 'GuardrailsTenantsCompliance_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'RawData'
+          type: 'string'
         }
       ]
     }
@@ -321,72 +389,112 @@ resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/table
     schema: {
       name: 'CaCDebugMetrics_CL'
       columns: [
-        {
+        { 
           name: 'TimeGenerated'
           type: 'dateTime'
         }
-        {
+        { 
           name: 'GuardrailId_s'
           type: 'string'
         }
-        {
+        { 
           name: 'RunbookName_s'
           type: 'string'
         }
-        {
+        { 
           name: 'ModuleName_s'
           type: 'string'
         }
-        {
+        { 
           name: 'ExecutionScope_s'
           type: 'string'
         }
-        {
+        { 
           name: 'EventType_s'
           type: 'string'
         }
-        {
-          name: 'CorrelationId_s'
+        { 
+          name: 'CorrelationId'
           type: 'string'
         }
-        {
-          name: 'JobId_s'
-          type: 'string'
+        { 
+          name: 'JobId_g'
+          type: 'guid'
         }
-        {
-          name: 'RunSubscriptionId_s'
-          type: 'string'
+        { 
+          name: 'RunSubscriptionId_g'
+          type: 'guid'
         }
-        {
-          name: 'RunTenantId_s'
-          type: 'string'
+        { 
+          name: 'RunTenantId_g'
+          type: 'guid'
         }
-        {
+        { 
           name: 'ErrorCount_d'
           type: 'real'
         }
-        {
+        { 
           name: 'ItemCount_d'
           type: 'real'
         }
-        {
+        { 
           name: 'CompliantCount_d'
           type: 'real'
         }
-        {
+        { 
           name: 'NonCompliantCount_d'
           type: 'real'
         }
-        {
+        { 
           name: 'DurationMsReal_d'
           type: 'real'
         }
-        {
+        { 
+          name: 'MemoryStartMb_d'
+          type: 'real'
+        }
+        { 
+          name: 'MemoryEndMb_d'
+          type: 'real'
+        }
+        { 
+          name: 'MemoryPeakMb_d'
+          type: 'real'
+        }
+        { 
+          name: 'MemoryDeltaMb_d'
+          type: 'real'
+        }
+        { 
           name: 'ReportTime_s'
           type: 'string'
         }
-        {
-          name: 'Message_s'
+        { 
+          name: 'Message'
+          type: 'string'
+        }
+        { 
+          name: 'TenantRootManagementGroupId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'TenantRootManagementGroupResourceId_s'
+          type: 'string'
+        }
+        { 
+          name: 'AadAppRoleAssignments_d'
+          type: 'real'
+        }
+        { 
+          name: 'Assignments_d'
+          type: 'real'
+        }
+        { 
+          name: 'RbacAssignments_d'
+          type: 'real'
+        }
+        { 
+          name: 'PermissionSnapshot_s'
           type: 'string'
         }
       ]
@@ -403,85 +511,129 @@ resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tab
     schema: {
       name: 'GuardrailsUserRaw_CL'
       columns: [
-        {
+        { 
           name: 'TimeGenerated'
           type: 'dateTime'
         }
-        {
+        { 
+          name: 'id_g'
+          type: 'guid'
+        }
+        { 
           name: 'userPrincipalName_s'
           type: 'string'
         }
-        {
+        { 
           name: 'displayName_s'
           type: 'string'
         }
-        {
+        { 
           name: 'mail_s'
           type: 'string'
         }
-        {
-          name: 'createdDateTime_s'
-          type: 'string'
+        { 
+          name: 'createdDateTime_t'
+          type: 'dateTime'
         }
-        {
+        { 
           name: 'userType_s'
           type: 'string'
         }
-        {
-          name: 'homeTenantId_s'
-          type: 'string'
+        { 
+          name: 'homeTenantId_g'
+          type: 'guid'
         }
-        {
+        { 
           name: 'homeTenantResolved_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'accountEnabled_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'guardrailsExcludedMfa_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'isMfaRegistered_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'isMfaCapable_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'isSsprEnabled_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'isSsprRegistered_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'isSsprCapable_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'isPasswordlessCapable_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'defaultMethod_s'
           type: 'string'
         }
-        {
+        { 
           name: 'isSystemPreferredAuthenticationMethodEnabled_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'userPreferredMethodForSecondaryAuthentication_s'
           type: 'string'
         }
-        {
+        { 
+          name: 'methodsRegistered_s'
+          type: 'string'
+        }
+        { 
+          name: 'systemPreferredAuthenticationMethods_s'
+          type: 'string'
+        }
+        { 
           name: 'ReportTime_s'
           type: 'string'
+        }
+        { 
+          name: 'signInActivity_lastSignInDateTime_t'
+          type: 'dateTime'
+        }
+        { 
+          name: 'signInActivity_lastSignInRequestId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'signInActivity_lastNonInteractiveSignInDateTime_t'
+          type: 'dateTime'
+        }
+        { 
+          name: 'signInActivity_lastNonInteractiveSignInRequestId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'signInActivity_lastSuccessfulSignInDateTime_t'
+          type: 'dateTime'
+        }
+        { 
+          name: 'signInActivity_lastSuccessfulSignInRequestId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'customSecurityAttributes_GCCloudGuardrails_ExcludeFromMFA_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'customSecurityAttributes_Guardrails_Excludedmfa_b'
+          type: 'boolean'
         }
       ]
     }
@@ -497,35 +649,39 @@ resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/work
     schema: {
       name: 'GuardrailsCrossTenantAccess_CL'
       columns: [
-        {
+        { 
           name: 'TimeGenerated'
           type: 'dateTime'
         }
-        {
+        { 
           name: 'ReportTime_s'
           type: 'string'
         }
-        {
+        { 
           name: 'PartnerTenantId_s'
           type: 'string'
         }
-        {
+        { 
+          name: 'PartnerTenantId_g'
+          type: 'guid'
+        }
+        { 
           name: 'InboundTrustMfa_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'InboundTrustCompliantDevice_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'InboundTrustHybridAzureADJoined_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'IsDefault_b'
           type: 'boolean'
         }
-        {
+        { 
           name: 'HasGuestMfaPolicy_b'
           type: 'boolean'
         }
@@ -544,12 +700,36 @@ resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces
       name: 'GR2UsersWithoutGroups_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'UserId_s'
+          type: 'string'
+        }
+        { 
+          name: 'DisplayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'GivenName_s'
+          type: 'string'
+        }
+        { 
+          name: 'UserPrincipalName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Comments_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
         }
       ]
     }
@@ -566,12 +746,44 @@ resource dcrTableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tabl
       name: 'GR2ExternalUsers_CL'
       columns: [
         { 
-          name: 'TimeGenerated' 
-          type: 'dateTime' 
+          name: 'TimeGenerated'
+          type: 'dateTime'
         }
         { 
-          name: 'RawData' 
-          type: 'string' 
+          name: 'Comments_s'
+          type: 'string'
+        }
+        { 
+          name: 'DisplayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ItemName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Mail_s'
+          type: 'string'
+        }
+        { 
+          name: 'PrivilegedRole_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'Role_s'
+          type: 'string'
+        }
+        { 
+          name: 'Subscription_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
         }
       ]
     }
@@ -872,9 +1084,9 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
-    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
-    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+    sysPreferredValue = column_if_exists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_if_exists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_if_exists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
 | extend
     systemPreferredMethodsArray = iff(
         isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
@@ -888,7 +1100,7 @@ let mfaAnalysis = userData
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
+    hasMfaRegistered = tobool(column_if_exists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
@@ -1033,9 +1245,9 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
-    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
-    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+    sysPreferredValue = column_if_exists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_if_exists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_if_exists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
 | extend
     systemPreferredMethodsArray = iff(
         isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
@@ -1049,7 +1261,7 @@ let mfaAnalysis = userData
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
+    hasMfaRegistered = tobool(column_if_exists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
@@ -1227,7 +1439,7 @@ resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSea
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // status only reflects mandatory controls
-    query: 'let enableMultiCloudProfiles = ${enableMultiCloudProfiles}; \n let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where enableMultiCloudProfiles == false or toint(column_ifexists("Profile_d","")) !in (1, 2) \n | where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let enableMultiCloudProfiles = ${enableMultiCloudProfiles}; \n let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where enableMultiCloudProfiles == false or toint(column_ifexists("Profile_d","")) != 1 \n | where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "🔴", "🟢")\n| project Guardrail, ["Total # Controls"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix56a'
     functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
     version: 2 
