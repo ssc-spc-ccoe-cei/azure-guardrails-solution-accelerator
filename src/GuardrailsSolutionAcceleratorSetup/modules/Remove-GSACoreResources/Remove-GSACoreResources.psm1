@@ -44,6 +44,10 @@ Function Remove-GSACoreResources {
     )
     $ErrorActionPreference = 'Stop'
     
+    Write-Verbose ("enableMultiCloudProfiles (pre-deploy): {0} [{1}]" -f `
+    $config['runtime']['enableMultiCloudProfiles'], `
+    $config['runtime']['enableMultiCloudProfiles'].GetType().FullName)
+
     Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Deploy-GuardrailsSolutionAccelerator\Deploy-GuardrailsSolutionAccelerator.psd1") -Function 'Confirm-GSASubscriptionSelection','Confirm-GSAConfigurationParameters'
 
     If ($configString) {
