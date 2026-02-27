@@ -135,6 +135,7 @@ module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || update
   ]
   params: {
     location: location
+    #disable-next-line BCP318    
     logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
     releaseVersion: releaseVersion
     releaseDate: releaseDate
@@ -157,6 +158,9 @@ module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployme
     dcrResourceId2: DCRDCE.outputs.dcrResourceId2
     #disable-next-line BCP318
     automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
+    #disable-next-line BCP318    
+    logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
+
   }
 }
 

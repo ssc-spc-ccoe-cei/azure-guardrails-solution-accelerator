@@ -1674,5 +1674,7 @@ union
     version: 2
   }
 }
+#disable-next-line BCP318
 output logAnalyticsWorkspaceId string = guardrailsLogAnalytics.properties.customerId 
+#disable-next-line BCP318
 output logAnalyticsResourceId string = guardrailsLogAnalytics.id
