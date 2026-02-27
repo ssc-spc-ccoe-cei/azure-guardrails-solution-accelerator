@@ -419,7 +419,7 @@ Function Confirm-GSAConfigurationParameters {
     #    break
     #}
     #$config['runtime']['enableMultiCloudProfiles'] = [bool]::Parse($config.enableMultiCloudProfiles)
-
+    $config['runtime']['enableMultiCloudProfiles'] = $true
     # output the configuration as an object
     Write-Host "Validation of configuration parameters completed successfully!" -ForegroundColor Green
 
