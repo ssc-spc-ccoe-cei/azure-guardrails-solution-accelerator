@@ -1012,7 +1012,7 @@ let crossTenantSettings = union isfuzzy=true (
     | where column_ifexists("ReportTime_s", "") == reportTime
     | extend 
         PartnerTenantId = coalesce(
-            tostring(column_ifexists("PartnerTenantId_g", "")),
+            tostring(column_ifexists("PartnerTenantId_g", dynamic(null))),
             column_ifexists("PartnerTenantId_s", "")
         ),
         InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
@@ -1206,7 +1206,7 @@ let crossTenantSettings = union isfuzzy=true (
     | where column_ifexists("ReportTime_s", "") == reportTime
     | extend 
         PartnerTenantId = coalesce(
-            tostring(column_ifexists("PartnerTenantId_g", "")),
+            tostring(column_ifexists("PartnerTenantId_g", dynamic(null))),
             column_ifexists("PartnerTenantId_s", "")
         ),
         InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
