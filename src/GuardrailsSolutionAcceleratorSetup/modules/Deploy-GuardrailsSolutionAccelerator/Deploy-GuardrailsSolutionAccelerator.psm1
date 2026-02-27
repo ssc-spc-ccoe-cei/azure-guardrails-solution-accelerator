@@ -44,14 +44,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         [string]
         $moduleBaseURL
     )
-    $enableMcp =
-        if ($config.ContainsKey('runtime') -and
-            $config['runtime'].ContainsKey('enableMultiCloudProfiles') -and
-            ($config['runtime']['enableMultiCloudProfiles'] -is [bool])) {
-            [bool]$config['runtime']['enableMultiCloudProfiles']
-        } else {
-            $false
-        }
+
     Write-Verbose "Creating bicep parameters file for this deployment."
     $templateParameterObject = @{
         'AllowedLocationInitiativeId'           = $config.AllowedLocationInitiativeId
@@ -81,7 +74,6 @@ Function New-GSACoreResourceDeploymentParamObject {
         'subscriptionId'                        = (Get-AzContext).Subscription.Id
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
         'securityRetentionDays'                   = $config.securityRetentionDays
-        'enableMultiCloudProfiles'              = $enableMcp
     }
     # Adding URL parameter if specified
     [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
@@ -282,6 +274,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
             $config = Confirm-GSAConfigurationParameters -configFilePath $configFilePath -Verbose:$useVerbose
         }
 
+        # Force enableMultiCloudProfiles = $true at runtime
+        if (-not $config.ContainsKey('runtime')) { 
+            $config['runtime'] = @{} 
+        }
+
+        $config['runtime']['enableMultiCloudProfiles'] = $true
+        Write-Verbose "Override applied: enableMultiCloudProfiles forced to TRUE"
+        
         Show-GSADeploymentSummary -deployParams $PSBoundParameters -deployParamSet $PSCmdlet.ParameterSetName -yes:$yes.isPresent -Verbose:$useVerbose
 
         # set module install or update source URL
