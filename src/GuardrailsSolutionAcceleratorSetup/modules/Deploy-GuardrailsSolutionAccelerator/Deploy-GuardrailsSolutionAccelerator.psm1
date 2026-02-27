@@ -74,7 +74,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'subscriptionId'                        = (Get-AzContext).Subscription.Id
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
         'securityRetentionDays'                   = $config.securityRetentionDays
-        'enableMultiCloudProfiles'              = [bool]$config['runtime']['enableMultiCloudProfiles']
+
     }
     # Adding URL parameter if specified
     [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
@@ -275,23 +275,6 @@ Function Deploy-GuardrailsSolutionAccelerator {
             $config = Confirm-GSAConfigurationParameters -configFilePath $configFilePath -Verbose:$useVerbose
         }
 
-        # Force enableMultiCloudProfiles = $true at runtime
-        if (-not $config.ContainsKey('runtime')) { 
-            $config['runtime'] = @{} 
-        }
-
-        $config['runtime']['enableMultiCloudProfiles'] = $true
-        Write-Verbose "Override applied: enableMultiCloudProfiles forced to TRUE"
-        # Type guard
-        $val = $config['runtime']['enableMultiCloudProfiles']
-        if ($val -isnot [bool]) {
-            $parsed = $null
-            if ([bool]::TryParse([string]$val, [ref]$parsed)) {
-                $config['runtime']['enableMultiCloudProfiles'] = $parsed
-            } else {
-                throw "enableMultiCloudProfiles must be boolean. Got '$val' (type: $($val.GetType().FullName))."
-            }
-        }
 
         Show-GSADeploymentSummary -deployParams $PSBoundParameters -deployParamSet $PSCmdlet.ParameterSetName -yes:$yes.isPresent -Verbose:$useVerbose
 
