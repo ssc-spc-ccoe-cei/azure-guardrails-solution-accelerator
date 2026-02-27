@@ -448,20 +448,29 @@ foreach ($module in $modules) {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
 
-            $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
-
-            New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
-
-            if ($null -ne $results.Errors) {
-                $moduleErrors = @($results.Errors).Count
-                "Module $($module.modulename) failed with $moduleErrors errors. $($results.Errors)"
-                New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
+            if ($null -eq $results) {
+                Write-Warning "Module $($module.modulename) returned no output - skipping all data ingestion."
             }
+            else {
+                if ($null -ne $results.ComplianceResults) {
+                    $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
+                    New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
+                }
+                else {
+                    Write-Warning "Module $($module.modulename) returned null ComplianceResults - skipping data ingestion."
+                }
 
-            if ($null -ne $results.AdditionalResults) {
-                # There is more data!
-                "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
-                New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
+                if ($null -ne $results.Errors) {
+                    $moduleErrors = @($results.Errors).Count
+                    "Module $($module.modulename) failed with $moduleErrors errors. $($results.Errors)"
+                    New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
+                }
+
+                if ($null -ne $results.AdditionalResults) {
+                    # There is more data!
+                    "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
+                    New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
+                }
             }
 
             if ($null -ne $results.ComplianceResults) {
