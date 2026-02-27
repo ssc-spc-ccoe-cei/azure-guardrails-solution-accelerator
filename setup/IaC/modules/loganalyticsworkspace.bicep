@@ -1084,9 +1084,9 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    sysPreferredValue = column_if_exists("systemPreferredAuthenticationMethods_s", ""),
-    methodsRegisteredValue = column_if_exists("methodsRegistered_s", ""),
-    isSystemPreferredEnabled = tobool(column_if_exists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
 | extend
     systemPreferredMethodsArray = iff(
         isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
@@ -1100,7 +1100,7 @@ let mfaAnalysis = userData
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = tobool(column_if_exists("isMfaRegistered_b", "false"))
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
@@ -1245,9 +1245,9 @@ let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
-    sysPreferredValue = column_if_exists("systemPreferredAuthenticationMethods_s", ""),
-    methodsRegisteredValue = column_if_exists("methodsRegistered_s", ""),
-    isSystemPreferredEnabled = tobool(column_if_exists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
+    sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
+    methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
+    isSystemPreferredEnabled = tobool(column_ifexists("isSystemPreferredAuthenticationMethodEnabled_b", "false"))
 | extend
     systemPreferredMethodsArray = iff(
         isnotempty(sysPreferredValue) and sysPreferredValue startswith "[",
@@ -1261,7 +1261,7 @@ let mfaAnalysis = userData
         array_length(set_intersect(systemPreferredMethodsArray, validSystemMethods)) > 0,
         false
     ),
-    hasMfaRegistered = tobool(column_if_exists("isMfaRegistered_b", "false"))
+    hasMfaRegistered = tobool(column_ifexists("isMfaRegistered_b", "false"))
 | extend
     validMfaMethodsCount = iff(
         hasMfaRegistered == true and isnotempty(methodsRegisteredArray),
