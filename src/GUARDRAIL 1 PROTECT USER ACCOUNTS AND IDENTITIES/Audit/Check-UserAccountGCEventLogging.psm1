@@ -81,7 +81,7 @@ function Check-UserAccountGCEventLogging {
 
     $IsCompliant = $true
     $Comments = ""
-    $ErrorList = @()  
+    [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
 
 
     # Parse LAW Resource ID
@@ -94,12 +94,12 @@ function Check-UserAccountGCEventLogging {
         Select-AzSubscription -Subscription $subscriptionId -ErrorAction Stop | Out-Null
     }
     catch {
-        $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+        [void]$ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscriptionId)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
             error message: $_")
         #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
         #    error message: $_"
-        throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
+        throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscriptionId)'--ensure `
             you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
     }
 
