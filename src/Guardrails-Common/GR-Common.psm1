@@ -254,8 +254,12 @@ Function Add-LogEntry {
     
     $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
 
-    # log event to Log Analytics workspace using DCR-based Log Ingestion API
-    Send-GuardrailsData -Data $entryJson -LogType $exceptionLogTable -WorkSpaceID $workspaceGuid -WorkSpaceKey $workspaceKey 
+    # log event to Log Analytics workspace by REST API via the OMSIngestionAPI community PS module
+    Send-OMSAPIIngestionFile  -customerId $workspaceGuid `
+        -sharedkey $workspaceKey `
+        -body $entryJson `
+        -logType $exceptionLogTable `
+        -TimeStampField Get-Date 
 
 }
 
@@ -308,7 +312,11 @@ Function Add-TenantInfo {
     if ($debug) { Write-Output $tenantInfo }
     $JSON = ConvertTo-Json -inputObject $object
 
-    Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 
 function Add-LogAnalyticsResults {
@@ -330,7 +338,11 @@ function Add-LogAnalyticsResults {
 
     $JSON = ConvertTo-Json -inputObject $Results
 
-    Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 
 function Get-GuardrailIdentityPermissions {
@@ -737,7 +749,11 @@ function Check-UpdateAvailable {
     }
     $JSON = ConvertTo-Json -inputObject $object
 
-    Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 
 function get-itsgdata {
@@ -765,143 +781,11 @@ function get-itsgdata {
         $JSONcontrols
     }
 
-    Send-GuardrailsData -Data $JSONcontrols -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey
-}
-
-function Send-GuardrailsData {
-    <#
-    .SYNOPSIS
-    Sends data to Azure Monitor Log Analytics using DCR-based Log Ingestion API.
-    
-    .DESCRIPTION
-    This function replaces the deprecated Data Collector API with the modern DCR-based Log Ingestion API.
-    It uses Invoke-AzRestMethod for automatic Azure authentication and requires DCE_ENDPOINT and DCR_IMMUTABLE_ID environment variables.
-    
-    .PARAMETER Data
-    JSON string containing the data to send to Log Analytics.
-    
-    .PARAMETER LogType
-    The log type (table name) to send data to. This will be mapped to a DCR stream name.
-    
-    .PARAMETER WorkSpaceID
-    Optional workspace ID for backward compatibility (not used by DCR API but kept for compatibility).
-    
-    .PARAMETER WorkSpaceKey
-    Optional workspace key for backward compatibility (not used by DCR API but kept for compatibility).
-    
-    .EXAMPLE
-    Send-GuardrailsData -Data $jsonData -LogType "GuardrailsCompliance"
-    #>
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Data,
-        
-        [Parameter(Mandatory = $true)]
-        [string]
-        $LogType,
-        
-        [Parameter(Mandatory = $false)]
-        [string]
-        $WorkSpaceID,
-        
-        [Parameter(Mandatory = $false)]
-        [string]
-        $WorkSpaceKey
-    )
-    
-    # Get DCE endpoint and DCR immutable IDs (two DCRs used due to 10-flows-per-rule limit)
-    $dceEndpoint = $null
-    $dcrImmutableId = $null
-    $dcrImmutableId2 = $null
-
-    if (Get-Command -Name Get-GSAAutomationVariable -ErrorAction SilentlyContinue) {
-        try {
-            $dceEndpoint = Get-GSAAutomationVariable -Name "DCE_ENDPOINT" -ErrorAction SilentlyContinue
-            $dcrImmutableId = Get-GSAAutomationVariable -Name "DCR_IMMUTABLE_ID" -ErrorAction SilentlyContinue
-            $dcrImmutableId2 = Get-GSAAutomationVariable -Name "DCR_IMMUTABLE_ID_2" -ErrorAction SilentlyContinue
-        }
-        catch { }
-    }
-    if (-not $dceEndpoint) { $dceEndpoint = $env:DCE_ENDPOINT }
-    if (-not $dcrImmutableId) { $dcrImmutableId = $env:DCR_IMMUTABLE_ID }
-    if (-not $dcrImmutableId2) { $dcrImmutableId2 = $env:DCR_IMMUTABLE_ID_2 }
-
-    if (-not $dceEndpoint) {
-        throw "DCE_ENDPOINT is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
-    }
-    if (-not $dcrImmutableId) {
-        throw "DCR_IMMUTABLE_ID is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
-    }
-
-    try {
-        # Map log types to DCR stream names; GR2* types use second DCR (DCR has max 10 flows)
-        $streamName = switch ($LogType) {
-            'GuardrailsCompliance' { 'Custom-GuardrailsCompliance' }
-            'GuardrailsComplianceException' { 'Custom-GuardrailsComplianceException' }
-            'GR_TenantInfo' { 'Custom-GR_TenantInfo' }
-            'GR_Results' { 'Custom-GR_Results' }
-            'GR_VersionInfo' { 'Custom-GR_VersionInfo' }
-            'GRITSGControls' { 'Custom-GRITSGControls' }
-            'GuardrailsTenantsCompliance' { 'Custom-GuardrailsTenantsCompliance' }
-            'CaCDebugMetrics' { 'Custom-CaCDebugMetrics' }
-            'GuardrailsUserRaw' { 'Custom-GuardrailsUserRaw' }
-            'GuardrailsCrossTenantAccess' { 'Custom-GuardrailsCrossTenantAccess' }
-            'GR2UsersWithoutGroups' { 'Custom-GR2UsersWithoutGroups' }
-            'GR2ExternalUsers' { 'Custom-GR2ExternalUsers' }
-            default { "Custom-$LogType" }
-        }
-
-        $dcrId = $dcrImmutableId
-        if ($LogType -in 'GR2UsersWithoutGroups', 'GR2ExternalUsers' -and $dcrImmutableId2) {
-            $dcrId = $dcrImmutableId2
-        }
-
-        $uri = "$dceEndpoint/dataCollectionRules/$dcrId/streams/$streamName" + "?api-version=2023-01-01"
-
-        # DCR Log Ingestion API requires a JSON array body. Wrap single objects automatically
-        # so callers that send a single PSCustomObject via ConvertTo-Json still work correctly.
-        if ($Data.Trim().StartsWith('{')) {
-            $Data = "[$Data]"
-        }
-
-        if ([string]::IsNullOrWhiteSpace($Data) -or $Data.Trim() -eq '[]') {
-            Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
-            return
-        }
-
-        # Invoke-AzRestMethod cannot determine the authentication audience for DCE endpoints
-        # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
-        # the Azure Monitor audience (no trailing slash per API docs) using Invoke-RestMethod.
-        # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
-        try {
-            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com" -AsSecureString -ErrorAction Stop
-            $tokenPlain = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
-        }
-        catch {
-            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com"
-            $tokenPlain = $tokenResponse.Token
-        }
-
-        # Per API docs, encode the body explicitly as UTF-8 to prevent data transmission issues
-        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
-
-        $headers = @{
-            Authorization          = "Bearer $tokenPlain"
-            'Content-Type'         = 'application/json'
-            'x-ms-client-request-id' = [System.Guid]::NewGuid().ToString()
-        }
-
-        # Invoke-RestMethod throws on 4xx/5xx when -ErrorAction Stop is set
-        Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $bodyBytes -ErrorAction Stop | Out-Null
-
-        Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$streamName' ($($bodyBytes.Length) bytes)"
-    }
-    catch {
-        Write-Error "Data Collection API failed: $($_.Exception.Message)"
-        throw
-    }
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JSONcontrols `
+        -logType $LogType `
+        -TimeStampField Get-Date
 }
 
 function New-LogAnalyticsData {
@@ -922,7 +806,11 @@ function New-LogAnalyticsData {
     )
     $JsonObject = convertTo-Json -inputObject $Data -Depth 3
 
-    Send-GuardrailsData -Data $JsonObject -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkSpaceKey
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JsonObject `
+        -logType $LogType `
+        -TimeStampField Get-Date  
 }
 
 function Hide-Email {
@@ -2270,34 +2158,6 @@ function Get-allowedLocationCAPCompliance {
         $caps = @()
     }
 
-    # # --------------------Named Location check to filter out cases -------------------- #
-    # Case 1: Named locations not found at all
-    # Case 2: Multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location
-    # Case 3: One Named location exists and it's Canada-only
-    # Case 4: One named location exists and it's 'all-countries' except Canada'
-    # Case 5: One named location exists and it's includes Canada + other countries
-    # Case 6: Multiple named locations exist, at least one Canada-only named location found
-    
-    # Case 1:
-    if ($locations.Count -eq 0) {
-        Write-Warning "Warning: No named locations found. Cannot evaluate Conditional Access Policies for compliance."
-        $ErrorList.Add("No named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
-        $IsCompliant = $false
-        $Comments = $msgTable.noNamedLocationFound 
-
-        $PsObject = [PSCustomObject]@{
-            ComplianceStatus = $IsCompliant
-            ControlName      = $ControlName
-            Comments         = $Comments
-            ItemName         = $ItemName
-            ReportTime       = $ReportTime
-            itsgcode         = $itsgcode
-            Errors           = $ErrorList
-        }
-        
-        return $PsObject
-    }
-
     # Group named locations and find location Ids
     $validLocations = @()               # Canada-only named locations
     $validLocationIds = @()             
@@ -2356,16 +2216,12 @@ function Get-allowedLocationCAPCompliance {
             continue
         }
     }
-
-    # Case 2:
-    # multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location found
-    # return non-compliant
-
-    if ($locations.Count -gt 1 -and ($validLocations.Count -eq 0 -and $nonCAnamedLocations.Count -eq 0)){
+    # If no Canada-only named locations or no non-Canada all-country named locations found, return non-compliant
+    if ($validLocations.Count -eq 0 -or $nonCAnamedLocations.Count -eq 0) {
         Write-Warning "Warning: No Canada-only named locations found or no non-Canada all-country named locations found. Cannot evaluate Conditional Access Policies for compliance."
         $ErrorList.Add("No Canada-only named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
         $IsCompliant = $false
-        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noCAallLocationsNonCompliant
+        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noLocationsnonCACompliant
 
         $PsObject = [PSCustomObject]@{
             ComplianceStatus = $IsCompliant
@@ -2376,11 +2232,10 @@ function Get-allowedLocationCAPCompliance {
             itsgcode         = $itsgcode
             Errors           = $ErrorList
         }
-        
+        # Explicit return avoids null/implicit output in early-exit non-compliance paths.
         return $PsObject
     }
     
-    # Case 2/3/4/5/6: next evaluation step
 
     # Filter enabled CAPs
     $enabledCAPs = $caps | Where-Object { $_.state -eq 'enabled' }
@@ -2897,11 +2752,18 @@ function Check-PBMMPolicies {
         }
 
         # Add to the Object List 
-        $props = @{
+        if ($null -eq $obj.DisplayName){
+            $DisplayName=$obj.Name
+        }
+        else {
+            $DisplayName=$obj.DisplayName
+        }
+
+        $c = New-Object -TypeName PSCustomObject -Property @{ 
             Type = [string]$objType
             Id = [string]$obj.Id
-            # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
-            SubscriptionName = $(if ($objType -eq "subscription") { [string]$obj.Name } else { "" })
+            Name = [string]$obj.Name
+            DisplayName = [string]$DisplayName
             ComplianceStatus = [boolean]$ComplianceStatus
             Comments = [string]$Comment
             ItemName = [string]$ItemName
@@ -2909,13 +2771,6 @@ function Check-PBMMPolicies {
             ControlName = [string]$ControlName
             ReportTime = [string]$ReportTime
         }
-        if ($objType -ne "subscription") {
-            # For non-subscription rows, keep Name/DisplayName as entity labels; subscription rows rely on SubscriptionName to avoid duplicate labels.
-            $name = [string]$obj.Name
-            $props.Name = $name
-            $props.DisplayName = if ([string]::IsNullOrWhiteSpace([string]$obj.DisplayName)) { $name } else { [string]$obj.DisplayName }
-        }
-        $c = New-Object -TypeName PSCustomObject -Property $props
 
         if ($EnableMultiCloudProfiles) {
             if ($objType -eq "subscription") {
@@ -3188,6 +3043,7 @@ function Check-BuiltInPolicies {
                         Type = "subscription"
                         Id = $subscription.Id
                         SubscriptionName = $subscription.Name
+                        DisplayName = $subscription.Name
                         ComplianceStatus = $false
                         Comments = $msgTable.policyHasExemptions
                         ItemName = "$ItemName - $policyDisplayName"
@@ -3230,6 +3086,7 @@ function Check-BuiltInPolicies {
                         Type = "subscription"
                         Id = $subscription.Id
                         SubscriptionName = $subscription.Name
+                        DisplayName = $subscription.Name
                         ComplianceStatus = $true
                         Comments = $msgTable.policyNoApplicableResourcesSub
                         ItemName = "$ItemName - $policyDisplayName"
@@ -3293,8 +3150,8 @@ function Check-BuiltInPolicies {
                     $result = [PSCustomObject]@{
                         Type = "subscription"
                         Id = $subscription.Id
-                        SubscriptionName = $subscription.Name
                         Name = "All Resources"
+                        DisplayName = $subscription.Name
                         ComplianceStatus = $true
                         Comments = $msgTable.policyCompliant
                         ItemName = "$ItemName - $policyDisplayName"
@@ -3329,6 +3186,7 @@ function Check-BuiltInPolicies {
                     Type = "subscription"
                     Id = $subscription.Id
                     SubscriptionName = $subscription.Name
+                    DisplayName = $subscription.Name
                     ComplianceStatus = $false
                     Comments = $msgTable.policyNotConfiguredSub -f $subScope
                     ItemName = "$ItemName - $policyDisplayName"

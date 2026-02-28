@@ -56,12 +56,14 @@ function Check-AllUserMFARequired {
         
         if (-not $success) {
             Write-Error "Failed to get compliance results after $maxRetries attempts"
-            [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function after $maxRetries attempts")        }
+            # Suppress Add() return index from polluting function output.
+            [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function after $maxRetries attempts")
+        }
     } catch {
         Write-Error "Failed to call KQL function: $_"
         [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
     }
-    
+
     # Add Profile information to compliance result if KQL function was successful
     if ($complianceResult -and $EnableMultiCloudProfiles) {
         try {
