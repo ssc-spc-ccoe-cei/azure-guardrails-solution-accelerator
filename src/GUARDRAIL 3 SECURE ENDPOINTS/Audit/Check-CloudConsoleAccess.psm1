@@ -15,7 +15,7 @@ function Get-CloudConsoleAccess {
         [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )
     $IsCompliant = $false
-    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
     
     # get named locations
     $PsObjectLocation = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant
