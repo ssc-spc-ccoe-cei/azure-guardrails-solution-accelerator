@@ -2123,8 +2123,10 @@ function CompareKQLQueries{
 function Get-allowedLocationCAPCompliance {
     param (
         [AllowEmptyCollection()]
-        [array] $ErrorList,
-        [string] $IsCompliant
+        # Callers pass an ArrayList so this function can append errors in-place
+        # and return the same mutable collection in the output envelope.
+        [System.Collections.ArrayList] $ErrorList,
+        [bool] $IsCompliant
     )
 
     # Find named locations
@@ -2137,7 +2139,8 @@ function Get-allowedLocationCAPCompliance {
         $locations = $locationData | Where-Object { $_.'@odata.type' -and $_.'@odata.type' -eq '#microsoft.graph.countryNamedLocation'}
     }
     catch {
-        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
+        # Suppress Add() return index so the function output remains a compliance object, not an array.
+        [void]$Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
         $locations = @()
     }
@@ -2150,7 +2153,7 @@ function Get-allowedLocationCAPCompliance {
         $caps = if ($response.Content -and $response.Content.value) { $response.Content.value } else { @() }
     }
     catch {
-        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
+        [void]$Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
         $caps = @()
     }
@@ -2229,7 +2232,8 @@ function Get-allowedLocationCAPCompliance {
             itsgcode         = $itsgcode
             Errors           = $ErrorList
         }
-        return
+        # Explicit return avoids null/implicit output in early-exit non-compliance paths.
+        return $PsObject
     }
     
 
@@ -2251,7 +2255,7 @@ function Get-allowedLocationCAPCompliance {
             itsgcode         = $itsgcode
             Errors           = $ErrorList
         }
-        return
+        return $PsObject
     }
     
     Write-Host "Found $($enabledCAPs.Count) enabled Conditional Access Policies."

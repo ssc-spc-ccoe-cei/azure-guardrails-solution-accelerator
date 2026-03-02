@@ -16,7 +16,7 @@ function Check-AllUserMFARequired {
         [switch] $EnableMultiCloudProfiles # default to false
     )
 
-    $ErrorList = @()
+    [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
     # Call KQL function to get compliance results with retry logic
@@ -56,13 +56,14 @@ function Check-AllUserMFARequired {
         
         if (-not $success) {
             Write-Error "Failed to get compliance results after $maxRetries attempts"
-            $ErrorList.Add("Failed to call gr_mfa_evaluation KQL function after $maxRetries attempts")
+            # Suppress Add() return index from polluting function output.
+            [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function after $maxRetries attempts")
         }
     } catch {
         Write-Error "Failed to call KQL function: $_"
-        $ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
+        [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
     }
-    
+
     # Add Profile information to compliance result if KQL function was successful
     if ($complianceResult -and $EnableMultiCloudProfiles) {
         try {
@@ -72,7 +73,7 @@ function Check-AllUserMFARequired {
             Write-Verbose "Profile information added successfully"
         } catch {
             Write-Warning "Failed to add Profile information: $_"
-            $ErrorList.Add("Failed to add Profile information: $_")
+            [void]$ErrorList.Add("Failed to add Profile information: $_")
         }
     }
     
