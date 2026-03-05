@@ -309,7 +309,10 @@ Function Deploy-GuardrailsSolutionAccelerator {
             
             If ($releases.name -contains $releaseVersion) {
                 Write-Verbose "Found a release on GitHub match for $releaseVersion"
-                $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/{0}/" -f $releaseVersion
+                
+                $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/psmodules" -f $releaseVersion
+                Write-Verbose "Using release $releaseVersion from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
+                $params = @{ moduleBaseURL = $moduleBaseURL }
             }
         }
         # ElseIf ($prerelease) {
