@@ -135,6 +135,7 @@ allPoliciesAreCompliant = All the following policies are compliant; {0}.
 noCanadaNamedLocationFound = No locations have only Canada in them.
 noCAallLocationsNonCompliant = No locations have all countries except Canada in them.
 noEnabledPoliciesFound = No enabled conditional access policy found.
+noNamedLocationFound = No named location found in the conditional access policies.
 
 
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators

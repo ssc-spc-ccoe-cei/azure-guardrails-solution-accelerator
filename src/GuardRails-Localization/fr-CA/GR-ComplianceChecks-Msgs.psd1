@@ -134,6 +134,7 @@ allPoliciesAreCompliant = Toutes les politiques suivantes sont conformes; {0}.
 noCanadaNamedLocationFound = Aucun endroit n'a seulement le Canada en eux.
 noCAallLocationsNonCompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
+noNamedLocationFound = No named location found in the conditional access policies.
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
