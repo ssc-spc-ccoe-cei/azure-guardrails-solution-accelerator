@@ -2217,11 +2217,11 @@ function Get-allowedLocationCAPCompliance {
         }
     }
     # If no Canada-only named locations or no non-Canada all-country named locations found, return non-compliant
-    if ($validLocations.Count -eq 0 -or $nonCAnamedLocations.Count -eq 0) {
+    if ($validLocations.Count -eq 0 -and $nonCAnamedLocations.Count -eq 0) {
         Write-Warning "Warning: No Canada-only named locations found or no non-Canada all-country named locations found. Cannot evaluate Conditional Access Policies for compliance."
         $ErrorList.Add("No Canada-only named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
         $IsCompliant = $false
-        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noLocationsnonCACompliant
+        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noCAallLocationsNonCompliant
 
         $PsObject = [PSCustomObject]@{
             ComplianceStatus = $IsCompliant
