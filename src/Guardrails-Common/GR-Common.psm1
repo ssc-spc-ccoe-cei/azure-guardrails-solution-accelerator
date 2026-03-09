@@ -2249,7 +2249,7 @@ function Get-allowedLocationCAPCompliance {
     # multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location found
     # return non-compliant
     
-    if (location.count -gt 1 -and ($validLocations.Count -eq 0 -and $nonCAnamedLocations.Count -eq 0)){
+    if ($locations.count -gt 1 -and ($validLocations.Count -eq 0 -and $nonCAnamedLocations.Count -eq 0)){
         Write-Warning "Warning: No Canada-only named locations found or no non-Canada all-country named locations found. Cannot evaluate Conditional Access Policies for compliance."
         $ErrorList.Add("No Canada-only named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
         $IsCompliant = $false
