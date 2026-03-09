@@ -121,6 +121,7 @@ Write-Output  "LogType: $(Get-GSAAutomationVariable -Name "LogType")"
 Write-Output  "reservedSubnetList: $(Get-GSAAutomationVariable -Name "reservedSubnetList")"
 Write-Output  "TenantDomainUPN: $(Get-GSAAutomationVariable -Name "TenantDomainUPN")"
 Write-Output  "WorkSpaceID: $(Get-GSAAutomationVariable -Name "WorkSpaceID")"
+Write-Output  "GuardrailsAutomationAccountMSI: $(Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI")"
 
 
 #Standard variables
@@ -129,10 +130,15 @@ $LogType = Get-GSAAutomationVariable -Name "LogType"
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
 $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
+$AutomationAccountMsiId = Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
 $Locale = Get-GSAAutomationVariable -Name "GuardRailsLocale"
+
+if ($AutomationAccountMsiId) {
+    [Environment]::SetEnvironmentVariable('AUTOMATION_ACCOUNT_ID', $AutomationAccountMsiId, 'Process') | Out-Null
+}
 
 If ($Locale -eq $null) {
     $Locale = "en-CA"
@@ -166,22 +172,26 @@ $enableMultiCloudProfiles = $RuntimeConfig.enableMultiCloudProfiles
 if($enableMultiCloudProfiles) {
     Write-Output "Running enableMultiCloudProfiles True."
 
-    # Retrieve the cloudUsageProfiles and convert to an array
-    $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
-    if ($cloudUsageProfiles -is [string]) {
-        if ($cloudUsageProfiles.Contains(",")) {
-            # Handle comma-separated string case (e.g., "1,2,3")
-            $cloudUsageProfiles = $cloudUsageProfiles.Trim('[]').Split(",") | ForEach-Object { $_.Trim() }
+    # Read active profiles from cloudUsageProfiles (Automation Account variable).
+    # Examples this supports: "1", "[1]", "1,2,3", "[1,2,3]" (without the quotes)
+    $cloudUsageProfilesRaw = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
+    if ($cloudUsageProfilesRaw -is [string]) {
+        # Remove square brackets so split logic works the same for all string formats.
+        $normalizedProfiles = $cloudUsageProfilesRaw.Trim().Trim('[]')
+        if ([string]::IsNullOrWhiteSpace($normalizedProfiles)) {
+            throw "cloudUsageProfiles is empty. Provide at least one profile value."
         }
-        else {
-            # Handle single profile string case (e.g., "3")
-            $cloudUsageProfiles = @($cloudUsageProfiles.Trim())
-        }
+        $cloudUsageProfiles = $normalizedProfiles.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+    }
+    else {
+        $cloudUsageProfiles = @($cloudUsageProfilesRaw)
     }
 
-    # Ensure all profiles are integers
+    # Convert to integers once so profile comparisons are reliable.
     $cloudUsageProfiles = $cloudUsageProfiles | ForEach-Object { [int]$_ }
 
+    # Run this module only when at least one value in module.Profiles (from setup/modules.json)
+    # matches cloudUsageProfiles (AA var).
     $modules = $modules | Where-Object {
         $moduleProfiles = $_.Profiles
         $moduleProfiles -is [array] -and ($moduleProfiles | Where-Object { $cloudUsageProfiles -contains $_ })
@@ -213,6 +223,72 @@ if (-not $automationJobId -and $PSPrivateMetadata.JobId) {
 $runState = $null
 if ($enableDebugMetrics) {
     $runState = New-GuardrailRunState -GuardrailId 'ALL' -RunbookName 'main' -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -SubscriptionId $SubID -TenantId $tenantID -JobId $automationJobId -ReportTime $ReportTime
+
+    $permissionScanContext = $null
+    $permissionTelemetryMessage = 'Permission scan'
+    try {
+        $permissionScanContext = Start-GuardrailModuleState -RunState $runState -ModuleName 'SYSTEM.PermissionScan'
+
+        $permissionData = Get-GuardrailIdentityPermissions -TenantRootManagementGroupId $tenantID
+
+        foreach ($warning in $permissionData.Errors) {
+            Write-Warning "Permission scan warning: $warning"
+        }
+
+        $rbacCount = @($permissionData.Assignments | Where-Object { $_.PermissionType -eq 'RBAC' }).Count
+        $aadCount  = @($permissionData.Assignments | Where-Object { $_.PermissionType -eq 'AADAppRole' }).Count
+        $messageParts = @(
+            "Assignments=$($permissionData.Assignments.Count)",
+            "RBAC=$rbacCount",
+            "AADAppRoles=$aadCount"
+        )
+        if ($permissionData.Errors.Count -gt 0) {
+            $messageParts += "Warnings=$($permissionData.Errors.Count)"
+        }
+        $permissionTelemetryMessage = $messageParts -join '; '
+
+        if ($runState.TelemetryContext -and $runState.TelemetryContext.Enabled) {
+            $permissionSnapshotJson = ConvertTo-Json -InputObject $permissionData.Assignments -Depth 5
+            $permissionTelemetryRecord = [pscustomobject]@{
+                GuardrailId                         = $runState.TelemetryContext.GuardrailId
+                RunbookName                         = $runState.TelemetryContext.RunbookName
+                ModuleName                          = 'SYSTEM.PermissionScan'
+                ExecutionScope                      = 'Module'
+                EventType                           = 'PermissionScan'
+                CorrelationId                       = [string]$runState.TelemetryContext.CorrelationId
+                JobId                               = [string]$runState.TelemetryContext.JobId
+                RunSubscriptionId                   = [string]$runState.TelemetryContext.SubscriptionId
+                RunTenantId                         = [string]$runState.TelemetryContext.TenantId
+                TenantRootManagementGroupId         = $permissionData.TenantRootManagementGroupId
+                TenantRootManagementGroupResourceId = $permissionData.TenantRootManagementGroupResourceId
+                PermissionSnapshot                  = $permissionSnapshotJson
+                Assignments                         = $permissionData.Assignments.Count
+                RbacAssignments                     = $rbacCount
+                AadAppRoleAssignments               = $aadCount
+                Message                             = $permissionTelemetryMessage
+                ReportTime                          = $runState.ReportTime
+            }
+
+            try {
+                New-LogAnalyticsData -Data @($permissionTelemetryRecord) -WorkSpaceID $runState.TelemetryContext.WorkspaceId -WorkSpaceKey $runState.TelemetryContext.WorkspaceKey -LogType 'CaCDebugMetrics' | Out-Null
+            }
+            catch {
+                Write-Warning "Failed to emit permission telemetry payload: $_"
+            }
+        }
+
+        if ($permissionScanContext) {
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $permissionScanContext -ItemCount $permissionData.Assignments.Count -Message $permissionTelemetryMessage | Out-Null
+            $permissionScanContext = $null
+        }
+    }
+    catch {
+        Write-Warning "Permission scan failed: $_"
+        if ($permissionScanContext) {
+            Complete-GuardrailModuleState -RunState $runState -ModuleState $permissionScanContext -ErrorCount 1 -ItemCount 0 -Message 'Permission scan failed.' | Out-Null
+            $permissionScanContext = $null
+        }
+    }
 }
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main -additionalValues @{reportTime = $ReportTime; locale = $locale }
@@ -288,6 +364,7 @@ catch {
     if ($runState -and $userRawDataContext) {
         Complete-GuardrailModuleState -RunState $runState -ModuleState $userRawDataContext -ErrorCount 1 -ItemCount 0 -Message 'FetchAllUserRawData threw an exception. UsersLoaded=0' | Out-Null
     }
+    throw
 }
 finally {
     Write-Output "Fetching user raw data complete."
@@ -302,7 +379,7 @@ try {
     }
 } catch {
     Write-Error "Exception occurred during cross-tenant access data collection: $_"
-
+    throw
 }
 finally {
     Write-Output "Fetching cross-tenant access settings complete."
@@ -375,29 +452,77 @@ foreach ($module in $modules) {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
 
-            if ($null -eq $results) {
-                Write-Warning "Module $($module.modulename) returned no output - skipping all data ingestion."
+            if ($enableMultiCloudProfiles -and $null -ne $results.ComplianceResults) {
+                # Some modules can return compliance rows without a Profile value.
+                # This fallback fills Profile before upload so workbook filtering stays accurate.
+                foreach ($record in @($results.ComplianceResults)) {
+                    if (-not $record) { continue }
+
+                    # Keep existing Profile values untouched.
+                    $hasProfile = $record.PSObject.Properties.Match('Profile').Count -gt 0 -and `
+                        -not [string]::IsNullOrWhiteSpace([string]$record.Profile)
+                    if ($hasProfile) { continue }
+
+                    try {
+                        # Try to find subscription id from result fields (SubscriptionId first, then Id).
+                        $subscriptionIdForEval = $null
+                        if ($record.PSObject.Properties.Match('SubscriptionId').Count -gt 0 -and $record.SubscriptionId) {
+                            $candidate = [string]$record.SubscriptionId
+                            if ($candidate -match '/subscriptions/([^/]+)') {
+                                $subscriptionIdForEval = $Matches[1]
+                            } elseif ($candidate -match '^[0-9a-fA-F-]{36}$') {
+                                $subscriptionIdForEval = $candidate
+                            }
+                        }
+                        # Fallback: some result rows do not have SubscriptionId but do have Id.
+                        # Handle both formats:
+                        # 1) full ARM id (extract subscription segment), and
+                        # 2) raw subscription GUID when Type=subscription.
+                        if (-not $subscriptionIdForEval -and $record.PSObject.Properties.Match('Id').Count -gt 0 -and $record.Id) {
+                            $candidate = [string]$record.Id
+                            if ($candidate -match '/subscriptions/([^/]+)') {
+                                $subscriptionIdForEval = $Matches[1]
+                            } elseif ($record.PSObject.Properties.Match('Type').Count -gt 0 -and `
+                                      [string]$record.Type -eq 'subscription' -and `
+                                      $candidate -match '^[0-9a-fA-F-]{36}$') {
+                                $subscriptionIdForEval = $candidate
+                            }
+                        }
+
+                        # Use Get-EvaluationProfile so profile rules stay in one place (no duplicated logic here).
+                        # Pass SubscriptionId when available so evaluation can use subscription 'profile' tags.
+                        # Without SubscriptionId, evaluation falls back to cloudUsageProfiles + module Profiles only.
+                        if ($subscriptionIdForEval) {
+                            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString -SubscriptionId $subscriptionIdForEval
+                        } else {
+                            $evalResult = Get-EvaluationProfile -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString
+                        }
+
+                        # Only write Profile when evaluation returns a valid profile number.
+                        if ($evalResult.Profile -gt 0) {
+                            $record | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
+                        }
+                    }
+                    catch {
+                        Write-Verbose "Unable to backfill Profile for module '$($module.modulename)': $_"
+                    }
+                }
             }
-            else {
-                if ($null -ne $results.ComplianceResults) {
-                    $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
-                    New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
-                }
-                else {
-                    Write-Warning "Module $($module.modulename) returned null ComplianceResults - skipping data ingestion."
-                }
 
-                if ($null -ne $results.Errors) {
-                    $moduleErrors = @($results.Errors).Count
-                    "Module $($module.modulename) failed with $moduleErrors errors. $($results.Errors)"
-                    New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
-                }
+            $results.ComplianceResults | Add-Member -MemberType NoteProperty -Name "Required" -Value $module.Required -PassThru
 
-                if ($null -ne $results.AdditionalResults) {
-                    # There is more data!
-                    "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
-                    New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
-                }
+            New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType | Out-Null
+
+            if ($null -ne $results.Errors) {
+                $moduleErrors = @($results.Errors).Count
+                "Module $($module.modulename) failed with $moduleErrors errors. $($results.Errors)"
+                New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException" | Out-Null
+            }
+
+            if ($null -ne $results.AdditionalResults) {
+                # There is more data!
+                "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
+                New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType | Out-Null
             }
 
             if ($null -ne $results.ComplianceResults) {
@@ -476,16 +601,11 @@ foreach ($module in $modules) {
                 Complete-GuardrailModuleState -RunState $runState -ModuleState $moduleContext -ErrorCount $moduleErrors -ItemCount $itemCount -CompliantCount $compliantCount -NonCompliantCount $nonCompliantCount -Message 'Module execution threw an exception.' | Out-Null
             }
 
-            # Use exception message only to avoid dumping script content (ErrorRecord can include InvocationInfo with full script)
-            $exceptionMessage = $_.Exception.Message
-            if ([string]::IsNullOrWhiteSpace($exceptionMessage)) {
-                $exceptionMessage = $_.ToString()
-            }
-            Write-Output "Caught error while invoking module $($module.moduleName): $exceptionMessage"
+            Write-Output "Caught error while invoking result is $($results.Errors)"
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($moduleScript -ireplace '\$workspaceKey', '***')))
 
-            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $exceptionMessage" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
-            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $exceptionMessage"
+            Add-LogEntry 'Error' "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main
+            Write-Error "Failed to invoke the module execution script for module '$($module.moduleName)', script '$sanitizedScriptblock' with error: $_"
         }
         finally {
             # Clear memory after each module
