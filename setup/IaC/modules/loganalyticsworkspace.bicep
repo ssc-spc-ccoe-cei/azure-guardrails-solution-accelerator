@@ -798,7 +798,7 @@ resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -915,7 +915,7 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data567'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=column_ifexists("DisplayName_s", ""),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")),\n    ["Subscription Name"]=column_ifexists("DisplayName_s", ""),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data567'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -963,7 +963,7 @@ resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data11'
-    query: 'let enableMultiCloudProfiles = ${enableMultiCloudProfiles}; \n let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|where enableMultiCloudProfiles == false or toint(column_ifexists("Profile_d","")) != 1 \n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")), ["Subscription Name"] = column_ifexists("SubscriptionName_s", ""), Comments=column_ifexists("Comments_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'),["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(column_ifexists("ItemName_s", ""), iff(column_ifexists("Required_s", "")=="False"," (R)", " (M)")), ["Subscription Name"] = column_ifexists("SubscriptionName_s", ""), Comments=column_ifexists("Comments_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data11'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -1007,7 +1007,7 @@ let crossTenantDataExists = toscalar(
     )
     | summarize sum(count_) > 0
 );
-let crossTenantSettings = union isfuzzy=true (
+let crossTenantRawData = union isfuzzy=true (
     GuardrailsCrossTenantAccess_CL
     | where column_ifexists("ReportTime_s", "") == reportTime
     | extend 
@@ -1020,9 +1020,15 @@ let crossTenantSettings = union isfuzzy=true (
     | where isnotempty(PartnerTenantId)
     | summarize arg_max(TimeGenerated, *) by PartnerTenantId
 ), (
-    print PartnerTenantId = "", InboundMfaTrust = false, HasGuestMfaPolicy = false, TimeGenerated = datetime(null)
+    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
     | where 1 == 0  // Empty result if table doesn't exist
 );
+let crossTenantSettings = crossTenantRawData
+| extend 
+    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
+    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
+    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
+| where isnotempty(PartnerTenantId);
 let defaultMfaTrustSetting = toscalar(
     crossTenantSettings
     | where PartnerTenantId == "default"
@@ -1032,7 +1038,8 @@ let defaultMfaTrustSetting = toscalar(
 );
 let hasGuestMfaPolicyConfigured = toscalar(
     crossTenantSettings
-    | summarize HasPolicy = coalesce(max(HasGuestMfaPolicy), false)
+    | summarize HasPolicy = max(HasGuestMfaPolicy)
+    | extend HasPolicy = coalesce(HasPolicy, false)
     | project HasPolicy
 );
 let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
@@ -1040,11 +1047,7 @@ let rawUserData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = coalesce(
-             tostring(column_ifexists("homeTenantId_g", "")),
-             column_ifexists("homeTenantId_s", "")
-         ),
-         homeTenantResolved = tobool(coalesce(column_ifexists("homeTenantResolved_b", bool(null)), false))
+         homeTenantId = column_ifexists("homeTenantId_s", "")
 | where ReportTime == reportTime;
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
@@ -1054,23 +1057,14 @@ let memberUsers = rawUserData
 | where guardrailsExcluded == false and userType != "Guest";
 // Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
 let guestsWithTrustInfo = guestUsers
-| extend guestHomeTenantId = case(
-    // If resolution succeeded and no explicit tenant policy, use default
-    homeTenantResolved == true and (isempty(homeTenantId) or isnull(homeTenantId)), "default",
-    // If resolution succeeded and we have a tenant ID, use it
-    homeTenantResolved == true and isnotempty(homeTenantId), homeTenantId,
-    // If resolution failed, mark as unresolved (do NOT trust by default)
-    homeTenantResolved == false, "unresolved",
-    // Fallback for unexpected cases
-    "unresolved"
-)
+| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
 ) on $left.guestHomeTenantId == $right.PartnerTenantId
 | extend 
-    effectiveMfaTrust = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", 
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled, 
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), 
         false);
 let guestsToExclude = guestsWithTrustInfo
@@ -1201,7 +1195,7 @@ let crossTenantDataExists = toscalar(
     )
     | summarize sum(count_) > 0
 );
-let crossTenantSettings = union isfuzzy=true (
+let crossTenantRawData = union isfuzzy=true (
     GuardrailsCrossTenantAccess_CL
     | where column_ifexists("ReportTime_s", "") == reportTime
     | extend 
@@ -1214,9 +1208,15 @@ let crossTenantSettings = union isfuzzy=true (
     | where isnotempty(PartnerTenantId)
     | summarize arg_max(TimeGenerated, *) by PartnerTenantId
 ), (
-    print PartnerTenantId = "", InboundMfaTrust = false, HasGuestMfaPolicy = false, TimeGenerated = datetime(null)
+    print PartnerTenantId_s = "", InboundTrustMfa_b = false, HasGuestMfaPolicy_b = false, TimeGenerated = datetime(null)
     | where 1 == 0  // Empty result if table doesn't exist
 );
+let crossTenantSettings = crossTenantRawData
+| extend 
+    PartnerTenantId = column_ifexists("PartnerTenantId_s", ""),
+    InboundMfaTrust = tobool(coalesce(column_ifexists("InboundTrustMfa_b", bool(null)), false)),
+    HasGuestMfaPolicy = tobool(coalesce(column_ifexists("HasGuestMfaPolicy_b", bool(null)), false))
+| where isnotempty(PartnerTenantId);
 let defaultMfaTrustSetting = toscalar(
     crossTenantSettings
     | where PartnerTenantId == "default"
@@ -1226,7 +1226,8 @@ let defaultMfaTrustSetting = toscalar(
 );
 let hasGuestMfaPolicyConfigured = toscalar(
     crossTenantSettings
-    | summarize HasPolicy = coalesce(max(HasGuestMfaPolicy), false)
+    | summarize HasPolicy = max(HasGuestMfaPolicy)
+    | extend HasPolicy = coalesce(HasPolicy, false)
     | project HasPolicy
 );
 let crossTenantFeatureEnabled = crossTenantDataExists and hasGuestMfaPolicyConfigured;
@@ -1234,11 +1235,7 @@ let userData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = coalesce(
-             tostring(column_ifexists("homeTenantId_g", "")),
-             column_ifexists("homeTenantId_s", "")
-         ),
-         homeTenantResolved = tobool(coalesce(column_ifexists("homeTenantResolved_b", bool(null)), false))
+         homeTenantId = column_ifexists("homeTenantId_s", "")
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
@@ -1278,23 +1275,14 @@ let mfaAnalysis = userData
     );
 let nonCompliantUsers = mfaAnalysis
 | where isMfaCompliant == false
-| extend guestHomeTenantId = case(
-    // If resolution succeeded and no explicit tenant policy, use default
-    homeTenantResolved == true and (isempty(homeTenantId) or isnull(homeTenantId)), "default",
-    // If resolution succeeded and we have a tenant ID, use it
-    homeTenantResolved == true and isnotempty(homeTenantId), homeTenantId,
-    // If resolution failed, mark as unresolved (do NOT trust by default)
-    homeTenantResolved == false, "unresolved",
-    // Fallback for unexpected cases
-    "unresolved"
-)
+| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
 ) on $left.guestHomeTenantId == $right.PartnerTenantId
 | extend 
-    effectiveMfaTrust = iff(crossTenantFeatureEnabled and guestHomeTenantId != "unresolved", coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest" and guestHomeTenantId != "unresolved",
+    effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
+    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest",
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false),
         false)
 | where shouldExcludeGuest == false
