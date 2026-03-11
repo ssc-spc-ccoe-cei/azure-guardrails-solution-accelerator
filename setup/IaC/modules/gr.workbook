@@ -2477,6 +2477,11 @@
             "parameterName": "selectedTab",
             "comparison": "isEqualTo",
             "value": "summary"
+            },
+            {
+            "parameterName": "RequiredYesNo",
+            "comparison": "isEqualTo",
+            "value": "Other"
             }
        ],
        "name": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",

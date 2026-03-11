@@ -2158,6 +2158,34 @@ function Get-allowedLocationCAPCompliance {
         $caps = @()
     }
 
+    # # --------------------Named Location check to filter out cases -------------------- #
+    # Case 1: Named locations not found at all
+    # Case 2: Multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location
+    # Case 3: One Named location exists and it's Canada-only
+    # Case 4: One named location exists and it's 'all-countries' except Canada'
+    # Case 5: One named location exists and it's includes Canada + other countries
+    # Case 6: Multiple named locations exist, at least one Canada-only named location found
+    
+    # Case 1:
+    if ($locations.Count -eq 0) {
+        Write-Warning "Warning: No named locations found. Cannot evaluate Conditional Access Policies for compliance."
+        $ErrorList.Add("No named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
+        $IsCompliant = $false
+        $Comments = $msgTable.noNamedLocationFound 
+
+        $PsObject = [PSCustomObject]@{
+            ComplianceStatus = $IsCompliant
+            ControlName      = $ControlName
+            Comments         = $Comments
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+            Errors           = $ErrorList
+        }
+        
+        return $PsObject
+    }
+
     # Group named locations and find location Ids
     $validLocations = @()               # Canada-only named locations
     $validLocationIds = @()             
@@ -2216,12 +2244,16 @@ function Get-allowedLocationCAPCompliance {
             continue
         }
     }
-    # If no Canada-only named locations or no non-Canada all-country named locations found, return non-compliant
-    if ($validLocations.Count -eq 0 -or $nonCAnamedLocations.Count -eq 0) {
+
+    # Case 2:
+    # multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location found
+    # return non-compliant
+
+    if ($locations.Count -gt 1 -and ($validLocations.Count -eq 0 -and $nonCAnamedLocations.Count -eq 0)){
         Write-Warning "Warning: No Canada-only named locations found or no non-Canada all-country named locations found. Cannot evaluate Conditional Access Policies for compliance."
         $ErrorList.Add("No Canada-only named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
         $IsCompliant = $false
-        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noLocationsnonCACompliant
+        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noCAallLocationsNonCompliant
 
         $PsObject = [PSCustomObject]@{
             ComplianceStatus = $IsCompliant
@@ -2232,10 +2264,11 @@ function Get-allowedLocationCAPCompliance {
             itsgcode         = $itsgcode
             Errors           = $ErrorList
         }
-        # Explicit return avoids null/implicit output in early-exit non-compliance paths.
+        
         return $PsObject
     }
     
+    # Case 2/3/4/5/6: next evaluation step
 
     # Filter enabled CAPs
     $enabledCAPs = $caps | Where-Object { $_.state -eq 'enabled' }
