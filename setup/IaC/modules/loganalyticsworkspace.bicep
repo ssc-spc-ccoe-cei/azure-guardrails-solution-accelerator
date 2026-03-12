@@ -1047,7 +1047,7 @@ let rawUserData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = column_ifexists("homeTenantId_s", "")
+         homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime;
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
@@ -1235,7 +1235,7 @@ let userData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
-         homeTenantId = column_ifexists("homeTenantId_s", "")
+         homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
