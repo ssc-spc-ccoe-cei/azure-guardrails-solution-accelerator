@@ -241,7 +241,7 @@ jobs:
                   "keyVaultName": "gsapipe",
                   "resourcegroup": "guardrailscac_test",
                   "region": "CanadaCentral",
-                  "storageaccountName": "gsapipe1",
+                  "storageaccountName": "gsapipe",
                   "logAnalyticsworkspaceName": "gsapipe",
                   "autoMationAccountName": "gsapipe",
                   "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
