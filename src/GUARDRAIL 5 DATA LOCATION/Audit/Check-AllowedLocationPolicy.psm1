@@ -268,9 +268,9 @@ function Check-PolicyStatus {
    
         }
 
-        # This module only emits subscription-scoped rows, so keep the output shape explicit here.
+        # This module currently emits subscription-scoped rows, so reuse the incoming objType for the emitted row shape.
         $c = New-Object -TypeName PSCustomObject -Property @{
-            Type = "subscription"
+            Type = [string]$objType
             Id = [string]$obj.Id
             SubscriptionName = [string]$obj.Name
             ComplianceStatus = [boolean]$ComplianceStatus
