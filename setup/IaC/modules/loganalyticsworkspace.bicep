@@ -9,6 +9,7 @@ param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
 param updateCoreResources bool = false
+param updateCoreResources bool = false
 param enableMultiCloudProfiles bool
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
@@ -17,6 +18,7 @@ var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
 var wbConfig='${wb}${wbConfig2}'
 
+resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
 resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: logAnalyticsWorkspaceName
   location: location
@@ -31,6 +33,768 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
     }
   }
 }
+
+// Custom tables required by DCR-based log ingestion; must exist before DCR is created
+resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GuardrailsCompliance_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GuardrailsCompliance_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'ControlName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ItemName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ComplianceStatus_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'ComplianceStatus_s'
+          type: 'string'
+        }
+        { 
+          name: 'Comments_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
+        }
+        { 
+          name: 'Required_s'
+          type: 'string'
+        }
+        { 
+          name: 'Profile_d'
+          type: 'real'
+        }
+        { 
+          name: 'DisplayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'SubscriptionName_s'
+          type: 'string'
+        }
+        { 
+          name: 'VNETName_s'
+          type: 'string'
+        }
+        { 
+          name: 'DocumentName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Id_g'
+          type: 'guid'
+        }
+        { 
+          name: 'MitigationCommands_s'
+          type: 'string'
+        }
+        { 
+          name: 'Name_s'
+          type: 'string'
+        }
+        { 
+          name: 'SubnetName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Type_s'
+          type: 'string'
+        }
+        { 
+          name: 'ADLicenseType_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsComplianceException 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GuardrailsComplianceException_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GuardrailsComplianceException_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'Message'
+          type: 'string'
+        }
+        { 
+          name: 'moduleName_s'
+          type: 'string'
+        }
+        { 
+          name: 'severity_s'
+          type: 'string'
+        }
+        { 
+          name: 'locale_s'
+          type: 'string'
+        }
+        { 
+          name: 'reportTime_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GR_TenantInfo_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GR_TenantInfo_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'RawData'
+          type: 'string'
+        }
+        { 
+          name: 'TenantDomain_s'
+          type: 'string'
+        }
+        { 
+          name: 'DepartmentTenantID_g'
+          type: 'guid'
+        }
+        { 
+          name: 'DepartmentTenantName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'DepartmentName_s'
+          type: 'string'
+        }
+        { 
+          name: 'DepartmentNumber_s'
+          type: 'string'
+        }
+        { 
+          name: 'cloudUsageProfiles_s'
+          type: 'string'
+        }
+        { 
+          name: 'Locale_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GR_Results_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GR_Results_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'ControlName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ItemName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ComplianceStatus_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'ComplianceStatus_s'
+          type: 'string'
+        }
+        { 
+          name: 'Comments_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
+        }
+        { 
+          name: 'Required_s'
+          type: 'string'
+        }
+        { 
+          name: 'Profile_d'
+          type: 'real'
+        }
+        { 
+          name: 'DisplayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'SubscriptionName_s'
+          type: 'string'
+        }
+        { 
+          name: 'VNETName_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GR_VersionInfo_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GR_VersionInfo_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'RawData'
+          type: 'string'
+        }
+        { 
+          name: 'DeployedVersion_s'
+          type: 'string'
+        }
+        { 
+          name: 'AvailableVersion_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'UpdateNeeded_b'
+          type: 'boolean'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GRITSGControls_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GRITSGControls_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'RawData'
+          type: 'string'
+        }
+        { 
+          name: 'Name_s'
+          type: 'string'
+        }
+        { 
+          name: 'Definition_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GuardrailsTenantsCompliance_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GuardrailsTenantsCompliance_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'RawData'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'CaCDebugMetrics_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'CaCDebugMetrics_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'GuardrailId_s'
+          type: 'string'
+        }
+        { 
+          name: 'RunbookName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ModuleName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ExecutionScope_s'
+          type: 'string'
+        }
+        { 
+          name: 'EventType_s'
+          type: 'string'
+        }
+        { 
+          name: 'CorrelationId'
+          type: 'string'
+        }
+        { 
+          name: 'JobId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'RunSubscriptionId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'RunTenantId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'ErrorCount_d'
+          type: 'real'
+        }
+        { 
+          name: 'ItemCount_d'
+          type: 'real'
+        }
+        { 
+          name: 'CompliantCount_d'
+          type: 'real'
+        }
+        { 
+          name: 'NonCompliantCount_d'
+          type: 'real'
+        }
+        { 
+          name: 'DurationMsReal_d'
+          type: 'real'
+        }
+        { 
+          name: 'MemoryStartMb_d'
+          type: 'real'
+        }
+        { 
+          name: 'MemoryEndMb_d'
+          type: 'real'
+        }
+        { 
+          name: 'MemoryPeakMb_d'
+          type: 'real'
+        }
+        { 
+          name: 'MemoryDeltaMb_d'
+          type: 'real'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'Message'
+          type: 'string'
+        }
+        { 
+          name: 'TenantRootManagementGroupId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'TenantRootManagementGroupResourceId_s'
+          type: 'string'
+        }
+        { 
+          name: 'AadAppRoleAssignments_d'
+          type: 'real'
+        }
+        { 
+          name: 'Assignments_d'
+          type: 'real'
+        }
+        { 
+          name: 'RbacAssignments_d'
+          type: 'real'
+        }
+        { 
+          name: 'PermissionSnapshot_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GuardrailsUserRaw_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GuardrailsUserRaw_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'id_g'
+          type: 'guid'
+        }
+        { 
+          name: 'userPrincipalName_s'
+          type: 'string'
+        }
+        { 
+          name: 'displayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'mail_s'
+          type: 'string'
+        }
+        { 
+          name: 'createdDateTime_t'
+          type: 'dateTime'
+        }
+        { 
+          name: 'userType_s'
+          type: 'string'
+        }
+        { 
+          name: 'homeTenantId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'homeTenantResolved_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'accountEnabled_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'guardrailsExcludedMfa_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'isMfaRegistered_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'isMfaCapable_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'isSsprEnabled_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'isSsprRegistered_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'isSsprCapable_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'isPasswordlessCapable_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'defaultMethod_s'
+          type: 'string'
+        }
+        { 
+          name: 'isSystemPreferredAuthenticationMethodEnabled_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'userPreferredMethodForSecondaryAuthentication_s'
+          type: 'string'
+        }
+        { 
+          name: 'methodsRegistered_s'
+          type: 'string'
+        }
+        { 
+          name: 'systemPreferredAuthenticationMethods_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'signInActivity_lastSignInDateTime_t'
+          type: 'dateTime'
+        }
+        { 
+          name: 'signInActivity_lastSignInRequestId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'signInActivity_lastNonInteractiveSignInDateTime_t'
+          type: 'dateTime'
+        }
+        { 
+          name: 'signInActivity_lastNonInteractiveSignInRequestId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'signInActivity_lastSuccessfulSignInDateTime_t'
+          type: 'dateTime'
+        }
+        { 
+          name: 'signInActivity_lastSuccessfulSignInRequestId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'customSecurityAttributes_GCCloudGuardrails_ExcludeFromMFA_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'customSecurityAttributes_Guardrails_Excludedmfa_b'
+          type: 'boolean'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GuardrailsCrossTenantAccess_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GuardrailsCrossTenantAccess_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'PartnerTenantId_s'
+          type: 'string'
+        }
+        { 
+          name: 'PartnerTenantId_g'
+          type: 'guid'
+        }
+        { 
+          name: 'InboundTrustMfa_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'InboundTrustCompliantDevice_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'InboundTrustHybridAzureADJoined_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'IsDefault_b'
+          type: 'boolean'
+        }
+        { 
+          name: 'HasGuestMfaPolicy_b'
+          type: 'boolean'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GR2UsersWithoutGroups_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GR2UsersWithoutGroups_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'UserId_s'
+          type: 'string'
+        }
+        { 
+          name: 'DisplayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'GivenName_s'
+          type: 'string'
+        }
+        { 
+          name: 'UserPrincipalName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Comments_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+resource dcrTableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  parent: guardrailsLogAnalytics
+  name: 'GR2ExternalUsers_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GR2ExternalUsers_CL'
+      columns: [
+        { 
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        { 
+          name: 'Comments_s'
+          type: 'string'
+        }
+        { 
+          name: 'DisplayName_s'
+          type: 'string'
+        }
+        { 
+          name: 'ItemName_s'
+          type: 'string'
+        }
+        { 
+          name: 'Mail_s'
+          type: 'string'
+        }
+        { 
+          name: 'PrivilegedRole_s'
+          type: 'string'
+        }
+        { 
+          name: 'ReportTime_s'
+          type: 'string'
+        }
+        { 
+          name: 'Role_s'
+          type: 'string'
+        }
+        { 
+          name: 'Subscription_s'
+          type: 'string'
+        }
+        { 
+          name: 'itsgcode_s'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+
+
+
+resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
 
 // Custom tables required by DCR-based log ingestion; must exist before DCR is created
 resource dcrTableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
@@ -910,6 +1674,7 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   }
 }
 resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data567'
   parent: guardrailsLogAnalytics
   properties: {
@@ -921,6 +1686,7 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
+resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
 resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data56'
   parent: guardrailsLogAnalytics

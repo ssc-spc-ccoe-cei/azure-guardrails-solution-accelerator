@@ -11,6 +11,7 @@ param DepartmentNumber string
 param DepartmentName string
 param deployKV bool = true
 param deployLAW bool = true
+#disable-next-line no-unused-params
 param DeployTelemetry bool = true
 param HealthLAWResourceId string
 param kvName string = 'guardrails-kv'
@@ -64,6 +65,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     DepartmentNumber: DepartmentNumber
     DepartmentName: DepartmentName
     guardrailsKVname: kvName
+    #disable-next-line BCP318
     guardrailsLogAnalyticscustomerId: LAW.outputs.logAnalyticsWorkspaceId
     guardrailsStoragename: storageAccountName
     HealthLAWResourceId: HealthLAWResourceId
@@ -81,6 +83,12 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
+    #disable-next-line BCP318
+    dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
+    #disable-next-line BCP318
+    dcrImmutableId: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
+    #disable-next-line BCP318
+    dcrImmutableId2: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -110,12 +118,52 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     releaseDate: releaseDate
     rg: rg
     deployLAW: deployLAW
-    subscriptionId: subscription().subscriptionId
+    subscriptionId: subscriptionId
     GRDocsBaseUrl: GRDocsBaseUrl
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
+    updateCoreResources: updateCoreResources
   }
 }
+
+// Data Collection Endpoint (DCE) and Data Collection Rule (DCR) for DCR-based Log Ingestion API
+// Create DCE/DCR on new deployments or when updating core resources (for migration from Data Collector API)
+module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+  name: 'guardrails-dcrdce'
+  dependsOn: [
+    LAW
+  ]
+  params: {
+    location: location
+    #disable-next-line BCP318    
+    logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
+    releaseVersion: releaseVersion
+    releaseDate: releaseDate
+    newDeployment: newDeployment
+    updateCoreResources: updateCoreResources
+  }
+}
+// Grants the automation account MSI the Monitoring Metrics Publisher role on both DCRs.
+// Separate module to avoid a circular dependency between automationaccount and dcrdce modules.
+module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+  name: 'guardrails-dcrrbac'
+  dependsOn: [
+    aa
+    DCRDCE
+  ]
+  params: {
+    #disable-next-line BCP318
+    dcrResourceId: DCRDCE.outputs.dcrResourceId
+    #disable-next-line BCP318
+    dcrResourceId2: DCRDCE.outputs.dcrResourceId2
+    #disable-next-line BCP318
+    automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
+    #disable-next-line BCP318    
+    logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
+
+  }
+}
+
 module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
   name: 'guardrails-storageaccount'
   params: {
@@ -137,7 +185,7 @@ module alertNewVersion 'modules/alert.bicep' = {
     alertRuleDisplayName: 'Guardrails New Version Available.'
     alertRuleSeverity: 3
     location: location
-    query: 'GR_VersionInfo_CL | summarize total=count() by UpdateAvailable=iff(CurrentVersion_s != AvailableVersion_s, "Yes",\'No\') | where UpdateAvailable == \'Yes\''
+    query: 'GR_VersionInfo_CL | summarize total=count() by UpdateAvailable=iff(DeployedVersion_s != AvailableVersion_s, "Yes",\'No\') | where UpdateAvailable == \'Yes\''
     scope: LAW.outputs.logAnalyticsResourceId
     autoMitigate: true
     evaluationFrequency: 'PT6H'
