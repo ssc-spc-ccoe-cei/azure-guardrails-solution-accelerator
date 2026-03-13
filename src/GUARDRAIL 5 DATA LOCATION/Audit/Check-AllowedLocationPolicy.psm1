@@ -268,11 +268,11 @@ function Check-PolicyStatus {
    
         }
 
-        $props = @{
-            Type = [string]$objType
+        # This module only emits subscription-scoped rows, so keep the output shape explicit here.
+        $c = New-Object -TypeName PSCustomObject -Property @{
+            Type = "subscription"
             Id = [string]$obj.Id
-            # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
-            SubscriptionName = $(if ($objType -eq "subscription") { [string]$obj.Name } else { "" })
+            SubscriptionName = [string]$obj.Name
             ComplianceStatus = [boolean]$ComplianceStatus
             Comments = [string]$Comment
             ItemName = [string]$ItemName
@@ -280,13 +280,6 @@ function Check-PolicyStatus {
             ControlName = [string]$ControlName
             ReportTime = [string]$ReportTime
         }
-        if ($objType -ne "subscription") {
-            # For non-subscription rows, keep Name/DisplayName as entity labels; subscription rows rely on SubscriptionName to avoid duplicate labels.
-            $name = [string]$obj.Name
-            $props.Name = $name
-            $props.DisplayName = if ([string]::IsNullOrWhiteSpace([string]$obj.DisplayName)) { $name } else { [string]$obj.DisplayName }
-        }
-        $c = New-Object -TypeName PSCustomObject -Property $props
 
         if ($EnableMultiCloudProfiles) {
             if ($objType -eq "subscription") {
