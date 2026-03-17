@@ -783,7 +783,7 @@ union isfuzzy=true
   (gr_summary_by_prefix_a("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
   (gr_summary_by_prefix3a("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
 | project
-    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", column_ifexists("Total # Controls", 0)))),
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
     UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
 | summarize
@@ -831,7 +831,7 @@ union isfuzzy=true
   (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
   (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
 | project
-    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", column_ifexists("Total # Controls", 0)))),
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
     UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
 | summarize
@@ -879,7 +879,7 @@ union isfuzzy=true
   (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
   (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
 | project
-    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", column_ifexists("Total # Controls", 0)))),
+    TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
     UnknownItems_norm      = tolong(column_ifexists("UnknownItems",       column_ifexists("Unknown Items", 0)))
 | summarize
