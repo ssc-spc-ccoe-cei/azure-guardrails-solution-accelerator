@@ -90,7 +90,8 @@ function Validate-ActionGroups {
         [Object[]] $alerts,
         [Parameter(Mandatory=$true)][string] $SubscriptionName,
         [Parameter(Mandatory=$true)][string] $SubscriptionId,
-        [Parameter(Mandatory=$true)][hashtable] $MsgTable
+        [Parameter(Mandatory=$true)][hashtable] $MsgTable,
+        [Object[]] $allEnabledActionGroups
     )
 
     # Evaluate each action group's contacts and surface aggregate results back to the caller.
@@ -112,7 +113,7 @@ function Validate-ActionGroups {
 
     # Get all enabled action groups for the subscription
     try{
-        $allEnabledActionGroups = Get-AzActionGroup | Where-Object { $_.Enabled -eq $true }
+
         # Get action group IDs
         $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
         if ($actionGroupIdsArray.Count -eq 0) {
@@ -217,6 +218,26 @@ function Get-ServiceHealthAlerts {
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
 
+
+    # Get all enabled action groups in the tenant scope azure monitor
+    $allEnabledActionGroups = @()
+    try{
+        Get-AzSubscription | ForEach-Object {
+            Select-AzSubscription -SubscriptionId $_.Id | Out-Null
+            Get-AzResourceGroup | ForEach-Object {
+                $rgActionGroups = Get-AzActionGroup -ResourceGroupName $_.ResourceGroupName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+                if($null -ne $rgActionGroups){
+                    $allEnabledActionGroups += $rgActionGroups | Where-Object { $_.Enabled -eq $true }
+                }
+            }
+        }
+    }
+    catch{
+        $ErrorList.Add("Failed to execute the 'Get-AzActionGroup' command--verify your permissions and the installion of the Az.Monitor module; returned error message: $_" )
+        throw "Error: Failed to execute the 'Get-AzActionGroup' command--verify your permissions and the installion of the Az.Monitor module; returned error message: $_"
+    }
+
+    # Evaluate service health alerts and their associated action groups
     foreach($subscription in $subs){
         # Initialize
         $isCompliant = $false
@@ -306,7 +327,7 @@ function Get-ServiceHealthAlerts {
                 
                 if($checkActionGroupNext){
                     # Store compliance state of each action group
-                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable
+                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable -allEnabledActionGroups $allEnabledActionGroups
 
                     if ($evaluation.Comments.Count -gt 0) {
                         # Merge any helper-supplied context (e.g., missing action group) with existing comments.
