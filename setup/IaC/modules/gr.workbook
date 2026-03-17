@@ -70,6 +70,11 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
       "name": "parameters - 1"
     },
     {
@@ -191,7 +196,7 @@
             "style": "link"
           },
           {
-            "id": "f4f1952c-6d50-4c1f-a1bf-c95cd078e767",
+            "id": "8c5914bd-a497-473f-b767-f646b642fe5e",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
             "linkLabel": "Information",
@@ -2634,7 +2639,7 @@
         "comparison": "isEqualTo",
         "value": "information"
       },
-      "name": "summary-reference-version"
+      "name": "information-version"
     },
     {
       "type": 3,
@@ -2654,7 +2659,7 @@
         "comparison": "isEqualTo",
         "value": "information"
       },
-      "name": "summary-reference-cloud-usage"
+      "name": "information-cloud-usage"
     },
     {
       "type": 1,
@@ -2668,7 +2673,7 @@
         "comparison": "isEqualTo",
         "value": "information"
       },
-      "name": "summary-reference-itsg33"
+      "name": "information-itsg33"
     }
   ],
   "fallbackResourceIds": [
