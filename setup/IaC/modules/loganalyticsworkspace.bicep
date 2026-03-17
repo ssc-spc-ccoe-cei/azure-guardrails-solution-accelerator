@@ -945,6 +945,18 @@ resource grdata7 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     version: 2
   }
 }
+resource grdata8 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  name: 'gr_data8'
+  parent: guardrailsLogAnalytics
+  properties: {
+    category: 'gr_functions'
+    displayName: 'gr_data8'
+    query: 'let enableMultiCloudProfiles = ${enableMultiCloudProfiles}; \n let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\n GuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix  and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|where enableMultiCloudProfiles == false or toint(column_ifexists("Profile_d","")) != 1 \n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")), ["Subscription Name"]=column_ifexists("SubscriptionName_s", ""), ["Subnet Name"]=column_ifexists("SubnetName_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'), Comments=column_ifexists("Comments_s", ""), ["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    functionAlias: 'gr_data8'
+    functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
+    version: 2
+  }
+}
 resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'gr_data9'
   parent: guardrailsLogAnalytics
