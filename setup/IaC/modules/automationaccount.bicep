@@ -24,6 +24,9 @@ param updatePSModules bool = false
 param updateCoreResources bool = false
 param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
+param dceEndpoint string = ''
+param dcrImmutableId string = ''
+param dcrImmutableId2 string = ''
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -132,7 +135,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.4.4'
+        version: '1.4.5'
       }}
   }
   resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -182,7 +185,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.17'
+        version: '1.4.20'
       }}
   }
   resource module19 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -238,7 +241,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.1.0'
+        version: '1.1.1'
       }}
   }
   resource module29 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -640,5 +643,29 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
         value: '"true"'
     }
   }
+  // DCR-based Log Ingestion API variables
+  resource variable24 'variables' = if ((newDeployment || updateCoreResources) && dceEndpoint != '') {
+    name: 'DCE_ENDPOINT'
+    properties: {
+      isEncrypted: true
+      value: '"${dceEndpoint}"'
+    }
+  }
+  
+  resource variable25 'variables' = if ((newDeployment || updateCoreResources) && dcrImmutableId != '') {
+    name: 'DCR_IMMUTABLE_ID'
+    properties: {
+      isEncrypted: true
+      value: '"${dcrImmutableId}"'
+    }
+  }
+
+  resource variable26 'variables' = if ((newDeployment || updateCoreResources) && dcrImmutableId2 != '') {
+    name: 'DCR_IMMUTABLE_ID_2'
+    properties: {
+      isEncrypted: true
+      value: '"${dcrImmutableId2}"'
+    }
+  }  
 }
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

@@ -131,9 +131,10 @@ compliantC2 = La politique d'accès conditionnel visant à empêcher les connexi
 # nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
 noCompliantPoliciesfound = Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
 allPoliciesAreCompliant = Toutes les politiques suivantes sont conformes; {0}.
-# noLocationsCompliant = Aucun endroit n'a seulement le Canada en eux.
-noLocationsnonCACompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
+noCanadaNamedLocationFound = Aucun endroit n'a seulement le Canada en eux.
+noCAallLocationsNonCompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
+noNamedLocationFound = Aucune localisation nommée trouvée dans la stratégie d'accès conditionnel.
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
