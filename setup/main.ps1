@@ -194,7 +194,7 @@ Write-Output  "GuardrailsAutomationAccountMSI: $(Get-GSAAutomationVariable -Name
 
 
 #Standard variables
-$WorkSpaceID = c -Name "WorkSpaceID" 
+$WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID" 
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
