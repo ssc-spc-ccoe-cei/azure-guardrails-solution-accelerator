@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select whether Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended",
+        "json": "## Guardrails Accelerator\n\nSelect the Report Time (Default is latest). Select whether Recommended items are shown.\n\n(M) = Mandatory / (R) = Recommended\n\nGR = Guardrail",
         "style": "info"
       },
       "name": "Details Title"
@@ -87,7 +87,7 @@
             "id": "e01ddeb8-1ffd-4088-9cb3-f4f8b8fa9eec",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "SUMMARY",
+            "linkLabel": "Summary",
             "subTarget": "summary",
             "style": "link"
           },
@@ -95,7 +95,7 @@
             "id": "6a683959-7ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 1",
+            "linkLabel": "GR1",
             "subTarget": "gr1",
             "style": "link"
           },
@@ -103,7 +103,7 @@
             "id": "6a683959-7fd3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 2",
+            "linkLabel": "GR2",
             "subTarget": "gr2",
             "style": "link"
           },
@@ -111,7 +111,7 @@
             "id": "6a683359-5ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 3",
+            "linkLabel": "GR3",
             "subTarget": "gr3",
             "style": "link"
           },
@@ -119,7 +119,7 @@
             "id": "6a383959-1ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 4",
+            "linkLabel": "GR4",
             "subTarget": "gr4",
             "style": "link"
           },
@@ -127,7 +127,7 @@
             "id": "6b683959-7ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 5",
+            "linkLabel": "GR5",
             "subTarget": "gr5",
             "style": "link"
           },
@@ -135,7 +135,7 @@
             "id": "6a683959-4fd3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 6",
+            "linkLabel": "GR6",
             "subTarget": "gr6",
             "style": "link"
           },
@@ -143,7 +143,7 @@
             "id": "6a683959-7ed3-42b1-a509-3cfcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 7",
+            "linkLabel": "GR7",
             "subTarget": "gr7",
             "style": "link"
           },
@@ -151,7 +151,7 @@
             "id": "4b2de2e9-a9c7-486c-a524-7da0e8f44d26",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 8",
+            "linkLabel": "GR8",
             "subTarget": "gr8",
             "style": "link"
           },
@@ -159,7 +159,7 @@
             "id": "40243b3d-3037-482b-959b-d95c1b4b2014",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 9",
+            "linkLabel": "GR9",
             "subTarget": "gr9",
             "style": "link"
           },
@@ -167,7 +167,7 @@
             "id": "6bc4aa50-56c1-425b-9894-d6d7edb20e3a",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 10",
+            "linkLabel": "GR10",
             "subTarget": "gr10",
             "style": "link"
           },
@@ -175,7 +175,7 @@
             "id": "cad591d5-9404-46e2-b56f-b32723b390de",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 11",
+            "linkLabel": "GR11",
             "subTarget": "gr11",
             "style": "link"
           },
@@ -183,7 +183,7 @@
             "id": "144c0d71-a9de-4e02-95bf-0474d243ada6",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 12",
+            "linkLabel": "GR12",
             "subTarget": "gr12",
             "style": "link"
           },
@@ -191,7 +191,7 @@
             "id": "6a683959-2ed3-42b1-a509-3cdcd18017cf",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "GUARDRAIL 13",
+            "linkLabel": "GR13",
             "subTarget": "gr13",
             "style": "link"
           },
@@ -2588,7 +2588,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GuardrailsCompliance_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}'\n| summarize by column_ifexists(\"ControlName_s\", \"\")\n| count \n| extend Title=\"Total # of Controls\"",
+        "query": "GuardrailsCompliance_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}'\n| summarize by column_ifexists(\"ControlName_s\", \"\")\n| count \n| extend Title=\"Total # of Items\"",
         "size": 4,
         "timeContext": {
           "durationMs": 86400000
@@ -2639,41 +2639,41 @@
         "comparison": "isEqualTo",
         "value": "information"
       },
-      "name": "information"
+      "name": "information-version"
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let dt = GR_TenantInfo_CL | summarize max(column_ifexists(\"ReportTime_s\", \"\"));\r\nGR_TenantInfo_CL\r\n| where column_ifexists(\"ReportTime_s\", \"\") == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(column_ifexists(\"cloudUsageProfiles_s\", \"\") == 'default',toscalar(\"Cloud Usage Profile not specified or 'default'\"),column_ifexists(\"cloudUsageProfiles_s\", \"\")),[\"Report Time (UTC)\"]=toscalar (dt)",
-        "size": 0,
+        "query": "let dt = GR_TenantInfo_CL | summarize max(column_ifexists(\"ReportTime_s\", \"\"));\r\nGR_TenantInfo_CL\r\n| where column_ifexists(\"ReportTime_s\", \"\") == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(column_ifexists(\"cloudUsageProfiles_s\", \"\") == 'default',toscalar(\"Cloud Usage Profile not specified or 'default'\"),column_ifexists(\"cloudUsageProfiles_s\", \"\"))",
+        "size": 4,
         "title": "Cloud Usage Profile Configuration",
         "timeContext": {
           "durationMs": 86400000
         },
         "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "card"
+        "resourceType": "microsoft.operationalinsights/workspaces"
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
         "comparison": "isEqualTo",
         "value": "information"
       },
-      "name": "query - 20"
+      "name": "information-cloud-usage"
     },
     {
       "type": 1,
       "content": {
         "json": "***ITSG-33 POLICIES***\r\n\r\nITSG-33 English Link: https://www.cyber.gc.ca/sites/default/files/cyber/publications/itsg33-ann3a-eng.pdf\r\n\r\nITSG-33 French Link: https://www.cyber.gc.ca/sites/default/files/cyber/publications/itsg33-ann3a-fra.pdf",
-        "style": "info"
+        "style": "info",
+        "size": 4
       },
       "conditionalVisibility": {
         "parameterName": "selectedTab",
         "comparison": "isEqualTo",
         "value": "information"
       },
-      "name": "information"
+      "name": "information-itsg33"
     }
   ],
   "fallbackResourceIds": [
