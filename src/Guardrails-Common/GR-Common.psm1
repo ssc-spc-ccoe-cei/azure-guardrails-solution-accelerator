@@ -2897,18 +2897,11 @@ function Check-PBMMPolicies {
         }
 
         # Add to the Object List 
-        if ($null -eq $obj.DisplayName){
-            $DisplayName=$obj.Name
-        }
-        else {
-            $DisplayName=$obj.DisplayName
-        }
-
-        $c = New-Object -TypeName PSCustomObject -Property @{ 
+        $props = @{
             Type = [string]$objType
             Id = [string]$obj.Id
-            Name = [string]$obj.Name
-            DisplayName = [string]$DisplayName
+            # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
+            SubscriptionName = $(if ($objType -eq "subscription") { [string]$obj.Name } else { "" })
             ComplianceStatus = [boolean]$ComplianceStatus
             Comments = [string]$Comment
             ItemName = [string]$ItemName
@@ -2916,6 +2909,13 @@ function Check-PBMMPolicies {
             ControlName = [string]$ControlName
             ReportTime = [string]$ReportTime
         }
+        if ($objType -ne "subscription") {
+            # For non-subscription rows, keep Name/DisplayName as entity labels; subscription rows rely on SubscriptionName to avoid duplicate labels.
+            $name = [string]$obj.Name
+            $props.Name = $name
+            $props.DisplayName = if ([string]::IsNullOrWhiteSpace([string]$obj.DisplayName)) { $name } else { [string]$obj.DisplayName }
+        }
+        $c = New-Object -TypeName PSCustomObject -Property $props
 
         if ($EnableMultiCloudProfiles) {
             if ($objType -eq "subscription") {
@@ -3188,7 +3188,6 @@ function Check-BuiltInPolicies {
                         Type = "subscription"
                         Id = $subscription.Id
                         SubscriptionName = $subscription.Name
-                        DisplayName = $subscription.Name
                         ComplianceStatus = $false
                         Comments = $msgTable.policyHasExemptions
                         ItemName = "$ItemName - $policyDisplayName"
@@ -3231,7 +3230,6 @@ function Check-BuiltInPolicies {
                         Type = "subscription"
                         Id = $subscription.Id
                         SubscriptionName = $subscription.Name
-                        DisplayName = $subscription.Name
                         ComplianceStatus = $true
                         Comments = $msgTable.policyNoApplicableResourcesSub
                         ItemName = "$ItemName - $policyDisplayName"
@@ -3295,8 +3293,8 @@ function Check-BuiltInPolicies {
                     $result = [PSCustomObject]@{
                         Type = "subscription"
                         Id = $subscription.Id
+                        SubscriptionName = $subscription.Name
                         Name = "All Resources"
-                        DisplayName = $subscription.Name
                         ComplianceStatus = $true
                         Comments = $msgTable.policyCompliant
                         ItemName = "$ItemName - $policyDisplayName"
@@ -3331,7 +3329,6 @@ function Check-BuiltInPolicies {
                     Type = "subscription"
                     Id = $subscription.Id
                     SubscriptionName = $subscription.Name
-                    DisplayName = $subscription.Name
                     ComplianceStatus = $false
                     Comments = $msgTable.policyNotConfiguredSub -f $subScope
                     ItemName = "$ItemName - $policyDisplayName"
