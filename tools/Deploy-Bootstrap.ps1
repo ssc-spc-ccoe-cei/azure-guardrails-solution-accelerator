@@ -30,20 +30,26 @@
     Skip the bootstrap confirmation prompt. The bootstrap script always passes -yes to downstream commands to avoid duplicate
     confirmation prompts. Prompts that are not controlled by downstream -yes can still appear.
 .EXAMPLE
+    # New deployment with file-based config and source from the main branch:
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main
 .EXAMPLE
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v1.0.9 -update -componentsToUpdate Workbook,CoreComponents
+    # New deployment with file-based config and source from a specific tag, deploying only a subset of components:
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v3.0.0beta -newComponents CoreComponents,CentralizedCustomerReportingSupport
 .EXAMPLE
+    # Update with file-based config, source from tag, and updating only a subset of components:
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v2.3.3 -update -componentsToUpdate Workbook,CoreComponents
+.EXAMPLE
+    # New deployment with Key Vault-based config, source from main, deploying only one new component:
     ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerDefenderForCloudSupport -timeoutSec 120
 .EXAMPLE
     # File-based new deployment syntax:
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v3.0.0beta [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # File-based update syntax:
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment syntax:
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef fa/some-branch -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment component-addition syntax:
     ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
