@@ -10,6 +10,21 @@
     Fresh install is supported with -configFilePath.
     Existing deployment update is supported with -configFilePath or -keyVaultName.
     Adding new components to an existing deployment is supported with -configFilePath or -keyVaultName.
+
+    Component guide for -newComponents:
+      - CoreComponents: deploys the main Guardrails resource group resources, including Log Analytics workspace,
+        Automation Account, Storage Account, Key Vault, Workbook, core templates, Automation Account
+        PowerShell modules, and core runbooks.
+      - CentralizedCustomerReportingSupport: deploys Lighthouse reporting access for a managing tenant.
+      - CentralizedCustomerDefenderForCloudSupport: deploys Defender for Cloud support resources for a managing tenant.
+
+    Component guide for -componentsToUpdate:
+      - CoreComponents: updates the core Azure resources managed by the main Guardrails template,
+        including the Automation Account resource settings and variables, Log Analytics workspace
+        resources, storage account resources, and data collection rule / data collection endpoint resources.
+      - Workbook: updates workbook content and related saved searches.
+      - GuardrailPowerShellModules: updates the Guardrails PowerShell modules in the Automation Account.
+      - AutomationAccountRunbooks: updates the Automation Account runbook definitions.
 .PARAMETER configFilePath
     Path to the deployment configuration JSON file. Use this for fresh installs or updates when the config file is available locally.
 .PARAMETER keyVaultName
@@ -30,26 +45,37 @@
     Skip the bootstrap confirmation prompt. The bootstrap script always passes -yes to downstream commands to avoid duplicate
     confirmation prompts. Prompts that are not controlled by downstream -yes can still appear.
 .EXAMPLE
-    # New deployment with file-based config and source from the main branch:
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main
-.EXAMPLE
-    # New deployment with file-based config and source from a specific tag, deploying only a subset of components:
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v3.0.0beta -newComponents CoreComponents,CentralizedCustomerReportingSupport
 .EXAMPLE
-    # Update with file-based config, source from tag, and updating only a subset of components:
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v2.3.3 -update -componentsToUpdate Workbook,CoreComponents
+    # Fresh install all supported components: core Guardrails resources, workbook, Automation
+    # Account PowerShell modules, runbooks, Lighthouse reporting support, and Defender for Cloud support.
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport
 .EXAMPLE
-    # New deployment with Key Vault-based config, source from main, deploying only one new component:
+    # Update the full default update set: workbook content, Guardrails PowerShell modules,
+    # Automation Account runbooks, and core template-driven resources.
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update
+.EXAMPLE
+    # Update only the Guardrails PowerShell modules in the Automation Account using a local config file.
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update -componentsToUpdate GuardrailPowerShellModules
+.EXAMPLE
+    # Update only the Guardrails PowerShell modules in the Automation Account using config
+    # saved in an existing Guardrails Key Vault.
+    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update -componentsToUpdate GuardrailPowerShellModules
+.EXAMPLE
+    # Add Defender for Cloud support to an existing deployment using config saved in Key Vault.
     ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerDefenderForCloudSupport -timeoutSec 120
 .EXAMPLE
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v1.0.9 -update -componentsToUpdate Workbook,CoreComponents
+.EXAMPLE
     # File-based new deployment syntax:
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v3.0.0beta [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # File-based update syntax:
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment syntax:
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef fa/some-branch -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment component-addition syntax:
     ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
