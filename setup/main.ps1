@@ -133,35 +133,6 @@ Else {
     [System.Environment]::SetEnvironmentVariable('ContainerName', 'guardrailsstorage', [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('ReservedSubnetList', "GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet", [System.EnvironmentVariableTarget]::Process)
 
-    # DCE_ENDPOINT, DCR_IMMUTABLE_ID, and DCR_IMMUTABLE_ID_2 are included in the gsaConfigExportLatest
-    # Key Vault secret (written by Deploy-GSACoreResources after Bicep deployment) and will have been set
-    # above by the runtime config loop. The resource lookup below is a fallback for older deployments
-    # whose exported config predates this change.
-    if (-not $env:DCE_ENDPOINT) {
-        Write-Verbose "DCE_ENDPOINT not in exported config; falling back to Azure resource lookup..."
-        $dceResource = Get-AzResource -ResourceGroupName $env:ResourceGroup -ResourceType 'Microsoft.Insights/dataCollectionEndpoints' -ExpandProperties | Select-Object -First 1
-        if ($dceResource) {
-            [System.Environment]::SetEnvironmentVariable('DCE_ENDPOINT', $dceResource.Properties.logsIngestion.endpoint, [System.EnvironmentVariableTarget]::Process)
-            Write-Host "Setting environment variable: DCE_ENDPOINT = $($dceResource.Properties.logsIngestion.endpoint)"
-        } else {
-            Write-Warning "Local execution: no Data Collection Endpoint found in resource group '$($env:ResourceGroup)'. DCR-based ingestion will fail."
-        }
-    }
-    if (-not $env:DCR_IMMUTABLE_ID) {
-        Write-Verbose "DCR_IMMUTABLE_ID not in exported config; falling back to Azure resource lookup..."
-        # DCRs sorted by name: index 0 = primary DCR (most log types), index 1 = secondary DCR (GR2* types)
-        $dcrResources = Get-AzResource -ResourceGroupName $env:ResourceGroup -ResourceType 'Microsoft.Insights/dataCollectionRules' -ExpandProperties | Sort-Object Name
-        if ($dcrResources.Count -ge 1) {
-            [System.Environment]::SetEnvironmentVariable('DCR_IMMUTABLE_ID', $dcrResources[0].Properties.immutableId, [System.EnvironmentVariableTarget]::Process)
-            Write-Host "Setting environment variable: DCR_IMMUTABLE_ID = $($dcrResources[0].Properties.immutableId)"
-        } else {
-            Write-Warning "Local execution: no Data Collection Rules found in resource group '$($env:ResourceGroup)'. DCR-based ingestion will fail."
-        }
-        if ($dcrResources.Count -ge 2) {
-            [System.Environment]::SetEnvironmentVariable('DCR_IMMUTABLE_ID_2', $dcrResources[1].Properties.immutableId, [System.EnvironmentVariableTarget]::Process)
-            Write-Host "Setting environment variable: DCR_IMMUTABLE_ID_2 = $($dcrResources[1].Properties.immutableId)"
-        }
-    }
     $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
     $signedInUser = Get-AzADUser -SignedIn
     if (-not $signedInUser -or -not $signedInUser.Id) {
