@@ -36,6 +36,22 @@ Function Deploy-GSACoreResources {
     # add automation account msi to config object
     $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
 
+    # Persist DCE endpoint and DCR immutable IDs into config['runtime'] so they are included in the
+    # gsaConfigExportLatest Key Vault secret. The local execution flow reads this secret and sets all
+    # runtime properties as environment variables, making these available to Send-GuardrailsData.
+    if ($mainBicepDeployment.Outputs.ContainsKey('dceEndpoint') -and -not [string]::IsNullOrEmpty($mainBicepDeployment.Outputs['dceEndpoint'].value)) {
+        $config['runtime']['DCE_ENDPOINT'] = $mainBicepDeployment.Outputs['dceEndpoint'].value
+        Write-Verbose "Captured DCE endpoint from deployment: $($config['runtime']['DCE_ENDPOINT'])"
+    }
+    if ($mainBicepDeployment.Outputs.ContainsKey('dcrImmutableId') -and -not [string]::IsNullOrEmpty($mainBicepDeployment.Outputs['dcrImmutableId'].value)) {
+        $config['runtime']['DCR_IMMUTABLE_ID'] = $mainBicepDeployment.Outputs['dcrImmutableId'].value
+        Write-Verbose "Captured DCR immutable ID from deployment: $($config['runtime']['DCR_IMMUTABLE_ID'])"
+    }
+    if ($mainBicepDeployment.Outputs.ContainsKey('dcrImmutableId2') -and -not [string]::IsNullOrEmpty($mainBicepDeployment.Outputs['dcrImmutableId2'].value)) {
+        $config['runtime']['DCR_IMMUTABLE_ID_2'] = $mainBicepDeployment.Outputs['dcrImmutableId2'].value
+        Write-Verbose "Captured DCR immutable ID 2 from deployment: $($config['runtime']['DCR_IMMUTABLE_ID_2'])"
+    }
+
     # persist MSI object id as automation variable for runbooks
     $automationVariableName = 'GuardrailsAutomationAccountMSI'
     $automationAccountName = $config['runtime']['automationAccountName']
