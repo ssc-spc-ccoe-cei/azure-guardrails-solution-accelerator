@@ -132,6 +132,47 @@ Else {
     [System.Environment]::SetEnvironmentVariable('WorkSpaceID', (Get-AzOperationalInsightsWorkspace -ResourceGroupName $env:ResourceGroup -Name $env:logAnalyticsworkspaceName).CustomerId, [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('ContainerName', 'guardrailsstorage', [System.EnvironmentVariableTarget]::Process)
     [System.Environment]::SetEnvironmentVariable('ReservedSubnetList', "GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet", [System.EnvironmentVariableTarget]::Process)
+
+    $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
+    $signedInUser = Get-AzADUser -SignedIn
+    if (-not $signedInUser -or -not $signedInUser.Id) {
+        throw "Could not resolve the signed-in Entra user."
+    }
+    $principalObjectId = $signedInUser.Id
+    Write-Host "Signed-in user object ID: $principalObjectId"
+    if (-not $principalObjectId) {
+        throw "Could not resolve principal object ID."
+    }
+
+    # Discover all DCRs in the resource group
+    $dcrs = Get-AzDataCollectionRule -ResourceGroupName $ResourceGroupName
+    if (-not $dcrs) {
+        throw "No Data Collection Rules found in resource group '$ResourceGroupName'."
+    }
+    Write-Host "Found $($dcrs.Count) DCR(s)."
+
+    foreach ($dcr in $dcrs) {
+        Write-Host "Ensuring role on DCR: $($dcr.Name)"
+        Write-Host "Scope: $($dcr.Id)"
+
+        $existing = Get-AzRoleAssignment `
+            -ObjectId $principalObjectId `
+            -Scope $dcr.Id `
+            -ErrorAction SilentlyContinue |
+            Where-Object { $_.RoleDefinitionName -eq "Monitoring Metrics Publisher" }
+
+        if (-not $existing) {
+            New-AzRoleAssignment `
+                -ObjectId $principalObjectId `
+                -RoleDefinitionName "Monitoring Metrics Publisher" `
+                -Scope $dcr.Id | Out-Null
+
+            Write-Host "Assigned Monitoring Metrics Publisher on $($dcr.Name)"
+        }
+        else {
+            Write-Host "Role already exists on $($dcr.Name)"
+        }
+    }
 }
 
 
