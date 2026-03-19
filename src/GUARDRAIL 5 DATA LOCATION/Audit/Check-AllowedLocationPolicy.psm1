@@ -268,19 +268,11 @@ function Check-PolicyStatus {
    
         }
 
-        if ($null -eq $obj.DisplayName)
-        {
-            $DisplayName=$obj.Name
-        }
-        else {
-            $DisplayName=$obj.DisplayName
-        }
-
-        $c = New-Object -TypeName PSCustomObject -Property @{ 
+        # This module currently emits subscription-scoped rows, so reuse the incoming objType for the emitted row shape.
+        $c = New-Object -TypeName PSCustomObject -Property @{
             Type = [string]$objType
             Id = [string]$obj.Id
-            Name = [string]$obj.Name
-            DisplayName = [string]$DisplayName
+            SubscriptionName = [string]$obj.Name
             ComplianceStatus = [boolean]$ComplianceStatus
             Comments = [string]$Comment
             ItemName = [string]$ItemName
