@@ -222,7 +222,7 @@ function Get-ServiceHealthAlerts {
     # Get all enabled action groups in the tenant scope azure monitor
     $allEnabledActionGroups = @()
     try{
-        Get-AzSubscription | ForEach-Object {
+        $subs | ForEach-Object {
             Select-AzSubscription -SubscriptionId $_.Id | Out-Null
             Get-AzResourceGroup | ForEach-Object {
                 $rgActionGroups = Get-AzActionGroup -ResourceGroupName $_.ResourceGroupName -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
