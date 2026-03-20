@@ -36,7 +36,6 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
-param enableMultiCloudProfiles bool
 
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
@@ -103,7 +102,6 @@ module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
 module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'guardrails-loganalytics'
   params: {
-    enableMultiCloudProfiles: enableMultiCloudProfiles
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     location: location
     releaseVersion: releaseVersion
