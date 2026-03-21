@@ -41,6 +41,10 @@
     Specific components to update. If omitted, the downstream deploy command updates its default set of components.
 .PARAMETER timeoutSec
     Timeout in seconds for the bootstrap script's GitHub HTTP requests. If omitted, the default is 120 seconds.
+.PARAMETER applyConfigTags
+    Copy runtime.tagsTable from the provided config into the downloaded ref's setup/tags.json before deployment.
+    This is the bootstrap equivalent of manually editing setup/tags.json before running Deploy-GuardrailsSolutionAccelerator directly.
+    If omitted, the downloaded ref's setup/tags.json is left unchanged.
 .PARAMETER yes
     Skip the bootstrap confirmation prompt. The bootstrap script always passes -yes to downstream commands to avoid duplicate
     confirmation prompts. Prompts that are not controlled by downstream -yes can still appear.
@@ -52,9 +56,15 @@
     # Account PowerShell modules, runbooks, Lighthouse reporting support, and Defender for Cloud support.
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport
 .EXAMPLE
+    # Copy runtime.tagsTable from config into the downloaded setup/tags.json before a fresh install.
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -applyConfigTags
+.EXAMPLE
     # Update the full default update set: workbook content, Guardrails PowerShell modules,
     # Automation Account runbooks, and core template-driven resources.
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update
+.EXAMPLE
+    # Copy runtime.tagsTable from the exported Key Vault config into the downloaded setup/tags.json before an update.
+    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update -applyConfigTags
 .EXAMPLE
     # Update only the Guardrails PowerShell modules in the Automation Account using a local config file.
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update -componentsToUpdate GuardrailPowerShellModules
@@ -69,16 +79,16 @@
     ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v1.0.9 -update -componentsToUpdate Workbook,CoreComponents
 .EXAMPLE
     # File-based new deployment syntax:
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # File-based update syntax:
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment syntax:
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment component-addition syntax:
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'newDeployment-configFilePath')]
@@ -129,6 +139,10 @@ param(
     [int]
     $timeoutSec = 120,
 
+    [Parameter(Mandatory = $false)]
+    [switch]
+    $applyConfigTags,
+
     [Alias('y')]
     [switch]
     $yes
@@ -149,7 +163,11 @@ function Get-BootstrapSourceArchive {
     param(
         [Parameter(Mandatory = $true)]
         [string]
-        $SourceRef
+        $SourceRef,
+
+        [Parameter(Mandatory = $true)]
+        [int]
+        $TimeoutSec
     )
 
     # Create a unique temp folder so two runs do not use the same location.
@@ -165,7 +183,7 @@ function Get-BootstrapSourceArchive {
         Write-Host ("Downloading source ref '{0}' from '{1}'..." -f $SourceRef, $downloadUri)
         # Download the zip file from GitHub.
         try {
-            Invoke-WebRequest -Uri $downloadUri -OutFile $archivePath -Headers @{ 'User-Agent' = 'Deploy-Bootstrap' } -TimeoutSec $timeoutSec -ErrorAction Stop -Verbose:$false
+            Invoke-WebRequest -Uri $downloadUri -OutFile $archivePath -Headers @{ 'User-Agent' = 'Deploy-Bootstrap' } -TimeoutSec $TimeoutSec -ErrorAction Stop -Verbose:$false
         }
         catch {
             # If GitHub gives us an HTTP status, keep it so we can show a clearer message.
@@ -182,12 +200,12 @@ function Get-BootstrapSourceArchive {
         Write-Verbose "Extracting downloaded source archive to '$tempRoot'."
         Expand-Archive -Path $archivePath -DestinationPath $tempRoot -Force
 
-        # GitHub zipballs unpack into one top-level repo folder. Use that as the repo root.
-        $repoRoot = Get-ChildItem -Path $tempRoot -Directory | Select-Object -First 1
-
-        if ($null -eq $repoRoot) {
-            throw "Could not determine extracted repository root for source ref '$SourceRef'."
+        # GitHub zipballs should unpack into exactly one top-level repo folder.
+        $repoDirectories = Get-ChildItem -Path $tempRoot -Directory
+        if ($repoDirectories.Count -ne 1) {
+            throw "Expected exactly one extracted repository root for source ref '$SourceRef', found $($repoDirectories.Count)."
         }
+        $repoRoot = $repoDirectories[0]
 
         # Return both the repo path and the temp folder path.
         @{
@@ -211,7 +229,11 @@ function Test-BootstrapSourceRef {
     param(
         [Parameter(Mandatory = $true)]
         [string]
-        $SourceRef
+        $SourceRef,
+
+        [Parameter(Mandatory = $true)]
+        [int]
+        $TimeoutSec
     )
 
     # Build the GitHub URL for the module zip files in this ref.
@@ -222,7 +244,7 @@ function Test-BootstrapSourceRef {
     Write-Verbose "Checking that source ref '$SourceRef' contains '$grCommonUrl'."
     try {
         # HEAD checks whether the file exists without downloading the whole file.
-        Invoke-WebRequest -Method Head -Uri $grCommonUrl -Headers @{ 'User-Agent' = 'Deploy-Bootstrap' } -TimeoutSec $timeoutSec -ErrorAction Stop -Verbose:$false | Out-Null
+        Invoke-WebRequest -Method Head -Uri $grCommonUrl -Headers @{ 'User-Agent' = 'Deploy-Bootstrap' } -TimeoutSec $TimeoutSec -ErrorAction Stop -Verbose:$false | Out-Null
     }
     catch {
         # If GitHub gives us an HTTP status, use it to explain the failure more clearly.
@@ -243,9 +265,82 @@ function Test-BootstrapSourceRef {
     $modulesUrl
 }
 
+# Read the operator-provided config and return runtime.tagsTable if it exists.
+# Bootstrap uses this to keep the downloaded tags file aligned with the config.
+function Get-BootstrapConfigTagsTable {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ConfigJson
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ConfigJson)) {
+        return $null
+    }
+
+    try {
+        $configObject = $ConfigJson | ConvertFrom-Json -AsHashtable
+    }
+    catch {
+        Write-Verbose "Bootstrap could not parse the provided config while checking for runtime.tagsTable."
+        return $null
+    }
+
+    if ($configObject.runtime -isnot [System.Collections.IDictionary]) {
+        return $null
+    }
+
+    if ($configObject.runtime.tagsTable -isnot [System.Collections.IDictionary] -or $configObject.runtime.tagsTable.Count -eq 0) {
+        return $null
+    }
+
+    return @{} + $configObject.runtime.tagsTable
+}
+
+# Update the downloaded setup/tags.json file so the downstream deploy command
+# sees the same tag values the operator already supplied in the config.
+function Update-BootstrapDownloadedTagsFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]
+        $RepoRoot,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $TagsTable
+    )
+
+    $tagsFilePath = Join-Path $RepoRoot 'setup/tags.json'
+    if (-not (Test-Path -Path $tagsFilePath -PathType Leaf)) {
+        throw "Could not find downloaded tags file at '$tagsFilePath'."
+    }
+
+    $existingTagsJson = Get-Content -Path $tagsFilePath -Raw -ErrorAction Stop
+    $existingTagsObject = $existingTagsJson | ConvertFrom-Json -AsHashtable
+
+    if ($existingTagsObject.Count -lt 1) {
+        throw "Downloaded tags file '$tagsFilePath' did not contain any tag entries."
+    }
+
+    if ($existingTagsObject -is [array]) {
+        $mergedTags = @{} + $existingTagsObject[0]
+    }
+    else {
+        $mergedTags = @{} + $existingTagsObject
+    }
+
+    foreach ($tagEntry in $TagsTable.GetEnumerator()) {
+        $mergedTags[$tagEntry.Key] = $tagEntry.Value
+    }
+
+    @($mergedTags) | ConvertTo-Json -Depth 20 | Set-Content -Path $tagsFilePath -ErrorAction Stop
+    Write-Host "Applied config runtime.tagsTable values to downloaded setup/tags.json."
+}
+
 # Keep track of what we need to clean up at the end.
 $downloadedSource = $null
 $refModule = $null
+$bootstrapConfigJson = $null
 
 try {
     # --- Pre-checks: make sure the script can run before it changes anything ---
@@ -262,6 +357,8 @@ try {
 
     # Check only the Azure commands that this bootstrap script calls directly.
     $requiredCommands = @('Get-AzContext')
+    $bicepSummary = 'not detected (used only for Bicep-based deployment/update flows)'
+
     if ($PSBoundParameters.ContainsKey('keyVaultName')) {
         if ([string]::IsNullOrWhiteSpace($keyVaultName)) {
             throw "-keyVaultName cannot be empty or whitespace."
@@ -277,6 +374,16 @@ try {
         }
     }
 
+    if (Get-Command -Name 'bicep' -ErrorAction SilentlyContinue) {
+        $detectedBicepVersion = & bicep --version 2>$null
+        if ([string]::IsNullOrWhiteSpace($detectedBicepVersion)) {
+            $bicepSummary = 'detected'
+        }
+        else {
+            $bicepSummary = $detectedBicepVersion.Trim()
+        }
+    }
+
     # Make sure Azure sign-in and subscription selection are already in place.
     $azureContext = Get-AzContext -ErrorAction SilentlyContinue
     if ($null -eq $azureContext -or $null -eq $azureContext.Account -or $null -eq $azureContext.Subscription) {
@@ -285,17 +392,23 @@ try {
 
     # Validate whichever config source the operator chose.
     if ($PSBoundParameters.ContainsKey('configFilePath')) {
-        # Turn the file path into a full path and make sure we can read it.
+        if ([string]::IsNullOrWhiteSpace($configFilePath)) {
+            throw "-configFilePath cannot be empty or whitespace."
+        }
+
+        $configFilePath = $configFilePath.Trim()
+        # Turn the file path into a full path and read the config we will use later.
         $resolvedConfigPath = Resolve-Path -Path $configFilePath -ErrorAction Stop
-        $null = Get-Content -Path $resolvedConfigPath.ProviderPath -TotalCount 1 -ErrorAction Stop
+        $bootstrapConfigJson = Get-Content -Path $resolvedConfigPath.ProviderPath -Raw -ErrorAction Stop
         $configFilePath = $resolvedConfigPath.ProviderPath
         $configSourceLabel = 'Config file'
         $configSourceValue = $configFilePath
     }
     else {
-        # Make sure the exported config secret exists and we can read it.
+        # Read the exported config now so bootstrap can use it for both tag patching
+        # and the downstream deploy command.
         try {
-            Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $script:ExportedConfigSecretName -ErrorAction Stop | Out-Null
+            $bootstrapConfigJson = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $script:ExportedConfigSecretName -AsPlainText -ErrorAction Stop
         }
         catch {
             throw "Unable to read secret '$($script:ExportedConfigSecretName)' from Key Vault '$keyVaultName'. Ensure the Key Vault exists, the exported configuration is present, and your current Azure context has access. $_"
@@ -306,17 +419,15 @@ try {
     }
 
     # Check the requested ref before asking the operator to continue.
-    $moduleBaseUrl = Test-BootstrapSourceRef -SourceRef $sourceRef
+    $moduleBaseUrl = Test-BootstrapSourceRef -SourceRef $sourceRef -TimeoutSec $timeoutSec
 
     # --- Summary: show the operator where this deployment will run ---
 
     Write-Host "Bootstrap pre-checks passed. Proceeding will run deployment code from the downloaded source ref below:"
     Write-Host ("  PowerShell: {0}" -f $PSVersionTable.PSVersion)
+    Write-Host ("  Bicep CLI: {0}" -f $bicepSummary)
     Write-Host ("  Azure account: {0}" -f $azureContext.Account.Id)
     Write-Host ("  Tenant ID: {0}" -f $azureContext.Tenant.Id)
-    Write-Host ("  Subscription ID: {0}" -f $azureContext.Subscription.Id)
-    $subscriptionName = if ([string]::IsNullOrWhiteSpace($azureContext.Subscription.Name)) { '(unavailable)' } else { $azureContext.Subscription.Name }
-    Write-Host ("  Subscription name: {0}" -f $subscriptionName)
     Write-Host ("  {0}: {1}" -f $configSourceLabel, $configSourceValue)
     Write-Host ("  Source ref: {0}" -f $sourceRef)
 
@@ -329,12 +440,23 @@ try {
 
     # --- Download and import: get the requested code and load its module ---
 
-    $downloadedSource = Get-BootstrapSourceArchive -SourceRef $sourceRef
+    $downloadedSource = Get-BootstrapSourceArchive -SourceRef $sourceRef -TimeoutSec $timeoutSec
 
     # Make sure the downloaded code includes the module file we expect to import.
     $moduleManifestPath = Join-Path $downloadedSource.RepoRoot 'src/GuardrailsSolutionAcceleratorSetup/GuardrailsSolutionAcceleratorSetup.psd1'
     if (-not (Test-Path -Path $moduleManifestPath -PathType Leaf)) {
         throw "Could not find GuardrailsSolutionAcceleratorSetup module manifest in downloaded ref at '$moduleManifestPath'."
+    }
+
+    # Only patch the downloaded tags file when the operator explicitly asks for it.
+    if ($applyConfigTags.IsPresent) {
+        $bootstrapTagsTable = Get-BootstrapConfigTagsTable -ConfigJson $bootstrapConfigJson
+        if ($bootstrapTagsTable) {
+            Update-BootstrapDownloadedTagsFile -RepoRoot $downloadedSource.RepoRoot -TagsTable $bootstrapTagsTable
+        }
+        else {
+            Write-Warning "-applyConfigTags was specified, but runtime.tagsTable was not found in the provided config. Downloaded setup/tags.json was left unchanged."
+        }
     }
 
     # Add the prefix so these imported command names do not clash with any version
@@ -370,7 +492,8 @@ try {
         $deployParams.configFilePath = $configFilePath
     }
     else {
-        # The downloaded helper returns the saved config as a string for the deploy command.
+        # Use the downloaded helper to keep Key Vault-to-config handling aligned
+        # with the downloaded deploy code.
         $exportedConfig = Get-RefGSAExportedConfig -KeyVaultName $keyVaultName @commonCommandParams
         $deployParams.configString = $exportedConfig.configString
     }
