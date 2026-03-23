@@ -39,7 +39,6 @@ function Get-SubscriptionPublicIpStatus {
 
     # We count all public IP resources in the
     # subscription and check whether they show a DDoS protection mode.
-    # We do not try to map them back to a specific VNet in this version.
     $publicIpQuery = @"
 resources
 | where type =~ 'microsoft.network/publicipaddresses'
@@ -93,7 +92,7 @@ function Get-SubscriptionComplianceObject {
     )
 
     # For this check, any included VNet with VNet DDoS or
-    # any public IP with DDoS protection is enough to mark the
+    # any public IP with DDoS protection will mark the
     # subscription compliant.
     $protectedVNetCount = @($includedVNETs | Where-Object { $_.EnableDdosProtection }).Count
     $includedVNetCount = @($includedVNETs).Count
