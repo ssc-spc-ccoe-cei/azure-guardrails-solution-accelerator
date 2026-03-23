@@ -1,3 +1,141 @@
+function Invoke-ArgPagedQuery {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)][string] $Query,
+        [Parameter(Mandatory = $true)][string] $SubscriptionId
+    )
+
+    # Resource Graph returns large result sets a page at a time.
+    # This helper keeps requesting the next page until there are no more rows.
+    $allResults = [System.Collections.ArrayList]::new()
+    $skipToken = $null
+
+    do {
+        if ($skipToken) {
+            $pageResults = Search-AzGraph -Query $Query -Subscription $SubscriptionId -First 1000 -SkipToken $skipToken -ErrorAction Stop
+        }
+        else {
+            $pageResults = Search-AzGraph -Query $Query -Subscription $SubscriptionId -First 1000 -ErrorAction Stop
+        }
+
+        foreach ($row in $pageResults) {
+            $allResults.Add($row) | Out-Null
+        }
+
+        $skipToken = $pageResults.SkipToken
+    } while ($skipToken)
+
+    return $allResults
+}
+
+function Get-SubscriptionPublicIpStatus {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)][string] $SubscriptionId,
+        [Parameter(Mandatory = $true)][string] $SubscriptionName,
+        [Parameter(Mandatory = $true)][hashtable] $msgTable,
+        [Parameter(Mandatory = $true)][System.Collections.ArrayList] $ErrorList
+    )
+
+    # Stage 1 keeps this simple. We count all public IP resources in the
+    # subscription and check whether they show a DDoS protection mode.
+    # We do not try to map them back to a specific VNet in this version.
+    $publicIpQuery = @"
+resources
+| where type =~ 'microsoft.network/publicipaddresses'
+| project publicIpName = name,
+          protectionMode = tostring(properties.ddosSettings.protectionMode)
+"@
+
+    try {
+        $publicIpResults = Invoke-ArgPagedQuery -Query $publicIpQuery -SubscriptionId $SubscriptionId
+    }
+    catch {
+        $errorMessage = $msgTable.ddosPublicIpCheckFailed -f $SubscriptionName, $_
+        $ErrorList.Add($errorMessage) | Out-Null
+        Write-Warning $errorMessage
+
+        return [PSCustomObject]@{
+            QueryFailed        = $true
+            PublicIpCount      = 0
+            ProtectedPublicIps = 0
+        }
+    }
+
+    $publicIps = @($publicIpResults)
+    $protectedPublicIps = @(
+        $publicIps | Where-Object {
+            $_.protectionMode -in @('Enabled', 'VirtualNetworkInherited')
+        }
+    )
+
+    return [PSCustomObject]@{
+        QueryFailed        = $false
+        PublicIpCount      = $publicIps.Count
+        ProtectedPublicIps = $protectedPublicIps.Count
+    }
+}
+
+function Get-SubscriptionComplianceObject {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)] $sub,
+        [Parameter(Mandatory = $true)] $includedVNETs,
+        [Parameter(Mandatory = $true)] $publicIpStatus,
+        [Parameter(Mandatory = $true)][hashtable] $msgTable,
+        [Parameter(Mandatory = $true)][string] $ControlName,
+        [Parameter(Mandatory = $true)][string] $itsgcode,
+        [Parameter(Mandatory = $true)][string] $ReportTime,
+        [Parameter(Mandatory = $true)][bool] $EnableMultiCloudProfiles,
+        [Parameter(Mandatory = $true)][System.Collections.ArrayList] $ErrorList,
+        [string] $CloudUsageProfiles,
+        [string] $ModuleProfiles
+    )
+
+    # For the simplified stage 1 check, any included VNet with VNet DDoS or
+    # any public IP with DDoS protection is enough to mark the
+    # subscription compliant.
+    $protectedVNetCount = @($includedVNETs | Where-Object { $_.EnableDdosProtection }).Count
+    $includedVNetCount = @($includedVNETs).Count
+    $protectedPublicIpCount = $publicIpStatus.ProtectedPublicIps
+    $publicIpCount = $publicIpStatus.PublicIpCount
+    $hasNoScopedResources = (-not $publicIpStatus.QueryFailed -and $includedVNetCount -eq 0 -and $publicIpCount -eq 0)
+
+    $subscriptionObject = [PSCustomObject]@{
+        VNETName         = $msgTable.subscriptionScope
+        SubscriptionName = $sub.Name
+        ComplianceStatus = $false
+        Comments         = ''
+        ItemName         = $msgTable.vnetDDosConfig
+        itsgcode         = $itsgcode
+        ControlName      = $ControlName
+        ReportTime       = $ReportTime
+    }
+
+    if ($hasNoScopedResources) {
+        $subscriptionObject.ComplianceStatus = $true
+        $subscriptionObject.Comments = $msgTable.ddosSubscriptionNoResources -f $sub.Name
+    }
+    elseif ($protectedVNetCount -gt 0 -or $protectedPublicIpCount -gt 0) {
+        $subscriptionObject.ComplianceStatus = $true
+        $subscriptionObject.Comments = $msgTable.ddosSubscriptionProtectionFound -f $sub.Name, $protectedVNetCount, $includedVNetCount, $protectedPublicIpCount, $publicIpCount
+    }
+    elseif ($publicIpStatus.QueryFailed) {
+        $subscriptionObject.ComplianceStatus = $false
+        $subscriptionObject.Comments = $msgTable.ddosPublicIpCheckFailedNoProtection -f $sub.Name, $protectedVNetCount, $includedVNetCount
+    }
+    else {
+        $subscriptionObject.ComplianceStatus = $false
+        $subscriptionObject.Comments = $msgTable.ddosSubscriptionProtectionMissing -f $sub.Name, $protectedVNetCount, $includedVNetCount, $protectedPublicIpCount, $publicIpCount
+    }
+
+    if ($EnableMultiCloudProfiles) {
+        $subscriptionObject = Add-ProfileInformation -Result $subscriptionObject -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id -ErrorList $ErrorList
+    }
+
+    return $subscriptionObject
+}
+
 function Get-VNetComplianceInformation {
     [CmdletBinding()]
     param (
@@ -14,18 +152,16 @@ function Get-VNetComplianceInformation {
         [switch] $EnableMultiCloudProfiles
     )
 
-    # Initialize result collections
-    $VNetList = [System.Collections.ArrayList]::new()
+    $ResultList = [System.Collections.ArrayList]::new()
     $ErrorList = [System.Collections.ArrayList]::new()
     $ExcludeVnetTag = "GR9-ExcludeVNetFromCompliance"
 
-    # Get subscriptions
     try {
         $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' }
     }
     catch {
         $errorMessage = "Failed to execute 'Get-AzSubscription'. Verify permissions and Az.Accounts module installation. Error: $_"
-        $ErrorList.Add($errorMessage)
+        $ErrorList.Add($errorMessage) | Out-Null
         throw $errorMessage
     }
 
@@ -36,130 +172,23 @@ function Get-VNetComplianceInformation {
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
 
         $allVNETs = Get-AzVirtualNetwork
-        $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
-        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
+        $includedVNETs = @($allVNETs | Where-Object {
+            $_.Tag.$ExcludeVnetTag -ine 'true' -and $_.Name -notin $ExcludedVNetsList
+        })
+        Write-Verbose "Subscription '$($sub.Name)': Found $(@($allVNETs).Count) VNet(s); $($includedVNETs.Count) included after exclusions."
 
-        if ($includedVNETs.count -gt 0) {
-            foreach ($VNet in $allVNETs) {
-                $VNetObject = Get-VNetComplianceObject -VNet $VNet -sub $sub -ExcludedVNetsList $ExcludedVNetsList -includedVNETs $includedVNETs -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -EnableMultiCloudProfiles $EnableMultiCloudProfiles
-                $VNetList.Add($VNetObject) | Out-Null
-            }
-        }
-        else {
-            $VNetObject = Get-NoVNetsComplianceObject -sub $sub -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -EnableMultiCloudProfiles $EnableMultiCloudProfiles
-            $VNetList.Add($VNetObject) | Out-Null
-        }
+        $publicIpStatus = Get-SubscriptionPublicIpStatus -SubscriptionId $sub.Id -SubscriptionName $sub.Name -msgTable $msgTable -ErrorList $ErrorList
+        $resultObject = Get-SubscriptionComplianceObject -sub $sub -includedVNETs $includedVNETs -publicIpStatus $publicIpStatus -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ReportTime $ReportTime -EnableMultiCloudProfiles $EnableMultiCloudProfiles.IsPresent -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+        $ResultList.Add($resultObject) | Out-Null
     }
 
-    if ($debuginfo) { 
-        Write-Output "Listing $($VNetList.Count) List members."
-        $VNetList | ForEach-Object { Write-Output "VNet: $($_.VNETName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" }
+    if ($debuginfo) {
+        Write-Output "Listing $($ResultList.Count) List members."
+        $ResultList | ForEach-Object { Write-Output "Subscription: $($_.SubscriptionName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" }
     }
 
-    return [PSCustomObject]@{ 
-        ComplianceResults = $VNetList 
+    return [PSCustomObject]@{
+        ComplianceResults = $ResultList
         Errors            = $ErrorList
     }
 }
-
-function Get-VNetComplianceObject {
-    param ($VNet, $sub, $ExcludedVNetsList, $includedVNETs, $msgTable, $ControlName, $itsgcode, $ReportTime, $EnableMultiCloudProfiles)
-
-    if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
-        $ComplianceStatus = $Vnet.EnableDdosProtection
-        $Comments = if ($ComplianceStatus) { "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)" } else { $msgTable.ddosNotEnabled }
-    }
-    else {
-        $ComplianceStatus = $true
-        $Comments = if ($VNet.Name -in $ExcludedVNetsList) {
-            $msgTable.vnetExcludedByParameter -f $Vnet.name, $ExcludedVNets
-        }
-        elseif ($VNet.Name -notin $includedVNETs.Name) {
-            $msgTable.vnetExcludedByTag -f $VNet.Name, $ExcludeVnetTag
-        }
-    }
-
-    $VNetObject = [PSCustomObject]@{ 
-        VNETName         = $VNet.Name
-        SubscriptionName = $sub.Name 
-        ComplianceStatus = $ComplianceStatus
-        Comments         = $Comments
-        ItemName         = $msgTable.vnetDDosConfig
-        itsgcode         = $itsgcode
-        ControlName      = $ControlName
-        ReportTime       = $ReportTime
-    }
-
-    if ($EnableMultiCloudProfiles) {        
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-        if (!$evalResult.ShouldEvaluate) {
-            if(!$evalResult.ShouldAvailable ){
-                if ($evalResult.Profile -gt 0) {
-                    $VNetObject.ComplianceStatus = "Not Applicable"
-                    $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $VNetObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
-                } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration availability")
-                }
-            } else {
-                if ($evalResult.Profile -gt 0) {
-                    $VNetObject.ComplianceStatus = "Not Applicable"
-                    $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                    $VNetObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-                } else {
-                    $ErrorList.Add("Error occurred while evaluating profile configuration")
-                }
-            }
-        } else {
-            
-            $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
-    }
-
-    return $VNetObject
-}
-
-function Get-NoVNetsComplianceObject {
-    param (
-        $sub,
-        $msgTable,
-        $ControlName,
-        $itsgcode,
-        $ReportTime,
-        $EnableMultiCloudProfiles
-    )
-
-    $ComplianceStatus = $true
-
-    $Comments = "$($msgTable.noVNets) - $($sub.Name)"
-
-    $VNETObject = [PSCustomObject]@{
-        SubnetName       = $msgTable.noVNets
-        SubscriptionName = $sub.Name 
-        ComplianceStatus = $ComplianceStatus
-        Comments         = $Comments
-        ItemName         = $msgTable.vnetDDosConfig
-        itsgcode         = $itsgcode
-        ControlName      = $ControlName
-        ReportTime       = $ReportTime
-    }
-
-    if ($EnableMultiCloudProfiles) {        
-        $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $sub.Id
-        if (!$evalResult.ShouldEvaluate) {
-            if ($evalResult.Profile -gt 0) {
-                $VNetObject.ComplianceStatus = "Not Applicable"
-                $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-                $VNetObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                $ErrorList.Add("Error occurred while evaluating profile configuration")
-            }
-        } else {
-            
-            $VNetObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile
-        }
-    }
-    return $VNETObject
-}
-
-
