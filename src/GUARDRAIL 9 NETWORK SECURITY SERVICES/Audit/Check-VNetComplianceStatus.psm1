@@ -34,6 +34,7 @@ function Get-SubscriptionPublicIpStatus {
         [Parameter(Mandatory = $true)][string] $SubscriptionId,
         [Parameter(Mandatory = $true)][string] $SubscriptionName,
         [Parameter(Mandatory = $true)][hashtable] $msgTable,
+        [AllowEmptyCollection()]
         [Parameter(Mandatory = $true)][System.Collections.ArrayList] $ErrorList
     )
 
@@ -86,6 +87,7 @@ function Get-SubscriptionComplianceObject {
         [Parameter(Mandatory = $true)][string] $itsgcode,
         [Parameter(Mandatory = $true)][string] $ReportTime,
         [Parameter(Mandatory = $true)][bool] $EnableMultiCloudProfiles,
+        [AllowEmptyCollection()]
         [Parameter(Mandatory = $true)][System.Collections.ArrayList] $ErrorList,
         [string] $CloudUsageProfiles,
         [string] $ModuleProfiles
