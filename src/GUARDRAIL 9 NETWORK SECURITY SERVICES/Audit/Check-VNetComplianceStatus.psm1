@@ -37,7 +37,7 @@ function Get-SubscriptionPublicIpStatus {
         [Parameter(Mandatory = $true)][System.Collections.ArrayList] $ErrorList
     )
 
-    # Stage 1 keeps this simple. We count all public IP resources in the
+    # We count all public IP resources in the
     # subscription and check whether they show a DDoS protection mode.
     # We do not try to map them back to a specific VNet in this version.
     $publicIpQuery = @"
@@ -92,7 +92,7 @@ function Get-SubscriptionComplianceObject {
         [string] $ModuleProfiles
     )
 
-    # For the simplified stage 1 check, any included VNet with VNet DDoS or
+    # For this check, any included VNet with VNet DDoS or
     # any public IP with DDoS protection is enough to mark the
     # subscription compliant.
     $protectedVNetCount = @($includedVNETs | Where-Object { $_.EnableDdosProtection }).Count
