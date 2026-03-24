@@ -7,9 +7,9 @@
     context with the operator, downloads the requested ref, imports the downloaded Guardrails setup module, and then calls
     the existing deployment commands from that downloaded copy.
 
-    Fresh install is supported with -configFilePath.
-    Existing deployment update is supported with -configFilePath or -keyVaultName.
-    Adding new components to an existing deployment is supported with -configFilePath or -keyVaultName.
+    Fresh install is supported with -configFile.
+    Existing deployment update is supported with -configFile or -keyVault.
+    Adding new components to an existing deployment is supported with -configFile or -keyVault.
 
     Component guide for -newComponents:
       - CoreComponents: deploys the main Guardrails resource group resources, including Log Analytics workspace,
@@ -25,96 +25,94 @@
       - Workbook: updates workbook content and related saved searches.
       - GuardrailPowerShellModules: updates the Guardrails PowerShell modules in the Automation Account.
       - AutomationAccountRunbooks: updates the Automation Account runbook definitions.
-.PARAMETER configFilePath
+.PARAMETER configFile
     Path to the deployment configuration JSON file. Use this for fresh installs or updates when the config file is available locally.
-.PARAMETER keyVaultName
+.PARAMETER keyVault
     Name of the existing Guardrails Key Vault that stores the exported deployment configuration. This is only supported for update
     or new-components flows.
-.PARAMETER sourceRef
+.PARAMETER source
     GitHub branch, tag, or commit to download and run.
+.PARAMETER tagsFile
+    Optional path to a tags.json file to use instead of the downloaded ref's default setup/tags.json.
+    This is the bootstrap equivalent of manually replacing setup/tags.json before running Deploy-GuardrailsSolutionAccelerator directly.
 .PARAMETER update
     Update an existing deployment.
 .PARAMETER newComponents
-    New components to deploy. With -keyVaultName, this must be used for existing-deployment component-addition flows.
+    New components to deploy. With -keyVault, this must be used for existing-deployment component-addition flows.
     If omitted for a file-based new deployment, the downstream deploy command uses its own default component set.
 .PARAMETER componentsToUpdate
     Specific components to update. If omitted, the downstream deploy command updates its default set of components.
 .PARAMETER timeoutSec
     Timeout in seconds for the bootstrap script's GitHub HTTP requests. If omitted, the default is 120 seconds.
-.PARAMETER applyConfigTags
-    Copy runtime.tagsTable from the provided config into the downloaded ref's setup/tags.json before deployment.
-    This is the bootstrap equivalent of manually editing setup/tags.json before running Deploy-GuardrailsSolutionAccelerator directly.
-    If omitted, the downloaded ref's setup/tags.json is left unchanged.
 .PARAMETER yes
     Skip the bootstrap confirmation prompt. The bootstrap script always passes -yes to downstream commands to avoid duplicate
     confirmation prompts. Prompts that are not controlled by downstream -yes can still appear.
 .EXAMPLE
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v3.0.0beta -newComponents CoreComponents,CentralizedCustomerReportingSupport
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source v3.0.0beta -newComponents CoreComponents,CentralizedCustomerReportingSupport
 .EXAMPLE
     # Fresh install all supported components: core Guardrails resources, workbook, Automation
     # Account PowerShell modules, runbooks, Lighthouse reporting support, and Defender for Cloud support.
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport
 .EXAMPLE
-    # Copy runtime.tagsTable from config into the downloaded setup/tags.json before a fresh install.
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -applyConfigTags
+    # Replace the downloaded setup/tags.json with a client-specific tags file before a fresh install.
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -tagsFile ./client-tags.json
 .EXAMPLE
     # Update the full default update set: workbook content, Guardrails PowerShell modules,
     # Automation Account runbooks, and core template-driven resources.
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update
 .EXAMPLE
-    # Copy runtime.tagsTable from the exported Key Vault config into the downloaded setup/tags.json before an update.
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update -applyConfigTags
+    # Replace the downloaded setup/tags.json with a client-specific tags file before an update.
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update -tagsFile ./client-tags.json
 .EXAMPLE
     # Update only the Guardrails PowerShell modules in the Automation Account using a local config file.
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update -componentsToUpdate GuardrailPowerShellModules
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update -componentsToUpdate GuardrailPowerShellModules
 .EXAMPLE
     # Update only the Guardrails PowerShell modules in the Automation Account using config
     # saved in an existing Guardrails Key Vault.
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update -componentsToUpdate GuardrailPowerShellModules
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update -componentsToUpdate GuardrailPowerShellModules
 .EXAMPLE
     # Add Defender for Cloud support to an existing deployment using config saved in Key Vault.
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerDefenderForCloudSupport -timeoutSec 120
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -newComponents CentralizedCustomerDefenderForCloudSupport -timeoutSec 120
 .EXAMPLE
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef v1.0.9 -update -componentsToUpdate Workbook,CoreComponents
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source v1.0.9 -update -componentsToUpdate Workbook,CoreComponents
 .EXAMPLE
     # File-based new deployment syntax:
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # File-based update syntax:
-    ./Deploy-Bootstrap.ps1 -configFilePath ./config.json -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment syntax:
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment component-addition syntax:
-    ./Deploy-Bootstrap.ps1 -keyVaultName guardrails-12345 -sourceRef main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-applyConfigTags] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 #>
 
-[CmdletBinding(DefaultParameterSetName = 'newDeployment-configFilePath')]
+[CmdletBinding(DefaultParameterSetName = 'newDeployment-configFile')]
 param(
-    [Parameter(Mandatory = $true, ParameterSetName = 'newDeployment-configFilePath')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-configFilePath')]
-    [Alias('configFileName')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'newDeployment-configFile')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-configFile')]
     [string]
-    $configFilePath,
+    $configFile,
 
-    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-keyVaultName')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'newComponents-keyVaultName')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-keyVault')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'newComponents-keyVault')]
     [string]
-    $keyVaultName,
+    $keyVault,
 
     [Parameter(Mandatory = $true)]
     [string]
-    $sourceRef,
+    $source,
 
-    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-configFilePath')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-keyVaultName')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-configFile')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'updateDeployment-keyVault')]
     [switch]
     $update,
 
-    [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'newComponents-keyVaultName')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFile')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'newComponents-keyVault')]
     [ValidateSet(
         'CoreComponents',
         'CentralizedCustomerReportingSupport',
@@ -123,8 +121,8 @@ param(
     [string[]]
     $newComponents,
 
-    [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
-    [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-keyVaultName')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFile')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-keyVault')]
     [ValidateSet(
         'CoreComponents',
         'Workbook',
@@ -135,13 +133,13 @@ param(
     $componentsToUpdate,
 
     [Parameter(Mandatory = $false)]
+    [string]
+    $tagsFile,
+
+    [Parameter(Mandatory = $false)]
     [ValidateRange(1, 3600)]
     [int]
     $timeoutSec = 120,
-
-    [Parameter(Mandatory = $false)]
-    [switch]
-    $applyConfigTags,
 
     [Alias('y')]
     [switch]
@@ -265,83 +263,32 @@ function Test-BootstrapSourceRef {
     $modulesUrl
 }
 
-# Read the operator-provided config and return runtime.tagsTable if it exists.
-# Bootstrap uses this to keep the downloaded tags file aligned with the config.
-function Get-BootstrapConfigTagsTable {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $ConfigJson
-    )
-
-    if ([string]::IsNullOrWhiteSpace($ConfigJson)) {
-        return $null
-    }
-
-    try {
-        $configObject = $ConfigJson | ConvertFrom-Json -AsHashtable
-    }
-    catch {
-        Write-Verbose "Bootstrap could not parse the provided config while checking for runtime.tagsTable."
-        return $null
-    }
-
-    if ($configObject.runtime -isnot [System.Collections.IDictionary]) {
-        return $null
-    }
-
-    if ($configObject.runtime.tagsTable -isnot [System.Collections.IDictionary] -or $configObject.runtime.tagsTable.Count -eq 0) {
-        return $null
-    }
-
-    return @{} + $configObject.runtime.tagsTable
-}
-
-# Update the downloaded setup/tags.json file so the downstream deploy command
-# sees the same tag values the operator already supplied in the config.
-function Update-BootstrapDownloadedTagsFile {
+# Replace the downloaded setup/tags.json file with an operator-supplied one.
+function Set-BootstrapDownloadedTagsFile {
     param(
         [Parameter(Mandatory = $true)]
         [string]
         $RepoRoot,
 
         [Parameter(Mandatory = $true)]
-        [hashtable]
-        $TagsTable
+        [string]
+        $TagsFilePath
     )
 
-    $tagsFilePath = Join-Path $RepoRoot 'setup/tags.json'
-    if (-not (Test-Path -Path $tagsFilePath -PathType Leaf)) {
-        throw "Could not find downloaded tags file at '$tagsFilePath'."
+    $downloadedTagsFilePath = Join-Path $RepoRoot 'setup/tags.json'
+    if (-not (Test-Path -Path $downloadedTagsFilePath -PathType Leaf)) {
+        throw "Could not find downloaded tags file at '$downloadedTagsFilePath'."
     }
 
-    $existingTagsJson = Get-Content -Path $tagsFilePath -Raw -ErrorAction Stop
-    $existingTagsObject = $existingTagsJson | ConvertFrom-Json -AsHashtable
+    $tagsFileContent = Get-Content -Path $TagsFilePath -Raw -ErrorAction Stop
 
-    if ($existingTagsObject.Count -lt 1) {
-        throw "Downloaded tags file '$tagsFilePath' did not contain any tag entries."
-    }
-
-    if ($existingTagsObject -is [array]) {
-        $mergedTags = @{} + $existingTagsObject[0]
-    }
-    else {
-        $mergedTags = @{} + $existingTagsObject
-    }
-
-    foreach ($tagEntry in $TagsTable.GetEnumerator()) {
-        $mergedTags[$tagEntry.Key] = $tagEntry.Value
-    }
-
-    @($mergedTags) | ConvertTo-Json -Depth 20 | Set-Content -Path $tagsFilePath -ErrorAction Stop
-    Write-Host "Applied config runtime.tagsTable values to downloaded setup/tags.json."
+    Set-Content -Path $downloadedTagsFilePath -Value $tagsFileContent -ErrorAction Stop
+    Write-Host ("Using tags file '{0}' in place of downloaded setup/tags.json." -f $TagsFilePath)
 }
 
 # Keep track of what we need to clean up at the end.
 $downloadedSource = $null
 $refModule = $null
-$bootstrapConfigJson = $null
-
 try {
     # --- Pre-checks: make sure the script can run before it changes anything ---
 
@@ -350,22 +297,32 @@ try {
     }
 
     # Reject blank values like "   ".
-    if ([string]::IsNullOrWhiteSpace($sourceRef)) {
-        throw "-sourceRef cannot be empty or whitespace."
+    if ([string]::IsNullOrWhiteSpace($source)) {
+        throw "-source cannot be empty or whitespace."
     }
-    $sourceRef = $sourceRef.Trim()
+    $source = $source.Trim()
 
     # Check only the Azure commands that this bootstrap script calls directly.
     $requiredCommands = @('Get-AzContext')
     $bicepSummary = 'not detected (used only for Bicep-based deployment/update flows)'
 
-    if ($PSBoundParameters.ContainsKey('keyVaultName')) {
-        if ([string]::IsNullOrWhiteSpace($keyVaultName)) {
-            throw "-keyVaultName cannot be empty or whitespace."
+    if ($PSBoundParameters.ContainsKey('keyVault')) {
+        if ([string]::IsNullOrWhiteSpace($keyVault)) {
+            throw "-keyVault cannot be empty or whitespace."
         }
 
-        $keyVaultName = $keyVaultName.Trim()
+        $keyVault = $keyVault.Trim()
         $requiredCommands += 'Get-AzKeyVaultSecret'
+    }
+
+    if ($PSBoundParameters.ContainsKey('tagsFile')) {
+        if ([string]::IsNullOrWhiteSpace($tagsFile)) {
+            throw "-tagsFile cannot be empty or whitespace."
+        }
+
+        $resolvedTagsFilePath = Resolve-Path -Path $tagsFile.Trim() -ErrorAction Stop
+        $null = Get-Content -Path $resolvedTagsFilePath.ProviderPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        $tagsFile = $resolvedTagsFilePath.ProviderPath
     }
 
     foreach ($commandName in $requiredCommands) {
@@ -391,35 +348,33 @@ try {
     }
 
     # Validate whichever config source the operator chose.
-    if ($PSBoundParameters.ContainsKey('configFilePath')) {
-        if ([string]::IsNullOrWhiteSpace($configFilePath)) {
-            throw "-configFilePath cannot be empty or whitespace."
+    if ($PSBoundParameters.ContainsKey('configFile')) {
+        if ([string]::IsNullOrWhiteSpace($configFile)) {
+            throw "-configFile cannot be empty or whitespace."
         }
 
-        $configFilePath = $configFilePath.Trim()
-        # Turn the file path into a full path and read the config we will use later.
-        $resolvedConfigPath = Resolve-Path -Path $configFilePath -ErrorAction Stop
-        $bootstrapConfigJson = Get-Content -Path $resolvedConfigPath.ProviderPath -Raw -ErrorAction Stop
-        $configFilePath = $resolvedConfigPath.ProviderPath
+        # Turn the file path into a full path and make sure we can read it.
+        $resolvedConfigPath = Resolve-Path -Path $configFile.Trim() -ErrorAction Stop
+        $null = Get-Content -Path $resolvedConfigPath.ProviderPath -Raw -ErrorAction Stop
+        $configFile = $resolvedConfigPath.ProviderPath
         $configSourceLabel = 'Config file'
-        $configSourceValue = $configFilePath
+        $configSourceValue = $configFile
     }
     else {
-        # Read the exported config now so bootstrap can use it for both tag patching
-        # and the downstream deploy command.
+        # Make sure the exported config secret exists and we can read it.
         try {
-            $bootstrapConfigJson = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $script:ExportedConfigSecretName -AsPlainText -ErrorAction Stop
+            Get-AzKeyVaultSecret -VaultName $keyVault -Name $script:ExportedConfigSecretName -ErrorAction Stop | Out-Null
         }
         catch {
-            throw "Unable to read secret '$($script:ExportedConfigSecretName)' from Key Vault '$keyVaultName'. Ensure the Key Vault exists, the exported configuration is present, and your current Azure context has access. $_"
+            throw "Unable to read secret '$($script:ExportedConfigSecretName)' from Key Vault '$keyVault'. Ensure the Key Vault exists, the exported configuration is present, and your current Azure context has access. $_"
         }
 
         $configSourceLabel = 'Key Vault'
-        $configSourceValue = $keyVaultName
+        $configSourceValue = $keyVault
     }
 
     # Check the requested ref before asking the operator to continue.
-    $moduleBaseUrl = Test-BootstrapSourceRef -SourceRef $sourceRef -TimeoutSec $timeoutSec
+    $moduleBaseUrl = Test-BootstrapSourceRef -SourceRef $source -TimeoutSec $timeoutSec
 
     # --- Summary: show the operator where this deployment will run ---
 
@@ -429,7 +384,7 @@ try {
     Write-Host ("  Azure account: {0}" -f $azureContext.Account.Id)
     Write-Host ("  Tenant ID: {0}" -f $azureContext.Tenant.Id)
     Write-Host ("  {0}: {1}" -f $configSourceLabel, $configSourceValue)
-    Write-Host ("  Source ref: {0}" -f $sourceRef)
+    Write-Host ("  Source: {0}" -f $source)
 
     # --- Confirmation: stop here unless the operator already chose -yes ---
 
@@ -440,7 +395,7 @@ try {
 
     # --- Download and import: get the requested code and load its module ---
 
-    $downloadedSource = Get-BootstrapSourceArchive -SourceRef $sourceRef -TimeoutSec $timeoutSec
+    $downloadedSource = Get-BootstrapSourceArchive -SourceRef $source -TimeoutSec $timeoutSec
 
     # Make sure the downloaded code includes the module file we expect to import.
     $moduleManifestPath = Join-Path $downloadedSource.RepoRoot 'src/GuardrailsSolutionAcceleratorSetup/GuardrailsSolutionAcceleratorSetup.psd1'
@@ -448,15 +403,9 @@ try {
         throw "Could not find GuardrailsSolutionAcceleratorSetup module manifest in downloaded ref at '$moduleManifestPath'."
     }
 
-    # Only patch the downloaded tags file when the operator explicitly asks for it.
-    if ($applyConfigTags.IsPresent) {
-        $bootstrapTagsTable = Get-BootstrapConfigTagsTable -ConfigJson $bootstrapConfigJson
-        if ($bootstrapTagsTable) {
-            Update-BootstrapDownloadedTagsFile -RepoRoot $downloadedSource.RepoRoot -TagsTable $bootstrapTagsTable
-        }
-        else {
-            Write-Warning "-applyConfigTags was specified, but runtime.tagsTable was not found in the provided config. Downloaded setup/tags.json was left unchanged."
-        }
+    # Only replace the downloaded tags file when the operator explicitly asks for it.
+    if ($PSBoundParameters.ContainsKey('tagsFile')) {
+        Set-BootstrapDownloadedTagsFile -RepoRoot $downloadedSource.RepoRoot -TagsFilePath $tagsFile
     }
 
     # Add the prefix so these imported command names do not clash with any version
@@ -488,13 +437,13 @@ try {
     }
 
     # Pass the config file through directly, or read the saved config from Key Vault.
-    if ($PSBoundParameters.ContainsKey('configFilePath')) {
-        $deployParams.configFilePath = $configFilePath
+    if ($PSBoundParameters.ContainsKey('configFile')) {
+        $deployParams.configFilePath = $configFile
     }
     else {
         # Use the downloaded helper to keep Key Vault-to-config handling aligned
         # with the downloaded deploy code.
-        $exportedConfig = Get-RefGSAExportedConfig -KeyVaultName $keyVaultName @commonCommandParams
+        $exportedConfig = Get-RefGSAExportedConfig -KeyVaultName $keyVault @commonCommandParams
         $deployParams.configString = $exportedConfig.configString
     }
 
