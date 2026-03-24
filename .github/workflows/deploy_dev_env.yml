@@ -166,6 +166,7 @@ jobs:
               "SSCReadOnlyServicePrincipalNameAPPID": "$DEVTENANT_SPN_APPID",
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
+              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
               "cloudUsageProfiles": "$DEV_CLOUDUSAGEPROFILES",
               "tenantId": "$DEVTENANT_ID"
             }
@@ -266,6 +267,7 @@ jobs:
               "SSCReadOnlyServicePrincipalNameAPPID": "$DEVTENANT_SPN_APPID",
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
+              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
               "cloudUsageProfiles": "$DEV_CLOUDUSAGEPROFILES",
               "tenantId": "$DEVTENANT_ID"
               }
