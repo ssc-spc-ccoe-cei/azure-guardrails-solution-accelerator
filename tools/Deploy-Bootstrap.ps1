@@ -56,14 +56,14 @@
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport
 .EXAMPLE
     # Replace the downloaded setup/tags.json with a client-specific tags file before a fresh install.
-    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -tagsFile ./client-tags.json
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -tagsFile ./tags.json
 .EXAMPLE
     # Update the full default update set: workbook content, Guardrails PowerShell modules,
     # Automation Account runbooks, and core template-driven resources.
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update
 .EXAMPLE
     # Replace the downloaded setup/tags.json with a client-specific tags file before an update.
-    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update -tagsFile ./client-tags.json
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update -tagsFile ./tags.json
 .EXAMPLE
     # Update only the Guardrails PowerShell modules in the Automation Account using a local config file.
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update -componentsToUpdate GuardrailPowerShellModules
@@ -78,16 +78,16 @@
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source v1.0.9 -update -componentsToUpdate Workbook,CoreComponents
 .EXAMPLE
     # File-based new deployment syntax:
-    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main [-newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport] [-tagsFile ./tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # File-based update syntax:
-    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-tagsFile ./tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment syntax:
-    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update [-componentsToUpdate Workbook,GuardrailPowerShellModules,AutomationAccountRunbooks,CoreComponents] [-tagsFile ./tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 .EXAMPLE
     # Key Vault-based existing deployment component-addition syntax:
-    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-tagsFile ./client-tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
+    ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -newComponents CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport [-tagsFile ./tags.json] [-timeoutSec 120] [-yes] [-Verbose] [-Debug]
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'newDeployment-configFile')]
