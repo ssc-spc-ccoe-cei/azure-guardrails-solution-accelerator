@@ -161,7 +161,7 @@ function Get-BootstrapSourceArchive {
     param(
         [Parameter(Mandatory = $true)]
         [string]
-        $SourceRef,
+        $Source,
 
         [Parameter(Mandatory = $true)]
         [int]
@@ -175,10 +175,10 @@ function Get-BootstrapSourceArchive {
     try {
         $archivePath = Join-Path $tempRoot 'source.zip'
         # Make the ref safe to place in a web address, including branch names with "/".
-        $downloadUri = "{0}/zipball/{1}" -f $script:GitHubApiRoot, [uri]::EscapeDataString($SourceRef)
+        $downloadUri = "{0}/zipball/{1}" -f $script:GitHubApiRoot, [uri]::EscapeDataString($Source)
 
         Write-Host ("Temporary files for this run: {0}" -f $tempRoot)
-        Write-Host ("Downloading source ref '{0}' from '{1}'..." -f $SourceRef, $downloadUri)
+        Write-Host ("Downloading source '{0}' from '{1}'..." -f $Source, $downloadUri)
         # Download the zip file from GitHub.
         try {
             Invoke-WebRequest -Uri $downloadUri -OutFile $archivePath -Headers @{ 'User-Agent' = 'Deploy-Bootstrap' } -TimeoutSec $TimeoutSec -ErrorAction Stop -Verbose:$false
@@ -188,7 +188,7 @@ function Get-BootstrapSourceArchive {
             $statusCode = try { [int]$_.Exception.Response.StatusCode } catch { $null }
 
             if ($statusCode -eq 403) {
-                throw "GitHub API returned HTTP 403 for source ref '$SourceRef'. This may be caused by rate limiting, insufficient permissions, or the ref not being accessible. $_"
+                throw "GitHub API returned HTTP 403 for source '$Source'. This may be caused by rate limiting, insufficient permissions, or the ref not being accessible. $_"
             }
 
             throw
@@ -201,7 +201,7 @@ function Get-BootstrapSourceArchive {
         # GitHub zipballs should unpack into exactly one top-level repo folder.
         $repoDirectories = Get-ChildItem -Path $tempRoot -Directory
         if ($repoDirectories.Count -ne 1) {
-            throw "Expected exactly one extracted repository root for source ref '$SourceRef', found $($repoDirectories.Count)."
+            throw "Expected exactly one extracted repository root for source '$Source', found $($repoDirectories.Count)."
         }
         $repoRoot = $repoDirectories[0]
 
@@ -223,11 +223,11 @@ function Get-BootstrapSourceArchive {
 
 # Check that GitHub can find the requested ref and that it includes the
 # expected GR-Common.zip file.
-function Test-BootstrapSourceRef {
+function Test-BootstrapSource {
     param(
         [Parameter(Mandatory = $true)]
         [string]
-        $SourceRef,
+        $Source,
 
         [Parameter(Mandatory = $true)]
         [int]
@@ -235,11 +235,11 @@ function Test-BootstrapSourceRef {
     )
 
     # Build the GitHub URL for the module zip files in this ref.
-    $modulesUrl = "{0}/raw/{1}/psmodules" -f $script:GitHubRepoRoot, [uri]::EscapeDataString($SourceRef)
+    $modulesUrl = "{0}/raw/{1}/psmodules" -f $script:GitHubRepoRoot, [uri]::EscapeDataString($Source)
     # Check one known file. If it is there, the ref is usable for module downloads.
     $grCommonUrl = "$modulesUrl/GR-Common.zip"
 
-    Write-Verbose "Checking that source ref '$SourceRef' contains '$grCommonUrl'."
+    Write-Verbose "Checking that source '$Source' contains '$grCommonUrl'."
     try {
         # HEAD checks whether the file exists without downloading the whole file.
         Invoke-WebRequest -Method Head -Uri $grCommonUrl -Headers @{ 'User-Agent' = 'Deploy-Bootstrap' } -TimeoutSec $TimeoutSec -ErrorAction Stop -Verbose:$false | Out-Null
@@ -249,14 +249,14 @@ function Test-BootstrapSourceRef {
         $statusCode = try { [int]$_.Exception.Response.StatusCode } catch { $null }
 
         if ($statusCode -eq 403) {
-            throw "GitHub returned HTTP 403 while validating source ref '$SourceRef'. This may be caused by rate limiting, insufficient permissions, or the ref not being accessible. $_"
+            throw "GitHub returned HTTP 403 while validating source '$Source'. This may be caused by rate limiting, insufficient permissions, or the ref not being accessible. $_"
         }
 
         if ($statusCode -eq 404) {
-            throw "Could not find '$grCommonUrl'. Ensure source ref '$SourceRef' exists and includes 'psmodules/GR-Common.zip'."
+            throw "Could not find '$grCommonUrl'. Ensure source '$Source' exists and includes 'psmodules/GR-Common.zip'."
         }
 
-        throw "Unable to validate source ref '$SourceRef' using '$grCommonUrl'. $_"
+        throw "Unable to validate source '$Source' using '$grCommonUrl'. $_"
     }
 
     # Return the base URL for the module zip files.
@@ -374,11 +374,11 @@ try {
     }
 
     # Check the requested ref before asking the operator to continue.
-    $moduleBaseUrl = Test-BootstrapSourceRef -SourceRef $source -TimeoutSec $timeoutSec
+    $moduleBaseUrl = Test-BootstrapSource -Source $source -TimeoutSec $timeoutSec
 
     # --- Summary: show the operator where this deployment will run ---
 
-    Write-Host "Bootstrap pre-checks passed. Proceeding will run deployment code from the downloaded source ref below:"
+    Write-Host "Bootstrap pre-checks passed. Proceeding will run deployment code from the downloaded source below:"
     Write-Host ("  PowerShell: {0}" -f $PSVersionTable.PSVersion)
     Write-Host ("  Bicep CLI: {0}" -f $bicepSummary)
     Write-Host ("  Azure account: {0}" -f $azureContext.Account.Id)
@@ -395,7 +395,7 @@ try {
 
     # --- Download and import: get the requested code and load its module ---
 
-    $downloadedSource = Get-BootstrapSourceArchive -SourceRef $source -TimeoutSec $timeoutSec
+    $downloadedSource = Get-BootstrapSourceArchive -Source $source -TimeoutSec $timeoutSec
 
     # Make sure the downloaded code includes the module file we expect to import.
     $moduleManifestPath = Join-Path $downloadedSource.RepoRoot 'src/GuardrailsSolutionAcceleratorSetup/GuardrailsSolutionAcceleratorSetup.psd1'
