@@ -38,9 +38,6 @@
     "deployLAW": {
       "value": %deployLAW%
     },
-    "enableMultiCloudProfiles": {
-      "value": %enableMultiCloudProfiles%
-    },
     "CBSSubscriptionName": {
       "value": "%CBSSubscriptionName%"
     },
