@@ -284,6 +284,7 @@ jobs:
             $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
             $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
             $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
+            $jsonContent | Add-Member -Type NoteProperty -Name 'ssc_cbrid' -Value '1352'
             $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
             $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
             $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'
@@ -313,7 +314,7 @@ jobs:
                 else {
                   Write-Output "Upgrade workflow flag is set to '$DEV_UPGRADE_VAR'"
                   Write-Output "Deploying a new installation of the CaC solution"
-                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams
+                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerReportingSupport -Yes @optionalParams
                 }   
             }
             catch {
