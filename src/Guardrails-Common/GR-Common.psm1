@@ -3362,6 +3362,249 @@ function Check-BuiltInPolicies {
     return $results
 }
 
+function Check-BuiltInPoliciesWithResourceGraph {
+    <#
+    .SYNOPSIS
+        Checks that required built-in policies are assigned to every subscription in the tenant.
+
+    .DESCRIPTION
+        For each required policy ID this function determines, per subscription, whether the policy
+        is assigned at a scope that covers that subscription — either directly at subscription scope
+        or via a parent management group.
+
+        Two batched Azure Resource Graph queries replace the old approach of iterating subscriptions
+        with Get-AzSubscription / Set-AzContext and calling Get-AzPolicyState (which caused timeouts
+        in large tenants):
+
+          1. All subscriptions with their management-group ancestor chain.
+          2. All policy assignments for the required policy IDs (any scope).
+
+        These are joined in memory so the guardrail result is one row per subscription per policy:
+          - ComplianceStatus = $true  when an assignment covers the subscription.
+          - ComplianceStatus = $false when no assignment covers the subscription.
+
+    .PARAMETER requiredPolicyIds
+        Array of built-in policy definition resource IDs to evaluate.
+    .PARAMETER ReportTime
+        ISO-8601 timestamp injected into every result object.
+    .PARAMETER ItemName
+        Human-readable check name prepended to the policy display name in results.
+    .PARAMETER msgTable
+        Hashtable of localised message strings.  Keys used: policyAssignedSub,
+        policyNotConfiguredSub.
+    .PARAMETER ControlName
+        Guardrail control identifier included in every result.
+    .PARAMETER itsgcode
+        ITSG security control code included in every result.
+    .PARAMETER CloudUsageProfiles / ModuleProfiles / EnableMultiCloudProfiles
+        Multi-cloud profile parameters forwarded to Add-ProfileInformation when needed.
+    .PARAMETER ErrorList
+        ArrayList that receives non-terminating error strings.
+
+    .OUTPUTS
+        System.Collections.ArrayList of PSCustomObject result rows — one per subscription per
+        required policy.
+    #>
+    param (
+        [Parameter(Mandatory=$true)]
+        [array]$requiredPolicyIds,
+        [Parameter(Mandatory=$true)]
+        [string]$ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]$ItemName,
+        [Parameter(Mandatory=$true)]
+        [hashtable]$msgTable,
+        [Parameter(Mandatory=$true)]
+        [string]$ControlName,
+        [string]$itsgcode,
+        [string]$CloudUsageProfiles = "3",
+        [string]$ModuleProfiles,
+        [switch]$EnableMultiCloudProfiles,
+        [System.Collections.ArrayList]$ErrorList
+    )
+
+    $results = New-Object System.Collections.ArrayList
+
+    if ($grRequiredPolicies.Count -eq 0) {
+        Write-Warning "Verify-TLSConfiguration: No required policies found for ItemName '$ItemName'. Skipping."
+        $ErrorList.Add("Verify-TLSConfiguration: No required policies found for ItemName '$ItemName'. Skipping.")
+        return [PSCustomObject]@{ ComplianceResults = @(); Errors = $ErrorList }
+    }
+
+    # ── Helper: paginate an ARG query and return all rows ─────────────────────
+    function Invoke-ARGQueryAllPages {
+        param([string]$Query)
+        $allRows = [System.Collections.Generic.List[object]]::new()
+        $skipToken = $null
+        $page = 0
+        do {
+            $page++
+            $invokeParams = @{
+                UseTenantScope = $true
+                Query          = $Query
+                First          = 1000
+                ErrorAction    = 'Stop'
+            }
+            if ($skipToken) { $invokeParams['SkipToken'] = $skipToken }
+            $pageResult = Search-AzGraph @invokeParams
+            foreach ($row in $pageResult) { $allRows.Add($row) | Out-Null }
+            $skipToken = $pageResult.SkipToken
+            Write-Verbose "ARG page $page returned $($pageResult.Count) rows. HasMore: $($null -ne $skipToken)"
+        } while ($skipToken)
+        return $allRows
+    }
+
+    # ── Normalise IDs to lower-case for case-insensitive KQL matching ─────────
+    $normalizedIds = $requiredPolicyIds | ForEach-Object { $_.ToLower() }
+    $kqlIdList     = ($normalizedIds | ForEach-Object { "'$_'" }) -join ', '
+
+    # ── Query 1: Policy definition display names ──────────────────────────────
+    $defQuery = @"
+policyresources
+| where type =~ 'microsoft.authorization/policydefinitions'
+| where tolower(id) in~ ($kqlIdList)
+| project id = tolower(id), displayName = tostring(properties.displayName)
+"@
+
+    $policyDisplayNames = @{}
+    try {
+        Write-Host "ARG: fetching policy definition display names..."
+        $defRows = Invoke-ARGQueryAllPages -Query $defQuery
+        foreach ($row in $defRows) {
+            $policyDisplayNames[$row.id] = $row.displayName
+        }
+    } catch {
+        $ErrorList.Add("ARG policy definition query failed: $_") | Out-Null
+    }
+
+    # ── Query 2: All (subscription, coveringScope) pairs ─────────────────────
+    # The query expands every subscription to one row per scope that can hold a
+    # policy assignment covering it: the subscription scope itself (direct
+    # assignment) plus every parent management group scope.
+    # Using mv-expand + union inside a single resourcecontainers query avoids
+    # returning nested dynamic arrays that are fragile to deserialize in
+    # PowerShell, and also avoids cross-table let statements unsupported in ARG.
+    $subScopeQuery = @"
+resourcecontainers
+| where type =~ 'microsoft.resources/subscriptions'
+| extend subId   = tolower(subscriptionId)
+| extend subName = name
+| mv-expand ancestor = properties.managementGroupAncestorsChain
+| project subId, subName,
+          coveringScope = tolower(strcat('/providers/microsoft.management/managementgroups/', tostring(ancestor.name)))
+| union (
+    resourcecontainers
+    | where type =~ 'microsoft.resources/subscriptions'
+    | project subId        = tolower(subscriptionId),
+              subName      = name,
+              coveringScope = tolower(strcat('/subscriptions/', subscriptionId))
+)
+"@
+
+    $allSubscriptions  = @{}   # subId → subName
+    $subCoveringScopes = @{}   # subId → HashSet<coveringScope>
+
+    try {
+        Write-Host "ARG: fetching subscriptions and management group hierarchy..."
+        $scopeRows = Invoke-ARGQueryAllPages -Query $subScopeQuery
+        foreach ($row in $scopeRows) {
+            if (-not $allSubscriptions.ContainsKey($row.subId)) {
+                $allSubscriptions[$row.subId] = $row.subName
+                $subCoveringScopes[$row.subId] = [System.Collections.Generic.HashSet[string]]::new()
+            }
+            [void]$subCoveringScopes[$row.subId].Add($row.coveringScope)
+        }
+        Write-Host "ARG: found $($allSubscriptions.Count) subscriptions"
+    } catch {
+        $ErrorList.Add("ARG subscription covering-scopes query failed: $_") | Out-Null
+    }
+
+    # ── Query 3: All policy assignments for the required policy IDs ───────────
+    $assignQuery = @"
+policyresources
+| where type =~ 'microsoft.authorization/policyassignments'
+| where tolower(tostring(properties.policyDefinitionId)) in~ ($kqlIdList)
+| project policyDefId    = tolower(tostring(properties.policyDefinitionId)),
+          assignmentScope = tolower(tostring(properties.scope))
+"@
+
+    # assignmentScopes[policyDefId] = HashSet of scopes where the policy is assigned
+    $assignmentScopes = @{}
+    try {
+        Write-Host "ARG: fetching policy assignments..."
+        $assignRows = Invoke-ARGQueryAllPages -Query $assignQuery
+        foreach ($row in $assignRows) {
+            $polId = $row.policyDefId
+            if (-not $assignmentScopes.ContainsKey($polId)) {
+                $assignmentScopes[$polId] = [System.Collections.Generic.HashSet[string]]::new()
+            }
+            [void]$assignmentScopes[$polId].Add($row.assignmentScope)
+        }
+        Write-Host "ARG: found assignments for $($assignmentScopes.Count) distinct policy IDs"
+    } catch {
+        $ErrorList.Add("ARG policy assignment query failed: $_") | Out-Null
+    }
+
+    # ── Build per-subscription × per-policy results ───────────────────────────
+    # For each subscription, check whether each required policy has an assignment
+    # at any scope that covers that subscription (subscription or ancestor MG).
+    foreach ($policyId in $requiredPolicyIds) {
+        $polIdLower        = $policyId.ToLower()
+        $policyDisplayName = if ($policyDisplayNames.ContainsKey($polIdLower)) {
+            $policyDisplayNames[$polIdLower]
+        } else {
+            "Unknown Policy"
+        }
+
+        $assignedScopesForPolicy = $assignmentScopes[$polIdLower]   # may be $null
+
+        foreach ($subId in $allSubscriptions.Keys) {
+            $subName  = $allSubscriptions[$subId]
+            $subScope = "/subscriptions/$subId"
+
+            # A policy covers this subscription when at least one of its assignment
+            # scopes (MG or subscription) is in the subscription's covering-scope set.
+            $isCovered = $false
+            if ($null -ne $assignedScopesForPolicy -and $assignedScopesForPolicy.Count -gt 0) {
+                $coveringScopes = $subCoveringScopes[$subId]
+                foreach ($assignScope in $assignedScopesForPolicy) {
+                    if ($coveringScopes.Contains($assignScope)) {
+                        $isCovered = $true
+                        break
+                    }
+                }
+            }
+
+            if ($isCovered) {
+                $comments = $msgTable.policyAssignedSub
+            } else {
+                $comments = $msgTable.policyNotConfiguredSub -f $subScope
+            }
+
+            $r = [PSCustomObject]@{
+                Type             = 'subscription'
+                Id               = $subId
+                SubscriptionName = $subName
+                ComplianceStatus = $isCovered
+                Comments         = $comments
+                ItemName         = "$ItemName - $policyDisplayName"
+                ControlName      = $ControlName
+                ReportTime       = $ReportTime
+                itsgcode         = $itsgcode
+            }
+
+            if ($EnableMultiCloudProfiles) {
+                $r = Add-ProfileInformation -Result $r -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
+            }
+
+            $results.Add($r) | Out-Null
+        }
+    }
+
+    Write-Host "ARG policy assignment coverage check completed. $($results.Count) results ($($allSubscriptions.Count) subscriptions x $($requiredPolicyIds.Count) policies)"
+    return $results
+}
+
 function FetchAllUserRawData {
     [CmdletBinding()]
     param (

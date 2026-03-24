@@ -44,11 +44,21 @@ function Verify-TLSConfiguration {
         }
     }
 
-    if ($EnableMultiCloudProfiles) {
-        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ErrorList $ErrorList
-    } else {
-        $ObjectList += Check-BuiltInPolicies -requiredPolicyIds $grRequiredPolicies -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -itsgcode $itsgcode -ErrorList $ErrorList
+    $grParams = @{
+        requiredPolicyIds      = $grRequiredPolicies
+        ReportTime             = $ReportTime
+        ItemName               = $ItemName
+        msgTable               = $msgTable
+        ControlName            = $ControlName
+        itsgcode               = $itsgcode
+        CloudUsageProfiles     = $CloudUsageProfiles
+        ModuleProfiles         = $ModuleProfiles
+        EnableMultiCloudProfiles = $EnableMultiCloudProfiles   # passes $false when not set
+        ErrorList              = $ErrorList
     }
+
+
+    $ObjectList.AddRange((Check-BuiltInPoliciesWithResourceGraph @grParams))
     
     # Filter out PSAzureContext objects
     $ObjectList_filtered = $ObjectList | Where-Object { $_.GetType() -notlike "*PSAzureContext*" }
