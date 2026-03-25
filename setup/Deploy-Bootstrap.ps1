@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Download a Guardrails repo ref and run deployment or update from that ref.
+    Simplified deployment entry point that runs from a specified GitHub branch/tag without requiring a local clone of the repo.
 .DESCRIPTION
     This bootstrap script lets operators run Guardrails deployment/update code from a specific GitHub branch, tag, or commit
     without cloning the full repository locally. The script performs lightweight environment checks, confirms the target
