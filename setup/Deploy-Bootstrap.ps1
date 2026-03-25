@@ -385,6 +385,9 @@ try {
     Write-Host ("  Tenant ID: {0}" -f $azureContext.Tenant.Id)
     Write-Host ("  {0}: {1}" -f $configSourceLabel, $configSourceValue)
     Write-Host ("  Source: {0}" -f $source)
+    if ($PSBoundParameters.ContainsKey('tagsFile')) {
+        Write-Host ("  Tags file: {0}" -f $tagsFile)
+    }
 
     # --- Confirmation: stop here unless the operator already chose -yes ---
 
