@@ -410,7 +410,7 @@ try {
 
     # Add the prefix so these imported command names do not clash with any version
     # of the same module that might already be loaded in the session.
-    Write-Warning "Importing and executing deployment code from downloaded ref at '$($downloadedSource.RepoRoot)'. Only use trusted refs."
+    Write-Host ("Using deployment code from downloaded source '{0}' at '{1}'." -f $source, $downloadedSource.RepoRoot)
     $refModule = Import-Module $moduleManifestPath -Force -Prefix $script:BootstrapPrefix -PassThru
 
     # --- Build the parameters we will pass into the downloaded commands ---
