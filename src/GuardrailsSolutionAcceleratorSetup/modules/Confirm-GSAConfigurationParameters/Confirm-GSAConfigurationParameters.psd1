@@ -14,7 +14,7 @@
 RootModule = 'Confirm-GSAConfigurationParameters'
 
 # Version number of this module.
-ModuleVersion = '1.0.11'
+ModuleVersion = '1.0.12'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
