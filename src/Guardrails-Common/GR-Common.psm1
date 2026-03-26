@@ -3425,7 +3425,7 @@ function Check-BuiltInPoliciesWithResourceGraph {
 
     $results = New-Object System.Collections.ArrayList
 
-    if ($grRequiredPolicies.Count -eq 0) {
+    if ($requiredPolicyIds.Count -eq 0) {
         Write-Warning "Verify-TLSConfiguration: No required policies found for ItemName '$ItemName'. Skipping."
         $ErrorList.Add("Verify-TLSConfiguration: No required policies found for ItemName '$ItemName'. Skipping.")
         return [PSCustomObject]@{ ComplianceResults = @(); Errors = $ErrorList }
