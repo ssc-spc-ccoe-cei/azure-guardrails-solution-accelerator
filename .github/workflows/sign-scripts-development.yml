@@ -179,7 +179,6 @@ jobs:
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
-                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
                   "tenantId": "$TESTTENANT_ID"
               }
               "@
@@ -276,7 +275,6 @@ jobs:
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
-                  "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
                   "tenantId": "$TESTTENANT_ID"
                 }
               "@
@@ -292,6 +290,7 @@ jobs:
               $jsonContent | Add-Member -Type NoteProperty -Name 'ClientOrganization' -Value 'SSC'
               $jsonContent | Add-Member -Type NoteProperty -Name 'CostCenter' -Value 'SSC Cloud Operations'
               $jsonContent | Add-Member -Type NoteProperty -Name 'DataSensitivity' -Value 'PB'
+              $jsonContent | Add-Member -Type NoteProperty -Name 'ssc_cbrid' -Value '1352'
               $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectContact' -Value 'Amrinder'
               $jsonContent | Add-Member -Type NoteProperty -Name 'ProjectName' -Value 'ComplianceAsCodeAzure'
               $jsonContent | Add-Member -Type NoteProperty -Name 'TechnicalContact' -Value 'Amrinder'

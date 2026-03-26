@@ -130,22 +130,40 @@ function Get-UserRiskBasedCAP {
     }
     Write-Host "Existing CAP count $($caps.count)"
 
-    # list all users in the tenant (using paginated query to handle >100 users)
-    $urlPath = "/users"
+    # Get break glass account IDs directly by UPN (2 targeted calls instead of fetching all users)
+    $FirstBreakGlassID = $null
+    $SecondBreakGlassID = $null
+
+    $encodedUPN1 = [System.Uri]::EscapeDataString($FirstBreakGlassUPN)
+    $bgUserUrlPath1 = "/users/$encodedUPN1"
     try {
-        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
-        $data = $response.Content
-        $users = if ($data -and $data.value) { $data.value | Select-Object userPrincipalName, displayName, givenName, surname, id, mail } else { @() }
+        $response = Invoke-GraphQueryEX -urlPath $bgUserUrlPath1 -ErrorAction Stop
+        if ($response.Content) {
+            $userData = if ($response.Content.value) { $response.Content.value } else { $response.Content }
+            $FirstBreakGlassID = if ($userData -is [array]) { $userData[0].id } else { $userData.id }
+        }
     }
     catch {
-        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+        $errorMsg = "Failed to resolve break glass UPN '$FirstBreakGlassUPN'; error: $_"
         $ErrorList.Add($errorMsg)
-        Write-Error "Error: $errorMsg"
+        Write-Warning $errorMsg
     }
-    # get ID for BG UPNs
-    $FirstBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN}| Select-Object id).id
-    $SecondBreakGlassID = ($users| Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object id).id
-    
+
+    $encodedUPN2 = [System.Uri]::EscapeDataString($SecondBreakGlassUPN)
+    $bgUserUrlPath2 = "/users/$encodedUPN2"
+    try {
+        $response = Invoke-GraphQueryEX -urlPath $bgUserUrlPath2 -ErrorAction Stop
+        if ($response.Content) {
+            $userData = if ($response.Content.value) { $response.Content.value } else { $response.Content }
+            $SecondBreakGlassID = if ($userData -is [array]) { $userData[0].id } else { $userData.id }
+        }
+    }
+    catch {
+        $errorMsg = "Failed to resolve break glass UPN '$SecondBreakGlassUPN'; error: $_"
+        $ErrorList.Add($errorMsg)
+        Write-Warning $errorMsg
+    }
+
     # Diagnostic logging for break glass account resolution
     Write-Host "Break Glass UPN 1: $FirstBreakGlassUPN -> ID: $FirstBreakGlassID"
     Write-Host "Break Glass UPN 2: $SecondBreakGlassUPN -> ID: $SecondBreakGlassID"
@@ -156,67 +174,53 @@ function Get-UserRiskBasedCAP {
         Write-Warning "Could not resolve SecondBreakGlassUPN '$SecondBreakGlassUPN' to a user ID"
     }
 
-    # List of all user groups in the environment (using paginated query to handle >100 groups)
-    $groupsUrlPath = "/groups"
-    try {
-        $response = Invoke-GraphQueryEX -urlPath $groupsUrlPath -ErrorAction Stop
-        $data = $response.Content
-        $userGroups = if ($data -and $data.value) { $data.value } else { @() }
-    }
-    catch {
-        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$groupsUrlPath'; returned error message: $_"                
-        $ErrorList.Add($errorMsg)
-        Write-Error "Error: $errorMsg"
-    }
-    # Find any group (if any) for BG accounts
-    $groupMemberList = @()
-    foreach ($group in $userGroups){
-        $groupId = $group.id
-        $membersUrlPath = "/groups/$groupId/members"
-        try {
-            # Using paginated query to handle >100 members per group
-            $response = Invoke-GraphQueryEX -urlPath $membersUrlPath -ErrorAction Stop
-            $data = $response.Content
-            if ($null -ne $data -and $null -ne $data.value) {
-                $grMembers = $data.value | Select-Object userPrincipalName, displayName, givenName, surname, id, mail
+    # Get group memberships for each BG account directly via /users/{id}/memberOf
+    # (2 targeted calls instead of fetching ALL groups + ALL members of every group)
+    $bg1Groups = @()
+    $bg2Groups = @()
 
-                foreach ($grMember in $grMembers) {
-                    $groupMembers = [PSCustomObject]@{
-                        groupName           = $group.displayName
-                        groupId             = $group.id
-                        userId              = $grMember.id
-                        displayName         = $grMember.displayName
-                        givenName           = $grMember.givenName
-                        surname             = $grMember.surname
-                        mail                = $grMember.mail
-                        userPrincipalName   = $grMember.userPrincipalName
-                    }
-                    $groupMemberList +=  $groupMembers
-                }
+    if (-not [string]::IsNullOrEmpty($FirstBreakGlassID)) {
+        $memberOfUrl1 = "/users/$FirstBreakGlassID/memberOf"
+        try {
+            $response = Invoke-GraphQueryEX -urlPath $memberOfUrl1 -ErrorAction Stop
+            if ($response.Content -and $response.Content.value) {
+                $bg1Groups = @($response.Content.value |
+                    Where-Object { $_.'@odata.type' -eq '#microsoft.graph.group' } |
+                    Select-Object -ExpandProperty id)
             }
         }
         catch {
-            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$membersUrlPath'; returned error message: $_"                
+            $errorMsg = "Failed to get group memberships for '$FirstBreakGlassUPN'; error: $_"
             $ErrorList.Add($errorMsg)
-            Write-Error "Error: $errorMsg" 
+            Write-Error "Error: $errorMsg"
         }
     }
 
-    # Check if both BG accounts share at least one common group
-    # This is more robust than the previous Count -eq 2 check which could fail if:
-    # - BG accounts are in multiple groups
-    # - BG accounts are in different groups (false positive with count=2)
-    $bg1Groups = @($groupMemberList | Where-Object {$_.userPrincipalName -eq $FirstBreakGlassUPN} | Select-Object -ExpandProperty groupId)
-    $bg2Groups = @($groupMemberList | Where-Object {$_.userPrincipalName -eq $SecondBreakGlassUPN} | Select-Object -ExpandProperty groupId)
-    
+    if (-not [string]::IsNullOrEmpty($SecondBreakGlassID)) {
+        $memberOfUrl2 = "/users/$SecondBreakGlassID/memberOf"
+        try {
+            $response = Invoke-GraphQueryEX -urlPath $memberOfUrl2 -ErrorAction Stop
+            if ($response.Content -and $response.Content.value) {
+                $bg2Groups = @($response.Content.value |
+                    Where-Object { $_.'@odata.type' -eq '#microsoft.graph.group' } |
+                    Select-Object -ExpandProperty id)
+            }
+        }
+        catch {
+            $errorMsg = "Failed to get group memberships for '$SecondBreakGlassUPN'; error: $_"
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg"
+        }
+    }
+
     # Find groups that contain BOTH BG accounts
     $commonBGGroups = @($bg1Groups | Where-Object { $bg2Groups -contains $_ } | Select-Object -Unique)
-    
+
     # Diagnostic logging for BG group membership
     Write-Host "BG1 is in $($bg1Groups.Count) group(s): $($bg1Groups -join ', ')"
     Write-Host "BG2 is in $($bg2Groups.Count) group(s): $($bg2Groups -join ', ')"
     Write-Host "Common groups containing both BG accounts: $($commonBGGroups.Count)"
-    
+
     if ($commonBGGroups.Count -gt 0) {
         Write-Host "Both BG accounts share group(s): $($commonBGGroups -join ', ')"
         $uniqueGroupIdBG = $commonBGGroups

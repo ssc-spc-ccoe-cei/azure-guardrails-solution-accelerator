@@ -9,7 +9,6 @@ param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
 param updateCoreResources bool = false
-param enableMultiCloudProfiles bool
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
@@ -1081,7 +1080,7 @@ let guestsToEvaluate = guestsWithTrustInfo
 let excludedGuestCount = toscalar(guestsToExclude | summarize count());
 let userData = union memberUsers, guestsToEvaluate;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
-let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
@@ -1245,7 +1244,7 @@ let userData = GuardrailsUserRaw_CL
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
-let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
