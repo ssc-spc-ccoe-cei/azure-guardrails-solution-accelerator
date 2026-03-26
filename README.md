@@ -7,7 +7,7 @@ As this is a beta release, please install with caution. You can still use versio
 
 Thank you for your understanding.
 ___________________________________________________________________
-## $${\color{Red} Avis \space sur \space la \space version \space 3.0.0 \space }$$
+## $${\color{Red} Avis \space : Deuxième \space version \space bêta \space 3.0.0 \space }$$
 La version actuelle (v3.0.0beta2) disponible fait l'objet de tests opérationnels finaux. Elle a passé avec succès tous les tests unitaires et les tests d'intégration, mais doit encore faire l'objet d'un dernier cycle d'assurance qualité.
 
 Comme il s'agit d'une version bêta, veuillez l'installer avec précaution. Vous pouvez toujours utiliser la version 2.3.3 dans l'intervalle. L'étiquette bêta sera supprimée une fois l'examen final terminé.
