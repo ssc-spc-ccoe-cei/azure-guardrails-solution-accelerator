@@ -378,7 +378,18 @@ try {
 
     # --- Summary: show the operator where this deployment will run ---
 
+    if ($update.IsPresent) {
+        $operationSummary = 'Upgrade'
+    }
+    elseif ($PSCmdlet.ParameterSetName -eq 'newDeployment-configFile') {
+        $operationSummary = 'Fresh install'
+    }
+    else {
+        $operationSummary = 'Add new components'
+    }
+
     Write-Host "Bootstrap pre-checks passed. Proceeding will run deployment code from the downloaded source below:"
+    Write-Host ("  Operation: {0}" -f $operationSummary)
     Write-Host ("  PowerShell: {0}" -f $PSVersionTable.PSVersion)
     Write-Host ("  Bicep CLI: {0}" -f $bicepSummary)
     Write-Host ("  Azure account: {0}" -f $azureContext.Account.Id)
@@ -387,6 +398,9 @@ try {
     Write-Host ("  Source: {0}" -f $source)
     if ($PSBoundParameters.ContainsKey('tagsFile')) {
         Write-Host ("  Tags file: {0}" -f $tagsFile)
+    }
+    else {
+        Write-Host "  Tags file: Default setup/tags.json"
     }
 
     # --- Confirmation: stop here unless the operator already chose -yes ---
