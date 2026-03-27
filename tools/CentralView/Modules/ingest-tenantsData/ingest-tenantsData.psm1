@@ -82,7 +82,7 @@ function get-tenantdata {
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
     ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
-    | summarize Count=count('VNet Name') by Mandatory,ControlName_s, Status, ItemName, Profile, ['ITSG Control']
+    | summarize Count=count() by Mandatory,ControlName_s, Status, ItemName, Profile, ['ITSG Control']
 "@
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     foreach ($ws in $wsidList.wsid)
