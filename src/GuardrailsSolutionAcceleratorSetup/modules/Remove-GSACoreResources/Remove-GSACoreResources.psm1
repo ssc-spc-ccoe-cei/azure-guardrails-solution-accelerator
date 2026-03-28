@@ -155,18 +155,17 @@ Function Remove-GSACoreResources {
             # 2. the deleted-workspaces view used for recoverable workspaces
             $activeWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
             $deletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'waiting for permanent LAW delete to settle')
-            $deletedWorkspace = $deletedWorkspaceMatches | Select-Object -First 1
 
             # Require multiple clean reads in a row so we do not trust a single
             # transient "gone" result from Azure.
-            if (-not $activeWorkspace -and -not $deletedWorkspace) {
+            if (-not $activeWorkspace -and -not $deletedWorkspaceMatches) {
                 $clearChecks++
             }
             else {
                 $clearChecks = 0
             }
 
-            Write-Verbose ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspace, $clearChecks)
+            Write-Verbose ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspaceMatches, $clearChecks)
 
             if ($clearChecks -ge 3) {
                 break
