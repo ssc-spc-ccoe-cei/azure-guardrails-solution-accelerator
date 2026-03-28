@@ -1,3 +1,72 @@
+Function Get-GSADeletedLogAnalyticsWorkspace {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $subscriptionId,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $resourceGroupName,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $workspaceName
+    )
+
+    $path = "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.OperationalInsights/deletedWorkspaces?api-version=2023-09-01"
+    $response = Invoke-AzRestMethod -Method GET -Path $path -ErrorAction Stop
+    $content = if ($response.Content) { $response.Content } else { "{}" }
+    $payload = $content | ConvertFrom-Json -Depth 20
+
+    @($payload.value) |
+        Where-Object { $_.name -eq $workspaceName } |
+        Select-Object -First 1
+}
+
+Function Wait-GSALogAnalyticsWorkspacePermanentDelete {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $subscriptionId,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $resourceGroupName,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $workspaceName
+    )
+
+    $pollIntervalSeconds = 15
+    $timeoutMinutes = 10
+    $deadline = (Get-Date).AddMinutes($timeoutMinutes)
+    $clearChecks = 0
+
+    do {
+        $activeWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $workspaceName -ErrorAction SilentlyContinue
+        $deletedWorkspace = Get-GSADeletedLogAnalyticsWorkspace -subscriptionId $subscriptionId -resourceGroupName $resourceGroupName -workspaceName $workspaceName
+
+        if (-not $activeWorkspace -and -not $deletedWorkspace) {
+            $clearChecks++
+        }
+        else {
+            $clearChecks = 0
+        }
+
+        Write-Verbose ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspace, $clearChecks)
+
+        if ($clearChecks -ge 3) {
+            return
+        }
+
+        if ((Get-Date) -ge $deadline) {
+            throw "Timed out waiting for Log Analytics workspace '$workspaceName' to disappear from both active and deleted states."
+        }
+
+        Start-Sleep -Seconds $pollIntervalSeconds
+    } while ($true)
+}
 
 Function Remove-GSACoreResources {
     param (
@@ -87,6 +156,7 @@ Function Remove-GSACoreResources {
     if ($logAnalyticsWorkspace) {
         Write-Verbose "Removing Guardrails Solution Accelerator Log Analytics Workspace..."
         $logAnalyticsWorkspace | Remove-AzOperationalInsightsWorkspace -ForceDelete -Force
+        Wait-GSALogAnalyticsWorkspacePermanentDelete -subscriptionId $config['runtime']['subscriptionId'] -resourceGroupName $config['runtime']['resourceGroup'] -workspaceName $config['runtime']['logAnalyticsWorkspaceName']
     }
     else {
         Write-Verbose "Guardrails Solution Accelerator Log Analytics workspace not found."
