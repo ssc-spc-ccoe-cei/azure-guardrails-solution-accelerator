@@ -9,12 +9,12 @@ Replace this with a brief description of what this Pull Request fixes, changes, 
 2. *Replace me*
 3. *Replace me*
 
-### Breaking Changes
+## Breaking Changes
 
 1. *Replace me*
 2. *Replace me*
 
-### Disclosure of AI assistance
+## Disclosure of AI assistance
 
 Please provide a brief descriptio if any AI-assisted code is used in this PR and the nature and extent of the AI assistance e.g. file name, line numbers etc.
 
