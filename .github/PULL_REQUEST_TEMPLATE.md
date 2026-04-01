@@ -14,6 +14,11 @@ Replace this with a brief description of what this Pull Request fixes, changes, 
 1. *Replace me*
 2. *Replace me*
 
+### Disclosure of AI assistance
+
+Please provide a brief descriptio if any AI-assisted code is used in this PR and the nature and extent of the AI assistance e.g. file name, line numbers etc.
+
+
 ## Testing Evidence
 
 Please provide any testing evidence to show that your Pull Request works/fixes as described and planned (include screenshots, if appropriate).
