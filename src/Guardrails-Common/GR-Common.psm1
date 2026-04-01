@@ -3582,10 +3582,10 @@ policyresources
     }
 
     # ── Build per-subscription × per-policy results ───────────────────────────
-    # Decision tree per subscription per policy (mirrors Check-BuiltInPolicies):
-    #   1. No assignment covers this subscription → policyNotConfiguredSub  ❌
-    #   2. Covering assignment has an exemption   → policyHasExemptions     ❌
-    #   3. Covered and no exemptions              → policyAssignedSub       ✅
+    # Decision tree per subscription per policy:
+    #   1. No assignment covers this subscription → policyNotConfiguredSub  
+    #   2. Covering assignment has an exemption   → policyHasExemptions     
+    #   3. Covered and no exemptions              → policyAssignedSub       
     foreach ($policyId in $requiredPolicyIds) {
         $polIdLower        = $policyId.ToLower()
         $policyDisplayName = if ($policyDisplayNames.ContainsKey($polIdLower)) {
@@ -3627,11 +3627,7 @@ policyresources
                     $comments         = $msgTable.policyHasExemptions
                 } else {
                     $complianceStatus = $true
-                    $comments         = if ($msgTable -and $msgTable.ContainsKey('policyAssignedSub') -and $msgTable.policyAssignedSub) {
-                        $msgTable.policyAssignedSub
-                    } else {
-                        'Required policy is assigned at a scope covering this subscription.'
-                    }
+                    $comments         = $msgTable.policyAssignedSub -f $subScope
                 }
             }
 

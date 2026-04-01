@@ -289,6 +289,7 @@ networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP 
 networkInterfaceIPs = Policy for Limiting Public IPs
 policyNoApplicableResourcesSub = Policy is assigned at the subscription level. No applicable resources found
 policyNotConfiguredSub = Required policy is not assigned to this subscription: {0}. Please assign the policy to ensure compliance.
+policyAssignedSub = Required policy is assigned at a scope covering this subscription: {0}.
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist

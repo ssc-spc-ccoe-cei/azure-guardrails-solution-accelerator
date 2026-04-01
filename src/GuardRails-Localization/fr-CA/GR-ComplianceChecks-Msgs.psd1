@@ -289,6 +289,7 @@ networkInterfaceIPs = Politique de limitation des adresses IP publiques
 
 policyNoApplicableResourcesSub = La politique est attribuée au niveau de l'abonnement. Aucune ressource applicable n'a été trouvée. 
 policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonnement : {0}. Veuillez attribuer la politique pour assurer la conformité.
+policyAssignedSub = La politique requise est attribuée à une portée couvrant cet abonnement : {0}.
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
