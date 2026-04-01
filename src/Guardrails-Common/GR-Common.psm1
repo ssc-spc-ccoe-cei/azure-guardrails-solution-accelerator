@@ -3519,73 +3519,127 @@ resourcecontainers
         $ErrorList.Add("ARG subscription covering-scopes query failed: $_") | Out-Null
     }
 
-    # ── Query 3: All policy assignments for the required policy IDs ───────────
+    # ── Query 3: Policy assignments (scope + ID) for the required policy IDs ──
+    # The assignment ID is required to match against exemptions in Query 4.
     $assignQuery = @"
 policyresources
 | where type =~ 'microsoft.authorization/policyassignments'
 | where tolower(tostring(properties.policyDefinitionId)) in~ ($kqlIdList)
 | project policyDefId    = tolower(tostring(properties.policyDefinitionId)),
-          assignmentScope = tolower(tostring(properties.scope))
+          assignmentScope = tolower(tostring(properties.scope)),
+          assignmentId    = tolower(id)
 "@
 
-    # assignmentScopes[policyDefId] = HashSet of scopes where the policy is assigned
-    $assignmentScopes = @{}
+    # assignmentsByPolicy[policyDefId] = List of objects with Scope and Id
+    $assignmentsByPolicy = @{}
     try {
         Write-Host "ARG: fetching policy assignments..."
         $assignRows = Invoke-ARGQueryAllPages -Query $assignQuery
         foreach ($row in $assignRows) {
             $polId = $row.policyDefId
-            if (-not $assignmentScopes.ContainsKey($polId)) {
-                $assignmentScopes[$polId] = [System.Collections.Generic.HashSet[string]]::new()
+            if (-not $assignmentsByPolicy.ContainsKey($polId)) {
+                $assignmentsByPolicy[$polId] = [System.Collections.Generic.List[object]]::new()
             }
-            [void]$assignmentScopes[$polId].Add($row.assignmentScope)
+            $assignmentsByPolicy[$polId].Add([PSCustomObject]@{
+                Scope = $row.assignmentScope
+                Id    = $row.assignmentId
+            }) | Out-Null
         }
-        Write-Host "ARG: found assignments for $($assignmentScopes.Count) distinct policy IDs"
+        Write-Host "ARG: found assignments for $($assignmentsByPolicy.Count) distinct policy IDs"
     } catch {
         $ErrorList.Add("ARG policy assignment query failed: $_") | Out-Null
     }
 
+    # ── Query 4: Exemptions for the collected assignments ─────────────────────
+    # Mirrors Check-BuiltInPolicies: any exemption on a covering assignment means
+    # the subscription reports policyHasExemptions (non-compliant).
+    $exemptedAssignmentIds = [System.Collections.Generic.HashSet[string]]::new()
+
+    $allAssignmentIds = [System.Collections.Generic.List[string]]::new()
+    foreach ($assignments in $assignmentsByPolicy.Values) {
+        foreach ($a in $assignments) { $allAssignmentIds.Add($a.Id) | Out-Null }
+    }
+
+    if ($allAssignmentIds.Count -gt 0) {
+        $kqlAssignmentList = ($allAssignmentIds | Select-Object -Unique | ForEach-Object { "'$_'" }) -join ', '
+
+        $exemptQuery = @"
+policyresources
+| where type =~ 'microsoft.authorization/policyexemptions'
+| where tolower(tostring(properties.policyAssignmentId)) in~ ($kqlAssignmentList)
+| project assignmentId = tolower(tostring(properties.policyAssignmentId))
+"@
+        try {
+            Write-Host "ARG: fetching policy exemptions..."
+            $exemptRows = Invoke-ARGQueryAllPages -Query $exemptQuery
+            foreach ($row in $exemptRows) {
+                [void]$exemptedAssignmentIds.Add($row.assignmentId)
+            }
+            Write-Host "ARG: found exemptions on $($exemptedAssignmentIds.Count) assignment(s)"
+        } catch {
+            $ErrorList.Add("ARG policy exemption query failed: $_") | Out-Null
+        }
+    }
+
     # ── Build per-subscription × per-policy results ───────────────────────────
-    # For each subscription, check whether each required policy has an assignment
-    # at any scope that covers that subscription (subscription or ancestor MG).
+    # Decision tree per subscription per policy (mirrors Check-BuiltInPolicies):
+    #   1. No assignment covers this subscription → policyNotConfiguredSub  ❌
+    #   2. Covering assignment has an exemption   → policyHasExemptions     ❌
+    #   3. Covered and no exemptions              → policyAssignedSub       ✅
     foreach ($policyId in $requiredPolicyIds) {
         $polIdLower        = $policyId.ToLower()
         $policyDisplayName = if ($policyDisplayNames.ContainsKey($polIdLower)) {
             $policyDisplayNames[$polIdLower]
         } else {
-            "Unknown Policy"
+            'Unknown Policy'
         }
 
-        $assignedScopesForPolicy = $assignmentScopes[$polIdLower]   # may be $null
+        $policyAssignments = $assignmentsByPolicy[$polIdLower]   # may be $null
 
         foreach ($subId in $allSubscriptions.Keys) {
-            $subName  = $allSubscriptions[$subId]
-            $subScope = "/subscriptions/$subId"
+            $subName        = $allSubscriptions[$subId]
+            $subScope       = "/subscriptions/$subId"
+            $coveringScopes = $subCoveringScopes[$subId]
 
-            # A policy covers this subscription when at least one of its assignment
-            # scopes (MG or subscription) is in the subscription's covering-scope set.
-            $isCovered = $false
-            if ($null -ne $assignedScopesForPolicy -and $assignedScopesForPolicy.Count -gt 0) {
-                $coveringScopes = $subCoveringScopes[$subId]
-                foreach ($assignScope in $assignedScopesForPolicy) {
-                    if ($coveringScopes.Contains($assignScope)) {
-                        $isCovered = $true
+            # Assignments whose scope is in the subscription's covering-scope set
+            $coveringAssignments = if ($null -ne $policyAssignments) {
+                @($policyAssignments | Where-Object { $coveringScopes.Contains($_.Scope) })
+            } else {
+                @()
+            }
+
+            if ($coveringAssignments.Count -eq 0) {
+                # No assignment covers this subscription
+                $complianceStatus = $false
+                $comments         = $msgTable.policyNotConfiguredSub -f $subScope
+            } else {
+                # Check whether any covering assignment carries an exemption
+                $hasExemption = $false
+                foreach ($assignment in $coveringAssignments) {
+                    if ($exemptedAssignmentIds.Contains($assignment.Id)) {
+                        $hasExemption = $true
                         break
                     }
                 }
-            }
 
-            if ($isCovered) {
-                $comments = $msgTable.policyAssignedSub
-            } else {
-                $comments = $msgTable.policyNotConfiguredSub -f $subScope
+                if ($hasExemption) {
+                    $complianceStatus = $false
+                    $comments         = $msgTable.policyHasExemptions
+                } else {
+                    $complianceStatus = $true
+                    $comments         = if ($msgTable -and $msgTable.ContainsKey('policyAssignedSub') -and $msgTable.policyAssignedSub) {
+                        $msgTable.policyAssignedSub
+                    } else {
+                        'Required policy is assigned at a scope covering this subscription.'
+                    }
+                }
             }
 
             $r = [PSCustomObject]@{
                 Type             = 'subscription'
                 Id               = $subId
                 SubscriptionName = $subName
-                ComplianceStatus = $isCovered
+                ComplianceStatus = $complianceStatus
                 Comments         = $comments
                 ItemName         = "$ItemName - $policyDisplayName"
                 ControlName      = $ControlName
