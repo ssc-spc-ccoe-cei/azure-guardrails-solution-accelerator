@@ -269,15 +269,19 @@ noSubnets = No subnets found in the subscription.
 cloudInfrastructureDeployGuide = Cloud Infrastructure Deployment Guide or Applicable Landing Zone Details
 
 # GuardRail #9
-ddosEnabled=DDos Protection Enabled. 
-ddosNotEnabled=DDos Protection not enabled.
+ddosPublicIpCheckFailed = Failed to check public IP DDoS protection for subscription '{0}'. Error: {1}
+ddosPublicIpCheckFailedNoProtection = Public IP DDoS protection could not be checked for subscription '{0}'. {1} out of {2} included VNet(s) have DDoS protection enabled. Public IP results are unavailable.
+ddosSubscriptionNoResources = Subscription '{0}' has no included VNets or public IPs to evaluate.
+ddosSubscriptionProtectionFound = Subscription '{0}' has DDoS protection enabled on {1} out of {2} included VNet(s) and {3} out of {4} public IP(s).
+ddosSubscriptionProtectionMissing = Subscription '{0}' does not have DDoS protection enabled on any included VNet or public IP. Included VNet(s) protected: {1} out of {2}. Public IP(s) protected: {3} out of {4}.
+subscriptionScope = Subscription scope
 
 networkWatcherEnabled=Network Watcher exists for region '{0}'
 networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
 noVNets = No VNet found in the subscription.
 vnetExcludedByParameter = VNet '{0}' is excluded from compliance because it is in the excluded VNet list '{1}'
 vnetExcludedByTag = VNet '{0}' is excluded from compliance because it has tag '{1}' with a value of 'true'
-vnetDDosConfig = VNet DDos configuration
+vnetDDosConfig = DDoS Configuration - Subscription
 networkWatcherConfig = VNet Network Watcher configuration
 networkWatcherConfigNoRegions = Either due to no VNETs or all VNETs being excluded, there are no regions to check for Network Watcher configuration
 noFirewallOrGateway = This subscription does not have a firewall or an application gateway in use.
