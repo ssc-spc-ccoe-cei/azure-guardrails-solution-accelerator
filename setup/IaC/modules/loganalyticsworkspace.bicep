@@ -9,7 +9,6 @@ param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
 param updateCoreResources bool = false
-param enableMultiCloudProfiles bool
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
@@ -957,7 +956,7 @@ resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     category: 'gr_functions'
     displayName: 'gr_data9'
     // Profile gating removed from this query so valid profile rows are not suppressed.
-    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\n GuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix  and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ["Item Name"]=column_ifexists("ItemName_s", ""), ["Subscription Name"]=column_ifexists("SubscriptionName_s", ""), ["VNet Name"]=column_ifexists("VNETName_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'), Comments=column_ifexists("Comments_s", ""), ["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\n GuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix  and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ["Item Name"]=column_ifexists("ItemName_s", ""), ["Subscription Name"]=column_ifexists("SubscriptionName_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'🟢\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'🔴\', \'➖\'), Comments=column_ifexists("Comments_s", ""), ["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data9'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -1081,7 +1080,7 @@ let guestsToEvaluate = guestsWithTrustInfo
 let excludedGuestCount = toscalar(guestsToExclude | summarize count());
 let userData = union memberUsers, guestsToEvaluate;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
-let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
@@ -1245,7 +1244,7 @@ let userData = GuardrailsUserRaw_CL
 | where ReportTime == reportTime
 | where guardrailsExcluded == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
-let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
+let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),

@@ -110,7 +110,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
-        version: '1.1.12'
+        version: '1.2.0'
       }}
   }
   resource module9 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -323,7 +323,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserRiskBasedCAP.zip'
-        version: '1.0.2'
+        version: '1.0.3'
       }
     }
   }
@@ -369,7 +369,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
-        version: '1.0.4'
+        version: '1.1.0'
       }}
   }
 

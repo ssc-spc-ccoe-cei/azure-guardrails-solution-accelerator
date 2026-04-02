@@ -161,7 +161,6 @@ jobs:
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
               "cloudUsageProfiles": "$DEV_CLOUDUSAGEPROFILES",
-              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
               "tenantId": "$DEVTENANT_ID"
             }
             "@
@@ -261,7 +260,6 @@ jobs:
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
               "cloudUsageProfiles": "$DEV_CLOUDUSAGEPROFILES",
-              "enableMultiCloudProfiles": "$ENABLE_MULTICLOUD_PROFILES",
               "tenantId": "$DEVTENANT_ID"
               }
             "@

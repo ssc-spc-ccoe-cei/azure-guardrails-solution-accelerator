@@ -1,4 +1,3 @@
-
 Function Remove-GSACoreResources {
     param (
         [Parameter(mandatory = $true, parameterSetName = 'string', ValueFromPipelineByPropertyName = $true)]
@@ -82,14 +81,103 @@ Function Remove-GSACoreResources {
 
     Confirm-GSASubscriptionSelection -config $config -confirmSingleSubscription:(!$force.IsPresent)
 
+    # Azure exposes deleted workspaces through a separate REST endpoint.
+    # We query that endpoint so we can tell when a "permanent" delete has
+    # actually finished and the workspace is no longer recoverable.
+    $deletedWorkspacePath = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])/providers/Microsoft.OperationalInsights/deletedWorkspaces?api-version=2023-09-01"
+
+    # Small helper used by the wait loop below.
+    # It fetches deleted workspaces for this resource group and filters to the
+    # exact LAW name we are cleaning up.
+    $getDeletedWorkspaceMatches = {
+        param (
+            [string]
+            $workspaceName,
+
+            [string]
+            $deletedWorkspacePath,
+
+            [string]
+            $operationName
+        )
+
+        # The Azure control plane can be briefly inconsistent right after a delete.
+        # Retry a couple of times before failing the cleanup.
+        $attempt = 0
+        do {
+            try {
+                $deletedWorkspaceResponse = Invoke-AzRestMethod -Method GET -Path $deletedWorkspacePath -ErrorAction Stop
+                $deletedWorkspaceContent = if ($deletedWorkspaceResponse.Content) { $deletedWorkspaceResponse.Content } else { "{}" }
+                $deletedWorkspacePayload = $deletedWorkspaceContent | ConvertFrom-Json -Depth 20
+
+                return @($deletedWorkspacePayload.value) | Where-Object { $_.name -eq $workspaceName }
+            }
+            catch {
+                $attempt++
+                if ($attempt -ge 3) {
+                    throw "Failed to query deleted Log Analytics workspaces while $operationName. Error: $($_.Exception.Message)"
+                }
+
+                Write-Verbose "Retrying deleted-workspaces lookup after transient error during $operationName..."
+                Start-Sleep -Seconds 5
+            }
+        } while ($true)
+    }
+
     Write-Verbose "Looking for Guardrails Log Analytics Workspace..."
     $logAnalyticsWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
+    $existingDeletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'checking for an already deleted LAW')
     if ($logAnalyticsWorkspace) {
         Write-Verbose "Removing Guardrails Solution Accelerator Log Analytics Workspace..."
+        # Even with -ForceDelete, Azure can briefly surface the workspace in its
+        # deleted view after the delete call returns. We still wait on both
+        # active and deleted states so we do not start deleting the resource group
+        # or redeploying while Azure is still finishing the workspace delete.
         $logAnalyticsWorkspace | Remove-AzOperationalInsightsWorkspace -ForceDelete -Force
     }
     else {
         Write-Verbose "Guardrails Solution Accelerator Log Analytics workspace not found."
+    }
+
+    # The delete command can return before Azure fully removes the workspace.
+    # Wait until the active workspace is gone and the workspace no longer
+    # appears in the deleted-workspaces view before deleting the resource group.
+    # This avoids a race where the resource group delete or the next deploy
+    # starts while the LAW delete is still settling on Azure's side.
+    $pollIntervalSeconds = 10
+    $deadline = (Get-Date).AddMinutes(10)
+    $clearChecks = 0
+
+    if ($logAnalyticsWorkspace -or $existingDeletedWorkspaceMatches) {
+        do {
+            # Check both places Azure can still show the workspace:
+            # 1. the normal active workspace view
+            # 2. the deleted-workspaces view used for recoverable workspaces
+            $activeWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
+            $deletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'waiting for permanent LAW delete to settle')
+
+            # Require multiple clean reads in a row so we do not trust a single
+            # transient "gone" result from Azure.
+            if (-not $activeWorkspace -and -not $deletedWorkspaceMatches) {
+                $clearChecks++
+            }
+            else {
+                $clearChecks = 0
+            }
+
+            Write-Verbose ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspaceMatches, $clearChecks)
+
+            if ($clearChecks -ge 3) {
+                break
+            }
+
+            # Fail rather than silently continuing if Azure never reaches a clean state.
+            if ((Get-Date) -ge $deadline) {
+                throw "Timed out waiting for Log Analytics workspace '$($config['runtime']['logAnalyticsWorkspaceName'])' to disappear from both active and deleted states."
+            }
+
+            Start-Sleep -Seconds $pollIntervalSeconds
+        } while ($true)
     }
 
     Write-Verbose "Looking for Guardrails Solution Accelerator Automation Account..."
