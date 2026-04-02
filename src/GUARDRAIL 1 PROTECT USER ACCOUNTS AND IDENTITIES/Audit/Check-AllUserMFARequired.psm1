@@ -10,7 +10,9 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime, 
+        [string] $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string] $WorkSpaceID,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # default to false

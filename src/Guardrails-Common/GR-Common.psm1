@@ -4073,7 +4073,7 @@ GuardrailsUserRaw_CL
         Write-Warning "  Warning: Data count mismatch detected."
         Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
             
-        if ($recordCount > 0) {
+        if ($recordCount -gt 0) {
             Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
             Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
         } else {
