@@ -17,7 +17,6 @@ RootModule = 'Check-AllUserMFARequired'
 
 ModuleVersion = '1.1.1'
 
-
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
