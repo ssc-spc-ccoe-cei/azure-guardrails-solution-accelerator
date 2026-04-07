@@ -63,7 +63,7 @@ function Check-AllUserMFARequired {
         Write-Error "Failed to call KQL function: $_"
         [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
     }
-    
+
     # Add Profile information to compliance result if KQL function was successful
     if ($complianceResult -and $EnableMultiCloudProfiles) {
         try {

@@ -483,25 +483,62 @@ function Get-DefenderForCloudAlerts {
         }
         else{
             Write-Host "Defender for Cloud (Microsoft.Security) is registered and has Standard plans for subscription $subName ($subId)."
-            # -------------------------
-            # B) CWP Coverage check (ARG counts + ARM pricing)
-            # -------------------------
-            $coverageOk = $true
-            $coverageComment = $null
 
-            if (-not $authHeader) {
-                $coverageOk = $false
-                $coverageComment = "Unable to evaluate CWP coverage (missing auth token)."
-            }
-            else {
+            # -------------------------
+            # B) Determine paid tier status (Defender CSPM / CWP)
+            # -------------------------
+            $pricingByPlan = @{}
+            if ($authHeader) {
                 $pricingByPlan = Get-DefenderPricingBySubscription -SubscriptionId $subId -AuthHeader $authHeader -ErrorList $ErrorList
-                $cov = Get-CwpCoverageForSubscription -SubscriptionId $subId -CountsBySub $countsBySub -TypeToPlanMap $TypeToPlanMap -PricingByPlan $pricingByPlan -msgTable $msgTable
-                $coverageOk = [bool]$cov.coverageOk
-                $coverageComment = $cov.comment
+            }
+
+            # Check if Defender CSPM (paid tier) is active
+            $defenderCspmActive = $false
+            if ($pricingByPlan.ContainsKey("CloudPosture") -and $pricingByPlan["CloudPosture"] -eq "Standard") {
+                $defenderCspmActive = $true
+            }
+
+            # Check if any CWP plan is active (Standard tier)
+            $cwpPlansActive = $false
+            foreach ($plan in ($TypeToPlanMap.Values | Select-Object -Unique)) {
+                if ($pricingByPlan.ContainsKey($plan) -and $pricingByPlan[$plan] -eq "Standard") {
+                    $cwpPlansActive = $true
+                    break
+                }
+            }
+
+            $anyPaidTierActive = $defenderCspmActive -or $cwpPlansActive
+
+            # -------------------------
+            # If no paid tier active (only Foundational CSPM / free tier) -> Compliant
+            # -------------------------
+            if (-not $anyPaidTierActive) {
+                Write-Verbose "Only Foundational CSPM (free tier) active for subscription $subName ($subId). Marking compliant."
+                $Comments = $msgTable.FoundationalCspmOnlyCompliant
+
+                $C = [PSCustomObject]@{
+                    SubscriptionName = $subName
+                    ComplianceStatus = $true
+                    ControlName      = $ControlName
+                    Comments         = $Comments
+                    ItemName         = $ItemName
+                    ReportTime       = $ReportTime
+                    itsgcode         = $itsgcode
+                }
+
+                if ($EnableMultiCloudProfiles) {
+                    $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
+                    [void]$PsObject.Add($result)
+                } else {
+                    [void]$PsObject.Add($C)
+                }
+
+                Write-Verbose "Completed compliance output for subscription: $subName"
+                continue
             }
 
             # -------------------------
-            # C) Notifications / securityContacts check (ARM)
+            # C) Notifications / securityContacts check (ARM) - paid tier is active
             # -------------------------
             $notifOk = $true
             $notifComment = $null
@@ -541,15 +578,23 @@ function Get-DefenderForCloudAlerts {
                     }
                 }
             }
-            
 
             # -------------------------
-            # Final compliance (both must pass)
+            # D) CWP evaluation - informational only (does NOT affect compliance)
             # -------------------------
-            $isCompliant = ($coverageOk -and $notifOk )
+            $cwpInfoComment = $null
+            if ($cwpPlansActive -and $authHeader) {
+                $cov = Get-CwpCoverageForSubscription -SubscriptionId $subId -CountsBySub $countsBySub -TypeToPlanMap $TypeToPlanMap -PricingByPlan $pricingByPlan -msgTable $msgTable
+                $cwpInfoComment = $msgTable.CwpInformational -f $cov.comment
+                Write-Verbose "CWP informational for $subName : $cwpInfoComment"
+            }
+
+            # -------------------------
+            # Final compliance (based on notification checks only; CWP is informational)
+            # -------------------------
+            $isCompliant = $notifOk
 
             $commentsList = New-Object System.Collections.Generic.List[string]
-            if (-not $coverageOk -and $coverageComment) { $commentsList.Add($coverageComment) | Out-Null }
             if (-not $notifOk -and $notifComment) { $commentsList.Add($notifComment) | Out-Null }
 
             if ($isCompliant) {
@@ -558,6 +603,9 @@ function Get-DefenderForCloudAlerts {
             elseif ($commentsList.Count -eq 0) {
                 $commentsList.Add($msgTable.DefenderEnabledNonCompliant) | Out-Null
             }
+
+            # Append CWP informational comment if present
+            if ($cwpInfoComment) { $commentsList.Add($cwpInfoComment) | Out-Null }
 
             $Comments = ($commentsList | Where-Object { $_ } | Select-Object -Unique) -join " | "
 
