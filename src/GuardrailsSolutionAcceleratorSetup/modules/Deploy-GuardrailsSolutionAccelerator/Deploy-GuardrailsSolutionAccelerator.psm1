@@ -91,6 +91,298 @@ Function New-GSACoreResourceDeploymentParamObject {
     [hashtable]$templateParameterObject
 }
 
+$script:GsaGitHubRepoRoot = 'https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator'
+$script:GsaGitHubApiRoot = 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator'
+$script:GsaMandatoryTagKeys = @('Solution', 'ReleaseVersion', 'ReleaseDate')
+$script:GsaExportedConfigSecretName = 'gsaConfigExportLatest'
+
+# Find the GitHub release whose values should supply the mandatory Azure resource tags.
+Function Get-GSAResolvedGitHubRelease {
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]
+        $RequestedReleaseVersion
+    )
+
+    # Deployment can either target a specific GitHub release tag (for example, v3.0.0)
+    # or whatever GitHub currently marks as latest.
+    if ([string]::IsNullOrEmpty($RequestedReleaseVersion)) {
+        return Invoke-RestMethod "$($script:GsaGitHubApiRoot)/releases/latest" -Verbose:$false -ErrorAction Stop
+    }
+
+    $releases = Invoke-RestMethod "$($script:GsaGitHubApiRoot)/releases" -Verbose:$false -ErrorAction Stop
+    $resolvedRelease = $releases | Where-Object {
+        $_.tag_name -eq $RequestedReleaseVersion
+    } | Select-Object -First 1
+
+    if (-not $resolvedRelease) {
+        throw "Release '$RequestedReleaseVersion' was not found on GitHub."
+    }
+
+    return $resolvedRelease
+}
+
+# Read the GitHub release tag name that should be used when downloading repo files
+# or published module zip files.
+Function Get-GSAReleaseRef {
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]
+        $Release
+    )
+
+    # Use the GitHub release tag name when downloading repo files
+    # or published module zip files.
+    if (-not [string]::IsNullOrEmpty($Release.tag_name)) {
+        return $Release.tag_name
+    }
+
+    throw "GitHub release did not include a usable tag_name."
+}
+
+# When -alternatePSModulesURL is used, read the GitHub branch or tag name from that URL.
+# Fresh installs and full upgrades use that same GitHub source for the mandatory Azure resource tags.
+Function Get-GSAAlternateSourceRef {
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]
+        $AlternatePSModulesURL
+    )
+
+    if ([string]::IsNullOrEmpty($AlternatePSModulesURL)) {
+        return $null
+    }
+
+    $githubModuleUrlPattern = '^https://github\.com/[^/]+/[^/]+/(raw|archive)/(?<ref>.+)/psmodules/?$'
+    if ($AlternatePSModulesURL -notmatch $githubModuleUrlPattern) {
+        return $null
+    }
+
+    return [uri]::UnescapeDataString($Matches.ref)
+}
+
+# Decide whether an update request is the default full-upgrade set or only a partial component update.
+# A full upgrade means either:
+# - -update by itself
+# - -update with the full component set: Workbook, GuardrailPowerShellModules,
+#   AutomationAccountRunbooks, and CoreComponents
+Function Test-GSAIsFullUpgrade {
+    param (
+        [Parameter(Mandatory = $false)]
+        [string[]]
+        $ComponentsToUpdate = @()
+    )
+
+    $defaultUpdateComponents = @('Workbook', 'GuardrailPowerShellModules', 'AutomationAccountRunbooks', 'CoreComponents')
+    return (@($ComponentsToUpdate | Sort-Object) -join ',') -eq (@($defaultUpdateComponents | Sort-Object) -join ',')
+}
+
+# Check whether the JSON passed through -configString is the saved deployment config that was exported
+# to Key Vault earlier. If it is, this is an existing environment, so the code can keep using the
+# saved mandatory Azure resource tags from Key Vault.
+Function Test-GSAHasExportedRuntime {
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]
+        $ConfigString
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ConfigString)) {
+        return $false
+    }
+
+    try {
+        $configObject = $ConfigString | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+    }
+    catch {
+        return $false
+    }
+
+    return $configObject.ContainsKey('runtime') -and ($configObject['runtime'] -is [hashtable])
+}
+
+# Replace the reserved mandatory Azure resource tags in a tag table while preserving any non-reserved custom tags.
+Function Set-GSAMandatoryTagsInTable {
+    param (
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $TargetTags,
+
+        [Parameter(Mandatory = $true)]
+        $SourceTags,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $SourceDescription
+    )
+
+    $resolvedTags = [hashtable]$TargetTags.Clone()
+
+    # Remove any existing copies of the reserved mandatory Azure resource tags first so they are
+    # re-added with the expected names: Solution, ReleaseVersion, and ReleaseDate.
+    foreach ($mandatoryTagKey in $script:GsaMandatoryTagKeys) {
+        $existingMandatoryTagKey = $resolvedTags.Keys | Where-Object { $_ -ieq $mandatoryTagKey } | Select-Object -First 1
+        if ($existingMandatoryTagKey) {
+            $resolvedTags.Remove($existingMandatoryTagKey)
+        }
+    }
+
+    foreach ($mandatoryTagKey in $script:GsaMandatoryTagKeys) {
+        if ($SourceTags -is [System.Collections.IDictionary]) {
+            $mandatoryTagValue = $SourceTags[$mandatoryTagKey]
+        }
+        else {
+            $mandatoryTagValue = $SourceTags.$mandatoryTagKey
+        }
+
+        if ([string]::IsNullOrEmpty($mandatoryTagValue)) {
+            throw "$SourceDescription is missing mandatory tag '$mandatoryTagKey'."
+        }
+
+        $resolvedTags[$mandatoryTagKey] = $mandatoryTagValue
+    }
+
+    return $resolvedTags
+}
+
+# Replace the reserved mandatory Azure resource tags in runtime.tagsTable with values read from a
+# specific GitHub branch or tag. This is used for fresh installs and full upgrades.
+Function Set-GSAResolvedMandatoryTags {
+    param (
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $config,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ReleaseRef
+    )
+
+    $tagsFileUri = "{0}/raw/{1}/setup/tags.json" -f $script:GsaGitHubRepoRoot, $ReleaseRef
+
+    Write-Verbose "Fetching mandatory Azure resource tags from GitHub source '$ReleaseRef' using '$tagsFileUri'"
+    $githubTags = Invoke-RestMethod -Uri $tagsFileUri -Verbose:$false -ErrorAction Stop
+    if ($githubTags -is [System.Array]) {
+        $githubTags = $githubTags | Select-Object -First 1
+    }
+
+    # The reserved mandatory Azure resource tags always come from the selected GitHub source, even if the local tags file was edited.
+    $config['runtime']['tagsTable'] = Set-GSAMandatoryTagsInTable -TargetTags $config['runtime']['tagsTable'] -SourceTags $githubTags -SourceDescription "GitHub tags.json for release '$ReleaseRef'"
+}
+
+# Reuse the saved mandatory Azure resource tags from Key Vault so partial updates and existing-deployment
+# component additions keep the deployment's existing release identity.
+Function Set-GSASavedMandatoryTags {
+    param (
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $config
+    )
+
+    # Support bugfix updates should keep the environment's existing GitHub release identity instead of
+    # relabeling Azure resource tags to match an alternate module URL.
+    Write-Verbose "Fetching saved mandatory Azure resource tags from Key Vault secret '$($script:GsaExportedConfigSecretName)' in '$($config['runtime']['keyVaultName'])'"
+    try {
+        [string]$configValue = Get-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $script:GsaExportedConfigSecretName -AsPlainText -ErrorAction Stop
+        $exportedConfig = $configValue | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+    }
+    catch {
+        throw "Unable to retrieve saved mandatory Azure resource tags from Key Vault '$($config['runtime']['keyVaultName'])'. $_"
+    }
+
+    if (-not $exportedConfig.ContainsKey('runtime') -or -not $exportedConfig['runtime'].ContainsKey('tagsTable')) {
+        throw "Key Vault secret '$($script:GsaExportedConfigSecretName)' does not contain runtime.tagsTable."
+    }
+
+    $config['runtime']['tagsTable'] = Set-GSAMandatoryTagsInTable -TargetTags $config['runtime']['tagsTable'] -SourceTags $exportedConfig['runtime']['tagsTable'] -SourceDescription "Key Vault secret '$($script:GsaExportedConfigSecretName)'"
+}
+
+# Keep the mandatory Azure resource tag rules in one place so deploy, update, and validation
+# all behave the same way.
+# Rules:
+# - Fresh install or full upgrade: use the selected GitHub branch or tag.
+# - Partial update or existing-deployment component addition: use the saved tags from Key Vault.
+Function Set-GSAEffectiveMandatoryTags {
+    param (
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $config,
+
+        [Parameter(Mandatory = $false)]
+        [string]
+        $RequestedReleaseVersion,
+
+        [Parameter(Mandatory = $false)]
+        [string]
+        $AlternatePSModulesURL,
+
+        [Parameter(Mandatory = $false)]
+        [string]
+        $RequestedGitHubSourceRef,
+
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $RequireSavedTags
+    )
+
+    $alternateSourceRef = Get-GSAAlternateSourceRef -AlternatePSModulesURL $AlternatePSModulesURL
+    $selectedGitHubRef = $RequestedGitHubSourceRef
+
+    # This optional branch/tag value is only meant to preserve source identity when modules were
+    # staged somewhere else and -alternatePSModulesURL is being used.
+    if (-not [string]::IsNullOrEmpty($RequestedGitHubSourceRef) -and [string]::IsNullOrEmpty($AlternatePSModulesURL)) {
+        throw "The optional -gitHubSourceRef value can only be used together with -alternatePSModulesURL."
+    }
+
+    # Direct module callers should not be able to label Azure resource tags from one GitHub branch/tag
+    # while downloading modules from a different GitHub branch/tag.
+    if (-not [string]::IsNullOrEmpty($RequestedGitHubSourceRef) -and -not [string]::IsNullOrEmpty($RequestedReleaseVersion) -and $RequestedGitHubSourceRef -ne $RequestedReleaseVersion) {
+        throw "The specified -gitHubSourceRef '$RequestedGitHubSourceRef' does not match -releaseVersion '$RequestedReleaseVersion'."
+    }
+
+    # If the alternate module URL already points to GitHub, the branch/tag in that URL must match any
+    # explicit branch/tag value passed in by the caller.
+    if ([string]::IsNullOrEmpty($selectedGitHubRef)) {
+        $selectedGitHubRef = $alternateSourceRef
+    }
+    elseif (-not [string]::IsNullOrEmpty($alternateSourceRef) -and $selectedGitHubRef -ne $alternateSourceRef) {
+        throw "The specified -gitHubSourceRef '$selectedGitHubRef' does not match the GitHub branch/tag '$alternateSourceRef' in -alternatePSModulesURL."
+    }
+
+    if (-not [string]::IsNullOrEmpty($RequestedReleaseVersion) -and -not [string]::IsNullOrEmpty($alternateSourceRef) -and $RequestedReleaseVersion -ne $alternateSourceRef) {
+        throw "The specified -releaseVersion '$RequestedReleaseVersion' does not match the GitHub branch/tag '$alternateSourceRef' in -alternatePSModulesURL."
+    }
+
+    if ($RequireSavedTags.IsPresent -and -not [string]::IsNullOrEmpty($AlternatePSModulesURL)) {
+        Set-GSASavedMandatoryTags -config $config -Verbose:($VerbosePreference -eq 'Continue')
+        return [PSCustomObject]@{
+            ReleaseRef    = $null
+            SourceSummary = "saved mandatory Azure resource tags from Key Vault '$($config['runtime']['keyVaultName'])'"
+        }
+    }
+
+    if (-not [string]::IsNullOrEmpty($selectedGitHubRef)) {
+        Set-GSAResolvedMandatoryTags -config $config -ReleaseRef $selectedGitHubRef -Verbose:($VerbosePreference -eq 'Continue')
+
+        return [PSCustomObject]@{
+            ReleaseRef    = $selectedGitHubRef
+            SourceSummary = "GitHub branch/tag '$selectedGitHubRef'"
+        }
+    }
+
+    # Standard release flows get the mandatory Azure resource tags from either the requested GitHub
+    # release tag (for example, v3.0.0) or the latest official GitHub release.
+    $resolvedRelease = Get-GSAResolvedGitHubRelease -RequestedReleaseVersion $RequestedReleaseVersion -Verbose:($VerbosePreference -eq 'Continue')
+    $selectedReleaseRef = Get-GSAReleaseRef -Release $resolvedRelease
+    Set-GSAResolvedMandatoryTags -config $config -ReleaseRef $selectedReleaseRef -Verbose:($VerbosePreference -eq 'Continue')
+    $sourceSummary = if (-not [string]::IsNullOrEmpty($RequestedReleaseVersion)) { "GitHub release '$selectedReleaseRef'" } else { "latest official GitHub release '$selectedReleaseRef'" }
+
+    return [PSCustomObject]@{
+        ReleaseRef    = $selectedReleaseRef
+        SourceSummary = $sourceSummary
+    }
+}
+
 Function Deploy-GuardrailsSolutionAccelerator {
     <#
     .SYNOPSIS
@@ -206,26 +498,39 @@ Function Deploy-GuardrailsSolutionAccelerator {
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
         [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
         [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
+        # Validation also accepts alternatePSModulesURL so it can show the final mandatory Azure
+        # resource tags that deployment would use, not just the local setup/tags.json values.
+        [Parameter(Mandatory = $false, ParameterSetName = 'validateConfigFile')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'validatePreReqs-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'validatePreReqs-configString')]
         [string]
         $alternatePSModulesURL,
 
-        # specify a release to deploy or update to - ex: 'v1.0.9', 'prerelease-v1.0.8.1'. If not specified, the latest release will be used
-        # the 'latest' release is typically the last full release, unless a critcal bug fix was applied since the last full release
+        # specify a release/tag to deploy or update to - ex: 'v1.0.9' or 'v3.0.0beta2'.
+        # If not specified, the latest GitHub release will be used.
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
         [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
         [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
-        [ValidatePattern('(prerelease-)?v\d+\.\d+\.\d+(\.\d+)?')]
+        # Validation also accepts releaseVersion so it can resolve the same mandatory Azure
+        # resource tags that a real deploy or update would use.
+        [Parameter(Mandatory = $false, ParameterSetName = 'validateConfigFile')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'validatePreReqs-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'validatePreReqs-configString')]
         [string]
         $releaseVersion,
 
-        # # if specified, deploy the lastest pre-release version. If used with -releaseVersion, the release version will take precedence
-        # [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
-        # [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
-        # [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
-        # [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
-        # [switch]
-        # $prerelease,
+        # When modules are staged outside GitHub, this optional value tells the deploy logic which
+        # GitHub branch or tag the modules originally came from for mandatory Azure resource tags.
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'updateDeployment-configString')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'validateConfigFile')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'validatePreReqs-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'validatePreReqs-configString')]
+        [string]
+        $gitHubSourceRef,
 
         # proceed through imput prompts - used for deployment via automation or testing
         [Parameter(Mandatory = $false)]
@@ -247,20 +552,33 @@ Function Deploy-GuardrailsSolutionAccelerator {
     # based on parameters, perform validation or deployment/update
     If ($validateConfigFile.IsPresent) {
         $config = Confirm-GSAConfigurationParameters -configFilePath $configFilePath -Verbose:$useVerbose
+        $mandatoryTagResolution = Set-GSAEffectiveMandatoryTags -config $config -RequestedReleaseVersion $releaseVersion -AlternatePSModulesURL $alternatePSModulesURL -RequestedGitHubSourceRef $gitHubSourceRef -Verbose:$useVerbose
 
         Write-Output "Configuration parameters:"
         $config.GetEnumerator() | Sort-Object -Property Name | Format-Table -AutoSize -Wrap
+        Write-Output "Mandatory tag source: $($mandatoryTagResolution.SourceSummary)"
+        Write-Output "Effective tags:"
+        $config['runtime']['tagsTable'].GetEnumerator() | Sort-Object -Property Key | Format-Table -Property Key, Value -AutoSize -Wrap
         break
     }
     ElseIf ($validatePrerequisites.IsPresent) {
         Write-Verbose "Validating config parameters before validating prerequisites..."
+        $hasExportedRuntime = $false
         If ($PSCmdlet.ParameterSetName -eq 'validatePreReqs-configString') {
+            $hasExportedRuntime = Test-GSAHasExportedRuntime -ConfigString $configString
             $config = Confirm-GSAConfigurationParameters -configString $configString -Verbose:$useVerbose
         }
         Else {
             $config = Confirm-GSAConfigurationParameters -configFilePath $configFilePath -Verbose:$useVerbose
         }
         Write-Verbose "Completed validating config parameters."
+        # Validation only knows whether the input came from an exported existing-deployment config.
+        # It does not know whether a later execution will be a full upgrade or a partial update,
+        # so it can only apply the part of the rule that is visible from the validation input.
+        $mandatoryTagResolution = Set-GSAEffectiveMandatoryTags -config $config -RequestedReleaseVersion $releaseVersion -AlternatePSModulesURL $alternatePSModulesURL -RequestedGitHubSourceRef $gitHubSourceRef -RequireSavedTags:($hasExportedRuntime -and -not [string]::IsNullOrEmpty($alternatePSModulesURL) -and [string]::IsNullOrEmpty($releaseVersion)) -Verbose:$useVerbose
+        Write-Output "Mandatory tag source: $($mandatoryTagResolution.SourceSummary)"
+        Write-Output "Effective tags:"
+        $config['runtime']['tagsTable'].GetEnumerator() | Sort-Object -Property Key | Format-Table -Property Key, Value -AutoSize -Wrap
 
         Confirm-GSAPrerequisites -config $config -newComponents $newComponents -Verbose:$useVerbose
         break
@@ -268,13 +586,23 @@ Function Deploy-GuardrailsSolutionAccelerator {
     Else {
         # new deployment or update deployment
         # confirms the provided values in config.json and appends runtime values, then returns the config object
+        $hasExportedRuntime = $false
         If ($PSCmdlet.ParameterSetName -in 'newDeployment-configString','updateDeployment-configString') {
+            $hasExportedRuntime = Test-GSAHasExportedRuntime -ConfigString $configString
             $config = Confirm-GSAConfigurationParameters -configString $configString -Verbose:$useVerbose
         }
         Else {
             $config = Confirm-GSAConfigurationParameters -configFilePath $configFilePath -Verbose:$useVerbose
         }
 
+        $isFullUpgrade = $update.IsPresent -and (Test-GSAIsFullUpgrade -ComponentsToUpdate $componentsToUpdate)
+        $isExistingDeploymentComponentFlow = $hasExportedRuntime -and (-not $update.IsPresent)
+        # Use the saved mandatory Azure resource tags from Key Vault for partial updates or
+        # existing-deployment component-addition flows that use an alternate module source and do
+        # not request a specific GitHub release. Fresh installs and full upgrades use GitHub instead.
+        $requireSavedTags = (($update.IsPresent -and -not $isFullUpgrade) -or $isExistingDeploymentComponentFlow) -and -not [string]::IsNullOrEmpty($alternatePSModulesURL) -and [string]::IsNullOrEmpty($releaseVersion)
+        $mandatoryTagResolution = Set-GSAEffectiveMandatoryTags -config $config -RequestedReleaseVersion $releaseVersion -AlternatePSModulesURL $alternatePSModulesURL -RequestedGitHubSourceRef $gitHubSourceRef -RequireSavedTags:$requireSavedTags -Verbose:$useVerbose
+        $selectedReleaseRef = $mandatoryTagResolution.ReleaseRef
         Show-GSADeploymentSummary -deployParams $PSBoundParameters -deployParamSet $PSCmdlet.ParameterSetName -yes:$yes.isPresent -Verbose:$useVerbose
 
         # set module install or update source URL
@@ -283,53 +611,29 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "-alternatePSModulesURL specified, using alternate URL for Guardrails PowerShell modules: $alternatePSModulesURL"
             $params = @{ moduleBaseURL = $alternatePSModulesURL }
         }
-        ElseIf ([string]::IsNullOrEmpty($releaseVersion) -and !$prerelease.IsPresent) {
-            # getting latest release from GitHub
-            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-            $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/psmodules" -f $latestRelease.name
+        ElseIf ([string]::IsNullOrEmpty($releaseVersion)) {
+            $moduleBaseURL = "{0}/raw/{1}/psmodules" -f $script:GsaGitHubRepoRoot, $selectedReleaseRef
 
             Write-Verbose "Using latest release from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
             $params = @{ moduleBaseURL = $moduleBaseURL }
         }
         ElseIf ($releaseVersion) {
-            # check if prerelease version was specified 
-            If ($releaseVersion -like 'prerelease-*') {
-                Write-Warning "-releaseVersion specified with a pre-release version, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
-            }
-
-            # get releases from GitHub
-            $releases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
-            
-            If ($releases.name -contains $releaseVersion) {
-                Write-Verbose "Found a release on GitHub match for $releaseVersion"
-                $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/{0}/" -f $releaseVersion
-            }
+            Write-Verbose "Found a release on GitHub match for $releaseVersion"
+            $moduleBaseURL = "{0}/releases/download/{1}/" -f $script:GsaGitHubRepoRoot, $selectedReleaseRef
         }
-        # ElseIf ($prerelease) {
-        #     Write-Warning "-Prerelease specified, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
-
-        #     # getting all release from github
-        #     $releases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
-        #     $latestPreRelease = $releases | Where-Object { $_.prerelease -eq 'True' } | 
-        #         Sort-Object -Property published_at -Descending | 
-        #         Select-Object -First 1
-
-        #     $releaseVersion = $latestPreRelease.name
-        #     $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/{0}/" -f $releaseVersion
-        # }
 
         # if installing from a published release, check that the release contains zip assets
-        If (-NOT($alternatePSModulesURL)) {
+        If (-NOT($alternatePSModulesURL) -and $moduleBaseURL) {
             # check that the release contains the 'GR-Common.zip' file as an asset. 
             Write-Verbose "Checking that the release contains the 'GR-Common.zip' file as an asset..."
             try {
                 $null = Invoke-RestMethod -Method HEAD -Uri "$moduleBaseURL/GR-Common.zip" -ErrorAction Stop -Verbose:$false
             }
             catch {
-                Write-Error "The release $releaseVersion does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases"
+                Write-Error "The release $selectedReleaseRef does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: $($script:GsaGitHubRepoRoot)/releases"
                 return
             }
-            Write-Verbose "The release $releaseVersion contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
+            Write-Verbose "The release $selectedReleaseRef contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
         }
         
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose

@@ -385,8 +385,13 @@ Function Confirm-GSAConfigurationParameters {
         $userId = (Get-AzAdUser -SignedIn).Id
     }
 
-    ## gets tags information from tags.json, including version and release date.
-    $tagsTable = get-content -path "$PSScriptRoot/../../../../setup/tags.json" | convertfrom-json -AsHashtable
+    ## Read the local Azure resource tags from setup/tags.json.
+    ## During deployment, the reserved mandatory Azure resource tags may be replaced with values
+    ## fetched from the selected GitHub release or branch.
+    $tagsTable = Get-Content -Path "$PSScriptRoot/../../../../setup/tags.json" -Raw | ConvertFrom-Json -AsHashtable
+    if ($tagsTable -is [System.Array]) {
+        $tagsTable = $tagsTable | Select-Object -First 1
+    }
 
     ## unique resource name suffix, default to last segment of tenant ID
     If ([string]::IsNullOrEmpty($config.uniqueNameSuffix)) {
