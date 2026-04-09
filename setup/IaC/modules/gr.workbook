@@ -29,7 +29,7 @@
             "timeContext": {
               "durationMs": 86400000
             },
-            "value": "Other"
+            "value": "False"
           }
         ],
         "style": "pills",
