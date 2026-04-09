@@ -365,11 +365,7 @@ function Check-ApplicationGatewayCertificateValidity {
             $subComments = $msgTable.noAppGatewayFound -f $subscription.Name
             $IsCompliant = $true
             Write-Verbose "No app gateways found - Comments: $Comments"
-        } 
-        # elseif($NotEvaluated){
-        #     $IsCompliant = "Not Available"
-        #     Write-Verbose "App gateways found but certificate validation could not be completed due to errors accessing certificate data - IsCompliant: $IsCompliant, Comments: $subComments"
-        # }
+        }
         else {
             $IsCompliant = $isSubCompliant
             if (-not $NotEvaluated) {
@@ -378,16 +374,20 @@ function Check-ApplicationGatewayCertificateValidity {
                     $subComments= $msgTable.allCertificatesValid
                 }
             }
+            elseif($NotEvaluated){
+                $IsCompliant = "Not Available"
+                Write-Verbose "App gateways found but certificate validation could not be completed due to errors accessing certificate data - IsCompliant: $IsCompliant, Comments: $subComments"
+            }
         }
         
-        $Comments = $Comments + " " + $subComments
+        $subComments = $subComments + " " + $subComments
         # Add evaluation info for each subscription
 
         $C = [PSCustomObject]@{
             SubscriptionName   = $subscription.Name
-            ComplianceStatus   = if ($NotEvaluated) { "Not Available" } else { $IsCompliant }
+            ComplianceStatus   = $IsCompliant #if ($NotEvaluated) { "Not Available" } else { $IsCompliant }
             ControlName        = $ControlName
-            Comments           = $Comments
+            Comments           = $subComments
             ItemName           = $ItemName
             ReportTime         = $ReportTime
             itsgcode           = $itsgcode
