@@ -385,9 +385,7 @@ function Check-ApplicationGatewayCertificateValidity {
             }
         }
         
-        $subComments = $subComments + " " + $subComments
         # Add evaluation info for each subscription
-
         $C = [PSCustomObject]@{
             SubscriptionName   = $subscription.Name
             ComplianceStatus   = $IsCompliant 
