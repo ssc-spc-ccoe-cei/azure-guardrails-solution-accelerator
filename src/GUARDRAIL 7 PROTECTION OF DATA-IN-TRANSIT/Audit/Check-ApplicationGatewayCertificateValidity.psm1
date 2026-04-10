@@ -37,9 +37,11 @@ function Check-ApplicationGatewayCertificateValidity {
     # --------------------------------
     # Add possible file extensions
     $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
+    $subName = ""
 
     try {
         Select-AzSubscription -Subscription $SubscriptionID | out-null
+        $subName  = (Get-AzContext).Subscription.Name
     }
     catch {
         $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
@@ -50,7 +52,7 @@ function Check-ApplicationGatewayCertificateValidity {
     }
     catch {
         $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
+        subscription '$SubscriptionID   '; verify that the storage account exists and that you have permissions to it. Error: $_")
         Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
@@ -89,6 +91,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
         }
     }
+    
 
     # ----------------------
     # Case 1: uploaded fileName is correct but has wrong extension
@@ -99,6 +102,7 @@ function Check-ApplicationGatewayCertificateValidity {
         $IsCompliant = $false
 
         $C = [PSCustomObject]@{
+            SubscriptionName = $subName
             ComplianceStatus = $IsCompliant
             ControlName      = $ControlName
             Comments         = $Comments
@@ -109,7 +113,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
         # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
-            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscription.Id -ErrorList $ErrorList
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
             Write-Host "$result"
             $PsObject.Add($result) | Out-Null
         } else {
@@ -137,6 +141,7 @@ function Check-ApplicationGatewayCertificateValidity {
         $IsCompliant = $false
         
         $C= [PSCustomObject]@{
+            SubscriptionName = $subName
             ComplianceStatus = $IsCompliant
             ControlName      = $ControlName
             Comments         = $Comments
@@ -147,7 +152,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
         # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
-            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscription.Id -ErrorList $ErrorList
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
             Write-Host "$result"
             $PsObject.Add($result) | Out-Null
         } else {
@@ -427,4 +432,3 @@ function Test-KeyVaultAccess {
     }
     return $result
 }
-
