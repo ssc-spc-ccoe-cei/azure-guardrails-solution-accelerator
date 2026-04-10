@@ -27,7 +27,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
     $IsCompliant = $false
     $Comments = ""
-    # $ErrorList = [System.Collections.ArrayList]@()
+    
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ApprovedCAList = @()
@@ -390,7 +390,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
         $C = [PSCustomObject]@{
             SubscriptionName   = $subscription.Name
-            ComplianceStatus   = $IsCompliant #if ($NotEvaluated) { "Not Available" } else { $IsCompliant }
+            ComplianceStatus   = $IsCompliant 
             ControlName        = $ControlName
             Comments           = $subComments
             ItemName           = $ItemName
