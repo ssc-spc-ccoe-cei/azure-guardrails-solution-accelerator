@@ -180,7 +180,7 @@ function Check-ApplicationGatewayCertificateValidity {
 
         #initialize for each subscription
         $appGatewaysFound = $false
-        $isSubCompliant = $false
+        $isSubCompliant = $true
         $subComments = ""
         $NotEvaluated = $false
 
@@ -240,7 +240,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             Write-Warning "KeyVault access not successful."
                             $subComments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name
                             $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account managed identity requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error).")
-                            # Don't set allCompliant to true - set NotEvaluated flag
+                            # Don't set isSubCompliant to true - set NotEvaluated flag
                             $NotEvaluated = $true
                             continue
                         }
