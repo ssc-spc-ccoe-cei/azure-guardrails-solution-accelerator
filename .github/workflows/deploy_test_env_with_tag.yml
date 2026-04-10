@@ -289,11 +289,15 @@ jobs:
               $modulesStagingURI = $storageContext.BlobEndpoint.ToString() + 'psmodules' 
 
               $alternatePSModulesURL = $modulesStagingURI
+              $gitHubSourceRef = '${{ github.event.inputs.version_tag }}'
               Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
 
               $optionalParams = @{}
               if ($alternatePSModulesURL) {
                   $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+              }
+              if ($gitHubSourceRef) {
+                  $optionalParams['gitHubSourceRef'] = $gitHubSourceRef
               }
 
               try {
