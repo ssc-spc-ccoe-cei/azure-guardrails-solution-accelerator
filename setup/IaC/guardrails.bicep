@@ -135,6 +135,7 @@ module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || update
     location: location
     #disable-next-line BCP318    
     logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
+    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     releaseVersion: releaseVersion
     releaseDate: releaseDate
     newDeployment: newDeployment
