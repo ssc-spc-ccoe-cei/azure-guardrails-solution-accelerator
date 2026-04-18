@@ -342,7 +342,7 @@ DefenderEnabledNonCompliant = MS Defender for Cloud is enabled for this subscrip
 NoMappedResourcesOrMappingIncomplete = There are not any resources (i.e., virtual machines, servers, storage accounts etc.,) being directly protected by Defender for Cloud Workload Protection (CWP) Standard tier service offering.
 CwpPlansNotStandard = The following CWP plans in use are not considered Standard tier for Defender for Cloud: {0}.
 CoverageOk = All CWP plans are using a Defender for Cloud Workload Protection (CWP) Standard tier service offering and are considered compliant.
-FoundationalCspmOnlyCompliant = Only Foundational CSPM (free tier) is active for this subscription. Defender CSPM and CWP plans are not enabled. The subscription is compliant.
+FoundationalCspmOnlyInfo = [Informational] Only Foundational CSPM (free tier) is active for this subscription. Defender CSPM and CWP plans are not enabled.
 CwpInformational = [Informational] {0}
 
 
