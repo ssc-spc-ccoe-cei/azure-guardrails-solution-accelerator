@@ -162,9 +162,20 @@ function Check-GAUserCountMFARequired {
 
             if ($null -ne $data -and $null -ne $data.value) {
                 $groupMembers  = $data.value
-                # Filter only user objects
-                $groupMemberUsers = $groupMembers | Where-Object { $_.'@odata.type' -eq "#microsoft.graph.user" }
-                $expandedGAGroupUsers += $groupMemberUsers
+                foreach ($member in $groupMembers) {
+                    if ($member. '@odata.type' -eq "#microsoft.graph.user") {
+                        $expandedGAGroupUsers += [PSCustomObject]@{
+                            roleId = $roleId
+                            roleName = $roleName
+                            id = $member.id
+                            displayName = $member.displayName
+                            mail = $member.mail
+                            userPrincipalName = $member.userPrincipalName
+                            assignmentType = "Group"
+                            sourceGroup = $gaGroup.displayName
+                        }
+                    }
+                }    
             }
         }
         catch {
@@ -184,18 +195,19 @@ function Check-GAUserCountMFARequired {
 
     }
 
-    $globalAdminUserAccounts = @()
-    $allGAUsers = $gaUserList + $expandedGAGroupUsers
-    foreach ($gaUser in $allGAUsers) {
-        $roleAssignments = [PSCustomObject]@{
+    # $globalAdminUserAccounts = @()
+    $globalAdminUserAccounts = $expandedGAGroupUsers
+    # Add direct GA users to the list
+    foreach ($gaUser in $gaUserList) {
+        $globalAdminUserAccounts += [PSCustomObject]@{
             roleId              = $roleId
             roleName            = $roleName
             userId              = $gaUser.id
             displayName         = $gaUser.displayName
             mail                = $gaUser.mail
             userPrincipalName   = $gaUser.userPrincipalName
+            assignmentType      = "Direct"
         }
-        $globalAdminUserAccounts +=  $roleAssignments
     }
     $globalAdminUserAccounts = $globalAdminUserAccounts | Sort-Object -Property userPrincipalName -Unique
 
