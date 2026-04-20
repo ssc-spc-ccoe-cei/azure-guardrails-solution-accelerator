@@ -510,35 +510,16 @@ function Get-DefenderForCloudAlerts {
             $anyPaidTierActive = $defenderCspmActive -or $cwpPlansActive
 
             # -------------------------
-            # If no paid tier active (only Foundational CSPM / free tier) -> Compliant
+            # Track if only free tier is active (informational)
             # -------------------------
+            $freeTierInfoComment = $null
             if (-not $anyPaidTierActive) {
-                Write-Verbose "Only Foundational CSPM (free tier) active for subscription $subName ($subId). Marking compliant."
-                $Comments = $msgTable.FoundationalCspmOnlyCompliant
-
-                $C = [PSCustomObject]@{
-                    SubscriptionName = $subName
-                    ComplianceStatus = $true
-                    ControlName      = $ControlName
-                    Comments         = $Comments
-                    ItemName         = $ItemName
-                    ReportTime       = $ReportTime
-                    itsgcode         = $itsgcode
-                }
-
-                if ($EnableMultiCloudProfiles) {
-                    $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
-                    [void]$PsObject.Add($result)
-                } else {
-                    [void]$PsObject.Add($C)
-                }
-
-                Write-Verbose "Completed compliance output for subscription: $subName"
-                continue
+                Write-Verbose "Only Foundational CSPM (free tier) active for subscription $subName ($subId). Still checking notifications."
+                $freeTierInfoComment = $msgTable.FoundationalCspmOnlyInfo
             }
 
             # -------------------------
-            # C) Notifications / securityContacts check (ARM) - paid tier is active
+            # C) Notifications / securityContacts check (ARM)
             # -------------------------
             $notifOk = $true
             $notifComment = $null
@@ -603,6 +584,9 @@ function Get-DefenderForCloudAlerts {
             elseif ($commentsList.Count -eq 0) {
                 $commentsList.Add($msgTable.DefenderEnabledNonCompliant) | Out-Null
             }
+
+            # Append free-tier informational comment if present
+            if ($freeTierInfoComment) { $commentsList.Add($freeTierInfoComment) | Out-Null }
 
             # Append CWP informational comment if present
             if ($cwpInfoComment) { $commentsList.Add($cwpInfoComment) | Out-Null }
