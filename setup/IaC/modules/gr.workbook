@@ -58,12 +58,24 @@
               "showDefault": false
             },
             "timeContext": {
-              "durationMs": 86400000
+              "durationMs": "{Lookback}"
             },
             "defaultValue": "value::1",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
             "value": "2023-01-16 19:55:14"
+          },
+          {
+            "id": "f3b2d0e3-7b6e-4b7a-b1a4-ffb1c62a2e91",
+            "version": "KqlParameterItem/1.0",
+            "name": "Lookback",
+            "label": "Lookback Interval",
+            "type": 2,
+            "isRequired": true,
+            "query": "datatable(Value:string, Label:string)\n[\n  \"P1D\", \"24 hours\",\n  \"P7D\", \"⏳ 7 days\",\n  \"P30D\", \"📅 30 days\"\n]",
+            "defaultValue": "P7D",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
           }
         ],
         "style": "pills",
