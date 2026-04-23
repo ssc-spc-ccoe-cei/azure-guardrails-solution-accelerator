@@ -343,7 +343,7 @@ DefenderEnabledNonCompliant = MS Defender pour l'infonuagique est activé pour c
 NoMappedResourcesOrMappingIncomplete = Aucune ressource (c'est-à-dire machines virtuelles, serveurs, comptes de stockage, etc.) n'est directement protégée par l'offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard.
 CwpPlansNotStandard = Les plans CWP suivants en cours d'utilisation ne sont pas considérés comme appartenant au niveau Standard pour Defender pour l'infonuagique : {0}.
 CoverageOk = Tous les plans CWP utilisent une offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard et sont considérés comme conformes.
-FoundationalCspmOnlyCompliant = Seul le niveau de base de CSPM (niveau gratuit) est actif pour cet abonnement. Les plans Defender CSPM et CWP ne sont pas activés. L'abonnement est conforme.
+FoundationalCspmOnlyInfo = [Information] Seul le niveau de base de CSPM (niveau gratuit) est actif pour cet abonnement. Les plans Defender CSPM et CWP ne sont pas activés.
 CwpInformational = [Informationnel] {0}
 
 # GuardRail #12
