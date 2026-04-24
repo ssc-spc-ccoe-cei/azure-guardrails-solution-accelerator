@@ -1534,9 +1534,15 @@ function Invoke-GraphQueryEX {
         do {
             try {
                 $uri = $fullUri -as [uri]
-                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
-                $data = $response.Content | ConvertFrom-Json
+                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
+                # Treat any non-2xx as an error so bad requests (e.g. unsupported $filter)
+                # are retried/surfaced rather than silently returned as content
+                if ($statusCode -lt 200 -or $statusCode -ge 300) {
+                    throw [System.Exception]::new(
+                        "Graph API returned HTTP $statusCode at page $pageCount. Response: $($response.Content)")
+                }
+                $data = $response.Content | ConvertFrom-Json
                 $success = $true
             }
             catch {
@@ -1546,7 +1552,7 @@ function Invoke-GraphQueryEX {
                     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null
-                        StatusCode = $null
+                        StatusCode = $statusCode
                         Error      = $_.Exception.Message
                     }
                 } else {
@@ -1560,7 +1566,8 @@ function Invoke-GraphQueryEX {
             # AddRange avoids per-item overhead; cast ensures compatibility with all page types
             $allResults.AddRange([object[]]$data.value)
         } else {
-            # Endpoint returns a single object rather than a .value collection
+            # Endpoint returns a single object rather than a .value collection;
+            # preserve original return shape @{ value = singleObject } for caller compatibility
             $singleObjectResult = $data
             break
         }
@@ -1574,15 +1581,8 @@ function Invoke-GraphQueryEX {
     
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
-    if ($null -ne $singleObjectResult) {
-        return @{
-            Content    = $singleObjectResult
-            StatusCode = $statusCode
-        }
-    }
-
     return @{
-        Content    = @{ value = $allResults }
+        Content    = @{ value = if ($null -ne $singleObjectResult) { $singleObjectResult } else { $allResults } }
         StatusCode = $statusCode
     }
 }

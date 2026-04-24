@@ -22,38 +22,38 @@ function Check-GuestRoleReviews {
     
     $accessReviewList = @()
 
-    # list all access reviews in identity governance (using paginated query to handle >100 reviews)
-    # $select limits each record to only the fields consumed below, significantly reducing per-page payload.
-    # $filter excludes Completed and NotStarted definitions server-side; the client-side Where-Object
-    # below is therefore redundant and has been removed.
+    # Query 1: fetch only active access review definitions using server-side $filter.
+    # Graph does not support 'ne' on status for this endpoint; use explicit 'eq' per active
+    # status joined with 'or'. $select limits each record to only the fields consumed below.
+    # Full status enum per Graph docs: Initializing, NotStarted, Starting, InProgress,
+    # Completing, Completed, AutoReviewing, AutoReviewed.
+    # 'eq' is the only supported operator on status ($filter eq only - ne/gt/lt return HTTP 400).
+    # Exclude only the two terminal/inactive states: Completed and NotStarted.
+    $activeStatusFilter = "status eq 'Initializing' or status eq 'Starting' or status eq 'InProgress' or status eq 'Completing' or status eq 'AutoReviewing' or status eq 'AutoReviewed'"
     $urlPath = "/identityGovernance/accessReviews/definitions" +
         "?`$select=id,displayName,status,createdBy,createdDateTime,settings,scope,reviewers,descriptionForAdmins,descriptionForReviewers" +
-        "&`$filter=status ne 'Completed' and status ne 'NotStarted'"
+        "&`$filter=$activeStatusFilter"
 
     try {
         $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
-        # portal
         $data = $response.Content
         
         if ($null -ne $data -and $null -ne $data.value) {
-            $accessReviewsAll = $data.value 
-            $accessReviewsSorted = $accessReviewsAll | Sort-Object -Property displayName, createdDateTime -Descending 
-            
-            # Condition: any access review exist. if not, non-compliant
-            if ($accessReviewsSorted.Count -eq 0) {
-                $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReviewForGuests
-            }
-            else{
-                Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
+            $accessReviewHistory = $data.value | Sort-Object -Property displayName, createdDateTime -Descending
+            Write-Host "Number of active access reviews (server-filtered): $($accessReviewHistory.count)"
 
-                # Server-side $filter already excludes Completed and NotStarted; assign directly
-                $accessReviewHistory = $accessReviewsSorted
-                Write-Host "Number of most recent access review with in-progress review:  $($accessReviewHistory.count)"
-                # Condition: any access review are in active status. if not, non-compliant
-                if ($accessReviewHistory.Count -eq 0) {
+            if ($accessReviewHistory.Count -eq 0) {
+                # No active reviews found; run a cheap single-record existence check to pick the
+                # right non-compliant message: "never set up" vs "set up but nothing active now"
+                $existCheck = Invoke-GraphQuery -urlPath "/identityGovernance/accessReviews/definitions?`$select=id&`$top=1"
+                if ($null -eq $existCheck.Content -or $existCheck.Content.value.Count -eq 0) {
+                    $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noAutomatedAccessReviewForGuests
+                } else {
                     $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.noInProgressGuestAccessReview
                 }
-                else{
+            }
+            else{
+                Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one active review."
                     # get user info
                     $allUserInfo = Get-AzADUser
 
