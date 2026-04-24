@@ -1520,10 +1520,11 @@ function Invoke-GraphQueryEX {
 
     [string]$baseUri = "https://graph.microsoft.com/v1.0"
     $fullUri = "$baseUri$urlPath" 
-    $allResults = @()
+    # Use a generic List to avoid the O(n²) memory cost of PowerShell array '+=' on every page
+    $allResults = [System.Collections.Generic.List[object]]::new()
+    $singleObjectResult = $null
     $statusCode = $null
     $pageCount = 0
-   # Write-Host $fullUri
     do {
         $retryCount = 0
         $success = $false
@@ -1535,7 +1536,6 @@ function Invoke-GraphQueryEX {
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
                 $data = $response.Content | ConvertFrom-Json
-                $parsedcontent = $data.value
                 $statusCode = $response.StatusCode
                 $success = $true
             }
@@ -1557,10 +1557,11 @@ function Invoke-GraphQueryEX {
         } while (-not $success -and $retryCount -lt $MaxRetries)
 
         if ($null -ne $data.value) {
-            $allResults += $data.value
+            # AddRange avoids per-item overhead; cast ensures compatibility with all page types
+            $allResults.AddRange([object[]]$data.value)
         } else {
-            # For endpoints that don't return .value (single object)
-            $allResults = $data
+            # Endpoint returns a single object rather than a .value collection
+            $singleObjectResult = $data
             break
         }
         # Handle paging
@@ -1572,6 +1573,13 @@ function Invoke-GraphQueryEX {
     } while ($fullUri)
     
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
+
+    if ($null -ne $singleObjectResult) {
+        return @{
+            Content    = $singleObjectResult
+            StatusCode = $statusCode
+        }
+    }
 
     return @{
         Content    = @{ value = $allResults }

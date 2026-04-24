@@ -23,7 +23,12 @@ function Check-GuestRoleReviews {
     $accessReviewList = @()
 
     # list all access reviews in identity governance (using paginated query to handle >100 reviews)
-    $urlPath = "/identityGovernance/accessReviews/definitions"
+    # $select limits each record to only the fields consumed below, significantly reducing per-page payload.
+    # $filter excludes Completed and NotStarted definitions server-side; the client-side Where-Object
+    # below is therefore redundant and has been removed.
+    $urlPath = "/identityGovernance/accessReviews/definitions" +
+        "?`$select=id,displayName,status,createdBy,createdDateTime,settings,scope,reviewers,descriptionForAdmins,descriptionForReviewers" +
+        "&`$filter=status ne 'Completed' and status ne 'NotStarted'"
 
     try {
         $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
@@ -41,10 +46,8 @@ function Check-GuestRoleReviews {
             else{
                 Write-Host "Tenant has been onboarded to automated MS Access Reviews and has at least one access review."
 
-                # filter out non-active the access reviews
-                # status can be 'Completed','InProgress', 'Applied', 'NotStarted'
-                $accessReviewHistory = $accessReviewsSorted | Where-Object { $_.status -ne 'Completed'} 
-                $accessReviewHistory = $accessReviewHistory | Where-Object { $_.status -ne 'NotStarted'}
+                # Server-side $filter already excludes Completed and NotStarted; assign directly
+                $accessReviewHistory = $accessReviewsSorted
                 Write-Host "Number of most recent access review with in-progress review:  $($accessReviewHistory.count)"
                 # Condition: any access review are in active status. if not, non-compliant
                 if ($accessReviewHistory.Count -eq 0) {
