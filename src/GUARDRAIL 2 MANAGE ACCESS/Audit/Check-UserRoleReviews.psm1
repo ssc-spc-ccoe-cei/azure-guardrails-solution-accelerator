@@ -134,8 +134,7 @@ function Check-UserRoleReviews {
                         } else {
                             $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
                         }
-                    } 
-                }               
+                    }
             }
         }
         else{

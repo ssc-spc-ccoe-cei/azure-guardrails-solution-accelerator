@@ -136,7 +136,6 @@ function Check-GuestRoleReviews {
                             $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.nonCompliantRecurrenceReviews
                         }
                     }
-                }               
             }
         }
         else{
