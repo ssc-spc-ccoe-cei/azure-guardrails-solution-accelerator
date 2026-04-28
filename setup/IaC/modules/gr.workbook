@@ -58,7 +58,7 @@
               "showDefault": false
             },
             "timeContext": {
-              "durationMs": 86400000
+              "durationMs": 2592000000
             },
             "defaultValue": "value::1",
             "queryType": 0,
