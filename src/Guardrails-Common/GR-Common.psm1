@@ -1520,10 +1520,11 @@ function Invoke-GraphQueryEX {
 
     [string]$baseUri = "https://graph.microsoft.com/v1.0"
     $fullUri = "$baseUri$urlPath" 
-    $allResults = @()
+    # Use a generic List to avoid the O(n²) memory cost of PowerShell array '+=' on every page
+    $allResults = [System.Collections.Generic.List[object]]::new()
+    $singleObjectResult = $null
     $statusCode = $null
     $pageCount = 0
-   # Write-Host $fullUri
     do {
         $retryCount = 0
         $success = $false
@@ -1533,10 +1534,15 @@ function Invoke-GraphQueryEX {
         do {
             try {
                 $uri = $fullUri -as [uri]
-                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
-                $data = $response.Content | ConvertFrom-Json
-                $parsedcontent = $data.value
+                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
+                # Treat any non-2xx as an error so bad requests (e.g. unsupported $filter)
+                # are retried/surfaced rather than silently returned as content
+                if ($statusCode -lt 200 -or $statusCode -ge 300) {
+                    throw [System.Exception]::new(
+                        "Graph API returned HTTP $statusCode at page $pageCount. Response: $($response.Content)")
+                }
+                $data = $response.Content | ConvertFrom-Json
                 $success = $true
             }
             catch {
@@ -1546,7 +1552,7 @@ function Invoke-GraphQueryEX {
                     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null
-                        StatusCode = $null
+                        StatusCode = $statusCode
                         Error      = $_.Exception.Message
                     }
                 } else {
@@ -1557,10 +1563,12 @@ function Invoke-GraphQueryEX {
         } while (-not $success -and $retryCount -lt $MaxRetries)
 
         if ($null -ne $data.value) {
-            $allResults += $data.value
+            # AddRange avoids per-item overhead; cast ensures compatibility with all page types
+            $allResults.AddRange([object[]]$data.value)
         } else {
-            # For endpoints that don't return .value (single object)
-            $allResults = $data
+            # Endpoint returns a single object rather than a .value collection;
+            # preserve original return shape @{ value = singleObject } for caller compatibility
+            $singleObjectResult = $data
             break
         }
         # Handle paging
@@ -1574,7 +1582,7 @@ function Invoke-GraphQueryEX {
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
     return @{
-        Content    = @{ value = $allResults }
+        Content    = @{ value = if ($null -ne $singleObjectResult) { $singleObjectResult } else { $allResults } }
         StatusCode = $statusCode
     }
 }
