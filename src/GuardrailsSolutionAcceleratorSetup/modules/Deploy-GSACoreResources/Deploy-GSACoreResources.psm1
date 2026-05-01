@@ -20,7 +20,7 @@ function Ensure-GSAStorageRoleAssignment {
         return $false
     }
 
-    # Create the missing role assignment only when the check above shows there is a real gap.
+    # Creating role assignments requires the deployer to have Owner, User Access Administrator, or equivalent rights at this scope.
     New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
     return $true
 }
@@ -176,11 +176,11 @@ Function Deploy-GSACoreResources {
         Write-Verbose "`tAssigning reader access to the Automation Account Managed Identity for MG: $($rootmg.DisplayName)"
         New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $config['runtime']['tenantRootManagementGroupId'] | Out-Null
 
-        # Give the Automation MSI blob read access that works with Entra auth and no Shared Key fallback.
+        # Give the Automation Account identity blob read access because the storage account no longer accepts Shared Key auth.
         Write-Verbose "`tEnsuring 'Storage Blob Data Reader' role exists for Automation Account MSI on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
         $null = Ensure-GSAStorageRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Storage Blob Data Reader" -Scope $config['runtime']['storageAccountId']
 
-        # Give the deployer temporary blob write access so deployment can upload modules.json with Entra auth.
+        # Give the deployment user or service principal temporary blob write access so modules.json can be uploaded with Entra auth.
         Write-Verbose "`tEnsuring temporary 'Storage Blob Data Contributor' role exists for deployer '$($config['runtime']['userId'])' on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
         $config['runtime']['temporaryDeployerBlobContributorAssigned'] = Ensure-GSAStorageRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId']
 

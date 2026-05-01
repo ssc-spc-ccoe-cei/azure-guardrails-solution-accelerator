@@ -26,8 +26,8 @@ Function Add-GSAAutomationRunbooks {
     
     Write-Verbose "Uploading modules.json to blob storage container 'configuration'..."
     try {
-        # Give RBAC enough time to propagate before the deployment gives up on uploading modules.json.
-        $maxBlobAttempts = 18
+        # Wait up to 10 minutes for the temporary Blob Contributor role to become usable by the deployer.
+        $maxBlobAttempts = 30
         $blobRetryDelaySeconds = 20
 
         for ($attempt = 1; $attempt -le $maxBlobAttempts; $attempt++) {

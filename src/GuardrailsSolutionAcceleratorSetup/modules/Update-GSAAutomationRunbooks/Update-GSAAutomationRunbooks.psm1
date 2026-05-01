@@ -59,22 +59,23 @@ Function Update-GSAAutomationRunbooks {
     $temporaryBlobContributorCreated = $false
     $storageAccountId = $null
     try {
-        # Resolve the storage-account scope first so the deployer can get temporary blob upload access for this update.
+        # Resolve the storage-account scope first so the update caller can get temporary blob upload access.
         $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageAccountName'] -ErrorAction Stop
         $storageAccountId = $storageAccount.Id
 
-        # Reuse an existing effective assignment at this scope when present, otherwise create the temporary one this update needs.
+        # Reuse an existing Blob Contributor assignment when present; otherwise create the temporary one this update needs.
         $existingBlobContributor = Get-AzRoleAssignment -ObjectId $config['runtime']['userId'] -Scope $storageAccountId -ErrorAction SilentlyContinue |
             Where-Object { $_.RoleDefinitionName -eq "Storage Blob Data Contributor" } |
             Select-Object -First 1
 
         if (-not $existingBlobContributor) {
+            # Creating this role assignment requires the update caller to have role-assignment rights at the storage account scope or above.
             New-AzRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $storageAccountId -ErrorAction Stop | Out-Null
             $temporaryBlobContributorCreated = $true
         }
 
-        # Give RBAC enough time to propagate before the update gives up on uploading modules.json.
-        $maxBlobAttempts = 18
+        # Wait up to 10 minutes for the temporary Blob Contributor role to become usable by the update caller.
+        $maxBlobAttempts = 30
         $blobRetryDelaySeconds = 20
 
         for ($attempt = 1; $attempt -le $maxBlobAttempts; $attempt++) {

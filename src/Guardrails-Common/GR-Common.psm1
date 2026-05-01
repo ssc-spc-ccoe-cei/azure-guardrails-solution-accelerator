@@ -221,8 +221,8 @@ function read-blob {
         [string]
         $containerName
     )
-    # Give RBAC enough time to propagate before the runbook gives up on reading modules.json.
-    $maxBlobAttempts = 18
+    # Wait up to 10 minutes for the Automation Account's Blob Reader role to become usable.
+    $maxBlobAttempts = 30
     $blobRetryDelaySeconds = 20
     $Context = New-ConnectedStorageContext -storageaccountName $storageaccountName
 
@@ -618,6 +618,7 @@ function Check-DocumentExistsInStorage {
     $blobAccessFailed = $false
 
     try {
+        # Use Entra/RBAC blob access here because the Guardrails storage account no longer allows Shared Key auth.
         $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
     }
     catch {

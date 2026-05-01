@@ -48,7 +48,7 @@ function Check-ApplicationGatewayCertificateValidity {
         throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
     }
     try {
-        # Build the blob context once so storage existence and access failures surface as a single error path.
+        # Use Entra/RBAC blob access because the Guardrails storage account no longer allows Shared Key auth.
         $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
     }
     catch {
