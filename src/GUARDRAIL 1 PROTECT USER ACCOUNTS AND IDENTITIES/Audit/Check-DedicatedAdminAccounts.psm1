@@ -126,14 +126,12 @@ function Check-DedicatedAdminAccounts {
     }
 
     try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+        # Build the blob context once so storage existence and access failures surface as a single error path.
+        $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
     }
     catch {
-        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
-
-        throw "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add("Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
+        throw "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
     $commentsArray = @()
@@ -142,7 +140,7 @@ function Check-DedicatedAdminAccounts {
     $hasBlobContent = $false
     
     # Get a list of filenames uploaded in the blob storage
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
+    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
     if ($null -eq $blobs) {            
         # a blob with the name $DocumentName was not located in the specified storage account
         $warningMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
@@ -184,7 +182,7 @@ function Check-DedicatedAdminAccounts {
     elseif ($blobFound){
         Write-host "Retrieve UPNs from file for compliance check"
         # get UPN from the file
-        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
+        $blob = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -Blob $DocumentName_new -ErrorAction Stop
         if ($blob) {            
             ## blob found
             try {

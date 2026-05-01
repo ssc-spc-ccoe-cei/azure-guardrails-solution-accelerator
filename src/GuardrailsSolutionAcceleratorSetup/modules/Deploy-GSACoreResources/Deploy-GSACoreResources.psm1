@@ -1,3 +1,30 @@
+function Ensure-GSAStorageRoleAssignment {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ObjectId,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $RoleDefinitionName,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Scope
+    )
+
+    # Reuse a role assignment only when this scope already reports one, so create/remove behavior stays simple.
+    $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -Scope $Scope -ErrorAction SilentlyContinue |
+        Where-Object { $_.RoleDefinitionName -eq $RoleDefinitionName } |
+        Select-Object -First 1
+
+    if ($existingAssignment) {
+        return $false
+    }
+
+    # Create the missing role assignment only when the check above shows there is a real gap.
+    New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+    return $true
+}
+
 Function Deploy-GSACoreResources {
     param (
         # config
@@ -33,8 +60,30 @@ Function Deploy-GSACoreResources {
         Write-error "Failed to deploy main Guardrails Accelerator template with error: $_" 
         Exit
     }
-    # add automation account msi to config object
-    $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
+    # Look up the storage account after deployment so later blob RBAC and upload steps use a real resource id.
+    try {
+        $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageaccountName'] -ErrorAction Stop
+        $config['runtime']['storageAccountId'] = $storageAccount.Id
+    }
+    catch {
+        throw "Failed to find Guardrails storage account '$($config['runtime']['storageaccountName'])' after deployment. $_"
+    }
+
+    # Look up the automation account so we can confirm its system-assigned identity exists before granting blob access.
+    try {
+        $automationAccount = Get-AzAutomationAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['automationAccountName'] -ErrorAction Stop
+    }
+    catch {
+        throw "Failed to find Guardrails Automation Account '$($config['runtime']['automationAccountName'])' after deployment. $_"
+    }
+
+    # Stop early if the automation account was created without the MSI this release depends on.
+    if ($null -eq $automationAccount.Identity -or [string]::IsNullOrWhiteSpace($automationAccount.Identity.PrincipalId)) {
+        throw "Guardrails Automation Account '$($config['runtime']['automationAccountName'])' does not have a system-assigned managed identity."
+    }
+
+    # Keep the confirmed MSI object id in config so later deployment steps and runbooks use the same value.
+    $config['guardrailsAutomationAccountMSI'] = $automationAccount.Identity.PrincipalId
 
     # Persist DCE endpoint and DCR immutable IDs into config['runtime'] so they are included in the
     # gsaConfigExportLatest Key Vault secret. The local execution flow reads this secret and sets all
@@ -127,9 +176,13 @@ Function Deploy-GSACoreResources {
         Write-Verbose "`tAssigning reader access to the Automation Account Managed Identity for MG: $($rootmg.DisplayName)"
         New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $config['runtime']['tenantRootManagementGroupId'] | Out-Null
 
-        Write-Verbose "`tAssigning 'Reader and Data Access' role to Automation Account MSI on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
-        $StorageAccountID = (Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageaccountName']).Id
-        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Reader and Data Access" -Scope $StorageAccountID | Out-Null
+        # Give the Automation MSI blob read access that works with Entra auth and no Shared Key fallback.
+        Write-Verbose "`tEnsuring 'Storage Blob Data Reader' role exists for Automation Account MSI on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
+        $null = Ensure-GSAStorageRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Storage Blob Data Reader" -Scope $config['runtime']['storageAccountId']
+
+        # Give the deployer temporary blob write access so deployment can upload modules.json with Entra auth.
+        Write-Verbose "`tEnsuring temporary 'Storage Blob Data Contributor' role exists for deployer '$($config['runtime']['userId'])' on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
+        $config['runtime']['temporaryDeployerBlobContributorAssigned'] = Ensure-GSAStorageRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId']
 
         Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure AD IAM scope"
         New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' | Out-Null

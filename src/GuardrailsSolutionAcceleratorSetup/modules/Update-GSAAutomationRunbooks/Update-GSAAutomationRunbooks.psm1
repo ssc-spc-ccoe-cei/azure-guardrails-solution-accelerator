@@ -56,32 +56,78 @@ Function Update-GSAAutomationRunbooks {
     }
     
     Write-Verbose "Uploading modules.json to blob storage container 'configuration'..."
+    $temporaryBlobContributorCreated = $false
+    $storageAccountId = $null
     try {
-        copy-toBlob -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration" -ErrorAction Stop
-        
-        # Verify the upload succeeded by checking the blob exists
-        Write-Verbose "Verifying modules.json was successfully uploaded to blob storage..."
+        # Resolve the storage-account scope first so the deployer can get temporary blob upload access for this update.
         $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageAccountName'] -ErrorAction Stop
-        $blob = Get-AzStorageBlob -Container "configuration" -Blob "modules.json" -Context $storageAccount.Context -ErrorAction SilentlyContinue
-        
-        if ($null -eq $blob) {
-            throw "Critical: modules.json upload verification failed - blob not found in storage account after upload"
+        $storageAccountId = $storageAccount.Id
+
+        # Reuse an existing effective assignment at this scope when present, otherwise create the temporary one this update needs.
+        $existingBlobContributor = Get-AzRoleAssignment -ObjectId $config['runtime']['userId'] -Scope $storageAccountId -ErrorAction SilentlyContinue |
+            Where-Object { $_.RoleDefinitionName -eq "Storage Blob Data Contributor" } |
+            Select-Object -First 1
+
+        if (-not $existingBlobContributor) {
+            New-AzRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $storageAccountId -ErrorAction Stop | Out-Null
+            $temporaryBlobContributorCreated = $true
         }
 
-        # Verify the blob was updated today (for upgrade scenario)
-        $today = (Get-Date).ToUniversalTime().Date
-        $blobLastModifiedDate = $blob.LastModified.UtcDateTime.Date
-        
-        if ($blobLastModifiedDate -lt $today) {
-            throw "Critical: modules.json blob verification failed - LastModified date ($blobLastModifiedDate) is not today ($today). This indicates the blob was not updated during the upgrade. The blob may be stale from a previous deployment."
+        # Give RBAC enough time to propagate before the update gives up on uploading modules.json.
+        $maxBlobAttempts = 18
+        $blobRetryDelaySeconds = 20
+
+        for ($attempt = 1; $attempt -le $maxBlobAttempts; $attempt++) {
+            try {
+                # Upload modules.json with the connected Entra identity instead of the storage account key.
+                copy-toBlobUsingConnectedAccount -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration" -ErrorAction Stop
+
+                # Verify the blob with the same Entra-authenticated context so update follows the same auth model as runtime.
+                Write-Verbose "Verifying modules.json was successfully uploaded to blob storage..."
+                $storageContext = New-ConnectedStorageContext -storageaccountName $config['runtime']['storageAccountName']
+                $blob = Get-AzStorageBlob -Container "configuration" -Blob "modules.json" -Context $storageContext -ErrorAction SilentlyContinue
+
+                if ($null -eq $blob) {
+                    throw "Critical: modules.json upload verification failed - blob not found in storage account after upload"
+                }
+
+                # Keep the existing update check that confirms the blob was actually refreshed during this run.
+                $today = (Get-Date).ToUniversalTime().Date
+                $blobLastModifiedDate = $blob.LastModified.UtcDateTime.Date
+
+                if ($blobLastModifiedDate -lt $today) {
+                    throw "Critical: modules.json blob verification failed - LastModified date ($blobLastModifiedDate) is not today ($today). This indicates the blob was not updated during the upgrade. The blob may be stale from a previous deployment."
+                }
+
+                Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified.UtcDateTime) (UTC)"
+                Write-Host "Successfully updated modules.json in blob storage container 'configuration' (LastModified: $($blob.LastModified.UtcDateTime.ToString('yyyy-MM-dd HH:mm:ss')) UTC)" -ForegroundColor Green
+                break
+            }
+            catch {
+                # Keep retrying while RBAC settles, but stop immediately once the final attempt is exhausted.
+                if ($attempt -eq $maxBlobAttempts -or -not (Test-GSARetryableBlobError -ErrorRecord $_)) {
+                    throw
+                }
+
+                Write-Verbose "Attempt $attempt of $maxBlobAttempts could not upload or verify modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"
+                Start-Sleep -Seconds $blobRetryDelaySeconds
+            }
         }
-        
-        Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified.UtcDateTime) (UTC)"
-        Write-Host "Successfully updated modules.json in blob storage container 'configuration' (LastModified: $($blob.LastModified.UtcDateTime.ToString('yyyy-MM-dd HH:mm:ss')) UTC)" -ForegroundColor Green        
     }
     catch {
         $errorMessage = "Critical: Failed to upload modules.json to blob storage. This will cause runbook execution to fail. Error: $_"
         Write-Error $errorMessage
         throw $errorMessage
+    }
+    finally {
+        # Remove the temporary blob role when this update created it and no longer needs blob write access.
+        if ($temporaryBlobContributorCreated -and -not [string]::IsNullOrWhiteSpace($storageAccountId)) {
+            try {
+                Remove-AzRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $storageAccountId -ErrorAction Stop
+            }
+            catch {
+                Write-Warning "Failed to remove temporary deployer blob access on storage account '$($config['runtime']['storageAccountName'])'. $_"
+            }
+        }
     }
 }

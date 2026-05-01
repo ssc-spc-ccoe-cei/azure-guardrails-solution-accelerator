@@ -26,19 +26,38 @@ Function Add-GSAAutomationRunbooks {
     
     Write-Verbose "Uploading modules.json to blob storage container 'configuration'..."
     try {
-        copy-toBlob -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration" -ErrorAction Stop
-        
-        # Verify the upload succeeded by checking the blob exists
-        Write-Verbose "Verifying modules.json was successfully uploaded to blob storage..."
-        $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageAccountName'] -ErrorAction Stop
-        $blob = Get-AzStorageBlob -Container "configuration" -Blob "modules.json" -Context $storageAccount.Context -ErrorAction SilentlyContinue
-        
-        if ($null -eq $blob) {
-            throw "Critical: modules.json upload verification failed - blob not found in storage account after upload"
+        # Give RBAC enough time to propagate before the deployment gives up on uploading modules.json.
+        $maxBlobAttempts = 18
+        $blobRetryDelaySeconds = 20
+
+        for ($attempt = 1; $attempt -le $maxBlobAttempts; $attempt++) {
+            try {
+                # Upload modules.json with the connected Entra identity instead of the storage account key.
+                copy-toBlobUsingConnectedAccount -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration" -ErrorAction Stop
+
+                # Read the blob back with the same Entra-authenticated context so we only proceed after RBAC access is live.
+                Write-Verbose "Verifying modules.json was successfully uploaded to blob storage..."
+                $storageContext = New-ConnectedStorageContext -storageaccountName $config['runtime']['storageAccountName']
+                $blob = Get-AzStorageBlob -Container "configuration" -Blob "modules.json" -Context $storageContext -ErrorAction SilentlyContinue
+
+                if ($null -eq $blob) {
+                    throw "Critical: modules.json upload verification failed - blob not found in storage account after upload"
+                }
+
+                Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified)"
+                Write-Host "Successfully uploaded modules.json to blob storage container 'configuration'" -ForegroundColor Green
+                break
+            }
+            catch {
+                # Keep retrying while RBAC settles, but stop immediately once we run out of attempts.
+                if ($attempt -eq $maxBlobAttempts -or -not (Test-GSARetryableBlobError -ErrorRecord $_)) {
+                    throw
+                }
+
+                Write-Verbose "Attempt $attempt of $maxBlobAttempts could not upload or verify modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"
+                Start-Sleep -Seconds $blobRetryDelaySeconds
+            }
         }
-        
-        Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified)"
-        Write-Host "Successfully uploaded modules.json to blob storage container 'configuration'" -ForegroundColor Green
     }
     catch {
         $errorMessage = "Critical: Failed to upload modules.json to blob storage. This will cause runbook execution to fail. Error: $_"

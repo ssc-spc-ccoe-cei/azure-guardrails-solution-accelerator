@@ -109,7 +109,24 @@ function Test-GuardrailsMfaExclusion {
 
     return ($attributeProperty.Value -eq $true)
 }
-function copy-toBlob {
+function New-ConnectedStorageContext {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $storageaccountName
+    )
+    try {
+        # Build a blob context that uses the identity already connected to Az PowerShell instead of a storage key.
+        return (New-AzStorageContext -StorageAccountName $storageaccountName -UseConnectedAccount -ErrorAction Stop)
+    }
+    catch {
+        $errorMessage = "Failed to create an Entra-authenticated storage context for storage account '$storageaccountName'. Error: $($_.Exception.Message)"
+        throw $errorMessage
+    }
+}
+
+function copy-toBlobUsingConnectedAccount {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -129,51 +146,63 @@ function copy-toBlob {
         $force
     )
     try {
-        $saParams = @{
-            ResourceGroupName = $resourcegroup
-            Name              = $storageaccountName
-        }
-        $scParams = @{
-            Container = $containerName
-        }
+        # Reuse the shared Entra-authenticated context so upload works with RBAC and no Shared Key access.
+        $context = New-ConnectedStorageContext -storageaccountName $storageaccountName
         $bcParams = @{
-            File = $FilePath
-            Blob = ($FilePath | Split-Path -Leaf)
+            File      = $FilePath
+            Blob      = ($FilePath | Split-Path -Leaf)
+            Container = $containerName
+            Context   = $context
         }
-        if ($force)
-        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force | Out-Null }
-        else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
+
+        # Add -Force only when the caller asked for it so the upload call stays a single code path.
+        if ($force) {
+            $bcParams['Force'] = $true
+        }
+        Set-AzStorageBlobContent @bcParams | Out-Null
     }
     catch {
-        $errorMessage = "Failed to upload blob '$($FilePath | Split-Path -Leaf)' to storage account '$storageaccountName' container '$containerName'. Error: $($_.Exception.Message)"
-        Write-Error $errorMessage
+        $errorMessage = "Failed to upload blob '$($FilePath | Split-Path -Leaf)' to storage account '$storageaccountName' container '$containerName' with Entra auth. Error: $($_.Exception.Message)"
         throw $errorMessage
     }
 }
-function get-blobs {
+
+function Test-GSARetryableBlobError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string]
-        $storageaccountName,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $resourcegroup
+        [System.Management.Automation.ErrorRecord]
+        $ErrorRecord
     )
-    $psModulesContainerName = "psmodules"
-    try {
-        $saParams = @{
-            ResourceGroupName = $resourcegroup
-            Name              = $storageaccountName
-        }
-        $scParams = @{
-            Container = $psModulesContainerName
-        }
-        return (Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Get-AzStorageBlob)
+
+    # Retry only when the error still looks like RBAC/auth propagation instead of a real missing-resource problem.
+    $retryableMarkers = @(
+        'AuthorizationFailure',
+        'AuthorizationPermissionMismatch',
+        'AuthorizationPermissionDenied',
+        'AuthenticationFailed',
+        'Forbidden',
+        'Unauthorized',
+        'not authorized'
+    )
+
+    $statusCode = $null
+    if ($null -ne $ErrorRecord.Exception.Response -and $null -ne $ErrorRecord.Exception.Response.StatusCode) {
+        $statusCode = [int]$ErrorRecord.Exception.Response.StatusCode
     }
-    catch {
-        Write-Error $_.Exception.Message
+
+    if ($statusCode -in @(401, 403)) {
+        return $true
     }
+
+    $errorText = $ErrorRecord.ToString()
+    foreach ($marker in $retryableMarkers) {
+        if ($errorText -match $marker) {
+            return $true
+        }
+    }
+
+    return $false
 }
 
 function read-blob {
@@ -190,20 +219,37 @@ function read-blob {
         $resourcegroup,
         [Parameter(Mandatory = $true)]
         [string]
-        $containerName,
-        [Parameter(Mandatory = $false)]
-        [switch]
-        $force
+        $containerName
     )
-    $Context = (Get-AzStorageAccount -ResourceGroupName $resourcegroup -Name $storageaccountName).Context
-    $blobParams = @{
-        Blob        = 'modules.json'
-        Container   = $containerName
-        Destination = $FilePath
-        Context     = $Context
-        Force       = $true
+    # Give RBAC enough time to propagate before the runbook gives up on reading modules.json.
+    $maxBlobAttempts = 18
+    $blobRetryDelaySeconds = 20
+    $Context = New-ConnectedStorageContext -storageaccountName $storageaccountName
+
+    for ($attempt = 1; $attempt -le $maxBlobAttempts; $attempt++) {
+        try {
+            $blobParams = @{
+                Blob        = 'modules.json'
+                Container   = $containerName
+                Destination = $FilePath
+                Context     = $Context
+                Force       = $true
+                ErrorAction = 'Stop'
+            }
+
+            Get-AzStorageBlobContent @blobParams
+            return
+        }
+        catch {
+            # Keep retrying while the new blob role settles, but fail loudly once the final attempt is exhausted.
+            if ($attempt -eq $maxBlobAttempts -or -not (Test-GSARetryableBlobError -ErrorRecord $_)) {
+                throw
+            }
+
+            Write-Verbose "Attempt $attempt of $maxBlobAttempts could not read modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"
+            Start-Sleep -Seconds $blobRetryDelaySeconds
+        }
     }
-    Get-AzStorageBlobContent @blobParams
 }
 
 Function Add-LogEntry {
@@ -565,60 +611,71 @@ function Check-DocumentExistsInStorage {
         #Add-LogEntry 'Error' 
         throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
     }
-    try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
-    }
-    catch {
-        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
-        #Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        #    subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_" `
-        #    -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
-        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
-    }
-
     $docMissing = $false
     $commentsArray = @()
     $blobFound = $false
     $baseFileNameFound = $false
-   
-    # Get a list of filenames uploaded in the blob storage
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
-    $fileNamesList = @()
-    $blobs | ForEach-Object {
-        $fileNamesList += $_.Name
-    }
-    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
-    if ( $matchingFiles.count -lt 1 ){
-        # check if any fileName matches without the extension
-        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
-        
-        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
-        if ($BaseFileNamesMatch.Count -gt 0){
-            $baseFileNameFound = $true
-        }
-    }
-    else {
-        # also covers the use case if more than 1 appropriate files are uploaded
-        $blobFound = $true
-    }
+    $blobAccessFailed = $false
 
-    # Use case: uploaded fileName is correct but has wrong extension
-    if ($baseFileNameFound){
-        # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
-        $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+    try {
+        $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
     }
-    else{
-        if ($blobFound){
-            # Use case: a blob with the name $documentName was located in the specified storage account
-            $commentsArray += $msgTable.procedureFileFound -f  $DocumentName
+    catch {
+        $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add($storageErrorMessage)
+        $commentsArray += $storageErrorMessage
+        $docMissing = $true
+    }
+   
+    if ($null -ne $StorageContext) {
+        try {
+            # Fail fast on blob RBAC issues so they are not misreported as a missing document.
+            $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
+            $fileNamesList = @()
+            $blobs | ForEach-Object {
+                $fileNamesList += $_.Name
+            }
+            $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+            if ( $matchingFiles.count -lt 1 ){
+                # check if any fileName matches without the extension
+                $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+                
+                $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+                if ($BaseFileNamesMatch.Count -gt 0){
+                    $baseFileNameFound = $true
+                }
+            }
+            else {
+                # also covers the use case if more than 1 appropriate files are uploaded
+                $blobFound = $true
+            }
         }
-        else {
-            # Use case: no blob with the name $documentName was found in the specified storage account
+        catch {
+            $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that blob data access is available. Error: $_"
+            $ErrorList.Add($storageErrorMessage)
+            $commentsArray += $storageErrorMessage
             $docMissing = $true
-            $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+            $blobAccessFailed = $true
+        }
+
+        if (-not $blobAccessFailed) {
+            # Use case: uploaded fileName is correct but has wrong extension
+            if ($baseFileNameFound){
+                # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
+                $docMissing = $true
+                $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+            }
+            else {
+                if ($blobFound){
+                    # Use case: a blob with the name $documentName was located in the specified storage account
+                    $commentsArray += $msgTable.procedureFileFound -f  $DocumentName
+                }
+                else {
+                    # Use case: no blob with the name $documentName was found in the specified storage account
+                    $docMissing = $true
+                    $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+                }
+            }
         }
     }
 
@@ -1520,11 +1577,10 @@ function Invoke-GraphQueryEX {
 
     [string]$baseUri = "https://graph.microsoft.com/v1.0"
     $fullUri = "$baseUri$urlPath" 
-    # Use a generic List to avoid the O(n²) memory cost of PowerShell array '+=' on every page
-    $allResults = [System.Collections.Generic.List[object]]::new()
-    $singleObjectResult = $null
+    $allResults = @()
     $statusCode = $null
     $pageCount = 0
+   # Write-Host $fullUri
     do {
         $retryCount = 0
         $success = $false
@@ -1534,15 +1590,10 @@ function Invoke-GraphQueryEX {
         do {
             try {
                 $uri = $fullUri -as [uri]
-                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop
-                $statusCode = $response.StatusCode
-                # Treat any non-2xx as an error so bad requests (e.g. unsupported $filter)
-                # are retried/surfaced rather than silently returned as content
-                if ($statusCode -lt 200 -or $statusCode -ge 300) {
-                    throw [System.Exception]::new(
-                        "Graph API returned HTTP $statusCode at page $pageCount. Response: $($response.Content)")
-                }
+                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
                 $data = $response.Content | ConvertFrom-Json
+                $parsedcontent = $data.value
+                $statusCode = $response.StatusCode
                 $success = $true
             }
             catch {
@@ -1552,7 +1603,7 @@ function Invoke-GraphQueryEX {
                     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null
-                        StatusCode = $statusCode
+                        StatusCode = $null
                         Error      = $_.Exception.Message
                     }
                 } else {
@@ -1563,12 +1614,10 @@ function Invoke-GraphQueryEX {
         } while (-not $success -and $retryCount -lt $MaxRetries)
 
         if ($null -ne $data.value) {
-            # AddRange avoids per-item overhead; cast ensures compatibility with all page types
-            $allResults.AddRange([object[]]$data.value)
+            $allResults += $data.value
         } else {
-            # Endpoint returns a single object rather than a .value collection;
-            # preserve original return shape @{ value = singleObject } for caller compatibility
-            $singleObjectResult = $data
+            # For endpoints that don't return .value (single object)
+            $allResults = $data
             break
         }
         # Handle paging
@@ -1582,7 +1631,7 @@ function Invoke-GraphQueryEX {
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
     return @{
-        Content    = @{ value = if ($null -ne $singleObjectResult) { $singleObjectResult } else { $allResults } }
+        Content    = @{ value = $allResults }
         StatusCode = $statusCode
     }
 }
@@ -3370,299 +3419,6 @@ function Check-BuiltInPolicies {
     return $results
 }
 
-function Check-BuiltInPoliciesWithResourceGraph {
-    <#
-    .SYNOPSIS
-        Checks that required built-in policies are assigned to every subscription in the tenant.
-
-    .DESCRIPTION
-        For each required policy ID this function determines, per subscription, whether the policy
-        is assigned at a scope that covers that subscription — either directly at subscription scope
-        or via a parent management group.
-
-        Two batched Azure Resource Graph queries replace the old approach of iterating subscriptions
-        with Get-AzSubscription / Set-AzContext and calling Get-AzPolicyState (which caused timeouts
-        in large tenants):
-
-          1. All subscriptions with their management-group ancestor chain.
-          2. All policy assignments for the required policy IDs (any scope).
-
-        These are joined in memory so the guardrail result is one row per subscription per policy:
-          - ComplianceStatus = $true  when an assignment covers the subscription.
-          - ComplianceStatus = $false when no assignment covers the subscription.
-
-    .PARAMETER requiredPolicyIds
-        Array of built-in policy definition resource IDs to evaluate.
-    .PARAMETER ReportTime
-        ISO-8601 timestamp injected into every result object.
-    .PARAMETER ItemName
-        Human-readable check name prepended to the policy display name in results.
-    .PARAMETER msgTable
-        Hashtable of localised message strings.  Keys used: policyAssignedSub,
-        policyNotConfiguredSub.
-    .PARAMETER ControlName
-        Guardrail control identifier included in every result.
-    .PARAMETER itsgcode
-        ITSG security control code included in every result.
-    .PARAMETER CloudUsageProfiles / ModuleProfiles / EnableMultiCloudProfiles
-        Multi-cloud profile parameters forwarded to Add-ProfileInformation when needed.
-    .PARAMETER ErrorList
-        ArrayList that receives non-terminating error strings.
-
-    .OUTPUTS
-        System.Collections.ArrayList of PSCustomObject result rows — one per subscription per
-        required policy.
-    #>
-    param (
-        [Parameter(Mandatory=$true)]
-        [array]$requiredPolicyIds,
-        [Parameter(Mandatory=$true)]
-        [string]$ReportTime,
-        [Parameter(Mandatory=$true)]
-        [string]$ItemName,
-        [Parameter(Mandatory=$true)]
-        [hashtable]$msgTable,
-        [Parameter(Mandatory=$true)]
-        [string]$ControlName,
-        [string]$itsgcode,
-        [string]$CloudUsageProfiles = "3",
-        [string]$ModuleProfiles,
-        [switch]$EnableMultiCloudProfiles,
-        [System.Collections.ArrayList]$ErrorList
-    )
-
-    $results = New-Object System.Collections.ArrayList
-
-    if ($requiredPolicyIds.Count -eq 0) {
-        Write-Warning "Verify-TLSConfiguration: No required policies found for ItemName '$ItemName'. Skipping."
-        $ErrorList.Add("Verify-TLSConfiguration: No required policies found for ItemName '$ItemName'. Skipping.")
-        return [PSCustomObject]@{ ComplianceResults = @(); Errors = $ErrorList }
-    }
-
-    # ── Helper: paginate an ARG query and return all rows ─────────────────────
-    function Invoke-ARGQueryAllPages {
-        param([string]$Query)
-        $allRows = [System.Collections.Generic.List[object]]::new()
-        $skipToken = $null
-        $page = 0
-        do {
-            $page++
-            $invokeParams = @{
-                UseTenantScope = $true
-                Query          = $Query
-                First          = 1000
-                ErrorAction    = 'Stop'
-            }
-            if ($skipToken) { $invokeParams['SkipToken'] = $skipToken }
-            $pageResult = Search-AzGraph @invokeParams
-            foreach ($row in $pageResult) { $allRows.Add($row) | Out-Null }
-            $skipToken = $pageResult.SkipToken
-            Write-Verbose "ARG page $page returned $($pageResult.Count) rows. HasMore: $($null -ne $skipToken)"
-        } while ($skipToken)
-        return $allRows
-    }
-
-    # ── Normalise IDs to lower-case for case-insensitive KQL matching ─────────
-    $normalizedIds = $requiredPolicyIds | ForEach-Object { $_.ToLower() }
-    $kqlIdList     = ($normalizedIds | ForEach-Object { "'$_'" }) -join ', '
-
-    # ── Query 1: Policy definition display names ──────────────────────────────
-    $defQuery = @"
-policyresources
-| where type =~ 'microsoft.authorization/policydefinitions'
-| where tolower(id) in~ ($kqlIdList)
-| project id = tolower(id), displayName = tostring(properties.displayName)
-"@
-
-    $policyDisplayNames = @{}
-    try {
-        Write-Host "ARG: fetching policy definition display names..."
-        $defRows = Invoke-ARGQueryAllPages -Query $defQuery
-        foreach ($row in $defRows) {
-            $policyDisplayNames[$row.id] = $row.displayName
-        }
-    } catch {
-        $ErrorList.Add("ARG policy definition query failed: $_") | Out-Null
-    }
-
-    # ── Query 2: All (subscription, coveringScope) pairs ─────────────────────
-    # The query expands every subscription to one row per scope that can hold a
-    # policy assignment covering it: the subscription scope itself (direct
-    # assignment) plus every parent management group scope.
-    # Using mv-expand + union inside a single resourcecontainers query avoids
-    # returning nested dynamic arrays that are fragile to deserialize in
-    # PowerShell, and also avoids cross-table let statements unsupported in ARG.
-    $subScopeQuery = @"
-resourcecontainers
-| where type =~ 'microsoft.resources/subscriptions'
-| extend subId   = tolower(subscriptionId)
-| extend subName = name
-| mv-expand ancestor = properties.managementGroupAncestorsChain
-| project subId, subName,
-          coveringScope = tolower(strcat('/providers/microsoft.management/managementgroups/', tostring(ancestor.name)))
-| union (
-    resourcecontainers
-    | where type =~ 'microsoft.resources/subscriptions'
-    | project subId        = tolower(subscriptionId),
-              subName      = name,
-              coveringScope = tolower(strcat('/subscriptions/', subscriptionId))
-)
-"@
-
-    $allSubscriptions  = @{}   # subId → subName
-    $subCoveringScopes = @{}   # subId → HashSet<coveringScope>
-
-    try {
-        Write-Host "ARG: fetching subscriptions and management group hierarchy..."
-        $scopeRows = Invoke-ARGQueryAllPages -Query $subScopeQuery
-        foreach ($row in $scopeRows) {
-            if (-not $allSubscriptions.ContainsKey($row.subId)) {
-                $allSubscriptions[$row.subId] = $row.subName
-                $subCoveringScopes[$row.subId] = [System.Collections.Generic.HashSet[string]]::new()
-            }
-            [void]$subCoveringScopes[$row.subId].Add($row.coveringScope)
-        }
-        Write-Host "ARG: found $($allSubscriptions.Count) subscriptions"
-    } catch {
-        $ErrorList.Add("ARG subscription covering-scopes query failed: $_") | Out-Null
-    }
-
-    # ── Query 3: Policy assignments (scope + ID) for the required policy IDs ──
-    # The assignment ID is required to match against exemptions in Query 4.
-    $assignQuery = @"
-policyresources
-| where type =~ 'microsoft.authorization/policyassignments'
-| where tolower(tostring(properties.policyDefinitionId)) in~ ($kqlIdList)
-| project policyDefId    = tolower(tostring(properties.policyDefinitionId)),
-          assignmentScope = tolower(tostring(properties.scope)),
-          assignmentId    = tolower(id)
-"@
-
-    # assignmentsByPolicy[policyDefId] = List of objects with Scope and Id
-    $assignmentsByPolicy = @{}
-    try {
-        Write-Host "ARG: fetching policy assignments..."
-        $assignRows = Invoke-ARGQueryAllPages -Query $assignQuery
-        foreach ($row in $assignRows) {
-            $polId = $row.policyDefId
-            if (-not $assignmentsByPolicy.ContainsKey($polId)) {
-                $assignmentsByPolicy[$polId] = [System.Collections.Generic.List[object]]::new()
-            }
-            $assignmentsByPolicy[$polId].Add([PSCustomObject]@{
-                Scope = $row.assignmentScope
-                Id    = $row.assignmentId
-            }) | Out-Null
-        }
-        Write-Host "ARG: found assignments for $($assignmentsByPolicy.Count) distinct policy IDs"
-    } catch {
-        $ErrorList.Add("ARG policy assignment query failed: $_") | Out-Null
-    }
-
-    # ── Query 4: Exemptions for the collected assignments ─────────────────────
-    # Mirrors Check-BuiltInPolicies: any exemption on a covering assignment means
-    # the subscription reports policyHasExemptions (non-compliant).
-    $exemptedAssignmentIds = [System.Collections.Generic.HashSet[string]]::new()
-
-    $allAssignmentIds = [System.Collections.Generic.List[string]]::new()
-    foreach ($assignments in $assignmentsByPolicy.Values) {
-        foreach ($a in $assignments) { $allAssignmentIds.Add($a.Id) | Out-Null }
-    }
-
-    if ($allAssignmentIds.Count -gt 0) {
-        $kqlAssignmentList = ($allAssignmentIds | Select-Object -Unique | ForEach-Object { "'$_'" }) -join ', '
-
-        $exemptQuery = @"
-policyresources
-| where type =~ 'microsoft.authorization/policyexemptions'
-| where tolower(tostring(properties.policyAssignmentId)) in~ ($kqlAssignmentList)
-| project assignmentId = tolower(tostring(properties.policyAssignmentId))
-"@
-        try {
-            Write-Host "ARG: fetching policy exemptions..."
-            $exemptRows = Invoke-ARGQueryAllPages -Query $exemptQuery
-            foreach ($row in $exemptRows) {
-                [void]$exemptedAssignmentIds.Add($row.assignmentId)
-            }
-            Write-Host "ARG: found exemptions on $($exemptedAssignmentIds.Count) assignment(s)"
-        } catch {
-            $ErrorList.Add("ARG policy exemption query failed: $_") | Out-Null
-        }
-    }
-
-    # ── Build per-subscription × per-policy results ───────────────────────────
-    # Decision tree per subscription per policy:
-    #   1. No assignment covers this subscription → policyNotConfiguredSub  
-    #   2. Covering assignment has an exemption   → policyHasExemptions     
-    #   3. Covered and no exemptions              → policyAssignedSub       
-    foreach ($policyId in $requiredPolicyIds) {
-        $polIdLower        = $policyId.ToLower()
-        $policyDisplayName = if ($policyDisplayNames.ContainsKey($polIdLower)) {
-            $policyDisplayNames[$polIdLower]
-        } else {
-            'Unknown Policy'
-        }
-
-        $policyAssignments = $assignmentsByPolicy[$polIdLower]   # may be $null
-
-        foreach ($subId in $allSubscriptions.Keys) {
-            $subName        = $allSubscriptions[$subId]
-            $subScope       = "/subscriptions/$subId"
-            $coveringScopes = $subCoveringScopes[$subId]
-
-            # Assignments whose scope is in the subscription's covering-scope set
-            $coveringAssignments = if ($null -ne $policyAssignments) {
-                @($policyAssignments | Where-Object { $coveringScopes.Contains($_.Scope) })
-            } else {
-                @()
-            }
-
-            if ($coveringAssignments.Count -eq 0) {
-                # No assignment covers this subscription
-                $complianceStatus = $false
-                $comments         = $msgTable.policyNotConfiguredSub -f $subScope
-            } else {
-                # Check whether any covering assignment carries an exemption
-                $hasExemption = $false
-                foreach ($assignment in $coveringAssignments) {
-                    if ($exemptedAssignmentIds.Contains($assignment.Id)) {
-                        $hasExemption = $true
-                        break
-                    }
-                }
-
-                if ($hasExemption) {
-                    $complianceStatus = $false
-                    $comments         = $msgTable.policyHasExemptions
-                } else {
-                    $complianceStatus = $true
-                    $comments         = $msgTable.policyAssignedSub -f $subScope
-                }
-            }
-
-            $r = [PSCustomObject]@{
-                Type             = 'subscription'
-                Id               = $subId
-                SubscriptionName = $subName
-                ComplianceStatus = $complianceStatus
-                Comments         = $comments
-                ItemName         = "$ItemName - $policyDisplayName"
-                ControlName      = $ControlName
-                ReportTime       = $ReportTime
-                itsgcode         = $itsgcode
-            }
-
-            if ($EnableMultiCloudProfiles) {
-                $r = Add-ProfileInformation -Result $r -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
-            }
-
-            $results.Add($r) | Out-Null
-        }
-    }
-
-    Write-Host "ARG policy assignment coverage check completed. $($results.Count) results ($($allSubscriptions.Count) subscriptions x $($requiredPolicyIds.Count) policies)"
-    return $results
-}
-
 function FetchAllUserRawData {
     [CmdletBinding()]
     param (
@@ -4081,7 +3837,7 @@ GuardrailsUserRaw_CL
         Write-Warning "  Warning: Data count mismatch detected."
         Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
             
-        if ($recordCount -gt 0) {
+        if ($recordCount > 0) {
             Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
             Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
         } else {
