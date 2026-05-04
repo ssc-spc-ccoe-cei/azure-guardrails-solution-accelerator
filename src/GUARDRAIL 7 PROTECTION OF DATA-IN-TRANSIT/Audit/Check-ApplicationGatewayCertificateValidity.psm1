@@ -48,48 +48,113 @@ function Check-ApplicationGatewayCertificateValidity {
         throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
     }
     try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+        # Use Entra/RBAC blob access because the Guardrails storage account no longer allows Shared Key auth.
+        $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
     }
     catch {
-        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$SubscriptionID   '; verify that the storage account exists and that you have permissions to it. Error: $_")
-        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add($storageErrorMessage)
+
+        # Storage access is part of the compliance check, so an RBAC/storage connection failure should be
+        # reported as a non-compliant result for this subscription instead of failing the whole module.
+        # This keeps the report complete and makes the storage-auth problem visible in the normal output.
+        $C = [PSCustomObject]@{
+            SubscriptionName = $subName
+            ComplianceStatus = $false
+            ControlName      = $ControlName
+            Comments         = $storageErrorMessage
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+        }
+
+        # Keep the result shape consistent with the rest of the module. When multi-cloud profiles are
+        # enabled, add the profile metadata before adding the row to the final compliance results.
+        if ($EnableMultiCloudProfiles) {
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
+            $PsObject.Add($result) | Out-Null
+        } else {
+            $PsObject.Add($C) | Out-Null
+        }
+
+        # Return the same wrapper object used by the normal check path: one collection for compliance
+        # rows and one collection for non-terminating errors gathered during the run.
+        $moduleOutput = [PSCustomObject]@{
+            ComplianceResults = $PsObject
+            Errors            = $ErrorList
+        }
+        return $moduleOutput
     }
 
     $baseFileNameFound = $false
     $blobFound = $false
 
-    # Get a list of filenames uploaded in the blob storage
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
-    
-    $fileNamesList = @()
-    $blobs | ForEach-Object {
-        $fileNamesList += $_.Name
-    }
-    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
-    if ( $matchingFiles.count -lt 1 ){
-        # check if any fileName matches without the extension
-        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+    try {
+        # Fail fast on blob RBAC issues so they are reported as storage access problems instead of missing files.
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
         
-        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
-        if ($BaseFileNamesMatch.Count -gt 0){
-            $baseFileNameFound = $true
+        $fileNamesList = @()
+        $blobs | ForEach-Object {
+            $fileNamesList += $_.Name
+        }
+        $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+        if ( $matchingFiles.count -lt 1 ){
+            # check if any fileName matches without the extension
+            $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+            
+            $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+            if ($BaseFileNamesMatch.Count -gt 0){
+                $baseFileNameFound = $true
+            }
+        }
+        else {
+            # also covers the use case if more than 1 appropriate files are uploaded
+            
+            # check for procedure doc in blob storage account
+            $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -Blob $DocumentName_new -ErrorAction Stop
+
+            If ($blobs) {
+                $blobFound = $true
+                # Read the content of the blob and save CA names into array
+                $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageContext -Force -ErrorAction Stop
+                $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
+
+            }
         }
     }
-    else {
-        # also covers the use case if more than 1 appropriate files are uploaded
-        
-        # check for procedure doc in blob storage account
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
+    catch {
+        $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that blob data access is available. Error: $_"
+        $ErrorList.Add($storageErrorMessage)
 
-        If ($blobs) {
-            $blobFound = $true
-            # Read the content of the blob and save CA names into array
-            $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageAccount.Context -Force
-            $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
-
+        # Storage access is part of the compliance check, so an RBAC/storage read failure should be
+        # reported as a non-compliant result for this subscription instead of failing the whole module.
+        # This keeps the report complete and makes the storage-auth problem visible in the normal output.
+        $C = [PSCustomObject]@{
+            SubscriptionName = $subName
+            ComplianceStatus = $false
+            ControlName      = $ControlName
+            Comments         = $storageErrorMessage
+            ItemName         = $ItemName
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
         }
+
+        # Keep the result shape consistent with the rest of the module. When multi-cloud profiles are
+        # enabled, add the profile metadata before adding the row to the final compliance results.
+        if ($EnableMultiCloudProfiles) {
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
+            $PsObject.Add($result) | Out-Null
+        } else {
+            $PsObject.Add($C) | Out-Null
+        }
+
+        # Return the same wrapper object used by the normal check path: one collection for compliance
+        # rows and one collection for non-terminating errors gathered during the run.
+        $moduleOutput = [PSCustomObject]@{
+            ComplianceResults = $PsObject
+            Errors            = $ErrorList
+        }
+        return $moduleOutput
     }
     
 

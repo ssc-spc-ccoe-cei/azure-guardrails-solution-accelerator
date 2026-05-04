@@ -32,6 +32,28 @@ Function Invoke-GSARunbooks {
     }
 }
 
+function Remove-GSATemporaryDeployerBlobAccess {
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]
+        $config
+    )
+
+    # Only remove the blob role when this deployment created a temporary storage-account assignment for the deployer.
+    if (-not $config['runtime']['temporaryDeployerBlobContributorAssigned']) {
+        return
+    }
+
+    try {
+        # Remove the temporary deployer role as soon as the upload step no longer needs blob write access.
+        Remove-AzRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId'] -ErrorAction Stop
+        Write-Verbose "Removed temporary 'Storage Blob Data Contributor' role from deployer '$($config['runtime']['userId'])'."
+    }
+    catch {
+        Write-Warning "Failed to remove temporary deployer blob access on storage account '$($config['runtime']['storageAccountName'])'. $_"
+    }
+}
+
 Function New-GSACoreResourceDeploymentParamObject {
     param (
         # config object
@@ -342,24 +364,22 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Confirm-GSAPrerequisites -config $config -newComponents $newComponents -Verbose:$useVerbose
             
             If ($newComponents -contains 'CoreComponents') {
-                # deploy core resources
-                Write-Host "Deploying CoreComponents..." -ForegroundColor Green
-                try{
+                try {
+                    # Deploy the shared resources first so the storage account, automation account, and role assignments exist.
+                    Write-Host "Deploying CoreComponents..." -ForegroundColor Green
                     Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
-                }
-                catch{
-                    Write-Error "Error in deploying GSACoreResources. $_"
-                }
-                
-                # add runbooks to AA
-                Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
-                try{
+
+                    # Upload modules.json and add the runbooks after the core resources are ready.
+                    Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
                     Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
                 }
-                catch{
-                    Write-Error "Error adding to runbook. $_"
+                catch {
+                    Write-Error "Error while deploying core components and automation runbooks. $_"
                 }
-                
+                finally {
+                    # Always try to drop the deployer's temporary blob role once this block no longer needs it.
+                    Remove-GSATemporaryDeployerBlobAccess -config $config
+                }
             }
             
             # deploy Lighthouse components
