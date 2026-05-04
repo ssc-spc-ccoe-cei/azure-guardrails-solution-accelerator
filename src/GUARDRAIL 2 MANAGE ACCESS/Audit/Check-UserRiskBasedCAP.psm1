@@ -38,7 +38,7 @@ function Test-CommonFilters {
     # 2. includedUsers = 'All'
     # 3. applications.includedApplications = 'All'
     # 4. grantControls.builtInControls contains 'mfa' and 'passwordChange'
-    # 5. clientAppTypes contains 'all' (or all individual types selected: browser, mobileAppsAndDesktopClients, exchangeActiveSync, other)
+    # 5. clientAppTypes contains 'all'
     # 6. userRiskLevels = 'high'
     # 7. signInRiskLevels = @() or null
     # 8. platforms = null
@@ -71,11 +71,7 @@ function Test-CommonFilters {
                 ) -or
                 $_.grantControls.builtInControls -contains 'block'
             ) -and
-            ($_.conditions.clientAppTypes -contains 'all' -or
-             ($_.conditions.clientAppTypes -contains 'browser' -and
-              $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and
-              $_.conditions.clientAppTypes -contains 'exchangeActiveSync' -and
-              $_.conditions.clientAppTypes -contains 'other')) -and
+            $_.conditions.clientAppTypes -contains 'all' -and
             $_.conditions.userRiskLevels -contains 'high' -and
             $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
             $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
