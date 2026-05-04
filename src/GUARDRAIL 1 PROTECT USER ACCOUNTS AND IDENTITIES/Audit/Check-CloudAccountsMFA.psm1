@@ -34,7 +34,7 @@ function Check-CloudAccountsMFA {
     # 2. includedUsers = 'All'
     # 3. includedApplications = 'All'
     # 4. grantControls.builtInControls contains 'mfa'
-    # 5. clientAppTypes contains 'all'
+    # 5. clientAppTypes contains 'all' (or all individual types selected: browser, mobileAppsAndDesktopClients, exchangeActiveSync, other)
     # 6. userRiskLevels = @()
     # 7. signInRiskLevels = @()
     # 8. platforms = null
@@ -48,7 +48,11 @@ function Check-CloudAccountsMFA {
         ($_.conditions.applications.includeApplications -contains 'All' -or
          $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
         $_.grantControls.builtInControls -contains 'mfa' -and
-        $_.conditions.clientAppTypes -contains 'all' -and
+        ($_.conditions.clientAppTypes -contains 'all' -or
+         ($_.conditions.clientAppTypes -contains 'browser' -and
+          $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and
+          $_.conditions.clientAppTypes -contains 'exchangeActiveSync' -and
+          $_.conditions.clientAppTypes -contains 'other')) -and
         [string]::IsNullOrEmpty($_.conditions.userRiskLevels) -and
         [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
         [string]::IsNullOrEmpty($_.conditions.platforms) -and
