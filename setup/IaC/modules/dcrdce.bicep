@@ -3,12 +3,71 @@
 
 param location string
 param logAnalyticsWorkspaceResourceId string
+// Workspace name is used to declare table existing-resource references so ARM enforces
+// resource-level readiness before the DCR is created or updated (prevents InvalidOutputTable).
+param logAnalyticsWorkspaceName string
 param dceName string = 'guardrails-dce'
 param dcrName string = 'guardrails-dcr'
 param releaseVersion string
 param releaseDate string
 param newDeployment bool = true
 param updateCoreResources bool = false
+
+// ── Existing-resource references for every DCR output table ──────────────────
+// Declaring these as 'existing' and adding them to the DCR dependsOn tells ARM
+// to wait until each table is in Succeeded state before provisioning the DCR,
+// preventing the race condition where tables are still updating when the DCR runs.
+resource lawWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = {
+  name: logAnalyticsWorkspaceName
+}
+resource tableGuardrailsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GuardrailsCompliance_CL'
+}
+resource tableGuardrailsComplianceException 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GuardrailsComplianceException_CL'
+}
+resource tableGR_TenantInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GR_TenantInfo_CL'
+}
+resource tableGR_Results 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GR_Results_CL'
+}
+resource tableGR_VersionInfo 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GR_VersionInfo_CL'
+}
+resource tableGRITSGControls 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GRITSGControls_CL'
+}
+resource tableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GuardrailsTenantsCompliance_CL'
+}
+resource tableCaCDebugMetrics 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'CaCDebugMetrics_CL'
+}
+resource tableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GuardrailsUserRaw_CL'
+}
+resource tableGuardrailsCrossTenantAccess 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GuardrailsCrossTenantAccess_CL'
+}
+resource tableGR2UsersWithoutGroups 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GR2UsersWithoutGroups_CL'
+}
+resource tableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = {
+  parent: lawWorkspace
+  name: 'GR2ExternalUsers_CL'
+}
 
 // Data Collection Endpoint (DCE)
 // Create/update DCE on new deployments or when updating core resources (for migration)
@@ -39,6 +98,23 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
     releaseDate: releaseDate
   }
   kind: 'Direct'
+  // Wait for every output-stream table to reach Succeeded before ARM validates the DCR.
+  // Module-level dependsOn alone (deployment granularity) is insufficient — ARM can mark a
+  // deployment Succeeded while individual table resources are still in Updating state.
+  dependsOn: [
+    tableGuardrailsCompliance
+    tableGuardrailsComplianceException
+    tableGR_TenantInfo
+    tableGR_Results
+    tableGR_VersionInfo
+    tableGRITSGControls
+    tableGuardrailsTenantsCompliance
+    tableCaCDebugMetrics
+    tableGuardrailsUserRaw
+    tableGuardrailsCrossTenantAccess
+    tableGR2UsersWithoutGroups
+    tableGR2ExternalUsers
+  ]
   properties: {
     dataCollectionEndpointId: dataCollectionEndpoint.id
     dataFlows: [
@@ -679,6 +755,10 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
     releaseDate: releaseDate
   }
   kind: 'Direct'
+  dependsOn: [
+    tableGR2UsersWithoutGroups
+    tableGR2ExternalUsers
+  ]
   properties: {
     dataCollectionEndpointId: dataCollectionEndpoint.id
     dataFlows: [

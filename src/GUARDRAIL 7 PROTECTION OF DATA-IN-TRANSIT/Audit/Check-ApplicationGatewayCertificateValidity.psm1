@@ -27,14 +27,21 @@ function Check-ApplicationGatewayCertificateValidity {
 
     $IsCompliant = $false
     $Comments = ""
-    $ErrorList = [System.Collections.ArrayList]@()
+    
+    [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ApprovedCAList = @()
 
+    # --------------------------------
+    # Check if document exists in blob
+    # --------------------------------
     # Add possible file extensions
     $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
+    $subName = ""
 
     try {
         Select-AzSubscription -Subscription $SubscriptionID | out-null
+        $subName  = (Get-AzContext).Subscription.Name
     }
     catch {
         $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
@@ -45,7 +52,7 @@ function Check-ApplicationGatewayCertificateValidity {
     }
     catch {
         $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
+        subscription '$SubscriptionID   '; verify that the storage account exists and that you have permissions to it. Error: $_")
         Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
@@ -84,14 +91,18 @@ function Check-ApplicationGatewayCertificateValidity {
 
         }
     }
+    
 
-    # Use case: uploaded fileName is correct but has wrong extension
+    # ----------------------
+    # Case 1: uploaded fileName is correct but has wrong extension
+    # ----------------------
     if ($baseFileNameFound){
         # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
         $Comments += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
         $IsCompliant = $false
 
-        $PsObject = [PSCustomObject]@{
+        $C = [PSCustomObject]@{
+            SubscriptionName = $subName
             ComplianceStatus = $IsCompliant
             ControlName      = $ControlName
             Comments         = $Comments
@@ -100,8 +111,13 @@ function Check-ApplicationGatewayCertificateValidity {
             itsgcode         = $itsgcode
         }
 
+        # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
-            Set-ProfileEvaluation -PsObject $PsObject -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
+            Write-Host "$result"
+            $PsObject.Add($result) | Out-Null
+        } else {
+            $PsObject.Add($C) | Out-Null
         }
     
         $moduleOutput = [PSCustomObject]@{ 
@@ -112,13 +128,20 @@ function Check-ApplicationGatewayCertificateValidity {
 
     }
     elseif ($blobFound){
+    # ----------------------
+    # Case 2: file exists in blob storage
+    # ----------------------
         $Comments += $msgTable.approvedCAFileFound -f $DocumentName
     }
     else {
+        # ----------------------
+        # Case 3: file does not exist in blob storage
+        # ----------------------
         $Comments += $msgTable.approvedCAFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
         $IsCompliant = $false
         
-        $PsObject = [PSCustomObject]@{
+        $C= [PSCustomObject]@{
+            SubscriptionName = $subName
             ComplianceStatus = $IsCompliant
             ControlName      = $ControlName
             Comments         = $Comments
@@ -127,8 +150,13 @@ function Check-ApplicationGatewayCertificateValidity {
             itsgcode         = $itsgcode
         }
 
+        # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
-            Set-ProfileEvaluation -PsObject $PsObject -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
+            Write-Host "$result"
+            $PsObject.Add($result) | Out-Null
+        } else {
+            $PsObject.Add($C) | Out-Null
         }
     
         $moduleOutput = [PSCustomObject]@{ 
@@ -138,16 +166,24 @@ function Check-ApplicationGatewayCertificateValidity {
         return $moduleOutput
     }
 
-    # Get all subscriptions
+    # ----------------------
+    # Case 2: Correct document exists (i.e. blobfound) - proceed with checking App Gateway certificate validity for subscriptions
+    # ----------------------
+
+    # Get all subscriptions in tenant scope
     $subscriptions = Get-AzSubscription
 
-    $allCompliant = $true
-    $appGatewaysFound = $false
-    $NotEvaluated = $false
-
     foreach ($subscription in $subscriptions) {
+
         # Set the context to the current subscription
         Set-AzContext -Subscription $subscription.Id | Out-Null
+
+        #initialize for each subscription
+        $appGatewaysFound = $false
+        $isSubCompliant = $true
+        $subComments = ""
+        $NotEvaluated = $false
+
 
         # Get Application Gateways in the current subscription
         $appGateways = Get-AzApplicationGateway
@@ -155,13 +191,13 @@ function Check-ApplicationGatewayCertificateValidity {
         if ($appGateways.Count -gt 0) {
             $appGatewaysFound = $true
             foreach ($appGateway in $appGateways) {
-                # 2. Check for SSL Certificates in listeners
+                # 4a. Check for SSL Certificates in listeners
                 $listeners = Get-AzApplicationGatewayHttpListener -ApplicationGateway $appGateway
                 $sslListeners = $listeners | Where-Object { $_.SslCertificate -ne $null }
                 
                 if ($sslListeners.Count -eq 0) {
-                    $Comments += " " + $msgTable.noSslListenersFound -f $appGateway.Name
-                    $allCompliant = $false
+                    $subComments += " " + $msgTable.noSslListenersFound -f $appGateway.Name
+                    $isSubCompliant = $false
                     continue
                 }
 
@@ -193,18 +229,18 @@ function Check-ApplicationGatewayCertificateValidity {
                         # Validate that we have the required values
                         if ([string]::IsNullOrEmpty($keyVaultName) -or [string]::IsNullOrEmpty($secretName)) {
                             Write-Warning "Failed to parse Key Vault URL properly"
-                            $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
+                            $subComments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                             $ErrorList.Add("Failed to parse Key Vault URL '$keyVaultSecretId' for listener '$($listener.Name)'. Expected format: https://[vaultname].vault.azure.net/secrets/[secretname].")
                             # Set Compliant to Non compliant as this is a parsing issue
-                            $allCompliant = $false
+                            $isSubCompliant = $false
                             continue
                         }
                         $kvAccessResult = Test-KeyVaultAccess -KeyVaultName $keyVaultName -SecretName $secretName
                         if (-not $kvAccessResult.Success) {
                             Write-Warning "KeyVault access not successful."
-                            $Comments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name
+                            $subComments += " " + $msgTable.keyVaultCertValidationFailed -f $listener.Name, $appGateway.Name
                             $ErrorList.Add("No access to Key Vault '$keyVaultName' for listener '$($listener.Name)'. The CAC Automation Account managed identity requires 'Key Vault Secrets User' permissions on this Key Vault. Error: $($kvAccessResult.Error).")
-                            # Don't set allCompliant to true - set NotEvaluated flag
+                            # Don't set isSubCompliant to true - set NotEvaluated flag
                             $NotEvaluated = $true
                             continue
                         }
@@ -232,8 +268,8 @@ function Check-ApplicationGatewayCertificateValidity {
                                 
                                 # Validate certificate expiration
                                 if ($x509cert.NotAfter -le (Get-Date)) {
-                                    $Comments += " " + $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
-                                    $allCompliant = $false
+                                    $subComments += " " + $msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
+                                    $isSubCompliant = $false
                                 }
                                 
                                 # Check if certificate is from an approved CA
@@ -246,22 +282,22 @@ function Check-ApplicationGatewayCertificateValidity {
                                 }
                                 
                                 if (-not $isApprovedCA) {
-                                    $Comments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
-                                    $allCompliant = $false
+                                    $subComments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                                    $isSubCompliant = $false
                                 }
                             }
                             else {
                                 Write-Verbose "KeyVault secret has no value."
-                                $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
+                                $subComments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
                                 $ErrorList.Add("Key Vault secret '$secretName' in vault '$keyVaultName' has no value for listener '$($listener.Name)'.")
-                                $allCompliant = $false
+                                $isSubCompliant = $false
                             }
                         }
                         catch {
                             Write-Verbose "KeyVault certificate retrieval failed"
-                            $Comments += " " + $msgTable.keyVaultCertRetrievalFailed -f $listener.Name, $appGateway.Name
+                            $subComments += " " + $msgTable.keyVaultCertRetrievalFailed -f $listener.Name, $appGateway.Name
                             $ErrorList.Add("Failed to retrieve certificate from Key Vault '$keyVaultName' for listener '$($listener.Name)': $_ .")
-                             $allCompliant = $false
+                             $isSubCompliant = $false
                         }
                     }
                     elseif ($cert.PublicCertData) {
@@ -274,8 +310,8 @@ function Check-ApplicationGatewayCertificateValidity {
                             $x509cert = $certCollection[0]
                         
                             if ($x509cert.NotAfter -le (Get-Date)) {
-                                $Comments += " " +$msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
-                                $allCompliant = $false
+                                $subComments += " " +$msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
+                                $isSubCompliant = $false
                             }
 
                             # Check if certificate is from an approved CA
@@ -288,19 +324,19 @@ function Check-ApplicationGatewayCertificateValidity {
                             }
 
                             if (-not $isApprovedCA) {
-                                $Comments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
-                                $allCompliant = $false
+                                $subComments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                                $isSubCompliant = $false
                             }
                         }
                         catch {
-                            $Comments += " " + $msgTable.unableToProcessCertData -f $listener.Name, $appGateway.Name, $_.Exception.Message
-                            $allCompliant = $false
+                            $subComments += " " + $msgTable.unableToProcessCertData -f $listener.Name, $appGateway.Name, $_.Exception.Message
+                            $isSubCompliant = $false
                         }
                     }
                     else {
                         Write-Verbose "Certificate has no PublicCertData and no KeyVaultSecretId"
-                        $Comments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
-                        $allCompliant = $false
+                        $subComments += " " + $msgTable.unableToRetrieveCertData -f $listener.Name, $appGateway.Name
+                        $isSubCompliant = $false
                     }
                 }
 
@@ -309,52 +345,66 @@ function Check-ApplicationGatewayCertificateValidity {
                     Where-Object { $_.Protocol -eq 'Https' }
 
                 if ($httpsBackendSettings.Count -eq 0) {
-                    $Comments += " " + $msgTable.noHttpsBackendSettingsFound -f $appGateway.Name
+                    $subComments += " " + $msgTable.noHttpsBackendSettingsFound -f $appGateway.Name
                 } else {
                     $allWellKnownCA = $true
                     foreach ($backendSetting in $httpsBackendSettings) {
                         if ($backendSetting.TrustedRootCertificates.Count -gt 0) {
-                            $Comments += " " + $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                            $subComments += " " + $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
                             $allWellKnownCA = $false
                         }
                     }
 
                     if ($allWellKnownCA) {
-                        $Comments += " " + $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
+                        $subComments += " " + $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
                     } else {
-                        $allCompliant = $false
+                        $isSubCompliant = $false
                     }
                 }
             }
         }
-    }
     
-    if (-not $appGatewaysFound) {
-        $Comments = $msgTable.noAppGatewayFound
-        $IsCompliant = $true
-        Write-Verbose "No app gateways found - Comments: $Comments"
-    } else {
-        $IsCompliant = $allCompliant
-        if (-not $NotEvaluated) {
-            Write-Verbose "App gateways found - IsCompliant: $IsCompliant, allCompliant: $allCompliant"
-            if ($IsCompliant) {
-                $Comments = $msgTable.allCertificatesValid
+    
+        # Determine per-subscription compliance status and Comments
+        if (-not $appGatewaysFound) {
+            $subComments = $msgTable.noAppGatewayFound -f $subscription.Name
+            $IsCompliant = $true
+            Write-Verbose "No app gateways found - Comments: $Comments"
+        }
+        else {
+            $IsCompliant = $isSubCompliant
+            if (-not $NotEvaluated) {
+                Write-Verbose "App gateways found - IsCompliant: $IsCompliant, allCompliant: $allCompliant"
+                if ($IsCompliant){
+                    $subComments= $msgTable.allCertificatesValid
+                }
+            }
+            elseif($NotEvaluated){
+                $IsCompliant = "Not Available"
+                Write-Verbose "App gateways found but certificate validation could not be completed due to errors accessing certificate data - IsCompliant: $IsCompliant, Comments: $subComments"
             }
         }
-    }
-    
+        
+        # Add evaluation info for each subscription
+        $C = [PSCustomObject]@{
+            SubscriptionName   = $subscription.Name
+            ComplianceStatus   = $IsCompliant 
+            ControlName        = $ControlName
+            Comments           = $subComments
+            ItemName           = $ItemName
+            ReportTime         = $ReportTime
+            itsgcode           = $itsgcode
+        }
 
-    $PsObject = [PSCustomObject]@{
-        ComplianceStatus = if ($NotEvaluated) { "Not Available" } else { $IsCompliant }
-        ControlName      = $ControlName
-        Comments         = $Comments
-        ItemName         = $ItemName
-        ReportTime       = $ReportTime
-        itsgcode         = $itsgcode
-    }
+        # Add profile information if MCUP feature is enabled
+        if ($EnableMultiCloudProfiles) {
+            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subscription.Id -ErrorList $ErrorList
+            Write-Host "$result"
+            $PsObject.Add($result) | Out-Null
+        } else {
+            $PsObject.Add($C) | Out-Null
+        }
 
-    if ($EnableMultiCloudProfiles) {
-        Set-ProfileEvaluation -PsObject $PsObject -ErrorList $ErrorList -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
     }
 
     $moduleOutput = [PSCustomObject]@{ 
@@ -379,43 +429,4 @@ function Test-KeyVaultAccess {
         $result.Error = $_.Exception.Message
     }
     return $result
-}
-
-function Set-ProfileEvaluation {
-    param (
-        [Parameter(Mandatory=$true)]
-        [PSCustomObject]$PsObject,
-        [Parameter(Mandatory=$true)]
-        [AllowEmptyCollection()]
-        [System.Collections.ArrayList]$ErrorList,
-        [Parameter(Mandatory=$true)]
-        [string]$CloudUsageProfiles,
-        [Parameter(Mandatory=$true)]
-        [string]$ModuleProfiles
-    )
-
-    $evalResult = Get-EvaluationProfile -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles
-    if (!$evalResult.ShouldEvaluate) {
-        if(!$evalResult.ShouldAvailable ){
-            if ($evalResult.Profile -gt 0) {
-                $PsObject.ComplianceStatus = "Not Applicable"
-                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
-                $PsObject.Comments = "Not available - Profile $($evalResult.Profile) not applicable for this guardrail"
-            } else {
-                # Add error to ErrorList instead of throwing
-                 [void]$ErrorList.Add("Error occurred while evaluating profile configuration availability")
-            }
-        } else {
-            if ($evalResult.Profile -gt 0) {
-                $PsObject.ComplianceStatus = "Not Applicable"
-                $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
-                $PsObject.Comments = "Not evaluated - Profile $($evalResult.Profile) not present in CloudUsageProfiles"
-            } else {
-                # Add error to ErrorList instead of throwing
-                [void]$ErrorList.Add("Error occurred while evaluating profile configuration")
-            }
-        }
-    } else {
-        $PsObject | Add-Member -MemberType NoteProperty -Name "Profile" -Value $evalResult.Profile -Force
-    }
 }
