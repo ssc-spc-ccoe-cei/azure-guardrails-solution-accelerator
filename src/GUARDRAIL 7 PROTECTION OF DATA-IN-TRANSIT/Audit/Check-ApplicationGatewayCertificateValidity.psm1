@@ -53,37 +53,12 @@ function Check-ApplicationGatewayCertificateValidity {
     }
     catch {
         $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that the storage account exists and that you have permissions to it. Error: $_"
-        $ErrorList.Add($storageErrorMessage)
+        $ErrorList.Add($storageErrorMessage) | Out-Null
 
-        # Storage access is part of the compliance check, so an RBAC/storage connection failure should be
-        # reported as a non-compliant result for this subscription instead of failing the whole module.
-        # This keeps the report complete and makes the storage-auth problem visible in the normal output.
-        $C = [PSCustomObject]@{
-            SubscriptionName = $subName
-            ComplianceStatus = $false
-            ControlName      = $ControlName
-            Comments         = $storageErrorMessage
-            ItemName         = $ItemName
-            ReportTime       = $ReportTime
-            itsgcode         = $itsgcode
-        }
-
-        # Keep the result shape consistent with the rest of the module. When multi-cloud profiles are
-        # enabled, add the profile metadata before adding the row to the final compliance results.
-        if ($EnableMultiCloudProfiles) {
-            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
-            $PsObject.Add($result) | Out-Null
-        } else {
-            $PsObject.Add($C) | Out-Null
-        }
-
-        # Return the same wrapper object used by the normal check path: one collection for compliance
-        # rows and one collection for non-terminating errors gathered during the run.
-        $moduleOutput = [PSCustomObject]@{
-            ComplianceResults = $PsObject
+        return [PSCustomObject]@{
+            ComplianceResults = $null
             Errors            = $ErrorList
         }
-        return $moduleOutput
     }
 
     $baseFileNameFound = $false
@@ -124,37 +99,12 @@ function Check-ApplicationGatewayCertificateValidity {
     }
     catch {
         $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that blob data access is available. Error: $_"
-        $ErrorList.Add($storageErrorMessage)
+        $ErrorList.Add($storageErrorMessage) | Out-Null
 
-        # Storage access is part of the compliance check, so an RBAC/storage read failure should be
-        # reported as a non-compliant result for this subscription instead of failing the whole module.
-        # This keeps the report complete and makes the storage-auth problem visible in the normal output.
-        $C = [PSCustomObject]@{
-            SubscriptionName = $subName
-            ComplianceStatus = $false
-            ControlName      = $ControlName
-            Comments         = $storageErrorMessage
-            ItemName         = $ItemName
-            ReportTime       = $ReportTime
-            itsgcode         = $itsgcode
-        }
-
-        # Keep the result shape consistent with the rest of the module. When multi-cloud profiles are
-        # enabled, add the profile metadata before adding the row to the final compliance results.
-        if ($EnableMultiCloudProfiles) {
-            $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
-            $PsObject.Add($result) | Out-Null
-        } else {
-            $PsObject.Add($C) | Out-Null
-        }
-
-        # Return the same wrapper object used by the normal check path: one collection for compliance
-        # rows and one collection for non-terminating errors gathered during the run.
-        $moduleOutput = [PSCustomObject]@{
-            ComplianceResults = $PsObject
+        return [PSCustomObject]@{
+            ComplianceResults = $null
             Errors            = $ErrorList
         }
-        return $moduleOutput
     }
     
 

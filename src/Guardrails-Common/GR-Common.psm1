@@ -623,9 +623,13 @@ function Check-DocumentExistsInStorage {
     }
     catch {
         $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
-        $ErrorList.Add($storageErrorMessage)
-        $commentsArray += $storageErrorMessage
-        $docMissing = $true
+        $ErrorList.Add($storageErrorMessage) | Out-Null
+
+        return [PSCustomObject]@{
+            ComplianceResults = $null
+            Errors            = $ErrorList
+            AdditionalResults = $AdditionalResults
+        }
     }
    
     if ($null -ne $StorageContext) {
@@ -653,29 +657,30 @@ function Check-DocumentExistsInStorage {
         }
         catch {
             $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that blob data access is available. Error: $_"
-            $ErrorList.Add($storageErrorMessage)
-            $commentsArray += $storageErrorMessage
-            $docMissing = $true
-            $blobAccessFailed = $true
+            $ErrorList.Add($storageErrorMessage) | Out-Null
+
+            return [PSCustomObject]@{
+                ComplianceResults = $null
+                Errors            = $ErrorList
+                AdditionalResults = $AdditionalResults
+            }
         }
 
-        if (-not $blobAccessFailed) {
-            # Use case: uploaded fileName is correct but has wrong extension
-            if ($baseFileNameFound){
-                # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
-                $docMissing = $true
-                $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        # Use case: uploaded fileName is correct but has wrong extension
+        if ($baseFileNameFound){
+            # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
+            $docMissing = $true
+            $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+        }
+        else {
+            if ($blobFound){
+                # Use case: a blob with the name $documentName was located in the specified storage account
+                $commentsArray += $msgTable.procedureFileFound -f  $DocumentName
             }
             else {
-                if ($blobFound){
-                    # Use case: a blob with the name $documentName was located in the specified storage account
-                    $commentsArray += $msgTable.procedureFileFound -f  $DocumentName
-                }
-                else {
-                    # Use case: no blob with the name $documentName was found in the specified storage account
-                    $docMissing = $true
-                    $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
-                }
+                # Use case: no blob with the name $documentName was found in the specified storage account
+                $docMissing = $true
+                $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
             }
         }
     }
