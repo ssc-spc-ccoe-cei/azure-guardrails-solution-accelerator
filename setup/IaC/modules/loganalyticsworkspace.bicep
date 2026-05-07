@@ -1152,10 +1152,10 @@ let finalSummary = summary
             strcat("Exclusion de ", tostring(excludedGuestCount), " comptes invités avec confiance AMF inter-locataire et politique d'accès conditionnel"),
             strcat("Excluded ", tostring(excludedGuestCount), " guest accounts with cross-tenant MFA trust and conditional access policy"))),
         Comments);
-| extend Comments = iff(graceUserCount > 0,
+| extend Comments = iff(gracePeriodCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
-            strcat("Exclusion de ", tostring(graceUserCount), " utilisateurs dans la période de grâce AMF de ", tostring(mfaGracePeriod), " jours"),
-            strcat("Excluded ", tostring(graceUserCount), " users in the MFA grace period of ", tostring(mfaGracePeriod), " days"))),
+            strcat("Exclusion de ", tostring(gracePeriodCount), " utilisateurs dans la période de grâce AMF de ", tostring(mfaGracePeriod), " jours"),
+            strcat("Excluded ", tostring(gracePeriodCount), " users in the MFA grace period of ", tostring(mfaGracePeriod), " days"))),
         Comments);
 finalSummary
 | project 
