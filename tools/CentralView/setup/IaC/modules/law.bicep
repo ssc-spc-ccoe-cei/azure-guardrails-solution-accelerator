@@ -5,6 +5,9 @@ param location string
 param version string
 param releaseDate string
 
+@description('When true, skips creating GuardrailsTenantsCompliance_CL here and references an existing table (brownfield): avoids schema conflicts when the workspace already defines that table.')
+param deferGuardrailsTenantsComplianceTableProvisioning bool = false
+
 var wbConfig1 ='''
 {
   "version": "Notebook/1.0",
@@ -126,6 +129,35 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2022-1
     }
   }
 }
+
+resource existingCentralTenantsComplianceTableForDcr 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' existing = if (deferGuardrailsTenantsComplianceTableProvisioning) {
+  parent: guardrailsLogAnalytics
+  name: 'GuardrailsTenantsCompliance_CL'
+}
+
+resource centralTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = if (!deferGuardrailsTenantsComplianceTableProvisioning) {
+  parent: guardrailsLogAnalytics
+  name: 'GuardrailsTenantsCompliance_CL'
+  properties: {
+    plan: 'Analytics'
+    retentionInDays: 90
+    totalRetentionInDays: 90
+    schema: {
+      name: 'GuardrailsTenantsCompliance_CL'
+      columns: [
+        {
+          name: 'TimeGenerated'
+          type: 'dateTime'
+        }
+        {
+          name: 'RawData'
+          type: 'string'
+        }
+      ]
+    }
+  }
+}
+
 resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2022-04-01' = {
   location: location
   kind: 'shared'
@@ -149,5 +181,214 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     version: 2
   }
 }
+
+// DCE + DCR for Send-GuardrailsData (Log Ingestion API). CentralView posts LogType GuardrailsTenantsCompliance only.
+// Grant the Function App service principal (used after Connect-AzAccount -ServicePrincipal in run.ps1) Monitoring Metrics Publisher on this DCR.
+// Expose dceEndpoint + dcrImmutableId to the Function App as DCE_ENDPOINT and DCR_IMMUTABLE_ID app settings.
+var centralDceName = 'guardrails-cv-dce'
+var centralDcrName = 'guardrails-cv-dcr'
+var centralTenantsComplianceTransformKql = loadTextContent('law-centralview-tenantscompliance-transform.kql')
+
+resource centralDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = {
+  name: centralDceName
+  location: location
+  tags: {
+    version: version
+    releasedate: releaseDate
+  }
+  kind: 'Logs'
+  properties: {
+    networkAcls: {
+      publicNetworkAccess: 'Enabled'
+    }
+  }
+}
+
+resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' = {
+  name: centralDcrName
+  location: location
+  tags: {
+    version: version
+    releasedate: releaseDate
+  }
+  kind: 'Direct'
+  dependsOn: [
+    deferGuardrailsTenantsComplianceTableProvisioning ? existingCentralTenantsComplianceTableForDcr : centralTableGuardrailsTenantsCompliance
+  ]
+  properties: {
+    dataCollectionEndpointId: centralDataCollectionEndpoint.id
+    dataFlows: [
+      {
+        streams: ['Custom-GuardrailsTenantsCompliance']
+        destinations: ['central-law']
+        transformKql: centralTenantsComplianceTransformKql
+        outputStream: 'Custom-GuardrailsTenantsCompliance_CL'
+      }
+    ]
+    destinations: {
+      logAnalytics: [
+        {
+          name: 'central-law'
+          workspaceResourceId: guardrailsLogAnalytics.id
+        }
+      ]
+    }
+    streamDeclarations: {
+      'Custom-GuardrailsTenantsCompliance': {
+        columns: [
+          {
+            name: 'TimeGenerated'
+            type: 'datetime'
+          }
+          {
+            name: 'Mandatory'
+            type: 'string'
+          }
+          {
+            name: 'ControlName_s'
+            type: 'string'
+          }
+          {
+            name: 'ItemName'
+            type: 'string'
+          }
+          {
+            name: 'Profile'
+            type: 'string'
+          }
+          {
+            name: 'Status'
+            type: 'string'
+          }
+          {
+            name: 'Count'
+            type: 'long'
+          }
+          {
+            name: 'ITSG Control'
+            type: 'string'
+          }
+          {
+            name: 'SubnetName'
+            type: 'string'
+          }
+          {
+            name: 'Definition'
+            type: 'string'
+          }
+          {
+            name: 'Remediation'
+            type: 'string'
+          }
+          {
+            name: 'VNet Name'
+            type: 'string'
+          }
+          {
+            name: 'TenantDomain'
+            type: 'string'
+          }
+          {
+            name: 'DepartmentName'
+            type: 'string'
+          }
+          {
+            name: 'DepartmentNumber'
+            type: 'string'
+          }
+          {
+            name: 'DepartmentTenantName'
+            type: 'string'
+          }
+          {
+            name: 'DepartmentTenantID'
+            type: 'string'
+          }
+          {
+            name: 'DepartmentCloudUsageProfiles'
+            type: 'string'
+          }
+          {
+            name: 'AggregationTenantID'
+            type: 'string'
+          }
+          {
+            name: 'AggregationTenantName'
+            type: 'string'
+          }
+          {
+            name: 'AggregationTenantUPN'
+            type: 'string'
+          }
+          {
+            name: 'ReportTime'
+            type: 'string'
+          }
+          {
+            name: 'DepartmentReportTime'
+            type: 'string'
+          }
+          {
+            name: 'DeployedVersion'
+            type: 'string'
+          }
+          {
+            name: 'AvailableVersion'
+            type: 'string'
+          }
+          {
+            name: 'UpdatedNeeded'
+            type: 'boolean'
+          }
+          {
+            name: 'DepartmentVersionCheckDate'
+            type: 'string'
+          }
+          {
+            name: 'WSId'
+            type: 'string'
+          }
+          {
+            name: 'ControlName'
+            type: 'string'
+          }
+          {
+            name: 'ComplianceStatus'
+            type: 'dynamic'
+          }
+          {
+            name: 'Comments'
+            type: 'string'
+          }
+          {
+            name: 'itsgcode'
+            type: 'string'
+          }
+          {
+            name: 'Required'
+            type: 'string'
+          }
+          {
+            name: 'DisplayName'
+            type: 'string'
+          }
+          {
+            name: 'SubscriptionName'
+            type: 'string'
+          }
+          {
+            name: 'VNETName'
+            type: 'string'
+          }
+        ]
+      }
+    }
+  }
+}
+
 output customerId string = guardrailsLogAnalytics.properties.customerId
 output lawresourceid string = guardrailsLogAnalytics.id
+output dceEndpoint string = centralDataCollectionEndpoint.properties.logsIngestion.endpoint
+output dcrImmutableId string = centralDataCollectionRule.properties.immutableId
+output dcrResourceId string = centralDataCollectionRule.id
+output dceResourceId string = centralDataCollectionEndpoint.id

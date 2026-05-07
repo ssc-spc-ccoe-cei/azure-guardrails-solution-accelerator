@@ -1,0 +1,36 @@
+source
+| extend TimeGenerated = coalesce(todatetime(TimeGenerated), now())
+| extend
+    ReportTime_s = tostring(ReportTime),
+    TenantDomain_s = tostring(TenantDomain),
+    DepartmentName_s = tostring(DepartmentName),
+    DepartmentNumber_s = tostring(DepartmentNumber),
+    DepartmentTenantName_s = tostring(DepartmentTenantName),
+    DepartmentTenantID_s = tostring(DepartmentTenantID),
+    DepartmentCloudUsageProfiles_s = tostring(DepartmentCloudUsageProfiles),
+    Status_s = tostring(Status),
+    Mandatory_s = tostring(Mandatory),
+    ControlName_s_s = tostring(ControlName_s),
+    ItemName_s = tostring(ItemName),
+    Profile_s = tostring(Profile),
+    Count_s = tostring(Count),
+    ITSG_Control_s = tostring(['ITSG Control']),
+    AggregationTenantID_s = tostring(AggregationTenantID),
+    AggregationTenantName_s = tostring(AggregationTenantName),
+    AggregationTenantUPN_s = tostring(AggregationTenantUPN),
+    DepartmentReportTime_s = tostring(DepartmentReportTime),
+    DeployedVersion_s = tostring(DeployedVersion),
+    AvailableVersion_s = tostring(AvailableVersion),
+    UpdatedNeeded_b = tobool(UpdatedNeeded),
+    DepartmentVersionCheckDate_s = tostring(DepartmentVersionCheckDate),
+    WSId_s = tostring(WSId),
+    SubnetName_s = tostring(SubnetName),
+    Definition_s = tostring(Definition),
+    Remediation_s = tostring(Remediation),
+    VNETName_s = tostring(['VNet Name'])
+| project
+    TimeGenerated, ReportTime_s, TenantDomain_s, DepartmentName_s, DepartmentNumber_s, DepartmentTenantName_s,
+    DepartmentTenantID_s, DepartmentCloudUsageProfiles_s, Status_s, Mandatory_s, ControlName_s_s, ItemName_s,
+    Profile_s, Count_s, ITSG_Control_s, AggregationTenantID_s, AggregationTenantName_s, AggregationTenantUPN_s,
+    DepartmentReportTime_s, DeployedVersion_s, AvailableVersion_s, UpdatedNeeded_b, DepartmentVersionCheckDate_s,
+    WSId_s, SubnetName_s, Definition_s, Remediation_s, VNETName_s

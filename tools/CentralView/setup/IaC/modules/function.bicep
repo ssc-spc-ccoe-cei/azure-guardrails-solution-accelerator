@@ -4,6 +4,8 @@ param storageAccountName string
 param kvname string
 param lawresourceid string
 param appInsightsLocation string
+param dceEndpoint string
+param dcrImmutableId string
 
 //Storage Account
 resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
@@ -139,6 +141,8 @@ resource azfunctionsiteconfig 'Microsoft.Web/sites/config@2021-03-01' = {
     'APPINSIGHTS_INSTRUMENTATIONKEY': reference(appinsights.id, '2020-02-02-preview').InstrumentationKey
     'APPLICATIONINSIGHTS_CONNECTION_STRING': 'InstrumentationKey=${reference(appinsights.id, '2020-02-02-preview').InstrumentationKey}'
     'ApplicationInsightsAgent_EXTENSION_VERSION': '~2'
+    'DCE_ENDPOINT': dceEndpoint
+    'DCR_IMMUTABLE_ID': dcrImmutableId
   }
 }
 
