@@ -221,10 +221,10 @@ unableToRetrieveCertData = Unable to retrieve certificate data for listener '{0}
 noHttpsBackendSettingsFound = No HTTPS backend settings found/configured for Application Gateway: {0}.
 manualTrustedRootCertsFound = Manual trusted root certificates found for Application Gateway '{0}', backend setting '{1}'.
 allBackendSettingsUseWellKnownCA = All backend settings for Application Gateway '{0}' use well‑known Certificate Authority (CA) certificates.
-noAppGatewayFound = No Application Gateways found in any subscription.
+noAppGatewayFound = No Application Gateways found in this subscription: {0}.
 allCertificatesValid = All certificates are valid and from approved Certificate Authorities (CAs).
-approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed
-approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities
+approvedCAFileFound = Approved Certificate Authority (CA) list file '{0}' found and processed.
+approvedCAFileNotFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
 appServiceHttpsConfig = Azure App Service: HTTPS Application Configuration
 keyVaultCertValidationFailed = Certificate stored in Key Vault for listener '{0}' in Application Gateway '{1}' could not be validated. The CAC solution requires 'Key Vault Secrets User' permissions on the customer Key Vault to validate certificates. If the vault is in Access Policy mode, grant the Automation Account managed identity the 'Get' permission on Secrets for this Key Vault. Contact your administrator to grant the CAC Automation Account managed identity access to this Key Vault if desired.
 keyVaultCertRetrievalFailed = Unable to retrieve certificate from Key Vault for listener '{0}' in Application Gateway '{1}'. Certificate may be stored in Key Vault and requires proper permissions to access.
@@ -293,6 +293,7 @@ networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP 
 networkInterfaceIPs = Policy for Limiting Public IPs
 policyNoApplicableResourcesSub = Policy is assigned at the subscription level. No applicable resources found
 policyNotConfiguredSub = Required policy is not assigned to this subscription: {0}. Please assign the policy to ensure compliance.
+policyAssignedSub = Required policy is assigned at a scope covering this subscription: {0}.
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
@@ -341,7 +342,9 @@ DefenderCompliant = MS Defender for Cloud is enabled for this subscription, and 
 DefenderEnabledNonCompliant = MS Defender for Cloud is enabled for this subscription, but the security contact to receive email notifications are not properly configured.
 NoMappedResourcesOrMappingIncomplete = There are not any resources (i.e., virtual machines, servers, storage accounts etc.,) being directly protected by Defender for Cloud Workload Protection (CWP) Standard tier service offering.
 CwpPlansNotStandard = The following CWP plans in use are not considered Standard tier for Defender for Cloud: {0}.
-CoverageOk = All CWP pans are using a Defender for Cloud Workload Protection (CWP) Standard tier service offering and are considered compliant.
+CoverageOk = All CWP plans are using a Defender for Cloud Workload Protection (CWP) Standard tier service offering and are considered compliant.
+FoundationalCspmOnlyInfo = [Informational] Only Foundational CSPM (free tier) is active for this subscription. Defender CSPM and CWP plans are not enabled.
+CwpInformational = [Informational] {0}
 
 
 # GuardRail #12

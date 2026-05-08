@@ -10,7 +10,9 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
-        [string] $ReportTime, 
+        [string] $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string] $WorkSpaceID,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # default to false
@@ -61,7 +63,7 @@ function Check-AllUserMFARequired {
         Write-Error "Failed to call KQL function: $_"
         [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
     }
-    
+
     # Add Profile information to compliance result if KQL function was successful
     if ($complianceResult -and $EnableMultiCloudProfiles) {
         try {

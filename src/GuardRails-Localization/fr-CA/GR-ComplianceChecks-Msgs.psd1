@@ -221,9 +221,9 @@ unableToRetrieveCertData = Incapable de récupérer les données de certificat p
 noHttpsBackendSettingsFound = Aucun paramètre principal HTTPS n'a été trouvé/configuré pour la passerelle d'application : {0}. 
 manualTrustedRootCertsFound = Certificats racines de confiance manuels trouvés pour la passerelle d'application '{0}', paramètre principal '{1}'. 
 allBackendSettingsUseWellKnownCA = Tous les paramètres principaux de la passerelle d'application '{0}' utilisent des certificats d'autorité de certification (AC) bien connus. 
-noAppGatewayFound = Aucune passerelle d'application trouvée dans aucun abonnement.
+noAppGatewayFound = Aucune passerelle d'application trouvée dans cet abonnement : {0}.
 allCertificatesValid = Tous les certificats sont valides et provenant d'autorités de certification (AC) approuvées. 
-approvedCAFileFound = Approved Certificate Authority (CA) file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify certificate authorities.
+approvedCAFileFound = Fichier de liste des autorités de certification (CA) approuvées '{0}' trouvé et traité.
 approvedCAFileNotFound = Le fichier des Autorités de certification (AC) approuvées '{0}' n'a pas été trouvé dans le conteneur '{1}' du compte de stockage '{2}'. Incapable de vérifier les autorités de certification.
 appServiceHttpsConfig = « Azure App Service » : Configuration d'application HTTPS
 keyVaultCertValidationFailed = Le certificat stocké dans Key Vault pour l'écouteur « {0} » dans Application Gateway « {1} » n'a pas pu être validé. La solution CAC requiert les autorisations « Key Vault Secrets User » sur le Key Vault du client pour valider les certificats. Si le coffre est en mode Stratégies d'accès (Access Policy), accordez à l'identité managée du compte d'automatisation l'autorisation « Obtenir » (Get) sur les secrets de ce Key Vault. Contactez votre administrateur afin d'accorder à l'identité managée du compte d'automatisation CAC l'accès à ce Key Vault, si vous le souhaitez.
@@ -293,6 +293,7 @@ networkInterfaceIPs = Politique de limitation des adresses IP publiques
 
 policyNoApplicableResourcesSub = La politique est attribuée au niveau de l'abonnement. Aucune ressource applicable n'a été trouvée. 
 policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonnement : {0}. Veuillez attribuer la politique pour assurer la conformité.
+policyAssignedSub = La politique requise est attribuée à une portée couvrant cet abonnement : {0}.
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
@@ -342,7 +343,8 @@ DefenderEnabledNonCompliant = MS Defender pour l'infonuagique est activé pour c
 NoMappedResourcesOrMappingIncomplete = Aucune ressource (c'est-à-dire machines virtuelles, serveurs, comptes de stockage, etc.) n'est directement protégée par l'offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard.
 CwpPlansNotStandard = Les plans CWP suivants en cours d'utilisation ne sont pas considérés comme appartenant au niveau Standard pour Defender pour l'infonuagique : {0}.
 CoverageOk = Tous les plans CWP utilisent une offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard et sont considérés comme conformes.
-
+FoundationalCspmOnlyInfo = [Information] Seul le niveau de base de CSPM (niveau gratuit) est actif pour cet abonnement. Les plans Defender CSPM et CWP ne sont pas activés.
+CwpInformational = [Informationnel] {0}
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

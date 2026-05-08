@@ -275,7 +275,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
             $config = Confirm-GSAConfigurationParameters -configFilePath $configFilePath -Verbose:$useVerbose
         }
 
-        Show-GSADeploymentSummary -deployParams $PSBoundParameters -deployParamSet $PSCmdlet.ParameterSetName -yes:$yes.isPresent -Verbose:$useVerbose
+        # Error handling for missing or invalid configuration parameters
+        try{
+            Show-GSADeploymentSummary -deployParams $PSBoundParameters -deployParamSet $PSCmdlet.ParameterSetName -yes:$yes.isPresent -Verbose:$useVerbose
+        }
+        catch{
+            Write-Error "Show-GSADeploymentSummary did not complete sucessfully. Check for errors."
+        }
+        Write-Verbose "Release version: $releaseVersion"
 
         # set module install or update source URL
         $params = @{}
@@ -302,7 +309,10 @@ Function Deploy-GuardrailsSolutionAccelerator {
             
             If ($releases.name -contains $releaseVersion) {
                 Write-Verbose "Found a release on GitHub match for $releaseVersion"
-                $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/{0}/" -f $releaseVersion
+                $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/psmodules" -f $releaseVersion
+
+                Write-Verbose "Using release $releaseVersion from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
+                $params = @{ moduleBaseURL = $moduleBaseURL }
             }
         }
         # ElseIf ($prerelease) {
@@ -323,7 +333,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             # check that the release contains the 'GR-Common.zip' file as an asset. 
             Write-Verbose "Checking that the release contains the 'GR-Common.zip' file as an asset..."
             try {
-                $null = Invoke-RestMethod -Method HEAD -Uri "$moduleBaseURL/GR-Common.zip" -ErrorAction Stop -Verbose:$false
+                $null = Invoke-RestMethod -Method HEAD -Uri "$moduleBaseURL/GR-Common.zip" -ErrorAction Stop -Verbose:$true
             }
             catch {
                 Write-Error "The release $releaseVersion does not contain the 'GR-Common.zip' file as an asset. This likely means the release was not properly published, or was published using an older process and is not recommended for new deployments. See: https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases"
