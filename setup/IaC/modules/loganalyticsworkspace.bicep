@@ -1055,7 +1055,7 @@ let rawUserData = GuardrailsUserRaw_CL
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
-| where ReportTime == reportTime;
+| where ReportTime == reportTime
 // new logic for created Date
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), createdDateTime_t);
 let excludedUsers = rawUserData
@@ -1151,7 +1151,7 @@ let finalSummary = summary
         strcat(Comments, "; ", iff(locale == "fr-CA",
             strcat("Exclusion de ", tostring(excludedGuestCount), " comptes invités avec confiance AMF inter-locataire et politique d'accès conditionnel"),
             strcat("Excluded ", tostring(excludedGuestCount), " guest accounts with cross-tenant MFA trust and conditional access policy"))),
-        Comments);
+        Comments)
 | extend Comments = iff(gracePeriodCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
             strcat("Exclusion de ", tostring(gracePeriodCount), " utilisateurs dans la période de grâce AMF de ", tostring(mfaGracePeriod), " jours"),
@@ -1261,7 +1261,7 @@ let userData = GuardrailsUserRaw_CL
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
-| where guardrailsExcluded == false;
+| where guardrailsExcluded == false
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), createdDateTime_t);
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
