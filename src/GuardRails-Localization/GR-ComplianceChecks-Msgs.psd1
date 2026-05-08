@@ -376,6 +376,7 @@ bgAccountTesting = Break Glass Account Testing Cadence
 bgAccountNotExist = One or both of the Break Glass Account User Principal Names (UPNs) provided do not exist in the environment. Review the provided Break Glass Account UPNs for accuracy.
 bgAccountLoginNotValid = Last login for the provided Break Glass Accounts is greater than a year. Ensure regular testing of the Break Glass Account procedure and login process.
 bgAccountLoginValid = Last login for the provided Break Glass Accounts is within a year. Ensure regular testing of the Break Glass Account procedure and login process.
+bgAccountIsGuestType = One or both of the provided Break Glass Account User Principal Names (UPNs) are Guest type accounts. Break Glass Accounts must be member type accounts. Review and update the Break Glass Account UPNs in the configuration.
 
 # GR-Common
 procedureFileFound = Compliant. Required file has been uploaded for review by Cloud Security Compliance assessors. '{0}' found.

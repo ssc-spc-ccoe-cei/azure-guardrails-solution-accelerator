@@ -35,8 +35,11 @@ function Get-BreakGlassAccounts {
   [bool] $IsCompliant = $false
   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
-  [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
-  [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
+  [String] $FirstBreakGlassUPNEncoded = $FirstBreakGlassUPN -replace '#', '%23'
+  [String] $SecondBreakGlassUPNEncoded = $SecondBreakGlassUPN -replace '#', '%23'
+
+  [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPNEncoded + "?$" + "select=userPrincipalName,id,userType")
+  [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPNEncoded + "?$" + "select=userPrincipalName,id,userType")
 
   if($FirstBreakGlassUPN -eq $SecondBreakGlassUPN){
 
@@ -56,11 +59,13 @@ function Get-BreakGlassAccounts {
       UserPrincipalName  = $FirstBreakGlassUPN
       apiUrl             = $FirstBreakGlassUPNUrl
       ComplianceStatus   = $false
+      IsGuestType        = $false
     }
     $SecondBreakGlassAcct = [PSCustomObject]@{
       UserPrincipalName   = $SecondBreakGlassUPN
       apiUrl              = $SecondBreakGlassUPNUrl
       ComplianceStatus    = $false
+      IsGuestType         = $false
     }
     
     # get 1st break glass account
@@ -73,6 +78,9 @@ function Get-BreakGlassAccounts {
       
       if ($data.userType -eq "Member") {
         $FirstBreakGlassAcct.ComplianceStatus = $true
+      }
+      elseif($dataz.userType -eq "Guest"){
+        $FirstBreakGlassAcct.IsGuestType = $true
       } 
     }
     catch {
@@ -90,6 +98,9 @@ function Get-BreakGlassAccounts {
 
       if ($data.userType -eq "Member") {
         $SecondBreakGlassAcct.ComplianceStatus = $true
+      }
+      elseif($dataz.userType -eq "Guest"){
+        $SecondBreakGlassAcct.IsGuestType = $true
       } 
     }
     catch {
@@ -99,12 +110,19 @@ function Get-BreakGlassAccounts {
 
     $IsCompliant = $FirstBreakGlassAcct.ComplianceStatus -and $SecondBreakGlassAcct.ComplianceStatus
 
+    if($FirstBreakGlassAcct.IsGuestType -or $SecondBreakGlassAcct.IsGuestType){
+      $bgComments = $msgTable.bgAccountIsGuestType
+    }
+    else{
+      $bgComments = $msgTable.bgAccountsCompliance -f $FirstBreakGlassAcct.ComplianceStatus, $SecondBreakGlassAcct.ComplianceStatus
+    }
+
     $PsObject = [PSCustomObject]@{
       ComplianceStatus = $IsCompliant
       ControlName      = $ControlName
       ItemName         = $ItemName
-      Comments          = $msgTable.bgAccountsCompliance -f $FirstBreakGlassAcct.ComplianceStatus, $SecondBreakGlassAcct.ComplianceStatus
-      ReportTime      = $ReportTime
+      Comments         = $bgComments
+      ReportTime       = $ReportTime
       itsgcode = $itsgcode
     }
   }

@@ -55,7 +55,8 @@ function Get-BreakGlassAccountLicense {
 
     foreach ($BGAccount in $BGAccounts) {
         
-        $urlPath = '/users/' + $BGAccount.UserPrincipalName
+        $encodedUPN = $BGOwner.UserPrincipalName -replace '#', '%23'
+        $urlPath = '/users/' + $encodedUPN
 
         try {
             $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop

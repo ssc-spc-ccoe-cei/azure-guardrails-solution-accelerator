@@ -35,9 +35,12 @@ function Test-BreakGlassAccounts {
   [bool] $IsCompliant = $false
   $commentsArray = @()
   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-  [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
-  [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPN + "?$" + "select=userPrincipalName,id,userType")
-  
+  [String] $FirstBreakGlassUPNEncoded = $FirstBreakGlassUPN -replace '#', '%23'
+  [String] $SecondBreakGlassUPNEncoded = $SecondBreakGlassUPN -replace '#', '%23'
+
+  [String] $FirstBreakGlassUPNUrl = $("/users/" + $FirstBreakGlassUPNEncoded + "?$" + "select=userPrincipalName,id,userType")
+  [String] $SecondBreakGlassUPNUrl = $("/users/" + $SecondBreakGlassUPNEncoded + "?$" + "select=userPrincipalName,id,userType")
+
 
   function Get-LastSuccessfulSignIn {
     param (
@@ -49,10 +52,11 @@ function Test-BreakGlassAccounts {
     }
 
     $upn = $UserPrincipalName.Trim()
+    $upnEncoded = $upn -replace '#', '%23'
 
     try{
       #Getting Last SignIn info from MS Graph
-      $userID = "/users/{0}?`$select=id" -f $upn #This is required to get last sign in info
+      $userID = "/users/{0}?`$select=id" -f $upnEncoded #This is required to get last sign in info
       $response1 = Invoke-GraphQueryEX -urlPath $userID -ErrorAction Stop
 
       $lastUserSignIn = "/users/{0}?`$select=userPrincipalName,signInActivity" -f $response1.Content.value.id

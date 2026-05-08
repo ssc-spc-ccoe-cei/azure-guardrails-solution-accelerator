@@ -53,7 +53,8 @@ function Get-BreakGlassOwnerinformation {
     
     foreach ($BGOwner in $BGOwners) {
         
-        $urlPath = '/users/' + $BGOwner.UserPrincipalName + '/manager'
+        $encodedUPN = $BGOwner.UserPrincipalName -replace '#', '%23'
+        $urlPath = '/users/' + $encodedUPN + '/manager'
         try {
             $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
 

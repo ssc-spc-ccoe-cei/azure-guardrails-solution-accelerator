@@ -37,7 +37,8 @@ function Get-UserAuthenticationMethod {
     $BGAccountList = @($FirstBreakGlassEmail,$SecondBreakGlassEmail )
     
     foreach($BGAcct in $BGAccountList){
-        $urlPath = '/users/' + $BGAcct + '/authentication/methods'
+        $encodedUPN = $BGAcct -replace '#', '%23'
+        $urlPath = '/users/' +  $encodedUPN + '/authentication/methods'
 
         try {
             $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
