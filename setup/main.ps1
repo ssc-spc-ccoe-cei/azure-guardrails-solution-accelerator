@@ -226,6 +226,8 @@ If ($Locale -eq $null) {
 
 try {
     $RuntimeConfig = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop | ConvertFrom-Json | Select-Object -Expand runtime
+    # Keep the Guardrails deployment subscription available even if later checks switch Az context.
+    [System.Environment]::SetEnvironmentVariable('subscriptionId', $RuntimeConfig.subscriptionId, [System.EnvironmentVariableTarget]::Process)
     Set-AzContext -SubscriptionId $RuntimeConfig.subscriptionId
 }
 catch {

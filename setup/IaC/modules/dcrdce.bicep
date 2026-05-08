@@ -13,6 +13,8 @@ param releaseDate string
 param newDeployment bool = true
 param updateCoreResources bool = false
 
+var dcrName2 = '${dcrName}-2'
+
 // ── Existing-resource references for every DCR output table ──────────────────
 // Declaring these as 'existing' and adding them to the DCR dependsOn tells ARM
 // to wait until each table is in Succeeded state before provisioning the DCR,
@@ -748,7 +750,7 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
 
 // DCR 2: remaining 2 streams (API limit 10 flows per DCR)
 resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11' = if (newDeployment || updateCoreResources) {
-  name: '${dcrName}-2'
+  name: dcrName2
   location: location
   tags: {
     releaseVersion: releaseVersion
@@ -865,6 +867,36 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
         ]
       }
     }
+  }
+}
+
+// Capture Azure-side DCR processing errors that can occur after the upload API accepts data.
+// Only LogErrors is enabled here; no noisier troubleshooting category is enabled by default.
+resource dcrErrorDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (newDeployment || updateCoreResources) {
+  name: '${dcrName}-errors'
+  scope: dataCollectionRule
+  properties: {
+    workspaceId: logAnalyticsWorkspaceResourceId
+    logs: [
+      {
+        category: 'LogErrors'
+        enabled: true
+      }
+    ]
+  }
+}
+
+resource dcr2ErrorDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (newDeployment || updateCoreResources) {
+  name: '${dcrName2}-errors'
+  scope: dataCollectionRule2
+  properties: {
+    workspaceId: logAnalyticsWorkspaceResourceId
+    logs: [
+      {
+        category: 'LogErrors'
+        enabled: true
+      }
+    ]
   }
 }
 

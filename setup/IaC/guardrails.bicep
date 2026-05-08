@@ -82,12 +82,6 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
-    #disable-next-line BCP318
-    dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
-    #disable-next-line BCP318
-    dcrImmutableId: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
-    #disable-next-line BCP318
-    dcrImmutableId2: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -142,8 +136,7 @@ module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || update
     updateCoreResources: updateCoreResources
   }
 }
-// Grants the automation account MSI the Monitoring Metrics Publisher role on both DCRs.
-// Separate module to avoid a circular dependency between automationaccount and dcrdce modules.
+// Grants the automation account MSI the DCR/LAW roles needed for ingestion and verification.
 module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
   name: 'guardrails-dcrrbac'
   dependsOn: [
@@ -151,6 +144,8 @@ module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployme
     DCRDCE
   ]
   params: {
+    #disable-next-line BCP318
+    dceResourceId: DCRDCE.outputs.dceResourceId
     #disable-next-line BCP318
     dcrResourceId: DCRDCE.outputs.dcrResourceId
     #disable-next-line BCP318

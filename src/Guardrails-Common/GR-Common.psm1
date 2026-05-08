@@ -768,6 +768,368 @@ function get-itsgdata {
     Send-GuardrailsData -Data $JSONcontrols -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey
 }
 
+function Get-GuardrailsAutomationVariableValue {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Name
+    )
+
+    if (Get-Command -Name Get-GSAAutomationVariable -ErrorAction SilentlyContinue) {
+        try {
+            $value = Get-GSAAutomationVariable -Name $Name -ErrorAction SilentlyContinue
+            if (-not [string]::IsNullOrWhiteSpace([string]$value)) {
+                return $value
+            }
+        }
+        catch {
+            Write-Warning "Unable to read Automation variable '$Name'. Falling back to process environment variables where available. Error: $($_.Exception.Message)"
+        }
+    }
+
+    return [System.Environment]::GetEnvironmentVariable($Name)
+}
+
+function Get-GuardrailsResourceGroupName {
+    [CmdletBinding()]
+    param ()
+
+    foreach ($name in @('ResourceGroupName', 'ResourceGroup')) {
+        $envValue = [System.Environment]::GetEnvironmentVariable($name)
+        if (-not [string]::IsNullOrWhiteSpace([string]$envValue)) {
+            return $envValue
+        }
+    }
+
+    foreach ($name in @('ResourceGroupName', 'ResourceGroup')) {
+        $value = Get-GuardrailsAutomationVariableValue -Name $name
+        if (-not [string]::IsNullOrWhiteSpace([string]$value)) {
+            return $value
+        }
+    }
+
+    throw "DCR runtime resolution failed: Guardrails resource group could not be determined from ResourceGroupName or ResourceGroup. Verify the Automation variable or process environment is set."
+}
+
+function Get-GuardrailsSubscriptionId {
+    [CmdletBinding()]
+    param ()
+
+    foreach ($name in @('subscriptionId', 'SubscriptionId')) {
+        $envValue = [System.Environment]::GetEnvironmentVariable($name)
+        if (-not [string]::IsNullOrWhiteSpace([string]$envValue)) {
+            return $envValue
+        }
+    }
+
+    foreach ($name in @('subscriptionId', 'SubscriptionId')) {
+        $value = Get-GuardrailsAutomationVariableValue -Name $name
+        if (-not [string]::IsNullOrWhiteSpace([string]$value)) {
+            return $value
+        }
+    }
+
+    $context = Get-AzContext
+    if ($context -and $context.Subscription -and -not [string]::IsNullOrWhiteSpace($context.Subscription.Id)) {
+        return $context.Subscription.Id
+    }
+
+    throw "DCR runtime resolution failed: no Guardrails subscription ID or Azure context is available. Verify the runbook loaded gsaConfigExportLatest and connected with managed identity before ingestion."
+}
+
+function Invoke-GuardrailsArmGet {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Path,
+        [Parameter(Mandatory = $true)]
+        [string] $ResourceName,
+        [Parameter(Mandatory = $true)]
+        [string] $ResourceType,
+        [Parameter(Mandatory = $true)]
+        [string] $ResourceGroupName
+    )
+
+    try {
+        $response = Invoke-AzRestMethod -Method GET -Path $Path -ErrorAction Stop
+    }
+    catch {
+        $message = $_.Exception.Message
+        if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+            $message = $_.ErrorDetails.Message
+        }
+
+        throw "DCR runtime resolution failed while calling Azure Resource Manager for $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Original error: $message"
+    }
+
+    $statusCode = ConvertTo-GuardrailsHttpStatusCode -StatusCode $response.StatusCode
+    $responseText = $response.Content
+
+    if ($statusCode -ge 200 -and $statusCode -lt 300) {
+        try {
+            return $responseText | ConvertFrom-Json -Depth 20
+        }
+        catch {
+            throw "DCR runtime resolution failed: Azure Resource Manager returned invalid JSON for $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Original error: $($_.Exception.Message)"
+        }
+    }
+
+    if ($statusCode -eq 401 -or $statusCode -eq 403) {
+        throw "DCR runtime resolution failed: the runbook identity cannot read $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Required permissions include Microsoft.Insights/dataCollectionEndpoints/read and Microsoft.Insights/dataCollectionRules/read on the Guardrails resource group or a parent scope. StatusCode=$statusCode. Response: $responseText"
+    }
+
+    if ($statusCode -eq 404) {
+        throw "DCR runtime resolution failed: $ResourceType '$ResourceName' was not found in resource group '$ResourceGroupName'. Rerun core deployment or verify the Guardrails resource group and DCR/DCE resources. StatusCode=$statusCode. Response: $responseText"
+    }
+
+    throw "DCR runtime resolution failed while reading $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. StatusCode=$statusCode. Response: $responseText"
+}
+
+function Get-GuardrailsDcrDeclaredStreams {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [object] $DataCollectionRule,
+        [Parameter(Mandatory = $true)]
+        [string] $ResourceName
+    )
+
+    $streamDeclarations = $DataCollectionRule.properties.streamDeclarations
+    if (-not $streamDeclarations) {
+        throw "DCR runtime resolution failed: DCR '$ResourceName' did not return properties.streamDeclarations. Verify core deployment completed successfully."
+    }
+
+    $streams = @($streamDeclarations.PSObject.Properties.Name)
+    if ($streams.Count -eq 0) {
+        throw "DCR runtime resolution failed: DCR '$ResourceName' returned no declared streams. Verify core deployment completed successfully."
+    }
+
+    return $streams
+}
+
+function Get-GuardrailsDcrIngestionSettings {
+    [CmdletBinding()]
+    param ()
+
+    if ($script:GuardrailsDcrIngestionSettings) {
+        return $script:GuardrailsDcrIngestionSettings
+    }
+
+    $resourceGroupName = Get-GuardrailsResourceGroupName
+    $subscriptionId = Get-GuardrailsSubscriptionId
+    $basePath = "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Insights"
+
+    Write-Host "DCR runtime resolution: resolving DCE/DCR resources from Azure Resource Manager. ResourceGroup='$resourceGroupName', SubscriptionId='$subscriptionId'."
+
+    $dce = Invoke-GuardrailsArmGet -Path "$basePath/dataCollectionEndpoints/guardrails-dce?api-version=2022-06-01" -ResourceName 'guardrails-dce' -ResourceType 'DCE' -ResourceGroupName $resourceGroupName
+    $dcr = Invoke-GuardrailsArmGet -Path "$basePath/dataCollectionRules/guardrails-dcr?api-version=2024-03-11" -ResourceName 'guardrails-dcr' -ResourceType 'DCR' -ResourceGroupName $resourceGroupName
+    $dcr2 = Invoke-GuardrailsArmGet -Path "$basePath/dataCollectionRules/guardrails-dcr-2?api-version=2024-03-11" -ResourceName 'guardrails-dcr-2' -ResourceType 'DCR' -ResourceGroupName $resourceGroupName
+
+    $dceEndpoint = $dce.properties.logsIngestion.endpoint
+    $dcrImmutableId = $dcr.properties.immutableId
+    $dcrImmutableId2 = $dcr2.properties.immutableId
+    $dcrStreams = @(Get-GuardrailsDcrDeclaredStreams -DataCollectionRule $dcr -ResourceName 'guardrails-dcr')
+    $dcr2Streams = @(Get-GuardrailsDcrDeclaredStreams -DataCollectionRule $dcr2 -ResourceName 'guardrails-dcr-2')
+
+    if ([string]::IsNullOrWhiteSpace([string]$dceEndpoint)) {
+        throw "DCR runtime resolution failed: DCE 'guardrails-dce' did not return properties.logsIngestion.endpoint. Verify core deployment completed successfully."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$dcrImmutableId)) {
+        throw "DCR runtime resolution failed: DCR 'guardrails-dcr' did not return properties.immutableId. Verify core deployment completed successfully."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$dcrImmutableId2)) {
+        throw "DCR runtime resolution failed: DCR 'guardrails-dcr-2' did not return properties.immutableId. Verify core deployment completed successfully."
+    }
+
+    $endpointHost = $dceEndpoint
+    try { $endpointHost = ([System.Uri]$dceEndpoint).Host } catch { }
+
+    Write-Host "DCR runtime resolution succeeded: DCE='guardrails-dce', DCE endpoint host='$endpointHost', DCR1='guardrails-dcr', DCR1 immutable ID='$dcrImmutableId', DCR1 streams=$($dcrStreams.Count), DCR2='guardrails-dcr-2', DCR2 immutable ID='$dcrImmutableId2', DCR2 streams=$($dcr2Streams.Count)."
+
+    # Cache only after every ARM read and validation succeeds; failed resolution should retry cleanly.
+    $script:GuardrailsDcrIngestionSettings = [PSCustomObject]@{
+        DceEndpoint       = ([string]$dceEndpoint).TrimEnd('/')
+        DcrImmutableId    = $dcrImmutableId
+        DcrImmutableId2   = $dcrImmutableId2
+        DcrStreams        = $dcrStreams
+        Dcr2Streams       = $dcr2Streams
+        ResourceGroupName = $resourceGroupName
+        SubscriptionId    = $subscriptionId
+    }
+
+    return $script:GuardrailsDcrIngestionSettings
+}
+
+function Get-GuardrailsDcrStreamName {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $LogType
+    )
+
+    switch ($LogType) {
+        'GuardrailsCompliance' { 'Custom-GuardrailsCompliance' }
+        'GuardrailsComplianceException' { 'Custom-GuardrailsComplianceException' }
+        'GR_TenantInfo' { 'Custom-GR_TenantInfo' }
+        'GR_Results' { 'Custom-GR_Results' }
+        'GR_VersionInfo' { 'Custom-GR_VersionInfo' }
+        'GRITSGControls' { 'Custom-GRITSGControls' }
+        'GuardrailsTenantsCompliance' { 'Custom-GuardrailsTenantsCompliance' }
+        'CaCDebugMetrics' { 'Custom-CaCDebugMetrics' }
+        'GuardrailsUserRaw' { 'Custom-GuardrailsUserRaw' }
+        'GuardrailsCrossTenantAccess' { 'Custom-GuardrailsCrossTenantAccess' }
+        'GR2UsersWithoutGroups' { 'Custom-GR2UsersWithoutGroups' }
+        'GR2ExternalUsers' { 'Custom-GR2ExternalUsers' }
+        default { "Custom-$LogType" }
+    }
+}
+
+function Resolve-GuardrailsDcrTarget {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $LogType
+    )
+
+    $settings = Get-GuardrailsDcrIngestionSettings
+    $streamName = Get-GuardrailsDcrStreamName -LogType $LogType
+    $declaredByDcr1 = $streamName -in @($settings.DcrStreams)
+    $declaredByDcr2 = $streamName -in @($settings.Dcr2Streams)
+
+    if ($declaredByDcr1 -and $declaredByDcr2) {
+        throw "DCR runtime resolution failed: stream '$streamName' for LogType '$LogType' is declared by both guardrails-dcr and guardrails-dcr-2. Fix the DCR stream declarations so each stream has one target DCR."
+    }
+
+    if (-not $declaredByDcr1 -and -not $declaredByDcr2) {
+        throw "DCR runtime resolution failed: stream '$streamName' for LogType '$LogType' is not declared by guardrails-dcr or guardrails-dcr-2. Verify dcrdce.bicep stream declarations and runtime LogType mapping."
+    }
+
+    $usesDcr2 = $declaredByDcr2
+    $dcrId = if ($declaredByDcr2) { $settings.DcrImmutableId2 } else { $settings.DcrImmutableId }
+
+    [PSCustomObject]@{
+        DceEndpoint = $settings.DceEndpoint
+        DcrId       = $dcrId
+        StreamName  = $streamName
+        UsesDcr2    = $usesDcr2
+    }
+}
+
+function Get-GuardrailsDcrResponseText {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorRecord] $ErrorRecord
+    )
+
+    if ($ErrorRecord.ErrorDetails -and $ErrorRecord.ErrorDetails.Message) {
+        return $ErrorRecord.ErrorDetails.Message
+    }
+
+    $response = $ErrorRecord.Exception.Response
+    if (-not $response) {
+        return $ErrorRecord.Exception.Message
+    }
+
+    try {
+        $stream = $response.GetResponseStream()
+        if ($stream) {
+            $reader = [System.IO.StreamReader]::new($stream)
+            $body = $reader.ReadToEnd()
+            if (-not [string]::IsNullOrWhiteSpace($body)) {
+                return $body
+            }
+        }
+    }
+    catch { }
+
+    return $ErrorRecord.Exception.Message
+}
+
+function ConvertTo-GuardrailsHttpStatusCode {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [object] $StatusCode
+    )
+
+    if ($StatusCode -is [int]) {
+        return $StatusCode
+    }
+
+    try {
+        return [int]$StatusCode
+    }
+    catch {
+        switch ([string]$StatusCode) {
+            'OK' { return 200 }
+            'Created' { return 201 }
+            'Accepted' { return 202 }
+            'NoContent' { return 204 }
+            'BadRequest' { return 400 }
+            'Unauthorized' { return 401 }
+            'Forbidden' { return 403 }
+            'NotFound' { return 404 }
+            default { return $null }
+        }
+    }
+}
+
+function Get-GuardrailsDcrStatusCode {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorRecord] $ErrorRecord
+    )
+
+    $response = $ErrorRecord.Exception.Response
+    if ($response -and $null -ne $response.StatusCode) {
+        return ConvertTo-GuardrailsHttpStatusCode -StatusCode $response.StatusCode
+    }
+
+    $exceptionStatusCode = $ErrorRecord.Exception.PSObject.Properties['StatusCode']
+    if ($exceptionStatusCode -and $null -ne $exceptionStatusCode.Value) {
+        return ConvertTo-GuardrailsHttpStatusCode -StatusCode $exceptionStatusCode.Value
+    }
+
+    return $null
+}
+
+function New-GuardrailsDcrUploadErrorMessage {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorRecord] $ErrorRecord,
+        [Parameter(Mandatory = $true)]
+        [object] $Target,
+        [Parameter(Mandatory = $true)]
+        [string] $LogType
+    )
+
+    $statusCode = Get-GuardrailsDcrStatusCode -ErrorRecord $ErrorRecord
+    $responseText = Get-GuardrailsDcrResponseText -ErrorRecord $ErrorRecord
+    $endpointHost = $Target.DceEndpoint
+    try { $endpointHost = ([System.Uri]$Target.DceEndpoint).Host } catch { }
+
+    $message = "Data Collection API failed for LogType '$LogType' using stream '$($Target.StreamName)', DCR immutable ID '$($Target.DcrId)', and DCE endpoint '$endpointHost'."
+
+    if ($statusCode -eq 404 -or $responseText -match 'Data collection rule with immutable Id .* not found') {
+        $message += " Azure Monitor could not find the resolved DCR immutable ID. Verify guardrails-dce, guardrails-dcr, and guardrails-dcr-2 exist in the Guardrails resource group and were not recreated during this run."
+    }
+    elseif ($statusCode -eq 401 -or $statusCode -eq 403) {
+        $message += " Verify the runbook identity can request a monitor.azure.com token and has Monitoring Metrics Publisher on the target DCR."
+    }
+    elseif ($statusCode -eq 400) {
+        $message += " Verify the DCR stream declaration, transform, payload shape, and Log Analytics table schema for this LogType."
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($responseText)) {
+        $message += " Original error: $responseText"
+    }
+
+    return $message
+}
+
 function Send-GuardrailsData {
     <#
     .SYNOPSIS
@@ -775,7 +1137,7 @@ function Send-GuardrailsData {
     
     .DESCRIPTION
     This function replaces the deprecated Data Collector API with the modern DCR-based Log Ingestion API.
-    It uses Invoke-AzRestMethod for automatic Azure authentication and requires DCE_ENDPOINT and DCR_IMMUTABLE_ID environment variables.
+    It resolves the current Guardrails DCE/DCR resources from Azure Resource Manager once per runbook job and caches the result in-process.
     
     .PARAMETER Data
     JSON string containing the data to send to Log Analytics.
@@ -810,55 +1172,10 @@ function Send-GuardrailsData {
         [string]
         $WorkSpaceKey
     )
-    
-    # Get DCE endpoint and DCR immutable IDs (two DCRs used due to 10-flows-per-rule limit)
-    $dceEndpoint = $null
-    $dcrImmutableId = $null
-    $dcrImmutableId2 = $null
-
-    if (Get-Command -Name Get-GSAAutomationVariable -ErrorAction SilentlyContinue) {
-        try {
-            $dceEndpoint = Get-GSAAutomationVariable -Name "DCE_ENDPOINT" -ErrorAction SilentlyContinue
-            $dcrImmutableId = Get-GSAAutomationVariable -Name "DCR_IMMUTABLE_ID" -ErrorAction SilentlyContinue
-            $dcrImmutableId2 = Get-GSAAutomationVariable -Name "DCR_IMMUTABLE_ID_2" -ErrorAction SilentlyContinue
-        }
-        catch { }
-    }
-    if (-not $dceEndpoint) { $dceEndpoint = $env:DCE_ENDPOINT }
-    if (-not $dcrImmutableId) { $dcrImmutableId = $env:DCR_IMMUTABLE_ID }
-    if (-not $dcrImmutableId2) { $dcrImmutableId2 = $env:DCR_IMMUTABLE_ID_2 }
-
-    if (-not $dceEndpoint) {
-        throw "DCE_ENDPOINT is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
-    }
-    if (-not $dcrImmutableId) {
-        throw "DCR_IMMUTABLE_ID is not set. Set it as an environment variable or automation variable. This is required for DCR-based log ingestion."
-    }
-
+    $target = $null
     try {
-        # Map log types to DCR stream names; GR2* types use second DCR (DCR has max 10 flows)
-        $streamName = switch ($LogType) {
-            'GuardrailsCompliance' { 'Custom-GuardrailsCompliance' }
-            'GuardrailsComplianceException' { 'Custom-GuardrailsComplianceException' }
-            'GR_TenantInfo' { 'Custom-GR_TenantInfo' }
-            'GR_Results' { 'Custom-GR_Results' }
-            'GR_VersionInfo' { 'Custom-GR_VersionInfo' }
-            'GRITSGControls' { 'Custom-GRITSGControls' }
-            'GuardrailsTenantsCompliance' { 'Custom-GuardrailsTenantsCompliance' }
-            'CaCDebugMetrics' { 'Custom-CaCDebugMetrics' }
-            'GuardrailsUserRaw' { 'Custom-GuardrailsUserRaw' }
-            'GuardrailsCrossTenantAccess' { 'Custom-GuardrailsCrossTenantAccess' }
-            'GR2UsersWithoutGroups' { 'Custom-GR2UsersWithoutGroups' }
-            'GR2ExternalUsers' { 'Custom-GR2ExternalUsers' }
-            default { "Custom-$LogType" }
-        }
-
-        $dcrId = $dcrImmutableId
-        if ($LogType -in 'GR2UsersWithoutGroups', 'GR2ExternalUsers' -and $dcrImmutableId2) {
-            $dcrId = $dcrImmutableId2
-        }
-
-        $uri = "$dceEndpoint/dataCollectionRules/$dcrId/streams/$streamName" + "?api-version=2023-01-01"
+        $target = Resolve-GuardrailsDcrTarget -LogType $LogType
+        $uri = "$($target.DceEndpoint)/dataCollectionRules/$($target.DcrId)/streams/$($target.StreamName)" + "?api-version=2023-01-01"
 
         # DCR Log Ingestion API requires a JSON array body. Wrap single objects automatically
         # so callers that send a single PSCustomObject via ConvertTo-Json still work correctly.
@@ -896,11 +1213,14 @@ function Send-GuardrailsData {
         # Invoke-RestMethod throws on 4xx/5xx when -ErrorAction Stop is set
         Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $bodyBytes -ErrorAction Stop | Out-Null
 
-        Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$streamName' ($($bodyBytes.Length) bytes)"
+        Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$($target.StreamName)' ($($bodyBytes.Length) bytes)"
     }
     catch {
-        Write-Error "Data Collection API failed: $($_.Exception.Message)"
-        throw
+        if ($target) {
+            throw (New-GuardrailsDcrUploadErrorMessage -ErrorRecord $_ -Target $target -LogType $LogType)
+        }
+
+        throw "Data Collection API failed before upload target was resolved for LogType '$LogType': $($_.Exception.Message)"
     }
 }
 
