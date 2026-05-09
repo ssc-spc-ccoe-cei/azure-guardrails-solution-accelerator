@@ -232,7 +232,10 @@ Function Remove-GSACoreResources {
             $ResourceId,
 
             [string]
-            $ResourceName
+            $ResourceName,
+
+            [switch]
+            $RetryExistingAssociations
         )
 
         $resource = Get-AzResource -ResourceId $ResourceId -ErrorAction SilentlyContinue
@@ -241,8 +244,26 @@ Function Remove-GSACoreResources {
             return
         }
 
-        Write-Verbose "Removing $ResourceName before resource group deletion..."
-        Remove-AzResource -ResourceId $ResourceId -Force -ErrorAction Stop | Out-Null
+        $retryDelaysInSeconds = if ($RetryExistingAssociations.IsPresent) { @(15, 30, 60, 120, 180) } else { @() }
+        $removeAttempt = 0
+        do {
+            try {
+                Write-Output "Removing $ResourceName before resource group deletion..."
+                Remove-AzResource -ResourceId $ResourceId -Force -ErrorAction Stop | Out-Null
+                break
+            }
+            catch {
+                $isAssociationLag = $_.Exception.Message -match 'ExistingAssociationsPreventDelete|Existing associations with Azure Monitor\s+Data Collection Rule'
+                if (-not $isAssociationLag -or $removeAttempt -ge $retryDelaysInSeconds.Count) {
+                    throw
+                }
+
+                $retryDelayInSeconds = $retryDelaysInSeconds[$removeAttempt]
+                $removeAttempt++
+                Write-Warning "$ResourceName delete is blocked by an existing DCR association on attempt $removeAttempt of $($retryDelaysInSeconds.Count + 1). Waiting $retryDelayInSeconds seconds before retrying."
+                Start-Sleep -Seconds $retryDelayInSeconds
+            }
+        } while ($true)
 
         if ($wait.IsPresent) {
             & $waitForArmResourceDeletion -ResourceId $ResourceId -ResourceName $ResourceName
@@ -259,7 +280,7 @@ Function Remove-GSACoreResources {
     # cleaner dependency order before the final resource-group delete.
     & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'"
     & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'"
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'"
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'" -RetryExistingAssociations
 
     If (Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue) {
         Write-Verbose "Removing Guardrails Solution Accelerator Resource Group (including DCE, DCR, and all other resources)..."
