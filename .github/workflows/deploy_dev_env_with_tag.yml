@@ -171,16 +171,18 @@ jobs:
                     Remove-GSACoreResources -Force -Wait -configString $staleConfigString
                 }
                 catch {
-                    $isDceAssociationLag = $_.Exception.Message -match 'ExistingAssociationsPreventDelete|Existing associations with Azure Monitor\s+Data Collection Rule'
+                    $isAzureMonitorTransientCleanup = $_.Exception.Message -match 'ExistingAssociationsPreventDelete|Existing associations with Azure Monitor\s+Data Collection Rule|Data collection rule has been modified before operation completed'
                     $remainingResources = @(Get-AzResource -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue)
-                    # Azure reports this exact resource type for DCEs today.
+                    # Azure reports these exact resource types for DCRs and DCEs today.
                     # Keep the fallback narrow so unrelated cleanup bugs still fail the workflow.
-                    $nonDceResources = @($remainingResources | Where-Object { $_.ResourceType -ne 'Microsoft.Insights/dataCollectionEndpoints' })
-                    if ($isDceAssociationLag -and $remainingResources.Count -eq 0) {
+                    $nonDcrDceResources = @($remainingResources | Where-Object {
+                        $_.ResourceType -notin 'Microsoft.Insights/dataCollectionRules', 'Microsoft.Insights/dataCollectionEndpoints'
+                    })
+                    if ($isAzureMonitorTransientCleanup -and $remainingResources.Count -eq 0) {
                         Write-Warning "Cleanup reported an error for stale CI resource group '$($staleResourceGroup.ResourceGroupName)', but no resources remain. Continuing with the new generated suffix."
                     }
-                    elseif ($isDceAssociationLag -and $nonDceResources.Count -eq 0) {
-                        Write-Warning "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' still has only DCE resources. Continuing because the new generated suffix does not depend on that old DCE."
+                    elseif ($isAzureMonitorTransientCleanup -and $nonDcrDceResources.Count -eq 0) {
+                        Write-Warning "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' still has only DCR/DCE resources after an Azure Monitor cleanup conflict. Continuing because the new generated suffix does not depend on those old resources."
                     }
                     else {
                         throw

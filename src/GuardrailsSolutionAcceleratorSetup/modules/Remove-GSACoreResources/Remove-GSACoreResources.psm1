@@ -235,7 +235,7 @@ Function Remove-GSACoreResources {
             $ResourceName,
 
             [switch]
-            $RetryExistingAssociations
+            $RetryAzureMonitorTransientDelete
         )
 
         $resource = Get-AzResource -ResourceId $ResourceId -ErrorAction SilentlyContinue
@@ -244,7 +244,7 @@ Function Remove-GSACoreResources {
             return
         }
 
-        $retryDelaysInSeconds = if ($RetryExistingAssociations.IsPresent) { @(15, 30, 60, 120, 180) } else { @() }
+        $retryDelaysInSeconds = if ($RetryAzureMonitorTransientDelete.IsPresent) { @(15, 30, 60, 120, 180) } else { @() }
         $removeAttempt = 0
         do {
             try {
@@ -253,14 +253,14 @@ Function Remove-GSACoreResources {
                 break
             }
             catch {
-                $isAssociationLag = $_.Exception.Message -match 'ExistingAssociationsPreventDelete|Existing associations with Azure Monitor\s+Data Collection Rule'
-                if (-not $isAssociationLag -or $removeAttempt -ge $retryDelaysInSeconds.Count) {
+                $isAzureMonitorTransientDelete = $_.Exception.Message -match 'ExistingAssociationsPreventDelete|Existing associations with Azure Monitor\s+Data Collection Rule|Data collection rule has been modified before operation completed'
+                if (-not $isAzureMonitorTransientDelete -or $removeAttempt -ge $retryDelaysInSeconds.Count) {
                     throw
                 }
 
                 $retryDelayInSeconds = $retryDelaysInSeconds[$removeAttempt]
                 $removeAttempt++
-                Write-Warning "$ResourceName delete is blocked by an existing DCR association on attempt $removeAttempt of $($retryDelaysInSeconds.Count + 1). Waiting $retryDelayInSeconds seconds before retrying."
+                Write-Warning "$ResourceName delete hit a transient Azure Monitor conflict on attempt $removeAttempt of $($retryDelaysInSeconds.Count + 1). Waiting $retryDelayInSeconds seconds before retrying."
                 Start-Sleep -Seconds $retryDelayInSeconds
             }
         } while ($true)
@@ -278,9 +278,9 @@ Function Remove-GSACoreResources {
     # gone; the cleaner long-term order would be DCRs -> DCE -> LAW -> RG.
     # DCRs reference the DCE, so remove the DCRs first. This gives Azure a
     # cleaner dependency order before the final resource-group delete.
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'"
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'"
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'" -RetryExistingAssociations
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'" -RetryAzureMonitorTransientDelete
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'" -RetryAzureMonitorTransientDelete
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'" -RetryAzureMonitorTransientDelete
 
     If (Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue) {
         Write-Verbose "Removing Guardrails Solution Accelerator Resource Group (including DCE, DCR, and all other resources)..."
