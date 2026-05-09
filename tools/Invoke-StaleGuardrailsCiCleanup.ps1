@@ -26,14 +26,20 @@ param (
 
     [Parameter(Mandatory = $false)]
     [int]
-    $PollIntervalSeconds = 30
+    $PollIntervalSeconds = 30,
+
+    [Parameter(Mandatory = $false)]
+    [int]
+    $DcrDceDeleteTimeoutSeconds = 300
 )
 
 $ErrorActionPreference = 'Stop'
 
-$azureMonitorTransientDeletePattern = 'ExistingAssociationsPreventDelete|Existing associations with Azure Monitor\s+Data Collection Rule|Data collection rule has been modified before operation completed'
-
-function Remove-StaleArmResource {
+function Start-StaleArmResourceDelete {
+    # DCR/DCE deletes are best-effort for stale CI resource groups. Any failure
+    # is logged and execution continues. The active-resource drain check at the
+    # end of this script is the gate that fails CI if quota-sensitive resources
+    # remain. Strict customer-facing cleanup stays in Remove-GSACoreResources.
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -44,32 +50,37 @@ function Remove-StaleArmResource {
         $ResourceName
     )
 
-    $resource = Get-AzResource -ResourceId $ResourceId -ErrorAction SilentlyContinue
-    if (-not $resource) {
-        Write-Output "$ResourceName not found."
+    if (-not (Get-AzResource -ResourceId $ResourceId -ErrorAction SilentlyContinue)) {
+        Write-Output "$ResourceName not found in stale CI resource group."
         return
     }
 
-    $retryDelaysInSeconds = @(15, 30, 60, 120, 180)
-    $removeAttempt = 0
-    do {
-        try {
-            Write-Output "Removing $ResourceName from stale CI resource group..."
-            Remove-AzResource -ResourceId $ResourceId -Force -ErrorAction Stop | Out-Null
-            return
-        }
-        catch {
-            $isAzureMonitorTransientDelete = $_.Exception.Message -match $azureMonitorTransientDeletePattern
-            if (-not $isAzureMonitorTransientDelete -or $removeAttempt -ge $retryDelaysInSeconds.Count) {
-                throw
-            }
+    Write-Output "Starting best-effort delete for $ResourceName from stale CI resource group."
+    try {
+        $job = Remove-AzResource -ResourceId $ResourceId -Force -AsJob -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "$ResourceName delete could not be started. Continuing stale CI cleanup; the resource group drain check will decide whether this can be left behind. Error: $($_.Exception.Message)"
+        return
+    }
 
-            $retryDelayInSeconds = $retryDelaysInSeconds[$removeAttempt]
-            $removeAttempt++
-            Write-Warning "$ResourceName delete hit a transient Azure Monitor conflict on attempt $removeAttempt of $($retryDelaysInSeconds.Count + 1). Waiting $retryDelayInSeconds seconds before retrying."
-            Start-Sleep -Seconds $retryDelayInSeconds
-        }
-    } while ($true)
+    if (-not (Wait-Job -Job $job -Timeout $DcrDceDeleteTimeoutSeconds)) {
+        Stop-Job -Job $job -ErrorAction SilentlyContinue
+        Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+        Write-Warning "$ResourceName delete did not finish within $DcrDceDeleteTimeoutSeconds seconds and may still be pending in Azure. Continuing stale CI cleanup; the resource group drain check will decide whether this can be left behind."
+        return
+    }
+
+    try {
+        Receive-Job -Job $job -ErrorAction Stop | Out-Null
+        Write-Output "$ResourceName delete request completed."
+    }
+    catch {
+        Write-Warning "$ResourceName delete failed. Continuing stale CI cleanup; the resource group drain check will decide whether this can be left behind. Error: $($_.Exception.Message)"
+    }
+    finally {
+        Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
@@ -87,18 +98,9 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
     $staleLogAnalyticsWorkspaceName = "$LogAnalyticsWorkspacePrefix$staleSuffix"
     $insightsResourceIdPrefix = "/subscriptions/$SubscriptionId/resourceGroups/$($staleResourceGroup.ResourceGroupName)/providers/Microsoft.Insights"
 
-    try {
-        Remove-StaleArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'"
-        Remove-StaleArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'"
-        Remove-StaleArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'"
-    }
-    catch {
-        if ($_.Exception.Message -notmatch $azureMonitorTransientDeletePattern) {
-            throw
-        }
-
-        Write-Warning "Stale CI Azure Monitor DCR/DCE cleanup hit a known transient conflict. Continuing to force-delete LAW and drain the resource group."
-    }
+    Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'"
+    Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'"
+    Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'"
 
     $logAnalyticsWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $staleResourceGroup.ResourceGroupName -Name $staleLogAnalyticsWorkspaceName -ErrorAction SilentlyContinue
     if ($logAnalyticsWorkspace) {
