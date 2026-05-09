@@ -1130,6 +1130,25 @@ function New-GuardrailsDcrUploadErrorMessage {
     return $message
 }
 
+function Test-GuardrailsDcrImmutableIdNotFoundError {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorRecord] $ErrorRecord
+    )
+
+    $responseText = Get-GuardrailsDcrResponseText -ErrorRecord $ErrorRecord
+    $statusCode = Get-GuardrailsDcrStatusCode -ErrorRecord $ErrorRecord
+    return $statusCode -eq 404 -and ($responseText -match 'Data collection rule with immutable Id .* not found')
+}
+
+function Clear-GuardrailsDcrIngestionSettingsCache {
+    [CmdletBinding()]
+    param ()
+
+    $script:GuardrailsDcrIngestionSettings = $null
+}
+
 function Send-GuardrailsData {
     <#
     .SYNOPSIS
@@ -1172,55 +1191,73 @@ function Send-GuardrailsData {
         [string]
         $WorkSpaceKey
     )
-    $target = $null
-    try {
-        $target = Resolve-GuardrailsDcrTarget -LogType $LogType
-        $uri = "$($target.DceEndpoint)/dataCollectionRules/$($target.DcrId)/streams/$($target.StreamName)" + "?api-version=2023-01-01"
 
-        # DCR Log Ingestion API requires a JSON array body. Wrap single objects automatically
-        # so callers that send a single PSCustomObject via ConvertTo-Json still work correctly.
-        if ($Data.Trim().StartsWith('{')) {
-            $Data = "[$Data]"
-        }
+    # DCR Log Ingestion API requires a JSON array body. Wrap single objects automatically
+    # so callers that send a single PSCustomObject via ConvertTo-Json still work correctly.
+    if ($Data.Trim().StartsWith('{')) {
+        $Data = "[$Data]"
+    }
 
-        if ([string]::IsNullOrWhiteSpace($Data) -or $Data.Trim() -eq '[]') {
-            Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
+    if ([string]::IsNullOrWhiteSpace($Data) -or $Data.Trim() -eq '[]') {
+        Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
+        return
+    }
+
+    # Per API docs, encode the body explicitly as UTF-8 to prevent data transmission issues.
+    $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
+    $retryDelaysInSeconds = @(30, 60, 120)
+
+    for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
+        $target = $null
+        try {
+            $target = Resolve-GuardrailsDcrTarget -LogType $LogType
+            $uri = "$($target.DceEndpoint)/dataCollectionRules/$($target.DcrId)/streams/$($target.StreamName)" + "?api-version=2023-01-01"
+
+            # Invoke-AzRestMethod cannot determine the authentication audience for DCE endpoints
+            # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
+            # the Azure Monitor audience (no trailing slash per API docs) using Invoke-RestMethod.
+            # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
+            try {
+                $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com" -AsSecureString -ErrorAction Stop
+                $tokenPlain = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
+            }
+            catch {
+                $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com"
+                $tokenPlain = $tokenResponse.Token
+            }
+
+            $headers = @{
+                Authorization            = "Bearer $tokenPlain"
+                'Content-Type'           = 'application/json'
+                'x-ms-client-request-id' = [System.Guid]::NewGuid().ToString()
+            }
+
+            # Invoke-RestMethod throws on 4xx/5xx when -ErrorAction Stop is set.
+            Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $bodyBytes -ErrorAction Stop | Out-Null
+
+            Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$($target.StreamName)' ($($bodyBytes.Length) bytes)"
             return
         }
-
-        # Invoke-AzRestMethod cannot determine the authentication audience for DCE endpoints
-        # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
-        # the Azure Monitor audience (no trailing slash per API docs) using Invoke-RestMethod.
-        # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
-        try {
-            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com" -AsSecureString -ErrorAction Stop
-            $tokenPlain = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
-        }
         catch {
-            $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com"
-            $tokenPlain = $tokenResponse.Token
+            $shouldRetryDcrPropagation = $target -and
+                (Test-GuardrailsDcrImmutableIdNotFoundError -ErrorRecord $_) -and
+                ($attempt -le $retryDelaysInSeconds.Count)
+
+            if ($shouldRetryDcrPropagation) {
+                $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
+                $maxAttempts = $retryDelaysInSeconds.Count + 1
+                Write-Warning "DCR ingestion endpoint does not know resolved DCR immutable ID '$($target.DcrId)' yet for LogType '$LogType' and stream '$($target.StreamName)' on attempt $attempt of $maxAttempts. Clearing DCR cache, waiting $delayInSeconds seconds, and re-resolving current DCR/DCE resources."
+                Clear-GuardrailsDcrIngestionSettingsCache
+                Start-Sleep -Seconds $delayInSeconds
+                continue
+            }
+
+            if ($target) {
+                throw (New-GuardrailsDcrUploadErrorMessage -ErrorRecord $_ -Target $target -LogType $LogType)
+            }
+
+            throw "Data Collection API failed before upload target was resolved for LogType '$LogType': $($_.Exception.Message)"
         }
-
-        # Per API docs, encode the body explicitly as UTF-8 to prevent data transmission issues
-        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
-
-        $headers = @{
-            Authorization          = "Bearer $tokenPlain"
-            'Content-Type'         = 'application/json'
-            'x-ms-client-request-id' = [System.Guid]::NewGuid().ToString()
-        }
-
-        # Invoke-RestMethod throws on 4xx/5xx when -ErrorAction Stop is set
-        Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $bodyBytes -ErrorAction Stop | Out-Null
-
-        Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$($target.StreamName)' ($($bodyBytes.Length) bytes)"
-    }
-    catch {
-        if ($target) {
-            throw (New-GuardrailsDcrUploadErrorMessage -ErrorRecord $_ -Target $target -LogType $LogType)
-        }
-
-        throw "Data Collection API failed before upload target was resolved for LogType '$LogType': $($_.Exception.Message)"
     }
 }
 
