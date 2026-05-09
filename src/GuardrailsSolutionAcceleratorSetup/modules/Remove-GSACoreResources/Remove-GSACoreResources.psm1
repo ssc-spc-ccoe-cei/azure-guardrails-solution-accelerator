@@ -287,12 +287,29 @@ Function Remove-GSACoreResources {
         $job = Remove-AzResourceGroup -Name $config['runtime']['resourceGroup'] -Force -AsJob 
 
         If ($wait.IsPresent) {
-            Write-Verbose "Waiting for Guardrails Solution Accelerator Resource Group to be removed..."
-            $job | Wait-Job | Out-Null
+            Write-Output "Waiting for Guardrails Solution Accelerator Resource Group delete job to finish..."
+            $rgDeleteJobDeadline = (Get-Date).AddMinutes(30)
+            do {
+                $job = Get-Job -Id $job.Id
+                if ($job.State -in 'Completed', 'Failed', 'Stopped', 'Suspended', 'Disconnected') {
+                    break
+                }
+
+                if ((Get-Date) -ge $rgDeleteJobDeadline) {
+                    throw "Timed out waiting for resource group delete job for '$($config['runtime']['resourceGroup'])' to finish."
+                }
+
+                Write-Output "Waiting for resource group delete job for '$($config['runtime']['resourceGroup'])' to finish. Current job state: $($job.State)."
+                Start-Sleep -Seconds 30
+            } while ($true)
 
             if ($job.State -eq 'Failed') {
                 $jobError = $job.ChildJobs | ForEach-Object { $_.JobStateInfo.Reason } | Where-Object { $_ } | Out-String
                 throw "Resource group delete job failed for '$($config['runtime']['resourceGroup'])'. Error: $jobError"
+            }
+
+            if ($job.State -ne 'Completed') {
+                throw "Resource group delete job for '$($config['runtime']['resourceGroup'])' ended with state '$($job.State)'."
             }
 
             # The Azure PowerShell job can finish before ARM has fully removed
