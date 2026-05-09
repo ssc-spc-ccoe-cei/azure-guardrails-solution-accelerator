@@ -25,13 +25,31 @@ Function Deploy-GSACoreResources {
 
     # deploy primary bicep template
     Write-Verbose "Deploying GSA core resource via bicep template..."
-    try { 
-        $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
-            -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
-    }
-    catch {
-        Write-error "Failed to deploy main Guardrails Accelerator template with error: $_" 
-        Exit
+    $deploymentRetryDelaysInSeconds = @(60, 120, 180, 240, 300)
+    $mainBicepDeployment = $null
+    for ($deploymentAttempt = 1; $deploymentAttempt -le ($deploymentRetryDelaysInSeconds.Count + 1); $deploymentAttempt++) {
+        try {
+            $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
+                -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
+            break
+        }
+        catch {
+            $deploymentErrorText = $_ | Out-String
+            if ([string]::IsNullOrWhiteSpace($deploymentErrorText)) {
+                $deploymentErrorText = $_.Exception.Message
+            }
+
+            $isDcrTableReadinessError = $deploymentErrorText -match 'InvalidOutputTable'
+            $isLastAttempt = $deploymentAttempt -gt $deploymentRetryDelaysInSeconds.Count
+            if (-not $isDcrTableReadinessError -or $isLastAttempt) {
+                Write-Error "Failed to deploy main Guardrails Accelerator template with error: $deploymentErrorText"
+                Exit
+            }
+
+            $retryDelayInSeconds = $deploymentRetryDelaysInSeconds[$deploymentAttempt - 1]
+            Write-Warning "Core deployment hit DCR table readiness error (InvalidOutputTable) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
+            Start-Sleep -Seconds $retryDelayInSeconds
+        }
     }
     # add automation account msi to config object
     $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value

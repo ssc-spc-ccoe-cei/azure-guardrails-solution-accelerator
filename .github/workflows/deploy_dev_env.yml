@@ -112,10 +112,24 @@ jobs:
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
           DEVSUBSCRIPTION_ID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
 
+      - name: Set CI deployment suffix
+        shell: pwsh
+        run: |
+          $baseSuffix = '${{ vars.UNIQUENAME_SUFFIX_DEV }}'
+          $runId = '${{ github.run_id }}'
+          $shortRunId = if ($runId.Length -gt 8) { $runId.Substring($runId.Length - 8) } else { $runId }
+          $ciSuffix = "$baseSuffix$shortRunId"
+          if ($ciSuffix.Length -gt 16) {
+            throw "CI suffix '$ciSuffix' is too long. Keep UNIQUENAME_SUFFIX_DEV short enough that generated Key Vault names stay under Azure's 24-character limit."
+          }
+
+          "CI_BASE_UNIQUENAME_SUFFIX_DEV=$baseSuffix" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CI_UNIQUENAME_SUFFIX_DEV=$ciSuffix" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "Using CI deployment suffix '$ciSuffix'."
+
       - name: Pre-Clean Dev environment
         if: ${{ env.DEV_UPGRADE_VAR != 'true'}}
         uses: azure/powershell@v2
-        continue-on-error: true
         with:
           inlineScript: |
             Set-AzContext -SubscriptionId $env:DEVSUBSCRIPTION_ID
@@ -127,7 +141,7 @@ jobs:
             $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
             $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
             $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
-            $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
+            $UNIQUENAME_SUFFIX_DEV = $env:CI_UNIQUENAME_SUFFIX_DEV
             $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
             $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
             $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
@@ -140,6 +154,15 @@ jobs:
             $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
             $DEVTENANT_ID = $env:DEVTENANT_ID
+            # Keep the 3 most recent prior deployments for failure inspection; clean older CI suffixes for cost hygiene.
+            $staleResourceGroups = @(Get-AzResourceGroup -ErrorAction Stop | Where-Object {
+                $_.ResourceGroupName -like "guardrailscacdev-$($env:CI_BASE_UNIQUENAME_SUFFIX_DEV)*" -and
+                $_.ResourceGroupName -ne "guardrailscacdev-$UNIQUENAME_SUFFIX_DEV"
+            } | Sort-Object -Property ResourceGroupName -Descending | Select-Object -Skip 3)
+            foreach ($staleResourceGroup in $staleResourceGroups) {
+                Write-Output "Queueing cleanup for stale CI resource group '$($staleResourceGroup.ResourceGroupName)'."
+                Remove-AzResourceGroup -Name $staleResourceGroup.ResourceGroupName -Force -AsJob -ErrorAction Continue | Out-Null
+            }
             $configContent = @"
             {
               "keyVaultName": "kvcac",
@@ -226,7 +249,7 @@ jobs:
             $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
             $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
             $LIGHTHOUSEPROVIDER_MGMTGRPID_DEV = $env:LIGHTHOUSEPROVIDER_MGMTGRPID_DEV
-            $UNIQUENAME_SUFFIX_DEV = $env:UNIQUENAME_SUFFIX_DEV
+            $UNIQUENAME_SUFFIX_DEV = $env:CI_UNIQUENAME_SUFFIX_DEV
             $DEVTENANT_BGA1 = $env:DEVTENANT_BGA1
             $DEVTENANT_BGA2 = $env:DEVTENANT_BGA2
             $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
@@ -350,7 +373,7 @@ jobs:
         with:
           inlineScript: |
             ipmo ./src/GuardrailsSolutionAcceleratorSetup
-            $c = Get-GSAExportedConfig -KeyVaultName kvcac-$env:UNIQUENAME_SUFFIX_DEV -y
+            $c = Get-GSAExportedConfig -KeyVaultName kvcac-$env:CI_UNIQUENAME_SUFFIX_DEV -y
             $config = $c.configString | ConvertFrom-Json
             
             Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"

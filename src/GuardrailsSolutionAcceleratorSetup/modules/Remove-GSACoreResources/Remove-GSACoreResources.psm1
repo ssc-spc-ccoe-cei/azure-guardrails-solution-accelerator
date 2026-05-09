@@ -145,7 +145,7 @@ Function Remove-GSACoreResources {
     # This avoids a race where the resource group delete or the next deploy
     # starts while the LAW delete is still settling on Azure's side.
     $pollIntervalSeconds = 10
-    $deadline = (Get-Date).AddMinutes(10)
+    $deadline = (Get-Date).AddMinutes(30)
     $clearChecks = 0
 
     if ($logAnalyticsWorkspace -or $existingDeletedWorkspaceMatches) {
