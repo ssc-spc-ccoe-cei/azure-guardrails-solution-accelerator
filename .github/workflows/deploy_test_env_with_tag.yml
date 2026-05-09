@@ -153,14 +153,26 @@ jobs:
               $TEST_CLOUDUSAGEPROFILES = $env:TEST_CLOUDUSAGEPROFILES
               $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
               $TESTTENANT_ID = $env:TESTTENANT_ID
-              # Keep the 3 most recent prior deployments for failure inspection; clean older CI suffixes for cost hygiene.
+              # Only one Guardrails CI deployment can be active in this subscription/region because of Azure quotas.
+              # Remove every older matching CI resource group before deploying the new generated suffix.
               $staleResourceGroups = @(Get-AzResourceGroup -ErrorAction Stop | Where-Object {
                   $_.ResourceGroupName -like "guardrailscac_test-$($env:CI_BASE_UNIQUENAME_SUFFIX)*" -and
                   $_.ResourceGroupName -ne "guardrailscac_test-$UNIQUENAME_SUFFIX"
-              } | Sort-Object -Property ResourceGroupName -Descending | Select-Object -Skip 3)
+              } | Sort-Object -Property ResourceGroupName)
               foreach ($staleResourceGroup in $staleResourceGroups) {
-                  Write-Output "Queueing cleanup for stale CI resource group '$($staleResourceGroup.ResourceGroupName)'."
-                  Remove-AzResourceGroup -Name $staleResourceGroup.ResourceGroupName -Force -AsJob -ErrorAction Continue | Out-Null
+                  Write-Output "Removing stale CI resource group '$($staleResourceGroup.ResourceGroupName)' before deployment."
+                  # Reconstruct the original Guardrails LAW/AA names so Remove-GSACoreResources can force-delete the LAW out of soft-delete.
+                  $staleSuffix = $staleResourceGroup.ResourceGroupName.Substring('guardrailscac_test-'.Length)
+                  $staleConfigString = @{
+                      subscriptionId = $TESTSUBSCRIPTION_ID
+                      runtime = @{
+                          subscriptionId = $TESTSUBSCRIPTION_ID
+                          resourceGroup = $staleResourceGroup.ResourceGroupName
+                          logAnalyticsWorkspaceName = "gsapipe-$staleSuffix"
+                          automationAccountName = "gsapipe-$staleSuffix"
+                      }
+                  } | ConvertTo-Json -Depth 5
+                  Remove-GSACoreResources -Force -Wait -configString $staleConfigString
               }
               $configContent = @"
               {

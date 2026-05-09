@@ -154,14 +154,26 @@ jobs:
             $DEVTENANT_SPN_APPID = $env:DEVTENANT_SPN_APPID
             $DEV_UPGRADE_VAR = $env:DEV_UPGRADE_VAR
             $DEVTENANT_ID = $env:DEVTENANT_ID
-            # Keep the 3 most recent prior deployments for failure inspection; clean older CI suffixes for cost hygiene.
+            # Only one Guardrails CI deployment can be active in this subscription/region because of Azure quotas.
+            # Remove every older matching CI resource group before deploying the new generated suffix.
             $staleResourceGroups = @(Get-AzResourceGroup -ErrorAction Stop | Where-Object {
                 $_.ResourceGroupName -like "guardrailscacdev-$($env:CI_BASE_UNIQUENAME_SUFFIX_DEV)*" -and
                 $_.ResourceGroupName -ne "guardrailscacdev-$UNIQUENAME_SUFFIX_DEV"
-            } | Sort-Object -Property ResourceGroupName -Descending | Select-Object -Skip 3)
+            } | Sort-Object -Property ResourceGroupName)
             foreach ($staleResourceGroup in $staleResourceGroups) {
-                Write-Output "Queueing cleanup for stale CI resource group '$($staleResourceGroup.ResourceGroupName)'."
-                Remove-AzResourceGroup -Name $staleResourceGroup.ResourceGroupName -Force -AsJob -ErrorAction Continue | Out-Null
+                Write-Output "Removing stale CI resource group '$($staleResourceGroup.ResourceGroupName)' before deployment."
+                # Reconstruct the original Guardrails LAW/AA names so Remove-GSACoreResources can force-delete the LAW out of soft-delete.
+                $staleSuffix = $staleResourceGroup.ResourceGroupName.Substring('guardrailscacdev-'.Length)
+                $staleConfigString = @{
+                    subscriptionId = $DEVSUBSCRIPTION_ID
+                    runtime = @{
+                        subscriptionId = $DEVSUBSCRIPTION_ID
+                        resourceGroup = $staleResourceGroup.ResourceGroupName
+                        logAnalyticsWorkspaceName = "logcac-$staleSuffix"
+                        automationAccountName = "aacac-$staleSuffix"
+                    }
+                } | ConvertTo-Json -Depth 5
+                Remove-GSACoreResources -Force -Wait -configString $staleConfigString
             }
             $configContent = @"
             {
