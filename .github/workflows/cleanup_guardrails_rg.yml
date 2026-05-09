@@ -1,0 +1,90 @@
+name: Cleanup Guardrails Resource Group
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Azure environment to use for credentials.
+        required: true
+        type: choice
+        options:
+          - test
+          - dev
+      resource_group_name:
+        description: Exact resource group name to delete.
+        required: true
+        type: string
+      confirm_resource_group_name:
+        description: Re-enter the exact resource group name to confirm deletion.
+        required: true
+        type: string
+      force_delete_log_analytics_workspace:
+        description: Force-delete Log Analytics workspaces before deleting the RG.
+        required: true
+        type: boolean
+        default: true
+      dry_run:
+        description: List resources only; do not delete anything.
+        required: true
+        type: boolean
+        default: true
+      timeout_minutes:
+        description: Maximum minutes to wait for deletion.
+        required: true
+        type: choice
+        options:
+          - '30'
+          - '60'
+          - '90'
+        default: '30'
+
+jobs:
+  cleanup-test:
+    name: Cleanup Test Resource Group
+    if: ${{ inputs.target_environment == 'test' }}
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: AZ Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
+
+      - name: Cleanup resource group
+        uses: ./.github/actions/cleanup-guardrails-rg
+        with:
+          subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
+          resource-group-name: ${{ inputs.resource_group_name }}
+          confirm-resource-group-name: ${{ inputs.confirm_resource_group_name }}
+          force-delete-log-analytics-workspace: ${{ inputs.force_delete_log_analytics_workspace }}
+          dry-run: ${{ inputs.dry_run }}
+          timeout-minutes: ${{ inputs.timeout_minutes }}
+
+  cleanup-dev:
+    name: Cleanup Dev Resource Group
+    if: ${{ inputs.target_environment == 'dev' }}
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: AZ Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.DEV_AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
+
+      - name: Cleanup resource group
+        uses: ./.github/actions/cleanup-guardrails-rg
+        with:
+          subscription-id: ${{ vars.DEVSUBSCRIPTION_ID }}
+          resource-group-name: ${{ inputs.resource_group_name }}
+          confirm-resource-group-name: ${{ inputs.confirm_resource_group_name }}
+          force-delete-log-analytics-workspace: ${{ inputs.force_delete_log_analytics_workspace }}
+          dry-run: ${{ inputs.dry_run }}
+          timeout-minutes: ${{ inputs.timeout_minutes }}

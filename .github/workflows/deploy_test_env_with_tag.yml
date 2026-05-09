@@ -113,118 +113,34 @@ jobs:
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
           SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Set CI deployment suffix
-        shell: pwsh
-        run: |
-          $baseSuffix = '${{ vars.UNIQUENAME_SUFFIX }}'
-          $runId = '${{ github.run_id }}'
-          $shortRunId = if ($runId.Length -gt 8) { $runId.Substring($runId.Length - 8) } else { $runId }
-          $ciSuffix = "$baseSuffix$shortRunId"
-          if ($ciSuffix.Length -gt 16) {
-            throw "CI suffix '$ciSuffix' is too long. Keep UNIQUENAME_SUFFIX short enough that generated Key Vault names stay under Azure's 24-character limit."
-          }
-
-          "CI_BASE_UNIQUENAME_SUFFIX=$baseSuffix" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "CI_UNIQUENAME_SUFFIX=$ciSuffix" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Output "Using CI deployment suffix '$ciSuffix'."
-
       - name: Pre-Clean Test environment
-        uses: azure/powershell@v2
+        uses: ./.github/actions/pre-clean-guardrails-ci
         with:
-          inlineScript: |
-              Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
-              ipmo ./src/GuardrailsSolutionAcceleratorSetup
-
-              $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
-              $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
-              $TESTSUBSCRIPTION_ID = $env:TESTSUBSCRIPTION_ID
-              $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
-              $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
-              $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
-              $UNIQUENAME_SUFFIX = $env:CI_UNIQUENAME_SUFFIX
-              $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
-              $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
-              $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
-              $LOCATIONPOLICY_ID = $env:LOCATIONPOLICY_ID
-              $INITIATIVELOCATION_ID = $env:INITIATIVELOCATION_ID
-              $TESTSEC_RESRC_ID = $env:TESTSEC_RESRC_ID
-              $TESTHEALTHLAW_RESRC_ID = $env:TESTHEALTHLAW_RESRC_ID
-              $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
-              $TEST_CLOUDUSAGEPROFILES = $env:TEST_CLOUDUSAGEPROFILES
-              $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
-              $TESTTENANT_ID = $env:TESTTENANT_ID
-              ./tools/Invoke-StaleGuardrailsCiCleanup.ps1 `
-                  -SubscriptionId $TESTSUBSCRIPTION_ID `
-                  -ResourceGroupPrefix 'guardrailscac_test-' `
-                  -BaseUniqueNameSuffix $env:CI_BASE_UNIQUENAME_SUFFIX `
-                  -CurrentUniqueNameSuffix $UNIQUENAME_SUFFIX `
-                  -LogAnalyticsWorkspacePrefix 'gsapipe-'
-              $configContent = @"
-              {
-                  "keyVaultName": "gsapipe",
-                  "resourcegroup": "guardrailscac_test",
-                  "region": "CanadaCentral",
-                  "storageaccountName": "gsapipe",
-                  "logAnalyticsworkspaceName": "gsapipe",
-                  "autoMationAccountName": "gsapipe",
-                  "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
-                  "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
-                  "PBMMPolicyID": "$PBMMPOLICY_ID",
-                  "AllowedLocationPolicyId": "$LOCATIONPOLICY_ID",
-                  "AllowedLocationInitiativeId": "$INITIATIVELOCATION_ID",
-                  "DepartmentNumber": "163",
-                  "CBSSubscriptionName": "$CBSSUBSCRIPTION_NAME",
-                  "securityLAWResourceId": "$TESTSEC_RESRC_ID",
-                  "healthLAWResourceId": "$TESTHEALTHLAW_RESRC_ID",
-                  "Locale": "en-CA",
-                  "lighthouseServiceProviderTenantID": "$LIGHTHOUSEPROVIDER_TENANTID",
-                  "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
-                  "lighthousePrincipalId": "$LIGHTHOUSEPROVIDER_PRINCIPALID",
-                  "lighthouseTargetManagementGroupID": "$LIGHTHOUSEPROVIDER_MGMTGRPID",
-                  "subscriptionId": "$TESTSUBSCRIPTION_ID",
-                  "SSCReadOnlyServicePrincipalNameAPPID": "$TESTTENANT_SPN_APPID",
-                  "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
-                  "securityRetentionDays": "730",
-                  "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
-                  "tenantId": "$TESTTENANT_ID"
-              }
-              "@
-              Set-Content -Path $configFilePath -Value $configContent
-
-              Push-Location -Path setup
-
-              try {
-                  $ErrorActionPreference = 'Stop'
-                  remove-gsacentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
-                  Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
-                  Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
-              }
-              catch {
-                  throw "Failed test deploy of solution with error: $_"
-              }
-              finally {
-                If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
-                Pop-Location
-              }
-          azPSVersion: "latest"
-        env:
-          TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
-          TESTSUBSCRIPTION_ID: ${{ vars.TESTSUBSCRIPTION_ID }}
-          CBSSUBSCRIPTION_NAME: ${{ vars.CBSSUBSCRIPTION_NAME }}
-          LIGHTHOUSEPROVIDER_TENANTID: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
-          LIGHTHOUSEPROVIDER_PRINCIPALID: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
-          LIGHTHOUSEPROVIDER_MGMTGRPID: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
-          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
-          TESTTENANT_BGA1: ${{ vars.TESTTENANT_BGA1 }}
-          TESTTENANT_BGA2: ${{ vars.TESTTENANT_BGA2 }}
-          PBMMPOLICY_ID: ${{ vars.PBMMPOLICY_ID }}
-          LOCATIONPOLICY_ID: ${{ vars.LOCATIONPOLICY_ID }}
-          INITIATIVELOCATION_ID: ${{ vars.INITIATIVELOCATION_ID }}
-          TESTTENANT_SPN_APPID: ${{ vars.TESTTENANT_SPN_APPID}}
-          TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
-          TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
-          ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
-          TEST_CLOUDUSAGEPROFILES: ${{ vars.TEST_CLOUDUSAGEPROFILES}}
+          subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
+          suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
+          base-suffix-environment-variable-name: CI_BASE_UNIQUENAME_SUFFIX
+          stale-resource-group-prefix: guardrailscac_test-
+          stale-log-analytics-workspace-prefix: gsapipe-
+          key-vault-name: gsapipe
+          resource-group: guardrailscac_test
+          storage-account-name: gsapipe
+          log-analytics-workspace-name: gsapipe
+          automation-account-name: gsapipe
+          first-break-glass-account-upn: ${{ vars.TESTTENANT_BGA1 }}
+          second-break-glass-account-upn: ${{ vars.TESTTENANT_BGA2 }}
+          pbmm-policy-id: ${{ vars.PBMMPOLICY_ID }}
+          allowed-location-policy-id: ${{ vars.LOCATIONPOLICY_ID }}
+          allowed-location-initiative-id: ${{ vars.INITIATIVELOCATION_ID }}
+          cbs-subscription-name: ${{ vars.CBSSUBSCRIPTION_NAME }}
+          security-law-resource-id: ${{ vars.TESTSEC_RESRC_ID }}
+          health-law-resource-id: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
+          lighthouse-service-provider-tenant-id: ${{ vars.LIGHTHOUSEPROVIDER_TENANTID }}
+          lighthouse-principal-display-name: SSC CSPM TEAM
+          lighthouse-principal-id: ${{ vars.LIGHTHOUSEPROVIDER_PRINCIPALID }}
+          lighthouse-target-management-group-id: ${{ vars.LIGHTHOUSEPROVIDER_MGMTGRPID }}
+          ssc-readonly-service-principal-appid: ${{ vars.TESTTENANT_SPN_APPID }}
+          cloud-usage-profiles: ${{ vars.TEST_CLOUDUSAGEPROFILES }}
+          tenant-id: ${{ vars.TESTTENANT_ID }}
       # - name: ReLogin AZ (due to timeout issue)
       #   uses: azure/login@v2
       #   with:

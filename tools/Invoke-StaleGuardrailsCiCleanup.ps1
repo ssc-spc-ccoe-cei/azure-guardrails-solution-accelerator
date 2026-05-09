@@ -8,9 +8,9 @@ param (
     [string]
     $ResourceGroupPrefix,
 
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [string]
-    $BaseUniqueNameSuffix,
+    $BaseUniqueNameSuffix = '',
 
     [Parameter(Mandatory = $true)]
     [string]
@@ -86,6 +86,9 @@ function Start-StaleArmResourceDelete {
 Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
 
 $currentResourceGroupName = "$ResourceGroupPrefix$CurrentUniqueNameSuffix"
+# Empty BaseUniqueNameSuffix means stale cleanup matches every RG under the
+# prefix. This is intentional for actor-based CI suffixes; manual experiments
+# using the same prefix will also be cleaned up.
 $staleResourceGroups = @(Get-AzResourceGroup -ErrorAction Stop | Where-Object {
     $_.ResourceGroupName -like "$ResourceGroupPrefix$BaseUniqueNameSuffix*" -and
     $_.ResourceGroupName -ne $currentResourceGroupName
