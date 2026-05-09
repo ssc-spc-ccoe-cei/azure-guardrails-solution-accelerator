@@ -186,15 +186,80 @@ Function Remove-GSACoreResources {
         $guardrailsAutomationAccountMSI = $automationAccount.Identity.PrincipalId
     }
 
+    $waitForArmResourceDeletion = {
+        param (
+            [string]
+            $ResourceId,
+
+            [string]
+            $ResourceName
+        )
+
+        $resourceDeleteDeadline = (Get-Date).AddMinutes(15)
+        $resourceClearChecks = 0
+        do {
+            try {
+                $null = Get-AzResource -ResourceId $ResourceId -ErrorAction Stop
+                $resourceClearChecks = 0
+                Write-Verbose "Waiting for $ResourceName deletion to finish: still exists."
+            }
+            catch {
+                if ($_.Exception.Message -match 'could not be found|ResourceNotFound|NotFound') {
+                    $resourceClearChecks++
+                    Write-Verbose "Waiting for $ResourceName deletion to finish: not found clearChecks=$resourceClearChecks/3."
+                }
+                else {
+                    $resourceClearChecks = 0
+                    Write-Verbose "Retrying $ResourceName deletion check after transient error: $($_.Exception.Message)"
+                }
+            }
+
+            if ($resourceClearChecks -ge 3) {
+                break
+            }
+
+            if ((Get-Date) -ge $resourceDeleteDeadline) {
+                throw "Timed out waiting for $ResourceName to be deleted."
+            }
+
+            Start-Sleep -Seconds 15
+        } while ($true)
+    }
+
+    $removeArmResource = {
+        param (
+            [string]
+            $ResourceId,
+
+            [string]
+            $ResourceName
+        )
+
+        $resource = Get-AzResource -ResourceId $ResourceId -ErrorAction SilentlyContinue
+        if (-not $resource) {
+            Write-Verbose "$ResourceName not found."
+            return
+        }
+
+        Write-Verbose "Removing $ResourceName before resource group deletion..."
+        Remove-AzResource -ResourceId $ResourceId -Force -ErrorAction Stop | Out-Null
+
+        if ($wait.IsPresent) {
+            & $waitForArmResourceDeletion -ResourceId $ResourceId -ResourceName $ResourceName
+        }
+    }
+
     Write-Verbose "Looking for Data Collection Endpoint (DCE) and Data Collection Rule (DCR)..."
-    $dce = Get-AzDataCollectionEndpoint -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardrails-dce" -ErrorAction SilentlyContinue
-    if ($dce) {
-        Write-Verbose "Found Data Collection Endpoint 'guardrails-dce' (will be removed with resource group)."
-    }
-    $dcr = Get-AzDataCollectionRule -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardrails-dcr" -ErrorAction SilentlyContinue
-    if ($dcr) {
-        Write-Verbose "Found Data Collection Rule 'guardrails-dcr' (will be removed with resource group)."
-    }
+    $insightsResourceIdPrefix = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])/providers/Microsoft.Insights"
+
+    # LAW is force-deleted earlier because its soft-delete state is the known
+    # name/quota risk. DCRs can still be deleted after their LAW destination is
+    # gone; the cleaner long-term order would be DCRs -> DCE -> LAW -> RG.
+    # DCRs reference the DCE, so remove the DCRs first. This gives Azure a
+    # cleaner dependency order before the final resource-group delete.
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'"
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'"
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'"
 
     If (Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue) {
         Write-Verbose "Removing Guardrails Solution Accelerator Resource Group (including DCE, DCR, and all other resources)..."
@@ -203,6 +268,45 @@ Function Remove-GSACoreResources {
         If ($wait.IsPresent) {
             Write-Verbose "Waiting for Guardrails Solution Accelerator Resource Group to be removed..."
             $job | Wait-Job | Out-Null
+
+            if ($job.State -eq 'Failed') {
+                $jobError = $job.ChildJobs | ForEach-Object { $_.JobStateInfo.Reason } | Where-Object { $_ } | Out-String
+                throw "Resource group delete job failed for '$($config['runtime']['resourceGroup'])'. Error: $jobError"
+            }
+
+            # The Azure PowerShell job can finish before ARM has fully removed
+            # every child resource. Confirm the RG is gone before returning so
+            # callers do not start a fresh deploy while DCE/DCR/AA cleanup is
+            # still settling.
+            $rgDeleteDeadline = (Get-Date).AddMinutes(30)
+            $rgClearChecks = 0
+            do {
+                try {
+                    $null = Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction Stop
+                    $rgClearChecks = 0
+                    Write-Verbose "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: still exists."
+                }
+                catch {
+                    if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|Resource group .* could not be found') {
+                        $rgClearChecks++
+                        Write-Verbose "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: not found clearChecks=$rgClearChecks/3."
+                    }
+                    else {
+                        $rgClearChecks = 0
+                        Write-Verbose "Retrying resource group deletion check after transient error: $($_.Exception.Message)"
+                    }
+                }
+
+                if ($rgClearChecks -ge 3) {
+                    break
+                }
+
+                if ((Get-Date) -ge $rgDeleteDeadline) {
+                    throw "Timed out waiting for resource group '$($config['runtime']['resourceGroup'])' to be deleted."
+                }
+
+                Start-Sleep -Seconds 30
+            } while ($true)
         }
     }
     else {
