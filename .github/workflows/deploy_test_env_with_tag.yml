@@ -153,47 +153,12 @@ jobs:
               $TEST_CLOUDUSAGEPROFILES = $env:TEST_CLOUDUSAGEPROFILES
               $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
               $TESTTENANT_ID = $env:TESTTENANT_ID
-              # Only one Guardrails CI deployment can be active in this subscription/region because of Azure quotas.
-              # Remove every older matching CI resource group before deploying the new generated suffix.
-              $staleResourceGroups = @(Get-AzResourceGroup -ErrorAction Stop | Where-Object {
-                  $_.ResourceGroupName -like "guardrailscac_test-$($env:CI_BASE_UNIQUENAME_SUFFIX)*" -and
-                  $_.ResourceGroupName -ne "guardrailscac_test-$UNIQUENAME_SUFFIX"
-              } | Sort-Object -Property ResourceGroupName)
-              foreach ($staleResourceGroup in $staleResourceGroups) {
-                  Write-Output "Removing stale CI resource group '$($staleResourceGroup.ResourceGroupName)' before deployment."
-                  # Reconstruct the original Guardrails LAW/AA names so Remove-GSACoreResources can force-delete the LAW out of soft-delete.
-                  $staleSuffix = $staleResourceGroup.ResourceGroupName.Substring('guardrailscac_test-'.Length)
-                  $staleConfigString = @{
-                      subscriptionId = $TESTSUBSCRIPTION_ID
-                      runtime = @{
-                          subscriptionId = $TESTSUBSCRIPTION_ID
-                          resourceGroup = $staleResourceGroup.ResourceGroupName
-                          logAnalyticsWorkspaceName = "gsapipe-$staleSuffix"
-                          automationAccountName = "gsapipe-$staleSuffix"
-                      }
-                  } | ConvertTo-Json -Depth 5
-                  try {
-                      Remove-GSACoreResources -Force -Wait -configString $staleConfigString
-                  }
-                  catch {
-                      $isAzureMonitorTransientCleanup = $_.Exception.Message -match 'ExistingAssociationsPreventDelete|Existing associations with Azure Monitor\s+Data Collection Rule|Data collection rule has been modified before operation completed'
-                      $remainingResources = @(Get-AzResource -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue)
-                      # Azure reports these exact resource types for DCRs and DCEs today.
-                      # Keep the fallback narrow so unrelated cleanup bugs still fail the workflow.
-                      $nonDcrDceResources = @($remainingResources | Where-Object {
-                          $_.ResourceType -notin 'Microsoft.Insights/dataCollectionRules', 'Microsoft.Insights/dataCollectionEndpoints'
-                      })
-                      if ($isAzureMonitorTransientCleanup -and $remainingResources.Count -eq 0) {
-                          Write-Warning "Cleanup reported an error for stale CI resource group '$($staleResourceGroup.ResourceGroupName)', but no resources remain. Continuing with the new generated suffix."
-                      }
-                      elseif ($isAzureMonitorTransientCleanup -and $nonDcrDceResources.Count -eq 0) {
-                          Write-Warning "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' still has only DCR/DCE resources after an Azure Monitor cleanup conflict. Continuing because the new generated suffix does not depend on those old resources."
-                      }
-                      else {
-                          throw
-                      }
-                  }
-              }
+              ./tools/Invoke-StaleGuardrailsCiCleanup.ps1 `
+                  -SubscriptionId $TESTSUBSCRIPTION_ID `
+                  -ResourceGroupPrefix 'guardrailscac_test-' `
+                  -BaseUniqueNameSuffix $env:CI_BASE_UNIQUENAME_SUFFIX `
+                  -CurrentUniqueNameSuffix $UNIQUENAME_SUFFIX `
+                  -LogAnalyticsWorkspacePrefix 'gsapipe-'
               $configContent = @"
               {
                   "keyVaultName": "gsapipe",
