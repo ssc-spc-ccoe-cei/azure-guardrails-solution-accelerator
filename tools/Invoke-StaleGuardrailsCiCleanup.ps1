@@ -83,7 +83,51 @@ function Start-StaleArmResourceDelete {
     }
 }
 
+function Remove-StaleAutomationMsiRoleAssignment {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ObjectId,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $RoleDefinitionName,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Scope,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Description,
+
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $Critical
+    )
+
+    try {
+        $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
+        if (-not $existingAssignment) {
+            Write-Output "Role assignment not found for stale CI cleanup: $Description"
+            return
+        }
+
+        Write-Output "Removing stale CI role assignment: $Description"
+        Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+    }
+    catch {
+        $message = "Failed to remove stale CI role assignment '$Description'. Continuing would leave RBAC behind. Error: $($_.Exception.Message)"
+        if ($Critical.IsPresent) {
+            throw $message
+        }
+
+        Write-Warning $message
+    }
+}
+
 Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
+$tenantRootManagementGroupScope = "/providers/Microsoft.Management/managementGroups/$((Get-AzContext).Tenant.Id)"
 
 $currentResourceGroupName = "$ResourceGroupPrefix$CurrentUniqueNameSuffix"
 # Empty BaseUniqueNameSuffix means stale cleanup matches every RG under the
@@ -100,6 +144,26 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
     $staleSuffix = $staleResourceGroup.ResourceGroupName.Substring($ResourceGroupPrefix.Length)
     $staleLogAnalyticsWorkspaceName = "$LogAnalyticsWorkspacePrefix$staleSuffix"
     $insightsResourceIdPrefix = "/subscriptions/$SubscriptionId/resourceGroups/$($staleResourceGroup.ResourceGroupName)/providers/Microsoft.Insights"
+
+    $automationAccounts = @(Get-AzAutomationAccount -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue)
+    $storageAccounts = @(Get-AzStorageAccount -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue)
+    foreach ($automationAccount in $automationAccounts) {
+        $automationAccountMsi = $automationAccount.Identity.PrincipalId
+        if ([string]::IsNullOrWhiteSpace($automationAccountMsi)) {
+            continue
+        }
+
+        # Tenant/provider-scope assignments are outside the stale resource group.
+        # Treat failures as critical so CI exposes quota-leak cleanup problems
+        # instead of silently accumulating orphaned role assignments.
+        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope $tenantRootManagementGroupScope -Description "Reader on tenant root management group for '$($automationAccount.AutomationAccountName)'" -Critical
+        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' -Description "Reader on Azure AD IAM scope for '$($automationAccount.AutomationAccountName)'" -Critical
+        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' -Description "Reader on Azure Marketplace scope for '$($automationAccount.AutomationAccountName)'" -Critical
+
+        foreach ($storageAccount in $storageAccounts) {
+            Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName 'Reader and Data Access' -Scope $storageAccount.Id -Description "Reader and Data Access on Storage Account '$($storageAccount.StorageAccountName)' for '$($automationAccount.AutomationAccountName)'"
+        }
+    }
 
     Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'"
     Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'"

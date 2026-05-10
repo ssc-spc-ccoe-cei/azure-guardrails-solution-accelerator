@@ -78,11 +78,55 @@ function Start-GuardrailsArmResourceDelete {
     }
 }
 
+function Remove-GuardrailsAutomationMsiRoleAssignment {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ObjectId,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $RoleDefinitionName,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Scope,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Description,
+
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $Critical
+    )
+
+    try {
+        $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
+        if (-not $existingAssignment) {
+            Write-Output "Role assignment not found: $Description"
+            return
+        }
+
+        Write-Output "Removing role assignment: $Description"
+        Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+    }
+    catch {
+        $message = "Failed to remove role assignment '$Description'. Continuing would leave RBAC behind. Error: $($_.Exception.Message)"
+        if ($Critical.IsPresent) {
+            throw $message
+        }
+
+        Write-Warning $message
+    }
+}
+
 if ($ResourceGroupName -ne $ConfirmResourceGroupName) {
     throw "Confirmation mismatch. ResourceGroupName '$ResourceGroupName' does not match ConfirmResourceGroupName '$ConfirmResourceGroupName'."
 }
 
 Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
+$tenantRootManagementGroupScope = "/providers/Microsoft.Management/managementGroups/$((Get-AzContext).Tenant.Id)"
 
 $resourceGroup = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue
 if (-not $resourceGroup) {
@@ -115,6 +159,26 @@ if ($guardrailsMarkerResources.Count -eq 0 -and $initialResources.Count -gt 0) {
 if ($DryRun) {
     Write-Output "Dry run requested. No resources were deleted."
     return
+}
+
+$automationAccounts = @(Get-AzAutomationAccount -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue)
+$storageAccounts = @(Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue)
+foreach ($automationAccount in $automationAccounts) {
+    $automationAccountMsi = $automationAccount.Identity.PrincipalId
+    if ([string]::IsNullOrWhiteSpace($automationAccountMsi)) {
+        continue
+    }
+
+    # Tenant/provider-scope assignments are outside the target resource group.
+    # Treat failures as critical so operator cleanup does not silently leave
+    # orphaned role assignments behind.
+    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope $tenantRootManagementGroupScope -Description "Reader on tenant root management group for '$($automationAccount.AutomationAccountName)'" -Critical
+    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' -Description "Reader on Azure AD IAM scope for '$($automationAccount.AutomationAccountName)'" -Critical
+    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' -Description "Reader on Azure Marketplace scope for '$($automationAccount.AutomationAccountName)'" -Critical
+
+    foreach ($storageAccount in $storageAccounts) {
+        Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName 'Reader and Data Access' -Scope $storageAccount.Id -Description "Reader and Data Access on Storage Account '$($storageAccount.StorageAccountName)' for '$($automationAccount.AutomationAccountName)'"
+    }
 }
 
 $dcrResources = @($initialResources | Where-Object { $_.ResourceType -eq 'Microsoft.Insights/dataCollectionRules' })

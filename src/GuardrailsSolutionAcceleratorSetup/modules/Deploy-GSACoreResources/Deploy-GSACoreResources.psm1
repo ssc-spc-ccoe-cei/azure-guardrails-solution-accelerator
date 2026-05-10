@@ -124,9 +124,11 @@ Function Deploy-GSACoreResources {
                     return
                 }
 
-                # BadRequest is broad, but Azure also uses it for fresh MSI
-                # propagation lag. The post-error assignment check and bounded
+                # BadRequest is broad, but Azure also uses it for transient MSI
+                # lookup failures. The post-error assignment check and bounded
                 # retry budget keep real BadRequest failures from being hidden.
+                # If this keeps failing, check the management-group Activity Log
+                # for quota, policy, and permission details.
                 $isRetryableRoleAssignmentError = $errorMessage -match 'BadRequest|PrincipalNotFound|does not exist in the directory|not found|RoleAssignmentExists|Conflict'
                 $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
                 if (-not $isRetryableRoleAssignmentError -or $isLastAttempt) {
@@ -134,7 +136,7 @@ Function Deploy-GSACoreResources {
                 }
 
                 $retryDelayInSeconds = $retryDelaysInSeconds[$attempt - 1]
-                Write-Warning "Role assignment '$Description' failed on attempt $attempt of $($retryDelaysInSeconds.Count + 1), likely while the new Automation Account MSI is propagating. Waiting $retryDelayInSeconds seconds before retrying. Error: $errorMessage"
+                Write-Warning "Role assignment '$Description' failed on attempt $attempt of $($retryDelaysInSeconds.Count + 1). This can be caused by transient MSI lookup lag, role-assignment quota, policy, or permissions. Waiting $retryDelayInSeconds seconds before retrying. Error: $errorMessage"
                 Start-Sleep -Seconds $retryDelayInSeconds
             }
         }

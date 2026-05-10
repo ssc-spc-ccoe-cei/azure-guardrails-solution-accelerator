@@ -186,6 +186,89 @@ Function Remove-GSACoreResources {
         $guardrailsAutomationAccountMSI = $automationAccount.Identity.PrincipalId
     }
 
+    $removeRoleAssignment = {
+        param (
+            [string]
+            $ObjectId,
+
+            [string]
+            $RoleDefinitionName,
+
+            [string]
+            $Scope,
+
+            [string]
+            $Description,
+
+            [switch]
+            $Critical
+        )
+
+        if ([string]::IsNullOrWhiteSpace($ObjectId) -or [string]::IsNullOrWhiteSpace($Scope)) {
+            return
+        }
+
+        try {
+            $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
+            if (-not $existingAssignment) {
+                Write-Verbose "Role assignment not found: $Description"
+                return
+            }
+
+            Write-Output "Removing role assignment: $Description"
+            Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+        }
+        catch {
+            $message = "Failed to remove role assignment '$Description'. This may leave stale RBAC behind. Error: $($_.Exception.Message)"
+            if ($Critical.IsPresent) {
+                throw $message
+            }
+
+            Write-Warning $message
+        }
+    }
+
+    if ($guardrailsAutomationAccountMSI) {
+        Write-Output "Removing Guardrails Automation Account MSI role assignments before deleting core resources..."
+
+        # These assignments are outside the Guardrails resource group, so the RG
+        # delete cascade will not remove them. Clean them explicitly before
+        # deleting the Automation Account; otherwise old MSI assignments pile up
+        # against tenant/provider role-assignment quotas.
+        & $removeRoleAssignment `
+            -ObjectId $guardrailsAutomationAccountMSI `
+            -RoleDefinitionName Reader `
+            -Scope $config['runtime']['tenantRootManagementGroupId'] `
+            -Description "Reader on tenant root management group" `
+            -Critical
+
+        & $removeRoleAssignment `
+            -ObjectId $guardrailsAutomationAccountMSI `
+            -RoleDefinitionName Reader `
+            -Scope '/providers/Microsoft.aadiam' `
+            -Description "Reader on Azure AD IAM scope" `
+            -Critical
+
+        & $removeRoleAssignment `
+            -ObjectId $guardrailsAutomationAccountMSI `
+            -RoleDefinitionName Reader `
+            -Scope '/providers/Microsoft.Marketplace' `
+            -Description "Reader on Azure Marketplace scope" `
+            -Critical
+
+        $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageAccountName'] -ErrorAction SilentlyContinue
+        if ($storageAccount) {
+            & $removeRoleAssignment `
+                -ObjectId $guardrailsAutomationAccountMSI `
+                -RoleDefinitionName 'Reader and Data Access' `
+                -Scope $storageAccount.Id `
+                -Description "Reader and Data Access on Guardrails Storage Account '$($storageAccount.StorageAccountName)'"
+        }
+    }
+    else {
+        Write-Verbose "Guardrails Automation Account MSI was not found; no broad MSI role assignments will be removed."
+    }
+
     $waitForArmResourceDeletion = {
         param (
             [string]
@@ -383,5 +466,4 @@ Function Remove-GSACoreResources {
     }
 
     Write-Host "Completed cleanup of Guardrails Solution Accelerator core resources. If -wait parameter was not specified, the core Resource Group deletion may still be in progress." -ForegroundColor Green
-    Write-Warning "Role assignments for the Guardrails Solution Accelerator service principal will not be removed. To remove these role assignments, remove them from the root management group manually."
 }
