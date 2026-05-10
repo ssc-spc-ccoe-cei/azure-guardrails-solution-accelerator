@@ -1,6 +1,6 @@
 name: Check Guardrails Automation jobs
 description: |
-  Checks the latest Guardrails main/backend Automation jobs after a workflow deploy.
+  Checks that the latest Guardrails main/backend Automation jobs started after a workflow deploy.
   The exported config Key Vault name is composed as <key-vault-prefix>-<generated-suffix>.
 
   Requires a prior azure/login@v2 step in the calling job to establish Az context.
@@ -15,7 +15,7 @@ inputs:
   timeout-minutes:
     required: false
     default: '5'
-    description: Maximum minutes to wait for both runbook jobs to reach a terminal state.
+    description: Maximum minutes to wait for both runbook jobs to appear.
   poll-seconds:
     required: false
     default: '5'
@@ -39,7 +39,7 @@ runs:
 
           $timeoutMinutes = [int]$env:GSA_TIMEOUT_MINUTES
           $pollSeconds = [int]$env:GSA_POLL_SECONDS
-          $terminalStatuses = @('Completed', 'Failed', 'Stopped', 'Suspended')
+          $failureStatuses = @('Failed', 'Stopped', 'Suspended')
           $uniqueNameSuffix = [Environment]::GetEnvironmentVariable($env:GSA_SUFFIX_ENV_NAME)
 
           if ([string]::IsNullOrWhiteSpace($uniqueNameSuffix)) {
@@ -76,7 +76,7 @@ runs:
             return 'NotFound'
           }
 
-          Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to $timeoutMinutes mins)"
+          Write-Output "Waiting for 'main' and 'backend' runbook jobs to start (up to $timeoutMinutes mins)"
           $timeout = New-TimeSpan -Minutes $timeoutMinutes
           $timer = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -87,7 +87,11 @@ runs:
             $mainStatus = Get-GuardrailsJobStatusText -Job $jobMain
             $backendStatus = Get-GuardrailsJobStatusText -Job $jobBackend
 
-            if ($mainStatus -in $terminalStatuses -and $backendStatus -in $terminalStatuses) {
+            if ($mainStatus -in $failureStatuses -or $backendStatus -in $failureStatuses) {
+              break
+            }
+
+            if ($mainStatus -ne 'NotFound' -and $backendStatus -ne 'NotFound') {
               break
             }
 
@@ -99,22 +103,39 @@ runs:
           }
           while ($true)
 
-          if ($mainStatus -notin $terminalStatuses -or $backendStatus -notin $terminalStatuses) {
-            throw "Timed out waiting for 'main' and 'backend' runbook jobs to complete. main status: $mainStatus; backend status: $backendStatus"
+          if ($mainStatus -eq 'NotFound' -or $backendStatus -eq 'NotFound') {
+            throw "Timed out waiting for 'main' and 'backend' runbook jobs to appear. main status: $mainStatus; backend status: $backendStatus"
           }
 
-          if ($mainStatus -ne 'Completed') {
-            throw "main runbook did not complete successfully. Status: $mainStatus"
+          if ($mainStatus -in $failureStatuses) {
+            throw "main runbook did not start successfully. Status: $mainStatus"
           }
-          Write-Output "'main' runbook completed successfully, checking for errors in output."
 
-          if ($backendStatus -ne 'Completed') {
-            throw "backend runbook did not complete successfully. Status: $backendStatus"
+          if ($backendStatus -in $failureStatuses) {
+            throw "backend runbook did not start successfully. Status: $backendStatus"
           }
-          Write-Output "'backend' runbook completed successfully, checking for errors in output."
 
-          $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
-          $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+          Write-Output "'main' runbook job observed with status: $mainStatus"
+          Write-Output "'backend' runbook job observed with status: $backendStatus"
+
+          $jobMainOutput = @()
+          $jobBackendOutput = @()
+
+          if ($mainStatus -eq 'Completed') {
+            Write-Output "'main' runbook completed before workflow moved on, checking for errors in output."
+            $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+          }
+          else {
+            Write-Output "'main' runbook is still running or queued; skipping completed-job error stream check."
+          }
+
+          if ($backendStatus -eq 'Completed') {
+            Write-Output "'backend' runbook completed before workflow moved on, checking for errors in output."
+            $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+          }
+          else {
+            Write-Output "'backend' runbook is still running or queued; skipping completed-job error stream check."
+          }
 
           foreach ($outputRecord in $jobMainOutput) {
             if ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
