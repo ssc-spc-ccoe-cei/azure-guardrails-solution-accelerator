@@ -266,58 +266,7 @@ jobs:
           TEST_CLOUDUSAGEPROFILES: ${{ vars.TEST_CLOUDUSAGEPROFILES}}
           TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
       - name: Check for AA Job Errors
-        uses: azure/powershell@v2
+        uses: ./.github/actions/check-guardrails-aa-jobs
         with:
-          inlineScript: |
-            ipmo ./src/GuardrailsSolutionAcceleratorSetup
-
-            $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$env:CI_UNIQUENAME_SUFFIX -y
-            $config = $c.configString | ConvertFrom-Json
-            
-            Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to 5 mins)"
-            $timeout = New-TimeSpan -Minutes 5
-            $timer = [System.Diagnostics.Stopwatch]::StartNew()
-            do {
-              $jobMain = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
-                Sort-Object StartTIme -Descending |
-                Select-Object -First 1
-              
-              $jobBackend = Get-AzAutomationJob -RunbookName 'backend' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
-                Sort-Object StartTIme -Descending |
-                Select-Object -First 1
-              
-              Start-Sleep 1
-            }
-            until (($jobMain.Status -in 'Completed','Failed' -and $jobBackend -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
-
-            If ($jobMain.Status -eq 'Failed') {
-              throw "main runbook failed to execute"
-            }
-            If ($jobMain.Status -eq 'Completed') {
-              Write-Output "'main' runbook completed successfully, checking for errors in output. "
-            }
-
-            If ($jobBackend.Status -eq 'Failed') {
-              throw "backend runbook failed to execute"
-            }
-            If ($jobBackend.Status -eq 'Completed') {
-              Write-Output "'backend' runbook completed successfully, checking for errors in output. "
-            }
-
-            $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
-            $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
-
-            $errorsFound = $false
-            ForEach ($outputRecord in $jobMainOutput) {
-              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-                throw 'Errors found in "main" runbook Azure Automation jobs'
-              }
-            }
-            ForEach ($outputRecord in $jobBackendOutput) {
-              If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
-                throw 'Errors found in "backend" runbook Azure Automation jobs'
-              }
-            }
-          azPSVersion: "latest"
-        env:
-          UNIQUENAME_SUFFIX: ${{ vars.UNIQUENAME_SUFFIX }}
+          key-vault-prefix: gsapipe
+          suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX

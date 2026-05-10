@@ -1,0 +1,129 @@
+name: Check Guardrails Automation jobs
+description: |
+  Checks the latest Guardrails main/backend Automation jobs after a workflow deploy.
+  The exported config Key Vault name is composed as <key-vault-prefix>-<generated-suffix>.
+
+  Requires a prior azure/login@v2 step in the calling job to establish Az context.
+
+inputs:
+  key-vault-prefix:
+    required: true
+    description: Prefix for the Key Vault that contains the exported Guardrails runtime config.
+  suffix-environment-variable-name:
+    required: true
+    description: Environment variable name that contains the generated unique suffix.
+  timeout-minutes:
+    required: false
+    default: '5'
+    description: Maximum minutes to wait for both runbook jobs to reach a terminal state.
+  poll-seconds:
+    required: false
+    default: '5'
+    description: Seconds between Automation job status checks.
+
+runs:
+  using: composite
+  steps:
+    - name: Check for AA Job Errors
+      uses: azure/powershell@v2
+      env:
+        GSA_KEY_VAULT_PREFIX: ${{ inputs.key-vault-prefix }}
+        GSA_SUFFIX_ENV_NAME: ${{ inputs.suffix-environment-variable-name }}
+        GSA_TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        GSA_POLL_SECONDS: ${{ inputs.poll-seconds }}
+      with:
+        azPSVersion: latest
+        inlineScript: |
+          $ErrorActionPreference = 'Stop'
+          Import-Module (Join-Path $env:GITHUB_WORKSPACE 'src/GuardrailsSolutionAcceleratorSetup')
+
+          $timeoutMinutes = [int]$env:GSA_TIMEOUT_MINUTES
+          $pollSeconds = [int]$env:GSA_POLL_SECONDS
+          $terminalStatuses = @('Completed', 'Failed', 'Stopped', 'Suspended')
+          $uniqueNameSuffix = [Environment]::GetEnvironmentVariable($env:GSA_SUFFIX_ENV_NAME)
+
+          if ([string]::IsNullOrWhiteSpace($uniqueNameSuffix)) {
+            throw "Generated suffix environment variable '$($env:GSA_SUFFIX_ENV_NAME)' is not set."
+          }
+
+          $keyVaultName = "$($env:GSA_KEY_VAULT_PREFIX)-$uniqueNameSuffix"
+
+          $c = Get-GSAExportedConfig -KeyVaultName $keyVaultName -y
+          $config = $c.configString | ConvertFrom-Json
+
+          function Get-LatestGuardrailsRunbookJob {
+            param (
+              [Parameter(Mandatory = $true)]
+              [string]
+              $RunbookName
+            )
+
+            Get-AzAutomationJob `
+              -RunbookName $RunbookName `
+              -ResourceGroupName $config.runtime.resourceGroup `
+              -AutomationAccountName $config.runtime.automationAccountName |
+              Sort-Object StartTime -Descending |
+              Select-Object -First 1
+          }
+
+          function Get-GuardrailsJobStatusText {
+            param ($Job)
+
+            if ($Job) {
+              return $Job.Status
+            }
+
+            return 'NotFound'
+          }
+
+          Write-Output "Waiting for 'main' and 'backend' runbook jobs to complete (up to $timeoutMinutes mins)"
+          $timeout = New-TimeSpan -Minutes $timeoutMinutes
+          $timer = [System.Diagnostics.Stopwatch]::StartNew()
+
+          do {
+            $jobMain = Get-LatestGuardrailsRunbookJob -RunbookName 'main'
+            $jobBackend = Get-LatestGuardrailsRunbookJob -RunbookName 'backend'
+
+            $mainStatus = Get-GuardrailsJobStatusText -Job $jobMain
+            $backendStatus = Get-GuardrailsJobStatusText -Job $jobBackend
+
+            if ($mainStatus -in $terminalStatuses -and $backendStatus -in $terminalStatuses) {
+              break
+            }
+
+            if ($timer.Elapsed -ge $timeout) {
+              break
+            }
+
+            Start-Sleep -Seconds $pollSeconds
+          }
+          while ($true)
+
+          if ($mainStatus -notin $terminalStatuses -or $backendStatus -notin $terminalStatuses) {
+            throw "Timed out waiting for 'main' and 'backend' runbook jobs to complete. main status: $mainStatus; backend status: $backendStatus"
+          }
+
+          if ($mainStatus -ne 'Completed') {
+            throw "main runbook did not complete successfully. Status: $mainStatus"
+          }
+          Write-Output "'main' runbook completed successfully, checking for errors in output."
+
+          if ($backendStatus -ne 'Completed') {
+            throw "backend runbook did not complete successfully. Status: $backendStatus"
+          }
+          Write-Output "'backend' runbook completed successfully, checking for errors in output."
+
+          $jobMainOutput = Get-AzAutomationJobOutput -Id $jobMain.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+          $jobBackendOutput = Get-AzAutomationJobOutput -Id $jobBackend.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
+
+          foreach ($outputRecord in $jobMainOutput) {
+            if ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+              throw 'Errors found in "main" runbook Azure Automation jobs'
+            }
+          }
+
+          foreach ($outputRecord in $jobBackendOutput) {
+            if ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+              throw 'Errors found in "backend" runbook Azure Automation jobs'
+            }
+          }
