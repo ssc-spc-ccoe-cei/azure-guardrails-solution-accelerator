@@ -78,9 +78,11 @@ Function Deploy-GSACoreResources {
     .DESCRIPTION
     Newly-created Automation Account MSIs can take seconds to minutes to propagate.
     Role assignments using the MSI object ID during that window can fail with
-    BadRequest or PrincipalNotFound. This wrapper skips existing assignments,
-    re-checks after errors in case creation succeeded, retries bounded transient
-    failures, and fails fast on non-retryable errors.
+    BadRequest or PrincipalNotFound. This wrapper sets ObjectType to
+    ServicePrincipal to bypass the principal-type lookup that can fail during
+    MSI propagation, skips existing assignments, re-checks after errors in case
+    creation succeeded, retries bounded transient failures, and fails fast on
+    non-retryable errors.
     #>
     function Set-GSARoleAssignment {
         param (
@@ -110,7 +112,7 @@ Function Deploy-GSACoreResources {
                     return
                 }
 
-                New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+                New-AzRoleAssignment -ObjectId $ObjectId -ObjectType ServicePrincipal -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
                 Write-Verbose "`tCreated role assignment: $Description"
                 return
             }
