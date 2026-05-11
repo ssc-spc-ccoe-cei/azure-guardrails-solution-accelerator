@@ -322,11 +322,11 @@ Function Remove-GSACoreResources {
     & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
     & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
 
-    Write-Verbose "Looking for Guardrails Log Analytics Workspace..."
+    Write-Output "Looking for Guardrails Log Analytics Workspace '$($config['runtime']['logAnalyticsWorkspaceName'])'..."
     $logAnalyticsWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
     $existingDeletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'checking for an already deleted LAW')
     if ($logAnalyticsWorkspace) {
-        Write-Verbose "Removing Guardrails Solution Accelerator Log Analytics Workspace..."
+        Write-Output "Force-deleting Guardrails Log Analytics workspace '$($config['runtime']['logAnalyticsWorkspaceName'])'."
         # Even with -ForceDelete, Azure can briefly surface the workspace in its
         # deleted view after the delete call returns. We still wait on both
         # active and deleted states so we do not redeploy while Azure is still
@@ -334,7 +334,7 @@ Function Remove-GSACoreResources {
         $logAnalyticsWorkspace | Remove-AzOperationalInsightsWorkspace -ForceDelete -Force
     }
     else {
-        Write-Verbose "Guardrails Solution Accelerator Log Analytics workspace not found."
+        Write-Output "Guardrails Log Analytics workspace '$($config['runtime']['logAnalyticsWorkspaceName'])' not found in active resources."
     }
 
     # The delete command can return before Azure fully removes the workspace.
@@ -363,9 +363,10 @@ Function Remove-GSACoreResources {
                 $clearChecks = 0
             }
 
-            Write-Verbose ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspaceMatches, $clearChecks)
+            Write-Output ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspaceMatches, $clearChecks)
 
             if ($clearChecks -ge 3) {
+                Write-Output "Permanent LAW delete is settled for '$($config['runtime']['logAnalyticsWorkspaceName'])'."
                 break
             }
 
@@ -379,7 +380,7 @@ Function Remove-GSACoreResources {
     }
 
     If (Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue) {
-        Write-Verbose "Removing Guardrails Solution Accelerator Resource Group (including DCE, DCR, and all other resources)..."
+        Write-Output "Starting Guardrails resource group delete for '$($config['runtime']['resourceGroup'])'."
         $job = Remove-AzResourceGroup -Name $config['runtime']['resourceGroup'] -Force -AsJob 
 
         If ($wait.IsPresent) {
@@ -396,6 +397,8 @@ Function Remove-GSACoreResources {
                 try {
                     $null = Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction Stop
                     $rgClearChecksDuringJobWait = 0
+                    $remainingResourceCount = @(Get-AzResource -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue).Count
+                    Write-Output "ARM still returns resource group '$($config['runtime']['resourceGroup'])' while delete job is '$($job.State)'. Remaining visible child resources: $remainingResourceCount."
                 }
                 catch {
                     if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|Resource group .* could not be found') {
@@ -404,7 +407,7 @@ Function Remove-GSACoreResources {
                     }
                     else {
                         $rgClearChecksDuringJobWait = 0
-                        Write-Verbose "Retrying resource group deletion check after transient error: $($_.Exception.Message)"
+                        Write-Output "Retrying resource group deletion check after transient error: $($_.Exception.Message)"
                     }
                 }
 
@@ -448,16 +451,17 @@ Function Remove-GSACoreResources {
                     try {
                         $null = Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction Stop
                         $rgClearChecks = 0
-                        Write-Verbose "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: still exists."
+                        $remainingResourceCount = @(Get-AzResource -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue).Count
+                        Write-Output "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: ARM still returns RG. Remaining visible child resources: $remainingResourceCount."
                     }
                     catch {
                         if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|Resource group .* could not be found') {
                             $rgClearChecks++
-                            Write-Verbose "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: not found clearChecks=$rgClearChecks/3."
+                            Write-Output "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: not found clearChecks=$rgClearChecks/3."
                         }
                         else {
                             $rgClearChecks = 0
-                            Write-Verbose "Retrying resource group deletion check after transient error: $($_.Exception.Message)"
+                            Write-Output "Retrying resource group deletion check after transient error: $($_.Exception.Message)"
                         }
                     }
 
@@ -475,7 +479,7 @@ Function Remove-GSACoreResources {
         }
     }
     else {
-        Write-Verbose "Guardrails Solution Accelerator Resource Group not found."
+        Write-Output "Guardrails Solution Accelerator Resource Group '$($config['runtime']['resourceGroup'])' not found."
     }
 
     Write-Host "Completed cleanup of Guardrails Solution Accelerator core resources. If -wait parameter was not specified, the core Resource Group deletion may still be in progress." -ForegroundColor Green
