@@ -30,7 +30,7 @@ param (
 
     [Parameter(Mandatory = $false)]
     [int]
-    $DcrDceDeleteTimeoutSeconds = 300
+    $DcrDeleteTimeoutSeconds = 300
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,10 +59,10 @@ function Start-GuardrailsArmResourceDelete {
         return
     }
 
-    if (-not (Wait-Job -Job $job -Timeout $DcrDceDeleteTimeoutSeconds)) {
+    if (-not (Wait-Job -Job $job -Timeout $DcrDeleteTimeoutSeconds)) {
         Stop-Job -Job $job -ErrorAction SilentlyContinue
         Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
-        Write-Warning "Delete for $ResourceType '$ResourceName' did not finish within $DcrDceDeleteTimeoutSeconds seconds and may still be pending in Azure. Continuing to resource group delete."
+        Write-Warning "Delete for $ResourceType '$ResourceName' did not finish within $DcrDeleteTimeoutSeconds seconds and may still be pending in Azure. Continuing to resource group delete."
         return
     }
 
@@ -143,7 +143,7 @@ try {
     $initialResources = @(Get-AzResource -ResourceGroupName $ResourceGroupName -ErrorAction Stop | Sort-Object ResourceType, Name)
 }
 catch {
-    throw "Failed to enumerate resources in '$ResourceGroupName'. Cleanup cannot safely continue because ordered DCR/DCE cleanup depends on a complete resource list. Error: $($_.Exception.Message)"
+    throw "Failed to enumerate resources in '$ResourceGroupName'. Cleanup cannot safely continue because ordered DCR cleanup depends on a complete resource list. Error: $($_.Exception.Message)"
 }
 
 if ($initialResources.Count -eq 0) {
@@ -194,11 +194,6 @@ foreach ($automationAccount in $automationAccounts) {
 
 $dcrResources = @($initialResources | Where-Object { $_.ResourceType -eq 'Microsoft.Insights/dataCollectionRules' })
 foreach ($resource in $dcrResources) {
-    Start-GuardrailsArmResourceDelete -ResourceId $resource.ResourceId -ResourceType $resource.ResourceType -ResourceName $resource.Name
-}
-
-$dceResources = @($initialResources | Where-Object { $_.ResourceType -eq 'Microsoft.Insights/dataCollectionEndpoints' })
-foreach ($resource in $dceResources) {
     Start-GuardrailsArmResourceDelete -ResourceId $resource.ResourceId -ResourceType $resource.ResourceType -ResourceName $resource.Name
 }
 

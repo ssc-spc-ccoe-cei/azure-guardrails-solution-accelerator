@@ -1,6 +1,6 @@
 name: Cleanup Guardrails resource group
 description: |
-  Deletes a specific Guardrails resource group after deleting DCRs, DCEs, and
+  Deletes a specific Guardrails resource group after deleting DCRs, and
   optionally force-deleting Log Analytics workspaces.
 
   Requires a prior azure/login@v2 step in the calling job to establish Az context.

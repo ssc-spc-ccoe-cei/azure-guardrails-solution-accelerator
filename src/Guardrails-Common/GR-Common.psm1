@@ -895,7 +895,7 @@ function Invoke-GuardrailsArmGet {
         if ($statusCode -eq 401 -or $statusCode -eq 403) {
             $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
             if ($isLastAttempt) {
-                throw "DCR runtime resolution failed: the runbook identity cannot read $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Required permissions include Microsoft.Insights/dataCollectionEndpoints/read and Microsoft.Insights/dataCollectionRules/read on the Guardrails resource group or a parent scope. StatusCode=$statusCode. Response: $responseText"
+                throw "DCR runtime resolution failed: the runbook identity cannot read $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Required permissions include Microsoft.Insights/dataCollectionRules/read on the Guardrails resource group or a parent scope. StatusCode=$statusCode. Response: $responseText"
             }
 
             $retryDelayInSeconds = $retryDelaysInSeconds[$attempt - 1]
@@ -905,7 +905,7 @@ function Invoke-GuardrailsArmGet {
         }
 
         if ($statusCode -eq 404) {
-            throw "DCR runtime resolution failed: $ResourceType '$ResourceName' was not found in resource group '$ResourceGroupName'. Rerun core deployment or verify the Guardrails resource group and DCR/DCE resources. StatusCode=$statusCode. Response: $responseText"
+            throw "DCR runtime resolution failed: $ResourceType '$ResourceName' was not found in resource group '$ResourceGroupName'. Rerun core deployment or verify the Guardrails resource group and DCR resources. StatusCode=$statusCode. Response: $responseText"
         }
 
         throw "DCR runtime resolution failed while reading $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. StatusCode=$statusCode. Response: $responseText"
@@ -946,20 +946,23 @@ function Get-GuardrailsDcrIngestionSettings {
     $subscriptionId = Get-GuardrailsSubscriptionId
     $basePath = "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Insights"
 
-    Write-Host "DCR runtime resolution: resolving DCE/DCR resources from Azure Resource Manager. ResourceGroup='$resourceGroupName', SubscriptionId='$subscriptionId'."
+    Write-Host "DCR runtime resolution: resolving DCR resources from Azure Resource Manager. ResourceGroup='$resourceGroupName', SubscriptionId='$subscriptionId'."
 
-    $dce = Invoke-GuardrailsArmGet -Path "$basePath/dataCollectionEndpoints/guardrails-dce?api-version=2022-06-01" -ResourceName 'guardrails-dce' -ResourceType 'DCE' -ResourceGroupName $resourceGroupName
     $dcr = Invoke-GuardrailsArmGet -Path "$basePath/dataCollectionRules/guardrails-dcr?api-version=2024-03-11" -ResourceName 'guardrails-dcr' -ResourceType 'DCR' -ResourceGroupName $resourceGroupName
     $dcr2 = Invoke-GuardrailsArmGet -Path "$basePath/dataCollectionRules/guardrails-dcr-2?api-version=2024-03-11" -ResourceName 'guardrails-dcr-2' -ResourceType 'DCR' -ResourceGroupName $resourceGroupName
 
-    $dceEndpoint = $dce.properties.logsIngestion.endpoint
+    $dcrEndpoint = $dcr.properties.endpoints.logsIngestion
+    $dcr2Endpoint = $dcr2.properties.endpoints.logsIngestion
     $dcrImmutableId = $dcr.properties.immutableId
     $dcrImmutableId2 = $dcr2.properties.immutableId
     $dcrStreams = @(Get-GuardrailsDcrDeclaredStreams -DataCollectionRule $dcr -ResourceName 'guardrails-dcr')
     $dcr2Streams = @(Get-GuardrailsDcrDeclaredStreams -DataCollectionRule $dcr2 -ResourceName 'guardrails-dcr-2')
 
-    if ([string]::IsNullOrWhiteSpace([string]$dceEndpoint)) {
-        throw "DCR runtime resolution failed: DCE 'guardrails-dce' did not return properties.logsIngestion.endpoint. Verify core deployment completed successfully."
+    if ([string]::IsNullOrWhiteSpace([string]$dcrEndpoint)) {
+        throw "DCR runtime resolution failed: DCR 'guardrails-dcr' did not return properties.endpoints.logsIngestion. Verify core deployment completed successfully."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$dcr2Endpoint)) {
+        throw "DCR runtime resolution failed: DCR 'guardrails-dcr-2' did not return properties.endpoints.logsIngestion. Verify core deployment completed successfully."
     }
     if ([string]::IsNullOrWhiteSpace([string]$dcrImmutableId)) {
         throw "DCR runtime resolution failed: DCR 'guardrails-dcr' did not return properties.immutableId. Verify core deployment completed successfully."
@@ -968,20 +971,23 @@ function Get-GuardrailsDcrIngestionSettings {
         throw "DCR runtime resolution failed: DCR 'guardrails-dcr-2' did not return properties.immutableId. Verify core deployment completed successfully."
     }
 
-    $endpointHost = $dceEndpoint
-    try { $endpointHost = ([System.Uri]$dceEndpoint).Host } catch { }
+    $dcrEndpointHost = $dcrEndpoint
+    $dcr2EndpointHost = $dcr2Endpoint
+    try { $dcrEndpointHost = ([System.Uri]$dcrEndpoint).Host } catch { }
+    try { $dcr2EndpointHost = ([System.Uri]$dcr2Endpoint).Host } catch { }
 
-    Write-Host "DCR runtime resolution succeeded: DCE='guardrails-dce', DCE endpoint host='$endpointHost', DCR1='guardrails-dcr', DCR1 immutable ID='$dcrImmutableId', DCR1 streams=$($dcrStreams.Count), DCR2='guardrails-dcr-2', DCR2 immutable ID='$dcrImmutableId2', DCR2 streams=$($dcr2Streams.Count)."
+    Write-Host "DCR runtime resolution succeeded: DCR1='guardrails-dcr', DCR1 endpoint host='$dcrEndpointHost', DCR1 immutable ID='$dcrImmutableId', DCR1 streams=$($dcrStreams.Count), DCR2='guardrails-dcr-2', DCR2 endpoint host='$dcr2EndpointHost', DCR2 immutable ID='$dcrImmutableId2', DCR2 streams=$($dcr2Streams.Count)."
 
     # Cache only after every ARM read and validation succeeds; failed resolution should retry cleanly.
     $script:GuardrailsDcrIngestionSettings = [PSCustomObject]@{
-        DceEndpoint       = ([string]$dceEndpoint).TrimEnd('/')
-        DcrImmutableId    = $dcrImmutableId
-        DcrImmutableId2   = $dcrImmutableId2
-        DcrStreams        = $dcrStreams
-        Dcr2Streams       = $dcr2Streams
-        ResourceGroupName = $resourceGroupName
-        SubscriptionId    = $subscriptionId
+        DcrImmutableId       = $dcrImmutableId
+        DcrImmutableId2      = $dcrImmutableId2
+        DcrLogsEndpoint      = ([string]$dcrEndpoint).TrimEnd('/')
+        Dcr2LogsEndpoint     = ([string]$dcr2Endpoint).TrimEnd('/')
+        DcrStreams           = $dcrStreams
+        Dcr2Streams          = $dcr2Streams
+        ResourceGroupName    = $resourceGroupName
+        SubscriptionId       = $subscriptionId
     }
 
     return $script:GuardrailsDcrIngestionSettings
@@ -1028,17 +1034,18 @@ function Resolve-GuardrailsDcrTarget {
     }
 
     if (-not $declaredByDcr1 -and -not $declaredByDcr2) {
-        throw "DCR runtime resolution failed: stream '$streamName' for LogType '$LogType' is not declared by guardrails-dcr or guardrails-dcr-2. Verify dcrdce.bicep stream declarations and runtime LogType mapping."
+        throw "DCR runtime resolution failed: stream '$streamName' for LogType '$LogType' is not declared by guardrails-dcr or guardrails-dcr-2. Verify DCR stream declarations and runtime LogType mapping."
     }
 
     $usesDcr2 = $declaredByDcr2
     $dcrId = if ($declaredByDcr2) { $settings.DcrImmutableId2 } else { $settings.DcrImmutableId }
+    $logsIngestionEndpoint = if ($declaredByDcr2) { $settings.Dcr2LogsEndpoint } else { $settings.DcrLogsEndpoint }
 
     [PSCustomObject]@{
-        DceEndpoint = $settings.DceEndpoint
-        DcrId       = $dcrId
-        StreamName  = $streamName
-        UsesDcr2    = $usesDcr2
+        LogsIngestionEndpoint = $logsIngestionEndpoint
+        DcrId                 = $dcrId
+        StreamName            = $streamName
+        UsesDcr2              = $usesDcr2
     }
 }
 
@@ -1135,13 +1142,13 @@ function New-GuardrailsDcrUploadErrorMessage {
 
     $statusCode = Get-GuardrailsDcrStatusCode -ErrorRecord $ErrorRecord
     $responseText = Get-GuardrailsDcrResponseText -ErrorRecord $ErrorRecord
-    $endpointHost = $Target.DceEndpoint
-    try { $endpointHost = ([System.Uri]$Target.DceEndpoint).Host } catch { }
+    $endpointHost = $Target.LogsIngestionEndpoint
+    try { $endpointHost = ([System.Uri]$Target.LogsIngestionEndpoint).Host } catch { }
 
-    $message = "Data Collection API failed for LogType '$LogType' using stream '$($Target.StreamName)', DCR immutable ID '$($Target.DcrId)', and DCE endpoint '$endpointHost'."
+    $message = "Data Collection API failed for LogType '$LogType' using stream '$($Target.StreamName)', DCR immutable ID '$($Target.DcrId)', and DCR logs ingestion endpoint '$endpointHost'."
 
     if ($statusCode -eq 404 -or $responseText -match 'Data collection rule with immutable Id .* not found') {
-        $message += " Azure Monitor could not find the resolved DCR immutable ID. Verify guardrails-dce, guardrails-dcr, and guardrails-dcr-2 exist in the Guardrails resource group and were not recreated during this run."
+        $message += " Azure Monitor could not find the resolved DCR immutable ID. Verify guardrails-dcr and guardrails-dcr-2 exist in the Guardrails resource group and were not recreated during this run."
     }
     elseif ($statusCode -eq 401 -or $statusCode -eq 403) {
         $message += " Verify the runbook identity can request a monitor.azure.com token and has Monitoring Metrics Publisher on the target DCR."
@@ -1216,7 +1223,7 @@ function Send-GuardrailsData {
     
     .DESCRIPTION
     This function replaces the deprecated Data Collector API with the modern DCR-based Log Ingestion API.
-    It resolves the current Guardrails DCE/DCR resources from Azure Resource Manager once per runbook job and caches the result in-process.
+    It resolves the current Guardrails DCR resources from Azure Resource Manager once per runbook job and caches the result in-process.
     
     .PARAMETER Data
     JSON string containing the data to send to Log Analytics.
@@ -1276,9 +1283,9 @@ function Send-GuardrailsData {
         $target = $null
         try {
             $target = Resolve-GuardrailsDcrTarget -LogType $LogType
-            $uri = "$($target.DceEndpoint)/dataCollectionRules/$($target.DcrId)/streams/$($target.StreamName)" + "?api-version=2023-01-01"
+            $uri = "$($target.LogsIngestionEndpoint)/dataCollectionRules/$($target.DcrId)/streams/$($target.StreamName)" + "?api-version=2023-01-01"
 
-            # Invoke-AzRestMethod cannot determine the authentication audience for DCE endpoints
+            # Invoke-AzRestMethod cannot determine the authentication audience for DCR ingestion endpoints
             # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
             # the Azure Monitor audience (no trailing slash per API docs) using Invoke-RestMethod.
             # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
@@ -1311,7 +1318,7 @@ function Send-GuardrailsData {
             if ($isDcrPropagationError -and $hasRetryBudget) {
                 $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
                 $maxAttempts = $retryDelaysInSeconds.Count + 1
-                Write-Warning "DCR ingestion endpoint does not know resolved DCR immutable ID '$($target.DcrId)' yet for LogType '$LogType' and stream '$($target.StreamName)' on attempt $attempt of $maxAttempts. Clearing DCR cache, waiting $delayInSeconds seconds, and re-resolving current DCR/DCE resources."
+                Write-Warning "DCR ingestion endpoint does not know resolved DCR immutable ID '$($target.DcrId)' yet for LogType '$LogType' and stream '$($target.StreamName)' on attempt $attempt of $maxAttempts. Clearing DCR cache, waiting $delayInSeconds seconds, and re-resolving current DCR resources."
                 Clear-GuardrailsDcrIngestionSettingsCache
                 Start-Sleep -Seconds $delayInSeconds
                 continue

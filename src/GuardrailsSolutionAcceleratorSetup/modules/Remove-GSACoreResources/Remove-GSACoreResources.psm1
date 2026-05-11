@@ -313,14 +313,12 @@ Function Remove-GSACoreResources {
         }
     }
 
-    Write-Verbose "Looking for Data Collection Endpoint (DCE) and Data Collection Rule (DCR)..."
+    Write-Verbose "Looking for Data Collection Rules (DCRs)..."
     $insightsResourceIdPrefix = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])/providers/Microsoft.Insights"
 
-    # DCRs reference the DCE, so remove the DCRs first. This gives Azure a
-    # cleaner dependency order before LAW and final resource-group deletion.
+    # Remove DCRs before LAW and final resource-group deletion.
     & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
     & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
 
     Write-Output "Looking for Guardrails Log Analytics Workspace '$($config['runtime']['logAnalyticsWorkspaceName'])'..."
     $logAnalyticsWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
@@ -443,7 +441,7 @@ Function Remove-GSACoreResources {
 
                 # The Azure PowerShell job can finish before ARM has fully removed
                 # every child resource. Confirm the RG is gone before returning so
-                # callers do not start a fresh deploy while DCE/DCR/AA cleanup is
+                # callers do not start a fresh deploy while DCR/AA cleanup is
                 # still settling.
                 $rgDeleteDeadline = (Get-Date).AddMinutes(30)
                 $rgClearChecks = 0

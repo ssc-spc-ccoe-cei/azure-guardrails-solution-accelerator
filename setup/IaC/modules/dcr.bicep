@@ -1,12 +1,11 @@
-// Data Collection Endpoint (DCE) and Data Collection Rule (DCR) for DCR-based Log Ingestion API
-// This module creates the infrastructure needed for migrating from Data Collector API to DCR-based ingestion
+// Data Collection Rules (DCRs) for DCR-based Log Ingestion API.
+// DCRs are kind 'Direct' and expose their own logsIngestion endpoints, so no separate endpoint resource is required.
 
 param location string
 param logAnalyticsWorkspaceResourceId string
 // Workspace name is used to declare table existing-resource references so ARM enforces
 // resource-level readiness before the DCR is created or updated (prevents InvalidOutputTable).
 param logAnalyticsWorkspaceName string
-param dceName string = 'guardrails-dce'
 param dcrName string = 'guardrails-dcr'
 param releaseVersion string
 param releaseDate string
@@ -71,23 +70,6 @@ resource tableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tables@
   name: 'GR2ExternalUsers_CL'
 }
 
-// Data Collection Endpoint (DCE)
-// Create/update DCE on new deployments or when updating core resources (for migration)
-resource dataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = if (newDeployment || updateCoreResources) {
-  name: dceName
-  location: location
-  tags: {
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
-  }
-  kind: 'Logs'
-  properties: {
-    networkAcls: {
-      publicNetworkAccess: 'Enabled'
-    }
-  }
-}
-
 // DCR allows max 10 data flows per rule; we have 12 tables so use two DCRs (10 + 2).
 // Stream declarations require at least one column (e.g. RawData string for custom JSON).
 
@@ -118,7 +100,6 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
     tableGR2ExternalUsers
   ]
   properties: {
-    dataCollectionEndpointId: dataCollectionEndpoint.id
     dataFlows: [
       {
         streams: ['Custom-GuardrailsCompliance']
@@ -762,7 +743,6 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
     tableGR2ExternalUsers
   ]
   properties: {
-    dataCollectionEndpointId: dataCollectionEndpoint.id
     dataFlows: [
       {
         streams: ['Custom-GR2UsersWithoutGroups']
@@ -901,9 +881,7 @@ resource dcr2ErrorDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-
 }
 
 // Outputs
-output dceEndpoint string = (newDeployment || updateCoreResources) ? dataCollectionEndpoint.properties.logsIngestion.endpoint : ''
 output dcrImmutableId string = (newDeployment || updateCoreResources) ? dataCollectionRule.properties.immutableId : ''
 output dcrImmutableId2 string = (newDeployment || updateCoreResources) ? dataCollectionRule2.properties.immutableId : ''
-output dceResourceId string = (newDeployment || updateCoreResources) ? dataCollectionEndpoint.id : ''
 output dcrResourceId string = (newDeployment || updateCoreResources) ? dataCollectionRule.id : ''
 output dcrResourceId2 string = (newDeployment || updateCoreResources) ? dataCollectionRule2.id : ''

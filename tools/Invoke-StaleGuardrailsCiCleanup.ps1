@@ -30,13 +30,13 @@ param (
 
     [Parameter(Mandatory = $false)]
     [int]
-    $DcrDceDeleteTimeoutSeconds = 300
+    $DcrDeleteTimeoutSeconds = 300
 )
 
 $ErrorActionPreference = 'Stop'
 
 function Start-StaleArmResourceDelete {
-    # DCR/DCE deletes are best-effort for stale CI resource groups. Any failure
+    # DCR deletes are best-effort for stale CI resource groups. Any failure
     # is logged and execution continues. The active-resource drain check at the
     # end of this script is the gate that fails CI if quota-sensitive resources
     # remain. Strict customer-facing cleanup stays in Remove-GSACoreResources.
@@ -64,10 +64,10 @@ function Start-StaleArmResourceDelete {
         return
     }
 
-    if (-not (Wait-Job -Job $job -Timeout $DcrDceDeleteTimeoutSeconds)) {
+    if (-not (Wait-Job -Job $job -Timeout $DcrDeleteTimeoutSeconds)) {
         Stop-Job -Job $job -ErrorAction SilentlyContinue
         Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
-        Write-Warning "$ResourceName delete did not finish within $DcrDceDeleteTimeoutSeconds seconds and may still be pending in Azure. Continuing stale CI cleanup; the resource group drain check will decide whether this can be left behind."
+        Write-Warning "$ResourceName delete did not finish within $DcrDeleteTimeoutSeconds seconds and may still be pending in Azure. Continuing stale CI cleanup; the resource group drain check will decide whether this can be left behind."
         return
     }
 
@@ -183,7 +183,6 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
 
     Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'"
     Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'"
-    Start-StaleArmResourceDelete -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'"
 
     $logAnalyticsWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $staleResourceGroup.ResourceGroupName -Name $staleLogAnalyticsWorkspaceName -ErrorAction SilentlyContinue
     if ($logAnalyticsWorkspace) {
@@ -211,13 +210,13 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
                 break
             }
 
-            throw "Failed to enumerate remaining resources in stale CI resource group '$($staleResourceGroup.ResourceGroupName)'. Cleanup cannot safely determine whether only DCR/DCE resources remain. Error: $($_.Exception.Message)"
+            throw "Failed to enumerate remaining resources in stale CI resource group '$($staleResourceGroup.ResourceGroupName)'. Cleanup cannot safely determine whether only DCR resources remain. Error: $($_.Exception.Message)"
         }
 
-        # Azure reports these exact resource types for DCRs and DCEs today.
+        # Azure reports this exact resource type for DCRs today.
         # Keep the fallback narrow so unrelated cleanup problems still fail CI.
-        $nonDcrDceResources = @($remainingResources | Where-Object {
-            $_.ResourceType -notin @('Microsoft.Insights/dataCollectionRules', 'Microsoft.Insights/dataCollectionEndpoints')
+        $nonDcrResources = @($remainingResources | Where-Object {
+            $_.ResourceType -ne 'Microsoft.Insights/dataCollectionRules'
         })
 
         if ($remainingResources.Count -eq 0) {
@@ -225,17 +224,17 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
             break
         }
 
-        if ($nonDcrDceResources.Count -eq 0) {
-            Write-Warning "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' still has only DCR/DCE resources. Continuing because the current deployment suffix does not depend on those old resources."
+        if ($nonDcrResources.Count -eq 0) {
+            Write-Warning "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' still has only DCR resources. Continuing because the current deployment suffix does not depend on those old resources."
             break
         }
 
         if ((Get-Date) -ge $staleCleanupDeadline) {
-            $remainingResourceSummary = $nonDcrDceResources | Select-Object ResourceType, Name | Format-Table -AutoSize | Out-String
-            throw "Timed out waiting for stale CI resource group '$($staleResourceGroup.ResourceGroupName)' to remove quota-sensitive resources. Remaining non-DCR/DCE resources: $remainingResourceSummary"
+            $remainingResourceSummary = $nonDcrResources | Select-Object ResourceType, Name | Format-Table -AutoSize | Out-String
+            throw "Timed out waiting for stale CI resource group '$($staleResourceGroup.ResourceGroupName)' to remove quota-sensitive resources. Remaining non-DCR resources: $remainingResourceSummary"
         }
 
-        Write-Output "Waiting for stale CI resource group '$($staleResourceGroup.ResourceGroupName)' cleanup. Remaining non-DCR/DCE resources: $($nonDcrDceResources.Count)."
+        Write-Output "Waiting for stale CI resource group '$($staleResourceGroup.ResourceGroupName)' cleanup. Remaining non-DCR resources: $($nonDcrResources.Count)."
         Start-Sleep -Seconds $PollIntervalSeconds
     } while ($true)
 }
