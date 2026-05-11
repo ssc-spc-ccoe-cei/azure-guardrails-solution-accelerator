@@ -145,8 +145,6 @@ module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployme
   ]
   params: {
     #disable-next-line BCP318
-    dceResourceId: DCRDCE.outputs.dceResourceId
-    #disable-next-line BCP318
     dcrResourceId: DCRDCE.outputs.dcrResourceId
     #disable-next-line BCP318
     dcrResourceId2: DCRDCE.outputs.dcrResourceId2

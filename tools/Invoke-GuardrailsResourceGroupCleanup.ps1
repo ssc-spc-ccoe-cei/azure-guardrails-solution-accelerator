@@ -94,30 +94,34 @@ function Remove-GuardrailsAutomationMsiRoleAssignment {
 
         [Parameter(Mandatory = $true)]
         [string]
-        $Description,
-
-        [Parameter(Mandatory = $false)]
-        [switch]
-        $Critical
+        $Description
     )
 
-    try {
-        $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
-        if (-not $existingAssignment) {
-            Write-Output "Role assignment not found: $Description"
+    $retryDelaysInSeconds = @(5, 15, 30)
+    for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
+        try {
+            $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop
+            if (-not $existingAssignment) {
+                Write-Output "Role assignment not found: $Description"
+                return
+            }
+
+            Write-Output "Removing role assignment: $Description"
+            Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
             return
         }
+        catch {
+            $message = "Failed to remove role assignment '$Description'. Resource group cleanup will continue, but RBAC may need manual cleanup if role-assignment quotas become a problem. Error: $($_.Exception.Message)"
+            $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
+            if (-not $isLastAttempt) {
+                $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
+                Write-Warning "$message Retrying in $delayInSeconds seconds."
+                Start-Sleep -Seconds $delayInSeconds
+                continue
+            }
 
-        Write-Output "Removing role assignment: $Description"
-        Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
-    }
-    catch {
-        $message = "Failed to remove role assignment '$Description'. Continuing would leave RBAC behind. Error: $($_.Exception.Message)"
-        if ($Critical.IsPresent) {
-            throw $message
+            Write-Warning $message
         }
-
-        Write-Warning $message
     }
 }
 
@@ -135,7 +139,13 @@ if (-not $resourceGroup) {
 }
 
 Write-Output "Preparing to delete resource group '$ResourceGroupName' in subscription '$SubscriptionId'."
-$initialResources = @(Get-AzResource -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Sort-Object ResourceType, Name)
+try {
+    $initialResources = @(Get-AzResource -ResourceGroupName $ResourceGroupName -ErrorAction Stop | Sort-Object ResourceType, Name)
+}
+catch {
+    throw "Failed to enumerate resources in '$ResourceGroupName'. Cleanup cannot safely continue because ordered DCR/DCE cleanup depends on a complete resource list. Error: $($_.Exception.Message)"
+}
+
 if ($initialResources.Count -eq 0) {
     Write-Output "Resource group '$ResourceGroupName' has no active child resources."
 }
@@ -144,24 +154,25 @@ else {
     $initialResources | Select-Object ResourceType, Name | Format-Table -AutoSize | Out-String | Write-Output
 }
 
-$guardrailsMarkerResources = @($initialResources | Where-Object {
-    $_.ResourceType -in @(
-        'Microsoft.Insights/dataCollectionRules',
-        'Microsoft.Insights/dataCollectionEndpoints',
-        'Microsoft.OperationalInsights/workspaces',
-        'Microsoft.Automation/automationAccounts'
-    )
-})
-if ($guardrailsMarkerResources.Count -eq 0 -and $initialResources.Count -gt 0) {
-    Write-Warning "Resource group '$ResourceGroupName' does not contain common Guardrails resource types such as DCR, DCE, Log Analytics workspace, or Automation Account. Continuing because the resource group name was explicitly confirmed."
-}
-
 if ($DryRun) {
     Write-Output "Dry run requested. No resources were deleted."
     return
 }
 
-$automationAccounts = @(Get-AzAutomationAccount -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue)
+try {
+    $automationAccounts = @(Get-AzAutomationAccount -ResourceGroupName $ResourceGroupName -ErrorAction Stop)
+}
+catch {
+    $automationAccountResources = @($initialResources | Where-Object { $_.ResourceType -eq 'Microsoft.Automation/automationAccounts' })
+    if ($automationAccountResources.Count -gt 0) {
+        Write-Warning "Failed to read Automation Account resources in '$ResourceGroupName'. Off-RG MSI role assignments may remain and can be cleaned up manually if they cause quota pressure. Error: $($_.Exception.Message)"
+    }
+    else {
+        Write-Output "No Automation Account resources found in '$ResourceGroupName'."
+    }
+    $automationAccounts = @()
+}
+
 $storageAccounts = @(Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue)
 foreach ($automationAccount in $automationAccounts) {
     $automationAccountMsi = $automationAccount.Identity.PrincipalId
@@ -170,11 +181,11 @@ foreach ($automationAccount in $automationAccounts) {
     }
 
     # Tenant/provider-scope assignments are outside the target resource group.
-    # Treat failures as critical so operator cleanup does not silently leave
-    # orphaned role assignments behind.
-    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope $tenantRootManagementGroupScope -Description "Reader on tenant root management group for '$($automationAccount.AutomationAccountName)'" -Critical
-    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' -Description "Reader on Azure AD IAM scope for '$($automationAccount.AutomationAccountName)'" -Critical
-    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' -Description "Reader on Azure Marketplace scope for '$($automationAccount.AutomationAccountName)'" -Critical
+    # Remove them when possible, but keep the operator-requested RG deletion
+    # moving if RBAC cleanup fails.
+    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope $tenantRootManagementGroupScope -Description "Reader on tenant root management group for '$($automationAccount.AutomationAccountName)'"
+    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' -Description "Reader on Azure AD IAM scope for '$($automationAccount.AutomationAccountName)'"
+    Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' -Description "Reader on Azure Marketplace scope for '$($automationAccount.AutomationAccountName)'"
 
     foreach ($storageAccount in $storageAccounts) {
         Remove-GuardrailsAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName 'Reader and Data Access' -Scope $storageAccount.Id -Description "Reader and Data Access on Storage Account '$($storageAccount.StorageAccountName)' for '$($automationAccount.AutomationAccountName)'"

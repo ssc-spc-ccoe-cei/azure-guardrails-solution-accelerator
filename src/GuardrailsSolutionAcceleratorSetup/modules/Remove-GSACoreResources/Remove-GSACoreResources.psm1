@@ -124,64 +124,20 @@ Function Remove-GSACoreResources {
         } while ($true)
     }
 
-    Write-Verbose "Looking for Guardrails Log Analytics Workspace..."
-    $logAnalyticsWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
-    $existingDeletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'checking for an already deleted LAW')
-    if ($logAnalyticsWorkspace) {
-        Write-Verbose "Removing Guardrails Solution Accelerator Log Analytics Workspace..."
-        # Even with -ForceDelete, Azure can briefly surface the workspace in its
-        # deleted view after the delete call returns. We still wait on both
-        # active and deleted states so we do not start deleting the resource group
-        # or redeploying while Azure is still finishing the workspace delete.
-        $logAnalyticsWorkspace | Remove-AzOperationalInsightsWorkspace -ForceDelete -Force
-    }
-    else {
-        Write-Verbose "Guardrails Solution Accelerator Log Analytics workspace not found."
-    }
-
-    # The delete command can return before Azure fully removes the workspace.
-    # Wait until the active workspace is gone and the workspace no longer
-    # appears in the deleted-workspaces view before deleting the resource group.
-    # This avoids a race where the resource group delete or the next deploy
-    # starts while the LAW delete is still settling on Azure's side.
-    $pollIntervalSeconds = 10
-    $deadline = (Get-Date).AddMinutes(30)
-    $clearChecks = 0
-
-    if ($logAnalyticsWorkspace -or $existingDeletedWorkspaceMatches) {
-        do {
-            # Check both places Azure can still show the workspace:
-            # 1. the normal active workspace view
-            # 2. the deleted-workspaces view used for recoverable workspaces
-            $activeWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
-            $deletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'waiting for permanent LAW delete to settle')
-
-            # Require multiple clean reads in a row so we do not trust a single
-            # transient "gone" result from Azure.
-            if (-not $activeWorkspace -and -not $deletedWorkspaceMatches) {
-                $clearChecks++
-            }
-            else {
-                $clearChecks = 0
-            }
-
-            Write-Verbose ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspaceMatches, $clearChecks)
-
-            if ($clearChecks -ge 3) {
-                break
-            }
-
-            # Fail rather than silently continuing if Azure never reaches a clean state.
-            if ((Get-Date) -ge $deadline) {
-                throw "Timed out waiting for Log Analytics workspace '$($config['runtime']['logAnalyticsWorkspaceName'])' to disappear from both active and deleted states."
-            }
-
-            Start-Sleep -Seconds $pollIntervalSeconds
-        } while ($true)
-    }
-
     Write-Verbose "Looking for Guardrails Solution Accelerator Automation Account..."
-    $automationAccount = Get-AzAutomationAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['automationAccountName'] -ErrorAction SilentlyContinue
+    try {
+        $automationAccount = Get-AzAutomationAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['automationAccountName'] -ErrorAction Stop
+    }
+    catch {
+        $automationAccountResource = Get-AzResource -ResourceGroupName $config['runtime']['resourceGroup'] -ResourceType 'Microsoft.Automation/automationAccounts' -Name $config['runtime']['automationAccountName'] -ErrorAction SilentlyContinue
+        if ($automationAccountResource) {
+            Write-Warning "Failed to read Guardrails Automation Account '$($config['runtime']['automationAccountName'])' before cleanup. Off-RG MSI role assignments may remain and can be cleaned up manually if they cause quota pressure. Error: $($_.Exception.Message)"
+        }
+        else {
+            Write-Verbose "Guardrails Automation Account '$($config['runtime']['automationAccountName'])' was not found; no broad MSI role assignments will be removed."
+        }
+    }
+
     If ($automationAccount) {
         $guardrailsAutomationAccountMSI = $automationAccount.Identity.PrincipalId
     }
@@ -198,33 +154,38 @@ Function Remove-GSACoreResources {
             $Scope,
 
             [string]
-            $Description,
-
-            [switch]
-            $Critical
+            $Description
         )
 
         if ([string]::IsNullOrWhiteSpace($ObjectId) -or [string]::IsNullOrWhiteSpace($Scope)) {
             return
         }
 
-        try {
-            $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
-            if (-not $existingAssignment) {
-                Write-Verbose "Role assignment not found: $Description"
+        $retryDelaysInSeconds = @(5, 15, 30)
+        for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
+            try {
+                $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop
+                if (-not $existingAssignment) {
+                    Write-Verbose "Role assignment not found: $Description"
+                    return
+                }
+
+                Write-Output "Removing role assignment: $Description"
+                Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
                 return
             }
+            catch {
+                $message = "Failed to remove role assignment '$Description'. This may leave stale RBAC behind. Error: $($_.Exception.Message)"
+                $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
+                if (-not $isLastAttempt) {
+                    $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
+                    Write-Warning "$message Retrying in $delayInSeconds seconds."
+                    Start-Sleep -Seconds $delayInSeconds
+                    continue
+                }
 
-            Write-Output "Removing role assignment: $Description"
-            Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
-        }
-        catch {
-            $message = "Failed to remove role assignment '$Description'. This may leave stale RBAC behind. Error: $($_.Exception.Message)"
-            if ($Critical.IsPresent) {
-                throw $message
+                Write-Warning $message
             }
-
-            Write-Warning $message
         }
     }
 
@@ -232,29 +193,25 @@ Function Remove-GSACoreResources {
         Write-Output "Removing Guardrails Automation Account MSI role assignments before deleting core resources..."
 
         # These assignments are outside the Guardrails resource group, so the RG
-        # delete cascade will not remove them. Clean them explicitly before
-        # deleting the Automation Account; otherwise old MSI assignments pile up
-        # against tenant/provider role-assignment quotas.
+        # delete cascade will not remove them. Cleanup is best-effort because
+        # stale role assignments should not block deleting the deployment.
         & $removeRoleAssignment `
             -ObjectId $guardrailsAutomationAccountMSI `
             -RoleDefinitionName Reader `
             -Scope $config['runtime']['tenantRootManagementGroupId'] `
-            -Description "Reader on tenant root management group" `
-            -Critical
+            -Description "Reader on tenant root management group"
 
         & $removeRoleAssignment `
             -ObjectId $guardrailsAutomationAccountMSI `
             -RoleDefinitionName Reader `
             -Scope '/providers/Microsoft.aadiam' `
-            -Description "Reader on Azure AD IAM scope" `
-            -Critical
+            -Description "Reader on Azure AD IAM scope"
 
         & $removeRoleAssignment `
             -ObjectId $guardrailsAutomationAccountMSI `
             -RoleDefinitionName Reader `
             -Scope '/providers/Microsoft.Marketplace' `
-            -Description "Reader on Azure Marketplace scope" `
-            -Critical
+            -Description "Reader on Azure Marketplace scope"
 
         $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageAccountName'] -ErrorAction SilentlyContinue
         if ($storageAccount) {
@@ -318,7 +275,10 @@ Function Remove-GSACoreResources {
             $ResourceName,
 
             [switch]
-            $RetryAzureMonitorTransientDelete
+            $RetryAzureMonitorTransientDelete,
+
+            [switch]
+            $WaitForDeletion
         )
 
         $resource = Get-AzResource -ResourceId $ResourceId -ErrorAction SilentlyContinue
@@ -348,7 +308,7 @@ Function Remove-GSACoreResources {
             }
         } while ($true)
 
-        if ($wait.IsPresent) {
+        if ($WaitForDeletion.IsPresent) {
             & $waitForArmResourceDeletion -ResourceId $ResourceId -ResourceName $ResourceName
         }
     }
@@ -356,14 +316,67 @@ Function Remove-GSACoreResources {
     Write-Verbose "Looking for Data Collection Endpoint (DCE) and Data Collection Rule (DCR)..."
     $insightsResourceIdPrefix = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])/providers/Microsoft.Insights"
 
-    # LAW is force-deleted earlier because its soft-delete state is the known
-    # name/quota risk. DCRs can still be deleted after their LAW destination is
-    # gone; the cleaner long-term order would be DCRs -> DCE -> LAW -> RG.
     # DCRs reference the DCE, so remove the DCRs first. This gives Azure a
-    # cleaner dependency order before the final resource-group delete.
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'" -RetryAzureMonitorTransientDelete
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'" -RetryAzureMonitorTransientDelete
-    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'" -RetryAzureMonitorTransientDelete
+    # cleaner dependency order before LAW and final resource-group deletion.
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr" -ResourceName "Data Collection Rule 'guardrails-dcr'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionRules/guardrails-dcr-2" -ResourceName "Data Collection Rule 'guardrails-dcr-2'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
+    & $removeArmResource -ResourceId "$insightsResourceIdPrefix/dataCollectionEndpoints/guardrails-dce" -ResourceName "Data Collection Endpoint 'guardrails-dce'" -RetryAzureMonitorTransientDelete -WaitForDeletion:$wait.IsPresent
+
+    Write-Verbose "Looking for Guardrails Log Analytics Workspace..."
+    $logAnalyticsWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
+    $existingDeletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'checking for an already deleted LAW')
+    if ($logAnalyticsWorkspace) {
+        Write-Verbose "Removing Guardrails Solution Accelerator Log Analytics Workspace..."
+        # Even with -ForceDelete, Azure can briefly surface the workspace in its
+        # deleted view after the delete call returns. We still wait on both
+        # active and deleted states so we do not redeploy while Azure is still
+        # finishing the workspace delete.
+        $logAnalyticsWorkspace | Remove-AzOperationalInsightsWorkspace -ForceDelete -Force
+    }
+    else {
+        Write-Verbose "Guardrails Solution Accelerator Log Analytics workspace not found."
+    }
+
+    # The delete command can return before Azure fully removes the workspace.
+    # Wait until the active workspace is gone and the workspace no longer
+    # appears in the deleted-workspaces view before deleting the resource group.
+    # This avoids a race where the next deploy starts while the LAW delete is
+    # still settling on Azure's side.
+    $pollIntervalSeconds = 10
+    $deadline = (Get-Date).AddMinutes(30)
+    $clearChecks = 0
+
+    if ($logAnalyticsWorkspace -or $existingDeletedWorkspaceMatches) {
+        do {
+            # Check both places Azure can still show the workspace:
+            # 1. the normal active workspace view
+            # 2. the deleted-workspaces view used for recoverable workspaces
+            $activeWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction SilentlyContinue
+            $deletedWorkspaceMatches = @(& $getDeletedWorkspaceMatches -workspaceName $config['runtime']['logAnalyticsWorkspaceName'] -deletedWorkspacePath $deletedWorkspacePath -operationName 'waiting for permanent LAW delete to settle')
+
+            # Require multiple clean reads in a row so we do not trust a single
+            # transient "gone" result from Azure.
+            if (-not $activeWorkspace -and -not $deletedWorkspaceMatches) {
+                $clearChecks++
+            }
+            else {
+                $clearChecks = 0
+            }
+
+            Write-Verbose ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspaceMatches, $clearChecks)
+
+            if ($clearChecks -ge 3) {
+                break
+            }
+
+            # Fail rather than silently continuing if Azure never reaches a clean state.
+            if ((Get-Date) -ge $deadline) {
+                throw "Timed out waiting for Log Analytics workspace '$($config['runtime']['logAnalyticsWorkspaceName'])' to disappear from both active and deleted states."
+            }
+
+            Start-Sleep -Seconds $pollIntervalSeconds
+        } while ($true)
+    }
 
     If (Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue) {
         Write-Verbose "Removing Guardrails Solution Accelerator Resource Group (including DCE, DCR, and all other resources)..."

@@ -794,21 +794,21 @@ function Get-GuardrailsResourceGroupName {
     [CmdletBinding()]
     param ()
 
-    foreach ($name in @('ResourceGroupName', 'ResourceGroup')) {
+    foreach ($name in @('ResourceGroupName', 'ResourceGroup', 'resourceGroup')) {
         $envValue = [System.Environment]::GetEnvironmentVariable($name)
         if (-not [string]::IsNullOrWhiteSpace([string]$envValue)) {
             return $envValue
         }
     }
 
-    foreach ($name in @('ResourceGroupName', 'ResourceGroup')) {
+    foreach ($name in @('ResourceGroupName', 'ResourceGroup', 'resourceGroup')) {
         $value = Get-GuardrailsAutomationVariableValue -Name $name
         if (-not [string]::IsNullOrWhiteSpace([string]$value)) {
             return $value
         }
     }
 
-    throw "DCR runtime resolution failed: Guardrails resource group could not be determined from ResourceGroupName or ResourceGroup. Verify the Automation variable or process environment is set."
+    throw "DCR runtime resolution failed: Guardrails resource group could not be determined from ResourceGroupName, ResourceGroup, or resourceGroup. Verify the Automation variable or process environment is set."
 }
 
 function Get-GuardrailsSubscriptionId {
@@ -850,39 +850,66 @@ function Invoke-GuardrailsArmGet {
         [string] $ResourceGroupName
     )
 
-    try {
-        $response = Invoke-AzRestMethod -Method GET -Path $Path -ErrorAction Stop
-    }
-    catch {
-        $message = $_.Exception.Message
-        if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
-            $message = $_.ErrorDetails.Message
-        }
-
-        throw "DCR runtime resolution failed while calling Azure Resource Manager for $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Original error: $message"
-    }
-
-    $statusCode = ConvertTo-GuardrailsHttpStatusCode -StatusCode $response.StatusCode
-    $responseText = $response.Content
-
-    if ($statusCode -ge 200 -and $statusCode -lt 300) {
+    $retryDelaysInSeconds = @(15, 30, 60, 120)
+    for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
+        $statusCode = $null
+        $responseText = $null
         try {
-            return $responseText | ConvertFrom-Json -Depth 20
+            $response = Invoke-AzRestMethod -Method GET -Path $Path -ErrorAction Stop
+            $statusCode = ConvertTo-GuardrailsHttpStatusCode -StatusCode $response.StatusCode
+            $responseText = $response.Content
         }
         catch {
-            throw "DCR runtime resolution failed: Azure Resource Manager returned invalid JSON for $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Original error: $($_.Exception.Message)"
+            $message = $_.Exception.Message
+            if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+                $message = $_.ErrorDetails.Message
+            }
+
+            $exceptionStatusCode = $_.Exception.PSObject.Properties['StatusCode']
+            if ($exceptionStatusCode -and $null -ne $exceptionStatusCode.Value) {
+                $statusCode = ConvertTo-GuardrailsHttpStatusCode -StatusCode $exceptionStatusCode.Value
+            }
+            elseif ($_.Exception.Response -and $null -ne $_.Exception.Response.StatusCode) {
+                $statusCode = ConvertTo-GuardrailsHttpStatusCode -StatusCode $_.Exception.Response.StatusCode
+            }
+            elseif ($_.Exception.InnerException -and $_.Exception.InnerException.Response -and $null -ne $_.Exception.InnerException.Response.StatusCode) {
+                $statusCode = ConvertTo-GuardrailsHttpStatusCode -StatusCode $_.Exception.InnerException.Response.StatusCode
+            }
+
+            $responseText = $message
+
+            if ($statusCode -ne 401 -and $statusCode -ne 403) {
+                throw "DCR runtime resolution failed while calling Azure Resource Manager for $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Original error: $message"
+            }
         }
-    }
 
-    if ($statusCode -eq 401 -or $statusCode -eq 403) {
-        throw "DCR runtime resolution failed: the runbook identity cannot read $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Required permissions include Microsoft.Insights/dataCollectionEndpoints/read and Microsoft.Insights/dataCollectionRules/read on the Guardrails resource group or a parent scope. StatusCode=$statusCode. Response: $responseText"
-    }
+        if ($statusCode -ge 200 -and $statusCode -lt 300) {
+            try {
+                return $responseText | ConvertFrom-Json -Depth 20
+            }
+            catch {
+                throw "DCR runtime resolution failed: Azure Resource Manager returned invalid JSON for $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Original error: $($_.Exception.Message)"
+            }
+        }
 
-    if ($statusCode -eq 404) {
-        throw "DCR runtime resolution failed: $ResourceType '$ResourceName' was not found in resource group '$ResourceGroupName'. Rerun core deployment or verify the Guardrails resource group and DCR/DCE resources. StatusCode=$statusCode. Response: $responseText"
-    }
+        if ($statusCode -eq 401 -or $statusCode -eq 403) {
+            $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
+            if ($isLastAttempt) {
+                throw "DCR runtime resolution failed: the runbook identity cannot read $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. Required permissions include Microsoft.Insights/dataCollectionEndpoints/read and Microsoft.Insights/dataCollectionRules/read on the Guardrails resource group or a parent scope. StatusCode=$statusCode. Response: $responseText"
+            }
 
-    throw "DCR runtime resolution failed while reading $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. StatusCode=$statusCode. Response: $responseText"
+            $retryDelayInSeconds = $retryDelaysInSeconds[$attempt - 1]
+            Write-Warning "DCR runtime resolution: ARM read for $ResourceType '$ResourceName' returned StatusCode=$statusCode on attempt $attempt of $($retryDelaysInSeconds.Count + 1). This can happen while RBAC assignments propagate after deployment. Waiting $retryDelayInSeconds seconds before retrying."
+            Start-Sleep -Seconds $retryDelayInSeconds
+            continue
+        }
+
+        if ($statusCode -eq 404) {
+            throw "DCR runtime resolution failed: $ResourceType '$ResourceName' was not found in resource group '$ResourceGroupName'. Rerun core deployment or verify the Guardrails resource group and DCR/DCE resources. StatusCode=$statusCode. Response: $responseText"
+        }
+
+        throw "DCR runtime resolution failed while reading $ResourceType '$ResourceName' in resource group '$ResourceGroupName'. StatusCode=$statusCode. Response: $responseText"
+    }
 }
 
 function Get-GuardrailsDcrDeclaredStreams {
@@ -1142,11 +1169,44 @@ function Test-GuardrailsDcrImmutableIdNotFoundError {
     return $statusCode -eq 404 -and ($responseText -match 'Data collection rule with immutable Id .* not found')
 }
 
+function Test-GuardrailsDcrUploadAuthorizationError {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorRecord] $ErrorRecord
+    )
+
+    $statusCode = Get-GuardrailsDcrStatusCode -ErrorRecord $ErrorRecord
+    return $statusCode -eq 401 -or $statusCode -eq 403
+}
+
 function Clear-GuardrailsDcrIngestionSettingsCache {
     [CmdletBinding()]
     param ()
 
     $script:GuardrailsDcrIngestionSettings = $null
+}
+
+function Get-GuardrailsCachedDcrUploadFailure {
+    [CmdletBinding()]
+    param ()
+
+    if ([string]::IsNullOrWhiteSpace($script:GuardrailsDcrUploadFailureMessage)) {
+        return $null
+    }
+
+    return $script:GuardrailsDcrUploadFailureMessage
+}
+
+function Set-GuardrailsCachedDcrUploadFailure {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Message
+    )
+
+    $script:GuardrailsDcrUploadFailureMessage = $Message
 }
 
 function Send-GuardrailsData {
@@ -1203,6 +1263,11 @@ function Send-GuardrailsData {
         return
     }
 
+    $cachedDcrUploadFailure = Get-GuardrailsCachedDcrUploadFailure
+    if ($cachedDcrUploadFailure) {
+        throw "Data Collection API skipped for LogType '$LogType' because a previous DCR upload exhausted its retry budget in this runbook job. Previous failure: $cachedDcrUploadFailure"
+    }
+
     # Per API docs, encode the body explicitly as UTF-8 to prevent data transmission issues.
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
     $retryDelaysInSeconds = @(30, 60, 120)
@@ -1239,11 +1304,11 @@ function Send-GuardrailsData {
             return
         }
         catch {
-            $shouldRetryDcrPropagation = $target -and
-                (Test-GuardrailsDcrImmutableIdNotFoundError -ErrorRecord $_) -and
-                ($attempt -le $retryDelaysInSeconds.Count)
+            $isDcrPropagationError = $target -and (Test-GuardrailsDcrImmutableIdNotFoundError -ErrorRecord $_)
+            $isDcrAuthorizationError = $target -and (Test-GuardrailsDcrUploadAuthorizationError -ErrorRecord $_)
+            $hasRetryBudget = $attempt -le $retryDelaysInSeconds.Count
 
-            if ($shouldRetryDcrPropagation) {
+            if ($isDcrPropagationError -and $hasRetryBudget) {
                 $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
                 $maxAttempts = $retryDelaysInSeconds.Count + 1
                 Write-Warning "DCR ingestion endpoint does not know resolved DCR immutable ID '$($target.DcrId)' yet for LogType '$LogType' and stream '$($target.StreamName)' on attempt $attempt of $maxAttempts. Clearing DCR cache, waiting $delayInSeconds seconds, and re-resolving current DCR/DCE resources."
@@ -1252,8 +1317,21 @@ function Send-GuardrailsData {
                 continue
             }
 
+            if ($isDcrAuthorizationError -and $hasRetryBudget) {
+                $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
+                $maxAttempts = $retryDelaysInSeconds.Count + 1
+                $statusCode = Get-GuardrailsDcrStatusCode -ErrorRecord $_
+                Write-Warning "DCR ingestion authorization failed with StatusCode=$statusCode for LogType '$LogType' and stream '$($target.StreamName)' on attempt $attempt of $maxAttempts. This can happen while Monitoring Metrics Publisher propagates after deployment. Waiting $delayInSeconds seconds before retrying."
+                Start-Sleep -Seconds $delayInSeconds
+                continue
+            }
+
             if ($target) {
-                throw (New-GuardrailsDcrUploadErrorMessage -ErrorRecord $_ -Target $target -LogType $LogType)
+                $uploadErrorMessage = New-GuardrailsDcrUploadErrorMessage -ErrorRecord $_ -Target $target -LogType $LogType
+                if ($isDcrPropagationError -or $isDcrAuthorizationError) {
+                    Set-GuardrailsCachedDcrUploadFailure -Message $uploadErrorMessage
+                }
+                throw $uploadErrorMessage
             }
 
             throw "Data Collection API failed before upload target was resolved for LogType '$LogType': $($_.Exception.Message)"

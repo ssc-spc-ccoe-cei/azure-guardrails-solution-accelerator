@@ -86,6 +86,11 @@ jobs:
         with:
           ref: ${{ github.event.inputs.version_tag }}
 
+      - name: Check out current workflow tooling
+        uses: actions/checkout@v4
+        with:
+          path: .workflow-tools
+
       - name: Download zipped modules and replace old ones
         uses: actions/download-artifact@v4
         with:
@@ -114,11 +119,11 @@ jobs:
           SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Pre-Clean Test environment
-        uses: ./.github/actions/pre-clean-guardrails-ci
+        uses: ./.workflow-tools/.github/actions/pre-clean-guardrails-ci
         with:
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
-          base-suffix-environment-variable-name: CI_BASE_UNIQUENAME_SUFFIX
+          unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX }}
           stale-resource-group-prefix: guardrailscac_test-
           stale-log-analytics-workspace-prefix: gsapipe-
           key-vault-name: gsapipe
@@ -153,6 +158,9 @@ jobs:
         with:
           inlineScript: |
               Set-AzContext -SubscriptionId $env:TESTSUBSCRIPTION_ID
+              $deployStartedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
+              "GSA_DEPLOY_STARTED_AT_UTC=$deployStartedAtUtc" | Out-File -FilePath $env:GITHUB_ENV -Append
+              Write-Output "Automation job check cutoff: $deployStartedAtUtc"
               $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
               $CBSSUBSCRIPTION_NAME = $env:CBSSUBSCRIPTION_NAME
               $TESTSUBSCRIPTION_ID = $env:TESTSUBSCRIPTION_ID
@@ -265,8 +273,9 @@ jobs:
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
           TEST_CLOUDUSAGEPROFILES: ${{ vars.TEST_CLOUDUSAGEPROFILES}}
           TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
-      - name: Check for AA Job Errors
-        uses: ./.github/actions/check-guardrails-aa-jobs
+      - name: Check AA Jobs Started
+        uses: ./.workflow-tools/.github/actions/check-guardrails-aa-jobs
         with:
           key-vault-prefix: gsapipe
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
+          subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}

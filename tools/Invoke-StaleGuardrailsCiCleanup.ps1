@@ -99,30 +99,34 @@ function Remove-StaleAutomationMsiRoleAssignment {
 
         [Parameter(Mandatory = $true)]
         [string]
-        $Description,
-
-        [Parameter(Mandatory = $false)]
-        [switch]
-        $Critical
+        $Description
     )
 
-    try {
-        $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
-        if (-not $existingAssignment) {
-            Write-Output "Role assignment not found for stale CI cleanup: $Description"
+    $retryDelaysInSeconds = @(5, 15, 30)
+    for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
+        try {
+            $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop
+            if (-not $existingAssignment) {
+                Write-Output "Role assignment not found for stale CI cleanup: $Description"
+                return
+            }
+
+            Write-Output "Removing stale CI role assignment: $Description"
+            Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
             return
         }
+        catch {
+            $message = "Failed to remove stale CI role assignment '$Description'. The stale resource group cleanup will continue, but RBAC may need manual cleanup if role-assignment quotas become a problem. Error: $($_.Exception.Message)"
+            $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
+            if (-not $isLastAttempt) {
+                $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
+                Write-Warning "$message Retrying in $delayInSeconds seconds."
+                Start-Sleep -Seconds $delayInSeconds
+                continue
+            }
 
-        Write-Output "Removing stale CI role assignment: $Description"
-        Remove-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
-    }
-    catch {
-        $message = "Failed to remove stale CI role assignment '$Description'. Continuing would leave RBAC behind. Error: $($_.Exception.Message)"
-        if ($Critical.IsPresent) {
-            throw $message
+            Write-Warning $message
         }
-
-        Write-Warning $message
     }
 }
 
@@ -130,9 +134,8 @@ Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
 $tenantRootManagementGroupScope = "/providers/Microsoft.Management/managementGroups/$((Get-AzContext).Tenant.Id)"
 
 $currentResourceGroupName = "$ResourceGroupPrefix$CurrentUniqueNameSuffix"
-# Empty BaseUniqueNameSuffix means stale cleanup matches every RG under the
-# prefix. This is intentional for actor-based CI suffixes; manual experiments
-# using the same prefix will also be cleaned up.
+# The dev/test CI prefixes are disposable cleanup scopes. This intentionally
+# also cleans manually-created RGs that use those prefixes.
 $staleResourceGroups = @(Get-AzResourceGroup -ErrorAction Stop | Where-Object {
     $_.ResourceGroupName -like "$ResourceGroupPrefix$BaseUniqueNameSuffix*" -and
     $_.ResourceGroupName -ne $currentResourceGroupName
@@ -145,7 +148,20 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
     $staleLogAnalyticsWorkspaceName = "$LogAnalyticsWorkspacePrefix$staleSuffix"
     $insightsResourceIdPrefix = "/subscriptions/$SubscriptionId/resourceGroups/$($staleResourceGroup.ResourceGroupName)/providers/Microsoft.Insights"
 
-    $automationAccounts = @(Get-AzAutomationAccount -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue)
+    try {
+        $automationAccounts = @(Get-AzAutomationAccount -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction Stop)
+    }
+    catch {
+        $automationAccountResources = @(Get-AzResource -ResourceGroupName $staleResourceGroup.ResourceGroupName -ResourceType 'Microsoft.Automation/automationAccounts' -ErrorAction SilentlyContinue)
+        if ($automationAccountResources.Count -gt 0) {
+            Write-Warning "Failed to read Automation Account resources in stale CI resource group '$($staleResourceGroup.ResourceGroupName)'. Off-RG MSI role assignments may remain and can be cleaned up manually if they cause quota pressure. Error: $($_.Exception.Message)"
+        }
+        else {
+            Write-Output "No Automation Account resources found in stale CI resource group '$($staleResourceGroup.ResourceGroupName)'."
+        }
+        $automationAccounts = @()
+    }
+
     $storageAccounts = @(Get-AzStorageAccount -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue)
     foreach ($automationAccount in $automationAccounts) {
         $automationAccountMsi = $automationAccount.Identity.PrincipalId
@@ -154,11 +170,11 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
         }
 
         # Tenant/provider-scope assignments are outside the stale resource group.
-        # Treat failures as critical so CI exposes quota-leak cleanup problems
-        # instead of silently accumulating orphaned role assignments.
-        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope $tenantRootManagementGroupScope -Description "Reader on tenant root management group for '$($automationAccount.AutomationAccountName)'" -Critical
-        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' -Description "Reader on Azure AD IAM scope for '$($automationAccount.AutomationAccountName)'" -Critical
-        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' -Description "Reader on Azure Marketplace scope for '$($automationAccount.AutomationAccountName)'" -Critical
+        # Remove them when possible, but do not block CI cleanup if RBAC cleanup
+        # fails; the deployment resources are the higher-priority cleanup target.
+        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope $tenantRootManagementGroupScope -Description "Reader on tenant root management group for '$($automationAccount.AutomationAccountName)'"
+        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' -Description "Reader on Azure AD IAM scope for '$($automationAccount.AutomationAccountName)'"
+        Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' -Description "Reader on Azure Marketplace scope for '$($automationAccount.AutomationAccountName)'"
 
         foreach ($storageAccount in $storageAccounts) {
             Remove-StaleAutomationMsiRoleAssignment -ObjectId $automationAccountMsi -RoleDefinitionName 'Reader and Data Access' -Scope $storageAccount.Id -Description "Reader and Data Access on Storage Account '$($storageAccount.StorageAccountName)' for '$($automationAccount.AutomationAccountName)'"
@@ -180,12 +196,23 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
 
     Write-Output "Starting resource group delete for stale CI resource group '$($staleResourceGroup.ResourceGroupName)'."
     # Job kickoff is fire-and-forget; the polling loop below decides whether
-    # cleanup has reached a state that is safe for the new generated suffix.
+    # cleanup has reached a state that is safe for the current deployment suffix.
     Remove-AzResourceGroup -Name $staleResourceGroup.ResourceGroupName -Force -AsJob -ErrorAction SilentlyContinue | Out-Null
 
     $staleCleanupDeadline = (Get-Date).AddMinutes($TimeoutMinutes)
     do {
-        $remainingResources = @(Get-AzResource -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue)
+        try {
+            $remainingResources = @(Get-AzResource -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction Stop)
+        }
+        catch {
+            $resourceGroup = Get-AzResourceGroup -Name $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue
+            if (-not $resourceGroup) {
+                Write-Output "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' no longer exists. Continuing with the current deployment suffix."
+                break
+            }
+
+            throw "Failed to enumerate remaining resources in stale CI resource group '$($staleResourceGroup.ResourceGroupName)'. Cleanup cannot safely determine whether only DCR/DCE resources remain. Error: $($_.Exception.Message)"
+        }
 
         # Azure reports these exact resource types for DCRs and DCEs today.
         # Keep the fallback narrow so unrelated cleanup problems still fail CI.
@@ -194,12 +221,12 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
         })
 
         if ($remainingResources.Count -eq 0) {
-            Write-Output "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' has no remaining resources. Continuing with the new generated suffix."
+            Write-Output "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' has no remaining resources. Continuing with the current deployment suffix."
             break
         }
 
         if ($nonDcrDceResources.Count -eq 0) {
-            Write-Warning "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' still has only DCR/DCE resources. Continuing because the new generated suffix does not depend on those old resources."
+            Write-Warning "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' still has only DCR/DCE resources. Continuing because the current deployment suffix does not depend on those old resources."
             break
         }
 

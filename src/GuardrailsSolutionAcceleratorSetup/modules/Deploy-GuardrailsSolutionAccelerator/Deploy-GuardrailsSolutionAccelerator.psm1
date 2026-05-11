@@ -471,15 +471,6 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "Completed update deployment."
         }
 
-        # after successful deployment or update
-        Write-Host "Invoking manual execution of Azure Automation runbooks..."
-        try{
-            Invoke-GSARunbooks -config $config -Verbose:$useVerbose
-        }
-        catch{
-            Write-Error "Error in invoking Azure automation runbook. $_"
-        }
-
         Write-Host "Exporting configuration to GSA KeyVault "
         Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
         $configSecretName = 'gsaConfigExportLatest'
@@ -542,6 +533,15 @@ Function Deploy-GuardrailsSolutionAccelerator {
         } else {
             Write-Error "Deployment completed with errors - gsaConfigExportLatest secret upload failed. Compliance data collection will not work."
             throw "Deployment failed - gsaConfigExportLatest secret upload unsuccessful"
+        }
+
+        # after successful deployment/update and config export
+        Write-Host "Invoking manual execution of Azure Automation runbooks..."
+        try{
+            Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        }
+        catch{
+            Write-Error "Error in invoking Azure automation runbook. $_"
         }
     }
 }

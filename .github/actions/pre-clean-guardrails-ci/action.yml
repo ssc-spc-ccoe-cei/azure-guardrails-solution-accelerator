@@ -1,6 +1,6 @@
 name: Pre-clean Guardrails CI deployment
 description: |
-  Generates the CI suffix, removes stale CI resource groups, writes config.json,
+  Selects the configured CI suffix, removes stale CI resource groups, writes config.json,
   and removes the current Guardrails deployment.
 
   Requires a prior azure/login@v2 step in the calling job to establish Az context.
@@ -11,10 +11,10 @@ inputs:
     description: Azure subscription ID used for the Guardrails deployment.
   suffix-environment-variable-name:
     required: true
-    description: Environment variable name that receives the generated unique suffix.
-  base-suffix-environment-variable-name:
+    description: Environment variable name that receives the selected unique suffix.
+  unique-name-suffix:
     required: true
-    description: Environment variable name used by stale cleanup as the suffix match anchor.
+    description: Stable unique suffix used for the current deployment.
   stale-resource-group-prefix:
     required: true
     description: Prefix used to find stale CI resource groups.
@@ -97,22 +97,21 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Set CI deployment suffix
+    - name: Set configured deployment suffix
       shell: pwsh
       run: |
-        & (Join-Path $env:GITHUB_WORKSPACE 'tools/Set-GuardrailsCiDeploymentSuffix.ps1') `
-          -GitHubActor '${{ github.actor }}' `
-          -GitHubRunId '${{ github.run_id }}' `
-          -GitHubRunAttempt '${{ github.run_attempt }}' `
-          -SuffixEnvironmentVariableName '${{ inputs.suffix-environment-variable-name }}' `
-          -BaseSuffixEnvironmentVariableName '${{ inputs.base-suffix-environment-variable-name }}'
+        $suffix = '${{ inputs.unique-name-suffix }}'
+        if ([string]::IsNullOrWhiteSpace($suffix)) {
+          throw 'unique-name-suffix input is required.'
+        }
+        '${{ inputs.suffix-environment-variable-name }}=' + $suffix | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Output "Using configured CI deployment suffix '$suffix'."
 
     - name: Pre-clean Guardrails resources
       uses: azure/powershell@v2
       env:
         GSA_SUBSCRIPTION_ID: ${{ inputs.subscription-id }}
         GSA_SUFFIX_ENV_NAME: ${{ inputs.suffix-environment-variable-name }}
-        GSA_BASE_SUFFIX_ENV_NAME: ${{ inputs.base-suffix-environment-variable-name }}
         GSA_STALE_RESOURCE_GROUP_PREFIX: ${{ inputs.stale-resource-group-prefix }}
         GSA_STALE_LAW_PREFIX: ${{ inputs.stale-log-analytics-workspace-prefix }}
         GSA_KEY_VAULT_NAME: ${{ inputs.key-vault-name }}
@@ -138,20 +137,20 @@ runs:
         GSA_SECURITY_RETENTION_DAYS: ${{ inputs.security-retention-days }}
         GSA_CLOUD_USAGE_PROFILES: ${{ inputs.cloud-usage-profiles }}
         GSA_TENANT_ID: ${{ inputs.tenant-id }}
+        GSA_ACTION_REPO_ROOT: ${{ github.action_path }}/../../..
       with:
         azPSVersion: latest
         inlineScript: |
           $ErrorActionPreference = 'Stop'
           Set-AzContext -SubscriptionId $env:GSA_SUBSCRIPTION_ID
-          Import-Module (Join-Path $env:GITHUB_WORKSPACE 'src/GuardrailsSolutionAcceleratorSetup')
+          $actionRepoRoot = Resolve-Path $env:GSA_ACTION_REPO_ROOT | Select-Object -ExpandProperty Path
+          Import-Module (Join-Path $actionRepoRoot 'src/GuardrailsSolutionAcceleratorSetup')
 
           $uniqueNameSuffix = [Environment]::GetEnvironmentVariable($env:GSA_SUFFIX_ENV_NAME)
-          $baseUniqueNameSuffix = [Environment]::GetEnvironmentVariable($env:GSA_BASE_SUFFIX_ENV_NAME)
 
-          & (Join-Path $env:GITHUB_WORKSPACE 'tools/Invoke-StaleGuardrailsCiCleanup.ps1') `
+          & (Join-Path $actionRepoRoot 'tools/Invoke-StaleGuardrailsCiCleanup.ps1') `
             -SubscriptionId $env:GSA_SUBSCRIPTION_ID `
             -ResourceGroupPrefix $env:GSA_STALE_RESOURCE_GROUP_PREFIX `
-            -BaseUniqueNameSuffix $baseUniqueNameSuffix `
             -CurrentUniqueNameSuffix $uniqueNameSuffix `
             -LogAnalyticsWorkspacePrefix $env:GSA_STALE_LAW_PREFIX
 
@@ -186,11 +185,18 @@ runs:
           }
           $config | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
 
-          Push-Location -Path (Join-Path $env:GITHUB_WORKSPACE 'setup')
+          $currentResourceGroupName = "$($env:GSA_RESOURCE_GROUP)-$uniqueNameSuffix"
+          Push-Location -Path (Join-Path $actionRepoRoot 'setup')
           try {
             Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
             Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
-            Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
+
+            if (Get-AzResourceGroup -Name $currentResourceGroupName -ErrorAction SilentlyContinue) {
+              Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
+            }
+            else {
+              Write-Output "Current resource group '$currentResourceGroupName' does not exist yet. Skipping current core RG cleanup."
+            }
           }
           catch {
             throw "Failed test deploy of solution with error: $_"
@@ -198,3 +204,4 @@ runs:
           finally {
             Pop-Location
           }
+          

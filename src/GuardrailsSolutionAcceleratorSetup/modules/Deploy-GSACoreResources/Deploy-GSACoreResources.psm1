@@ -78,11 +78,11 @@ Function Deploy-GSACoreResources {
     .DESCRIPTION
     Newly-created Automation Account MSIs can take seconds to minutes to propagate.
     Role assignments using the MSI object ID during that window can fail with
-    BadRequest or PrincipalNotFound. This wrapper sets ObjectType to
-    ServicePrincipal to bypass the principal-type lookup that can fail during
-    MSI propagation, skips existing assignments, re-checks after errors in case
-    creation succeeded, retries bounded transient failures, and fails fast on
-    non-retryable errors.
+    principal-not-found errors. This wrapper sets ObjectType to ServicePrincipal
+    to bypass the AAD principal-type lookup that fails during MSI propagation,
+    skips existing assignments, re-checks after errors in case creation
+    succeeded, retries bounded transient failures, and fails fast on
+    non-retryable errors such as role-assignment quota or policy denial.
     #>
     function Set-GSARoleAssignment {
         param (
@@ -124,19 +124,17 @@ Function Deploy-GSACoreResources {
                     return
                 }
 
-                # BadRequest is broad, but Azure also uses it for transient MSI
-                # lookup failures. The post-error assignment check and bounded
-                # retry budget keep real BadRequest failures from being hidden.
-                # If this keeps failing, check the management-group Activity Log
-                # for quota, policy, and permission details.
-                $isRetryableRoleAssignmentError = $errorMessage -match 'BadRequest|PrincipalNotFound|does not exist in the directory|not found|RoleAssignmentExists|Conflict'
+                # Keep this narrow: quota, policy, permission, and malformed-scope
+                # failures should surface immediately instead of being hidden by
+                # a propagation retry.
+                $isRetryableRoleAssignmentError = $errorMessage -match '(?i)(PrincipalNotFound|Cannot find principal|does not exist in the directory|not (yet )?(been )?registered|principal .* (was )?not found|principal .* does not exist|PrincipalTypeNotSupported)'
                 $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
                 if (-not $isRetryableRoleAssignmentError -or $isLastAttempt) {
                     throw "Failed to assign role '$RoleDefinitionName' on scope '$Scope' to Automation Account MSI object '$ObjectId' for '$Description'. Error: $errorMessage"
                 }
 
                 $retryDelayInSeconds = $retryDelaysInSeconds[$attempt - 1]
-                Write-Warning "Role assignment '$Description' failed on attempt $attempt of $($retryDelaysInSeconds.Count + 1). This can be caused by transient MSI lookup lag, role-assignment quota, policy, or permissions. Waiting $retryDelayInSeconds seconds before retrying. Error: $errorMessage"
+                Write-Warning "Role assignment '$Description' failed on attempt $attempt of $($retryDelaysInSeconds.Count + 1). This looks like transient MSI lookup lag. Waiting $retryDelayInSeconds seconds before retrying. Error: $errorMessage"
                 Start-Sleep -Seconds $retryDelayInSeconds
             }
         }
