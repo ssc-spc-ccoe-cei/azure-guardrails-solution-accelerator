@@ -393,13 +393,24 @@ Function Remove-GSACoreResources {
                 }
 
                 try {
-                    $null = Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction Stop
+                    $resourceGroup = Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction Stop
+                    if ($null -eq $resourceGroup) {
+                        $rgClearChecksDuringJobWait++
+                        Write-Output "Resource group '$($config['runtime']['resourceGroup'])' is no longer returned while delete job is still '$($job.State)' (clearChecks=$rgClearChecksDuringJobWait/3)."
+                        if ($rgClearChecksDuringJobWait -ge 3) {
+                            $rgDeletedBeforeJobCompleted = $true
+                            break
+                        }
+                        Start-Sleep -Seconds 30
+                        continue
+                    }
+
                     $rgClearChecksDuringJobWait = 0
                     $remainingResourceCount = @(Get-AzResource -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue).Count
                     Write-Output "ARM still returns resource group '$($config['runtime']['resourceGroup'])' while delete job is '$($job.State)'. Remaining visible child resources: $remainingResourceCount."
                 }
                 catch {
-                    if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|Resource group .* could not be found') {
+                    if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|ResourceNotFound|NotFound|Resource group .* could not be found|does not exist|not found') {
                         $rgClearChecksDuringJobWait++
                         Write-Output "Resource group '$($config['runtime']['resourceGroup'])' is no longer found while delete job is still '$($job.State)' (clearChecks=$rgClearChecksDuringJobWait/3)."
                     }
@@ -447,13 +458,23 @@ Function Remove-GSACoreResources {
                 $rgClearChecks = 0
                 do {
                     try {
-                        $null = Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction Stop
+                        $resourceGroup = Get-AzResourceGroup -Name $config['runtime']['resourceGroup'] -ErrorAction Stop
+                        if ($null -eq $resourceGroup) {
+                            $rgClearChecks++
+                            Write-Output "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: not returned clearChecks=$rgClearChecks/3."
+                            if ($rgClearChecks -ge 3) {
+                                break
+                            }
+                            Start-Sleep -Seconds 30
+                            continue
+                        }
+
                         $rgClearChecks = 0
                         $remainingResourceCount = @(Get-AzResource -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction SilentlyContinue).Count
                         Write-Output "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: ARM still returns RG. Remaining visible child resources: $remainingResourceCount."
                     }
                     catch {
-                        if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|Resource group .* could not be found') {
+                        if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|ResourceNotFound|NotFound|Resource group .* could not be found|does not exist|not found') {
                             $rgClearChecks++
                             Write-Output "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: not found clearChecks=$rgClearChecks/3."
                         }

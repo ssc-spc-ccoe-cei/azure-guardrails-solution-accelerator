@@ -215,11 +215,22 @@ $deleteDeadline = (Get-Date).AddMinutes($TimeoutMinutes)
 $clearChecks = 0
 do {
     try {
-        $null = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
+        $resourceGroup = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
+        if ($null -eq $resourceGroup) {
+            $clearChecks++
+            Write-Output "Resource group '$ResourceGroupName' is no longer returned (clearChecks=$clearChecks/3)."
+            if ($clearChecks -ge 3) {
+                Write-Output "Resource group '$ResourceGroupName' deletion confirmed."
+                return
+            }
+            Start-Sleep -Seconds $PollIntervalSeconds
+            continue
+        }
+
         $clearChecks = 0
     }
     catch {
-        if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|Resource group .* could not be found') {
+        if ($_.Exception.Message -match 'could not be found|ResourceGroupNotFound|ResourceNotFound|NotFound|Resource group .* could not be found|does not exist|not found') {
             $clearChecks++
             Write-Output "Resource group '$ResourceGroupName' is no longer found (clearChecks=$clearChecks/3)."
         }
