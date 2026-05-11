@@ -1,247 +1,378 @@
+[CmdletBinding()]
 param (
     [Parameter(Mandatory = $true)]
     [string]
     $configFilePath,
-    [Parameter(Mandatory = $true)]
+
+    # Optional. If omitted, the currently signed-in Az account is used (works in Azure Cloud Shell).
+    [Parameter(Mandatory = $false)]
     [string]
-    $userId,
-    [string] 
+    $userId = '',
+
+    [Parameter(Mandatory = $false)]
+    [string]
     $subscriptionId
 )
-#region Configuration and initialization
-#Other Variables
 
-#before deploying anything, check if current user can be found.
-$begin = get-date
-Write-Verbose "Adding current user as a Keyvault administrator (for setup)."
-if ($userId -eq "") {
-    $currentUserId = (get-azaduser -SignedIn).Id 
-}
-else {
-    $currentUserId = (get-azaduser -UserPrincipalName $userId).Id
-}
-if ($null -eq $currentUserId) {
-    Write-Error "Error: no current user could be found in current Tenant. Context: $((Get-AzAdUser -SignedIn).UserPrincipalName). Override specified: $userId."
-    break;
-}
-#$tenantDomainUPN=$userId.Split("@")[1]
-#region  Template Deployment
-# gets tags information from tags.json, including version and release date.
-$tags = get-content ./tags.json | convertfrom-json
-$tagstable = @{}
-$tags.psobject.properties | ForEach-Object { $tagstable[$_.Name] = $_.Value }
+$ErrorActionPreference = 'Stop'
 
-Write-Output "Reading Config file:"
+# Run from the script's own folder so all relative paths (./tags.json, ./IaC/grfunc.bicep, ../*) resolve correctly,
+# regardless of where the user invoked it from (Cloud Shell tends to launch from the home directory).
+$scriptRoot = Split-Path -Parent $PSCommandPath
+Push-Location $scriptRoot
+
 try {
-    $config = get-content $configFilePath | convertfrom-json
-}
-catch {
-    "Error reading config file."
-    break
-}
-#$tenantIDtoAppend="-"+$($env:ACC_TID).Split("-")[0]
-$tenantIDtoAppend = "-" + $((Get-AzContext).Tenant.Id).Split("-")[0]
+    $begin  = Get-Date
+    $update = $false   # explicit; the deploy block runs only when this is false
 
-$keyVaultName = $config.keyVaultName + $tenantIDtoAppend
-$resourcegroup = $config.resourcegroup + $tenantIDtoAppend
-$region = $config.region
-$logAnalyticsworkspaceName = $config.logAnalyticsworkspaceName + $tenantIDtoAppend
-$functionname = $config.functionName + $tenantIDtoAppend
-$keyVaultRG=$resourcegroup
-$deployKV=$true
-# Checks permissions, now for both update and setup
-#if ( $null -eq (Get-AzRoleAssignment | Where-Object { $_.RoleDefinitionName -eq "User Access Administrator"`
-#                -and $_.SignInName -eq $userId -and $_.Scope -eq "/" })) {
-#        Write-Output $userId + " doesn't have Access Management for Azure Resource permissions,please refer to the requirements section in the setup document"
-#        Break                                                
-#}
-#checks if logged in.
-$subs = Get-AzSubscription -ErrorAction SilentlyContinue
-if (-not($subs)) {
-    Connect-AzAccount
-}
-if ([string]::IsNullOrEmpty($subscriptionId)){
-    $subs = Get-AzSubscription -ErrorAction SilentlyContinue
-    if ($subs.count -gt 1) {
-        Write-output "More than one subscription detected. Current subscription $((get-azcontext).Name)"
-        Write-output "Please select subscription for deployment or Enter to keep current one:"
-        $i = 1
-        $subs | ForEach-Object { Write-output "$i - $($_.Name) - $($_.SubscriptionId)"; $i++ }
-        [int]$selection = Read-Host "Select Subscription number: (1 - $($i-1))"
+    function Resolve-CentralViewIngestionServicePrincipalObjectId {
+        param([string]$ApplicationId)
+        if ([string]::IsNullOrWhiteSpace($ApplicationId)) { return '' }
+        try {
+            $sp = Get-AzADServicePrincipal -ApplicationId $ApplicationId -ErrorAction Stop
+            return [string]$sp.Id
+        }
+        catch {
+            Write-Warning "Could not resolve service principal object id for ApplicationId '$ApplicationId': $($_.Exception.Message)"
+            return ''
+        }
     }
-    else { $selection = 0 }
-    if ($selection -ne 0) {
-        if ($selection -gt 0 -and $selection -le ($i - 1)) { 
-            Select-AzSubscription -SubscriptionObject $subs[$selection - 1]
+
+    function Test-RoleAssignmentConflictIsBenign {
+        param([System.Management.Automation.ErrorRecord]$ErrRecord)
+        $parts = @(
+            $ErrRecord.Exception.Message
+            $ErrRecord.Exception.InnerException.Message
+            "$($ErrRecord.Exception)"
+        ) | Where-Object { $_ }
+        $text = ($parts -join ' ')
+        if ($text -match '(?i)(already exists|RoleAssignmentExists|Conflict|\b409\b|duplicate)') {
+            return $true
         }
-        else {
-            Write-output "Invalid selection. ($selection)"
-            break
+        try {
+            $resp = $ErrRecord.Exception.Response
+            if ($null -ne $resp -and [int]$resp.StatusCode -eq 409) { return $true }
         }
+        catch {}
+        return $false
+    }
+
+    function Test-BicepAvailable {
+        if (Get-Command bicep -ErrorAction SilentlyContinue) { return $true }
+        # Az PowerShell looks here on Windows when 'bicep' isn't on PATH
+        $userBicep = Join-Path $env:USERPROFILE '.bicep\bicep.exe'
+        if ($IsWindows -and (Test-Path $userBicep)) { return $true }
+        # Cloud Shell PowerShell ships with bicep on PATH, so 'Get-Command' covers it.
+        return $false
+    }
+
+    if (-not (Test-BicepAvailable)) {
+        Write-Error @"
+Bicep CLI is required by New-AzResourceGroupDeployment but was not found on PATH.
+
+Quick installs:
+  Windows (winget):   winget install -e --id Microsoft.Bicep
+  Linux/WSL:          curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64; chmod +x bicep; sudo mv bicep /usr/local/bin/bicep
+  Azure Cloud Shell:  bicep is already preinstalled - if missing, run 'az bicep install' and re-open the shell.
+
+After installing, close and re-open this shell so PATH is refreshed.
+"@
+        return
+    }
+
+    Write-Output "Reading config file '$configFilePath'."
+    try {
+        $config = Get-Content -Raw -Path $configFilePath | ConvertFrom-Json
+    }
+    catch {
+        Write-Error "Error reading config file '$configFilePath'. $_"
+        return
+    }
+
+    Write-Output "Loading tags from tags.json."
+    try {
+        $tagsRaw = Get-Content -Raw -Path './tags.json' | ConvertFrom-Json
+        # tags.json may be a single object {} (preferred) or a legacy array [{}] - support both.
+        $tags = if ($tagsRaw -is [System.Array]) { $tagsRaw[0] } else { $tagsRaw }
+        $tagstable = @{}
+        $tags.PSObject.Properties | ForEach-Object { $tagstable[$_.Name] = $_.Value }
+        if ($tagstable.Count -eq 0) {
+            Write-Error "tags.json contains no tag values. Populate the policy-required tags (e.g. CostCenter, DataSensitivity, ProjectContact, ProjectName, TechnicalContact) before rerunning."
+            return
+        }
+    }
+    catch {
+        Write-Error "Error parsing tags.json. $_"
+        return
+    }
+
+    # Sign in if there's no current Az context.
+    $azContext = Get-AzContext -ErrorAction SilentlyContinue
+    if (-not $azContext) {
+        Write-Output "No Az context detected, signing in..."
+        Connect-AzAccount | Out-Null
+        $azContext = Get-AzContext
+    }
+
+    # Resolve the running user (mandatory for KV admin assignment).
+    if ([string]::IsNullOrWhiteSpace($userId)) {
+        try { $currentUserId = (Get-AzADUser -SignedIn -ErrorAction Stop).Id } catch { $currentUserId = $null }
     }
     else {
-        Write-host "Keeping current subscription."
+        try { $currentUserId = (Get-AzADUser -UserPrincipalName $userId -ErrorAction Stop).Id } catch { $currentUserId = $null }
     }
-}
-else {
-    Write-Output "Selecting $subcriptionId subscription:"
-    try {
-        Select-AzSubscription -Subscription $subscriptionId
+    if (-not $currentUserId) {
+        Write-Error "Could not resolve current user. Pass -userId 'name@tenant.onmicrosoft.com' or run 'Connect-AzAccount' first."
+        return
     }
-    catch {
-        Write-error "Error selecting provided subscription."
-        break
-    }
-}
-Write-Output "Creating bicep parameters file for this deployment."
-$templateParameterObject = @{
-    'kvName' = $keyVaultName
-    'location' = $region
-    'storageAccountName' = $storageaccountName
-    'logAnalyticsWorkspaceName' = $logAnalyticsworkspaceName
-    'version' = $tags.ReleaseVersion
-    'releasedate' = $tags.ReleaseDate
-    'functionname' = $functionname
-}
-# Adding URL parameter if specified
-If (![string]::IsNullOrEmpty($alternatePSModulesURL)) {
-    $templateParameterObject += @{CustomModulesBaseURL = $alternatePSModulesURL }
-}
-#checks if update or not.
-#   # #### #   #   ##### ##### ##### #   # #####
-##  # #    #   #   #     #       #   #   # #   #
-# # # ###  # # #   ##### ####    #   #   # #####
-#  ## #    ## ##       # #       #   #   # #   
-#   # #### #   #   ##### #####   #   ##### #   
-if (!$update)
-{
-    #Configuration Variables
-    $randomstoragechars = -join ((97..122) | Get-Random -Count 4 | ForEach-Object { [char]$_ })
-    $storageaccountName = "$($config.storageaccountName)$randomstoragechars"
-    #Storage verification
-    if ((Get-AzStorageAccountNameAvailability -Name $storageaccountName).NameAvailable -eq $false) {
-        Write-Error "Storage account $storageaccountName not available."
-        break
-    }
-    if ($storageaccountName.Length -gt 24 -or $storageaccountName.Length -lt 3) {
-        Write-Error "Storage account name must be between 3 and 24 lowercase characters."
-        break
-    }
-    $templateParameterObject.storageAccountName=$storageaccountname #needs to set this again since it is an update.
-    #endregion
-    #region keyvault verification
-    $kvContent = ((Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$((Get-AzContext).Subscription.Id)/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
-                -Method Post -Payload "{""name"": ""$keyVaultName"",""type"": ""Microsoft.KeyVault/vaults""}").Content | ConvertFrom-Json).NameAvailable
-    if (!($kvContent) -and $deployKV) {
-        write-output "Error: keyvault name $keyVaultName is not available."
-        break
-    }
-    #endregion
-    Write-Verbose "Creating $resourceGroup in $region location."
-    try {
-        New-AzResourceGroup -Name $resourceGroup -Location $region -Tags $tagstable
-    }
-    catch { 
-        throw "Error creating resource group. $_" 
-    }
-    $templateParameterObject
 
-    Write-Output "Deploying solution through bicep."
-    try { 
-        New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
-            -TemplateParameterObject $templateParameterObject -TemplateFile .\IaC\grfunc.bicep -WarningAction SilentlyContinue
+    # Subscription selection
+    if (-not [string]::IsNullOrWhiteSpace($subscriptionId)) {
+        Write-Output "Selecting subscription '$subscriptionId'."
+        try { Select-AzSubscription -SubscriptionId $subscriptionId | Out-Null } catch { Write-Error "Could not select subscription. $_"; return }
     }
-    catch {
-        Write-error "Error deploying solution to Azure. $_"
-    }
-    #endregion
-    $keyVaultRG=$resourcegroup
-    $logAnalyticsWorkspaceRG=$resourcegroup
-    #Add current user as a Keyvault administrator (for setup)
-    try { $kv = Get-AzKeyVault -ResourceGroupName $keyVaultRG -VaultName $keyVaultName } catch { "Error fetching KV object. $_"; break }
-    try { New-AzRoleAssignment -ObjectId $currentUserId -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId }catch { "Error assigning permissions to KV. $_"; break }
-    Write-Output "Sleeping 30 seconds to allow for permissions to be propagated."
-    Start-Sleep -Seconds 30
-    #region Secret Setup
-    # Adds keyvault secret user permissions to the Function App
-    Write-Verbose "Adding automation account Keyvault Secret User."
-    try {
-        New-AzRoleAssignment -ObjectId (Get-azwebapp -Name $functionName -ResourceGroupName $resourceGroup).Identity.PrincipalId -RoleDefinitionName "Key Vault Secrets User" -Scope $kv.ResourceId
-        New-AzRoleAssignment -ObjectId (Get-azwebapp -Name $functionName -ResourceGroupName $resourceGroup).Identity.PrincipalId -RoleDefinitionName "Key Vault Reader" -Scope $kv.ResourceId
-    }
-    catch {
-        "Error assigning permissions to Automation account (for keyvault). $_"
-        break
-    }
-    # Gets aggregation tenant info and store in Keyvault
-    Write-Verbose "Adding Aggretation tenant information to keyvault for future retrieval."
-    try {
-        $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json
-        $tenantId = $response.value.id
-        $secretvalue = ConvertTo-SecureString $tenantId -AsPlainText -Force 
-    }
-    catch {
-        "Error getting tenant ID information. $_"
-        break
-    }
-    try {
-        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "tenantId" -SecretValue $secretvalue
-        $tenantName= $response.value.displayName
-        $secretvalue = ConvertTo-SecureString $tenantName -AsPlainText -Force 
-        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "tenantName" -SecretValue $secretvalue
-    }
-    catch {
-        "Error setting tenant name information. $_"
-        break
-    }
-    try {
-        $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
-        $secretvalue = ConvertTo-SecureString $tenantDomainUPN -AsPlainText -Force 
-        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "tenantDomainUPN" -SecretValue $secretvalue                        
-    }
-    catch {
-        "Error setting tenant domain UPN information. $_"
-    }
-    Write-Verbose "Adding workspacekey information to keyvault."
-    # Application Id and Secure Password will be empty. Need to be updates with customer's information.
-    try {
-        $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
-
-        $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
-        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceKey" -SecretValue $secretvalue
-        $ws=Get-AzOperationalInsightsWorkspace -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName
-
-        $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
-        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceID" -SecretValue $secureString
-        if (!([string]::IsNullOrEmpty($config.applicationId))) {
-            "Adding Application ID to Keyvault."
-
-            $secureString = (ConvertTo-SecureString $config.applicationId -AsPlainText -Force)
-            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "ApplicationId" -SecretValue $secureString
-
-            $secureString = (ConvertTo-SecureString $config.SecurePassword -AsPlainText -Force)
-            set-azkeyvaultsecret -VaultName $keyVaultName -Name "SecurePassword" -SecretValue $secureString
+    else {
+        $subs = Get-AzSubscription -ErrorAction SilentlyContinue
+        if ($null -eq $subs) {
+            Write-Error "No subscriptions visible to the current account."
+            return
+        }
+        if ($subs.Count -gt 1) {
+            Write-Output "Current subscription: $((Get-AzContext).Name)"
+            $i = 1
+            $subs | ForEach-Object { Write-Output "$i - $($_.Name) - $($_.SubscriptionId)"; $i++ }
+            $selection = Read-Host "Select subscription number (Enter to keep current)"
+            if (-not [string]::IsNullOrWhiteSpace($selection)) {
+                if ([int]::TryParse($selection, [ref]$null) -and [int]$selection -ge 1 -and [int]$selection -le $subs.Count) {
+                    Select-AzSubscription -SubscriptionObject $subs[[int]$selection - 1] | Out-Null
+                }
+                else {
+                    Write-Error "Invalid selection '$selection'."
+                    return
+                }
+            }
         }
     }
-    catch { "Error adding secrets to KV. $_"; break }
 
+    $tenantIDtoAppend = '-' + ($((Get-AzContext).Tenant.Id).Split('-')[0])
 
-    #endregion
-    #region Import main runbook
-    Write-Verbose "Installing function code." #install function trigger code
-    try {
-        ###Deploy function code
-        [System.Net.ServicePointManager]::SecurityProtocol = 'TLS12'
-        Compress-Archive -Path ../* -DestinationPath /tmp/sscview.zip -Force
-        Publish-AzWebApp -ResourceGroupName $resourcegroup -Name $functionname -ArchivePath /tmp/sscview.zip -Force
-        ### Publish-AzWebApp -ResourceGroupName $resourcegroup -Name $functionname -ArchivePath /tmp/sscview.zip -Force
+    $keyVaultName              = $config.keyVaultName + $tenantIDtoAppend
+    $resourcegroup             = $config.resourcegroup + $tenantIDtoAppend
+    $region                    = $config.region
+    $logAnalyticsworkspaceName = $config.logAnalyticsworkspaceName + $tenantIDtoAppend
+    $functionname              = $config.functionName + $tenantIDtoAppend
+
+    if (-not $update) {
+        # Deterministic-but-unique storage account name suffix (4 lowercase chars).
+        $randomstoragechars = -join ((97..122) | Get-Random -Count 4 | ForEach-Object { [char]$_ })
+        $storageaccountName = ("$($config.storageaccountName)$randomstoragechars").ToLower()
+
+        if ($storageaccountName -notmatch '^[a-z0-9]{3,24}$') {
+            Write-Error "Storage account name '$storageaccountName' must be 3-24 lowercase letters/digits. Update config.storageaccountName."
+            return
+        }
+        try {
+            $storageNameAvailable = (Get-AzStorageAccountNameAvailability -Name $storageaccountName).NameAvailable
+        }
+        catch {
+            Write-Error "Storage account name availability check failed. $_"
+            return
+        }
+        if (-not $storageNameAvailable) {
+            Write-Error "Storage account name '$storageaccountName' is not available. Try a different config.storageaccountName."
+            return
+        }
+
+        $deferTenantsComplianceTable = $false
+        if ($null -ne $config.PSObject.Properties['deferGuardrailsTenantsComplianceTableProvisioning'] -and $config.deferGuardrailsTenantsComplianceTableProvisioning -eq $true) {
+            $deferTenantsComplianceTable = $true
+        }
+
+        $templateParameterObject = @{
+            kvName                                              = $keyVaultName
+            location                                            = $region
+            storageAccountName                                  = $storageaccountName
+            logAnalyticsWorkspaceName                           = $logAnalyticsworkspaceName
+            version                                             = $tags.ReleaseVersion
+            releasedate                                         = $tags.ReleaseDate
+            functionname                                        = $functionname
+            deferGuardrailsTenantsComplianceTableProvisioning   = $deferTenantsComplianceTable
+            ingestionServicePrincipalObjectId                   = (Resolve-CentralViewIngestionServicePrincipalObjectId -ApplicationId $config.ApplicationId)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($alternatePSModulesURL)) {
+            $templateParameterObject['CustomModulesBaseURL'] = $alternatePSModulesURL
+        }
+
+        # Key Vault name availability (separate from RG ARM check).
+        try {
+            $kvAvailability = ((Invoke-AzRest -Method Post `
+                -Uri "https://management.azure.com/subscriptions/$((Get-AzContext).Subscription.Id)/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
+                -Payload "{""name"":""$keyVaultName"",""type"":""Microsoft.KeyVault/vaults""}").Content | ConvertFrom-Json).NameAvailable
+        }
+        catch {
+            $kvAvailability = $true # If the API check fails, let the deploy attempt and surface the real error.
+        }
+        if (-not $kvAvailability) {
+            Write-Warning "Key Vault name '$keyVaultName' is not available globally. If the vault already exists in this RG and you are re-running setup, this is fine; otherwise change config.keyVaultName."
+        }
+
+        Write-Output "Creating resource group '$resourcegroup' in '$region'."
+        try {
+            New-AzResourceGroup -Name $resourcegroup -Location $region -Tag $tagstable -Force -ErrorAction Stop | Out-Null
+        }
+        catch {
+            Write-Error "Error creating resource group '$resourcegroup' (often a tagging policy). $_"
+            return
+        }
+
+        Write-Output "Deploying solution through Bicep."
+        $templateParameterObject | Format-Table -AutoSize | Out-String | Write-Verbose
+        try {
+            New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup `
+                -Name "guardraildeployment$(Get-Date -Format 'ddMMyyHHmmss')" `
+                -TemplateParameterObject $templateParameterObject `
+                -TemplateFile (Join-Path $scriptRoot 'IaC/grfunc.bicep') `
+                -WarningAction SilentlyContinue -ErrorAction Stop | Out-Null
+        }
+        catch {
+            Write-Error "Bicep deployment failed: $_"
+            return
+        }
+
+        # Self-grant Key Vault Administrator (idempotent).
+        try { $kv = Get-AzKeyVault -ResourceGroupName $resourcegroup -VaultName $keyVaultName -ErrorAction Stop } catch { Write-Error "Cannot fetch deployed Key Vault '$keyVaultName'. $_"; return }
+        try {
+            New-AzRoleAssignment -ObjectId $currentUserId -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId -ErrorAction Stop | Out-Null
+        }
+        catch {
+            if (-not (Test-RoleAssignmentConflictIsBenign $_)) {
+                Write-Warning "Could not assign Key Vault Administrator to current user (may already be present). $_"
+            }
+        }
+        Write-Output "Sleeping 30 seconds for KV permissions to propagate..."
+        Start-Sleep -Seconds 30
+
+        # Function App's MSI may need a moment to surface; retry getting it.
+        $funcMsi = $null
+        for ($i = 0; $i -lt 6 -and -not $funcMsi; $i++) {
+            try {
+                $webapp  = Get-AzWebApp -Name $functionname -ResourceGroupName $resourcegroup -ErrorAction Stop
+                $funcMsi = $webapp.Identity.PrincipalId
+            }
+            catch { Start-Sleep -Seconds 10 }
+            if (-not $funcMsi) { Start-Sleep -Seconds 10 }
+        }
+        if ($funcMsi) {
+            foreach ($role in @('Key Vault Secrets User', 'Key Vault Reader')) {
+                try { New-AzRoleAssignment -ObjectId $funcMsi -RoleDefinitionName $role -Scope $kv.ResourceId -ErrorAction Stop | Out-Null }
+                catch {
+                    if (-not (Test-RoleAssignmentConflictIsBenign $_)) {
+                        Write-Warning "Could not assign '$role' to Function App MSI. $_"
+                    }
+                }
+            }
+        }
+        else {
+            Write-Warning "Function App MSI did not appear in time; assign 'Key Vault Secrets User' / 'Key Vault Reader' on the KV manually."
+        }
+
+        # Aggregation tenant info from Microsoft Graph.
+        try {
+            $org = Invoke-AzRestMethod -Method GET -Uri 'https://graph.microsoft.com/v1.0/organization' -ErrorAction Stop |
+                Select-Object -ExpandProperty Content | ConvertFrom-Json
+            $aggTenantId      = $org.value.id
+            $aggTenantName    = $org.value.displayName
+            $aggDomainUPN     = ($org.value.verifiedDomains | Where-Object { $_.isDefault }).name
+
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'TenantId'        -SecretValue (ConvertTo-SecureString $aggTenantId   -AsPlainText -Force) | Out-Null
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'TenantName'      -SecretValue (ConvertTo-SecureString $aggTenantName -AsPlainText -Force) | Out-Null
+            if (-not [string]::IsNullOrWhiteSpace($aggDomainUPN)) {
+                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'tenantDomainUPN' -SecretValue (ConvertTo-SecureString $aggDomainUPN -AsPlainText -Force) | Out-Null
+            }
+        }
+        catch {
+            Write-Warning "Could not seed tenant info secrets (TenantId/TenantName/tenantDomainUPN): $_"
+        }
+
+        # Workspace key + id (used by some legacy flows; ingestion now uses DCR but secrets stay for compatibility).
+        try {
+            $ws         = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourcegroup -Name $logAnalyticsworkspaceName -ErrorAction Stop
+            $wsShared   = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $resourcegroup -Name $logAnalyticsworkspaceName -ErrorAction Stop).PrimarySharedKey
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'WorkspaceKey' -SecretValue (ConvertTo-SecureString $wsShared        -AsPlainText -Force) | Out-Null
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'WorkspaceId'  -SecretValue (ConvertTo-SecureString $ws.CustomerId   -AsPlainText -Force) | Out-Null
+        }
+        catch {
+            Write-Warning "Could not seed Workspace secrets: $_"
+        }
+
+        # ApplicationId / SecurePassword from config (or placeholder).
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($config.ApplicationId)) {
+                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'ApplicationId'  -SecretValue (ConvertTo-SecureString $config.ApplicationId  -AsPlainText -Force) | Out-Null
+                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'SecurePassword' -SecretValue (ConvertTo-SecureString $config.SecurePassword -AsPlainText -Force) | Out-Null
+                Write-Output "ApplicationId and SecurePassword stored in Key Vault."
+            }
+            else {
+                # Seed empty placeholders so Function code's Get-AzKeyVaultSecret calls don't fail with NotFound.
+                $placeholder = ConvertTo-SecureString ' ' -AsPlainText -Force
+                foreach ($name in 'ApplicationId','SecurePassword') {
+                    if (-not (Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $name -ErrorAction SilentlyContinue)) {
+                        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name $name -SecretValue $placeholder | Out-Null
+                    }
+                }
+                Write-Warning "config.ApplicationId / SecurePassword are empty - placeholders seeded. Add real values to Key Vault and rerun setup for DCR RBAC."
+            }
+        }
+        catch {
+            Write-Warning "Could not write ApplicationId/SecurePassword secrets: $_"
+        }
+
+        # Make absolutely sure the DCR RBAC happens once we know the SP exists.
+        try {
+            $spObjectId = Resolve-CentralViewIngestionServicePrincipalObjectId -ApplicationId $config.ApplicationId
+            if (-not [string]::IsNullOrWhiteSpace($spObjectId)) {
+                $dcr = Get-AzResource -ResourceGroupName $resourcegroup -ResourceType 'Microsoft.Insights/dataCollectionRules' -Name 'guardrails-cv-dcr' -ErrorAction SilentlyContinue
+                if ($dcr) {
+                    try {
+                        New-AzRoleAssignment -ObjectId $spObjectId -RoleDefinitionName 'Monitoring Metrics Publisher' -Scope $dcr.ResourceId -ErrorAction Stop | Out-Null
+                        Write-Output "Granted Monitoring Metrics Publisher to ingestion SP on DCR."
+                    }
+                    catch {
+                        if (-not (Test-RoleAssignmentConflictIsBenign $_)) {
+                            Write-Warning "Could not grant Monitoring Metrics Publisher on DCR. $_"
+                        }
+                    }
+                }
+                else {
+                    Write-Warning "DCR 'guardrails-cv-dcr' not found in '$resourcegroup' - manually assign Monitoring Metrics Publisher once it appears."
+                }
+            }
+        }
+        catch {
+            Write-Warning "DCR RBAC step failed: $_"
+        }
+
+        # Publish Function App code (cross-platform temp path).
+        Write-Output "Packaging and publishing Function App code."
+        try {
+            [System.Net.ServicePointManager]::SecurityProtocol = 'TLS12'
+            $sscViewZipPath = Join-Path ([System.IO.Path]::GetTempPath()) 'sscview.zip'
+            if (Test-Path $sscViewZipPath) { Remove-Item $sscViewZipPath -Force -ErrorAction SilentlyContinue }
+
+            # ../* relative to the setup folder packages all the function code (host.json, runbooks, profile.ps1, etc.)
+            $sourceGlob = Join-Path (Split-Path -Parent $scriptRoot) '*'
+            Compress-Archive -Path $sourceGlob -DestinationPath $sscViewZipPath -Force
+            Publish-AzWebApp -ResourceGroupName $resourcegroup -Name $functionname -ArchivePath $sscViewZipPath -Force | Out-Null
+        }
+        catch {
+            Write-Error "Function code publish failed: $_"
+            return
+        }
+
+        $timetaken = (Get-Date) - $begin
+        Write-Output ("Setup complete in {0} minutes." -f [Math]::Round($timetaken.TotalMinutes, 0))
     }
-    catch {
-        "Error installing code for trigger function. $_"
-        break
-    }
-    #endregion
-
-    $timetaken = ((get-date) - $begin) 
-    "Time to deploy: $([Math]::Round($timetaken.TotalMinutes,0)) Minutes."
+}
+finally {
+    Pop-Location
 }

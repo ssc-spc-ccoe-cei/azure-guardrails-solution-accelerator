@@ -1,36 +1,80 @@
+// Transform that maps the GuardrailsTenantsCompliance payload (sent by the CentralView
+// Function App's Send-GuardrailsData) onto the same _s / _b / _d / _g column suffix
+// convention used by the source GuardrailsCompliance_CL table on each client tenant.
+//
+// Notes on DCR transform KQL:
+//   - It's a restricted KQL subset. column_ifexists / iif on missing columns is NOT supported.
+//   - Every optional payload field MUST be declared in the DCR streamDeclarations (law.bicep).
+//     The DCE then forwards it to this transform - when the record didn't include the field,
+//     the column arrives as null. tostring(null) returns "", so optional fields fall back
+//     to empty string automatically with no special handling.
+//   - Output uses the original GuardrailsCompliance_CL column names
+//     (ControlName_s, Required_s, itsgcode_s, VNETName_s, ComplianceStatus_s, ...).
+//   - Mandatory_s is also kept as a synonym for Required_s because the embedded
+//     workbook in law.bicep currently references it.
 source
-| extend TimeGenerated = coalesce(todatetime(TimeGenerated), now())
 | extend
-    ReportTime_s = tostring(ReportTime),
-    TenantDomain_s = tostring(TenantDomain),
-    DepartmentName_s = tostring(DepartmentName),
-    DepartmentNumber_s = tostring(DepartmentNumber),
-    DepartmentTenantName_s = tostring(DepartmentTenantName),
-    DepartmentTenantID_s = tostring(DepartmentTenantID),
+    // -------- Source-table-style columns (same names as client GuardrailsCompliance_CL) --------
+    ControlName_s      = tostring(ControlName_s),
+    ItemName_s         = tostring(ItemName),
+    Required_s         = tostring(Mandatory),
+    Profile_s          = tostring(Profile),
+    Profile_d          = todouble(Profile),
+    ComplianceStatus_s = tostring(Status),
+    // Match source-table semantics: ComplianceStatus_b on the client is tobool(payload),
+    // where the payload is a real bool for Compliant/Non-Compliant and the literal string
+    // 'Not Applicable' for N/A (which tobool() coerces to null). Our function emits Status
+    // as a pre-mapped string, so we reverse the mapping with a 3-way case so 'Not Applicable'
+    // becomes null (NOT false) - keeping query parity with GuardrailsCompliance_CL.
+    ComplianceStatus_b = case(
+        tostring(Status) == 'Compliant',     true,
+        tostring(Status) == 'Non-Compliant', false,
+        bool(null)
+    ),
+    Comments_s         = tostring(Comments),
+    itsgcode_s         = tostring(['ITSG Control']),
+    DisplayName_s      = tostring(DisplayName),
+    SubscriptionName_s = tostring(SubscriptionName),
+    VNETName_s         = tostring(['VNet Name']),
+    SubnetName_s       = tostring(SubnetName),
+    Definition_s       = tostring(Definition),
+    Remediation_s      = tostring(Remediation),
+    // -------- Aggregation-specific columns produced by get-tenantdata --------
+    Status_s           = tostring(Status),
+    Count_s            = tostring(Count),
+    Count_d            = tolong(Count),
+    ITSG_Control_s     = tostring(['ITSG Control']),
+    Mandatory_s        = tostring(Mandatory),
+    // -------- Central reporting context (added by Add-Member in the function) --------
+    TenantDomain_s                 = tostring(TenantDomain),
+    DepartmentName_s               = tostring(DepartmentName),
+    DepartmentNumber_s             = tostring(DepartmentNumber),
+    DepartmentTenantName_s         = tostring(DepartmentTenantName),
+    DepartmentTenantID_s           = tostring(DepartmentTenantID),
+    // Must be guid-typed to match Custom-GuardrailsTenantsCompliance_CL output stream (same as client dcrdce.bicep: toguid(DepartmentTenantID)).
+    DepartmentTenantID_g           = toguid(DepartmentTenantID),
     DepartmentCloudUsageProfiles_s = tostring(DepartmentCloudUsageProfiles),
-    Status_s = tostring(Status),
-    Mandatory_s = tostring(Mandatory),
-    ControlName_s_s = tostring(ControlName_s),
-    ItemName_s = tostring(ItemName),
-    Profile_s = tostring(Profile),
-    Count_s = tostring(Count),
-    ITSG_Control_s = tostring(['ITSG Control']),
-    AggregationTenantID_s = tostring(AggregationTenantID),
-    AggregationTenantName_s = tostring(AggregationTenantName),
-    AggregationTenantUPN_s = tostring(AggregationTenantUPN),
-    DepartmentReportTime_s = tostring(DepartmentReportTime),
-    DeployedVersion_s = tostring(DeployedVersion),
-    AvailableVersion_s = tostring(AvailableVersion),
-    UpdatedNeeded_b = tobool(UpdatedNeeded),
-    DepartmentVersionCheckDate_s = tostring(DepartmentVersionCheckDate),
-    WSId_s = tostring(WSId),
-    SubnetName_s = tostring(SubnetName),
-    Definition_s = tostring(Definition),
-    Remediation_s = tostring(Remediation),
-    VNETName_s = tostring(['VNet Name'])
+    AggregationTenantID_s          = tostring(AggregationTenantID),
+    AggregationTenantName_s        = tostring(AggregationTenantName),
+    AggregationTenantUPN_s         = tostring(AggregationTenantUPN),
+    ReportTime_s                   = tostring(ReportTime),
+    DepartmentReportTime_s         = tostring(DepartmentReportTime),
+    DeployedVersion_s              = tostring(DeployedVersion),
+    AvailableVersion_s             = tostring(AvailableVersion),
+    UpdatedNeeded_b                = tobool(UpdatedNeeded),
+    DepartmentVersionCheckDate_s   = tostring(DepartmentVersionCheckDate),
+    WSId_s                         = tostring(WSId)
 | project
-    TimeGenerated, ReportTime_s, TenantDomain_s, DepartmentName_s, DepartmentNumber_s, DepartmentTenantName_s,
-    DepartmentTenantID_s, DepartmentCloudUsageProfiles_s, Status_s, Mandatory_s, ControlName_s_s, ItemName_s,
-    Profile_s, Count_s, ITSG_Control_s, AggregationTenantID_s, AggregationTenantName_s, AggregationTenantUPN_s,
-    DepartmentReportTime_s, DeployedVersion_s, AvailableVersion_s, UpdatedNeeded_b, DepartmentVersionCheckDate_s,
-    WSId_s, SubnetName_s, Definition_s, Remediation_s, VNETName_s
+    TimeGenerated,
+    // Source-table aliases (mirror GuardrailsCompliance_CL column names)
+    ControlName_s, ItemName_s, ComplianceStatus_s, ComplianceStatus_b, Comments_s,
+    ReportTime_s, itsgcode_s, Required_s, Profile_d, Profile_s,
+    DisplayName_s, SubscriptionName_s, VNETName_s, SubnetName_s, Definition_s, Remediation_s,
+    // Aggregation columns
+    Status_s, Count_s, Count_d, ITSG_Control_s, Mandatory_s,
+    // Central reporting / tenant / department context
+    TenantDomain_s, DepartmentName_s, DepartmentNumber_s, DepartmentTenantName_s,
+    DepartmentTenantID_s, DepartmentTenantID_g, DepartmentCloudUsageProfiles_s,
+    AggregationTenantID_s, AggregationTenantName_s, AggregationTenantUPN_s,
+    DepartmentReportTime_s, DeployedVersion_s, AvailableVersion_s, UpdatedNeeded_b,
+    DepartmentVersionCheckDate_s, WSId_s

@@ -36,10 +36,14 @@ $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 "Report Time: $ReportTime"
 try {
     get-tenantdata -workspaceID $workspaceId -workspacekey $WorkspaceKey -ReportTime $ReportTime `
-        -tenantName $TenantName -tenantDomainUPN $TenantDomainUPN -tenantId $TenantId -DebugInfo $true
+        -tenantName $TenantName -tenantDomainUPN $TenantDomainUPN -tenantId $TenantId -DebugInfo:$true
 }
 catch {
-    Write-Output "Error running get-tenantdata"
+    Write-Output "Error running get-tenantdata: $($_.Exception.Message)"
+    Write-Output "ScriptStackTrace: $($_.ScriptStackTrace)"
+    if ($_.Exception.InnerException) {
+        Write-Output "InnerException: $($_.Exception.InnerException.Message)"
+    }
 }
 # Write an information log with the current time.
 Write-Host "PowerShell timer trigger function ran! TIME: $currentUTCtime"

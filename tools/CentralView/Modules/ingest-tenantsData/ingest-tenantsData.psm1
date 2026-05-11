@@ -1,3 +1,143 @@
+function Send-GuardrailsData {
+    # Local copy of the DCR-based ingestion function from src/Guardrails-Common/GR-Common.psm1
+    # so the Function App package is self-contained (the src/ folder is not deployed to wwwroot).
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)] [string] $Data,
+        [Parameter(Mandatory = $true)] [string] $LogType,
+        [Parameter(Mandatory = $false)] [string] $WorkSpaceID,
+        [Parameter(Mandatory = $false)] [string] $WorkSpaceKey
+    )
+
+    $dceEndpoint    = $env:DCE_ENDPOINT
+    $dcrImmutableId = $env:DCR_IMMUTABLE_ID
+
+    if (-not $dceEndpoint)    { throw "DCE_ENDPOINT app setting is not set on the Function App." }
+    if (-not $dcrImmutableId) { throw "DCR_IMMUTABLE_ID app setting is not set on the Function App." }
+
+    $streamName = switch ($LogType) {
+        'GuardrailsTenantsCompliance' { 'Custom-GuardrailsTenantsCompliance' }
+        default                       { "Custom-$LogType" }
+    }
+
+    if ($Data.Trim().StartsWith('{')) { $Data = "[$Data]" }
+    if ([string]::IsNullOrWhiteSpace($Data) -or $Data.Trim() -eq '[]') {
+        Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
+        return
+    }
+
+    # DCR Log Ingestion API does NOT auto-coerce types and does NOT auto-fill TimeGenerated.
+    # The stream declaration in law.bicep declares the type of every column; the payload must match.
+    # If we send 'Mandatory' as a boolean but the schema says string, the whole batch is rejected with 400.
+    # So:
+    #   - inject TimeGenerated (ISO 8601 UTC) on every record
+    #   - force every field to the type the schema expects (per Custom-GuardrailsTenantsCompliance stream).
+    $stringFields = @(
+        'Mandatory','ControlName_s','ItemName','Profile','Status','ITSG Control','SubnetName',
+        'Definition','Remediation','VNet Name','TenantDomain','DepartmentName','DepartmentNumber',
+        'DepartmentTenantName','DepartmentTenantID','DepartmentCloudUsageProfiles','AggregationTenantID',
+        'AggregationTenantName','AggregationTenantUPN','ReportTime','DepartmentReportTime',
+        'DeployedVersion','AvailableVersion','DepartmentVersionCheckDate','WSId','ControlName',
+        'Comments','itsgcode','Required','DisplayName','SubscriptionName','VNETName'
+    )
+    $longFields    = @('Count')
+    $boolFields    = @('UpdatedNeeded')
+    try {
+        $records = $Data | ConvertFrom-Json
+        if ($records -isnot [System.Collections.IEnumerable] -or $records -is [string]) {
+            $records = @($records)
+        }
+        $nowIso = (Get-Date).ToUniversalTime().ToString('o')
+        foreach ($r in $records) {
+            # TimeGenerated (datetime) - required by every DCR stream
+            if (-not ($r.PSObject.Properties.Name -contains 'TimeGenerated')) {
+                $r | Add-Member -MemberType NoteProperty -Name TimeGenerated -Value $nowIso -Force
+            }
+
+            foreach ($p in @($r.PSObject.Properties)) {
+                if ($null -eq $p.Value) { continue }
+
+                if ($stringFields -contains $p.Name) {
+                    if ($p.Value -is [System.Collections.IEnumerable] -and $p.Value -isnot [string]) {
+                        # arrays/objects -> JSON literal so the string column is still useful
+                        $p.Value = ($p.Value | ConvertTo-Json -Compress -Depth 5)
+                    }
+                    elseif ($p.Value -is [bool]) {
+                        $p.Value = if ($p.Value) { 'True' } else { 'False' }
+                    }
+                    else {
+                        $p.Value = [string]$p.Value
+                    }
+                }
+                elseif ($longFields -contains $p.Name) {
+                    try { $p.Value = [int64]$p.Value } catch { $p.Value = 0 }
+                }
+                elseif ($boolFields -contains $p.Name) {
+                    if ($p.Value -is [bool]) {
+                        # already correct
+                    }
+                    elseif ($p.Value -is [string]) {
+                        $p.Value = ($p.Value -match '^(?i:true|1|yes)$')
+                    }
+                    else {
+                        try { $p.Value = [bool]$p.Value } catch { $p.Value = $false }
+                    }
+                }
+            }
+        }
+        $Data = $records | ConvertTo-Json -Depth 10
+        if ($Data.Trim().StartsWith('{')) { $Data = "[$Data]" }
+    }
+    catch {
+        Write-Warning "Send-GuardrailsData: could not normalize payload ($($_.Exception.Message)); attempting raw send."
+    }
+
+    try {
+        $tokenResponse = Get-AzAccessToken -ResourceUrl 'https://monitor.azure.com' -AsSecureString -ErrorAction Stop
+        $tokenPlain    = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
+    }
+    catch {
+        $tokenResponse = Get-AzAccessToken -ResourceUrl 'https://monitor.azure.com'
+        $tokenPlain    = $tokenResponse.Token
+    }
+
+    $uri     = "$dceEndpoint/dataCollectionRules/$dcrImmutableId/streams/$streamName" + '?api-version=2023-01-01'
+    $body    = [System.Text.Encoding]::UTF8.GetBytes($Data)
+    $headers = @{
+        Authorization            = "Bearer $tokenPlain"
+        'Content-Type'           = 'application/json'
+        'x-ms-client-request-id' = [System.Guid]::NewGuid().ToString()
+    }
+
+    try {
+        Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $body -ErrorAction Stop | Out-Null
+        Write-Output "Send-GuardrailsData: posted $($body.Length) bytes to '$streamName'."
+    }
+    catch {
+        # PS 7+ surfaces the response body via $_.ErrorDetails.Message; fall back to scanning the exception
+        $serverBody = $null
+        if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+            $serverBody = $_.ErrorDetails.Message
+        }
+        elseif ($_.Exception.Response) {
+            try {
+                $stream  = $_.Exception.Response.GetResponseStream()
+                $reader  = New-Object System.IO.StreamReader($stream)
+                $serverBody = $reader.ReadToEnd()
+            } catch {}
+        }
+        if ($serverBody) {
+            Write-Output "DCE response body: $serverBody"
+        }
+        # Also dump the first record we sent so you can compare it to the schema
+        try {
+            $first = ($records | Select-Object -First 1) | ConvertTo-Json -Depth 5 -Compress
+            Write-Output "First record sent: $first"
+        } catch {}
+        throw
+    }
+}
+
 function get-tenantdata {
     param (
         $WorkSpaceID,
@@ -213,15 +353,32 @@ function get-tenantdata {
     if ($FinalObjectList) {
         "$($FinalObjectList.count) objects found to send."
         if ($DebugInfo) {
-            "Writing to debug file."
-            $FinalObjectList | Out-File ./debubinfo_finalobjectlist.txt
+            # Best-effort debug dump; the Functions runtime sometimes refuses writes to the
+            # script's cwd, so swallow failures to avoid breaking ingestion.
+            try {
+                $tempDebug = Join-Path ([System.IO.Path]::GetTempPath()) 'debubinfo_finalobjectlist.txt'
+                $FinalObjectList | Out-File -FilePath $tempDebug -ErrorAction Stop
+                "Debug dump written to $tempDebug."
+            }
+            catch {
+                "Skipping debug dump ($($_.Exception.Message))."
+            }
         }
         $FinalObjectListJson = $FinalObjectList | ConvertTo-Json
-        # Import Send-GuardrailsData function from GR-Common module if not already available
-        if (-not (Get-Command -Name Send-GuardrailsData -ErrorAction SilentlyContinue)) {
-            Import-Module "$PSScriptRoot/../../../../src/Guardrails-Common/GR-Common.psm1" -Force
+        try {
+            Send-GuardrailsData -Data $FinalObjectListJson -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey
         }
-        Send-GuardrailsData -Data $FinalObjectListJson -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey
+        catch {
+            "Send-GuardrailsData FAILED: $($_.Exception.Message)"
+            if ($_.Exception.Response) {
+                try {
+                    $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                    $body = $reader.ReadToEnd()
+                    "Response body: $body"
+                } catch {}
+            }
+            throw
+        }
     }
     else { "No data to send" }
 }

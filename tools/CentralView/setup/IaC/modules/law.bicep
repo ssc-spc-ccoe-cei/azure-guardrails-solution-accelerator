@@ -47,7 +47,7 @@ var wbConfig1 ='''
             "version": "KqlParameterItem/1.0",
             "name": "Tenants",
             "type": 2,
-            "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where Status_s == \"Non-Compliant\" and ReportTime_s == toscalar(mrt) and DepartmentName_s == \"{Departments}\"\n| summarize sum(toint(Count_s)) by ControlName_s_s, TenantDomain_s\n| summarize by TenantDomain=TenantDomain_s\n",
+            "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where Status_s == \"Non-Compliant\" and ReportTime_s == toscalar(mrt) and DepartmentName_s == \"{Departments}\"\n| summarize sum(toint(Count_s)) by ControlName_s, TenantDomain_s\n| summarize by TenantDomain=TenantDomain_s\n",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -70,7 +70,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let mrt=GuardrailsTenantsCompliance_CL \n    | summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where Status_s == \"Non-Compliant\"\n    and ReportTime_s == toscalar(mrt)\n    and DepartmentName_s == '{Departments}'\n| summarize sum(toint(Count_s)) by ControlName_s_s, TenantDomain_s\n| summarize Total=round(1-todouble(count())/12,2)*100 by TenantDomain_s\n| top 10 by Total desc ",
+        "query": "let mrt=GuardrailsTenantsCompliance_CL \n    | summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where Status_s == \"Non-Compliant\"\n    and ReportTime_s == toscalar(mrt)\n    and DepartmentName_s == '{Departments}'\n| summarize sum(toint(Count_s)) by ControlName_s, TenantDomain_s\n| summarize Total=round(1-todouble(count())/12,2)*100 by TenantDomain_s\n| top 10 by Total desc ",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000
@@ -96,7 +96,7 @@ var wbConfig1 ='''
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where ReportTime_s == toscalar(mrt) and TenantDomain_s == \"{Tenants}\" \n| parse ControlName_s_s with * \"GUARDRAIL\" number \":\" rest\n| project-away rest\n| extend Mandatory=iff(Mandatory_s != \"\", iff(Mandatory_s==\"True\",\" (M)\", \" (R)\"),\" - N/A\")\n| summarize by Control=ControlName_s_s, Mandatory=Mandatory_s, ItemName=strcat(ItemName_s, Mandatory),[\"ITSG Control\"]=ITSG_Control_s,Status=Status_s, Profile=Profile_s, number\n| sort by toint(number) asc\n| project-away number",
+        "query": "let mrt=GuardrailsTenantsCompliance_CL \n| summarize mrt=max(ReportTime_s);\nGuardrailsTenantsCompliance_CL \n| where ReportTime_s == toscalar(mrt) and TenantDomain_s == \"{Tenants}\" \n| parse ControlName_s with * \"GUARDRAIL\" number \":\" rest\n| project-away rest\n| extend Mandatory=iff(Mandatory_s != \"\", iff(Mandatory_s==\"True\",\" (M)\", \" (R)\"),\" - N/A\")\n| summarize by Control=ControlName_s, Mandatory=Mandatory_s, ItemName=strcat(ItemName_s, Mandatory),[\"ITSG Control\"]=ITSG_Control_s,Status=Status_s, Profile=Profile_s, number\n| sort by toint(number) asc\n| project-away number",
         "size": 2,
         "timeContext": {
           "durationMs": 43200000
@@ -143,16 +143,55 @@ resource centralTableGuardrailsTenantsCompliance 'Microsoft.OperationalInsights/
     retentionInDays: 90
     totalRetentionInDays: 90
     schema: {
+      // Schema must declare every column the DCR transform projects (see
+      // law-centralview-tenantscompliance-transform.kql). Any column projected by the
+      // transform that isn't listed here is silently dropped by the LAW pipeline,
+      // which is why prior runs showed rows with only TimeGenerated populated.
+      // RawData is retained because LAW does not allow column removal once provisioned.
       name: 'GuardrailsTenantsCompliance_CL'
       columns: [
-        {
-          name: 'TimeGenerated'
-          type: 'dateTime'
-        }
-        {
-          name: 'RawData'
-          type: 'string'
-        }
+        { name: 'TimeGenerated',                  type: 'dateTime' }
+        { name: 'RawData',                        type: 'string'   }
+        // Source-table-style columns (mirror GuardrailsCompliance_CL on client tenants)
+        { name: 'ControlName_s',                  type: 'string'   }
+        { name: 'ItemName_s',                     type: 'string'   }
+        { name: 'ComplianceStatus_s',             type: 'string'   }
+        { name: 'ComplianceStatus_b',             type: 'boolean'  }
+        { name: 'Comments_s',                     type: 'string'   }
+        { name: 'ReportTime_s',                   type: 'string'   }
+        { name: 'itsgcode_s',                     type: 'string'   }
+        { name: 'Required_s',                     type: 'string'   }
+        { name: 'Profile_d',                      type: 'real'     }
+        { name: 'Profile_s',                      type: 'string'   }
+        { name: 'DisplayName_s',                  type: 'string'   }
+        { name: 'SubscriptionName_s',             type: 'string'   }
+        { name: 'VNETName_s',                     type: 'string'   }
+        { name: 'SubnetName_s',                   type: 'string'   }
+        { name: 'Definition_s',                   type: 'string'   }
+        { name: 'Remediation_s',                  type: 'string'   }
+        // Aggregation-specific columns from get-tenantdata
+        { name: 'Status_s',                       type: 'string'   }
+        { name: 'Count_s',                        type: 'string'   }
+        { name: 'Count_d',                        type: 'long'     }
+        { name: 'ITSG_Control_s',                 type: 'string'   }
+        { name: 'Mandatory_s',                    type: 'string'   }
+        // Central reporting / tenant / department context
+        { name: 'TenantDomain_s',                 type: 'string'   }
+        { name: 'DepartmentName_s',               type: 'string'   }
+        { name: 'DepartmentNumber_s',             type: 'string'   }
+        { name: 'DepartmentTenantName_s',         type: 'string'   }
+        { name: 'DepartmentTenantID_s',           type: 'string'   }
+        { name: 'DepartmentTenantID_g',           type: 'guid'     }
+        { name: 'DepartmentCloudUsageProfiles_s', type: 'string'   }
+        { name: 'AggregationTenantID_s',          type: 'string'   }
+        { name: 'AggregationTenantName_s',        type: 'string'   }
+        { name: 'AggregationTenantUPN_s',         type: 'string'   }
+        { name: 'DepartmentReportTime_s',         type: 'string'   }
+        { name: 'DeployedVersion_s',              type: 'string'   }
+        { name: 'AvailableVersion_s',             type: 'string'   }
+        { name: 'UpdatedNeeded_b',                type: 'boolean'  }
+        { name: 'DepartmentVersionCheckDate_s',   type: 'string'   }
+        { name: 'WSId_s',                         type: 'string'   }
       ]
     }
   }
@@ -213,7 +252,7 @@ resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-
   }
   kind: 'Direct'
   dependsOn: [
-    deferGuardrailsTenantsComplianceTableProvisioning ? existingCentralTenantsComplianceTableForDcr : centralTableGuardrailsTenantsCompliance
+    centralTableGuardrailsTenantsCompliance
   ]
   properties: {
     dataCollectionEndpointId: centralDataCollectionEndpoint.id
@@ -348,24 +387,12 @@ resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-
             name: 'WSId'
             type: 'string'
           }
-          {
-            name: 'ControlName'
-            type: 'string'
-          }
-          {
-            name: 'ComplianceStatus'
-            type: 'dynamic'
-          }
+          // Optional per-record fields. Currently summarized away in get-tenantdata so
+          // they're absent from the payload, but declared here so that if get-tenantdata
+          // is later changed to project them through, the DCE will forward them to the
+          // transform. String-typed declared columns null-coalesce silently when missing.
           {
             name: 'Comments'
-            type: 'string'
-          }
-          {
-            name: 'itsgcode'
-            type: 'string'
-          }
-          {
-            name: 'Required'
             type: 'string'
           }
           {
@@ -374,10 +401,6 @@ resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-
           }
           {
             name: 'SubscriptionName'
-            type: 'string'
-          }
-          {
-            name: 'VNETName'
             type: 'string'
           }
         ]
