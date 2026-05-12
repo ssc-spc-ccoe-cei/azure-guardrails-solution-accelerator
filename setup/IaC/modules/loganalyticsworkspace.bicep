@@ -1196,6 +1196,7 @@ let localizedMessages = case(
         "atLeastTwoRequired": ". Au moins 2 requises.",
         "noValidMethods": "Aucune méthode AMF valide trouvée. Au moins 2 requises.",
         "noMfaConfigured": "Aucune AMF configurée",
+        "noMfaConfiguredGrace": "Aucune AMF configurée. L'utilisateur est dans la période de grâce",
         "neverSignedIn": "Jamais connecté",
         "noNonCompliantUsers": "Aucun utilisateur non conforme trouvé"
     }),
@@ -1206,6 +1207,7 @@ let localizedMessages = case(
         "atLeastTwoRequired": ". At least 2 required.",
         "noValidMethods": "No valid MFA methods found. At least 2 required.",
         "noMfaConfigured": "No MFA configured",
+        "noMfaConfiguredGrace": "No MFA configured. User is within the grace period",
         "neverSignedIn": "Never Signed In",
         "noNonCompliantUsers": "No non-compliant users found"
     })
@@ -1266,6 +1268,8 @@ let userData = GuardrailsUserRaw_CL
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
+| extend gracePeriodEnd = CreatedDateTime_t + mfaGracePeriod
+| extend isWithinGracePeriod = now() < gracePeriodEnd
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
     methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
@@ -1296,11 +1300,10 @@ let mfaAnalysis = userData
         hasValidSystemPreferred, strcat(tostring(localizedMessages["systemPreferred"]), strcat_array(set_intersect(systemPreferredMethodsArray, validSystemMethods), ", ")),
         hasMfaRegistered == true and validMfaMethodsCount >= 1, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
         hasMfaRegistered == true and validMfaMethodsCount == 0, tostring(localizedMessages["noValidMethods"]),
+        hasMfaRegistered == false and isWithinGracePeriod == true, tostring(localizedMessages["noMfaConfiguredGrace"]),
         tostring(localizedMessages["noMfaConfigured"])
     );
 let nonCompliantUsers = mfaAnalysis
-| extend gracePeriodEnd = CreatedDateTime_t + mfaGracePeriod
-| extend isWithinGracePeriod = now() < gracePeriodEnd
 | where isWithinGracePeriod == false
 | where isMfaCompliant == false
 | extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
