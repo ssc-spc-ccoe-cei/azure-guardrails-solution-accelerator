@@ -430,7 +430,7 @@ Function Remove-GSACoreResources {
                 $clearChecks = 0
             }
 
-            Write-Output ("Waiting for permanent LAW delete to settle: active={0} deleted={1} clearChecks={2}/3" -f [bool]$activeWorkspace, [bool]$deletedWorkspaceMatches, $clearChecks)
+            Write-Output ("Waiting for permanent LAW delete to settle: activeGone={0} softDeletedGone={1} clearChecks={2}/3" -f (-not [bool]$activeWorkspace), (-not [bool]$deletedWorkspaceMatches), $clearChecks)
 
             if ($clearChecks -ge 3) {
                 Write-Output "Permanent LAW delete is settled for '$($config['runtime']['logAnalyticsWorkspaceName'])'."
