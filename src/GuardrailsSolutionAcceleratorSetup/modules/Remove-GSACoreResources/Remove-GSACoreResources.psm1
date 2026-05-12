@@ -561,5 +561,10 @@ Function Remove-GSACoreResources {
         throw "Could not confirm whether Guardrails Solution Accelerator Resource Group '$($config['runtime']['resourceGroup'])' exists before deletion. ARM status '$($initialResourceGroupState.StatusCode)': $($initialResourceGroupState.Message)"
     }
 
-    Write-Host "Completed cleanup of Guardrails Solution Accelerator core resources. If -wait parameter was not specified, the core Resource Group deletion may still be in progress." -ForegroundColor Green
+    if ($wait.IsPresent) {
+        Write-Host "Completed cleanup of Guardrails Solution Accelerator core resources. Resource group deletion was confirmed." -ForegroundColor Green
+    }
+    else {
+        Write-Host "Completed cleanup of Guardrails Solution Accelerator core resources. Resource group deletion may still be in progress because -Wait was not specified." -ForegroundColor Green
+    }
 }
