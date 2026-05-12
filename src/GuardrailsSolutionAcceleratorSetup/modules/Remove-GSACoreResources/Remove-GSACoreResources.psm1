@@ -157,12 +157,13 @@ Function Remove-GSACoreResources {
             $ResourceGroupName
         )
 
-        $resourceGroupPath = "/subscriptions/$SubscriptionId/resourcegroups/$ResourceGroupName?api-version=2021-04-01"
+        $encodedResourceGroupName = [System.Uri]::EscapeDataString($ResourceGroupName)
+        $resourceGroupUri = ('https://management.azure.com/subscriptions/{0}/resourceGroups/{1}?api-version=2021-04-01' -f $SubscriptionId, $encodedResourceGroupName) -as [uri]
         $statusCode = $null
         $message = $null
 
         try {
-            $response = Invoke-AzRestMethod -Method GET -Path $resourceGroupPath -ErrorAction Stop
+            $response = Invoke-AzRestMethod -Method GET -Uri $resourceGroupUri -ErrorAction Stop
             $statusCode = & $convertToHttpStatusCode -StatusCode $response.StatusCode
             $message = $response.Content
         }
