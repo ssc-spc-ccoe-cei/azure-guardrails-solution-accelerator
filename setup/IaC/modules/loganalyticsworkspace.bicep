@@ -984,6 +984,7 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
 let reportTime = ReportTime;
 // let mfaGracePeriodDays = toint(MfaGracePeriodDays);
 let mfaGracePeriod = 30d;
+let mfaGracePeriodDays = toint(mfaGracePeriod / 1d);
 let locale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
@@ -1154,8 +1155,8 @@ let finalSummary = summary
         Comments)
 | extend Comments = iff(gracePeriodCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
-            strcat("Exclusion de ", tostring(gracePeriodCount), " utilisateurs dans la période de grâce AMF de ", tostring(mfaGracePeriod), " jours"),
-            strcat("Excluded ", tostring(gracePeriodCount), " users in the MFA grace period of ", tostring(mfaGracePeriod), " days"))),
+            strcat("Exclusion de ", tostring(gracePeriodCount), " utilisateurs dans la période de grâce AMF de ", tostring(mfaGracePeriodDays), " jours"),
+            strcat("Excluded ", tostring(gracePeriodCount), " Users as they are within the ", tostring(mfaGracePeriodDays), " Days MFA Grace Period"))),
         Comments);
 finalSummary
 | project 
