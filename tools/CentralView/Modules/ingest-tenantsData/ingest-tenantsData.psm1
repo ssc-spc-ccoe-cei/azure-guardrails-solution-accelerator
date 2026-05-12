@@ -9,11 +9,13 @@ function Send-GuardrailsData {
         [Parameter(Mandatory = $false)] [string] $WorkSpaceKey
     )
 
-    $dceEndpoint    = $env:DCE_ENDPOINT
-    $dcrImmutableId = $env:DCR_IMMUTABLE_ID
+    # LOGS_INGESTION_ENDPOINT was previously named DCE_ENDPOINT (when a separate DCE resource was used).
+    # The DCR now hosts its own logsIngestion endpoint so the env var name has been clarified.
+    $logsIngestionEndpoint = $env:LOGS_INGESTION_ENDPOINT
+    $dcrImmutableId        = $env:DCR_IMMUTABLE_ID
 
-    if (-not $dceEndpoint)    { throw "DCE_ENDPOINT app setting is not set on the Function App." }
-    if (-not $dcrImmutableId) { throw "DCR_IMMUTABLE_ID app setting is not set on the Function App." }
+    if (-not $logsIngestionEndpoint) { throw "LOGS_INGESTION_ENDPOINT app setting is not set on the Function App." }
+    if (-not $dcrImmutableId)        { throw "DCR_IMMUTABLE_ID app setting is not set on the Function App." }
 
     $streamName = switch ($LogType) {
         'GuardrailsTenantsCompliance' { 'Custom-GuardrailsTenantsCompliance' }
@@ -101,7 +103,7 @@ function Send-GuardrailsData {
         $tokenPlain    = $tokenResponse.Token
     }
 
-    $uri     = "$dceEndpoint/dataCollectionRules/$dcrImmutableId/streams/$streamName" + '?api-version=2023-01-01'
+    $uri     = "$logsIngestionEndpoint/dataCollectionRules/$dcrImmutableId/streams/$streamName" + '?api-version=2023-01-01'
     $body    = [System.Text.Encoding]::UTF8.GetBytes($Data)
     $headers = @{
         Authorization            = "Bearer $tokenPlain"

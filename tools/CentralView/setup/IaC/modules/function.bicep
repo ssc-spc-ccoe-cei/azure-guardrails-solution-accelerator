@@ -4,7 +4,7 @@ param storageAccountName string
 param kvname string
 param lawresourceid string
 param appInsightsLocation string
-param dceEndpoint string
+param logsIngestionEndpoint string
 param dcrImmutableId string
 
 //Storage Account
@@ -171,7 +171,7 @@ resource azfunctionsiteconfig 'Microsoft.Web/sites/config@2021-03-01' = {
   properties: {
     'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING':'DefaultEndpointsProtocol=https;AccountName=${guardrailsStorage.name};AccountKey=${listKeys(guardrailsStorage.id, guardrailsStorage.apiVersion).keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
     'AzureWebJobsStorage':'DefaultEndpointsProtocol=https;AccountName=${guardrailsStorage.name};AccountKey=${listKeys(guardrailsStorage.id, guardrailsStorage.apiVersion).keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-    'WEBSITE_CONTENTSHARE' : guardrailsStorage.name
+    'WEBSITE_CONTENTSHARE' : toLower(guardrailsStorage.name)
     'FUNCTIONS_WORKER_RUNTIME':'powershell'
     'FUNCTIONS_EXTENSION_VERSION':'~4'
     'KEYVAULTNAME': kvname
@@ -179,7 +179,7 @@ resource azfunctionsiteconfig 'Microsoft.Web/sites/config@2021-03-01' = {
     'APPINSIGHTS_INSTRUMENTATIONKEY': reference(appinsights.id, '2020-02-02-preview').InstrumentationKey
     'APPLICATIONINSIGHTS_CONNECTION_STRING': 'InstrumentationKey=${reference(appinsights.id, '2020-02-02-preview').InstrumentationKey}'
     'ApplicationInsightsAgent_EXTENSION_VERSION': '~2'
-    'DCE_ENDPOINT': dceEndpoint
+    'LOGS_INGESTION_ENDPOINT': logsIngestionEndpoint
     'DCR_IMMUTABLE_ID': dcrImmutableId
   }
 }

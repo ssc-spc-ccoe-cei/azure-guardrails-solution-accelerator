@@ -221,29 +221,18 @@ resource f1 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   }
 }
 
-// DCE + DCR for Send-GuardrailsData (Log Ingestion API). CentralView posts LogType GuardrailsTenantsCompliance only.
+// DCR for Send-GuardrailsData (Log Ingestion API). CentralView posts LogType GuardrailsTenantsCompliance only.
+// 'Direct' kind DCRs expose their own logsIngestion endpoint (properties.endpoints.logsIngestion),
+// so a separate DCE resource is no longer needed
+// (see https://learn.microsoft.com/azure/azure-monitor/logs/tutorial-logs-ingestion-portal).
 // Grant the Function App service principal (used after Connect-AzAccount -ServicePrincipal in run.ps1) Monitoring Metrics Publisher on this DCR.
-// Expose dceEndpoint + dcrImmutableId to the Function App as DCE_ENDPOINT and DCR_IMMUTABLE_ID app settings.
-var centralDceName = 'guardrails-cv-dce'
+// Expose logsIngestionEndpoint (DCR's own ingestion endpoint) + dcrImmutableId to the Function App as LOGS_INGESTION_ENDPOINT and DCR_IMMUTABLE_ID app settings.
 var centralDcrName = 'guardrails-cv-dcr'
 var centralTenantsComplianceTransformKql = loadTextContent('law-centralview-tenantscompliance-transform.kql')
 
-resource centralDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = {
-  name: centralDceName
-  location: location
-  tags: {
-    version: version
-    releasedate: releaseDate
-  }
-  kind: 'Logs'
-  properties: {
-    networkAcls: {
-      publicNetworkAccess: 'Enabled'
-    }
-  }
-}
-
-resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' = {
+resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' = {
+  // NOTE: 2023-03-11 (and later) expose the DCR's built-in logsIngestion endpoint at
+  //       properties.endpoints.logsIngestion, removing the need for a separate DCE resource.
   name: centralDcrName
   location: location
   tags: {
@@ -255,7 +244,6 @@ resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-
     centralTableGuardrailsTenantsCompliance
   ]
   properties: {
-    dataCollectionEndpointId: centralDataCollectionEndpoint.id
     dataFlows: [
       {
         streams: ['Custom-GuardrailsTenantsCompliance']
@@ -411,7 +399,8 @@ resource centralDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-
 
 output customerId string = guardrailsLogAnalytics.properties.customerId
 output lawresourceid string = guardrailsLogAnalytics.id
-output dceEndpoint string = centralDataCollectionEndpoint.properties.logsIngestion.endpoint
+// DCR's own Logs Ingestion endpoint - no separate DCE resource is created/required.
+// Surfaced to the Function App as the LOGS_INGESTION_ENDPOINT app setting.
+output logsIngestionEndpoint string = centralDataCollectionRule.properties.endpoints.logsIngestion
 output dcrImmutableId string = centralDataCollectionRule.properties.immutableId
 output dcrResourceId string = centralDataCollectionRule.id
-output dceResourceId string = centralDataCollectionEndpoint.id

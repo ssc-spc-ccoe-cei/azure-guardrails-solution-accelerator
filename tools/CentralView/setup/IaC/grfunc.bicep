@@ -54,7 +54,7 @@ module functionapp 'modules/function.bicep' = {
     storageAccountName: storageAccountName
     lawresourceid: law.outputs.lawresourceid
     appInsightsLocation: appInsightslocation
-    dceEndpoint: law.outputs.dceEndpoint
+    logsIngestionEndpoint: law.outputs.logsIngestionEndpoint
     dcrImmutableId: law.outputs.dcrImmutableId
   }
 }
