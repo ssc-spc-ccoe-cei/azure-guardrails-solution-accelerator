@@ -285,13 +285,14 @@ Write-Output "Starting resource group delete for '$ResourceGroupName'."
 Remove-AzResourceGroup -Name $ResourceGroupName -Force -AsJob -ErrorAction SilentlyContinue | Out-Null
 
 $deleteDeadline = (Get-Date).AddMinutes($TimeoutMinutes)
+$requiredResourceGroupClearChecks = 2
 $clearChecks = 0
 do {
     $resourceGroupState = Get-ResourceGroupArmState -SubscriptionId $SubscriptionId -ResourceGroupName $ResourceGroupName
     if ($resourceGroupState.State -eq 'Deleted') {
         $clearChecks++
-        Write-Output "Resource group '$ResourceGroupName' is no longer returned by ARM (clearChecks=$clearChecks/3)."
-        if ($clearChecks -ge 3) {
+        Write-Output "Resource group '$ResourceGroupName' is no longer returned by ARM (clearChecks=$clearChecks/$requiredResourceGroupClearChecks)."
+        if ($clearChecks -ge $requiredResourceGroupClearChecks) {
             Write-Output "Resource group '$ResourceGroupName' deletion confirmed."
             return
         }
@@ -306,7 +307,7 @@ do {
         Write-Warning "Retrying resource group deletion check after transient ARM status '$($resourceGroupState.StatusCode)': $($resourceGroupState.Message)"
     }
 
-    if ($clearChecks -ge 3) {
+    if ($clearChecks -ge $requiredResourceGroupClearChecks) {
         Write-Output "Resource group '$ResourceGroupName' deletion confirmed."
         return
     }

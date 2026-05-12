@@ -304,6 +304,7 @@ Function Remove-GSACoreResources {
         )
 
         $resourceDeleteDeadline = (Get-Date).AddMinutes(15)
+        $requiredResourceClearChecks = 2
         $resourceClearChecks = 0
         do {
             try {
@@ -314,7 +315,7 @@ Function Remove-GSACoreResources {
             catch {
                 if ($_.Exception.Message -match 'could not be found|ResourceNotFound|NotFound') {
                     $resourceClearChecks++
-                    Write-Verbose "Waiting for $ResourceName deletion to finish: not found clearChecks=$resourceClearChecks/3."
+                    Write-Verbose "Waiting for $ResourceName deletion to finish: not found clearChecks=$resourceClearChecks/$requiredResourceClearChecks."
                 }
                 else {
                     $resourceClearChecks = 0
@@ -322,7 +323,7 @@ Function Remove-GSACoreResources {
                 }
             }
 
-            if ($resourceClearChecks -ge 3) {
+            if ($resourceClearChecks -ge $requiredResourceClearChecks) {
                 break
             }
 
@@ -445,6 +446,7 @@ Function Remove-GSACoreResources {
         } while ($true)
     }
 
+    $requiredResourceGroupClearChecks = 2
     $initialResourceGroupState = & $getResourceGroupArmState -SubscriptionId $config['runtime']['subscriptionId'] -ResourceGroupName $config['runtime']['resourceGroup']
     If ($initialResourceGroupState.State -eq 'Exists') {
         Write-Output "Starting Guardrails resource group delete for '$($config['runtime']['resourceGroup'])'."
@@ -464,8 +466,8 @@ Function Remove-GSACoreResources {
                 $resourceGroupState = & $getResourceGroupArmState -SubscriptionId $config['runtime']['subscriptionId'] -ResourceGroupName $config['runtime']['resourceGroup']
                 if ($resourceGroupState.State -eq 'Deleted') {
                     $rgClearChecksDuringJobWait++
-                    Write-Output "Resource group '$($config['runtime']['resourceGroup'])' is no longer returned by ARM while delete job is still '$($job.State)' (clearChecks=$rgClearChecksDuringJobWait/3)."
-                    if ($rgClearChecksDuringJobWait -ge 3) {
+                    Write-Output "Resource group '$($config['runtime']['resourceGroup'])' is no longer returned by ARM while delete job is still '$($job.State)' (clearChecks=$rgClearChecksDuringJobWait/$requiredResourceGroupClearChecks)."
+                    if ($rgClearChecksDuringJobWait -ge $requiredResourceGroupClearChecks) {
                         $rgDeletedBeforeJobCompleted = $true
                         break
                     }
@@ -482,7 +484,7 @@ Function Remove-GSACoreResources {
                     Write-Output "Retrying resource group deletion check after transient ARM status '$($resourceGroupState.StatusCode)': $($resourceGroupState.Message)"
                 }
 
-                if ($rgClearChecksDuringJobWait -ge 3) {
+                if ($rgClearChecksDuringJobWait -ge $requiredResourceGroupClearChecks) {
                     $rgDeletedBeforeJobCompleted = $true
                     break
                 }
@@ -522,8 +524,8 @@ Function Remove-GSACoreResources {
                     $resourceGroupState = & $getResourceGroupArmState -SubscriptionId $config['runtime']['subscriptionId'] -ResourceGroupName $config['runtime']['resourceGroup']
                     if ($resourceGroupState.State -eq 'Deleted') {
                         $rgClearChecks++
-                        Write-Output "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: ARM returned 404 clearChecks=$rgClearChecks/3."
-                        if ($rgClearChecks -ge 3) {
+                        Write-Output "Waiting for resource group '$($config['runtime']['resourceGroup'])' deletion to finish: ARM returned 404 clearChecks=$rgClearChecks/$requiredResourceGroupClearChecks."
+                        if ($rgClearChecks -ge $requiredResourceGroupClearChecks) {
                             break
                         }
                         Start-Sleep -Seconds 30
@@ -539,7 +541,7 @@ Function Remove-GSACoreResources {
                         Write-Output "Retrying resource group deletion check after transient ARM status '$($resourceGroupState.StatusCode)': $($resourceGroupState.Message)"
                     }
 
-                    if ($rgClearChecks -ge 3) {
+                    if ($rgClearChecks -ge $requiredResourceGroupClearChecks) {
                         break
                     }
 
