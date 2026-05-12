@@ -1304,7 +1304,7 @@ let mfaAnalysis = userData
         tostring(localizedMessages["noMfaConfigured"])
     );
 let nonCompliantUsers = mfaAnalysis
-| where isWithinGracePeriod == false
+// | where isWithinGracePeriod == false
 | where isMfaCompliant == false
 | extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
 | join kind=leftouter (
