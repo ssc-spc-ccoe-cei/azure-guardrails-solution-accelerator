@@ -35,6 +35,75 @@ param (
 
 $ErrorActionPreference = 'Stop'
 
+function ConvertTo-ArmHttpStatusCode {
+    param (
+        $StatusCode
+    )
+
+    if ($null -eq $StatusCode) {
+        return $null
+    }
+
+    try {
+        return [int]$StatusCode
+    }
+    catch {
+        try {
+            return [int][System.Net.HttpStatusCode]::$StatusCode
+        }
+        catch {
+            return $null
+        }
+    }
+}
+
+# Query ARM directly so deletion confirmation is based on HTTP status
+# codes instead of localized Azure PowerShell error text.
+function Get-ResourceGroupArmState {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $SubscriptionId,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ResourceGroupName
+    )
+
+    $resourceGroupPath = "/subscriptions/$SubscriptionId/resourcegroups/$ResourceGroupName?api-version=2021-04-01"
+    $statusCode = $null
+    $message = $null
+
+    try {
+        $response = Invoke-AzRestMethod -Method GET -Path $resourceGroupPath -ErrorAction Stop
+        $statusCode = ConvertTo-ArmHttpStatusCode -StatusCode $response.StatusCode
+        $message = $response.Content
+    }
+    catch {
+        $message = $_.Exception.Message
+        if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+            $statusCode = ConvertTo-ArmHttpStatusCode -StatusCode $_.Exception.Response.StatusCode
+        }
+        elseif ($_.Exception.StatusCode) {
+            $statusCode = ConvertTo-ArmHttpStatusCode -StatusCode $_.Exception.StatusCode
+        }
+    }
+
+    if ($statusCode -eq 200 -or $statusCode -eq 204) {
+        return [pscustomobject]@{ State = 'Exists'; StatusCode = $statusCode; Message = $message }
+    }
+
+    if ($statusCode -eq 404) {
+        return [pscustomobject]@{ State = 'Deleted'; StatusCode = $statusCode; Message = $message }
+    }
+
+    if ($statusCode -eq 408 -or $statusCode -eq 409 -or $statusCode -eq 429 -or ($statusCode -ge 500 -and $statusCode -lt 600) -or $null -eq $statusCode) {
+        return [pscustomobject]@{ State = 'Retry'; StatusCode = $statusCode; Message = $message }
+    }
+
+    throw "Resource group existence check failed for '$ResourceGroupName' with ARM status '$statusCode'. Error: $message"
+}
+
 function Start-StaleArmResourceDelete {
     # DCR deletes are best-effort for stale CI resource groups. Any failure
     # is logged and execution continues. The active-resource drain check at the
@@ -204,10 +273,16 @@ foreach ($staleResourceGroup in $staleResourceGroups) {
             $remainingResources = @(Get-AzResource -ResourceGroupName $staleResourceGroup.ResourceGroupName -ErrorAction Stop)
         }
         catch {
-            $resourceGroup = Get-AzResourceGroup -Name $staleResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue
-            if (-not $resourceGroup) {
+            $resourceGroupState = Get-ResourceGroupArmState -SubscriptionId $SubscriptionId -ResourceGroupName $staleResourceGroup.ResourceGroupName
+            if ($resourceGroupState.State -eq 'Deleted') {
                 Write-Output "Stale CI resource group '$($staleResourceGroup.ResourceGroupName)' no longer exists. Continuing with the current deployment suffix."
                 break
+            }
+
+            if ($resourceGroupState.State -eq 'Retry') {
+                Write-Warning "Retrying stale CI resource group deletion check after transient ARM status '$($resourceGroupState.StatusCode)': $($resourceGroupState.Message)"
+                Start-Sleep -Seconds $PollIntervalSeconds
+                continue
             }
 
             throw "Failed to enumerate remaining resources in stale CI resource group '$($staleResourceGroup.ResourceGroupName)'. Cleanup cannot safely determine whether only DCR resources remain. Error: $($_.Exception.Message)"
