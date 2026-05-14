@@ -9,6 +9,7 @@ param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
 param updateCoreResources bool = false
+param mfaGracePeriod int
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
@@ -982,9 +983,8 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     displayName: 'gr_mfa_evaluation'
     query: '''
 let reportTime = ReportTime;
-// let mfaGracePeriodDays = toint(MfaGracePeriodDays);
-let mfaGracePeriod = 30d;
-let mfaGracePeriodDays = toint(mfaGracePeriod / 1d);
+let mfaGracePeriodDays = toint(${mfaGracePeriod});
+let mfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
@@ -1182,7 +1182,8 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     displayName: 'gr_non_mfa_users'
     query: '''
 let reportTime = ReportTime;
-let mfaGracePeriod = 30d;
+let mfaGracePeriodDays = toint(${mfaGracePeriod});
+let mfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s

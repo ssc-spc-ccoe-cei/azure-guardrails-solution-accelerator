@@ -202,6 +202,7 @@ Write-Output  "reservedSubnetList: $(Get-GSAAutomationVariable -Name "reservedSu
 Write-Output  "TenantDomainUPN: $(Get-GSAAutomationVariable -Name "TenantDomainUPN")"
 Write-Output  "WorkSpaceID: $(Get-GSAAutomationVariable -Name "WorkSpaceID")"
 Write-Output  "GuardrailsAutomationAccountMSI: $(Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI")"
+Write-Output  "MfaGracePeriod: $(Get-GSAAutomationVariable -Name "MfaGracePeriod")"
 
 
 #Standard variables

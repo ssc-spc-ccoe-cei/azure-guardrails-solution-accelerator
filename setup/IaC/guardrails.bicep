@@ -37,6 +37,7 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
+param mfaGracePeriod int
 
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
@@ -121,6 +122,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
     updateCoreResources: updateCoreResources
+    mfaGracePeriod: mfaGracePeriod
   }
 }
 

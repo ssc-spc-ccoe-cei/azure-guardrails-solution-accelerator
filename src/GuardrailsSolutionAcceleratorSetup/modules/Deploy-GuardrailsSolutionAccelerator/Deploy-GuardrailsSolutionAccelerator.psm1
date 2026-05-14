@@ -74,6 +74,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'subscriptionId'                        = (Get-AzContext).Subscription.Id
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
         'securityRetentionDays'                   = $config.securityRetentionDays
+        'mfaGracePeriod'                         = $config['runtime']['mfaGracePeriod']
 
     }
     # Adding URL parameter if specified
