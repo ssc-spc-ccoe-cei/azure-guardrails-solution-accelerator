@@ -850,38 +850,6 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
   }
 }
 
-// Capture Azure-side DCR processing errors that can occur after the upload API accepts data.
-// Only LogErrors is enabled here; no noisier troubleshooting category is enabled by default.
-resource dcrErrorDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (newDeployment || updateCoreResources) {
-  name: '${dcrName}-errors'
-  scope: dataCollectionRule
-  properties: {
-    workspaceId: logAnalyticsWorkspaceResourceId
-    logs: [
-      {
-        category: 'LogErrors'
-        enabled: true
-      }
-    ]
-  }
-}
-
-resource dcr2ErrorDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (newDeployment || updateCoreResources) {
-  name: '${dcrName2}-errors'
-  scope: dataCollectionRule2
-  properties: {
-    workspaceId: logAnalyticsWorkspaceResourceId
-    logs: [
-      {
-        category: 'LogErrors'
-        enabled: true
-      }
-    ]
-  }
-}
-
 // Outputs
-output dcrImmutableId string = (newDeployment || updateCoreResources) ? dataCollectionRule.properties.immutableId : ''
-output dcrImmutableId2 string = (newDeployment || updateCoreResources) ? dataCollectionRule2.properties.immutableId : ''
 output dcrResourceId string = (newDeployment || updateCoreResources) ? dataCollectionRule.id : ''
 output dcrResourceId2 string = (newDeployment || updateCoreResources) ? dataCollectionRule2.id : ''

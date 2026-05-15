@@ -1,7 +1,7 @@
 name: Pre-clean Guardrails CI deployment
 description: |
-  Selects the configured CI suffix, removes stale CI resource groups, writes config.json,
-  and removes the current Guardrails deployment.
+  Selects the configured CI suffix, writes config.json, and removes the current
+  Guardrails deployment.
 
   Requires a prior azure/login@v2 step in the calling job to establish Az context.
 
@@ -15,12 +15,6 @@ inputs:
   unique-name-suffix:
     required: true
     description: Stable unique suffix used for the current deployment.
-  stale-resource-group-prefix:
-    required: true
-    description: Prefix used to find stale CI resource groups.
-  stale-log-analytics-workspace-prefix:
-    required: true
-    description: Prefix used to find the stale CI Log Analytics workspace.
   key-vault-name:
     required: true
     description: Base Key Vault name for config.json.
@@ -112,8 +106,6 @@ runs:
       env:
         GSA_SUBSCRIPTION_ID: ${{ inputs.subscription-id }}
         GSA_SUFFIX_ENV_NAME: ${{ inputs.suffix-environment-variable-name }}
-        GSA_STALE_RESOURCE_GROUP_PREFIX: ${{ inputs.stale-resource-group-prefix }}
-        GSA_STALE_LAW_PREFIX: ${{ inputs.stale-log-analytics-workspace-prefix }}
         GSA_KEY_VAULT_NAME: ${{ inputs.key-vault-name }}
         GSA_RESOURCE_GROUP: ${{ inputs.resource-group }}
         GSA_STORAGE_ACCOUNT_NAME: ${{ inputs.storage-account-name }}
@@ -147,12 +139,6 @@ runs:
           Import-Module (Join-Path $actionRepoRoot 'src/GuardrailsSolutionAcceleratorSetup')
 
           $uniqueNameSuffix = [Environment]::GetEnvironmentVariable($env:GSA_SUFFIX_ENV_NAME)
-
-          & (Join-Path $actionRepoRoot 'tools/Invoke-StaleGuardrailsCiCleanup.ps1') `
-            -SubscriptionId $env:GSA_SUBSCRIPTION_ID `
-            -ResourceGroupPrefix $env:GSA_STALE_RESOURCE_GROUP_PREFIX `
-            -CurrentUniqueNameSuffix $uniqueNameSuffix `
-            -LogAnalyticsWorkspacePrefix $env:GSA_STALE_LAW_PREFIX
 
           $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
           $config = [ordered]@{

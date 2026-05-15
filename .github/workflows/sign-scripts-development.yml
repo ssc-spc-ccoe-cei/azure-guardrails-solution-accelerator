@@ -132,8 +132,6 @@ jobs:
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX }}
-          stale-resource-group-prefix: guardrailscac_test-
-          stale-log-analytics-workspace-prefix: gsapipe-
           key-vault-name: gsapipe
           resource-group: guardrailscac_test
           storage-account-name: gsapipe

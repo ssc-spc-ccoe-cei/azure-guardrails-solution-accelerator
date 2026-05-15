@@ -119,8 +119,6 @@ jobs:
           subscription-id: ${{ vars.DEVSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX_DEV
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-          stale-resource-group-prefix: guardrailscacdev-
-          stale-log-analytics-workspace-prefix: logcac-
           key-vault-name: kvcac
           resource-group: guardrailscacdev
           storage-account-name: stcac
