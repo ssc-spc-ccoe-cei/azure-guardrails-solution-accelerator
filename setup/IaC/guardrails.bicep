@@ -56,6 +56,7 @@ module telemetry './nested_telemetry.bicep' =  if (telemetryInfo.customerUsageAt
 module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: 'guardrails-automationaccount'
   params: {
+    mfaGracePeriod: mfaGracePeriod
     AllowedLocationPolicyId: AllowedLocationPolicyId
     AllowedLocationInitiativeId: AllowedLocationInitiativeId
     automationAccountName: automationAccountName
