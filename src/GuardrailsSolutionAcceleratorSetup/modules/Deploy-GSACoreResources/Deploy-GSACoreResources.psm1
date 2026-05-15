@@ -71,75 +71,6 @@ Function Deploy-GSACoreResources {
         Write-Warning "Failed to persist automation account MSI id to variable '$automationVariableName'. Telemetry MSI scan will be skipped until this is set. $_"
     }
 
-    <#
-    .SYNOPSIS
-    Idempotently creates a role assignment with retry for transient MSI propagation errors.
-
-    .DESCRIPTION
-    Newly-created Automation Account MSIs can take seconds to minutes to propagate.
-    Role assignments using the MSI object ID during that window can fail with
-    principal-not-found errors. This wrapper sets ObjectType to ServicePrincipal
-    to bypass the AAD principal-type lookup that fails during MSI propagation,
-    skips existing assignments, re-checks after errors in case creation
-    succeeded, retries bounded transient failures, and fails fast on
-    non-retryable errors such as role-assignment quota or policy denial.
-    #>
-    function Set-GSARoleAssignment {
-        param (
-            [Parameter(Mandatory = $true)]
-            [string]
-            $ObjectId,
-
-            [Parameter(Mandatory = $true)]
-            [string]
-            $RoleDefinitionName,
-
-            [Parameter(Mandatory = $true)]
-            [string]
-            $Scope,
-
-            [Parameter(Mandatory = $true)]
-            [string]
-            $Description
-        )
-
-        $retryDelaysInSeconds = @(30, 60, 120, 180)
-        for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
-            try {
-                $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
-                if ($existingAssignment) {
-                    Write-Verbose "`tRole assignment already exists: $Description"
-                    return
-                }
-
-                New-AzRoleAssignment -ObjectId $ObjectId -ObjectType ServicePrincipal -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
-                Write-Verbose "`tCreated role assignment: $Description"
-                return
-            }
-            catch {
-                $errorMessage = $_.Exception.Message
-                $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction SilentlyContinue
-                if ($existingAssignment) {
-                    Write-Verbose "`tRole assignment exists after retryable error: $Description"
-                    return
-                }
-
-                # Keep this narrow: quota, policy, permission, and malformed-scope
-                # failures should surface immediately instead of being hidden by
-                # a propagation retry.
-                $isRetryableRoleAssignmentError = $errorMessage -match '(?i)(PrincipalNotFound|Cannot find principal|does not exist in the directory|not (yet )?(been )?registered|principal .* (was )?not found|principal .* does not exist|PrincipalTypeNotSupported)'
-                $isLastAttempt = $attempt -gt $retryDelaysInSeconds.Count
-                if (-not $isRetryableRoleAssignmentError -or $isLastAttempt) {
-                    throw "Failed to assign role '$RoleDefinitionName' on scope '$Scope' to Automation Account MSI object '$ObjectId' for '$Description'. Error: $errorMessage"
-                }
-
-                $retryDelayInSeconds = $retryDelaysInSeconds[$attempt - 1]
-                Write-Warning "Role assignment '$Description' failed on attempt $attempt of $($retryDelaysInSeconds.Count + 1). This looks like transient MSI lookup lag. Waiting $retryDelayInSeconds seconds before retrying. Error: $errorMessage"
-                Start-Sleep -Seconds $retryDelayInSeconds
-            }
-        }
-    }
-
     Write-Verbose "Core resource bicep deployment complete!"
 
     Write-Verbose "Granting Automation Account MSI permission to the Graph API"
@@ -197,17 +128,17 @@ Function Deploy-GSACoreResources {
     Write-Verbose "Granting the Automation Account required permissions to the deployed environment (for scanning)..."
     try {
         Write-Verbose "`tAssigning reader access to the Automation Account Managed Identity for MG: $($rootmg.DisplayName)"
-        Set-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $config['runtime']['tenantRootManagementGroupId'] -Description "Reader on root management group '$($rootmg.DisplayName)'"
+        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $config['runtime']['tenantRootManagementGroupId'] | Out-Null
 
         Write-Verbose "`tAssigning 'Reader and Data Access' role to Automation Account MSI on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
         $StorageAccountID = (Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageaccountName']).Id
-        Set-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Reader and Data Access" -Scope $StorageAccountID -Description "Reader and Data Access on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
+        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Reader and Data Access" -Scope $StorageAccountID | Out-Null
 
         Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure AD IAM scope"
-        Set-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' -Description "Reader on Azure AD IAM scope"
+        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' | Out-Null
 
         Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure MarketPlace"
-        Set-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' -Description "Reader on Azure Marketplace scope"
+        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' | Out-Null
     }
     catch {
         Write-Error "Error assigning root management group permissions. $_"
