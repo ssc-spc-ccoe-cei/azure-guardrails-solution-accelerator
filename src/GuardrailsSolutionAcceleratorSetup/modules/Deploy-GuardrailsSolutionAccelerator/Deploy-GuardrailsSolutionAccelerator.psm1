@@ -406,17 +406,6 @@ Function Deploy-GuardrailsSolutionAccelerator {
             $paramObject.deployLAW = $false
             $paramObject += @{newDeployment = $false }
 
-            $dcrDependentComponents = @('CoreComponents', 'GuardrailPowerShellModules', 'AutomationAccountRunbooks')
-            if ($componentsToUpdate | Where-Object { $_ -in $dcrDependentComponents }) {
-                $dcrResourceGroupName = $config['runtime']['resourceGroup']
-                $existingDcr = Get-AzResource -ResourceGroupName $dcrResourceGroupName -ResourceType 'Microsoft.Insights/dataCollectionRules' -Name 'guardrails-dcr' -ErrorAction SilentlyContinue
-                $existingDcr2 = Get-AzResource -ResourceGroupName $dcrResourceGroupName -ResourceType 'Microsoft.Insights/dataCollectionRules' -Name 'guardrails-dcr-2' -ErrorAction SilentlyContinue
-
-                if (-not $existingDcr -or -not $existingDcr2) {
-                    throw "Update would publish DCR-dependent Guardrails components, but 'guardrails-dcr' and 'guardrails-dcr-2' were not both found in resource group '$dcrResourceGroupName'. The first DCR baseline is a breaking change and does not support migration through -update. Clean up the existing deployment and run a fresh deployment instead."
-                }
-            }
-
             If ($PSBoundParameters.ContainsKey('componentsToUpdate')) {
                 Write-Warning "Specifying individual components to update with -componentsToUpdate risks deploying out-of-sync components; ommiting this parameter and updating all components is recommended. You selected to update $($componentsToUpdate -join ', '). Updating individual components should be done with caution. `n`nPress ENTER to continue or CTRL+C to cancel..."
                 Read-Host
