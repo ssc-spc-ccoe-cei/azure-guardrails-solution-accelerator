@@ -550,6 +550,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         Write-Host "Invoking manual execution of Azure Automation runbooks..."
         try{
             Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+            Write-Host "Completed deployment of the Guardrails Solution Accelerator and started main/backend runbooks." -ForegroundColor Green
         }
         catch{
             Write-Error "Error in invoking Azure automation runbook. $_"
