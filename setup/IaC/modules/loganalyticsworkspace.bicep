@@ -981,7 +981,7 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_mfa_evaluation'
-    query: '''
+    query: $'''
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(${mfaGracePeriod});
 let mfaGracePeriod = mfaGracePeriodDays * 1d;
@@ -1180,7 +1180,7 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_non_mfa_users'
-    query: '''
+    query: $'''
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(${mfaGracePeriod});
 let mfaGracePeriod = mfaGracePeriodDays * 1d;
