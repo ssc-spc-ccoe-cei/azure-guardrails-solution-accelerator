@@ -40,14 +40,21 @@ Function Deploy-GSACoreResources {
             }
 
             $isDcrTableReadinessError = $deploymentErrorText -match 'InvalidOutputTable'
+            $isStorageContainerReadinessError = $deploymentErrorText -match 'ContainerOperationFailure' -and
+                $deploymentErrorText -match 'The specified resource does not exist'
             $isLastAttempt = $deploymentAttempt -gt $deploymentRetryDelaysInSeconds.Count
-            if (-not $isDcrTableReadinessError -or $isLastAttempt) {
+            if (-not ($isDcrTableReadinessError -or $isStorageContainerReadinessError) -or $isLastAttempt) {
                 Write-Error "Failed to deploy main Guardrails Accelerator template with error: $deploymentErrorText"
                 Exit
             }
 
             $retryDelayInSeconds = $deploymentRetryDelaysInSeconds[$deploymentAttempt - 1]
-            Write-Warning "Core deployment hit DCR table readiness error (InvalidOutputTable) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
+            if ($isDcrTableReadinessError) {
+                Write-Warning "Core deployment hit DCR table readiness error (InvalidOutputTable) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
+            }
+            else {
+                Write-Warning "Core deployment hit storage container readiness error (ContainerOperationFailure) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
+            }
             Start-Sleep -Seconds $retryDelayInSeconds
         }
     }
