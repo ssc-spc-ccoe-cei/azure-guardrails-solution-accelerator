@@ -1,7 +1,11 @@
 # Input bindings are passed in via param block.
 param($Timer)
 
-$body = "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
+# Import the ingest-tenantsData module
+Import-Module "$PSScriptRoot\..\Modules\ingest-tenantsData\ingest-tenantsData.psm1" -Force
+
+# Write to the Azure Functions log stream.
+Write-Host "PowerShell timer trigger function processed a request."
 Connect-AzAccount -Identity
 $rg=$env:ResourceGroup #"ssc-centralview"
 $KeyvaultName=$env:KEYVAULTNAME #"ssccentralview"
@@ -10,8 +14,6 @@ $KeyvaultName=$env:KEYVAULTNAME #"ssccentralview"
 $KV=Get-AzKeyVault -ResourceGroupName $rg -VaultName $keyVaultName 
 $ApplicationId=Get-AzKeyVaultSecret -VaultName $keyVaultName -Name "ApplicationId" -asplaintext
 $SecuredPassword=Get-AzKeyVaultSecret -VaultName $keyVaultName -Name "SecurePassword" -asplaintext
-$workspaceId=Get-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkspaceId" -asplaintext
-$WorkspaceKey=Get-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkspaceKey" -asplaintext
 #New variables to store the tenant ID and tenant name for the aggreation tenant.
 $TenantId=Get-AzKeyVaultSecret -VaultName $keyVaultName -Name "TenantId" -asplaintext
 $TenantName=Get-AzKeyVaultSecret -VaultName $keyVaultName -Name "TenantName" -asplaintext
@@ -30,8 +32,8 @@ catch {
 $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 "Report Time: $ReportTime"
 try {
-    get-tenantdata -workspaceID $workspaceId -workspacekey $WorkspaceKey -ReportTime $ReportTime `
-        -tenantName $TenantName -tenantDomainUPN $TenantDomainUPN -tenantId $TenantId -DebugInfo:$true
+    # Updated function call without workspace parameters (DCR ingestion doesn't need them)
+    get-tenantdata -ReportTime $ReportTime -tenantName $TenantName -tenantDomainUPN $TenantDomainUPN -tenantId $TenantId -DebugInfo:$true
 }
 catch {
     Write-Output "Error running get-tenantdata: $($_.Exception.Message)"

@@ -3,10 +3,8 @@ function Send-GuardrailsData {
     # so the Function App package is self-contained (the src/ folder is not deployed to wwwroot).
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)] [string] $Data,
-        [Parameter(Mandatory = $true)] [string] $LogType,
-        [Parameter(Mandatory = $false)] [string] $WorkSpaceID,
-        [Parameter(Mandatory = $false)] [string] $WorkSpaceKey
+        [Parameter(Mandatory = $true)] $Data,
+        [Parameter(Mandatory = $true)] [string] $LogType
     )
 
     # LOGS_INGESTION_ENDPOINT was previously named DCE_ENDPOINT (when a separate DCE resource was used).
@@ -22,10 +20,22 @@ function Send-GuardrailsData {
         default                       { "Custom-$LogType" }
     }
 
-    if ($Data.Trim().StartsWith('{')) { $Data = "[$Data]" }
-    if ([string]::IsNullOrWhiteSpace($Data) -or $Data.Trim() -eq '[]') {
-        Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
-        return
+    # Handle both array of objects and JSON string inputs
+    if ($Data -is [string]) {
+        if ($Data.Trim().StartsWith('{')) { $Data = "[$Data]" }
+        if ([string]::IsNullOrWhiteSpace($Data) -or $Data.Trim() -eq '[]') {
+            Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
+            return
+        }
+        $jsonData = $Data
+    } else {
+        # Handle array of objects directly
+        if (-not $Data -or $Data.Count -eq 0) {
+            Write-Warning "Send-GuardrailsData: empty payload for '$LogType', skipping."
+            return
+        }
+        $jsonData = $Data | ConvertTo-Json -Depth 10
+        if ($jsonData.Trim().StartsWith('{')) { $jsonData = "[$jsonData]" }
     }
 
     # DCR Log Ingestion API does NOT auto-coerce types and does NOT auto-fill TimeGenerated.
@@ -45,7 +55,7 @@ function Send-GuardrailsData {
     $longFields    = @('Count')
     $boolFields    = @('UpdatedNeeded')
     try {
-        $records = $Data | ConvertFrom-Json
+        $records = $jsonData | ConvertFrom-Json
         if ($records -isnot [System.Collections.IEnumerable] -or $records -is [string]) {
             $records = @($records)
         }
@@ -87,8 +97,8 @@ function Send-GuardrailsData {
                 }
             }
         }
-        $Data = $records | ConvertTo-Json -Depth 10
-        if ($Data.Trim().StartsWith('{')) { $Data = "[$Data]" }
+        $jsonData = $records | ConvertTo-Json -Depth 10
+        if ($jsonData.Trim().StartsWith('{')) { $jsonData = "[$jsonData]" }
     }
     catch {
         Write-Warning "Send-GuardrailsData: could not normalize payload ($($_.Exception.Message)); attempting raw send."
@@ -104,7 +114,7 @@ function Send-GuardrailsData {
     }
 
     $uri     = "$logsIngestionEndpoint/dataCollectionRules/$dcrImmutableId/streams/$streamName" + '?api-version=2023-01-01'
-    $body    = [System.Text.Encoding]::UTF8.GetBytes($Data)
+    $body    = [System.Text.Encoding]::UTF8.GetBytes($jsonData)
     $headers = @{
         Authorization            = "Bearer $tokenPlain"
         'Content-Type'           = 'application/json'
@@ -133,19 +143,100 @@ function Send-GuardrailsData {
         }
         # Also dump the first record we sent so you can compare it to the schema
         try {
-            $first = ($records | Select-Object -First 1) | ConvertTo-Json -Depth 5 -Compress
-            Write-Output "First record sent: $first"
+            if ($records -and $records.Count -gt 0) {
+                $first = ($records | Select-Object -First 1) | ConvertTo-Json -Depth 5 -Compress
+                Write-Output "First record sent: $first"
+            }
         } catch {}
         throw
     }
 }
 
+function Send-GuardrailsDataInBatches {
+    # Optimized batch processing function to handle large datasets without exceeding DCR limits
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)] [array] $DataArray,
+        [Parameter(Mandatory = $true)] [string] $LogType,
+        [Parameter(Mandatory = $false)] [int] $BatchSize = 1000,
+        [Parameter(Mandatory = $false)] [int] $MaxBatchSizeBytes = 800KB  # Leave buffer under 1MB limit
+    )
+
+    if (-not $DataArray -or $DataArray.Count -eq 0) {
+        Write-Warning "Send-GuardrailsDataInBatches: No data to send."
+        return
+    }
+
+    Write-Output "Send-GuardrailsDataInBatches: Processing $($DataArray.Count) records in batches..."
+    
+    $totalSent = 0
+    $batchNumber = 1
+    $currentBatch = @()
+    
+    for ($i = 0; $i -lt $DataArray.Count; $i++) {
+        $currentBatch += $DataArray[$i]
+        
+        # Check if we should send this batch (either reached batch size or size limit)
+        $shouldSendBatch = $false
+        
+        if ($currentBatch.Count -ge $BatchSize) {
+            $shouldSendBatch = $true
+        } else {
+            # Check size of current batch
+            try {
+                $testJson = $currentBatch | ConvertTo-Json -Depth 10 -Compress
+                $testBytes = [System.Text.Encoding]::UTF8.GetByteCount($testJson)
+                if ($testBytes -gt $MaxBatchSizeBytes) {
+                    # Remove the last item and send the batch, then start new batch with that item
+                    $lastItem = $currentBatch[-1]
+                    $currentBatch = $currentBatch[0..($currentBatch.Count - 2)]
+                    $shouldSendBatch = $true
+                    $i-- # Reprocess this item in the next batch
+                }
+            } catch {
+                # If we can't calculate size, send the batch to be safe
+                $shouldSendBatch = $true
+            }
+        }
+        
+        # Send batch if we're at the end of data
+        if ($i -eq ($DataArray.Count - 1)) {
+            $shouldSendBatch = $true
+        }
+        
+        if ($shouldSendBatch -and $currentBatch.Count -gt 0) {
+            try {
+                $batchJson = $currentBatch | ConvertTo-Json -Depth 10
+                $batchSizeBytes = [System.Text.Encoding]::UTF8.GetByteCount($batchJson)
+                Write-Output "Sending batch $batchNumber with $($currentBatch.Count) records ($batchSizeBytes bytes)..."
+                
+                Send-GuardrailsData -Data $currentBatch -LogType $LogType
+                
+                $totalSent += $currentBatch.Count
+                Write-Output "Successfully sent batch $batchNumber. Total sent: $totalSent/$($DataArray.Count)"
+                $batchNumber++
+            }
+            catch {
+                Write-Error "Failed to send batch $batchNumber : $($_.Exception.Message)"
+                throw
+            }
+            
+            # Reset for next batch
+            $currentBatch = @()
+            
+            # If we removed an item due to size, add it to the new batch
+            if ($i -lt ($DataArray.Count - 1) -and $lastItem) {
+                $currentBatch = @($lastItem)
+                $lastItem = $null
+            }
+        }
+    }
+    
+    Write-Output "Send-GuardrailsDataInBatches: Successfully sent all $totalSent records in $($batchNumber - 1) batches."
+}
+
 function get-tenantdata {
     param (
-        $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $workspaceKey,
         [Parameter(Mandatory=$false)]
         [string]
         $LogType="GuardrailsTenantsCompliance",
@@ -170,7 +261,7 @@ function get-tenantdata {
     if ($wsidList.count -eq 0)
     {
         "No ws found."
-        break
+        return
     }
     else {
         "Found $($wsidList.count) workspaces."
@@ -205,12 +296,12 @@ function get-tenantdata {
     | where ControlName_s has ctrlprefix and ReportTime_s == "{0}"
     | where TimeGenerated > ago (24h)
     |join kind=inner (itsgcodes) on itsgcode_s
-    | project Mandatory=Required_s,ControlName_s, SubnetName=SubnetName_s, ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
+    | project Mandatory=Required_s,ControlName_s, SubnetName=column_ifexists('SubnetName_s', ''), ItemName=ItemName_s, Profile=column_ifexists('Profile_d',''), Status=case(
         column_ifexists('ComplianceStatus_s', '') == "Not Applicable", "Not Applicable",
         tostring(ComplianceStatus_b)=="True", "Compliant",
         "Non-Compliant"
     ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
-    | summarize Count=count(SubnetName) by Mandatory, ControlName_s, Status,ItemName, Profile, ['ITSG Control']
+    | summarize Count=countif(isnotempty(SubnetName)) by Mandatory, ControlName_s, Status,ItemName, Profile, ['ITSG Control']
 "@
         $gr9query=@"
     let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;
@@ -226,10 +317,15 @@ function get-tenantdata {
     ), ["ITSG Control"]=itsgcode_s, Definition=Definition_s,Remediation=gr_geturl(replace_string(ctrlprefix," ",""),itsgcode_s)
     | summarize Count=count() by Mandatory,ControlName_s, Status, ItemName, Profile, ['ITSG Control']
 "@
-    [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
+    # Use ArrayList for better performance with large datasets
+    [System.Collections.ArrayList] $FinalObjectList = New-Object System.Collections.ArrayList
+    $totalRecordsProcessed = 0
+    $totalWorkspacesProcessed = 0
+    
     foreach ($ws in $wsidList.wsid)
     {
         "Working on $ws workspace."
+        $totalWorkspacesProcessed++
 
         # Get latest report time for that Tenant
         # Keeping SilentlyContinue to avoid throwing error for tenant that dont have GR_TenantInfo_CL and GR_VersionInfo_CL tables i.e central reporting tenant itself
@@ -301,15 +397,19 @@ function get-tenantdata {
                 $QueryList+=$generalQuery -f "GUARDRAIL 12",$LatestRT
                 $QueryList+=$generalQuery -f "GUARDRAIL 13",$LatestRT
 
+                # Process queries for this workspace
+                $workspaceRecords = New-Object System.Collections.ArrayList
                 
                 foreach ($Query in $QueryList)
                 {
                     if ($DebugInfo) { $Query }
+                    $response = $null
                     try {
                         $response=(Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query).Results
                     }
                     catch {
-                        "Error querying WS $ws."
+                        "Error querying WS $ws : $($_.Exception.Message)"
+                        continue
                     }
                     if ($response)
                     {
@@ -317,43 +417,70 @@ function get-tenantdata {
                         if ($debuginfo) {
                             " Found $($tempArray.count) items running the query."
                         }
-                        # Gets aggregation tenant info. This is commented because it won't work without special permissions for the function MI.
-                        # $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json
-                        # $tenantId = $response.value.id
-                        # $tenantName= $response.value.displayName
-                        # $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
                         
-                        #$tempArray=$tempArray | Select-Object ControlName_s, ItemName, Status
                         #tenant info
-                        $tempArray | Add-Member -MemberType NoteProperty -Name TenantDomain -Value $TenantDomain -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentName -Value $DepartmentName -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentNumber -Value $DepartmentNumber -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantName -Value $DepartmentTenantName -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantID -Value $DepartmentTenantId -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantID -Value $TenantID -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantName -Value $TenantName -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name AggregationTenantUPN -Value $tenantDomainUPN -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentCloudUsageProfiles -Value $DepartmentCloudUsageProfiles -Force | Out-Null
+                        foreach ($record in $tempArray) {
+                            $record | Add-Member -MemberType NoteProperty -Name TenantDomain -Value $TenantDomain -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name DepartmentName -Value $DepartmentName -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name DepartmentNumber -Value $DepartmentNumber -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name DepartmentTenantName -Value $DepartmentTenantName -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name DepartmentTenantID -Value $DepartmentTenantId -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name AggregationTenantID -Value $TenantID -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name AggregationTenantName -Value $TenantName -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name AggregationTenantUPN -Value $tenantDomainUPN -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name DepartmentCloudUsageProfiles -Value $DepartmentCloudUsageProfiles -Force | Out-Null
+                            
+                            # Report time info
+                            $record | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name DepartmentReportTime -Value $LatestRT -Force | Out-Null
+                            # Version info
+                            $record | Add-Member -MemberType NoteProperty -Name DeployedVersion -Value $DepartmentDeployedVersion -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name AvailableVersion -Value $DepartmentAvailableVersion -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name UpdatedNeeded -Value $DepartmentUpdatedNeeded -Force | Out-Null
+                            $record | Add-Member -MemberType NoteProperty -Name DepartmentVersionCheckDate -Value $DepartmentVersionCheckDate -Force | Out-Null
+                            # Workspace info
+                            $record | Add-Member -MemberType NoteProperty -Name WSId -Value $ws -Force
+                        }
                         
-                        # Report time info
-                        $tempArray | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentReportTime -Value $LatestRT -Force | Out-Null
-                        # Version info
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DeployedVersion -Value $DepartmentDeployedVersion -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name AvailableVersion -Value $DepartmentAvailableVersion -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name UpdatedNeeded -Value $DepartmentUpdatedNeeded -Force | Out-Null
-                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentVersionCheckDate -Value $DepartmentVersionCheckDate -Force | Out-Null
-                        # Workspace info
-                        $tempArray | Add-Member -MemberType NoteProperty -Name WSId -Value $ws -Force 
+                        $workspaceRecords.AddRange($tempArray)
                         if ($DebugInfo) { $tempArray}
-                        $FinalObjectList+=$tempArray
                     }
-                }  
+                }
+                
+                # Add workspace records to the final list and check if we need to send a batch
+                if ($workspaceRecords.Count -gt 0) {
+                    $FinalObjectList.AddRange($workspaceRecords)
+                    $totalRecordsProcessed += $workspaceRecords.Count
+                    "Added $($workspaceRecords.Count) records from workspace $ws. Total: $totalRecordsProcessed"
+                    
+                    # Check if we should send a batch (every 2000 records or 500KB estimated)
+                    if ($FinalObjectList.Count -ge 2000) {
+                        "Sending batch with $($FinalObjectList.Count) records..."
+                        try {
+                            Send-GuardrailsDataInBatches -DataArray $FinalObjectList.ToArray() -LogType $LogType -BatchSize 1000 -MaxBatchSizeBytes 800KB
+                            "Successfully sent batch of $($FinalObjectList.Count) records."
+                            $FinalObjectList.Clear()  # Clear the list to free memory
+                        }
+                        catch {
+                            "Failed to send batch: $($_.Exception.Message)"
+                            if ($_.Exception.Response) {
+                                try {
+                                    $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                                    $body = $reader.ReadToEnd()
+                                    "Response body: $body"
+                                } catch {}
+                            }
+                            throw
+                        }
+                    }
+                }
             }
         }
     }
-    if ($FinalObjectList) {
-        "$($FinalObjectList.count) objects found to send."
+    
+    # Send any remaining records
+    if ($FinalObjectList.Count -gt 0) {
+        "$($FinalObjectList.count) objects found to send in final batch."
         if ($DebugInfo) {
             # Best-effort debug dump; the Functions runtime sometimes refuses writes to the
             # script's cwd, so swallow failures to avoid breaking ingestion.
@@ -366,9 +493,10 @@ function get-tenantdata {
                 "Skipping debug dump ($($_.Exception.Message))."
             }
         }
-        $FinalObjectListJson = $FinalObjectList | ConvertTo-Json
+        
         try {
-            Send-GuardrailsData -Data $FinalObjectListJson -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey
+            Send-GuardrailsDataInBatches -DataArray $FinalObjectList.ToArray() -LogType $LogType -BatchSize 1000 -MaxBatchSizeBytes 800KB
+            "Successfully sent final batch of $($FinalObjectList.Count) records."
         }
         catch {
             "Send-GuardrailsData FAILED: $($_.Exception.Message)"
@@ -382,5 +510,9 @@ function get-tenantdata {
             throw
         }
     }
-    else { "No data to send" }
+    else { 
+        "No remaining data to send"
+    }
+    
+    "Processing complete. Total workspaces processed: $totalWorkspacesProcessed, Total records processed: $totalRecordsProcessed"
 }
