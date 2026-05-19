@@ -912,28 +912,6 @@ function Invoke-GuardrailsArmGet {
     }
 }
 
-function Get-GuardrailsDcrDeclaredStreams {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [object] $DataCollectionRule,
-        [Parameter(Mandatory = $true)]
-        [string] $ResourceName
-    )
-
-    $streamDeclarations = $DataCollectionRule.properties.streamDeclarations
-    if (-not $streamDeclarations) {
-        throw "DCR runtime resolution failed: DCR '$ResourceName' did not return properties.streamDeclarations. Verify core deployment completed successfully."
-    }
-
-    $streams = @($streamDeclarations.PSObject.Properties.Name)
-    if ($streams.Count -eq 0) {
-        throw "DCR runtime resolution failed: DCR '$ResourceName' returned no declared streams. Verify core deployment completed successfully."
-    }
-
-    return $streams
-}
-
 function Get-GuardrailsDcrIngestionSettings {
     [CmdletBinding()]
     param ()
@@ -955,8 +933,6 @@ function Get-GuardrailsDcrIngestionSettings {
     $dcr2Endpoint = $dcr2.properties.endpoints.logsIngestion
     $dcrImmutableId = $dcr.properties.immutableId
     $dcrImmutableId2 = $dcr2.properties.immutableId
-    $dcrStreams = @(Get-GuardrailsDcrDeclaredStreams -DataCollectionRule $dcr -ResourceName 'guardrails-dcr')
-    $dcr2Streams = @(Get-GuardrailsDcrDeclaredStreams -DataCollectionRule $dcr2 -ResourceName 'guardrails-dcr-2')
 
     if ([string]::IsNullOrWhiteSpace([string]$dcrEndpoint)) {
         throw "DCR runtime resolution failed: DCR 'guardrails-dcr' did not return properties.endpoints.logsIngestion. Verify core deployment completed successfully."
@@ -976,7 +952,7 @@ function Get-GuardrailsDcrIngestionSettings {
     try { $dcrEndpointHost = ([System.Uri]$dcrEndpoint).Host } catch { }
     try { $dcr2EndpointHost = ([System.Uri]$dcr2Endpoint).Host } catch { }
 
-    Write-Host "DCR runtime resolution succeeded: DCR1='guardrails-dcr', DCR1 endpoint host='$dcrEndpointHost', DCR1 immutable ID='$dcrImmutableId', DCR1 streams=$($dcrStreams.Count), DCR2='guardrails-dcr-2', DCR2 endpoint host='$dcr2EndpointHost', DCR2 immutable ID='$dcrImmutableId2', DCR2 streams=$($dcr2Streams.Count)."
+    Write-Host "DCR runtime resolution succeeded: DCR1='guardrails-dcr', DCR1 endpoint host='$dcrEndpointHost', DCR1 immutable ID='$dcrImmutableId', DCR2='guardrails-dcr-2', DCR2 endpoint host='$dcr2EndpointHost', DCR2 immutable ID='$dcrImmutableId2'."
 
     # Cache only after every ARM read and validation succeeds; failed resolution should retry cleanly.
     $script:GuardrailsDcrIngestionSettings = [PSCustomObject]@{
@@ -984,8 +960,6 @@ function Get-GuardrailsDcrIngestionSettings {
         DcrImmutableId2      = $dcrImmutableId2
         DcrLogsEndpoint      = ([string]$dcrEndpoint).TrimEnd('/')
         Dcr2LogsEndpoint     = ([string]$dcr2Endpoint).TrimEnd('/')
-        DcrStreams           = $dcrStreams
-        Dcr2Streams          = $dcr2Streams
         ResourceGroupName    = $resourceGroupName
         SubscriptionId       = $subscriptionId
     }
@@ -1026,20 +1000,9 @@ function Resolve-GuardrailsDcrTarget {
 
     $settings = Get-GuardrailsDcrIngestionSettings
     $streamName = Get-GuardrailsDcrStreamName -LogType $LogType
-    $declaredByDcr1 = $streamName -in @($settings.DcrStreams)
-    $declaredByDcr2 = $streamName -in @($settings.Dcr2Streams)
-
-    if ($declaredByDcr1 -and $declaredByDcr2) {
-        throw "DCR runtime resolution failed: stream '$streamName' for LogType '$LogType' is declared by both guardrails-dcr and guardrails-dcr-2. Fix the DCR stream declarations so each stream has one target DCR."
-    }
-
-    if (-not $declaredByDcr1 -and -not $declaredByDcr2) {
-        throw "DCR runtime resolution failed: stream '$streamName' for LogType '$LogType' is not declared by guardrails-dcr or guardrails-dcr-2. Verify DCR stream declarations and runtime LogType mapping."
-    }
-
-    $usesDcr2 = $declaredByDcr2
-    $dcrId = if ($declaredByDcr2) { $settings.DcrImmutableId2 } else { $settings.DcrImmutableId }
-    $logsIngestionEndpoint = if ($declaredByDcr2) { $settings.Dcr2LogsEndpoint } else { $settings.DcrLogsEndpoint }
+    $usesDcr2 = $LogType -in @('GR2UsersWithoutGroups', 'GR2ExternalUsers')
+    $dcrId = if ($usesDcr2) { $settings.DcrImmutableId2 } else { $settings.DcrImmutableId }
+    $logsIngestionEndpoint = if ($usesDcr2) { $settings.Dcr2LogsEndpoint } else { $settings.DcrLogsEndpoint }
 
     [PSCustomObject]@{
         LogsIngestionEndpoint = $logsIngestionEndpoint
