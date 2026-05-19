@@ -9,7 +9,6 @@ param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
 param updateCoreResources bool = false
-param mfaGracePeriod string
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
@@ -981,9 +980,9 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_mfa_evaluation'
-    query: $'''
+    query: '''
 let reportTime = ReportTime;
-let mfaGracePeriodDays = toint(${mfaGracePeriod});
+let mfaGracePeriodDays = toint(MfaGracePeriod);
 let mfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
@@ -1169,7 +1168,7 @@ finalSummary
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
-    functionParameters: 'ReportTime:string'
+    functionParameters: 'ReportTime:string, MfaGracePeriod:string'
     version: 2
   }
 }
@@ -1180,9 +1179,9 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_non_mfa_users'
-    query: $'''
+    query: '''
 let reportTime = ReportTime;
-let mfaGracePeriodDays = toint(${mfaGracePeriod});
+let mfaGracePeriodDays = toint(MfaGracePeriod);
 let mfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
@@ -1349,7 +1348,7 @@ union
 )
 '''
     functionAlias: 'gr_non_mfa_users'
-    functionParameters: 'ReportTime:string'
+    functionParameters: 'ReportTime:string, MfaGracePeriod:string'
     version: 2
   }
 }

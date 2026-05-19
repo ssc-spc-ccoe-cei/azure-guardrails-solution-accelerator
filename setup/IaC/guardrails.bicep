@@ -37,7 +37,6 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
-param mfaGracePeriod string
 
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
@@ -56,7 +55,6 @@ module telemetry './nested_telemetry.bicep' =  if (telemetryInfo.customerUsageAt
 module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: 'guardrails-automationaccount'
   params: {
-    mfaGracePeriod: mfaGracePeriod
     AllowedLocationPolicyId: AllowedLocationPolicyId
     AllowedLocationInitiativeId: AllowedLocationInitiativeId
     automationAccountName: automationAccountName
@@ -123,7 +121,6 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
     updateCoreResources: updateCoreResources
-    mfaGracePeriod: mfaGracePeriod
   }
 }
 
