@@ -33,8 +33,6 @@ client tenant A     client tenant B     ...     client tenant N
               └──────────────────────────────┘
 ```
 
-A full technical reference of the DCR pipeline is in [`DCR_Log_Ingestion_Architecture.html`](../../DCR_Log_Ingestion_Architecture.html) at the repository root.
-
 ---
 
 ## 1. Prerequisites
