@@ -36,7 +36,7 @@ catch {
 $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 "Report Time: $ReportTime"
 try {
-    # Updated function call without workspace parameters (DCR ingestion doesn't need them)
+    # DCR ingestion path does not require workspace id/key.
     get-tenantdata -ReportTime $ReportTime -tenantName $TenantName -tenantDomainUPN $TenantDomainUPN -tenantId $TenantId -DebugInfo:$true
 }
 catch {

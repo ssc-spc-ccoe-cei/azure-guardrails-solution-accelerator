@@ -1,6 +1,5 @@
 function Send-GuardrailsData {
-    # Local copy of the DCR-based ingestion function from src/Guardrails-Common/GR-Common.psm1
-    # so the Function App package is self-contained (the src/ folder is not deployed to wwwroot).
+    # Kept local so the Function App package remains self-contained.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)] $Data,
@@ -38,12 +37,7 @@ function Send-GuardrailsData {
         if ($jsonData.Trim().StartsWith('{')) { $jsonData = "[$jsonData]" }
     }
 
-    # DCR Log Ingestion API does NOT auto-coerce types and does NOT auto-fill TimeGenerated.
-    # The stream declaration in law.bicep declares the type of every column; the payload must match.
-    # If we send 'Mandatory' as a boolean but the schema says string, the whole batch is rejected with 400.
-    # So:
-    #   - inject TimeGenerated (ISO 8601 UTC) on every record
-    #   - force every field to the type the schema expects (per Custom-GuardrailsTenantsCompliance stream).
+    # Keep payload types aligned with the DCR stream declaration.
     $stringFields = @(
         'Mandatory','ControlName_s','ItemName','Profile','Status','ITSG Control','SubnetName',
         'Definition','Remediation','VNet Name','TenantDomain','DepartmentName','DepartmentNumber',
@@ -153,7 +147,7 @@ function Send-GuardrailsData {
 }
 
 function Send-GuardrailsDataInBatches {
-    # Optimized batch processing function to handle large datasets without exceeding DCR limits
+    # Batch large payloads to stay under ingestion limits.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)] [array] $DataArray,
@@ -482,10 +476,9 @@ function get-tenantdata {
     if ($FinalObjectList.Count -gt 0) {
         "$($FinalObjectList.count) objects found to send in final batch."
         if ($DebugInfo) {
-            # Best-effort debug dump; the Functions runtime sometimes refuses writes to the
-            # script's cwd, so swallow failures to avoid breaking ingestion.
+            # Best-effort debug dump.
             try {
-                $tempDebug = Join-Path ([System.IO.Path]::GetTempPath()) 'debubinfo_finalobjectlist.txt'
+                $tempDebug = Join-Path ([System.IO.Path]::GetTempPath()) 'debuginfo_finalobjectlist.txt'
                 $FinalObjectList | Out-File -FilePath $tempDebug -ErrorAction Stop
                 "Debug dump written to $tempDebug."
             }
