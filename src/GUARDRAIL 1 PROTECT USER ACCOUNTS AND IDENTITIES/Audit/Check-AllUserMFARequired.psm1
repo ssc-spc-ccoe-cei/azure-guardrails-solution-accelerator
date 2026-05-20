@@ -14,7 +14,7 @@ function Check-AllUserMFARequired {
         [Parameter(Mandatory=$true)]
         [string] $WorkSpaceID,
         [Parameter(Mandatory=$true)]
-        [string] $MfaGracePeriod,
+        [string] $mfaGracePeriod,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] $EnableMultiCloudProfiles # default to false
@@ -30,7 +30,7 @@ function Check-AllUserMFARequired {
     $success = $false
     
     try {
-        $kqlQuery = "gr_mfa_evaluation('$ReportTime', '$MfaGracePeriod')"
+        $kqlQuery = "gr_mfa_evaluation('$ReportTime', '$mfaGracePeriod')"
         
         Write-Verbose "Calling KQL function with retry logic (max $maxRetries attempts, $retryDelay second delay)"
         

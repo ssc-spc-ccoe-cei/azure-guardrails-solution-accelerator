@@ -27,6 +27,7 @@ param cloudUsageProfiles string = 'default'
 param dceEndpoint string = ''
 param dcrImmutableId string = ''
 param dcrImmutableId2 string = ''
+param mfaGracePeriod string
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -667,5 +668,12 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       value: '"${dcrImmutableId2}"'
     }
   }  
+
+  resource variable27 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'mfaGracePeriod'
+    properties: {
+      isEncrypted: true
+      value: '"${mfaGracePeriod}"'
+    }
 }
 output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

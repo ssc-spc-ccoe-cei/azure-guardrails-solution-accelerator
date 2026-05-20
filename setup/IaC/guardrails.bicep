@@ -37,6 +37,7 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
+param mfaGracePeriod string
 
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
@@ -82,6 +83,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
+    mfaGracePeriod: mfaGracePeriod
     #disable-next-line BCP318
     dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
     #disable-next-line BCP318

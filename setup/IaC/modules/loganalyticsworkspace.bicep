@@ -982,7 +982,7 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     displayName: 'gr_mfa_evaluation'
     query: '''
 let reportTime = ReportTime;
-let mfaGracePeriodDays = toint(MfaGracePeriod);
+let mfaGracePeriodDays = toint(mfaGracePeriod);
 let mfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
@@ -1168,7 +1168,7 @@ finalSummary
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
-    functionParameters: 'ReportTime:string, MfaGracePeriod:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
     version: 2
   }
 }
@@ -1181,7 +1181,7 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     displayName: 'gr_non_mfa_users'
     query: '''
 let reportTime = ReportTime;
-let mfaGracePeriodDays = toint(MfaGracePeriod);
+let mfaGracePeriodDays = toint(mfaGracePeriod);
 let mfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
@@ -1348,7 +1348,7 @@ union
 )
 '''
     functionAlias: 'gr_non_mfa_users'
-    functionParameters: 'ReportTime:string, MfaGracePeriod:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
     version: 2
   }
 }
