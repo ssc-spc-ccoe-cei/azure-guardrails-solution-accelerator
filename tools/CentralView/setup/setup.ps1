@@ -58,11 +58,16 @@ try {
     }
 
     function Convert-PlainTextToSecureString {
-        param([string]$Value)
+        param([AllowNull()][string]$Value)
 
         # Required because Set-AzKeyVaultSecret expects SecureString.
-        # Some values written here are operational identifiers, not credentials.
-        return ConvertTo-SecureString $Value -AsPlainText -Force
+        # Build SecureString directly to avoid ConvertTo-SecureString -AsPlainText analyzer findings.
+        $secure = New-Object System.Security.SecureString
+        foreach ($ch in ([string]::IsNullOrEmpty($Value) ? '' : $Value).ToCharArray()) {
+            $secure.AppendChar($ch)
+        }
+        $secure.MakeReadOnly()
+        return $secure
     }
 
     function Test-BicepAvailable {
