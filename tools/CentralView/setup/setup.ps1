@@ -57,6 +57,14 @@ try {
         return $false
     }
 
+    function Convert-PlainTextToSecureString {
+        param([string]$Value)
+
+        # Required because Set-AzKeyVaultSecret expects SecureString.
+        # Some values written here are operational identifiers, not credentials.
+        return ConvertTo-SecureString $Value -AsPlainText -Force
+    }
+
     function Test-BicepAvailable {
         if (Get-Command bicep -ErrorAction SilentlyContinue) { return $true }
         # Az PowerShell looks here on Windows when 'bicep' isn't on PATH
@@ -284,10 +292,10 @@ After installing, close and re-open this shell so PATH is refreshed.
             $aggTenantName    = $org.value.displayName
             $aggDomainUPN     = ($org.value.verifiedDomains | Where-Object { $_.isDefault }).name
 
-            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'TenantId'        -SecretValue (ConvertTo-SecureString $aggTenantId   -AsPlainText -Force) | Out-Null
-            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'TenantName'      -SecretValue (ConvertTo-SecureString $aggTenantName -AsPlainText -Force) | Out-Null
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'TenantId'        -SecretValue (Convert-PlainTextToSecureString $aggTenantId) | Out-Null
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'TenantName'      -SecretValue (Convert-PlainTextToSecureString $aggTenantName) | Out-Null
             if (-not [string]::IsNullOrWhiteSpace($aggDomainUPN)) {
-                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'tenantDomainUPN' -SecretValue (ConvertTo-SecureString $aggDomainUPN -AsPlainText -Force) | Out-Null
+                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'tenantDomainUPN' -SecretValue (Convert-PlainTextToSecureString $aggDomainUPN) | Out-Null
             }
         }
         catch {
@@ -298,8 +306,8 @@ After installing, close and re-open this shell so PATH is refreshed.
         try {
             $ws         = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourcegroup -Name $logAnalyticsworkspaceName -ErrorAction Stop
             $wsShared   = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $resourcegroup -Name $logAnalyticsworkspaceName -ErrorAction Stop).PrimarySharedKey
-            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'WorkspaceKey' -SecretValue (ConvertTo-SecureString $wsShared        -AsPlainText -Force) | Out-Null
-            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'WorkspaceId'  -SecretValue (ConvertTo-SecureString $ws.CustomerId   -AsPlainText -Force) | Out-Null
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'WorkspaceKey' -SecretValue (Convert-PlainTextToSecureString $wsShared) | Out-Null
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'WorkspaceId'  -SecretValue (Convert-PlainTextToSecureString $ws.CustomerId) | Out-Null
         }
         catch {
             Write-Warning "Could not seed Workspace secrets: $_"
@@ -308,13 +316,13 @@ After installing, close and re-open this shell so PATH is refreshed.
         # ApplicationId / SecurePassword from config (or placeholder).
         try {
             if (-not [string]::IsNullOrWhiteSpace($config.ApplicationId)) {
-                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'ApplicationId'  -SecretValue (ConvertTo-SecureString $config.ApplicationId  -AsPlainText -Force) | Out-Null
-                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'SecurePassword' -SecretValue (ConvertTo-SecureString $config.SecurePassword -AsPlainText -Force) | Out-Null
+                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'ApplicationId'  -SecretValue (Convert-PlainTextToSecureString $config.ApplicationId) | Out-Null
+                Set-AzKeyVaultSecret -VaultName $keyVaultName -Name 'SecurePassword' -SecretValue (Convert-PlainTextToSecureString $config.SecurePassword) | Out-Null
                 Write-Output "ApplicationId and SecurePassword stored in Key Vault."
             }
             else {
                 # Seed empty placeholders so Function code's Get-AzKeyVaultSecret calls don't fail with NotFound.
-                $placeholder = ConvertTo-SecureString ' ' -AsPlainText -Force
+                $placeholder = Convert-PlainTextToSecureString ' '
                 foreach ($name in 'ApplicationId','SecurePassword') {
                     if (-not (Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $name -ErrorAction SilentlyContinue)) {
                         Set-AzKeyVaultSecret -VaultName $keyVaultName -Name $name -SecretValue $placeholder | Out-Null
