@@ -205,6 +205,7 @@ Write-Output  "GuardrailsAutomationAccountMSI: $(Get-GSAAutomationVariable -Name
 
 
 #Standard variables
+$mfaGracePeriod = Get-GSAAutomationVariable -Name "mfaGracePeriod"
 $WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID" 
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
