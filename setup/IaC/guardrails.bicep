@@ -123,6 +123,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
     updateCoreResources: updateCoreResources
+    mfaGracePeriod: mfaGracePeriod
   }
 }
 
