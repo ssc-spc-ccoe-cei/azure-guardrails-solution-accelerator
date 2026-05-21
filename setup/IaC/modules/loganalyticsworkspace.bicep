@@ -9,12 +9,15 @@ param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
 param updateCoreResources bool = false
+param mfaGracePeriod string
 var wb = loadTextContent('gr.workbook')
+var wbWithMfaGrace = replace(wb, '__MFA_GRACE_PERIOD__', mfaGracePeriod)
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
 //'''
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
-var wbConfig='${wb}${wbConfig2}'
+//var wbConfig='${wb}${wbConfig2}'
+var wbConfig='${wbWithMfaGrace}${wbConfig2}'
 
 resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: logAnalyticsWorkspaceName
@@ -983,7 +986,7 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     query: '''
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(mfaGracePeriod);
-let mfaGracePeriod = mfaGracePeriodDays * 1d;
+let MfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
@@ -1085,11 +1088,11 @@ let excludedGuestCount = toscalar(guestsToExclude | summarize count());
 let userData = union memberUsers, guestsToEvaluate;
 // users within grace
 let usersWithinGrace = userData
-| extend gracePeriodEnd = CreatedDateTime_t + mfaGracePeriod
+| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
 | where now() < gracePeriodEnd;
 let gracePeriodCount = toscalar(usersWithinGrace | summarize count());
 let userDataFiltered = userData
-| extend gracePeriodEnd = CreatedDateTime_t + mfaGracePeriod
+| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
 | extend isWithinGracePeriod = now() < gracePeriodEnd
 | where isWithinGracePeriod == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
@@ -1182,7 +1185,7 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     query: '''
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(mfaGracePeriod);
-let mfaGracePeriod = mfaGracePeriodDays * 1d;
+let MfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s
@@ -1269,7 +1272,7 @@ let userData = GuardrailsUserRaw_CL
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
-| extend gracePeriodEnd = CreatedDateTime_t + mfaGracePeriod
+| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
 | extend isWithinGracePeriod = now() < gracePeriodEnd
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
