@@ -324,13 +324,22 @@ Function Confirm-GSAConfigurationParameters {
 
     # Use tenant ID from config and set context
     $tenantId = $config.tenantId
+    Write-Host "Using  tenant ID '$tenantId' from config and setting the Azure context ..."
     try {
+        # $context = Set-AzContext -TenantId $tenantId -Subscription $config.subscriptionId -ErrorAction Stop
         $context = Set-AzContext -TenantId $tenantId -ErrorAction Stop
+        if($context.Tenant.Id -ne $tenantId){
+            Write-Error "Current Azure context tenant Id '$($context.Tenant.Id)' does not match the target tenant ID '$tenantId' specified in config file after Set-AzContext."
+            throw "Current Azure context tenant Id '$($context.Tenant.Id)' does not match the target tenant ID '$tenantId' specified in config file after Set-AzContext."
+            
+        }
         Write-Verbose "Successfully set Azure context to tenant: $tenantId"
     }
     catch {
         Write-Error "Failed to set Azure context to tenant: $tenantId. Error: $_"
         break
+        # throw "Failed to set Azure context to tenant: $tenantId. In cloud shell, switch the portal session to the target tenant and reopen the cloud shell. Error: $_"
+        
     }
 
     # verify Lighthouse config parameters

@@ -39,7 +39,10 @@ $cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
 
 # Connects to Azure using the Automation Account's managed identity
 try {
-    Connect-AzAccount -Identity -ErrorAction Stop
+    # read tenant Id before connecting so that MSI can authenticate against the currect tenant in multi-tenant scenarios
+    $tenantIdForMSI = Get-GSAAutomationVariable -Name 'tenantId'
+    Write-Verbose "Attempting to connect to Azure with MSI for tenant ID '$tenantIdForMSI'"
+    Connect-AzAccount -Identity -Tenant $tenantIdForMSI-ErrorAction Stop
 }
 catch {
     throw "Critical: Failed to connect to Azure with the 'Connect-AzAccount' command and '-identity' (MSI) parameter; verify that Azure Automation identity is configured. Error message: $_"

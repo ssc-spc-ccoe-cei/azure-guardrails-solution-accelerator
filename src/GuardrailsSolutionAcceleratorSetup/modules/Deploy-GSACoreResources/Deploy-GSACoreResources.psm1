@@ -52,6 +52,25 @@ Function Deploy-GSACoreResources {
     catch {
         Write-Warning "Failed to persist automation account MSI id to variable '$automationVariableName'. Telemetry MSI scan will be skipped until this is set. $_"
     }
+
+    # persist tenantId as automation variable so that runbooks can supply it to Connect-AzAccount -Identity
+    # This is to ensure that MSI authenticates against the correct multi-tenant account scenarios
+    $tenantIdVarName = 'tenantId'
+    try{
+        $existingTenantVar = Get-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $tenantIdVarName -ErrorAction SilentlyContinue
+        if($existingTenantVar){
+            Set-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $tenantIdVarName -Value $config['runtime']['tenantId'] -Encrypted:$true -ErrorAction Stop | Out-Null
+        }
+        else {
+            New-AzAutomationVariable -ResourceGroupName $automationAccountResourceGroup -AutomationAccountName $automationAccountName -Name $tenantIdVarName -Value $config['runtime']['tenantId'] -Encrypted:$true -ErrorAction Stop | Out-Null
+        }
+        Write-Verbose "Successfully persisted tenant ID to automation variable '$tenantIdVarName'"
+    }
+    catch{
+        Write-Warning "Failed to persist tenant ID to automation variable '$tenantIdVarName'. $_"
+    }
+
+
     Write-Verbose "Core resource bicep deployment complete!"
 
     Write-Verbose "Granting Automation Account MSI permission to the Graph API"
