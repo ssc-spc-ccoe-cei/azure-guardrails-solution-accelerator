@@ -1057,7 +1057,7 @@ let rawUserData = GuardrailsUserRaw_CL
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
 // new logic for created Date
-| extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), createdDateTime_t);
+| extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
 let guestUsers = rawUserData
@@ -1265,7 +1265,7 @@ let userData = GuardrailsUserRaw_CL
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
 | where guardrailsExcluded == false
-| extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), createdDateTime_t);
+| extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
