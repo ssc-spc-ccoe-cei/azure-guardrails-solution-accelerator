@@ -341,6 +341,10 @@ Function Deploy-GuardrailsSolutionAccelerator {
         
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
 
+        # capture the original deployment context before lighthouse management group deployment to avoid New-AzManagementGroupDeployment and Start-AzAutomationRunbook silently switching the default context
+        $originalDeploymentContext = Get-AzContext
+        Write-Verbose "Capture deployment context - Tenant: '$($originalDeploymentContext.Tenant.Id)', Subscription: '$($originalDeploymentContext.Subscription.Id)', Account: '$($originalDeploymentContext.Account)'"
+
         If (!$update.IsPresent) {
             Write-Host "Deploying Guardrails Solution Accelerator components ($($newComponents -join ','))..." -ForegroundColor Green
             Write-Verbose "Performing a new deployment of the Guardrails Solution Accelerator..."
@@ -390,6 +394,10 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 }
                 
             }
+
+            # Set to the original context after default tenant to lighthouse provider tenant
+            $null = Set-AzContext -TenantId $originalDeploymentContext.Tenant.Id -SubscriptionId $originalDeploymentContext.Subscription.Id -ErrorAction Stop
+            Write-Verbose "Set context back to original deployment context - Tenant: '$($originalDeploymentContext.Tenant.Id)', Subscription: '$($originalDeploymentContext.Subscription.Id)', Account: '$($originalDeploymentContext.Account)'"
 
             Write-Host "Completed new deployment."
             Write-Verbose "Completed new deployment."
