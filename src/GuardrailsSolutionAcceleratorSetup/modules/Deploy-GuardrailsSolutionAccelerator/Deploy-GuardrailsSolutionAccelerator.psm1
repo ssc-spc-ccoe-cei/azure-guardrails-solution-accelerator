@@ -19,12 +19,14 @@ Function Invoke-GSARunbooks {
     )
 
     try {
+        Write-Verbose "Starting 'main' runbook..."
         Start-AzAutomationRunbook -Name "main" -AutomationAccountName $config['runtime']['autoMationAccountName'] -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction Stop | Out-Null
     }
     catch { 
         Write-Error "Error starting 'main' runbook. $_"
     }
     try {
+         Write-Verbose "Starting 'backend' runbook..."
         Start-AzAutomationRunbook -Name "backend" -AutomationAccountName $config['runtime']['autoMationAccountName'] -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction Stop | Out-Null
     }
     catch { 
@@ -80,7 +82,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'storageAccountName'                    = $config['runtime']['storageaccountName']
         'subscriptionId'                        = (Get-AzContext).Subscription.Id
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
-        'securityRetentionDays'                   = $config.securityRetentionDays
+        'securityRetentionDays'                 = $config.securityRetentionDays
         'enableMultiCloudProfiles'              = $enableMcp
     }
     # Adding URL parameter if specified
@@ -342,8 +344,9 @@ Function Deploy-GuardrailsSolutionAccelerator {
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
 
         # capture the original deployment context before lighthouse management group deployment to avoid New-AzManagementGroupDeployment and Start-AzAutomationRunbook silently switching the default context
+        Write-Verbose "Capturing original deployment context before any potential context switches during deployment..."
         $originalDeploymentContext = Get-AzContext
-        Write-Verbose "Capture deployment context - Tenant: '$($originalDeploymentContext.Tenant.Id)', Subscription: '$($originalDeploymentContext.Subscription.Id)', Account: '$($originalDeploymentContext.Account)'"
+        Write-Verbose "Captured deployment context - Tenant: '$($originalDeploymentContext.Tenant.Id)', Subscription: '$($originalDeploymentContext.Subscription.Id)', Account: '$($originalDeploymentContext.Account)'"
 
         If (!$update.IsPresent) {
             Write-Host "Deploying Guardrails Solution Accelerator components ($($newComponents -join ','))..." -ForegroundColor Green
@@ -396,6 +399,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             }
 
             # Set to the original context after default tenant to lighthouse provider tenant
+            Write-Verbose "Setting context back to original deployment context ..."
             $null = Set-AzContext -TenantId $originalDeploymentContext.Tenant.Id -SubscriptionId $originalDeploymentContext.Subscription.Id -ErrorAction Stop
             Write-Verbose "Set context back to original deployment context - Tenant: '$($originalDeploymentContext.Tenant.Id)', Subscription: '$($originalDeploymentContext.Subscription.Id)', Account: '$($originalDeploymentContext.Account)'"
 
@@ -484,6 +488,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         catch{
             Write-Error "Error in invoking Azure automation runbook. $_"
         }
+        Write-Verbose "Completed invoking Azure Automation runbooks."
 
         Write-Host "Exporting configuration to GSA KeyVault "
         Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
