@@ -242,7 +242,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.1.2'
+        version: '1.1.4'
       }}
   }
   resource module29 'powerShell72Modules' = if (newDeployment || updatePSModules) {
