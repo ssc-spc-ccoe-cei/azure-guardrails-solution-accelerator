@@ -1,0 +1,169 @@
+name: Check Guardrails Automation jobs kicked off
+description: |
+  Checks that Guardrails main/backend Automation job records exist after a workflow deploy.
+  This is kickoff validation only; it does not wait for full runbook completion.
+  The exported config Key Vault name is composed as <key-vault-prefix>-<generated-suffix>.
+  If GSA_DEPLOY_STARTED_AT_UTC is set by the calling workflow, older Automation jobs are ignored.
+
+  Requires a prior azure/login@v2 step in the calling job to establish Az context.
+
+inputs:
+  key-vault-prefix:
+    required: true
+    description: Prefix for the Key Vault that contains the exported Guardrails runtime config.
+  suffix-environment-variable-name:
+    required: true
+    description: Environment variable name that contains the selected unique suffix.
+  subscription-id:
+    required: true
+    description: Azure subscription ID that contains the Guardrails deployment.
+  timeout-minutes:
+    required: false
+    default: '5'
+    description: Maximum minutes to wait for both runbook job records to appear.
+  poll-seconds:
+    required: false
+    default: '5'
+    description: Seconds between Automation job status checks.
+
+runs:
+  using: composite
+  steps:
+    - name: Check Automation jobs kicked off
+      uses: azure/powershell@v2
+      env:
+        GSA_KEY_VAULT_PREFIX: ${{ inputs.key-vault-prefix }}
+        GSA_SUFFIX_ENV_NAME: ${{ inputs.suffix-environment-variable-name }}
+        GSA_SUBSCRIPTION_ID: ${{ inputs.subscription-id }}
+        GSA_TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        GSA_POLL_SECONDS: ${{ inputs.poll-seconds }}
+        GSA_ACTION_REPO_ROOT: ${{ github.action_path }}/../../..
+      with:
+        azPSVersion: latest
+        inlineScript: |
+          $ErrorActionPreference = 'Stop'
+          $actionRepoRoot = Resolve-Path $env:GSA_ACTION_REPO_ROOT | Select-Object -ExpandProperty Path
+          Import-Module (Join-Path $actionRepoRoot 'src/GuardrailsSolutionAcceleratorSetup')
+
+          $timeoutMinutes = [int]$env:GSA_TIMEOUT_MINUTES
+          $pollSeconds = [int]$env:GSA_POLL_SECONDS
+          $failureStatuses = @('Failed', 'Stopped', 'Suspended')
+          $uniqueNameSuffix = [Environment]::GetEnvironmentVariable($env:GSA_SUFFIX_ENV_NAME)
+          $deployStartedAtRaw = [Environment]::GetEnvironmentVariable('GSA_DEPLOY_STARTED_AT_UTC')
+          $deployStartedAtUtc = $null
+
+          if ([string]::IsNullOrWhiteSpace($uniqueNameSuffix)) {
+            throw "Selected suffix environment variable '$($env:GSA_SUFFIX_ENV_NAME)' is not set."
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:GSA_SUBSCRIPTION_ID)) {
+            throw "subscription-id input is required for the Automation job kickoff check."
+          }
+
+          Set-AzContext -SubscriptionId $env:GSA_SUBSCRIPTION_ID | Out-Null
+
+          if (-not [string]::IsNullOrWhiteSpace($deployStartedAtRaw)) {
+            try {
+              $parsedDeployStartedAtUtc = ([DateTimeOffset]::Parse($deployStartedAtRaw)).UtcDateTime
+              $deployStartedAtUtc = $parsedDeployStartedAtUtc.AddMinutes(-2)
+              Write-Output "Ignoring Automation jobs created or started before $($deployStartedAtUtc.ToString('o')) (2-minute clock-skew allowance from deploy cutoff $($parsedDeployStartedAtUtc.ToString('o')))."
+            }
+            catch {
+              throw "GSA_DEPLOY_STARTED_AT_UTC value '$deployStartedAtRaw' is not a valid timestamp. $_"
+            }
+          }
+          else {
+            Write-Warning "GSA_DEPLOY_STARTED_AT_UTC is not set. Automation job check may match older jobs on retained Automation Accounts."
+          }
+
+          $keyVaultName = "$($env:GSA_KEY_VAULT_PREFIX)-$uniqueNameSuffix"
+
+          $c = Get-GSAExportedConfig -KeyVaultName $keyVaultName -y
+          $config = $c.configString | ConvertFrom-Json
+
+          function Get-GuardrailsJobCreatedTimeUtc {
+            param ($Job)
+
+            foreach ($propertyName in @('CreationTime', 'StartTime')) {
+              $value = $Job.$propertyName
+              if ($value) {
+                if ($value -is [DateTimeOffset]) {
+                  return $value.UtcDateTime
+                }
+
+                return ([DateTimeOffset]$value).UtcDateTime
+              }
+            }
+
+            return $null
+          }
+
+          function Get-LatestGuardrailsRunbookJob {
+            param (
+              [Parameter(Mandatory = $true)]
+              [string]
+              $RunbookName
+            )
+
+            Get-AzAutomationJob `
+              -RunbookName $RunbookName `
+              -ResourceGroupName $config.runtime.resourceGroup `
+              -AutomationAccountName $config.runtime.automationAccountName |
+              ForEach-Object {
+                $jobCreatedTimeUtc = Get-GuardrailsJobCreatedTimeUtc -Job $_
+                if (-not $deployStartedAtUtc -or ($jobCreatedTimeUtc -and $jobCreatedTimeUtc -ge $deployStartedAtUtc)) {
+                  $_ | Add-Member -NotePropertyName GuardrailsJobCreatedTimeUtc -NotePropertyValue $jobCreatedTimeUtc -Force -PassThru
+                }
+              } |
+              Sort-Object GuardrailsJobCreatedTimeUtc -Descending |
+              Select-Object -First 1
+          }
+
+          function Get-GuardrailsJobStatusText {
+            param ($Job)
+
+            if ($Job) {
+              return $Job.Status
+            }
+
+            return 'NotFound'
+          }
+
+          Write-Output "Waiting for 'main' and 'backend' runbook job records to appear (up to $timeoutMinutes mins)"
+          $timeout = New-TimeSpan -Minutes $timeoutMinutes
+          $timer = [System.Diagnostics.Stopwatch]::StartNew()
+
+          do {
+            $jobMain = Get-LatestGuardrailsRunbookJob -RunbookName 'main'
+            $jobBackend = Get-LatestGuardrailsRunbookJob -RunbookName 'backend'
+
+            $mainStatus = Get-GuardrailsJobStatusText -Job $jobMain
+            $backendStatus = Get-GuardrailsJobStatusText -Job $jobBackend
+
+            if ($mainStatus -ne 'NotFound' -and $backendStatus -ne 'NotFound') {
+              break
+            }
+
+            if ($timer.Elapsed -ge $timeout) {
+              break
+            }
+
+            Start-Sleep -Seconds $pollSeconds
+          }
+          while ($true)
+
+          if ($mainStatus -eq 'NotFound' -or $backendStatus -eq 'NotFound') {
+            throw "Timed out waiting for 'main' and 'backend' runbook jobs to appear. main status: $mainStatus; backend status: $backendStatus"
+          }
+
+          if ($mainStatus -in $failureStatuses) {
+            throw "main runbook job was created but entered terminal failure state before workflow moved on. Status: $mainStatus; jobId: $($jobMain.JobId)"
+          }
+
+          if ($backendStatus -in $failureStatuses) {
+            throw "backend runbook job was created but entered terminal failure state before workflow moved on. Status: $backendStatus; jobId: $($jobBackend.JobId)"
+          }
+
+          Write-Output "'main' runbook job observed with status: $mainStatus, jobId: $($jobMain.JobId)"
+          Write-Output "'backend' runbook job observed with status: $backendStatus, jobId: $($jobBackend.JobId)"
+          Write-Output "Automation job kickoff validation passed. Full runbook completion is not checked by this workflow step."
