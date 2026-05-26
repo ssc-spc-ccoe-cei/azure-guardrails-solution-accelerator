@@ -180,6 +180,7 @@ jobs:
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
                   "tenantId": "$TESTTENANT_ID"
+                  "mfaGracePeriod": "30"
               }
               "@
               Set-Content -Path $configFilePath -Value $configContent
@@ -276,6 +277,7 @@ jobs:
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
                   "tenantId": "$TESTTENANT_ID"
+                  "mfaGracePeriod": "30"
                 }
               "@
               Set-Content -Path $configFilePath -Value $configContent
