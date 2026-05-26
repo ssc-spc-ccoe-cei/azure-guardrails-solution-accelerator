@@ -84,12 +84,6 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
     mfaGracePeriod: mfaGracePeriod
-    #disable-next-line BCP318
-    dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
-    #disable-next-line BCP318
-    dcrImmutableId: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
-    #disable-next-line BCP318
-    dcrImmutableId2: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
