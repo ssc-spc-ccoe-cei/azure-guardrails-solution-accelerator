@@ -23,6 +23,10 @@ jobs:
       - name: Run Guardrail Unit Tests
         shell: pwsh
         run: |
+          # Override GitHub Actions default ($ErrorActionPreference = 'Stop')
+          # Source modules use Write-Error for non-terminating errors;
+          # 'Stop' would turn those into terminating exceptions.
+          $ErrorActionPreference = 'Continue'
           $config = New-PesterConfiguration
           $config.Run.Path = "test"
           $config.Run.Exit = $true

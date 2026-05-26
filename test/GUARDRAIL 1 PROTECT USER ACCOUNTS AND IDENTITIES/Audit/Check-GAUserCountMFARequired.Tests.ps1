@@ -1,4 +1,8 @@
 BeforeAll {
+    # Ensure Write-Error in source modules stays non-terminating (CI and VS Code set $ErrorActionPreference = 'Stop')
+    $script:originalEAP = $global:ErrorActionPreference
+    $global:ErrorActionPreference = 'Continue'
+
     # Define stubs for external functions
     function global:Invoke-GraphQueryEX { param($urlPath) }
     function global:Add-ProfileInformation { param($Result, $CloudUsageProfiles, $ModuleProfiles, $SubscriptionId, $ErrorList) return $Result }
@@ -13,6 +17,7 @@ AfterAll {
     Remove-Item Function:\Invoke-GraphQueryEX -ErrorAction SilentlyContinue
     Remove-Item Function:\Add-ProfileInformation -ErrorAction SilentlyContinue
     Remove-Item Function:\Get-AllUserAuthInformation -ErrorAction SilentlyContinue
+    $global:ErrorActionPreference = $script:originalEAP
 }
 
 # ──────────────────────────────────────────────

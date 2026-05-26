@@ -1,4 +1,8 @@
 BeforeAll {
+    # Ensure Write-Error in source modules stays non-terminating (CI and VS Code set $ErrorActionPreference = 'Stop')
+    $script:originalEAP = $global:ErrorActionPreference
+    $global:ErrorActionPreference = 'Continue'
+
     # Define stubs for external functions not available outside the solution
     function global:get-AADDiagnosticSettings { }
     function global:Add-ProfileInformation { param($Result, $CloudUsageProfiles, $ModuleProfiles, $SubscriptionId, $ErrorList) return $Result }
@@ -27,6 +31,7 @@ AfterAll {
     # Clean up global stubs
     Remove-Item Function:\get-AADDiagnosticSettings -ErrorAction SilentlyContinue
     Remove-Item Function:\Add-ProfileInformation -ErrorAction SilentlyContinue
+    $global:ErrorActionPreference = $script:originalEAP
 }
 
 # ──────────────────────────────────────────────

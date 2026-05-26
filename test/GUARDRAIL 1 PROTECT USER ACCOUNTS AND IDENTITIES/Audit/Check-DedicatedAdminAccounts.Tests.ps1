@@ -1,4 +1,8 @@
 BeforeAll {
+    # Ensure Write-Error in source modules stays non-terminating (CI and VS Code set $ErrorActionPreference = 'Stop')
+    $script:originalEAP = $global:ErrorActionPreference
+    $global:ErrorActionPreference = 'Continue'
+
     # Define stubs for external functions
     function global:Invoke-GraphQueryEX { param($urlPath) }
     function global:Add-ProfileInformation { param($Result, $CloudUsageProfiles, $ModuleProfiles, $SubscriptionId, $ErrorList) return $Result }
@@ -22,6 +26,7 @@ AfterAll {
     Remove-Item Function:\Set-AzContext -ErrorAction SilentlyContinue
     Remove-Item Function:\Get-AzStorageAccount -ErrorAction SilentlyContinue
     Remove-Item Function:\Get-AzStorageBlob -ErrorAction SilentlyContinue
+    $global:ErrorActionPreference = $script:originalEAP
 }
 
 Describe 'Check-DedicatedAdminAccounts' {
