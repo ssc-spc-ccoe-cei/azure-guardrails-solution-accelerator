@@ -37,7 +37,7 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
-
+param mfaGracePeriod string
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
 var GRDocsBaseUrl='https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1'
@@ -78,6 +78,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     SecurityLAWResourceId: SecurityLAWResourceId
     SSCReadOnlyServicePrincipalNameAPPID:SSCReadOnlyServicePrincipalNameAPPID
     TenantDomainUPN: TenantDomainUPN
+    mfaGracePeriod: mfaGracePeriod
     updatePSModules: updatePSModules
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
@@ -115,6 +116,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
     updateCoreResources: updateCoreResources
+    mfaGracePeriod: mfaGracePeriod
   }
 }
 
