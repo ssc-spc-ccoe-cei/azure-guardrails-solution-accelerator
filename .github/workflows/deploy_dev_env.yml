@@ -211,7 +211,8 @@ jobs:
               "uniqueNameSuffix": "$UNIQUENAME_SUFFIX_DEV",
               "securityRetentionDays": "730",
               "cloudUsageProfiles": "$DEV_CLOUDUSAGEPROFILES",
-              "tenantId": "$DEVTENANT_ID"
+              "tenantId": "$DEVTENANT_ID",
+              "mfaGracePeriod": "30"
               }
             "@
             Set-Content -Path $configFilePath -Value $configContent

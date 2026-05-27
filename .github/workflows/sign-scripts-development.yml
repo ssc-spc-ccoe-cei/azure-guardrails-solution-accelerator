@@ -11,6 +11,7 @@ on:
     branches:
       - main
       - main-*
+      - 'release/**'
 
 concurrency:
   group: Deploy-Azure-CAC-Test
@@ -212,7 +213,8 @@ jobs:
                   "uniqueNameSuffix": "$UNIQUENAME_SUFFIX",
                   "securityRetentionDays": "730",
                   "cloudUsageProfiles": "$TEST_CLOUDUSAGEPROFILES",
-                  "tenantId": "$TESTTENANT_ID"
+                  "tenantId": "$TESTTENANT_ID",
+                  "mfaGracePeriod": "30"
                 }
               "@
               Set-Content -Path $configFilePath -Value $configContent

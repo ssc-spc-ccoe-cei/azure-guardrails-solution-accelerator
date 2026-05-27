@@ -22,5 +22,6 @@
   "lighthouseTargetManagementGroupID": "",
   "securityRetentionDays": "730",
   "cloudUsageProfiles": "3",
-  "tenantId": "00000000-0000-0000-0000-000000000000"
+  "tenantId": "00000000-0000-0000-0000-000000000000",
+  "mfaGracePeriod": "30"
 }

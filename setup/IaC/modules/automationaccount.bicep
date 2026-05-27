@@ -24,6 +24,7 @@ param updatePSModules bool = false
 param updateCoreResources bool = false
 param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
+param mfaGracePeriod string
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -238,7 +239,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.1.2'
+        version: '1.1.3'
       }}
   }
   resource module29 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -638,6 +639,13 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
         isEncrypted: true
         value: '"true"'
+    }
+  }
+  resource variable24 'variables' = if (newDeployment || updateCoreResources) {
+    name: 'MFAGracePeriod'
+    properties: {
+      isEncrypted: true
+      value: '"${mfaGracePeriod}"'
     }
   }
 }

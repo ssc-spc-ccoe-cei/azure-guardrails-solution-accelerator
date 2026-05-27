@@ -9,12 +9,15 @@ param GRDocsBaseUrl string
 param newDeployment bool = true
 param updateWorkbook bool = false
 param updateCoreResources bool = false
+param mfaGracePeriod string
 var wb = loadTextContent('gr.workbook')
+var wbWithMfaGrace = replace(wb, '__MFA_GRACE_PERIOD__', mfaGracePeriod)
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
 //'''
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
-var wbConfig='${wb}${wbConfig2}'
+//var wbConfig='${wb}${wbConfig2}'
+var wbConfig='${wbWithMfaGrace}${wbConfig2}'
 
 resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: logAnalyticsWorkspaceName
@@ -982,6 +985,8 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     displayName: 'gr_mfa_evaluation'
     query: '''
 let reportTime = ReportTime;
+let mfaGracePeriodDays = toint(mfaGracePeriod);
+let MfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
@@ -1053,7 +1058,9 @@ let rawUserData = GuardrailsUserRaw_CL
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
-| where ReportTime == reportTime;
+| where ReportTime == reportTime
+// new logic for created Date
+| extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
 let guestUsers = rawUserData
@@ -1079,9 +1086,18 @@ let guestsToEvaluate = guestsWithTrustInfo
 | project-away PartnerTenantId, InboundMfaTrust, effectiveMfaTrust, shouldExcludeGuest, guestHomeTenantId;
 let excludedGuestCount = toscalar(guestsToExclude | summarize count());
 let userData = union memberUsers, guestsToEvaluate;
+// users within grace
+let usersWithinGrace = userData
+| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
+| where now() < gracePeriodEnd;
+let gracePeriodCount = toscalar(usersWithinGrace | summarize count());
+let userDataFiltered = userData
+| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
+| extend isWithinGracePeriod = now() < gracePeriodEnd
+| where isWithinGracePeriod == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
-let mfaAnalysis = userData
+let mfaAnalysis = userDataFiltered
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
     methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
@@ -1138,6 +1154,11 @@ let finalSummary = summary
         strcat(Comments, "; ", iff(locale == "fr-CA",
             strcat("Exclusion de ", tostring(excludedGuestCount), " comptes invités avec confiance AMF inter-locataire et politique d'accès conditionnel"),
             strcat("Excluded ", tostring(excludedGuestCount), " guest accounts with cross-tenant MFA trust and conditional access policy"))),
+        Comments)
+| extend Comments = iff(gracePeriodCount > 0,
+        strcat(Comments, "; ", iff(locale == "fr-CA",
+            strcat("Exclusion de ", tostring(gracePeriodCount), " utilisateurs dans la période de grâce AMF de ", tostring(mfaGracePeriodDays), " jours"),
+            strcat("Excluded ", tostring(gracePeriodCount), " Users as they are within the ", tostring(mfaGracePeriodDays), " Days MFA Grace Period"))),
         Comments);
 finalSummary
 | project 
@@ -1150,7 +1171,7 @@ finalSummary
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
-    functionParameters: 'ReportTime:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
     version: 2
   }
 }
@@ -1163,6 +1184,8 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
     displayName: 'gr_non_mfa_users'
     query: '''
 let reportTime = ReportTime;
+let mfaGracePeriodDays = toint(mfaGracePeriod);
+let MfaGracePeriod = mfaGracePeriodDays * 1d;
 let locale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s
@@ -1177,6 +1200,7 @@ let localizedMessages = case(
         "atLeastTwoRequired": ". Au moins 2 requises.",
         "noValidMethods": "Aucune méthode AMF valide trouvée. Au moins 2 requises.",
         "noMfaConfigured": "Aucune AMF configurée",
+        "noMfaConfiguredGrace": "Aucune AMF configurée. L'utilisateur est dans la période de grâce",
         "neverSignedIn": "Jamais connecté",
         "noNonCompliantUsers": "Aucun utilisateur non conforme trouvé"
     }),
@@ -1187,6 +1211,7 @@ let localizedMessages = case(
         "atLeastTwoRequired": ". At least 2 required.",
         "noValidMethods": "No valid MFA methods found. At least 2 required.",
         "noMfaConfigured": "No MFA configured",
+        "noMfaConfiguredGrace": "No MFA configured. User is within the grace period",
         "neverSignedIn": "Never Signed In",
         "noNonCompliantUsers": "No non-compliant users found"
     })
@@ -1242,10 +1267,13 @@ let userData = GuardrailsUserRaw_CL
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
-| where guardrailsExcluded == false;
+| where guardrailsExcluded == false
+| extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
 let mfaAnalysis = userData
+| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
+| extend isWithinGracePeriod = now() < gracePeriodEnd
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
     methodsRegisteredValue = column_ifexists("methodsRegistered_s", ""),
@@ -1276,9 +1304,11 @@ let mfaAnalysis = userData
         hasValidSystemPreferred, strcat(tostring(localizedMessages["systemPreferred"]), strcat_array(set_intersect(systemPreferredMethodsArray, validSystemMethods), ", ")),
         hasMfaRegistered == true and validMfaMethodsCount >= 1, strcat(tostring(localizedMessages["mfaRegistered"]), strcat_array(set_intersect(methodsRegisteredArray, validMfaMethods), ", ")),
         hasMfaRegistered == true and validMfaMethodsCount == 0, tostring(localizedMessages["noValidMethods"]),
+        hasMfaRegistered == false and isWithinGracePeriod == true, tostring(localizedMessages["noMfaConfiguredGrace"]),
         tostring(localizedMessages["noMfaConfigured"])
     );
 let nonCompliantUsers = mfaAnalysis
+// | where isWithinGracePeriod == false
 | where isMfaCompliant == false
 | extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
 | join kind=leftouter (
@@ -1321,7 +1351,7 @@ union
 )
 '''
     functionAlias: 'gr_non_mfa_users'
-    functionParameters: 'ReportTime:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
     version: 2
   }
 }
