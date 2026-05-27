@@ -1,3 +1,80 @@
+Function Confirm-GSATenantSelection {
+    param (
+        [Parameter(Mandatory = $false)]
+        [hashtable]
+        $config = @{}
+    )
+    $ErrorActionPreference = 'Stop'
+
+    # Ensure properly singned in before listing tenants
+    try{
+        $courrentContext = Get-AzContext -ErrorAction SilentlyContinue
+        if(-not $courrentContext -or -not $courrentContext.Account) {
+            Write-Host "Not currently signed in to Azure, initiating Connect-AzAccount..."
+            Connect-AzAccount | Out-Null
+            $courrentContext = Get-AzContext -ErrorAction SilentlyContinue
+        }
+    }
+    catch {
+        Write-Error "Error connecting to Azure. Verify that you have access to the account and try again. $_"
+        break
+    }
+    # Retrieve tenants and select tenant for deployment
+    $tenants = @(Get-AzTenant -ErrorAction SilentlyContinue | Sort-Object -Property Name)
+    if ($tenants.Count -eq 0){
+        Write-Warning ("Unable to list accessible tenants. Continuing with current context " + "(Tenant: $($courrentContext.Tenant.Id)).")
+        $config['tenantId'] = $courrentContext.Tenant.Id
+        return
+    }
+
+    # if tenantId already in config, validate then connect
+    if (-not [string]::IsNullOrEmpty($config.tenantId)) {
+        Write-Host "Validating tenantId from config.json: '$($config.tenantId)'"
+        $target = $tenants | Where-Object { $_.Id -eq $config.tenantId }
+        if (-not $target) {
+            $accessibleList = ($tenants | ForEach-Object { "$($_.Name) ($($_.Id))" }) -join "`n"
+            Write-Error "tenant ID '$($config.tenantId)' from config.jsdon is not  with the current account. `nAccesible tenants: `n$accessibleList"
+            break
+        }
+        Write-Host ("Target tenant from config.json: '$($target.Name)' with tenant Id:  $($target.Id).)")
+        $null = Connect-AzAccount -Tenant $target.Id -ErrorAction Stop
+        return 
+    }
+    # if config tenant Id is not set, or the context tenant Id does not match match with config tenant id,
+    # and tenant count is either 1 or more than 1, then prompt for tenant selection. Otherwise, continue with current context tenant.
+    if ($tenants.Count -eq 1) {
+        $selectedTenant  = $tenants[0]
+        Write-Host "Only one accessible tenant found. Selecting tenant '$($selected.Name)' with tenant Id ($($selected.Id))."
+        $null = Connect-AzAccount -Tenant $selected.Id -ErrorAction Stop
+        return
+    }
+    elseif ($tenants.Count -gt 1) {
+        # Select tenant for deployment from multiple accessible tenants
+        Write-Host "Multiple Azure tenants detected for this account. Current tenant context is '$((get-AzContext).Tenant.Id)'."
+        Write-Host "Please select tenant for deployment or Enter to keep current one:"
+        $i = 1
+        foreach ($tenant in $tenants){
+            Write-Host "$i - $($tenant.Name) - $($tenant.Id)"
+            $i++
+        }
+        # # [int]$selected = Read-Host "Select Tenant number: (1 - $($i-1))"
+        # selected tenant
+        do {[int]$selectedIndex = Read-Host "Select tenant number: (1 - $($tenants.Count))"
+        }until ($selectedIndex -ge 1 -and $selectedIndex -le $($tenants.Count))
+        $selectedTenant  = $tenants[$selectedIndex - 1]
+    }
+
+    # Write-Host "Selected tenant '$($selectedTenant.Name)' with tenant Id ($($selectedTenant.Id))."
+    Write-Host "Connecting to tenant '$($selectedTenant.Name)' with tenant Id '$($selectedTenant.Id)'..."
+    Connect-AzAccount -Tenant $selectedTenant.Id -ErrorAction Stop | Out-Null
+    $config['tenantId'] = $selectedTenant.Id
+    Write-Host "Connected to tenant '$($selectedTenant.Name)' with tenant Id '$($config.tenantId)'..."
+
+    return $config
+}
+
+
+
 Function Confirm-GSASubscriptionSelection {
     param (
         # config object
@@ -138,6 +215,10 @@ Function Confirm-GSAConfigurationParameters {
     $configObject.PSObject.Properties | ForEach-Object {
         $config += @{ $_.Name = $_.Value }
     }
+
+    # tenant selection prompt
+    $config = Confirm-GSATenantSelection -config $config
+    Write-Host "Config tenant Id: $($config.tenantId)"
 
     # verify params match expected patterns
     Write-Verbose "Validating parameters in config file/string..."
@@ -322,17 +403,20 @@ Function Confirm-GSAConfigurationParameters {
         }
     }
 
-    # Use tenant ID from config and set context
+    # select tenant ID (either from config or prompt) and set context
     $tenantId = $config.tenantId
+    Write-Verbose "Setting Azure context to tenant ID '$tenantId' for further validation of parameters and deployment..."
     try {
         $context = Set-AzContext -TenantId $tenantId -ErrorAction Stop
         Write-Verbose "Successfully set Azure context to tenant: $tenantId"
+        
     }
     catch {
         Write-Error "Failed to set Azure context to tenant: $tenantId. Error: $_"
         break
     }
 
+    Write-Verbose "Current Azure context tenant: $((Get-AzContext).Tenant.Id), subscription: $((Get-AzContext).Subscription.Name)"
     # verify Lighthouse config parameters
     $lighthouseServiceProviderTenantID = $config.lighthouseServiceProviderTenantID
     $lighthousePrincipalDisplayName = $config.lighthousePrincipalDisplayName
@@ -366,26 +450,35 @@ Function Confirm-GSAConfigurationParameters {
 
     ## confirm subscription selection
     Confirm-GSASubscriptionSelection -config $config
+
+    # Check the current context
+    Write-Verbose "Current Azure context tenant: $((Get-AzContext).Tenant.Id), subscription: $((Get-AzContext).Subscription.Name)"
     
     ## get tenant default domain - use Graph to support SPNs
     $response = Invoke-AzRestMethod -Method get -uri 'https://graph.microsoft.com/v1.0/organization' | Select-Object -expand Content | convertfrom-json -Depth 10
     $tenantDomainUPN = $response.value.verifiedDomains | Where-Object { $_.isDefault } | Select-Object -ExpandProperty name # onmicrosoft.com is verified and default by default
+    Write-Verbose "Tenant domain (UPN suffix): '$tenantDomainUPN'"
 
     ## get executing user identifier
+    Write-Verbose "Getting executing user identifier for config..."
     If ($context.Account -match '^MSI@') {
         # running in Cloud Shell, finding delegated user ID
         $userId = (Get-AzAdUser -SignedIn).Id
+        Write-Verbose "Running in Cloud Shell with MSI, using signed in user ID '$userId' for config."
     }
     ElseIf ($context.Account.Type -eq 'ServicePrincipal' -or $context.Account.Type -eq 'ClientAssertion') { # Federated Identity
         $sp = Get-AzADServicePrincipal -ApplicationId $context.Account.Id
         $userId = $sp.Id
+        Write-Verbose "Running with Service Principal or Federated Identity, using service principal ID '$userId' for config."
     }
     Else {
         # running locally
         $userId = (Get-AzAdUser -SignedIn).Id
+        Write-Verbose "Running locally, using signed in user ID '$userId' for config."
     }
 
-    ## gets tags information from tags.json, including version and release date.
+    ## gets tags information from tags.json, including version and release date
+    # Write-Verbose "Getting tags information from tags.json for config..."
     $tagsTable = get-content -path "$PSScriptRoot/../../../../setup/tags.json" | convertfrom-json -AsHashtable
 
     ## unique resource name suffix, default to last segment of tenant ID
@@ -395,6 +488,7 @@ Function Confirm-GSAConfigurationParameters {
     Else {
         $uniqueNameSuffix = '-' + $config.uniqueNameSuffix
     }
+    Write-Verbose "Using unique name suffix '$uniqueNameSuffix' for resource naming to avoid conflicts."
 
     ## generate resource names
     #TO-DO: switch to keyVaulNamePrefix, etc and existingKeyVauleName in config.json
