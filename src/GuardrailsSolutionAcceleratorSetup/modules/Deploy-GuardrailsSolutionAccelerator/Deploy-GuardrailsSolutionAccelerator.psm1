@@ -74,7 +74,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'subscriptionId'                        = (Get-AzContext).Subscription.Id
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
         'securityRetentionDays'                   = $config.securityRetentionDays
-
+        'mfaGracePeriod'                        = $config.mfaGracePeriod
     }
     # Adding URL parameter if specified
     [regex]$moduleURIRegex = '(https://github.com/.+?/(raw|archive)/.*?/psmodules)|(https://.+?\.blob\.core\.windows\.net/psmodules)'
