@@ -7,7 +7,7 @@ As this is an alpha release, please install with caution. You can still use vers
 
 Thank you for your understanding.
 ___________________________________________________________________
-## $${\color{Red} Avis \space : Deuxième \space version \space alpha \space 3.0.1 \space }$$
+## $${\color{Red} Avis \space : Deuxième \space version \space alpha \space 4.0.0 \space }$$
 La version actuelle (v4.0.0alpha) disponible fait l'objet de tests opérationnels. Elle a passé avec succès tous les tests unitaires et les tests d'intégration, mais elle nécessite toujours une révision active.
 
 Comme il s'agit d'une version alpha, veuillez l'installer avec précaution. Vous pouvez toujours utiliser la version 3.0.0 dans l'intervalle. L'étiquette alpha sera supprimée une fois l'examen final terminé.
