@@ -82,12 +82,6 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
-    #disable-next-line BCP318
-    dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
-    #disable-next-line BCP318
-    dcrImmutableId: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
-    #disable-next-line BCP318
-    dcrImmutableId2: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -124,10 +118,10 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
   }
 }
 
-// Data Collection Endpoint (DCE) and Data Collection Rule (DCR) for DCR-based Log Ingestion API
-// Create DCE/DCR on new deployments or when updating core resources (for migration from Data Collector API)
-module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
-  name: 'guardrails-dcrdce'
+// Data Collection Rules (DCRs) for DCR-based Log Ingestion API.
+// Create/update DCRs on new deployments or when updating core resources.
+module DCR 'modules/dcr.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+  name: 'guardrails-dcr'
   dependsOn: [
     LAW
   ]
@@ -142,19 +136,18 @@ module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || update
     updateCoreResources: updateCoreResources
   }
 }
-// Grants the automation account MSI the Monitoring Metrics Publisher role on both DCRs.
-// Separate module to avoid a circular dependency between automationaccount and dcrdce modules.
+// Grants the automation account MSI the DCR/LAW roles needed for ingestion and verification.
 module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
   name: 'guardrails-dcrrbac'
   dependsOn: [
     aa
-    DCRDCE
+    DCR
   ]
   params: {
     #disable-next-line BCP318
-    dcrResourceId: DCRDCE.outputs.dcrResourceId
+    dcrResourceId: DCR.outputs.dcrResourceId
     #disable-next-line BCP318
-    dcrResourceId2: DCRDCE.outputs.dcrResourceId2
+    dcrResourceId2: DCR.outputs.dcrResourceId2
     #disable-next-line BCP318
     automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
     #disable-next-line BCP318    
@@ -192,6 +185,3 @@ module alertNewVersion 'modules/alert.bicep' = {
   }
 }
 output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
-output dceEndpoint string = (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
-output dcrImmutableId string = (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
-output dcrImmutableId2 string = (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''
