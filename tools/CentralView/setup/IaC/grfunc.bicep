@@ -10,6 +10,12 @@ param version string
 param releaseDate string 
 param appInsightslocation string = 'canadacentral'
 
+@description('Object id (Get-AzADServicePrincipal .Id / enterprise app object id) for the CentralView ingestion service principal matching Key Vault ApplicationId. Leave empty to skip automated DCR Monitoring Metrics Publisher role assignment.')
+param ingestionServicePrincipalObjectId string = ''
+
+@description('Set true only when GuardrailsTenantsCompliance_CL already exists in the LAW and must not be redefined by IaC.')
+param deferGuardrailsTenantsComplianceTableProvisioning bool = false
+
 var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name
 
@@ -23,6 +29,18 @@ module law 'modules/law.bicep' = {
     rg: resourceGroup().name
     subscriptionId: subscription().subscriptionId
     version: version
+    deferGuardrailsTenantsComplianceTableProvisioning: deferGuardrailsTenantsComplianceTableProvisioning
+  }
+}
+
+module centralviewDcrIngestionRbac 'modules/centralview-dcr-ingestion-rbac.bicep' = if (!empty(ingestionServicePrincipalObjectId)) {
+  name: 'centralview-dcr-ingestion-rbac'
+  dependsOn: [
+    law
+  ]
+  params: {
+    dcrResourceId: law.outputs.dcrResourceId
+    principalId: ingestionServicePrincipalObjectId
   }
 }
 
@@ -36,6 +54,8 @@ module functionapp 'modules/function.bicep' = {
     storageAccountName: storageAccountName
     lawresourceid: law.outputs.lawresourceid
     appInsightsLocation: appInsightslocation
+    logsIngestionEndpoint: law.outputs.logsIngestionEndpoint
+    dcrImmutableId: law.outputs.dcrImmutableId
   }
 }
 module keyvault 'modules/keyvault.bicep' = {

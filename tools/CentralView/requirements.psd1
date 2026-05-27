@@ -4,9 +4,8 @@
 @{
     # For latest supported version, go to 'https://www.powershellgallery.com/packages/Az'. 
     # To use the Az module in your function app, please uncomment the line below.
-    'Az.Accounts' = '2.10.1'
-    'Az.ResourceGraph' = '0.13.0'
-    'Az.OperationalInsights' = '3.2.0'
-    'Az.KeyVault' = '4.7.0'
-    'OMSIngestionAPI' = '1.6.0'
+    'Az.Accounts' = '5.4.0'
+    'Az.ResourceGraph' = '1.2.1'
+    'Az.OperationalInsights' = '3.3.0'
+    'Az.KeyVault' = '6.4.3'
 }
