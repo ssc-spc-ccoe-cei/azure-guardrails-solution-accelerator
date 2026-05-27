@@ -14,6 +14,54 @@ Function Add-GSAAutomationRunbooks {
     $mainRunbookDescription = "Guardrails Main Runbook"
     $backendRunbookName = "backend"
     $backendRunbookDescription = "Guardrails Backend Runbook"
+    $scheduleName = "GR-Daily"
+
+    function Invoke-GSARunbookSetupStep {
+        param (
+            [Parameter(Mandatory = $true)]
+            [string]
+            $Description,
+
+            [Parameter(Mandatory = $true)]
+            [scriptblock]
+            $ScriptBlock
+        )
+
+        try {
+            & $ScriptBlock
+        }
+        catch {
+            $errorDetails = $_ | Out-String
+            if ([string]::IsNullOrWhiteSpace($errorDetails)) {
+                $errorDetails = $_.Exception.Message
+            }
+            throw "$Description failed. $errorDetails"
+        }
+    }
+
+    function Set-GSAAutomationSchedule {
+        param (
+            [Parameter(Mandatory = $true)]
+            [psobject]
+            $Config,
+
+            [Parameter(Mandatory = $true)]
+            [string]
+            $Name,
+
+            [Parameter(Mandatory = $true)]
+            [datetime]
+            $StartTime
+        )
+
+        $existingSchedule = Get-AzAutomationSchedule -ResourceGroupName $Config['runtime']['resourceGroup'] -AutomationAccountName $Config['runtime']['autoMationAccountName'] -Name $Name -ErrorAction SilentlyContinue
+        if ($existingSchedule) {
+            Write-Verbose "`tAutomation schedule '$Name' already exists. Reusing it."
+            return
+        }
+
+        New-AzAutomationSchedule -ResourceGroupName $Config['runtime']['resourceGroup'] -AutomationAccountName $Config['runtime']['autoMationAccountName'] -Name $Name -StartTime $StartTime -HourInterval 24 | Out-Null
+    }
 
     Write-Verbose "Exporting modules.json to Storage Account '$($config['runtime']['StorageAccountName'])' for runbook consumption"
 
@@ -49,26 +97,10 @@ Function Add-GSAAutomationRunbooks {
     Write-Verbose "Importing runbook definitions..."
     #region Import main runbook
     Write-Verbose "Importing 'main' Runbook." #main runbook, runs the modules.
-    try {
-        $ErrorActionPreference = 'Stop'
+    Invoke-GSARunbookSetupStep -Description "Importing 'main' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'" -ScriptBlock {
         Write-Verbose "`tImporting 'main' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'"
         Import-AzAutomationRunbook -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" -Description $mainRunbookDescription -Type PowerShell72 -Published `
             -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
-    }
-    catch [System.IO.IOException] {
-    Write-Log -Message "File access error: $_" -Level Error
-    Write-Output "Error Code 100: Unable to access required file or resource."
-    break
-    }
-    catch [Microsoft.Rest.Azure.CloudException] {
-        Write-Log -Message "Azure cloud service error: $_" -Level Error
-        Write-Output "Error Code 200: Azure API failure."
-        break
-    }
-    catch {
-        Write-Log -Message "Unexpected error occurred: $_" -Level Error
-        Write-Output "Error Code 999: An unknown error occurred."
-        break
     }
 
     $startTime = (Get-Date).Date.AddHours(7).ToUniversalTime()
@@ -76,117 +108,31 @@ Function Add-GSAAutomationRunbooks {
         $startTime = $startTime.AddDays(1)  # Move to the next day if the start time is too close
     }
 
-    Write-Verbose "Creating schedule for 'main' Runbook."
-    try {
-        $ErrorActionPreference = 'Stop'
-        Write-Verbose "`tCreating schedule for 'main' Runbook."
-        New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime $startTime -HourInterval 24 | Out-Null
-    }
-    catch [System.IO.IOException] {
-    Write-Log -Message "File access error: $_" -Level Error
-    Write-Output "Error Code 100: Unable to access required file or resource."
-    break
-    }
-    catch [Microsoft.Rest.Azure.CloudException] {
-        Write-Log -Message "Azure cloud service error: $_" -Level Error
-        Write-Output "Error Code 200: Azure API failure."
-        break
-    }
-    catch {
-        Write-Log -Message "Unexpected error occurred: $_" -Level Error
-        Write-Output "Error Code 999: An unknown error occurred."
-        break
+    Write-Verbose "Ensuring '$scheduleName' schedule exists."
+    Invoke-GSARunbookSetupStep -Description "Ensuring Automation schedule '$scheduleName'" -ScriptBlock {
+        Set-GSAAutomationSchedule -Config $config -Name $scheduleName -StartTime $startTime
     }
 
     Write-Verbose "Registering 'main' Runbook to schedule."
-    try{
-        $ErrorActionPreference = 'Stop'
-        Write-Verbose "`tRegistering 'main' Runbook to schedule."
-        Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Daily" | Out-Null
-    }
-    catch [System.IO.IOException] {
-    Write-Log -Message "File access error: $_" -Level Error
-    Write-Output "Error Code 100: Unable to access required file or resource."
-    break
-    }
-    catch [Microsoft.Rest.Azure.CloudException] {
-        Write-Log -Message "Azure cloud service error: $_" -Level Error
-        Write-Output "Error Code 200: Azure API failure."
-        break
-    }
-    catch {
-        Write-Log -Message "Unexpected error occurred: $_" -Level Error
-        Write-Output "Error Code 999: An unknown error occurred."
-        break
+    Invoke-GSARunbookSetupStep -Description "Registering 'main' Runbook to schedule '$scheduleName'" -ScriptBlock {
+        Write-Verbose "`tRegistering 'main' Runbook to schedule '$scheduleName'."
+        Register-AzAutomationScheduledRunbook -Name $mainRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName $scheduleName | Out-Null
     }
     #endregion
-    #region Import main runbook
+    #region Import backend runbook
     Write-Verbose "Importing 'Backend' Runbook." #backend runbooks. gets information about tenant, version and itsgcontrols.
-    try {
-        $ErrorActionPreference = 'Stop'
+    Invoke-GSARunbookSetupStep -Description "Importing 'backend' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'" -ScriptBlock {
         Write-Verbose "`tImporting 'backend' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'"
         Import-AzAutomationRunbook -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" -Description $backendRunbookDescription -Type PowerShell72 -Published `
             -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
     }
-    catch [System.IO.IOException] {
-    Write-Log -Message "File access error: $_" -Level Error
-    Write-Output "Error Code 101: Unable to access required file or resource."
-    break
-    }
-    catch [Microsoft.Rest.Azure.CloudException] {
-        Write-Log -Message "Azure cloud service error: $_" -Level Error
-        Write-Output "Error Code 200: Azure API failure."
-        break
-    }
-    catch {
-        Write-Log -Message "Unexpected error occurred: $_" -Level Error
-        Write-Output "Error Code 999: An unknown error occurred."
-        break
-    }
-
-    Write-Verbose "Creating schedule for 'Backend' Runbook."
-    try {
-        $ErrorActionPreference = 'Stop'
-        Write-Verbose "`tCreating schedule for 'backend' Runbook."
-        New-AzAutomationSchedule -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Name "GR-Daily" -StartTime $startTime -HourInterval 24 | Out-Null
-    }
-    catch [System.IO.IOException] {
-    Write-Log -Message "File access error: $_" -Level Error
-    Write-Output "Error Code 100: Unable to access required file or resource."
-    break
-    }
-    catch [Microsoft.Rest.Azure.CloudException] {
-        Write-Log -Message "Azure cloud service error: $_" -Level Error
-        Write-Output "Error Code 200: Azure API failure."
-        break
-    }
-    catch {
-        Write-Log -Message "Unexpected error occurred: $_" -Level Error
-        Write-Output "Error Code 999: An unknown error occurred."
-        break
-    }
 
     Write-Verbose "Registering 'Backend' Runbook to schedule."
-    try {
-        $ErrorActionPreference = 'Stop'
-        Write-Verbose "`tRegistering 'backend' Runbook to schedule."
-        Register-AzAutomationScheduledRunbook -Name $backendRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName "GR-Daily" | Out-Null
+    Invoke-GSARunbookSetupStep -Description "Registering 'backend' Runbook to schedule '$scheduleName'" -ScriptBlock {
+        Write-Verbose "`tRegistering 'backend' Runbook to schedule '$scheduleName'."
+        Register-AzAutomationScheduledRunbook -Name $backendRunbookName -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -ScheduleName $scheduleName | Out-Null
     }
-    catch [System.IO.IOException] {
-    Write-Log -Message "File access error: $_" -Level Error
-    Write-Output "Error Code 100: Unable to access required file or resource."
-    break
-    }
-    catch [Microsoft.Rest.Azure.CloudException] {
-        Write-Log -Message "Azure cloud service error: $_" -Level Error
-        Write-Output "Error Code 200: Azure API failure."
-        break
-    }
-    catch {
-        Write-Log -Message "Unexpected error occurred: $_" -Level Error
-        Write-Output "Error Code 999: An unknown error occurred."
-        break
-    }
+    #endregion
 
     Write-Verbose "Completed import Azure Automation Runbook definitions..."
 }

@@ -202,9 +202,10 @@ Write-Output  "reservedSubnetList: $(Get-GSAAutomationVariable -Name "reservedSu
 Write-Output  "TenantDomainUPN: $(Get-GSAAutomationVariable -Name "TenantDomainUPN")"
 Write-Output  "WorkSpaceID: $(Get-GSAAutomationVariable -Name "WorkSpaceID")"
 Write-Output  "GuardrailsAutomationAccountMSI: $(Get-GSAAutomationVariable -Name "GuardrailsAutomationAccountMSI")"
-
+Write-Output  "mfaGracePeriod: $(Get-GSAAutomationVariable -Name "mfaGracePeriod")"
 
 #Standard variables
+$mfaGracePeriod = Get-GSAAutomationVariable -Name "mfaGracePeriod"
 $WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID" 
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
@@ -226,6 +227,11 @@ If ($Locale -eq $null) {
 
 try {
     $RuntimeConfig = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name 'gsaConfigExportLatest' -AsPlainText -ErrorAction Stop | ConvertFrom-Json | Select-Object -Expand runtime
+    # Keep the Guardrails deployment context available even if later checks switch Az context.
+    [System.Environment]::SetEnvironmentVariable('subscriptionId', $RuntimeConfig.subscriptionId, [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('ResourceGroupName', $RuntimeConfig.resourceGroup, [System.EnvironmentVariableTarget]::Process)
+    $ResourceGroupName = $RuntimeConfig.resourceGroup
+    $StorageAccountName = $RuntimeConfig.storageAccountName
     Set-AzContext -SubscriptionId $RuntimeConfig.subscriptionId
 }
 catch {

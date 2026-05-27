@@ -25,32 +25,41 @@ Function Deploy-GSACoreResources {
 
     # deploy primary bicep template
     Write-Verbose "Deploying GSA core resource via bicep template..."
-    try { 
-        $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
-            -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
-    }
-    catch {
-        Write-error "Failed to deploy main Guardrails Accelerator template with error: $_" 
-        Exit
+    $deploymentRetryDelaysInSeconds = @(60, 120, 180, 240, 300)
+    $mainBicepDeployment = $null
+    for ($deploymentAttempt = 1; $deploymentAttempt -le ($deploymentRetryDelaysInSeconds.Count + 1); $deploymentAttempt++) {
+        try {
+            $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
+                -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
+            break
+        }
+        catch {
+            $deploymentErrorText = $_ | Out-String
+            if ([string]::IsNullOrWhiteSpace($deploymentErrorText)) {
+                $deploymentErrorText = $_.Exception.Message
+            }
+
+            $isDcrTableReadinessError = $deploymentErrorText -match 'InvalidOutputTable'
+            $isStorageContainerReadinessError = $deploymentErrorText -match 'ContainerOperationFailure' -and
+                $deploymentErrorText -match 'The specified resource does not exist'
+            $isLastAttempt = $deploymentAttempt -gt $deploymentRetryDelaysInSeconds.Count
+            if (-not ($isDcrTableReadinessError -or $isStorageContainerReadinessError) -or $isLastAttempt) {
+                Write-Error "Failed to deploy main Guardrails Accelerator template with error: $deploymentErrorText"
+                Exit
+            }
+
+            $retryDelayInSeconds = $deploymentRetryDelaysInSeconds[$deploymentAttempt - 1]
+            if ($isDcrTableReadinessError) {
+                Write-Warning "Core deployment hit DCR table readiness error (InvalidOutputTable) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
+            }
+            else {
+                Write-Warning "Core deployment hit storage container readiness error (ContainerOperationFailure) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
+            }
+            Start-Sleep -Seconds $retryDelayInSeconds
+        }
     }
     # add automation account msi to config object
     $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
-
-    # Persist DCE endpoint and DCR immutable IDs into config['runtime'] so they are included in the
-    # gsaConfigExportLatest Key Vault secret. The local execution flow reads this secret and sets all
-    # runtime properties as environment variables, making these available to Send-GuardrailsData.
-    if ($mainBicepDeployment.Outputs.ContainsKey('dceEndpoint') -and -not [string]::IsNullOrEmpty($mainBicepDeployment.Outputs['dceEndpoint'].value)) {
-        $config['runtime']['DCE_ENDPOINT'] = $mainBicepDeployment.Outputs['dceEndpoint'].value
-        Write-Verbose "Captured DCE endpoint from deployment: $($config['runtime']['DCE_ENDPOINT'])"
-    }
-    if ($mainBicepDeployment.Outputs.ContainsKey('dcrImmutableId') -and -not [string]::IsNullOrEmpty($mainBicepDeployment.Outputs['dcrImmutableId'].value)) {
-        $config['runtime']['DCR_IMMUTABLE_ID'] = $mainBicepDeployment.Outputs['dcrImmutableId'].value
-        Write-Verbose "Captured DCR immutable ID from deployment: $($config['runtime']['DCR_IMMUTABLE_ID'])"
-    }
-    if ($mainBicepDeployment.Outputs.ContainsKey('dcrImmutableId2') -and -not [string]::IsNullOrEmpty($mainBicepDeployment.Outputs['dcrImmutableId2'].value)) {
-        $config['runtime']['DCR_IMMUTABLE_ID_2'] = $mainBicepDeployment.Outputs['dcrImmutableId2'].value
-        Write-Verbose "Captured DCR immutable ID 2 from deployment: $($config['runtime']['DCR_IMMUTABLE_ID_2'])"
-    }
 
     # persist MSI object id as automation variable for runbooks
     $automationVariableName = 'GuardrailsAutomationAccountMSI'
@@ -68,6 +77,7 @@ Function Deploy-GSACoreResources {
     catch {
         Write-Warning "Failed to persist automation account MSI id to variable '$automationVariableName'. Telemetry MSI scan will be skipped until this is set. $_"
     }
+
     Write-Verbose "Core resource bicep deployment complete!"
 
     Write-Verbose "Granting Automation Account MSI permission to the Graph API"
