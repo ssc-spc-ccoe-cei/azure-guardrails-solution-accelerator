@@ -109,7 +109,24 @@ function Test-GuardrailsMfaExclusion {
 
     return ($attributeProperty.Value -eq $true)
 }
-function copy-toBlob {
+function New-ConnectedStorageContext {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $storageaccountName
+    )
+    try {
+        # Build a blob context that uses the identity already connected to Az PowerShell instead of a storage key.
+        return (New-AzStorageContext -StorageAccountName $storageaccountName -UseConnectedAccount -ErrorAction Stop)
+    }
+    catch {
+        $errorMessage = "Failed to create an Entra-authenticated storage context for storage account '$storageaccountName'. Error: $($_.Exception.Message)"
+        throw $errorMessage
+    }
+}
+
+function copy-toBlobUsingConnectedAccount {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -129,51 +146,63 @@ function copy-toBlob {
         $force
     )
     try {
-        $saParams = @{
-            ResourceGroupName = $resourcegroup
-            Name              = $storageaccountName
-        }
-        $scParams = @{
-            Container = $containerName
-        }
+        # Reuse the shared Entra-authenticated context so upload works with RBAC and no Shared Key access.
+        $context = New-ConnectedStorageContext -storageaccountName $storageaccountName
         $bcParams = @{
-            File = $FilePath
-            Blob = ($FilePath | Split-Path -Leaf)
+            File      = $FilePath
+            Blob      = ($FilePath | Split-Path -Leaf)
+            Container = $containerName
+            Context   = $context
         }
-        if ($force)
-        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force | Out-Null }
-        else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
+
+        # Add -Force only when the caller asked for it so the upload call stays a single code path.
+        if ($force) {
+            $bcParams['Force'] = $true
+        }
+        Set-AzStorageBlobContent @bcParams | Out-Null
     }
     catch {
-        $errorMessage = "Failed to upload blob '$($FilePath | Split-Path -Leaf)' to storage account '$storageaccountName' container '$containerName'. Error: $($_.Exception.Message)"
-        Write-Error $errorMessage
+        $errorMessage = "Failed to upload blob '$($FilePath | Split-Path -Leaf)' to storage account '$storageaccountName' container '$containerName' with Entra auth. Error: $($_.Exception.Message)"
         throw $errorMessage
     }
 }
-function get-blobs {
+
+function Test-GSARetryableBlobError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string]
-        $storageaccountName,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $resourcegroup
+        [System.Management.Automation.ErrorRecord]
+        $ErrorRecord
     )
-    $psModulesContainerName = "psmodules"
-    try {
-        $saParams = @{
-            ResourceGroupName = $resourcegroup
-            Name              = $storageaccountName
-        }
-        $scParams = @{
-            Container = $psModulesContainerName
-        }
-        return (Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Get-AzStorageBlob)
+
+    # Retry only when the error still looks like RBAC/auth propagation instead of a real missing-resource problem.
+    $retryableMarkers = @(
+        'AuthorizationFailure',
+        'AuthorizationPermissionMismatch',
+        'AuthorizationPermissionDenied',
+        'AuthenticationFailed',
+        'Forbidden',
+        'Unauthorized',
+        'not authorized'
+    )
+
+    $statusCode = $null
+    if ($null -ne $ErrorRecord.Exception.Response -and $null -ne $ErrorRecord.Exception.Response.StatusCode) {
+        $statusCode = [int]$ErrorRecord.Exception.Response.StatusCode
     }
-    catch {
-        Write-Error $_.Exception.Message
+
+    if ($statusCode -in @(401, 403)) {
+        return $true
     }
+
+    $errorText = $ErrorRecord.ToString()
+    foreach ($marker in $retryableMarkers) {
+        if ($errorText -match $marker) {
+            return $true
+        }
+    }
+
+    return $false
 }
 
 function read-blob {
@@ -190,20 +219,37 @@ function read-blob {
         $resourcegroup,
         [Parameter(Mandatory = $true)]
         [string]
-        $containerName,
-        [Parameter(Mandatory = $false)]
-        [switch]
-        $force
+        $containerName
     )
-    $Context = (Get-AzStorageAccount -ResourceGroupName $resourcegroup -Name $storageaccountName).Context
-    $blobParams = @{
-        Blob        = 'modules.json'
-        Container   = $containerName
-        Destination = $FilePath
-        Context     = $Context
-        Force       = $true
+    # Wait up to 10 minutes for the Automation Account's Blob Reader role to become usable.
+    $maxBlobAttempts = 30
+    $blobRetryDelaySeconds = 20
+    $Context = New-ConnectedStorageContext -storageaccountName $storageaccountName
+
+    for ($attempt = 1; $attempt -le $maxBlobAttempts; $attempt++) {
+        try {
+            $blobParams = @{
+                Blob        = 'modules.json'
+                Container   = $containerName
+                Destination = $FilePath
+                Context     = $Context
+                Force       = $true
+                ErrorAction = 'Stop'
+            }
+
+            Get-AzStorageBlobContent @blobParams
+            return
+        }
+        catch {
+            # Keep retrying while the new blob role settles, but fail loudly once the final attempt is exhausted.
+            if ($attempt -eq $maxBlobAttempts -or -not (Test-GSARetryableBlobError -ErrorRecord $_)) {
+                throw
+            }
+
+            Write-Verbose "Attempt $attempt of $maxBlobAttempts could not read modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"
+            Start-Sleep -Seconds $blobRetryDelaySeconds
+        }
     }
-    Get-AzStorageBlobContent @blobParams
 }
 
 Function Add-LogEntry {
@@ -565,60 +611,77 @@ function Check-DocumentExistsInStorage {
         #Add-LogEntry 'Error' 
         throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
     }
-    try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
-    }
-    catch {
-        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
-        #Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        #    subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_" `
-        #    -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
-        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
-    }
-
     $docMissing = $false
     $commentsArray = @()
     $blobFound = $false
     $baseFileNameFound = $false
-   
-    # Get a list of filenames uploaded in the blob storage
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
-    $fileNamesList = @()
-    $blobs | ForEach-Object {
-        $fileNamesList += $_.Name
+    $blobAccessFailed = $false
+
+    try {
+        # Use Entra/RBAC blob access here because the Guardrails storage account no longer allows Shared Key auth.
+        $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
     }
-    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
-    if ( $matchingFiles.count -lt 1 ){
-        # check if any fileName matches without the extension
-        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
-        
-        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
-        if ($BaseFileNamesMatch.Count -gt 0){
-            $baseFileNameFound = $true
+    catch {
+        $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add($storageErrorMessage) | Out-Null
+
+        return [PSCustomObject]@{
+            ComplianceResults = $null
+            Errors            = $ErrorList
+            AdditionalResults = $AdditionalResults
         }
     }
-    else {
-        # also covers the use case if more than 1 appropriate files are uploaded
-        $blobFound = $true
-    }
+   
+    if ($null -ne $StorageContext) {
+        try {
+            # Fail fast on blob RBAC issues so they are not misreported as a missing document.
+            $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
+            $fileNamesList = @()
+            $blobs | ForEach-Object {
+                $fileNamesList += $_.Name
+            }
+            $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+            if ( $matchingFiles.count -lt 1 ){
+                # check if any fileName matches without the extension
+                $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+                
+                $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+                if ($BaseFileNamesMatch.Count -gt 0){
+                    $baseFileNameFound = $true
+                }
+            }
+            else {
+                # also covers the use case if more than 1 appropriate files are uploaded
+                $blobFound = $true
+            }
+        }
+        catch {
+            $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$subscriptionId'; verify that blob data access is available. Error: $_"
+            $ErrorList.Add($storageErrorMessage) | Out-Null
 
-    # Use case: uploaded fileName is correct but has wrong extension
-    if ($baseFileNameFound){
-        # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
-        $docMissing = $true
-        $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
-    }
-    else{
-        if ($blobFound){
-            # Use case: a blob with the name $documentName was located in the specified storage account
-            $commentsArray += $msgTable.procedureFileFound -f  $DocumentName
+            return [PSCustomObject]@{
+                ComplianceResults = $null
+                Errors            = $ErrorList
+                AdditionalResults = $AdditionalResults
+            }
+        }
+
+        # Use case: uploaded fileName is correct but has wrong extension
+        if ($baseFileNameFound){
+            # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
+            $docMissing = $true
+            $commentsArray += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
         }
         else {
-            # Use case: no blob with the name $documentName was found in the specified storage account
-            $docMissing = $true
-            $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+            if ($blobFound){
+                # Use case: a blob with the name $documentName was located in the specified storage account
+                $commentsArray += $msgTable.procedureFileFound -f  $DocumentName
+            }
+            else {
+                # Use case: no blob with the name $documentName was found in the specified storage account
+                $docMissing = $true
+                $commentsArray += $msgTable.procedureFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+            }
         }
     }
 
