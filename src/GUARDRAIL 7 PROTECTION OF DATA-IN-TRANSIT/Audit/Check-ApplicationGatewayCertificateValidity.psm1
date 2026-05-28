@@ -185,8 +185,8 @@ function Check-ApplicationGatewayCertificateValidity {
     # Case 2: Correct document exists (i.e. blobfound) - proceed with checking App Gateway certificate validity for subscriptions
     # ----------------------
 
-    # Get all subscriptions in tenant scope
-    $subscriptions = Get-AzSubscription
+    # Get all enabled subscriptions in tenant scope (skip canceled/disabled subscriptions)
+    $subscriptions = Get-AzSubscription | Where-Object { $_.State -eq 'Enabled' }
 
     foreach ($subscription in $subscriptions) {
 
