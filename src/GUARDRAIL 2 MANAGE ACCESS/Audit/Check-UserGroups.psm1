@@ -50,26 +50,115 @@ function Check-UserGroups {
         Authorization    = "Bearer $accessToken"
         ConsistencyLevel = "eventual"
     }
-    
-    # Get all users in the tenant (Members and Guests)
-    $usersUrl = "https://graph.microsoft.com/v1.0/users?`$select=id,displayName,givenName,userPrincipalName&`$top=999"
-    $users = @()
-    do {
-        try {
-            $usersResp = Invoke-RestMethod -Method Get -Uri $usersUrl -Headers $headers
-        } catch {
-            $ErrorList.Add("Failed to get users: $_")
+
+    function Invoke-GraphGetWithRetry {
+        param (
+            [Parameter(Mandatory=$true)]
+            [string] $Uri,
+            [Parameter(Mandatory=$true)]
+            [hashtable] $Headers,
+            [int] $MaxRetries = 3,
+            [int] $RetryDelaySeconds = 5
+        )
+
+        for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
+            try {
+                return Invoke-RestMethod -Method Get -Uri $Uri -Headers $Headers -ErrorAction Stop
+            } catch {
+                if ($attempt -eq $MaxRetries) {
+                    throw
+                }
+
+                Write-Warning "Transient error calling Microsoft Graph URI '$Uri': $($_.Exception.Message). Retrying in $RetryDelaySeconds seconds... (Attempt $attempt of $MaxRetries)"
+                Start-Sleep -Seconds $RetryDelaySeconds
+            }
         }
-        if ($usersResp.value) {
-            $users += $usersResp.value
+    }
+
+    function Get-FirstUserWithoutGroup {
+        param (
+            [Parameter(Mandatory=$true)]
+            [hashtable] $Headers,
+            [Parameter(Mandatory=$true)]
+            [System.Collections.Generic.HashSet[string]] $GroupedUPNs,
+            [Parameter(Mandatory=$true)]
+            [string] $ReportTime,
+            [Parameter(Mandatory=$true)]
+            [string] $itsgcode,
+            [Parameter(Mandatory=$true)]
+            [string] $Comments,
+            [Parameter(Mandatory=$true)]
+            [System.Collections.IList] $ErrorList,
+            [int] $Limit = 20
+        )
+
+        $usersWithoutGroups = [System.Collections.Generic.List[object]]::new()
+        $usersUrl = "https://graph.microsoft.com/v1.0/users?`$select=id,displayName,givenName,userPrincipalName&`$top=999"
+
+        do {
+            $usersResp = $null
+            try {
+                $usersResp = Invoke-GraphGetWithRetry -Uri $usersUrl -Headers $Headers
+            } catch {
+                [void]$ErrorList.Add("Failed to get users: $_")
+                break
+            }
+
+            foreach ($user in $usersResp.value) {
+                if ($usersWithoutGroups.Count -ge $Limit) {
+                    break
+                }
+
+                if ($null -ne $user.userPrincipalName -and $user.userPrincipalName -ne '' -and -not $GroupedUPNs.Contains($user.userPrincipalName)) {
+                    $usersWithoutGroups.Add([PSCustomObject]@{
+                        UserId = $user.id
+                        DisplayName = $user.displayName
+                        GivenName = $user.givenName
+                        UserPrincipalName = $user.userPrincipalName
+                        Comments = $Comments
+                        ReportTime = $ReportTime
+                        itsgcode = $itsgcode
+                    }) | Out-Null
+                }
+            }
+
+            $usersUrl = if ($usersWithoutGroups.Count -lt $Limit) { $usersResp.'@odata.nextLink' } else { $null }
+        } while ($usersUrl)
+
+        return $usersWithoutGroups.ToArray()
+    }
+
+    function Get-UserWithoutGroupAdditionalResult {
+        param (
+            [Parameter(Mandatory=$true)]
+            [hashtable] $Headers,
+            [Parameter(Mandatory=$true)]
+            [System.Collections.Generic.HashSet[string]] $GroupedUPNs,
+            [Parameter(Mandatory=$true)]
+            [string] $ReportTime,
+            [Parameter(Mandatory=$true)]
+            [string] $itsgcode,
+            [Parameter(Mandatory=$true)]
+            [hashtable] $msgTable,
+            [Parameter(Mandatory=$true)]
+            [System.Collections.IList] $ErrorList
+        )
+
+        $limitedUsers = Get-FirstUserWithoutGroup -Headers $Headers -GroupedUPNs $GroupedUPNs -ReportTime $ReportTime -itsgcode $itsgcode -Comments $msgTable.userNotInGroup -ErrorList $ErrorList
+        if ($limitedUsers -and $limitedUsers.Count -gt 0) {
+            return [PSCustomObject]@{
+                records = $limitedUsers
+                logType = "GR2UsersWithoutGroups"
+            }
         }
-        $usersUrl = $usersResp.'@odata.nextLink'
-    } while ($usersUrl)
+
+        return $null
+    }
 
     $memberUrlPath = '/users/$count?$filter=userType eq ''Member'''
     $memberUri = "https://graph.microsoft.com/v1.0$memberUrlPath"
     try {
-        $memResp = Invoke-RestMethod -Uri $memberUri -Method Get -Headers $headers
+        $memResp = Invoke-GraphGetWithRetry -Uri $memberUri -Headers $headers
     } catch {
         $ErrorList.Add("Failed to get member count: $_")
     }
@@ -78,7 +167,7 @@ function Check-UserGroups {
     $guestUrlPath = '/users/$count?$filter=userType eq ''Guest'''
     $guestUri = "https://graph.microsoft.com/v1.0$guestUrlPath"
     try {
-        $guestResp = Invoke-RestMethod -Uri $guestUri -Method Get -Headers $headers
+        $guestResp = Invoke-GraphGetWithRetry -Uri $guestUri -Headers $headers
     } catch {
         $ErrorList.Add("Failed to get guest count: $_")
     }
@@ -87,7 +176,7 @@ function Check-UserGroups {
     $groupUrlPath = '/groups/$count'
     $groupsUri = "https://graph.microsoft.com/v1.0$groupUrlPath"
     try {
-        $groupResp = Invoke-RestMethod -Uri $groupsUri -Method Get -Headers $headers
+        $groupResp = Invoke-GraphGetWithRetry -Uri $groupsUri -Headers $headers
     } catch {
         $ErrorList.Add("Failed to get group count: $_")
     }
@@ -99,47 +188,54 @@ function Check-UserGroups {
 
     Write-Output "Members: $memberCount, Guests: $guestCount, Groups: $groupCount"
 
-    $uniqueUPNs = [System.Collections.Generic.HashSet[string]]::new()
+    $uniqueUPNs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-
-    $groupsUrl = "https://graph.microsoft.com/v1.0/groups?`$select=id&`$top=999"
-    do {
-        try {
-            # Get all groups in the tenant
-            $grpResp = Invoke-RestMethod -Method Get -Uri $groupsUrl -Headers $headers
-        } catch {
-            $ErrorList.Add("Failed to get groups: $_")
-        }
-    foreach ($g in $grpResp.value) {
-
-        # page members of each group (filter to users only)
-        $membersUrl = "https://graph.microsoft.com/v1.0/groups/$($g.id)/members/microsoft.graph.user?`$select=userPrincipalName&`$top=999"
-
+    if ($allUserCount -gt 0 -and $groupCount -gt 0) {
+        $groupsUrl = "https://graph.microsoft.com/v1.0/groups?`$select=id&`$top=999"
         do {
+            $grpResp = $null
             try {
-                # Get members of the group
-                $memResp = Invoke-RestMethod -Method Get -Uri $membersUrl -Headers $headers
+                # Get all groups in the tenant
+                $grpResp = Invoke-GraphGetWithRetry -Uri $groupsUrl -Headers $headers
             } catch {
-                $ErrorList.Add("Failed to get members for group ID '$($g.id)': $_")
+                $ErrorList.Add("Failed to get groups: $_")
+                break
             }
-            foreach ($u in $memResp.value) {
-                if ($u.userPrincipalName) {
-                    $uniqueUPNs.Add($u.userPrincipalName) | Out-Null
+
+            foreach ($g in $grpResp.value) {
+
+                # page members of each group (filter to users only)
+                $membersUrl = "https://graph.microsoft.com/v1.0/groups/$($g.id)/members/microsoft.graph.user?`$select=userPrincipalName&`$top=999"
+
+                do {
+                    $memResp = $null
+                    try {
+                        # Get members of the group
+                        $memResp = Invoke-GraphGetWithRetry -Uri $membersUrl -Headers $headers
+                    } catch {
+                        $ErrorList.Add("Failed to get members for group ID '$($g.id)': $_")
+                        break
+                    }
+                    foreach ($u in $memResp.value) {
+                        if ($u.userPrincipalName) {
+                            $uniqueUPNs.Add($u.userPrincipalName) | Out-Null
+                        }
+                    }
+                    $membersUrl = $memResp.'@odata.nextLink'
+                    # stop paging members early if we have seen every user
+                } while ($membersUrl -and $uniqueUPNs.Count -lt $allUserCount)
+
+                # break out of the group loop if done
+                if ($uniqueUPNs.Count -eq $allUserCount) {
+                    break
                 }
             }
-            $membersUrl = $memResp.'@odata.nextLink'
-            # stop paging members early if we’ve seen every user
-        } while ($membersUrl -and $uniqueUPNs.Count -lt $allUserCount)
 
-        # break out of the group loop if done
-        if ($uniqueUPNs.Count -eq $allUserCount) { break }
+            $groupsUrl = $grpResp.'@odata.nextLink'
+        } while ($groupsUrl)
     }
 
-    $groupsUrl = $grpResp.'@odata.nextLink'
-    } while ($groupsUrl)
-
     $totalGroupUsers = $uniqueUPNs.Count
-    $uniqueUsers = $users | Where-Object { $uniqueUPNs.Contains($_.userPrincipalName) }
 
     # Condition: if only 1 user in the tenant
     if($allUserCount -le 1) {
@@ -153,30 +249,9 @@ function Check-UserGroups {
             $IsCompliant = $false
             $commentsArray = $msgTable.isNotCompliant + " " +  $commentsArray  + " " + $msgTable.userGroupsMany
             
-            # Identify users without group assignments for remediation
-            $usersWithoutGroups = @()
-            $users | Where-Object { 
-                $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' -and
-                -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
-            } | ForEach-Object {
-                    $userObject = [PSCustomObject]@{
-                        UserId = $_.id
-                        DisplayName = $_.displayName
-                        GivenName = $_.givenName
-                        UserPrincipalName = $_.userPrincipalName
-                        Comments = $msgTable.userNotInGroup
-                        ReportTime = $ReportTime
-                        itsgcode = $itsgcode
-                    }
-                    $usersWithoutGroups += $userObject
-            }
-                
-            if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
-                $limitedUsers = $usersWithoutGroups | Select-Object -First 20
-                $AdditionalResults = [PSCustomObject]@{
-                    records = $limitedUsers
-                    logType = "GR2UsersWithoutGroups"
-                }
+            $usersWithoutGroupsResults = Get-UserWithoutGroupAdditionalResult -Headers $headers -GroupedUPNs $uniqueUPNs -ReportTime $ReportTime -itsgcode $itsgcode -msgTable $msgTable -ErrorList $ErrorList
+            if ($usersWithoutGroupsResults) {
+                $AdditionalResults = $usersWithoutGroupsResults
             }
         } 
         else {
@@ -220,30 +295,9 @@ function Check-UserGroups {
                 $IsCompliant = $false
                 $commentsArray += " " + $msgTable.userCountGroupNoMatch
                 
-                # Identify users without group assignments for remediation
-                $usersWithoutGroups = @()
-                $users | Where-Object { 
-                    $null -ne $_.userPrincipalName -and $_.userPrincipalName -ne '' -and
-                    -not ($uniqueUsers.userPrincipalName -contains $_.userPrincipalName)
-                } | ForEach-Object {
-                    $userObject = [PSCustomObject]@{
-                        UserId = $_.id
-                        DisplayName = $_.displayName
-                        GivenName = $_.givenName
-                        UserPrincipalName = $_.userPrincipalName
-                        Comments = $msgTable.userNotInGroup
-                        ReportTime = $ReportTime
-                        itsgcode = $itsgcode
-                    }
-                    $usersWithoutGroups += $userObject
-                }
-                
-                if ($usersWithoutGroups -and $usersWithoutGroups.Count -gt 0) {
-                    $limitedUsers = $usersWithoutGroups | Select-Object -First 20
-                    $AdditionalResults = [PSCustomObject]@{
-                        records = $limitedUsers
-                        logType = "GR2UsersWithoutGroups"
-                    }
+                $usersWithoutGroupsResults = Get-UserWithoutGroupAdditionalResult -Headers $headers -GroupedUPNs $uniqueUPNs -ReportTime $ReportTime -itsgcode $itsgcode -msgTable $msgTable -ErrorList $ErrorList
+                if ($usersWithoutGroupsResults) {
+                    $AdditionalResults = $usersWithoutGroupsResults
                 }
             }
         }

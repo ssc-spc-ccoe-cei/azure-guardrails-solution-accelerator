@@ -1408,10 +1408,10 @@ function Invoke-GraphQueryEX {
 
     [string]$baseUri = "https://graph.microsoft.com/v1.0"
     $fullUri = "$baseUri$urlPath" 
-    $allResults = @()
+    $allResults = [System.Collections.Generic.List[object]]::new()
+    $singleObjectResult = $null
     $statusCode = $null
     $pageCount = 0
-   # Write-Host $fullUri
     do {
         $retryCount = 0
         $success = $false
@@ -1421,10 +1421,15 @@ function Invoke-GraphQueryEX {
         do {
             try {
                 $uri = $fullUri -as [uri]
-                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
-                $data = $response.Content | ConvertFrom-Json
-                $parsedcontent = $data.value
+                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
+                if ($statusCode -lt 200 -or $statusCode -ge 300) {
+                    $responseText = [string]$response.Content
+                    $responsePreview = if ($responseText.Length -gt 500) { $responseText.Substring(0, 500) + '...' } else { $responseText }
+                    throw [System.Exception]::new(
+                        "Graph API returned HTTP $statusCode at page $pageCount. Response: $responsePreview")
+                }
+                $data = $response.Content | ConvertFrom-Json
                 $success = $true
             }
             catch {
@@ -1434,7 +1439,7 @@ function Invoke-GraphQueryEX {
                     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null
-                        StatusCode = $null
+                        StatusCode = $statusCode
                         Error      = $_.Exception.Message
                     }
                 } else {
@@ -1445,10 +1450,9 @@ function Invoke-GraphQueryEX {
         } while (-not $success -and $retryCount -lt $MaxRetries)
 
         if ($null -ne $data.value) {
-            $allResults += $data.value
+            $allResults.AddRange([object[]]$data.value)
         } else {
-            # For endpoints that don't return .value (single object)
-            $allResults = $data
+            $singleObjectResult = $data
             break
         }
         # Handle paging
@@ -1461,8 +1465,9 @@ function Invoke-GraphQueryEX {
     
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
+    $valueOut = if ($null -ne $singleObjectResult) { $singleObjectResult } else { [object[]]$allResults.ToArray() }
     return @{
-        Content    = @{ value = $allResults }
+        Content    = @{ value = $valueOut }
         StatusCode = $statusCode
     }
 }
@@ -1516,6 +1521,7 @@ function Invoke-GraphQueryStreamWithCallback {
         
         Write-Verbose "  -> Fetching page $pageCount from Graph API..."        
         do {
+            $isRetryable = $true
             try {
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
@@ -3308,17 +3314,40 @@ function FetchAllUserRawData {
     
     try {
         $regPath = "/reports/authenticationMethods/userRegistrationDetails"
-        $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details" -PerformanceMetrics $performanceMetrics
-        $registrationDetails = @($regResponse.Content.value)
-        
-        Write-Verbose "  Success: Retrieved $($registrationDetails.Count) registration records"
-        
-        # Build efficient lookup for registration data
-        $registrationDetails | ForEach-Object {
-            if ($_.id -and -not $regById.ContainsKey($_.id)) {
-                $regById[$_.id] = $_
+        $registrationContext = @{
+            regById = $regById
+        }
+        $processRegistrationPageCallback = {
+            param($pageData, $context)
+
+            $pageRegistrations = @($pageData.Data)
+            foreach ($registrationDetail in $pageRegistrations) {
+                if ($registrationDetail.id -and -not $context.regById.ContainsKey($registrationDetail.id)) {
+                    # Keep only fields consumed by KQL so each raw Graph page can be garbage-collected.
+                    $context.regById[$registrationDetail.id] = [PSCustomObject]@{
+                        isMfaRegistered       = $registrationDetail.isMfaRegistered
+                        isMfaCapable          = $registrationDetail.isMfaCapable
+                        isSsprEnabled         = $registrationDetail.isSsprEnabled
+                        isSsprRegistered      = $registrationDetail.isSsprRegistered
+                        isSsprCapable         = $registrationDetail.isSsprCapable
+                        isPasswordlessCapable = $registrationDetail.isPasswordlessCapable
+                        defaultMethod         = $registrationDetail.defaultMethod
+                        methodsRegistered     = if ($registrationDetail.methodsRegistered) { @($registrationDetail.methodsRegistered) } else { @() }
+                        isSystemPreferredAuthenticationMethodEnabled = $registrationDetail.isSystemPreferredAuthenticationMethodEnabled
+                        systemPreferredAuthenticationMethods = $registrationDetail.systemPreferredAuthenticationMethods
+                        userPreferredMethodForSecondaryAuthentication = $registrationDetail.userPreferredMethodForSecondaryAuthentication
+                    }
+                }
+            }
+
+            return @{
+                ProcessedCount = $pageRegistrations.Count
+                UploadedCount = 0
             }
         }
+
+        $registrationResult = Invoke-GraphQueryStreamWithCallback -urlPath $regPath -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -PerformanceMetrics $performanceMetrics
+        Write-Verbose "  Success: Retrieved $($registrationResult.TotalProcessed) registration records from $($registrationResult.TotalPages) pages"
         Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"        
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
@@ -3404,6 +3433,9 @@ function FetchAllUserRawData {
         $batchResults = $filteredPageUsers | ForEach-Object {
             $user = $_
             $registration = $context.regById[$user.id]
+            if ($registration) {
+                $context.regById.Remove($user.id) | Out-Null
+            }
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
 
