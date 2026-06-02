@@ -64,6 +64,9 @@
     },
     "lighthouseTargetManagementGroupID": {
       "value": "%lighthouseTargetManagementGroupID%"
+    },
+    "mfaGracePeriod": {
+      "value": "%mfaGracePeriod%"
     }
   }
 }

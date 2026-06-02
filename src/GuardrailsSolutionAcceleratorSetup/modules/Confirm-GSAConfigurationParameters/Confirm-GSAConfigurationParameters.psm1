@@ -242,6 +242,10 @@ Function Confirm-GSAConfigurationParameters {
             IsRequired = $true
             ValidationByType = 'guid'
         }
+        mfaGracePeriod = @{
+            IsRequired = $true
+            ValidationByType = 'int'
+        }
     }
 
     ForEach ($configParam in $config.GetEnumerator()) {
@@ -413,6 +417,7 @@ Function Confirm-GSAConfigurationParameters {
     $config['runtime']['deployLAW'] = $true
     $config['runtime']['deployKV'] = $true
     $config['runtime']['enableMultiCloudProfiles'] = $true
+    $config['runtime']['mfaGracePeriod'] = $config.mfaGracePeriod
     # output the configuration as an object
     Write-Host "Validation of configuration parameters completed successfully!" -ForegroundColor Green
 

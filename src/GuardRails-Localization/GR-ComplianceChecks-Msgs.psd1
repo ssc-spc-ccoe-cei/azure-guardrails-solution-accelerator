@@ -157,7 +157,7 @@ consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Acc
 adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
 
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
-noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
+noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all' or all individual types selected (browser, mobileAppsAndDesktopClients, exchangeActiveSync, other); 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 noDeviceFilterPolicies = Missing a required conditional access policy. At least one policy needs to have device filters enabled with target resources, administrator roles included and enabled.
 noLocationFilterPolicies = Missing a required conditional access policy. At least one policy needs to check for named/trusted locations with administrator roles included and enabled.
 hasRequiredPolicies = Required conditional access policies for administrator access exist. 
@@ -293,6 +293,7 @@ networkSecurityTools = Tools In Use For Limiting Access To Authorized Source IP 
 networkInterfaceIPs = Policy for Limiting Public IPs
 policyNoApplicableResourcesSub = Policy is assigned at the subscription level. No applicable resources found
 policyNotConfiguredSub = Required policy is not assigned to this subscription: {0}. Please assign the policy to ensure compliance.
+policyAssignedSub = Required policy is assigned at a scope covering this subscription: {0}.
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
@@ -342,7 +343,7 @@ DefenderEnabledNonCompliant = MS Defender for Cloud is enabled for this subscrip
 NoMappedResourcesOrMappingIncomplete = There are not any resources (i.e., virtual machines, servers, storage accounts etc.,) being directly protected by Defender for Cloud Workload Protection (CWP) Standard tier service offering.
 CwpPlansNotStandard = The following CWP plans in use are not considered Standard tier for Defender for Cloud: {0}.
 CoverageOk = All CWP plans are using a Defender for Cloud Workload Protection (CWP) Standard tier service offering and are considered compliant.
-FoundationalCspmOnlyCompliant = Only Foundational CSPM (free tier) is active for this subscription. Defender CSPM and CWP plans are not enabled. The subscription is compliant.
+FoundationalCspmOnlyInfo = [Informational] Only Foundational CSPM (free tier) is active for this subscription. Defender CSPM and CWP plans are not enabled.
 CwpInformational = [Informational] {0}
 
 

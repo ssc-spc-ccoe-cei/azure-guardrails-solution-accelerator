@@ -37,7 +37,7 @@ param cloudUsageProfiles string = 'default'
 param breakglassAccount1 string = ''
 @secure()
 param breakglassAccount2 string = ''
-
+param mfaGracePeriod string
 var containername = 'guardrailsstorage'
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
 var GRDocsBaseUrl='https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1'
@@ -78,16 +78,11 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     SecurityLAWResourceId: SecurityLAWResourceId
     SSCReadOnlyServicePrincipalNameAPPID:SSCReadOnlyServicePrincipalNameAPPID
     TenantDomainUPN: TenantDomainUPN
+    mfaGracePeriod: mfaGracePeriod
     updatePSModules: updatePSModules
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
-    #disable-next-line BCP318
-    dceEndpoint: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
-    #disable-next-line BCP318
-    dcrImmutableId: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
-    #disable-next-line BCP318
-    dcrImmutableId2: (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -121,13 +116,14 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
     updateCoreResources: updateCoreResources
+    mfaGracePeriod: mfaGracePeriod
   }
 }
 
-// Data Collection Endpoint (DCE) and Data Collection Rule (DCR) for DCR-based Log Ingestion API
-// Create DCE/DCR on new deployments or when updating core resources (for migration from Data Collector API)
-module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
-  name: 'guardrails-dcrdce'
+// Data Collection Rules (DCRs) for DCR-based Log Ingestion API.
+// Create/update DCRs on new deployments or when updating core resources.
+module DCR 'modules/dcr.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+  name: 'guardrails-dcr'
   dependsOn: [
     LAW
   ]
@@ -135,25 +131,25 @@ module DCRDCE 'modules/dcrdce.bicep' = if (deployLAW && (newDeployment || update
     location: location
     #disable-next-line BCP318    
     logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
+    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     releaseVersion: releaseVersion
     releaseDate: releaseDate
     newDeployment: newDeployment
     updateCoreResources: updateCoreResources
   }
 }
-// Grants the automation account MSI the Monitoring Metrics Publisher role on both DCRs.
-// Separate module to avoid a circular dependency between automationaccount and dcrdce modules.
+// Grants the automation account MSI the DCR/LAW roles needed for ingestion and verification.
 module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
   name: 'guardrails-dcrrbac'
   dependsOn: [
     aa
-    DCRDCE
+    DCR
   ]
   params: {
     #disable-next-line BCP318
-    dcrResourceId: DCRDCE.outputs.dcrResourceId
+    dcrResourceId: DCR.outputs.dcrResourceId
     #disable-next-line BCP318
-    dcrResourceId2: DCRDCE.outputs.dcrResourceId2
+    dcrResourceId2: DCR.outputs.dcrResourceId2
     #disable-next-line BCP318
     automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
     #disable-next-line BCP318    
@@ -191,6 +187,3 @@ module alertNewVersion 'modules/alert.bicep' = {
   }
 }
 output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
-output dceEndpoint string = (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dceEndpoint : ''
-output dcrImmutableId string = (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId : ''
-output dcrImmutableId2 string = (deployLAW && (newDeployment || updateCoreResources)) ? DCRDCE.outputs.dcrImmutableId2 : ''

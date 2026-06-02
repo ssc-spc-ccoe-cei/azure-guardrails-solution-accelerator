@@ -155,7 +155,7 @@ consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès 
 adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
 
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
-noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
+noMFAPolicyForAllUsers = Aucune politique d'accès conditionnel exigeant l'authentification à facteurs multiples (AFM) pour tous les utilisateurs et toutes les applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée :1. state = «activé»; 2. includedUsers = «tous»; 3. includedApplications = «tous»; 4. grantControls.builtInControls contient «AFM»; 5. clientAppTypes contient «tous» ou tous les types individuels sélectionnés (navigateur, mobileAppsAndDesktopClients, exchangeActiveSync, autre) ; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = nul; 9. locations = nul; 10. devices = nul; 11. clientApplications = nul
 noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d'appareil activés avec des ressources cibles, des rôles d'administrateur inclus et activés.
 noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d'administrateur inclus et activés.
 hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
@@ -293,6 +293,7 @@ networkInterfaceIPs = Politique de limitation des adresses IP publiques
 
 policyNoApplicableResourcesSub = La politique est attribuée au niveau de l'abonnement. Aucune ressource applicable n'a été trouvée. 
 policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonnement : {0}. Veuillez attribuer la politique pour assurer la conformité.
+policyAssignedSub = La politique requise est attribuée à une portée couvrant cet abonnement : {0}.
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
@@ -342,7 +343,7 @@ DefenderEnabledNonCompliant = MS Defender pour l'infonuagique est activé pour c
 NoMappedResourcesOrMappingIncomplete = Aucune ressource (c'est-à-dire machines virtuelles, serveurs, comptes de stockage, etc.) n'est directement protégée par l'offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard.
 CwpPlansNotStandard = Les plans CWP suivants en cours d'utilisation ne sont pas considérés comme appartenant au niveau Standard pour Defender pour l'infonuagique : {0}.
 CoverageOk = Tous les plans CWP utilisent une offre de service Protection des charges de travail infonuagique avec Microsoft Defender (CWP) Standard et sont considérés comme conformes.
-FoundationalCspmOnlyCompliant = Seul le niveau de base de CSPM (niveau gratuit) est actif pour cet abonnement. Les plans Defender CSPM et CWP ne sont pas activés. L'abonnement est conforme.
+FoundationalCspmOnlyInfo = [Information] Seul le niveau de base de CSPM (niveau gratuit) est actif pour cet abonnement. Les plans Defender CSPM et CWP ne sont pas activés.
 CwpInformational = [Informationnel] {0}
 
 # GuardRail #12

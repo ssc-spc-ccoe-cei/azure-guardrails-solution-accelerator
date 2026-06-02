@@ -1,8 +1,8 @@
 // Grants the automation account managed identity:
 //   - Monitoring Metrics Publisher on both DCRs (for DCR-based log ingestion)
 //   - Log Analytics Reader on the LAW workspace (for Invoke-AzOperationalInsightsQuery in runbooks)
-// This is a separate module to avoid a circular dependency between the automationaccount and dcrdce modules
-// (automationaccount needs DCR outputs; dcrdce cannot also depend on automationaccount).
+// This is a separate module because the DCR resources and automation account MSI must both exist
+// before these role assignments can be created.
 // Role GUIDs:
 //   Monitoring Metrics Publisher : 3913510d-42f4-4e42-8a64-420c390055eb
 //   Log Analytics Reader         : 73c42c96-874c-492b-b04d-ab87d138a893
