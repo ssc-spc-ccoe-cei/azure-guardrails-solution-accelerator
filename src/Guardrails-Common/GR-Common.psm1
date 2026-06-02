@@ -1495,6 +1495,9 @@ function Invoke-GraphQueryStreamWithCallback {
         
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 5,
+
+        [Parameter(Mandatory = $false)]
+        [int] $InterPageDelaySeconds = 2,
         
         [Parameter(Mandatory = $false)]
         [hashtable] $PerformanceMetrics = $null
@@ -1608,9 +1611,9 @@ function Invoke-GraphQueryStreamWithCallback {
         }
         
         # Rate limiting between pages
-        if ($fullUri) {
-            Write-Verbose "  -> Waiting 2 seconds before fetching next page..."
-            Start-Sleep -Seconds 2
+        if ($fullUri -and $InterPageDelaySeconds -gt 0) {
+            Write-Verbose "  -> Waiting $InterPageDelaySeconds seconds before fetching next page..."
+            Start-Sleep -Seconds $InterPageDelaySeconds
         }
         
     } while ($fullUri)
@@ -3320,7 +3323,7 @@ function FetchAllUserRawData {
         $processRegistrationPageCallback = {
             param($pageData, $context)
 
-            $pageRegistrations = @($pageData.Data)
+            $pageRegistrations = $pageData.Data
             foreach ($registrationDetail in $pageRegistrations) {
                 if ($registrationDetail.id -and -not $context.regById.ContainsKey($registrationDetail.id)) {
                     # Keep only fields consumed by KQL so each raw Graph page can be garbage-collected.
@@ -3332,7 +3335,7 @@ function FetchAllUserRawData {
                         isSsprCapable         = $registrationDetail.isSsprCapable
                         isPasswordlessCapable = $registrationDetail.isPasswordlessCapable
                         defaultMethod         = $registrationDetail.defaultMethod
-                        methodsRegistered     = if ($registrationDetail.methodsRegistered) { @($registrationDetail.methodsRegistered) } else { @() }
+                        methodsRegistered     = $registrationDetail.methodsRegistered
                         isSystemPreferredAuthenticationMethodEnabled = $registrationDetail.isSystemPreferredAuthenticationMethodEnabled
                         systemPreferredAuthenticationMethods = $registrationDetail.systemPreferredAuthenticationMethods
                         userPreferredMethodForSecondaryAuthentication = $registrationDetail.userPreferredMethodForSecondaryAuthentication
@@ -3346,7 +3349,7 @@ function FetchAllUserRawData {
             }
         }
 
-        $registrationResult = Invoke-GraphQueryStreamWithCallback -urlPath $regPath -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -PerformanceMetrics $performanceMetrics
+        $registrationResult = Invoke-GraphQueryStreamWithCallback -urlPath $regPath -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
         Write-Verbose "  Success: Retrieved $($registrationResult.TotalProcessed) registration records from $($registrationResult.TotalPages) pages"
         Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"        
     } catch {
