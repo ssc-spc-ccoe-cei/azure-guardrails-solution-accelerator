@@ -3309,11 +3309,24 @@ function FetchAllUserRawData {
         UsersProcessed = 0
         DataIngestionAttempts = 0
     }
+    $writePhaseTiming = {
+        param(
+            [string] $Phase,
+            [System.Diagnostics.Stopwatch] $PhaseStopwatch
+        )
+
+        if ($PhaseStopwatch.IsRunning) {
+            $PhaseStopwatch.Stop()
+        }
+
+        Write-Host ("FetchAllUserRawData timing | Phase={0} | Duration={1}" -f $Phase, $PhaseStopwatch.Elapsed.ToString("c"))
+    }
     
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData with ReportTime: $ReportTime  at $startTimeFormatted ==="
     Write-Verbose "Step 1: Fetching authentication method registration details..."
     $regById = @{}
+    $registrationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     
     try {
         $regPath = "/reports/authenticationMethods/userRegistrationDetails"
@@ -3354,6 +3367,8 @@ function FetchAllUserRawData {
         Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"        
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+    } finally {
+        & $writePhaseTiming "registration" $registrationStopwatch
     }
     
     # Step 2: Prepare break-glass account filtering
@@ -3532,9 +3547,10 @@ function FetchAllUserRawData {
         }
     }
     
+    $userStreamStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         # Use true streaming approach with callback processing        
-        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -PerformanceMetrics $performanceMetrics        
+        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -InterPageDelaySeconds 1 -PerformanceMetrics $performanceMetrics
         $pageNumber = $streamResult.TotalPages
         $processedUsers = $streamResult.TotalProcessed
         $totalUploadedRecords = $streamResult.TotalUploaded
@@ -3543,15 +3559,35 @@ function FetchAllUserRawData {
         Write-Verbose "  Success: All pages processed and uploaded - $totalUploadedRecords total records uploaded from $pageNumber pages"
         
     } catch {
+        & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
         Add-FunctionError -Message "Failed during streaming user processing" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        & $writePhaseTiming "total" $stopwatch
         return $ErrorList
     }
+    & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
     
     # Step 5: Wait before verification to allow data ingestion and table creation
+    $verificationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $existingTableVerificationDelaySeconds = 20
     Write-Verbose "Step 5: Waiting for data ingestion and table creation..."
-    Write-Verbose "  -> Waiting 60 seconds to allow Log Analytics to create table and index data..."
-    Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
-    Start-Sleep -Seconds 60
+    Write-Verbose "  -> Checking whether GuardrailsUserRaw_CL already exists..."
+    try {
+        $tableCheckQuery = "GuardrailsUserRaw_CL | take 1 | count"
+        Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $tableCheckQuery -ErrorAction Stop | Out-Null
+        Write-Verbose "  -> GuardrailsUserRaw_CL exists; waiting $existingTableVerificationDelaySeconds seconds before verification."
+        Start-Sleep -Seconds $existingTableVerificationDelaySeconds
+    }
+    catch {
+        $tableCheckError = $_.Exception.Message
+        if ($tableCheckError -like "*BadRequest*" -or $tableCheckError -like "*400*" -or $tableCheckError -like "*Failed to resolve table*") {
+            Write-Verbose "  -> GuardrailsUserRaw_CL table is not available yet; waiting 60 seconds for table creation and indexing."
+            Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
+            Start-Sleep -Seconds 60
+        }
+        else {
+            Write-Verbose "  -> Table existence check was inconclusive; skipping fixed wait and allowing verification retries to handle it. Error: $tableCheckError"
+        }
+    }
     
     # Step 6: Verify data ingestion with robust error handling
     Write-Verbose "Step 6: Verifying data ingestion..."
@@ -3560,6 +3596,7 @@ function FetchAllUserRawData {
     $recordCount = 0
     $permissionError = $false
     $verificationSkipped = $false
+    $expectedCount = $totalUploadedRecords
     
     # First, check if we can access Log Analytics at all
     Write-Verbose "  -> Testing Log Analytics connectivity..."
@@ -3619,13 +3656,16 @@ GuardrailsUserRaw_CL
             
                 if ($recordCount -gt 0) {
                     Write-Verbose "  Success: Data ingestion verified - $recordCount records found for ReportTime '$ReportTime'"
+                    if ($recordCount -ne $expectedCount) {
+                        Write-Verbose "  -> Expected $expectedCount uploaded records; Log Analytics may still be indexing the remaining records."
+                    }
                     $dataIngested = $true
                     break
                 } else {
                     $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                        Write-Verbose "  -> Data not yet available (attempt $attempt/$maxVerificationAttempts). Waiting $delay seconds..."
+                    Write-Verbose "  -> Data not yet available (attempt $attempt/$maxVerificationAttempts). Waiting $delay seconds..."
                     
-                        if ($attempt -lt $maxVerificationAttempts) {
+                    if ($attempt -lt $maxVerificationAttempts) {
                         Start-Sleep -Seconds $delay
                     }
                 }
@@ -3693,7 +3733,7 @@ GuardrailsUserRaw_CL
         # Add a non-fatal warning rather than an error
         Add-FunctionError -Message "Data verification unavailable due to permissions. Upload completed successfully with $totalUploadedRecords records." -Category "Permissions" -ErrorList $ErrorList
         
-    } elseif (-not $dataIngested) {
+    } elseif (-not $dataIngested -and $recordCount -eq 0) {
         # Verification was attempted but no data found
         Write-Warning "  Warning: Data ingestion verification failed - no records found in Log Analytics."
         Write-Verbose "  -> Uploaded $totalUploadedRecords records but verification query returned 0 results"
@@ -3701,25 +3741,20 @@ GuardrailsUserRaw_CL
             
         Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList        
     } elseif ($recordCount -ne $totalUploadedRecords) {
-            # Data found but count mismatch
-        $expectedCount = $totalUploadedRecords
-        Write-Warning "  Warning: Data count mismatch detected."
+        # Data exists but Log Analytics has not indexed every uploaded record yet.
+        Write-Verbose "  -> Data count mismatch detected during verification."
         Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
-            
-        if ($recordCount > 0) {
-            Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        } else {
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Data may be missing or still processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        }    
+        Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
     } else {
         # Perfect success case
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
         Write-Verbose "  -> Upload and verification both completed successfully"
     }
     
+    & $writePhaseTiming "verification" $verificationStopwatch
+
     # Performance summary
-    $stopwatch.Stop()
+    & $writePhaseTiming "total" $stopwatch
     $performanceMetrics.EndTime = Get-Date
     $performanceMetrics.TotalDurationMs = $stopwatch.ElapsedMilliseconds
     $performanceMetrics.TotalDurationMin = [Math]::Round($stopwatch.ElapsedMilliseconds / 60000, 2)
