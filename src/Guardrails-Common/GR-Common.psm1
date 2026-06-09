@@ -2717,6 +2717,86 @@ function Get-allowedLocationCAPCompliance {
         [bool] $IsCompliant
     )
 
+    # Required IP-ranges for compliant patterns
+    $requiredIPRanges = @()
+
+    # --------------------------------
+    # Check if document exists in blob
+    # --------------------------------
+    # Add possible file extensions
+    $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
+    $subName = ""
+
+    try {
+        Select-AzSubscription -Subscription $SubscriptionID | out-null
+        $subName  = (Get-AzContext).Subscription.Name
+    }
+    catch {
+        $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
+        throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
+    }
+    try {
+        # Use Entra/RBAC blob access because the Guardrails storage account no longer allows Shared Key auth.
+        $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
+    }
+    catch {
+        $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add($storageErrorMessage) | Out-Null
+
+        return [PSCustomObject]@{
+            ComplianceResults = $null
+            Errors            = $ErrorList
+        }
+    }
+
+    $baseFileNameFound = $false
+    $blobFound = $false
+
+    try {
+        # Fail fast on blob RBAC issues so they are reported as storage access problems instead of missing files.
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
+        
+        $fileNamesList = @()
+        $blobs | ForEach-Object {
+            $fileNamesList += $_.Name
+        }
+        $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+        if ( $matchingFiles.count -lt 1 ){
+            # check if any fileName matches without the extension
+            $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+            
+            $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+            if ($BaseFileNamesMatch.Count -gt 0){
+                $baseFileNameFound = $true
+            }
+        }
+        else {
+            # also covers the use case if more than 1 appropriate files are uploaded
+            
+            # check for procedure doc in blob storage account
+            $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -Blob $DocumentName_new -ErrorAction Stop
+
+            If ($blobs) {
+                $blobFound = $true
+                # Read the content of the blob and save CA names into array
+                $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageContext -Force -ErrorAction Stop
+                $requiredIPRanges = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
+                Write-Host " Sucessfully read IP ranges from blob storage: $($requiredIPRanges -join ', ')"
+
+            }
+        }
+    }
+    catch {
+        $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that blob data access is available. Error: $_"
+        $ErrorList.Add($storageErrorMessage) | Out-Null
+
+        return [PSCustomObject]@{
+            ComplianceResults = $null
+            Errors            = $ErrorList
+        }
+    }
+
+
     # Find named locations
     $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
     try {
@@ -2725,12 +2805,15 @@ function Get-allowedLocationCAPCompliance {
         $locationData = if ($data -and $data.value) { $data.value } else { @() }
         # Filter for country NamedLocation only
         $locations = $locationData | Where-Object { $_.'@odata.type' -and $_.'@odata.type' -eq '#microsoft.graph.countryNamedLocation'}
+        # Filter for IP-based named locations only
+        $ipLocations = $locationData | Where-Object {$_.'@odata.type' -and $_.'@odata.type' -eq '#microsoft.graph.ipNamedLocation'}
     }
     catch {
         # Suppress Add() return index so the function output remains a compliance object, not an array.
         [void]$Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
         $locations = @()
+        $ipLocations = @()
     }
 
     # Find conditional access policies
@@ -2754,8 +2837,8 @@ function Get-allowedLocationCAPCompliance {
     # Case 5: One named location exists and it's includes Canada + other countries
     # Case 6: Multiple named locations exist, at least one Canada-only named location found
     
-    # Case 1:
-    if ($locations.Count -eq 0) {
+    # Case 1: No named locations of any type (country/ip based) found
+    if ($locations.Count -eq 0 -and $ipLocations.Count -eq 0) {
         Write-Warning "Warning: No named locations found. Cannot evaluate Conditional Access Policies for compliance."
         $ErrorList.Add("No named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
         $IsCompliant = $false
@@ -2774,7 +2857,7 @@ function Get-allowedLocationCAPCompliance {
         return $PsObject
     }
 
-    # Group named locations and find location Ids
+    # Group country-based named locations and find location Ids
     $validLocations = @()               # Canada-only named locations
     $validLocationIds = @()             
     $nonCAnamedLocations = @()          # named locations that represent 'all countries except Canada-only
@@ -2831,6 +2914,54 @@ function Get-allowedLocationCAPCompliance {
             $ErrorList.Add("Error processing named location object: $_") | Out-Null
             continue
         }
+    }
+
+
+    # Group IP-based named locations and find location Ids 
+    $validIpLocations = @()             # Ip named locations whose ranges include all required CIDR ranges
+    $validIpLocationIds = @()
+    $notValidIpLocations = @()          # Ip named locations that are missing one or more required CIDR ranges
+    $notValidIpLocationIds = @()        
+
+    # Collect Ip-baeed named location IDs for use in CAP pattern matching
+    foreach ($ipLoc in $ipLocations) {
+        try{
+            $definedCIDRs = @()
+            if ($null -ne $ipLoc.ipRanges){
+                $definedCIDRs = @(
+                    $ipLoc.ipRanges | ForEach-Object {
+                        if($_.PSObject.Properties.Match('cidrAddress').Count -gt 0){
+                            $_.cidrAddress
+                        }
+                    } | Where-Object {$_}
+                )
+            }
+            Write-Host "IP-based Named Location found: $($ipLoc.displayName) with CIDRs: $($definedCIDRs -join ', ')"
+
+            # Find all valid Ip locations: a valid location requirement i.e. includes all IP ranges
+            $missingCIDRs = $requiredIPRanges | Where-Object {$definedCIDRs -notcontains $_}
+            if ($missingCIDRs.Count -eq 0){
+                $validIpLocations += $ipLoc
+                if($ipLoc.PSObject.Properties.Match('id').Count -gt 0){
+                    $validIpLocationIds += $ipLoc.id.ToString().ToLower()
+                }
+                continue
+            }
+            else{
+                Write-Host "IP-based Named Location '$($ipLoc.displayName)' is missing required CIDR ranges: $($missingCIDRs -join ', ')"
+                $notValidIpLocations += $ipLoc
+                if($ipLoc.PSObject.Properties.Match('id').Count -gt 0){
+                    $notValidIpLocationIds += $ipLoc.id.ToString().ToLower()
+                }
+                continue
+            }
+
+        }
+        catch{
+            $ErrorList.Add("Error processing IP named location object '$($ipLoc.displayName)': $_") | Out-Null
+            continue
+        }
+
     }
 
     # Case 2:
@@ -2895,9 +3026,29 @@ function Get-allowedLocationCAPCompliance {
     $allLocationsSym = @('all','any','alltrusted','alltrustedlocations','alllocations')
 
     # $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions.locations) -and ($validLocations.id -in $_.conditions.locations.includeLocations) -or ($validLocations.id -in $_.conditions.locations.excludeLocations ) }
+    
     # Find CAPs with Location conditions
     $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions) -and ($null -ne $_.conditions.locations) }
 
+    # Find CAPs whose include/exclude lists reference to a valid IP-based named locations
+    $validIpLocationBasedPolicies = @()
+    if($validIpLocationIds.Count -gt 0) {
+        $validIpLocationBasedPolicies = $locationBasedPolicies | Where-Object {
+            $locationCondition = $_.conditions.locations
+            $includesCIDR = @()
+            $excludesCIDR = @()
+            if ($locationCondition.PSObject.Properties.Match('includeLocations').Count -gt 0 -and $locationCondition.includeLocations){
+                $includesCIDR = @($locationCondition.includeLocations) | ForEach-Object{$_.ToString().ToLower()}
+            }
+            if ($locationCondition.PSObject.Properties.Match('excludeLocations').Count -gt 0 -and $locationCondition.excludeLocations){
+                $excludesCIDR = @($locationCondition.excludeLocations) | ForEach-Object{$_.ToString().ToLower()}
+            }
+            (($includesCIDR |Where-Object {$validLocationIds -contains $_}).Count -gt 0) -or (($excludesCIDR | Where-Object {$validLocationIds -contains $_}).Count -gt 0)
+        }
+        Write-Host "Found $($validIpLocationBasedPolicies.Count) CAP(s) referencing valid IP-based named locations."
+    }
+
+    
     $validlocationBasedPolicies = @()
     foreach ($cap in $locationBasedPolicies) {
         try {
@@ -2908,7 +3059,7 @@ function Get-allowedLocationCAPCompliance {
             if ($locationCondition.includeLocations -and $locationCondition.PSObject.Properties.Match('includeLocations').Count -gt 0 ) {
                 $inccludeVals = @( $locationCondition.includeLocations )
                 $includes = $inccludeVals | ForEach-Object { $_.ToString().ToLower() }
-            }  
+            }
             if ($locationCondition.excludeLocations -and $locationCondition.PSObject.Properties.Match('excludeLocations').Count -gt 0) {
                 $excludeVals = @( $locationCondition.excludeLocations )
                 $excludes = $excludeVals | ForEach-Object { $_.ToString().ToLower() }
@@ -2953,9 +3104,33 @@ function Get-allowedLocationCAPCompliance {
                     $matched = $true
                 }
             }
+
+            
+            $isIpLocationBasedCap = $false
+            # if($validIpLocationBasedPolicies | Where-Object { $_.id -eq $cap.id }.Count -gt 0) -or  ){
+            #     $isIpLocationBasedCap = $true
+            # }
+            
+
+
+            # IP-based Pattern B: includes 'all' locations but explicitly excludes a valid IP-based named locaitions only (if no country-based Locations included)
+            # Semantics: block everyone except the allowed IP ranges (which is equivalent of country in Pattern B)
+            # PASS
+            if( $isIpLocationBasedCap -and ($includes | Where-object {$allLocationsSym -contains $_}) -and ($excludes | Where-Object { $validIpLocationIds -contains $_ })){
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
             # Pattern C: no includes but explicitely exclude Canada-only named locations(conservative detection)
             # PASS
             if ($includes.Count -eq 0 -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
+            # IP-based Pattern C: no includes but explicitely exclude IP-based named locations(conservative detection)
+            # PASS
+            if ($isIpLocationBasedCap -and ($includes.Count -eq 0 -and ($excludes | Where-Object { $validIpLocationIds -contains $_ }))) {
                 if ($isBlockAction) {
                     $matched = $true
                 }
@@ -3004,7 +3179,7 @@ function Get-allowedLocationCAPCompliance {
             # Do nothing; all use cases are covered
         }
     }
-    
+
     
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
