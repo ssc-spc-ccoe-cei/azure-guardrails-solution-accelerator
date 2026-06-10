@@ -135,6 +135,8 @@ noCanadaNamedLocationFound = Aucun endroit n'a seulement le Canada en eux.
 noCAallLocationsNonCompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
 noNamedLocationFound = Aucune localisation nommée trouvée dans la stratégie d'accès conditionnel.
+approvedIPrangeFileFound = Approved IP range list file '{0}' found and processed.
+approvedIPrangeFileNotFound = Approved IP range list file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify IP range based named locations.
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.

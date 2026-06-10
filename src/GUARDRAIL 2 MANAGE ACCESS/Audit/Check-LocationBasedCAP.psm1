@@ -10,6 +10,16 @@ function Get-LocationBasedCAP {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountName,
+        [Parameter(Mandatory = $true)]
+        [string] $ContainerName,
+        [Parameter(Mandatory = $true)]
+        [string] $ResourceGroupName,
+        [Parameter(Mandatory = $true)]
+        [string] $SubscriptionID, 
+        [Parameter(Mandatory = $true)]
+        [string[]] $DocumentName, 
         [string] $CloudUsageProfiles = "3",     # Passed as a string
         [string] $ModuleProfiles,               # Passed as a string
         [switch] $EnableMultiCloudProfiles      # feature flag, default to false    
@@ -17,9 +27,11 @@ function Get-LocationBasedCAP {
     $IsCompliant = $false
     [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
 
-
-    # Check 2: Allowed Location – Conditional Access Policy
-    $PsObjectLocation = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant
+    # Check: Allowed Location – Conditional Access Policy
+    $PsObjectLocation = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant -ItemName $ItemName `
+        -DocumentName $DocumentName -SubscriptionID $SubscriptionID -StorageAccountName $StorageAccountName `
+        -ResourceGroupName $ResourceGroupName -ContainerName $ContainerName
+    
     $ErrorList = $PsObjectLocation.Errors
     $CommentsArray = $PsObjectLocation.Comments
 
