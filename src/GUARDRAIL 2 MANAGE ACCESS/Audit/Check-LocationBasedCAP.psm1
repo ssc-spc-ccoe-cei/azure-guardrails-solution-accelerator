@@ -30,7 +30,7 @@ function Get-LocationBasedCAP {
     # Check: Allowed Location – Conditional Access Policy
     $PsObjectLocation = Get-allowedLocationCAPCompliance -ErrorList $ErrorList -IsCompliant $IsCompliant -ItemName $ItemName `
         -DocumentName $DocumentName -SubscriptionID $SubscriptionID -StorageAccountName $StorageAccountName `
-        -ResourceGroupName $ResourceGroupName -ContainerName $ContainerName
+        -ResourceGroupName $ResourceGroupName -ContainerName $ContainerName -msgTable $msgTable
     
     $ErrorList = $PsObjectLocation.Errors
     $CommentsArray = $PsObjectLocation.Comments
