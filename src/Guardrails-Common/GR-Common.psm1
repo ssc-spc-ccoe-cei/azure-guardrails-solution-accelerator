@@ -3014,10 +3014,12 @@ function Get-allowedLocationCAPCompliance {
     }
 
     # Group IP-based named locations and find location Ids 
-    $validIpLocations = @()             # Ip named locations whose ranges include all required CIDR ranges
+    $validIpLocations = @()                 # Ip named locations whose ranges include all required CIDR ranges
     $validIpLocationIds = @()
-    $notValidIpLocations = @()          # Ip named locations that are missing one or more required CIDR ranges
-    $notValidIpLocationIds = @()        
+    $notValidIpLocations = @()              # Ip named locations that are missing ALL required CIDR ranges
+    $notValidIpLocationIds = @() 
+    $someNotValidIpnamedLocations = @()     # Ip named locations that are missing one or more required CIDR ranges
+    $someNotValidIpnamedLocationsIds = @()       
 
     # Collect Ip-baeed named location IDs for use in CAP pattern matching
     foreach ($ipLoc in $ipLocations) {
@@ -3034,7 +3036,7 @@ function Get-allowedLocationCAPCompliance {
             }
             Write-Host "IP-based Named Location found: $($ipLoc.displayName) with CIDRs: $($definedCIDRs -join ', ')"
 
-            # Find all valid Ip locations: a valid location requirement i.e. includes all IP ranges
+            # Find all valid Ip locations: a valid location requirement i.e. includes all IP ranges provided in blob document
             $missingCIDRs = $requiredIPRanges | Where-Object {$definedCIDRs -notcontains $_}
             if ($missingCIDRs.Count -eq 0){
                 $validIpLocations += $ipLoc
@@ -3043,7 +3045,8 @@ function Get-allowedLocationCAPCompliance {
                 }
                 continue
             }
-            else{
+            elseif($missingCIDRs.Count -eq $requiredIPRanges.Count){
+                # Find named location that contains IP ranges but doesn't include ALL required/valid IPs provided in the blob doc; not a valid location requirement
                 Write-Host "IP-based Named Location '$($ipLoc.displayName)' is missing required CIDR ranges: $($missingCIDRs -join ', ')"
                 $notValidIpLocations += $ipLoc
                 if($ipLoc.PSObject.Properties.Match('id').Count -gt 0){
@@ -3051,10 +3054,16 @@ function Get-allowedLocationCAPCompliance {
                 }
                 continue
             }
-            # Find named location contains some IP ranges but not all required/valid IPs provided in the blob doc; not a valid location requirement
-
-            
-
+            else{
+                # Find named location contains some IP ranges but not ALL required/valid IPs provided in the blob doc; not a valid location requirement
+                Write-Host "IP-based Named Location '$($ipLoc.displayName)' is missing required CIDR ranges: $($missingCIDRs -join ', ')"
+                $someNotValidIpnamedLocations += $ipLoc
+                if($ipLoc.PSObject.Properties.Match('id').Count -gt 0){
+                    $someNotValidIpnamedLocationsIds += $ipLoc.id.ToString().ToLower()
+                }
+                continue
+                
+            }
         }
         catch{
             $ErrorList.Add("Error processing IP named location object '$($ipLoc.displayName)': $_") | Out-Null
@@ -3127,6 +3136,8 @@ function Get-allowedLocationCAPCompliance {
     #  D-1) Pattern D:          Policy explicitly includes the Canada-only named-location id AND action is Grant, but none in exclusion (i.e. allow only Canada)
     #  D-2) IP-based Pattern D: Policy explicitly includes all the valid IP-ranges based named location AND action is Grant, but none in exclusion -> can represent "allow only valid IPs but other IPs  not excluded
     #  E-1) Pattern E:          Policy explicitly includes a named location that represents some countries except Canada AND action is Block
+    #  E-2) IP-based Pattern E: Policy explicitly includes a named location that represents some of the required IPs (not ALL) AND action is Block
+    #  ----------------------------------------------------------------------------------------------#
 
     # Common synonyms for "all" locations in various CAP outputs
     $allLocationsSym = @('all','any','alltrusted','alltrustedlocations','alllocations')
@@ -3231,7 +3242,7 @@ function Get-allowedLocationCAPCompliance {
                     $matched = $false
                 }
             }
-            # IP-based Pattern D: explicit inclusion of valid IP named location, no exclusion -> can represent "allow only valid IPs but other countries not excluded
+            # IP-based Pattern D: explicit inclusion of ALL valid IPs in named location, no exclusion -> can represent "allow only valid IPs but other countries not excluded
             # FAIL
             if ($includes | Where-Object { $validIpLocationIds -contains $_ }) {
                 if ($isGrantAction) {
@@ -3245,6 +3256,14 @@ function Get-allowedLocationCAPCompliance {
                     $matched = $false
                 }
             }
+            # IP-based Pattern E: explicit inclusion of some (not ALL) of the required IPs in named location -> can represent "block some countries except Canada"
+            # FAIL
+            if ($someNotValidIpnamedLocationsIds | Where-Object { $includes -contains $_ }) {
+                if ($isBlockAction) {
+                    $matched = $false
+                }
+            }
+            
 
             Write-Host "CAP Found $($cap.displayName) with include and/or exclude location condition that has a match '$($matched)' with '$($grantBuiltIns)' access control"
             if ($matched) {
@@ -3275,7 +3294,6 @@ function Get-allowedLocationCAPCompliance {
             # Do nothing; all use cases are covered
         }
     }
-
     
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
