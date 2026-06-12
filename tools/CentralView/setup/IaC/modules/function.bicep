@@ -4,6 +4,8 @@ param storageAccountName string
 param kvname string
 param lawresourceid string
 param appInsightsLocation string
+param logsIngestionEndpoint string
+param dcrImmutableId string
 
 //Storage Account
 resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
@@ -30,6 +32,37 @@ resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
             enabled: false
         }
     }
+  }
+  resource fileServices 'fileServices' = {
+    name: 'default'
+  }
+}
+
+// Containers and file share required by the Azure Functions runtime. If these don't exist
+// the host fails on first start with 'ContainerNotFound' (Azure.RequestFailedException 404)
+// because PublishAsync writes lock/secret blobs before checking-and-creating the container.
+// Declaring them in Bicep guarantees they exist on every deploy.
+resource hostsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-06-01' = {
+  parent: guardrailsStorage::blobServices
+  name: 'azure-webjobs-hosts'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+resource secretsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-06-01' = {
+  parent: guardrailsStorage::blobServices
+  name: 'azure-webjobs-secrets'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+// Function content share. WEBSITE_CONTENTSHARE below points to the storage account name,
+// so the share has to be named exactly that (lowercased to satisfy share naming rules).
+resource contentShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2021-06-01' = {
+  parent: guardrailsStorage::fileServices
+  name: toLower(guardrailsStorage.name)
+  properties: {
+    shareQuota: 5120
   }
 }
 
@@ -128,10 +161,17 @@ resource azfunctionsite 'Microsoft.Web/sites@2021-03-01' = {
 resource azfunctionsiteconfig 'Microsoft.Web/sites/config@2021-03-01' = {
   name: 'appsettings'
   parent: azfunctionsite
+  // Don't apply app settings (which start the function host) until the runtime's required
+  // blob containers and file share exist on the backing storage account.
+  dependsOn: [
+    hostsContainer
+    secretsContainer
+    contentShare
+  ]
   properties: {
     'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING':'DefaultEndpointsProtocol=https;AccountName=${guardrailsStorage.name};AccountKey=${listKeys(guardrailsStorage.id, guardrailsStorage.apiVersion).keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
     'AzureWebJobsStorage':'DefaultEndpointsProtocol=https;AccountName=${guardrailsStorage.name};AccountKey=${listKeys(guardrailsStorage.id, guardrailsStorage.apiVersion).keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-    'WEBSITE_CONTENTSHARE' : guardrailsStorage.name
+    'WEBSITE_CONTENTSHARE' : toLower(guardrailsStorage.name)
     'FUNCTIONS_WORKER_RUNTIME':'powershell'
     'FUNCTIONS_EXTENSION_VERSION':'~4'
     'KEYVAULTNAME': kvname
@@ -139,6 +179,8 @@ resource azfunctionsiteconfig 'Microsoft.Web/sites/config@2021-03-01' = {
     'APPINSIGHTS_INSTRUMENTATIONKEY': reference(appinsights.id, '2020-02-02-preview').InstrumentationKey
     'APPLICATIONINSIGHTS_CONNECTION_STRING': 'InstrumentationKey=${reference(appinsights.id, '2020-02-02-preview').InstrumentationKey}'
     'ApplicationInsightsAgent_EXTENSION_VERSION': '~2'
+    'LOGS_INGESTION_ENDPOINT': logsIngestionEndpoint
+    'DCR_IMMUTABLE_ID': dcrImmutableId
   }
 }
 

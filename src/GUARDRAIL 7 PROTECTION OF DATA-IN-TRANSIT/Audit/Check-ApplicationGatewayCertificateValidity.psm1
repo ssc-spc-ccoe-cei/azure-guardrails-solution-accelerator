@@ -48,47 +48,62 @@ function Check-ApplicationGatewayCertificateValidity {
         throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
     }
     try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+        # Use Entra/RBAC blob access because the Guardrails storage account no longer allows Shared Key auth.
+        $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
     }
     catch {
-        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$SubscriptionID   '; verify that the storage account exists and that you have permissions to it. Error: $_")
-        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that the storage account exists and that you have permissions to it. Error: $_"
+        $ErrorList.Add($storageErrorMessage) | Out-Null
+
+        return [PSCustomObject]@{
+            ComplianceResults = $null
+            Errors            = $ErrorList
+        }
     }
 
     $baseFileNameFound = $false
     $blobFound = $false
 
-    # Get a list of filenames uploaded in the blob storage
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context
-    
-    $fileNamesList = @()
-    $blobs | ForEach-Object {
-        $fileNamesList += $_.Name
-    }
-    $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
-    if ( $matchingFiles.count -lt 1 ){
-        # check if any fileName matches without the extension
-        $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+    try {
+        # Fail fast on blob RBAC issues so they are reported as storage access problems instead of missing files.
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
         
-        $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
-        if ($BaseFileNamesMatch.Count -gt 0){
-            $baseFileNameFound = $true
+        $fileNamesList = @()
+        $blobs | ForEach-Object {
+            $fileNamesList += $_.Name
+        }
+        $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+        if ( $matchingFiles.count -lt 1 ){
+            # check if any fileName matches without the extension
+            $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+            
+            $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+            if ($BaseFileNamesMatch.Count -gt 0){
+                $baseFileNameFound = $true
+            }
+        }
+        else {
+            # also covers the use case if more than 1 appropriate files are uploaded
+            
+            # check for procedure doc in blob storage account
+            $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -Blob $DocumentName_new -ErrorAction Stop
+
+            If ($blobs) {
+                $blobFound = $true
+                # Read the content of the blob and save CA names into array
+                $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageContext -Force -ErrorAction Stop
+                $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
+
+            }
         }
     }
-    else {
-        # also covers the use case if more than 1 appropriate files are uploaded
-        
-        # check for procedure doc in blob storage account
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName_new
+    catch {
+        $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that blob data access is available. Error: $_"
+        $ErrorList.Add($storageErrorMessage) | Out-Null
 
-        If ($blobs) {
-            $blobFound = $true
-            # Read the content of the blob and save CA names into array
-            $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $DocumentName_new -Context $StorageAccount.Context -Force
-            $ApprovedCAList = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
-
+        return [PSCustomObject]@{
+            ComplianceResults = $null
+            Errors            = $ErrorList
         }
     }
     

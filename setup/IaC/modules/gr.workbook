@@ -399,7 +399,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_non_mfa_users('{RunTime}')",
+        "query": "gr_non_mfa_users('{RunTime}','__MFA_GRACE_PERIOD__')",
         "size": 0,
         "timeContext": {
           "durationMs": 86400000

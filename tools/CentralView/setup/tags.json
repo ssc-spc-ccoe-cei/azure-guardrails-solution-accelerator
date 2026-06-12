@@ -1,7 +1,12 @@
-[     
-    {
-        "Solution":"Guardrails Accelerator-Central View",
-        "ReleaseVersion": "0.1",
-        "ReleaseDate": "2022/10/15"
-    }
-]
+{
+    "Solution": "Guardrails Accelerator-Central View",
+    "ReleaseVersion": "0.1",
+    "ReleaseDate": "2022/10/15",
+    "ClientOrganization": "SSC",
+    "CostCenter": "SSC Cloud Operations",
+    "DataSensitivity": "PB",
+    "ProjectContact": "Amrinder",
+    "ProjectName": "ComplianceAsCodeAzure",
+    "ssc_cbrid": "1352",
+    "TechnicalContact": "Amrinder"
+}

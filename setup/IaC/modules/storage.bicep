@@ -12,7 +12,8 @@ resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
   properties: {
     accessTier: 'Hot'
     allowBlobPublicAccess: false
-    allowSharedKeyAccess: true
+    // Use Entra-based blob access instead of Shared Key.
+    allowSharedKeyAccess: false
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
   }

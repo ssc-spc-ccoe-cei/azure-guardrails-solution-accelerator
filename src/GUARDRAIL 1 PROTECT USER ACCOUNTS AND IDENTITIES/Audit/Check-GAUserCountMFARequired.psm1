@@ -142,7 +142,50 @@ function Check-GAUserCountMFARequired {
         Write-Error "Error: $errorMsg"
     }
     # Get member users UPNs
-    $gaUserList = $gaRoleResponse 
+    $gaUserList = $gaRoleResponse | 
+        Where-Object { $_.'@odata.type' -eq "#microsoft.graph.user" }
+
+    $gaGroupList = $gaRoleResponse | 
+        Where-Object { $_.'@odata.type' -eq "#microsoft.graph.group" }
+
+    Write-Host "Active GA direct user accounts count is $($gaUserList.Count)"
+    Write-Host "Active GA group accounts count is $($gaGroupList.Count)"
+
+    #Expand active GA group to users
+    $expandedGAGroupUsers = @()
+    foreach ($gaGroup in $gaGroupList) {
+        $groupId = $gaGroup.id
+        $urlPath = "/groups/$groupId/members"
+        try{
+            $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
+            $data = $response.Content
+
+            if ($null -ne $data -and $null -ne $data.value) {
+                $groupMembers  = $data.value
+                foreach ($member in $groupMembers) {
+                    if ($member. '@odata.type' -eq "#microsoft.graph.user") {
+                        $expandedGAGroupUsers += [PSCustomObject]@{
+                            roleId = $roleId
+                            roleName = $roleName
+                            id = $member.id
+                            displayName = $member.displayName
+                            mail = $member.mail
+                            userPrincipalName = $member.userPrincipalName
+                            assignmentType = "Group"
+                            sourceGroup = $gaGroup.displayName
+                        }
+                    }
+                }    
+            }
+        }
+        catch {
+            $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
+            $ErrorList.Add($errorMsg)
+            Write-Error "Error: $errorMsg"
+        }
+    }
+
+    # Combine direct GA users and expanded GA group users
     # Exclude the breakglass account UPNs from the list
     if ($gaUserList.userPrincipalName -contains $FirstBreakGlassUPN){
         $gaUserList = $gaUserList | Where-Object { $_.userPrincipalName -ne $FirstBreakGlassUPN }
@@ -152,18 +195,23 @@ function Check-GAUserCountMFARequired {
 
     }
 
+    # $globalAdminUserAccounts = @()
+    $globalAdminUserAccounts = $expandedGAGroupUsers
+    # Add direct GA users to the list
     foreach ($gaUser in $gaUserList) {
-        $roleAssignments = [PSCustomObject]@{
+        $globalAdminUserAccounts += [PSCustomObject]@{
             roleId              = $roleId
             roleName            = $roleName
             userId              = $gaUser.id
             displayName         = $gaUser.displayName
             mail                = $gaUser.mail
             userPrincipalName   = $gaUser.userPrincipalName
+            assignmentType      = "Direct"
         }
-        $globalAdminUserAccounts +=  $roleAssignments
     }
+    $globalAdminUserAccounts = $globalAdminUserAccounts | Sort-Object -Property userPrincipalName -Unique
 
+    $globalAdminUserAccounts = $globalAdminUserAccounts | Where-Object { $_.userPrincipalName -ne $FirstBreakGlassUPN -and $_.userPrincipalName -ne $SecondBreakGlassUPN }
     # Count Users with active GA 
     $userValidMFACounter = @()
 

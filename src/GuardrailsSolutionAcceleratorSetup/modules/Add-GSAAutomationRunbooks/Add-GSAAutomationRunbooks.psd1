@@ -14,7 +14,7 @@
 RootModule = 'Add-GSAAutomationRunbooks'
 
 # Version number of this module.
-ModuleVersion = '1.2.1'
+ModuleVersion = '1.2.3'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
