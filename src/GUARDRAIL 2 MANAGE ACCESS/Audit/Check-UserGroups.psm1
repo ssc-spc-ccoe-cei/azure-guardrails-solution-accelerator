@@ -51,6 +51,7 @@ function Check-UserGroups {
         ConsistencyLevel = "eventual"
     }
 
+    # Small local retry wrapper for this module's direct Graph calls.
     function Invoke-GraphGetWithRetry {
         param (
             [Parameter(Mandatory=$true)]
@@ -75,6 +76,7 @@ function Check-UserGroups {
         }
     }
 
+    # Fetch only enough users to show remediation examples instead of loading every user.
     function Get-FirstUserWithoutGroup {
         param (
             [Parameter(Mandatory=$true)]
@@ -128,6 +130,7 @@ function Check-UserGroups {
         return $usersWithoutGroups.ToArray()
     }
 
+    # Build the optional remediation table only on non-compliant paths.
     function Get-UserWithoutGroupAdditionalResult {
         param (
             [Parameter(Mandatory=$true)]
@@ -188,8 +191,10 @@ function Check-UserGroups {
 
     Write-Output "Members: $memberCount, Guests: $guestCount, Groups: $groupCount"
 
+    # UPN casing can vary between Graph responses; compare users case-insensitively.
     $uniqueUPNs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
+    # No need to scan group memberships when there are no users or no groups to compare.
     if ($allUserCount -gt 0 -and $groupCount -gt 0) {
         $groupsUrl = "https://graph.microsoft.com/v1.0/groups?`$select=id&`$top=999"
         do {
@@ -222,17 +227,17 @@ function Check-UserGroups {
                         }
                     }
                     $membersUrl = $memResp.'@odata.nextLink'
-                    # stop paging members early if we have seen every user
+                    # Stop paging members once Graph has returned enough unique grouped users.
                 } while ($membersUrl -and $uniqueUPNs.Count -lt $allUserCount)
 
-                # break out of the group loop if done
-                if ($uniqueUPNs.Count -eq $allUserCount) {
+                # Count equality still decides compliance later; >= only avoids wasted scanning.
+                if ($uniqueUPNs.Count -ge $allUserCount) {
                     break
                 }
             }
 
             $groupsUrl = $grpResp.'@odata.nextLink'
-        } while ($groupsUrl)
+        } while ($groupsUrl -and $uniqueUPNs.Count -lt $allUserCount)
     }
 
     $totalGroupUsers = $uniqueUPNs.Count
