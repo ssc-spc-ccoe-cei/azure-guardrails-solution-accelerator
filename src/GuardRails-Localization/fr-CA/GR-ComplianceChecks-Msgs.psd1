@@ -137,7 +137,7 @@ noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a ét
 noNamedLocationFound = Aucune localisation nommée trouvée dans la stratégie d'accès conditionnel.
 approvedIPrangeFileFound = Le fichier de liste des plages IP approuvées '{0}' a été trouvé et traité.
 approvedIPrangeFileNotFound = Le fichier de liste des plages IP approuvées '{0}' est introuvable dans le conteneur '{1}' du compte de stockage '{2}'. Impossible de vérifier les emplacements nommés basés sur les plages IP.
-noValidIPLocationsNonCompliant = No valid IP-based named locations found. 
+noValidIPLocationsNonCompliant = Aucun emplacement nommé basé sur des adresses IP valides n'a été trouvé. 
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
