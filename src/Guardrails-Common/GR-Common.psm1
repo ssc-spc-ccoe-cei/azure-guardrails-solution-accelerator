@@ -3545,8 +3545,8 @@ function Check-BuiltInPoliciesPerSubscription {
         [System.Collections.ArrayList]$ErrorList
     )
 
-
-    $subscriptions = Get-AzSubscription
+    # Get all enabled subscriptions
+    $subscriptions = Get-AzSubscription | Where-Object { $_.State -eq 'Enabled' }
     $results = New-Object System.Collections.ArrayList
 
     foreach ($subscription in $subscriptions) {
@@ -3963,6 +3963,7 @@ policyresources
     $subScopeQuery = @"
 resourcecontainers
 | where type =~ 'microsoft.resources/subscriptions'
+| where properties.state =~ 'Enabled'
 | extend subId   = tolower(subscriptionId)
 | extend subName = name
 | mv-expand ancestor = properties.managementGroupAncestorsChain
@@ -3971,6 +3972,7 @@ resourcecontainers
 | union (
     resourcecontainers
     | where type =~ 'microsoft.resources/subscriptions'
+    | where properties.state =~ 'Enabled'
     | project subId        = tolower(subscriptionId),
               subName      = name,
               coveringScope = tolower(strcat('/subscriptions/', subscriptionId))
