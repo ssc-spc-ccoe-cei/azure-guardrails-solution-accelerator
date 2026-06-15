@@ -136,7 +136,9 @@ noCanadaNamedLocationFound = No locations have only Canada in them.
 noCAallLocationsNonCompliant = No locations have all countries except Canada in them.
 noEnabledPoliciesFound = No enabled conditional access policy found.
 noNamedLocationFound = No named location found in the conditional access policies.
-
+approvedIPrangeFileFound = Approved IP range list file '{0}' found and processed.
+approvedIPrangeFileNotFound = Approved IP range list file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify IP range based named locations.
+noValidIPLocationsNonCompliant = No valid IP-based named locations found. 
 
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
 noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
