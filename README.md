@@ -1,16 +1,16 @@
 # Azure Compliance as Code Solution (Guardrails Solution Accelerator) for Canadian Public Sector
 
-## $${\color{Red} Warning \space : \space Alpha \space Release \space 4.0.0 \space }$$
-The current release (v4.0.0alpha) available is undergoing operations testing. It has passed some unit tests and ad hoc use case testing but still requires active review.
+## $${\color{Red} Warning \space : \space Beta \space Release \space 4.0.0 \space }$$
+The current release (v4.0.0beta) available is undergoing operations testing. It has passed some unit tests and ad hoc use case testing but still requires active review.
  
-As this is an alpha release, please install with caution. You can still use version 3.0.0 in the interim. The alpha tag will be removed once the final review is completed.
+As this is an alpha release, please install with caution. You can still use version 3.0.1 in the interim. The alpha tag will be removed once the final review is completed.
 
 Thank you for your understanding.
 ___________________________________________________________________
-## $${\color{Red} Avis \space : Deuxième \space version \space alpha \space 4.0.0 \space }$$
-La version actuelle (v4.0.0alpha) disponible fait l'objet de tests opérationnels. Elle a passé avec succès tous les tests unitaires et les tests d'intégration, mais elle nécessite toujours une révision active.
+## $${\color{Red} Avis \space : Deuxième \space version \space beta \space 4.0.0 \space }$$
+La version actuelle (v4.0.0beta) disponible fait l'objet de tests opérationnels. Elle a passé avec succès tous les tests unitaires et les tests d'intégration, mais elle nécessite toujours une révision active.
 
-Comme il s'agit d'une version alpha, veuillez l'installer avec précaution. Vous pouvez toujours utiliser la version 3.0.0 dans l'intervalle. L'étiquette alpha sera supprimée une fois l'examen final terminé.
+Comme il s'agit d'une version alpha, veuillez l'installer avec précaution. Vous pouvez toujours utiliser la version 3.0.1 dans l'intervalle. L'étiquette alpha sera supprimée une fois l'examen final terminé.
 
 Nous vous remercions de votre compréhension.
 
