@@ -136,7 +136,9 @@ noCanadaNamedLocationFound = No locations have only Canada in them.
 noCAallLocationsNonCompliant = No locations have all countries except Canada in them.
 noEnabledPoliciesFound = No enabled conditional access policy found.
 noNamedLocationFound = No named location found in the conditional access policies.
-
+approvedIPrangeFileFound = Approved IP range list file '{0}' found and processed.
+approvedIPrangeFileNotFound = Approved IP range list file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify IP range based named locations.
+noValidIPLocationsNonCompliant = No valid IP-based named locations found. 
 
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
 noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
@@ -157,7 +159,7 @@ consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Acc
 adminAccessConditionalPolicy = Administrator Access Restrictions Applied - device management/trusted locations
 
 mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
-noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all' or all individual types selected (browser, mobileAppsAndDesktopClients, exchangeActiveSync, other); 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
+noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state = 'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa' OR grantControls.authenticationStrength is configured; 5. clientAppTypes contains 'all' or all individual types selected (browser, mobileAppsAndDesktopClients, exchangeActiveSync, other); 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 noDeviceFilterPolicies = Missing a required conditional access policy. At least one policy needs to have device filters enabled with target resources, administrator roles included and enabled.
 noLocationFilterPolicies = Missing a required conditional access policy. At least one policy needs to check for named/trusted locations with administrator roles included and enabled.
 hasRequiredPolicies = Required conditional access policies for administrator access exist. 

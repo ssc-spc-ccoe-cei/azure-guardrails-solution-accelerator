@@ -135,6 +135,9 @@ noCanadaNamedLocationFound = Aucun endroit n'a seulement le Canada en eux.
 noCAallLocationsNonCompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
 noNamedLocationFound = Aucune localisation nommée trouvée dans la stratégie d'accès conditionnel.
+approvedIPrangeFileFound = Le fichier de liste des plages IP approuvées '{0}' a été trouvé et traité.
+approvedIPrangeFileNotFound = Le fichier de liste des plages IP approuvées '{0}' est introuvable dans le conteneur '{1}' du compte de stockage '{2}'. Impossible de vérifier les emplacements nommés basés sur les plages IP.
+noValidIPLocationsNonCompliant = Aucun emplacement nommé basé sur des adresses IP valides n'a été trouvé. 
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
@@ -155,7 +158,7 @@ consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès 
 adminAccessConditionalPolicy = Restrictions d'accès administrateur appliquées - gestion des appareils/emplacements approuvés
 
 mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
-noMFAPolicyForAllUsers = Aucune politique d'accès conditionnel exigeant l'authentification à facteurs multiples (AFM) pour tous les utilisateurs et toutes les applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée :1. state = «activé»; 2. includedUsers = «tous»; 3. includedApplications = «tous»; 4. grantControls.builtInControls contient «AFM»; 5. clientAppTypes contient «tous» ou tous les types individuels sélectionnés (navigateur, mobileAppsAndDesktopClients, exchangeActiveSync, autre) ; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = nul; 9. locations = nul; 10. devices = nul; 11. clientApplications = nul
+noMFAPolicyForAllUsers = Aucune politique d'accès conditionnel exigeant l'authentification à facteurs multiples (AFM) pour tous les utilisateurs et toutes les applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée : 1. state = «activé»; 2. includedUsers = «tous»; 3. includedApplications = «tous»; 4. grantControls.builtInControls contient «mfa» OU grantControls.authenticationStrength est configuré; 5. clientAppTypes contient «tous» ou tous les types individuels sélectionnés (navigateur, mobileAppsAndDesktopClients, exchangeActiveSync, autre); 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = nul; 9. locations = nul; 10. devices = nul; 11. clientApplications = nul
 noDeviceFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit avoir des filtres d'appareil activés avec des ressources cibles, des rôles d'administrateur inclus et activés.
 noLocationFilterPolicies = Une politique d'accès conditionnel requise est manquante. Au moins une politique doit vérifier les emplacements nommés/approuvés avec des rôles d'administrateur inclus et activés.
 hasRequiredPolicies = Les politiques d'accès conditionnel requises pour l'accès administrateur existent.
