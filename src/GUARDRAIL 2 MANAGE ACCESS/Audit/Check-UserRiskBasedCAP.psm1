@@ -46,7 +46,7 @@ function Test-CommonFilters {
     # 10. devices = null
     # 11. clientApplications = null
     # 12. signInFrequency.frequencyInterval = 'everyTime'
-    # 13. signInFrequency.isEnabled = true
+    # 13. signInFrequency.isEnabled = true only if signIn is not block. If block → sessionControls must be empty/null
     # 14. signInFrequency.authenticationType = 'primaryAndSecondaryAuthentication'
     # 15. includeGroups = null or empty
     # 16. excludeApplications = null or empty
@@ -78,6 +78,21 @@ function Test-CommonFilters {
                     $_.conditions.clientAppTypes -contains 'exchangeActiveSync' -and
                     $_.conditions.clientAppTypes -contains 'other')) -and
             $_.conditions.userRiskLevels -contains 'high' -and
+            (
+                # IF block → sessionControls must be empty
+                (
+                    $_.grantControls.builtInControls -contains 'block' -and
+                    (Test-IsNullOrEmptyArray $_.sessionControls)
+                ) -or
+                # ELSE → sessionControls must exist and be configured
+                (
+                    -not ($_.grantControls.builtInControls -contains 'block') -and
+                    -not (Test-IsNullOrEmptyArray $_.sessionControls) -and
+                    $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
+                    $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
+                    $_.sessionControls.signInFrequency.isEnabled -eq $true
+                )
+            ) -and
             $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
             $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
             $_.sessionControls.signInFrequency.isEnabled -eq $true -and
