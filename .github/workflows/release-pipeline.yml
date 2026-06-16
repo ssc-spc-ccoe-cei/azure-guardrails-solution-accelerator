@@ -107,8 +107,66 @@ jobs:
           Get-ChildItem -Path . -Exclude $excludedItems | Compress-Archive -DestinationPath release_assets/azure-cac-solution-$releaseName.zip
           echo "RELEASE_NAME=$releaseName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Determine previous release tag
+        shell: powershell
+        run: |
+          git fetch origin --prune --tags
+
+          $currentTag = $env:GITHUB_REF -replace 'refs/tags/', ''
+
+          $releaseBranches = git branch -r |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -match '^origin/release/\d+\.\d+\.\d+' }
+
+          $currentReleaseBranch = git branch -r --contains $currentTag |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -match '^origin/release/\d+\.\d+\.\d+' } |
+            Select-Object -First 1
+
+          if (-not $currentReleaseBranch) {
+            throw "Could not find release branch containing tag '$currentTag'."
+          }
+
+          $currentVersion = [version]($currentReleaseBranch -replace '.*release/', '')
+          $previousReleaseBranch = $releaseBranches |
+            Where-Object { [version]($_ -replace '.*release/', '') -lt $currentVersion } |
+            Sort-Object { [version]($_ -replace '.*release/', '') } -Descending |
+            Select-Object -First 1
+
+          Write-Host "Current tag: $currentTag"
+          Write-Host "Current release branch: $currentReleaseBranch"
+
+          if (-not $previousReleaseBranch) {
+            Write-Host "No previous release branch found. Release notes will use GitHub default."
+          }
+          else {
+            $previousTag = "v$($previousReleaseBranch -replace '.*release/', '')"
+
+            if (-not (git tag --list $previousTag)) {
+              throw "Previous release tag '$previousTag' does not exist."
+            }
+
+            Write-Host "Previous release branch: $previousReleaseBranch"
+            Write-Host "Previous release tag: $previousTag"
+            echo "PREVIOUS_RELEASE_TAG=$previousTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create $env:RELEASE_NAME --generate-notes --latest "./release_assets/azure-cac-solution-$env:RELEASE_NAME.tar.gz#Azure CAC Solution (tar.gz)" "./release_assets/azure-cac-solution-$env:RELEASE_NAME.zip#Azure CAC Solution (zip)"
+          if ($env:PREVIOUS_RELEASE_TAG) {
+            gh release create $env:RELEASE_NAME `
+              --generate-notes `
+              --notes-start-tag $env:PREVIOUS_RELEASE_TAG `
+              --latest `
+              "./release_assets/azure-cac-solution-$env:RELEASE_NAME.tar.gz#Azure CAC Solution (tar.gz)" `
+              "./release_assets/azure-cac-solution-$env:RELEASE_NAME.zip#Azure CAC Solution (zip)"
+          }
+          else {
+            gh release create $env:RELEASE_NAME `
+              --generate-notes `
+              --latest `
+              "./release_assets/azure-cac-solution-$env:RELEASE_NAME.tar.gz#Azure CAC Solution (tar.gz)" `
+              "./release_assets/azure-cac-solution-$env:RELEASE_NAME.zip#Azure CAC Solution (zip)"
+          }
