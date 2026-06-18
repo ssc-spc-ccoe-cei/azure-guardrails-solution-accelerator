@@ -91,7 +91,6 @@ module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
     kvName: kvName
     location: location
     currentUserObjectId: currentUserObjectId
-    automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
     breakglassAccount1: breakglassAccount1
     breakglassAccount2: breakglassAccount2
     logAnalyticsWorkspaceName: split(LAW.outputs.logAnalyticsResourceId,'/')[8]
@@ -138,26 +137,6 @@ module DCR 'modules/dcr.bicep' = if (deployLAW && (newDeployment || updateCoreRe
     updateCoreResources: updateCoreResources
   }
 }
-// Grants the automation account MSI the DCR/LAW roles needed for ingestion and verification.
-module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
-  name: 'guardrails-dcrrbac'
-  dependsOn: [
-    aa
-    DCR
-  ]
-  params: {
-    #disable-next-line BCP318
-    dcrResourceId: DCR.outputs.dcrResourceId
-    #disable-next-line BCP318
-    dcrResourceId2: DCR.outputs.dcrResourceId2
-    #disable-next-line BCP318
-    automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
-    #disable-next-line BCP318    
-    logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
-
-  }
-}
-
 module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
   name: 'guardrails-storageaccount'
   params: {

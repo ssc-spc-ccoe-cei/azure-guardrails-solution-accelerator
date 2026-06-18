@@ -1,7 +1,6 @@
 param kvName string
 param location string
 param currentUserObjectId string = ''
-param automationAccountMSI string = ''
 param releaseVersion string
 param releaseDate string
 param vaultUri string
@@ -50,16 +49,6 @@ resource adminUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-0
     // key vault administrator role definition id
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions','00482a5a-887f-4fb3-b363-3b7fe8e74483')
     principalId: currentUserObjectId
-  }
-}
-
-resource automationAccountRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (automationAccountMSI != '') {
-  name: '7b13d1ff-d722-4761-9473-701a9a481aa2' // random guid 'automationAccountRoleAssignment'
-  scope: guardrailsKV
-  properties: {
-    // key vault secret user role definition id
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions','4633458b-17de-408a-b874-0445c86b69e6')
-    principalId: automationAccountMSI
   }
 }
 

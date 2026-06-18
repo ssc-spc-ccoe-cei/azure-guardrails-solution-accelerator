@@ -1,4 +1,4 @@
-function Ensure-GSAStorageRoleAssignment {
+function Ensure-GSARoleAssignment {
     param (
         [Parameter(Mandatory = $true)]
         [string]
@@ -8,21 +8,46 @@ function Ensure-GSAStorageRoleAssignment {
         $RoleDefinitionName,
         [Parameter(Mandatory = $true)]
         [string]
-        $Scope
+        $Scope,
+        [Parameter(Mandatory = $false)]
+        [int[]]
+        $RetryDelaysInSeconds = @()
     )
 
-    # Reuse a role assignment only when this scope already reports one, so create/remove behavior stays simple.
-    $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -Scope $Scope -ErrorAction SilentlyContinue |
-        Where-Object { $_.RoleDefinitionName -eq $RoleDefinitionName } |
-        Select-Object -First 1
+    for ($assignmentAttempt = 1; ; $assignmentAttempt++) {
+        $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -Scope $Scope -ErrorAction SilentlyContinue |
+            Where-Object { $_.RoleDefinitionName -eq $RoleDefinitionName } |
+            Select-Object -First 1
 
-    if ($existingAssignment) {
-        return $false
+        if ($existingAssignment) {
+            return $false
+        }
+
+        try {
+            # Creating role assignments requires the deployer to have Owner, User Access Administrator, or equivalent rights at this scope.
+            New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+            return $true
+        }
+        catch {
+            $assignmentErrorText = $_ | Out-String
+            if ([string]::IsNullOrWhiteSpace($assignmentErrorText)) {
+                $assignmentErrorText = $_.Exception.Message
+            }
+
+            $isRetryableRoleAssignmentDelay = $assignmentErrorText -match 'The provided credentials have insufficient access to perform the requested operation' -or
+                $assignmentErrorText -match 'PrincipalNotFound' -or
+                $assignmentErrorText -match 'does not exist in the directory' -or
+                $assignmentErrorText -match 'could not be found'
+            $isLastAttempt = $assignmentAttempt -gt $RetryDelaysInSeconds.Count
+            if (-not $isRetryableRoleAssignmentDelay -or $isLastAttempt) {
+                throw
+            }
+
+            $retryDelayInSeconds = $RetryDelaysInSeconds[$assignmentAttempt - 1]
+            Write-Warning "Role assignment '$RoleDefinitionName' for object '$ObjectId' at scope '$Scope' is not ready yet. Waiting $retryDelayInSeconds seconds before retrying."
+            Start-Sleep -Seconds $retryDelayInSeconds
+        }
     }
-
-    # Creating role assignments requires the deployer to have Owner, User Access Administrator, or equivalent rights at this scope.
-    New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
-    return $true
 }
 
 Function Deploy-GSACoreResources {
@@ -188,11 +213,33 @@ Function Deploy-GSACoreResources {
 
         # Give the Automation Account identity blob read access because the storage account no longer accepts Shared Key auth.
         Write-Verbose "`tEnsuring 'Storage Blob Data Reader' role exists for Automation Account MSI on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
-        $null = Ensure-GSAStorageRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Storage Blob Data Reader" -Scope $config['runtime']['storageAccountId']
+        $null = Ensure-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Storage Blob Data Reader" -Scope $config['runtime']['storageAccountId']
 
         # Give the deployment user or service principal temporary blob write access so modules.json can be uploaded with Entra auth.
         Write-Verbose "`tEnsuring temporary 'Storage Blob Data Contributor' role exists for deployer '$($config['runtime']['userId'])' on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
-        $config['runtime']['temporaryDeployerBlobContributorAssigned'] = Ensure-GSAStorageRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId']
+        $config['runtime']['temporaryDeployerBlobContributorAssigned'] = Ensure-GSARoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId']
+
+        if ($config['runtime']['deployKV']) {
+            $null = Get-AzKeyVault -VaultName $config['runtime']['keyVaultName'] -ResourceGroupName $config['runtime']['resourceGroup'] -ErrorAction Stop
+            $keyVaultResourceId = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])/providers/Microsoft.KeyVault/vaults/$($config['runtime']['keyVaultName'])"
+            Write-Verbose "`tEnsuring 'Key Vault Secrets User' role exists for Automation Account MSI on Guardrails Key Vault '$($config['runtime']['keyVaultName'])'"
+            $null = Ensure-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Key Vault Secrets User" -Scope $keyVaultResourceId -RetryDelaysInSeconds @(15, 30, 60, 120)
+        }
+
+        if ($config['runtime']['deployLAW']) {
+            $null = Get-AzOperationalInsightsWorkspace -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction Stop
+            $guardrailsLogAnalyticsResourceId = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])/providers/Microsoft.OperationalInsights/workspaces/$($config['runtime']['logAnalyticsWorkspaceName'])"
+            Write-Verbose "`tEnsuring 'Log Analytics Reader' role exists for Automation Account MSI on Guardrails Log Analytics workspace '$($config['runtime']['logAnalyticsWorkspaceName'])'"
+            $null = Ensure-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Log Analytics Reader" -Scope $guardrailsLogAnalyticsResourceId -RetryDelaysInSeconds @(15, 30, 60, 120)
+
+            foreach ($dcrName in @('guardrails-dcr', 'guardrails-dcr-2')) {
+                $dcr = Get-AzDataCollectionRule -ResourceGroupName $config['runtime']['resourceGroup'] -Name $dcrName -ErrorAction SilentlyContinue
+                if ($dcr) {
+                    Write-Verbose "`tEnsuring 'Monitoring Metrics Publisher' role exists for Automation Account MSI on DCR '$dcrName'"
+                    $null = Ensure-GSARoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Monitoring Metrics Publisher" -Scope $dcr.Id -RetryDelaysInSeconds @(15, 30, 60, 120)
+                }
+            }
+        }
 
         Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure AD IAM scope"
         New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' | Out-Null
