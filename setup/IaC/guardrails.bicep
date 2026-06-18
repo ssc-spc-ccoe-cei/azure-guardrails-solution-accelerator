@@ -172,6 +172,7 @@ module alertNewVersion 'modules/alert.bicep' = {
   dependsOn: [
     aa
     LAW
+    DCR
   ]
   params: {
     alertRuleDescription: 'Alerts when a new version of the Guardrails Solution Accelerator is available'
