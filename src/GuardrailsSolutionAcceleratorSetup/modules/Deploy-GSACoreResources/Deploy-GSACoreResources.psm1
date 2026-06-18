@@ -1,3 +1,28 @@
+function Ensure-GSARoleAssignment {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ObjectId,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $RoleDefinitionName,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Scope
+    )
+
+    $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -Scope $Scope -ErrorAction SilentlyContinue |
+        Where-Object { $_.RoleDefinitionName -eq $RoleDefinitionName } |
+        Select-Object -First 1
+
+    if ($existingAssignment) {
+        return $false
+    }
+
+    New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+    return $true
+}
+
 function Ensure-GSAStorageRoleAssignment {
     param (
         [Parameter(Mandatory = $true)]
@@ -11,18 +36,74 @@ function Ensure-GSAStorageRoleAssignment {
         $Scope
     )
 
-    # Reuse a role assignment only when this scope already reports one, so create/remove behavior stays simple.
-    $existingAssignment = Get-AzRoleAssignment -ObjectId $ObjectId -Scope $Scope -ErrorAction SilentlyContinue |
-        Where-Object { $_.RoleDefinitionName -eq $RoleDefinitionName } |
-        Select-Object -First 1
+    return Ensure-GSARoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope
+}
 
-    if ($existingAssignment) {
-        return $false
+function Ensure-GSAAutomationAccountRbac {
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]
+        $Config,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $AutomationAccountMsi
+    )
+
+    $resourceGroupName = $Config['runtime']['resourceGroup']
+    $rolesEnsured = [System.Collections.Generic.List[string]]::new()
+
+    $law = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $Config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction Stop
+    if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Log Analytics Reader' -Scope $law.ResourceId) {
+        $rolesEnsured.Add('Log Analytics Reader on Log Analytics workspace') | Out-Null
     }
 
-    # Creating role assignments requires the deployer to have Owner, User Access Administrator, or equivalent rights at this scope.
-    New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
-    return $true
+    foreach ($dcrName in @('guardrails-dcr', 'guardrails-dcr-2')) {
+        $dcr = Get-AzDataCollectionRule -ResourceGroupName $resourceGroupName -Name $dcrName -ErrorAction SilentlyContinue
+        if ($dcr) {
+            if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Monitoring Metrics Publisher' -Scope $dcr.Id) {
+                $rolesEnsured.Add("Monitoring Metrics Publisher on $dcrName") | Out-Null
+            }
+        }
+        else {
+            Write-Warning "Data Collection Rule '$dcrName' was not found in resource group '$resourceGroupName'. Skipping Monitoring Metrics Publisher assignment."
+        }
+    }
+
+    if ($Config['runtime']['storageAccountId']) {
+        if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Storage Blob Data Reader' -Scope $Config['runtime']['storageAccountId']) {
+            $rolesEnsured.Add('Storage Blob Data Reader on storage account') | Out-Null
+        }
+    }
+
+    $keyVaultName = $Config['runtime']['keyVaultName']
+    if (-not [string]::IsNullOrWhiteSpace($keyVaultName)) {
+        $keyVault = Get-AzKeyVault -VaultName $keyVaultName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
+        if ($keyVault) {
+            if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Key Vault Secrets User' -Scope $keyVault.ResourceId) {
+                $rolesEnsured.Add('Key Vault Secrets User on Key Vault') | Out-Null
+            }
+        }
+    }
+
+    if ($Config['runtime']['tenantRootManagementGroupId']) {
+        if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Reader' -Scope $Config['runtime']['tenantRootManagementGroupId']) {
+            $rolesEnsured.Add('Reader on tenant root management group') | Out-Null
+        }
+    }
+
+    foreach ($scope in @('/providers/Microsoft.aadiam', '/providers/Microsoft.Marketplace')) {
+        if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Reader' -Scope $scope) {
+            $rolesEnsured.Add("Reader on $scope") | Out-Null
+        }
+    }
+
+    if ($rolesEnsured.Count -gt 0) {
+        Write-Verbose "Ensured Automation Account MSI role assignments: $($rolesEnsured -join '; ')"
+    }
+    else {
+        Write-Verbose 'Automation Account MSI already has required Azure RBAC role assignments.'
+    }
 }
 
 Function Deploy-GSACoreResources {
@@ -148,7 +229,7 @@ Function Deploy-GSACoreResources {
         foreach ($approleidName in $appRoleIds) {
             Write-Verbose "`tAdding permission to $approleidName"
             $appRoleId = ($graphAppSP.AppRole | Where-Object { $_.Value -eq $approleidName }).Id
-            if ($null -ne $approleid) {
+            if ($null -ne $appRoleId) {
                 try {
                     $body = @{
                         "principalId" = $config.guardrailsAutomationAccountMSI
@@ -160,12 +241,12 @@ Function Deploy-GSACoreResources {
                     $response = Invoke-AzRest -Method POST -Uri $uri -Payload $body -ErrorAction Stop
                 }
                 catch {
-                    Write-Error "Error assigning permissions $approleid to $approleidName. $_"
+                    Write-Error "Error assigning permissions $appRoleId to $approleidName. $_"
                     Break
                 }
 
                 If ([int]($response.StatusCode) -gt 299) {
-                    Write-Error "Error assigning permissions $approleid to $approleidName. $($response.Error)"
+                    Write-Error "Error assigning permissions $appRoleId to $approleidName. $($response.Error)"
                     Break
                 }
             }
@@ -183,25 +264,14 @@ Function Deploy-GSACoreResources {
 
     Write-Verbose "Granting the Automation Account required permissions to the deployed environment (for scanning)..."
     try {
-        Write-Verbose "`tAssigning reader access to the Automation Account Managed Identity for MG: $($rootmg.DisplayName)"
-        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $config['runtime']['tenantRootManagementGroupId'] | Out-Null
-
-        # Give the Automation Account identity blob read access because the storage account no longer accepts Shared Key auth.
-        Write-Verbose "`tEnsuring 'Storage Blob Data Reader' role exists for Automation Account MSI on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
-        $null = Ensure-GSAStorageRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Storage Blob Data Reader" -Scope $config['runtime']['storageAccountId']
+        Ensure-GSAAutomationAccountRbac -Config $config -AutomationAccountMsi $config.guardrailsAutomationAccountMSI
 
         # Give the deployment user or service principal temporary blob write access so modules.json can be uploaded with Entra auth.
         Write-Verbose "`tEnsuring temporary 'Storage Blob Data Contributor' role exists for deployer '$($config['runtime']['userId'])' on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
         $config['runtime']['temporaryDeployerBlobContributorAssigned'] = Ensure-GSAStorageRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId']
-
-        Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure AD IAM scope"
-        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' | Out-Null
-
-        Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure MarketPlace"
-        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' | Out-Null
     }
     catch {
-        Write-Error "Error assigning root management group permissions. $_"
+        Write-Error "Error assigning Automation Account Azure RBAC permissions. $_"
         break
     }
     Write-Verbose "Completed granting Automation Account required permissions."
