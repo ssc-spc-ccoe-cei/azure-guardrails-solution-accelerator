@@ -58,7 +58,7 @@ Function Deploy-GSACoreResources {
         try {
             $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
                 -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
-            break
+                break
         }
         catch {
             $deploymentErrorText = $_ | Out-String
@@ -85,6 +85,18 @@ Function Deploy-GSACoreResources {
             Start-Sleep -Seconds $retryDelayInSeconds
         }
     }
+
+    # --------------------------------------------------
+    # 3. Capture Outputs
+    # --------------------------------------------------
+    if (-not $mainBicepDeployment.Outputs.dcrResourceId) {
+        throw "Missing expected outputs from Bicep deployment."
+    }
+
+    $config['runtime']['dcrResourceId'] = $mainBicepDeployment.Outputs.dcrResourceId.value
+    $config['runtime']['dcrResourceId2'] = $mainBicepDeployment.Outputs.dcrResourceId2.value
+    $config['runtime']['logAnalyticsResourceId'] = $mainBicepDeployment.Outputs.logAnalyticsResourceId.value
+
     # Look up the storage account after deployment so later blob RBAC and upload steps use a real resource id.
     try {
         $storageAccount = Get-AzStorageAccount -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['storageaccountName'] -ErrorAction Stop
@@ -109,6 +121,28 @@ Function Deploy-GSACoreResources {
 
     # Keep the confirmed MSI object id in config so later deployment steps and runbooks use the same value.
     $config['guardrailsAutomationAccountMSI'] = $automationAccount.Identity.PrincipalId
+
+    # --------------------------------------------------
+    # 5. Assign RBAC (DCR + LAW) ✅ FIXED LOCATION
+    # --------------------------------------------------
+    Write-Verbose "Assigning DCR and LAW RBAC roles..."
+
+    New-AzRoleAssignmentWithRetry `
+        -ObjectId $config.guardrailsAutomationAccountMSI `
+        -RoleDefinitionName "Monitoring Metrics Publisher" `
+        -Scope $config['runtime']['dcrResourceId']
+
+    New-AzRoleAssignmentWithRetry `
+        -ObjectId $config.guardrailsAutomationAccountMSI `
+        -RoleDefinitionName "Monitoring Metrics Publisher" `
+        -Scope $config['runtime']['dcrResourceId2']
+
+    New-AzRoleAssignmentWithRetry `
+        -ObjectId $config.guardrailsAutomationAccountMSI `
+        -RoleDefinitionName "Log Analytics Reader" `
+        -Scope $config['runtime']['logAnalyticsResourceId']
+
+    Write-Verbose "DCR and LAW RBAC assignment complete."
 
     # persist MSI object id as automation variable for runbooks
     $automationVariableName = 'GuardrailsAutomationAccountMSI'
