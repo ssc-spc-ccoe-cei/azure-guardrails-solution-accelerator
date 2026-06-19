@@ -153,4 +153,4 @@ module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreR
 // module alertNewVersion 'modules/alert.bicep' = {
 
 output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
-output logAnalyticsResourceId string = LAW.outputs.logAnalyticsResourceId
+output logAnalyticsResourceId string = newDeployment ? LAW.outputs.logAnalyticsResourceId : ''
