@@ -39,70 +39,112 @@ function Ensure-GSAStorageRoleAssignment {
     return Ensure-GSARoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope
 }
 
-function Ensure-GSAAutomationAccountRbac {
+function Ensure-GSAAutomationAccountMsiRoles {
     param (
         [Parameter(Mandatory = $true)]
         [psobject]
         $Config,
-
         [Parameter(Mandatory = $true)]
         [string]
         $AutomationAccountMsi
     )
 
     $resourceGroupName = $Config['runtime']['resourceGroup']
-    $rolesEnsured = [System.Collections.Generic.List[string]]::new()
 
     $law = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $Config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction Stop
-    if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Log Analytics Reader' -Scope $law.ResourceId) {
-        $rolesEnsured.Add('Log Analytics Reader on Log Analytics workspace') | Out-Null
-    }
+    $null = Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Log Analytics Reader' -Scope $law.ResourceId
 
     foreach ($dcrName in @('guardrails-dcr', 'guardrails-dcr-2')) {
         $dcr = Get-AzDataCollectionRule -ResourceGroupName $resourceGroupName -Name $dcrName -ErrorAction SilentlyContinue
         if ($dcr) {
-            if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Monitoring Metrics Publisher' -Scope $dcr.Id) {
-                $rolesEnsured.Add("Monitoring Metrics Publisher on $dcrName") | Out-Null
-            }
-        }
-        else {
-            Write-Warning "Data Collection Rule '$dcrName' was not found in resource group '$resourceGroupName'. Skipping Monitoring Metrics Publisher assignment."
+            $null = Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Monitoring Metrics Publisher' -Scope $dcr.Id
         }
     }
 
     if ($Config['runtime']['storageAccountId']) {
-        if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Storage Blob Data Reader' -Scope $Config['runtime']['storageAccountId']) {
-            $rolesEnsured.Add('Storage Blob Data Reader on storage account') | Out-Null
-        }
+        $null = Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Storage Blob Data Reader' -Scope $Config['runtime']['storageAccountId']
     }
 
     $keyVaultName = $Config['runtime']['keyVaultName']
     if (-not [string]::IsNullOrWhiteSpace($keyVaultName)) {
         $keyVault = Get-AzKeyVault -VaultName $keyVaultName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
         if ($keyVault) {
-            if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Key Vault Secrets User' -Scope $keyVault.ResourceId) {
-                $rolesEnsured.Add('Key Vault Secrets User on Key Vault') | Out-Null
-            }
+            $null = Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Key Vault Secrets User' -Scope $keyVault.ResourceId
         }
     }
 
     if ($Config['runtime']['tenantRootManagementGroupId']) {
-        if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Reader' -Scope $Config['runtime']['tenantRootManagementGroupId']) {
-            $rolesEnsured.Add('Reader on tenant root management group') | Out-Null
-        }
+        $null = Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Reader' -Scope $Config['runtime']['tenantRootManagementGroupId']
     }
 
     foreach ($scope in @('/providers/Microsoft.aadiam', '/providers/Microsoft.Marketplace')) {
-        if (Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Reader' -Scope $scope) {
-            $rolesEnsured.Add("Reader on $scope") | Out-Null
-        }
+        $null = Ensure-GSARoleAssignment -ObjectId $AutomationAccountMsi -RoleDefinitionName 'Reader' -Scope $scope
+    }
+}
+
+function Deploy-GSAVersionAvailableAlert {
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]
+        $Config
+    )
+
+    if ($Config['runtime']['deployLAW'] -eq $false) {
+        Write-Verbose 'Skipping version alert deployment because deployLAW is false.'
+        return
     }
 
-    if ($rolesEnsured.Count -gt 0) {
-        Write-Verbose "Ensured Automation Account MSI role assignments: $($rolesEnsured -join '; ')"
+    $resourceGroupName = $Config['runtime']['resourceGroup']
+    $deployerId = $Config['runtime']['userId']
+    $alertTemplate = Join-Path $PSScriptRoot '../../../../setup/IaC/modules/alert.bicep'
+    $versionAlertQuery = "GR_VersionInfo_CL | summarize total=count() by UpdateAvailable=iff(DeployedVersion_s != AvailableVersion_s, 'Yes','No') | where UpdateAvailable == 'Yes'"
+
+    try {
+        $law = Get-AzOperationalInsightsWorkspace -ResourceGroupName $resourceGroupName -Name $Config['runtime']['logAnalyticsWorkspaceName'] -ErrorAction Stop
+
+        $null = Ensure-GSARoleAssignment -ObjectId $deployerId -RoleDefinitionName 'Log Analytics Reader' -Scope $law.ResourceId
+        $null = Ensure-GSARoleAssignment -ObjectId $deployerId -RoleDefinitionName 'Monitoring Contributor' -Scope $law.ResourceId
+
+        Write-Verbose 'Waiting 30 seconds for deployer workspace RBAC to propagate before version alert deployment...'
+        Start-Sleep -Seconds 30
+
+        $alertParams = @{
+            alertRuleDescription   = 'Alerts when a new version of the Guardrails Solution Accelerator is available'
+            alertRuleName          = 'GuardrailsNewVersion'
+            alertRuleDisplayName   = 'Guardrails New Version Available.'
+            alertRuleSeverity      = 3
+            location               = $Config.region
+            query                  = $versionAlertQuery
+            scope                  = $law.ResourceId
+            autoMitigate           = $true
+            evaluationFrequency    = 'PT6H'
+            windowSize             = 'PT6H'
+        }
+
+        $retryDelaysInSeconds = @(30, 60, 120)
+        for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
+            try {
+                $null = New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
+                    -Name "guardrails-alert$(Get-Date -Format 'ddMMyyHHmmss')" `
+                    -TemplateFile $alertTemplate `
+                    -TemplateParameterObject $alertParams `
+                    -ErrorAction Stop
+                Write-Verbose 'Guardrails new-version alert deployed successfully.'
+                return
+            }
+            catch {
+                if ($attempt -gt $retryDelaysInSeconds.Count) {
+                    throw
+                }
+
+                $delayInSeconds = $retryDelaysInSeconds[$attempt - 1]
+                Write-Verbose "Version alert deployment attempt $attempt failed. Retrying in $delayInSeconds seconds. Error: $_"
+                Start-Sleep -Seconds $delayInSeconds
+            }
+        }
     }
-    else {
-        Write-Verbose 'Automation Account MSI already has required Azure RBAC role assignments.'
+    catch {
+        Write-Warning "Guardrails new-version alert deployment failed (non-fatal). Core deployment succeeded. Error: $_"
     }
 }
 
@@ -241,11 +283,13 @@ Function Deploy-GSACoreResources {
                     $response = Invoke-AzRest -Method POST -Uri $uri -Payload $body -ErrorAction Stop
                 }
                 catch {
-                    Write-Error "Error assigning permissions $appRoleId to $approleidName. $_"
-                    Break
+                    if ($_.Exception.Message -notmatch 'Permission being assigned already exists') {
+                        Write-Error "Error assigning permissions $appRoleId to $approleidName. $_"
+                        Break
+                    }
                 }
 
-                If ([int]($response.StatusCode) -gt 299) {
+                If ($response -and [int]($response.StatusCode) -gt 299) {
                     Write-Error "Error assigning permissions $appRoleId to $approleidName. $($response.Error)"
                     Break
                 }
@@ -264,10 +308,9 @@ Function Deploy-GSACoreResources {
 
     Write-Verbose "Granting the Automation Account required permissions to the deployed environment (for scanning)..."
     try {
-        Ensure-GSAAutomationAccountRbac -Config $config -AutomationAccountMsi $config.guardrailsAutomationAccountMSI
+        Ensure-GSAAutomationAccountMsiRoles -Config $config -AutomationAccountMsi $config.guardrailsAutomationAccountMSI
 
-        # Give the deployment user or service principal temporary blob write access so modules.json can be uploaded with Entra auth.
-        Write-Verbose "`tEnsuring temporary 'Storage Blob Data Contributor' role exists for deployer '$($config['runtime']['userId'])' on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
+        Write-Verbose "`tEnsuring temporary 'Storage Blob Data Contributor' role exists for deployer '$($config['runtime']['userId'])' on Guardrails Storage Account '$($config['runtime']['storageAccountName'])'"
         $config['runtime']['temporaryDeployerBlobContributorAssigned'] = Ensure-GSAStorageRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId']
     }
     catch {
@@ -275,6 +318,8 @@ Function Deploy-GSACoreResources {
         break
     }
     Write-Verbose "Completed granting Automation Account required permissions."
+
+    Deploy-GSAVersionAvailableAlert -Config $config
 
     Write-Verbose "Core resource deployment completed"
 }

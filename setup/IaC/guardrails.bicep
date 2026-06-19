@@ -120,9 +120,8 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
   }
 }
 
-// Data Collection Rules (DCRs) for DCR-based Log Ingestion API.
-// Create/update DCRs on new deployments or when updating core resources.
-module DCR 'modules/dcr.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+// Create/update DCRs on new deployments or when updating core resources (deployLAW is false on updates).
+module DCR 'modules/dcr.bicep' = if ((deployLAW && newDeployment) || updateCoreResources) {
   name: 'guardrails-dcr'
   dependsOn: [
     LAW
@@ -139,7 +138,7 @@ module DCR 'modules/dcr.bicep' = if (deployLAW && (newDeployment || updateCoreRe
   }
 }
 // Grants the automation account MSI the DCR/LAW roles needed for ingestion and verification.
-module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployment || updateCoreResources)) {
+module DCRRBAC 'modules/dcrroleassignment.bicep' = if ((deployLAW && newDeployment) || updateCoreResources) {
   name: 'guardrails-dcrrbac'
   dependsOn: [
     aa
@@ -167,24 +166,4 @@ module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreR
   }
 }
 
-module alertNewVersion 'modules/alert.bicep' = {
-  name: 'guardrails-alertNewVersion'
-  dependsOn: [
-    aa
-    LAW
-    DCR
-  ]
-  params: {
-    alertRuleDescription: 'Alerts when a new version of the Guardrails Solution Accelerator is available'
-    alertRuleName: 'GuardrailsNewVersion'
-    alertRuleDisplayName: 'Guardrails New Version Available.'
-    alertRuleSeverity: 3
-    location: location
-    query: 'GR_VersionInfo_CL | summarize total=count() by UpdateAvailable=iff(DeployedVersion_s != AvailableVersion_s, "Yes",\'No\') | where UpdateAvailable == \'Yes\''
-    scope: LAW.outputs.logAnalyticsResourceId
-    autoMitigate: true
-    evaluationFrequency: 'PT6H'
-    windowSize: 'PT6H'
-  }
-}
 output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
