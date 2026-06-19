@@ -4,10 +4,13 @@
 ## $${\color{Red} Warning \space : \space Beta \space Release \space 4.0.0 \space }$$
 June 19, 2026 13:30: Cloud Security Compliance Division (CSCD) is experiencing issues with the Azure Compliance as Code (CaC) Release 3.0.1 and 4.0.0.beta. Clients are advised not to download or install either version of the Azure CaC code until further notice. CSCD is presently investigating the issue and will post further updates when available. 
 
+Thank you for your understanding.
+
 ___________________________________________________________________
 ## $${\color{Red} Avis \space : Deuxième \space version \space beta \space 4.0.0 \space }$$
 19 juin 2026 13 h 30 : La Division de la Conformité à la sécurité infonuagique (DCSI) rencontre présentement des problèmes avec les versions Azure de Conformité en tant que code (CC) 3.0.1 et 4.0.0.beta. Il est conseillé aux clients de ne pas télécharger ni installer l’une ou l’autre version du code Azure CC jusqu’à nouvel avis. La DCSI enquête actuellement sur le problème et publiera des mises à jour supplémentaires dès qu’elles seront disponibles.
 
+Nous vous remercions de votre compréhension.
 
 ----------------------------------------------------------------------
 
