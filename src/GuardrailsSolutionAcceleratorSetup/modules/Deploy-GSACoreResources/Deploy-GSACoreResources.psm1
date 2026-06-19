@@ -21,7 +21,7 @@ function Ensure-GSAStorageRoleAssignment {
     }
 
     # Creating role assignments requires the deployer to have Owner, User Access Administrator, or equivalent rights at this scope.
-    New-AzRoleAssignment -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
+    New-AzRoleAssignmentWithRetry -ObjectId $ObjectId -RoleDefinitionName $RoleDefinitionName -Scope $Scope -ErrorAction Stop | Out-Null
     return $true
 }
 
@@ -157,7 +157,8 @@ Function Deploy-GSACoreResources {
                     } | ConvertTo-Json
 
                     $uri = "https://graph.microsoft.com/v1.0/servicePrincipals/{0}/appRoleAssignments" -f $config.guardrailsAutomationAccountMSI
-                    $response = Invoke-AzRest -Method POST -Uri $uri -Payload $body -ErrorAction Stop
+                #    $response = Invoke-AzRest -Method POST -Uri $uri -Payload $body -ErrorAction Stop
+                    Grant-GraphPermissionWithRetry -PrincipalId $config.guardrailsAutomationAccountMSI -ResourceId $graphAppSP.Id -AppRoleId $appRoleId -PermissionName $approleidName
                 }
                 catch {
                     Write-Error "Error assigning permissions $approleid to $approleidName. $_"
@@ -184,7 +185,7 @@ Function Deploy-GSACoreResources {
     Write-Verbose "Granting the Automation Account required permissions to the deployed environment (for scanning)..."
     try {
         Write-Verbose "`tAssigning reader access to the Automation Account Managed Identity for MG: $($rootmg.DisplayName)"
-        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $config['runtime']['tenantRootManagementGroupId'] | Out-Null
+        New-AzRoleAssignmentWithRetry -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $config['runtime']['tenantRootManagementGroupId'] | Out-Null
 
         # Give the Automation Account identity blob read access because the storage account no longer accepts Shared Key auth.
         Write-Verbose "`tEnsuring 'Storage Blob Data Reader' role exists for Automation Account MSI on Guardrails Storage Account '$($config['runtime']['StorageAccountName'])'"
@@ -195,10 +196,10 @@ Function Deploy-GSACoreResources {
         $config['runtime']['temporaryDeployerBlobContributorAssigned'] = Ensure-GSAStorageRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Storage Blob Data Contributor" -Scope $config['runtime']['storageAccountId']
 
         Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure AD IAM scope"
-        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' | Out-Null
+        New-AzRoleAssignmentWithRetry -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' | Out-Null
 
         Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure MarketPlace"
-        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' | Out-Null
+        New-AzRoleAssignmentWithRetry -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' | Out-Null
     }
     catch {
         Write-Error "Error assigning root management group permissions. $_"
@@ -207,4 +208,126 @@ Function Deploy-GSACoreResources {
     Write-Verbose "Completed granting Automation Account required permissions."
 
     Write-Verbose "Core resource deployment completed"
+}
+
+function Invoke-WithRetry {
+    param (
+        [Parameter(Mandatory)]
+        [scriptblock]$ScriptBlock,
+
+        [int]$MaxRetries = 6,
+        [int]$InitialDelaySeconds = 15,
+        [int]$BackoffFactor = 2
+    )
+
+    $attempt = 1
+    $delay = $InitialDelaySeconds
+
+    while ($attempt -le $MaxRetries) {
+        try {
+            return & $ScriptBlock
+        }
+        catch {
+            if ($attempt -eq $MaxRetries) {
+                throw "All retry attempts failed. Last error: $($_.Exception.Message)"
+            }
+
+            Write-Warning "Attempt $attempt failed: $($_.Exception.Message). Retrying in $delay seconds..."
+            Start-Sleep -Seconds $delay
+
+            $attempt++
+            $delay = [math]::Min($delay * $BackoffFactor, 300)  # cap at 5 min
+        }
+    }
+}
+
+
+function New-AzRoleAssignmentWithRetry {
+    param (
+        [string]$ObjectId,
+        [string]$RoleDefinitionName,
+        [string]$Scope
+    )
+
+    Write-Verbose "Creating role assignment: $RoleDefinitionName on $Scope"
+
+    # Step 1 — create role assignment
+    Invoke-WithRetry {
+        New-AzRoleAssignment `
+            -ObjectId $ObjectId `
+            -RoleDefinitionName $RoleDefinitionName `
+            -Scope $Scope `
+            -ErrorAction Stop | Out-Null
+    }
+
+    # Step 2 — wait for propagation (CRITICAL)
+    Write-Verbose "Waiting for RBAC propagation..."
+
+    Invoke-WithRetry {
+        $assignment = Get-AzRoleAssignment `
+            -ObjectId $ObjectId `
+            -Scope $Scope `
+            -ErrorAction Stop |
+            Where-Object { $_.RoleDefinitionName -eq $RoleDefinitionName }
+
+        if (-not $assignment) {
+            throw "Role assignment not visible yet."
+        }
+
+        # OPTIONAL: test actual permission (better than just checking existence)
+        # Example: try reading resource under scope if applicable
+
+        return $assignment
+    } -MaxRetries 8 -InitialDelaySeconds 20
+}
+
+function Grant-GraphPermissionWithRetry {
+    param (
+        [string]$PrincipalId,
+        [string]$ResourceId,
+        [string]$AppRoleId,
+        [string]$PermissionName
+    )
+
+    $uri = "https://graph.microsoft.com/v1.0/servicePrincipals/$PrincipalId/appRoleAssignments"
+
+    $body = @{
+        principalId = $PrincipalId
+        resourceId  = $ResourceId
+        appRoleId   = $AppRoleId
+    } | ConvertTo-Json
+
+    # Step 1 — assign permission
+    Invoke-WithRetry {
+        $response = Invoke-AzRest `
+            -Method POST `
+            -Uri $uri `
+            -Payload $body `
+            -ErrorAction Stop
+
+        if ([int]$response.StatusCode -gt 299) {
+            throw "Graph assignment failed: $($response.Content)"
+        }
+    }
+
+    # Step 2 — wait for propagation (CRITICAL)
+    Write-Verbose "Waiting for Graph permission propagation: $PermissionName"
+
+    Invoke-WithRetry {
+        # Query existing assignments
+        $checkUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$PrincipalId/appRoleAssignments"
+        $result = Invoke-AzRest -Method GET -Uri $checkUri -ErrorAction Stop
+
+        $assignments = ($result.Content | ConvertFrom-Json).value
+
+        $exists = $assignments | Where-Object {
+            $_.appRoleId -eq $AppRoleId
+        }
+
+        if (-not $exists) {
+            throw "Graph permission not visible yet"
+        }
+
+        return $exists
+    } -MaxRetries 10 -InitialDelaySeconds 20
 }
