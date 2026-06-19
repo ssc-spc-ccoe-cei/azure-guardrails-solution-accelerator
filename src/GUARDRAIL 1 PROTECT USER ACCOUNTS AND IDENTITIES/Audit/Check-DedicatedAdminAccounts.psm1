@@ -54,17 +54,15 @@ function Check-DedicatedAdminAccounts {
         Write-Error "Error: $errorMsg"
     }
 
-    $hpAdminUserAccounts = @()
+    $hpAdminUpnLookup = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
     # # Filter the highly privileged Administrator role ID
     $highlyPrivilegedAdminRole = $rolesResponse | Where-Object { $_.displayName -eq $highlyPrivilegedAdminRoleNames[0] -or $_.displayName -eq $highlyPrivilegedAdminRoleNames[1] }
     foreach ($role in  $highlyPrivilegedAdminRole){
         # Get directory roles for each user with the highly privileged admin access
 
-        $roleAssignments = @()
-
         $roleId = $role.id
-        $roleName = $role.displayName
+        $hpAdminRoleResponse = @()
         # Endpoint to get members of the role - using paginated query
         $urlPath = "/directoryRoles/$roleId/members"
         try{
@@ -82,37 +80,11 @@ function Check-DedicatedAdminAccounts {
         }
 
         foreach ($hpAdminUser in $hpAdminRoleResponse) {
-            $roleAssignments = [PSCustomObject]@{
-                roleId              = $roleId
-                roleName            = $roleName
-                userId              = $hpAdminUser.id
-                displayName         = $hpAdminUser.displayName
-                mail                = $hpAdminUser.mail
-                userPrincipalName   = $hpAdminUser.userPrincipalName
+            if (-not [string]::IsNullOrWhiteSpace($hpAdminUser.userPrincipalName)) {
+                $hpAdminUpnLookup.Add($hpAdminUser.userPrincipalName) | Out-Null
             }
-            $hpAdminUserAccounts +=  $roleAssignments
         }
     }
-
-    # list all users - using paginated query to handle large user counts (>100)
-    $urlPath = "/users"
-    try {
-        $response = Invoke-GraphQueryEX -urlPath $urlPath -ErrorAction Stop
-        $data = $response.Content
-
-        if ($null -ne $data -and $null -ne $data.value) {
-            $allUsers = $data.value | Select-Object userPrincipalName , displayName, givenName, surname, id, mail
-        }
-    }
-    catch {
-        $errorMsg = "Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"                
-        $ErrorList.Add($errorMsg)
-        Write-Error "Error: $errorMsg"
-    }
-
-    # Filter and List non-privileged users from all user list
-    $nonHPAdminUserAccounts = $allUsers | Where-Object { $_.userPrincipalName -notin $hpAdminUserAccounts.userPrincipalName }
-
 
     # Read UPN files from storage with .csv extensions, add possible file extensions
     $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
@@ -288,27 +260,19 @@ function Check-DedicatedAdminAccounts {
                     $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupRegAccount
                 }
                 else{
-                    $hpUPNinRegFound = $false
                     $regUPNinPAFound = $false
                     $hpUPNnotGA = $false
     
                     # validate: check HP users ONLY have HP admin role assignments
                     foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
                         
-                        if ( $hpAdminUserAccounts.userPrincipalName -contains $hpAdmin){
+                        if ( $hpAdminUpnLookup.Contains($hpAdmin)){
                             # each HP admin has active GA or PA role assignment
-                            if ($nonHPAdminUserAccounts.userPrincipalName -contains $hpAdmin){
-                                # not dedicated user UPN for admin
-                                $hpUPNinRegFound = $true
-                                break
-                            }
-                            else{
-                                # validate: regular accounts are non-GA/PA role assignments
-                                foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
-                                    if ( $hpAdminUserAccounts.userPrincipalName -contains $regUPN){
-                                        $regUPNinPAFound = $true
-                                        break 
-                                    }
+                            # validate: regular accounts are non-GA/PA role assignments
+                            foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
+                                if ( $hpAdminUpnLookup.Contains($regUPN)){
+                                    $regUPNinPAFound = $true
+                                    break
                                 }
                             }
                         }
@@ -320,11 +284,7 @@ function Check-DedicatedAdminAccounts {
                     }
     
                     # Compliance status
-                    if($hpUPNinRegFound){
-                        $IsCompliant = $false
-                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
-                    }
-                    elseif($regUPNinPAFound){
+                    if($regUPNinPAFound){
                         $IsCompliant = $false
                         $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
                     }

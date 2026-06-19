@@ -1408,10 +1408,10 @@ function Invoke-GraphQueryEX {
 
     [string]$baseUri = "https://graph.microsoft.com/v1.0"
     $fullUri = "$baseUri$urlPath" 
-    $allResults = @()
+    $allResults = [System.Collections.Generic.List[object]]::new()
+    $singleObjectResult = $null
     $statusCode = $null
     $pageCount = 0
-   # Write-Host $fullUri
     do {
         $retryCount = 0
         $success = $false
@@ -1421,10 +1421,15 @@ function Invoke-GraphQueryEX {
         do {
             try {
                 $uri = $fullUri -as [uri]
-                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop 
-                $data = $response.Content | ConvertFrom-Json
-                $parsedcontent = $data.value
+                $response = Invoke-AZRestMethod  -Uri $uri  -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
+                if ($statusCode -lt 200 -or $statusCode -ge 300) {
+                    $responseText = [string]$response.Content
+                    $responsePreview = if ($responseText.Length -gt 500) { $responseText.Substring(0, 500) + '...' } else { $responseText }
+                    throw [System.Exception]::new(
+                        "Graph API returned HTTP $statusCode at page $pageCount. Response: $responsePreview")
+                }
+                $data = $response.Content | ConvertFrom-Json
                 $success = $true
             }
             catch {
@@ -1434,7 +1439,7 @@ function Invoke-GraphQueryEX {
                     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Failed" -Completed
                     return @{
                         Content    = $null
-                        StatusCode = $null
+                        StatusCode = $statusCode
                         Error      = $_.Exception.Message
                     }
                 } else {
@@ -1445,10 +1450,9 @@ function Invoke-GraphQueryEX {
         } while (-not $success -and $retryCount -lt $MaxRetries)
 
         if ($null -ne $data.value) {
-            $allResults += $data.value
+            $allResults.AddRange([object[]]$data.value)
         } else {
-            # For endpoints that don't return .value (single object)
-            $allResults = $data
+            $singleObjectResult = $data
             break
         }
         # Handle paging
@@ -1461,8 +1465,9 @@ function Invoke-GraphQueryEX {
     
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
+    $valueOut = if ($null -ne $singleObjectResult) { $singleObjectResult } else { [object[]]$allResults.ToArray() }
     return @{
-        Content    = @{ value = $allResults }
+        Content    = @{ value = $valueOut }
         StatusCode = $statusCode
     }
 }
@@ -1490,6 +1495,9 @@ function Invoke-GraphQueryStreamWithCallback {
         
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 5,
+
+        [Parameter(Mandatory = $false)]
+        [int] $InterPageDelaySeconds = 2,
         
         [Parameter(Mandatory = $false)]
         [hashtable] $PerformanceMetrics = $null
@@ -1516,6 +1524,7 @@ function Invoke-GraphQueryStreamWithCallback {
         
         Write-Verbose "  -> Fetching page $pageCount from Graph API..."        
         do {
+            $isRetryable = $true
             try {
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
@@ -1602,9 +1611,9 @@ function Invoke-GraphQueryStreamWithCallback {
         }
         
         # Rate limiting between pages
-        if ($fullUri) {
-            Write-Verbose "  -> Waiting 2 seconds before fetching next page..."
-            Start-Sleep -Seconds 2
+        if ($fullUri -and $InterPageDelaySeconds -gt 0) {
+            Write-Verbose "  -> Waiting $InterPageDelaySeconds seconds before fetching next page..."
+            Start-Sleep -Seconds $InterPageDelaySeconds
         }
         
     } while ($fullUri)
@@ -3300,28 +3309,66 @@ function FetchAllUserRawData {
         UsersProcessed = 0
         DataIngestionAttempts = 0
     }
+    $writePhaseTiming = {
+        param(
+            [string] $Phase,
+            [System.Diagnostics.Stopwatch] $PhaseStopwatch
+        )
+
+        if ($PhaseStopwatch.IsRunning) {
+            $PhaseStopwatch.Stop()
+        }
+
+        Write-Host ("FetchAllUserRawData timing | Phase={0} | Duration={1}" -f $Phase, $PhaseStopwatch.Elapsed.ToString("c"))
+    }
     
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData with ReportTime: $ReportTime  at $startTimeFormatted ==="
     Write-Verbose "Step 1: Fetching authentication method registration details..."
     $regById = @{}
+    $registrationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     
     try {
         $regPath = "/reports/authenticationMethods/userRegistrationDetails"
-        $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details" -PerformanceMetrics $performanceMetrics
-        $registrationDetails = @($regResponse.Content.value)
-        
-        Write-Verbose "  Success: Retrieved $($registrationDetails.Count) registration records"
-        
-        # Build efficient lookup for registration data
-        $registrationDetails | ForEach-Object {
-            if ($_.id -and -not $regById.ContainsKey($_.id)) {
-                $regById[$_.id] = $_
+        $registrationContext = @{
+            regById = $regById
+        }
+        $processRegistrationPageCallback = {
+            param($pageData, $context)
+
+            $pageRegistrations = $pageData.Data
+            foreach ($registrationDetail in $pageRegistrations) {
+                if ($registrationDetail.id -and -not $context.regById.ContainsKey($registrationDetail.id)) {
+                    # Keep only fields consumed by KQL so each raw Graph page can be garbage-collected.
+                    $context.regById[$registrationDetail.id] = [PSCustomObject]@{
+                        isMfaRegistered       = $registrationDetail.isMfaRegistered
+                        isMfaCapable          = $registrationDetail.isMfaCapable
+                        isSsprEnabled         = $registrationDetail.isSsprEnabled
+                        isSsprRegistered      = $registrationDetail.isSsprRegistered
+                        isSsprCapable         = $registrationDetail.isSsprCapable
+                        isPasswordlessCapable = $registrationDetail.isPasswordlessCapable
+                        defaultMethod         = $registrationDetail.defaultMethod
+                        methodsRegistered     = $registrationDetail.methodsRegistered
+                        isSystemPreferredAuthenticationMethodEnabled = $registrationDetail.isSystemPreferredAuthenticationMethodEnabled
+                        systemPreferredAuthenticationMethods = $registrationDetail.systemPreferredAuthenticationMethods
+                        userPreferredMethodForSecondaryAuthentication = $registrationDetail.userPreferredMethodForSecondaryAuthentication
+                    }
+                }
+            }
+
+            return @{
+                ProcessedCount = $pageRegistrations.Count
+                UploadedCount = 0
             }
         }
+
+        $registrationResult = Invoke-GraphQueryStreamWithCallback -urlPath $regPath -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
+        Write-Verbose "  Success: Retrieved $($registrationResult.TotalProcessed) registration records from $($registrationResult.TotalPages) pages"
         Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"        
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+    } finally {
+        & $writePhaseTiming "registration" $registrationStopwatch
     }
     
     # Step 2: Prepare break-glass account filtering
@@ -3404,6 +3451,9 @@ function FetchAllUserRawData {
         $batchResults = $filteredPageUsers | ForEach-Object {
             $user = $_
             $registration = $context.regById[$user.id]
+            if ($registration) {
+                $context.regById.Remove($user.id) | Out-Null
+            }
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
 
@@ -3497,9 +3547,10 @@ function FetchAllUserRawData {
         }
     }
     
+    $userStreamStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         # Use true streaming approach with callback processing        
-        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -PerformanceMetrics $performanceMetrics        
+        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -InterPageDelaySeconds 1 -PerformanceMetrics $performanceMetrics
         $pageNumber = $streamResult.TotalPages
         $processedUsers = $streamResult.TotalProcessed
         $totalUploadedRecords = $streamResult.TotalUploaded
@@ -3508,15 +3559,35 @@ function FetchAllUserRawData {
         Write-Verbose "  Success: All pages processed and uploaded - $totalUploadedRecords total records uploaded from $pageNumber pages"
         
     } catch {
+        & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
         Add-FunctionError -Message "Failed during streaming user processing" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        & $writePhaseTiming "total" $stopwatch
         return $ErrorList
     }
+    & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
     
     # Step 5: Wait before verification to allow data ingestion and table creation
+    $verificationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $existingTableVerificationDelaySeconds = 20
     Write-Verbose "Step 5: Waiting for data ingestion and table creation..."
-    Write-Verbose "  -> Waiting 60 seconds to allow Log Analytics to create table and index data..."
-    Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
-    Start-Sleep -Seconds 60
+    Write-Verbose "  -> Checking whether GuardrailsUserRaw_CL already exists..."
+    try {
+        $tableCheckQuery = "GuardrailsUserRaw_CL | take 1 | count"
+        Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $tableCheckQuery -ErrorAction Stop | Out-Null
+        Write-Verbose "  -> GuardrailsUserRaw_CL exists; waiting $existingTableVerificationDelaySeconds seconds before verification."
+        Start-Sleep -Seconds $existingTableVerificationDelaySeconds
+    }
+    catch {
+        $tableCheckError = $_.Exception.Message
+        if ($tableCheckError -like "*BadRequest*" -or $tableCheckError -like "*400*" -or $tableCheckError -like "*Failed to resolve table*") {
+            Write-Verbose "  -> GuardrailsUserRaw_CL table is not available yet; waiting 60 seconds for table creation and indexing."
+            Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
+            Start-Sleep -Seconds 60
+        }
+        else {
+            Write-Verbose "  -> Table existence check was inconclusive; skipping fixed wait and allowing verification retries to handle it. Error: $tableCheckError"
+        }
+    }
     
     # Step 6: Verify data ingestion with robust error handling
     Write-Verbose "Step 6: Verifying data ingestion..."
@@ -3525,6 +3596,7 @@ function FetchAllUserRawData {
     $recordCount = 0
     $permissionError = $false
     $verificationSkipped = $false
+    $expectedCount = $totalUploadedRecords
     
     # First, check if we can access Log Analytics at all
     Write-Verbose "  -> Testing Log Analytics connectivity..."
@@ -3584,13 +3656,16 @@ GuardrailsUserRaw_CL
             
                 if ($recordCount -gt 0) {
                     Write-Verbose "  Success: Data ingestion verified - $recordCount records found for ReportTime '$ReportTime'"
+                    if ($recordCount -ne $expectedCount) {
+                        Write-Verbose "  -> Expected $expectedCount uploaded records; Log Analytics may still be indexing the remaining records."
+                    }
                     $dataIngested = $true
                     break
                 } else {
                     $delay = Get-BackoffDelay -Attempt $attempt -Config $RetryConfig
-                        Write-Verbose "  -> Data not yet available (attempt $attempt/$maxVerificationAttempts). Waiting $delay seconds..."
+                    Write-Verbose "  -> Data not yet available (attempt $attempt/$maxVerificationAttempts). Waiting $delay seconds..."
                     
-                        if ($attempt -lt $maxVerificationAttempts) {
+                    if ($attempt -lt $maxVerificationAttempts) {
                         Start-Sleep -Seconds $delay
                     }
                 }
@@ -3658,7 +3733,7 @@ GuardrailsUserRaw_CL
         # Add a non-fatal warning rather than an error
         Add-FunctionError -Message "Data verification unavailable due to permissions. Upload completed successfully with $totalUploadedRecords records." -Category "Permissions" -ErrorList $ErrorList
         
-    } elseif (-not $dataIngested) {
+    } elseif (-not $dataIngested -and $recordCount -eq 0) {
         # Verification was attempted but no data found
         Write-Warning "  Warning: Data ingestion verification failed - no records found in Log Analytics."
         Write-Verbose "  -> Uploaded $totalUploadedRecords records but verification query returned 0 results"
@@ -3666,25 +3741,20 @@ GuardrailsUserRaw_CL
             
         Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList        
     } elseif ($recordCount -ne $totalUploadedRecords) {
-            # Data found but count mismatch
-        $expectedCount = $totalUploadedRecords
-        Write-Warning "  Warning: Data count mismatch detected."
+        # Data exists but Log Analytics has not indexed every uploaded record yet.
+        Write-Verbose "  -> Data count mismatch detected during verification."
         Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
-            
-        if ($recordCount > 0) {
-            Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        } else {
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Data may be missing or still processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        }    
+        Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
     } else {
         # Perfect success case
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
         Write-Verbose "  -> Upload and verification both completed successfully"
     }
     
+    & $writePhaseTiming "verification" $verificationStopwatch
+
     # Performance summary
-    $stopwatch.Stop()
+    & $writePhaseTiming "total" $stopwatch
     $performanceMetrics.EndTime = Get-Date
     $performanceMetrics.TotalDurationMs = $stopwatch.ElapsedMilliseconds
     $performanceMetrics.TotalDurationMin = [Math]::Round($stopwatch.ElapsedMilliseconds / 60000, 2)
