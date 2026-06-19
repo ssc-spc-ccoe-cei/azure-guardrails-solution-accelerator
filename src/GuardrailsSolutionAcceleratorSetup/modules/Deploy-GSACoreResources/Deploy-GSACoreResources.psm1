@@ -144,6 +144,32 @@ Function Deploy-GSACoreResources {
 
     Write-Verbose "DCR and LAW RBAC assignment complete."
 
+    # --------------------------------------------------
+    # Grant LAW access for Workbook (USER / GROUP)
+    # --------------------------------------------------
+
+    Write-Verbose "Assigning Log Analytics access for Workbook users..."
+
+    # Option 1: use deploying user (quick fix)
+    #$userObjectId = $config['runtime']['userId']
+
+    # Option 2 (recommended): use AAD group instead
+    $userObjectId = "db368be4-79e1-4c90-886c-99ba5b342e96"
+
+    # Log Analytics query access
+    New-AzRoleAssignmentWithRetry `
+        -ObjectId $userObjectId `
+        -RoleDefinitionName "Log Analytics Reader" `
+        -Scope $config['runtime']['logAnalyticsResourceId']
+
+    # Monitoring access (recommended for Workbook UI)
+    New-AzRoleAssignmentWithRetry `
+        -ObjectId $userObjectId `
+        -RoleDefinitionName "Monitoring Reader" `
+        -Scope $config['runtime']['logAnalyticsResourceId']
+
+    Write-Verbose "Workbook RBAC assignment complete."
+
     # persist MSI object id as automation variable for runbooks
     $automationVariableName = 'GuardrailsAutomationAccountMSI'
     $automationAccountName = $config['runtime']['automationAccountName']
