@@ -154,7 +154,8 @@ Function Deploy-GSACoreResources {
     #$userObjectId = $config['runtime']['userId']
 
     # Option 2 (recommended): use AAD group instead
-    $userObjectId = "db368be4-79e1-4c90-886c-99ba5b342e96"
+    # $userObjectId = "db368be4-79e1-4c90-886c-99ba5b342e96"
+    $userObjectId = "3bcd878c-d8fb-4708-ab39-c0dfa2f686bd"
 
     # Log Analytics query access
     New-AzRoleAssignmentWithRetry `
