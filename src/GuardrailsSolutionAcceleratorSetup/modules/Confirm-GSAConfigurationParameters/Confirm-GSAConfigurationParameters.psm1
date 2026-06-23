@@ -427,5 +427,6 @@ Function Confirm-GSAConfigurationParameters {
     $config
 
     Write-Verbose "Validation of configuration file and parameters complete"
+    Write-Host "Validation of configuration file and parameters complete"
 }
 

@@ -223,4 +223,5 @@ Function Confirm-GSAPrerequisites {
     Write-Host "Prerequisite validation completed successfully!" -ForegroundColor Green
 
     Write-Verbose "Completed verification of the Guardrails Solution Accelerator prerequisites."
+    Write-Host "Completed verification of the Guardrails Solution Accelerator prerequisites."
 }

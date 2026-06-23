@@ -39,10 +39,10 @@ Function Deploy-GSACoreResources {
     )
     $ErrorActionPreference = 'Stop'
 
-    Write-Verbose "Initating deployment of core GSA resources..."
+    Write-Host "Initating deployment of core GSA resources..."
 
     # create resource broup
-    Write-Verbose "Creating resource group '$($config['runtime']['resourceGroup'])' in '$($config.region)' location."
+    Write-Host "Creating resource group '$($config['runtime']['resourceGroup'])' in '$($config.region)' location."
     try {
         New-AzResourceGroup -Name $config['runtime']['resourceGroup'] -Location $config.region -Tags $config['runtime']['tagstable'] -ErrorAction Stop -Force | Out-Null
     }
@@ -51,7 +51,7 @@ Function Deploy-GSACoreResources {
     }
 
     # deploy primary bicep template
-    Write-Verbose "Deploying GSA core resource via bicep template..."
+    Write-Host "Deploying GSA core resource via bicep template..."
     $deploymentRetryDelaysInSeconds = @(60, 120, 180, 240, 300)
     $mainBicepDeployment = $null
     for ($deploymentAttempt = 1; $deploymentAttempt -le ($deploymentRetryDelaysInSeconds.Count + 1); $deploymentAttempt++) {
@@ -66,12 +66,20 @@ Function Deploy-GSACoreResources {
                 $deploymentErrorText = $_.Exception.Message
             }
 
+            Write-Host "deployment error: $deploymentErrorText"
+
             $isDcrTableReadinessError = $deploymentErrorText -match 'InvalidOutputTable'
+            Write-Host "isDcrTableReadinessError: $isDcrTableReadinessError"
+
             $isStorageContainerReadinessError = $deploymentErrorText -match 'ContainerOperationFailure' -and
                 $deploymentErrorText -match 'The specified resource does not exist'
+            Write-Host "isStorageContainerReadinessError: $isStorageContainerReadinessError"
+
             $isLastAttempt = $deploymentAttempt -gt $deploymentRetryDelaysInSeconds.Count
+            Write-Host "isLastAttempt: $isLastAttempt"
+
             if (-not ($isDcrTableReadinessError -or $isStorageContainerReadinessError) -or $isLastAttempt) {
-                Write-Error "Failed to deploy main Guardrails Accelerator template with error: $deploymentErrorText"
+                Write-Error "Failed to deploy main Guardrails Accelerator template while deploying GSA core resource via bicep template. Error: $deploymentErrorText"
                 Exit
             }
 

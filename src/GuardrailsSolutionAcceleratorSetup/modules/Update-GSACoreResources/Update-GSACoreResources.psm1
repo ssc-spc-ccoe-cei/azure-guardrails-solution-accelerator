@@ -37,7 +37,7 @@ Function Update-GSACoreResources {
             -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
     }
     catch {
-        Write-error "Failed to deploy main Guardrails Accelerator template with error: $_" 
+        Write-error "Failed to deploy main Guardrails Accelerator template while updating GSA core resources via bicep template: Error: $_" 
         Exit
     }
 }
