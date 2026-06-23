@@ -94,8 +94,9 @@ Function Deploy-GSACoreResources {
             $isDcrTableReadinessError = $deploymentErrorText -match 'InvalidOutputTable'
             $isStorageContainerReadinessError = $deploymentErrorText -match 'ContainerOperationFailure' -and
                 $deploymentErrorText -match 'The specified resource does not exist'
+            $isRbacPropagationError = $deploymentErrorText -match 'The provided credentials have insufficient access to perform the requested operation'
             $isLastAttempt = $deploymentAttempt -gt $deploymentRetryDelaysInSeconds.Count
-            if (-not ($isDcrTableReadinessError -or $isStorageContainerReadinessError) -or $isLastAttempt) {
+            if (-not ($isDcrTableReadinessError -or $isStorageContainerReadinessError -or $isRbacPropagationError) -or $isLastAttempt) {
                 Write-Error "Failed to deploy main Guardrails Accelerator template with error: $deploymentErrorText"
                 Exit
             }
@@ -103,6 +104,9 @@ Function Deploy-GSACoreResources {
             $retryDelayInSeconds = $deploymentRetryDelaysInSeconds[$deploymentAttempt - 1]
             if ($isDcrTableReadinessError) {
                 Write-Warning "Core deployment hit DCR table readiness error (InvalidOutputTable) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
+            }
+            elseif ($isRbacPropagationError) {
+                Write-Warning "Core deployment hit RBAC propagation delay (Key Vault credentials not yet active) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
             }
             else {
                 Write-Warning "Core deployment hit storage container readiness error (ContainerOperationFailure) on attempt $deploymentAttempt. Waiting $retryDelayInSeconds seconds before retrying."
