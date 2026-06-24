@@ -167,11 +167,38 @@ module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreR
   }
 }
 
+resource deploymentScriptIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = if (newDeployment || updateCoreResources) {
+  name: 'guardrails-deploymentScriptIdentity'
+  location: location
+}
+
+resource roleAssignmentDelay 'Microsoft.Resources/deploymentScripts@2023-08-01' = if (newDeployment || updateCoreResources) {
+  name: 'guardrails-roleAssignmentDelay'
+  location: location
+  kind: 'AzurePowerShell'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${deploymentScriptIdentity.id}': {}
+    }
+  }
+  dependsOn: [
+    DCRRBAC
+  ]
+  properties: {
+    azPowerShellVersion: '9.0'
+    scriptContent: 'Start-Sleep -Seconds 120'
+    retentionInterval: 'PT1H'
+    cleanupPreference: 'OnSuccess'
+  }
+}
+
 module alertNewVersion 'modules/alert.bicep' = {
   name: 'guardrails-alertNewVersion'
   dependsOn: [
     aa
     LAW
+    roleAssignmentDelay
   ]
   params: {
     alertRuleDescription: 'Alerts when a new version of the Guardrails Solution Accelerator is available'
