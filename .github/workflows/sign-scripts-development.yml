@@ -19,6 +19,7 @@ concurrency:
 
 permissions:
   id-token: write
+  variables: write
 
 env:
   ARTIFACT_NAME: PowerShell.Workflows.ScriptSigning
@@ -133,6 +134,10 @@ jobs:
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX }}
+          previous-law-run-suffix: ${{ vars.LAW_RUN_SUFFIX }}
+          law-run-suffix-github-variable-name: LAW_RUN_SUFFIX
+          github-environment-name: test
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           key-vault-name: gsapipe
           resource-group: guardrailscac_test
           storage-account-name: gsapipe
@@ -192,7 +197,7 @@ jobs:
                   "resourcegroup": "guardrailscac_test",
                   "region": "CanadaCentral",
                   "storageaccountName": "gsapipe",
-                  "logAnalyticsworkspaceName": "gsapipe",
+                  "logAnalyticsworkspaceName": "gsapipe-$($env:GSA_LAW_RUN_SUFFIX)",
                   "autoMationAccountName": "gsapipe",
                   "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
