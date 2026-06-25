@@ -126,7 +126,10 @@ jobs:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME }}
           SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
+      
+      - name: Generate random suffix for LAW
+        run: echo "LAW_RANDOM_SUFFIX=$((RANDOM % 90000 + 10000))" >> $GITHUB_ENV
+      
       - name: Pre-Clean Test environment
         uses: ./.github/actions/pre-clean-guardrails-ci
         with:
@@ -136,7 +139,7 @@ jobs:
           key-vault-name: gsapipe
           resource-group: guardrailscac_test
           storage-account-name: gsapipe
-          log-analytics-workspace-name: gsapipe
+          log-analytics-workspace-name: gsapipe${{env.LAW_RANDOM_SUFFIX}}
           automation-account-name: gsapipe
           first-break-glass-account-upn: ${{ vars.TESTTENANT_BGA1 }}
           second-break-glass-account-upn: ${{ vars.TESTTENANT_BGA2 }}
@@ -192,7 +195,7 @@ jobs:
                   "resourcegroup": "guardrailscac_test",
                   "region": "CanadaCentral",
                   "storageaccountName": "gsapipe",
-                  "logAnalyticsworkspaceName": "gsapipe",
+                  "logAnalyticsworkspaceName": gsapipe$(env.LAW_RANDOM_SUFFIX),
                   "autoMationAccountName": "gsapipe",
                   "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
