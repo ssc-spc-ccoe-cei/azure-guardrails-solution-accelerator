@@ -198,7 +198,7 @@ jobs:
                   "resourcegroup": "guardrailscac_test",
                   "region": "CanadaCentral",
                   "storageaccountName": "gsapipe",
-                  "logAnalyticsworkspaceName": gsapipe${{github.run_number}},
+                  "logAnalyticsworkspaceName": "gsapipe$($env:LAW_RANDOM_SUFFIX)",
                   "autoMationAccountName": "gsapipe",
                   "FirstBreakGlassAccountUPN": "$TESTTENANT_BGA1",
                   "SecondBreakGlassAccountUPN": "$TESTTENANT_BGA2",
