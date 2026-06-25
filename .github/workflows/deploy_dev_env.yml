@@ -111,6 +111,11 @@ jobs:
           PIPELINEMODULESTAGING_RGNAME: ${{ vars.PIPELINEMODULESTAGING_RGNAME }}
           PIPELINEMODULESTAGING_STORAGEACCOUNTNAME: ${{ vars.PIPELINEMODULESTAGING_SANAME_DEV }}
           DEVSUBSCRIPTION_ID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID}}
+      
+      - name: Generate LAW suffix
+        run: |
+          echo "LAW_RANDOM_SUFFIX=${{github.run_number}}" >> $GITHUB_ENV
+          echo "LAW_PREV_SUFFIX = $((${{github.run_number}}-1))" >> $GITHUB_ENV
 
       - name: Pre-Clean Dev environment
         if: ${{ vars.DEV_UPGRADE_VAR != 'true'}}
@@ -122,7 +127,7 @@ jobs:
           key-vault-name: kvcac
           resource-group: guardrailscacdev
           storage-account-name: stcac
-          log-analytics-workspace-name: logcac
+          log-analytics-workspace-name: logcac${{env.LAW_PREV_SUFFIX}}
           automation-account-name: aacac
           first-break-glass-account-upn: ${{ vars.DEVTENANT_BGA1 }}
           second-break-glass-account-upn: ${{ vars.DEVTENANT_BGA2 }}
@@ -190,7 +195,7 @@ jobs:
               "resourcegroup": "guardrailscacdev",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
-              "logAnalyticsworkspaceName": "logcac",
+              "logAnalyticsworkspaceName": "logcac$($env:LAW_RANDOM_SUFFIX)",
               "autoMationAccountName": "aacac",
               "FirstBreakGlassAccountUPN": "$DEVTENANT_BGA1",
               "SecondBreakGlassAccountUPN": "$DEVTENANT_BGA2",
