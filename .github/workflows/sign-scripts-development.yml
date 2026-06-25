@@ -19,7 +19,6 @@ concurrency:
 
 permissions:
   id-token: write
-  variables: write
 
 env:
   ARTIFACT_NAME: PowerShell.Workflows.ScriptSigning

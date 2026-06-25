@@ -16,9 +16,7 @@ description: |
   Exposes GSA_LAW_RUN_SUFFIX to GITHUB_ENV so the deploy step can write
   logAnalyticsworkspaceName correctly in its own config.json.
 
-  Requires:
-  - A prior azure/login@v2 step in the calling job.
-  - 'variables: write' permission in the calling workflow.
+  Requires a prior azure/login@v2 step in the calling job.
 
 inputs:
   subscription-id:
@@ -53,7 +51,7 @@ inputs:
     description: GitHub Actions environment that owns the variable (e.g. 'test' or 'dev').
   github-token:
     required: true
-    description: GITHUB_TOKEN with 'variables: write' for updating the LAW suffix variable.
+    description: GITHUB_TOKEN passed to gh CLI for updating the LAW suffix variable.
   key-vault-name:
     required: true
     description: Base Key Vault name for config.json.
@@ -119,9 +117,6 @@ runs:
         GSA_SUFFIX_ENV_NAME:            ${{ inputs.suffix-environment-variable-name }}
         GSA_STATIC_SUFFIX:              ${{ inputs.unique-name-suffix }}
         GSA_PREVIOUS_LAW_SUFFIX:        ${{ inputs.previous-law-run-suffix }}
-        GSA_LAW_SUFFIX_GH_VAR_NAME:     ${{ inputs.law-run-suffix-github-variable-name }}
-        GSA_GH_ENVIRONMENT:             ${{ inputs.github-environment-name }}
-        GITHUB_TOKEN:                   ${{ inputs.github-token }}
         GSA_KEY_VAULT_NAME:             ${{ inputs.key-vault-name }}
         GSA_RESOURCE_GROUP:             ${{ inputs.resource-group }}
         GSA_STORAGE_ACCOUNT_NAME:       ${{ inputs.storage-account-name }}
@@ -249,23 +244,19 @@ runs:
           "$($env:GSA_SUFFIX_ENV_NAME)=$staticSuffix"  | Out-File -FilePath $env:GITHUB_ENV -Append
           "GSA_LAW_RUN_SUFFIX=$newLawSuffix"            | Out-File -FilePath $env:GITHUB_ENV -Append
 
-          # ── 3. Persist new LAW run suffix to GitHub variable for the next run ────────
-          # Updated AFTER teardown: if cleanup fails the variable still points at the
-          # old LAW so a retry can find and remove it.
-          $headers = @{
-            Authorization          = "Bearer $env:GITHUB_TOKEN"
-            Accept                 = 'application/vnd.github+json'
-            'X-GitHub-Api-Version' = '2022-11-28'
-          }
-          $uri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY" +
-                 "/environments/$env:GSA_GH_ENVIRONMENT/variables/$env:GSA_LAW_SUFFIX_GH_VAR_NAME"
-          try {
-            Invoke-RestMethod -Uri $uri -Method PUT -Headers $headers `
-              -Body (@{ value = $newLawSuffix } | ConvertTo-Json) `
-              -ContentType 'application/json' -ErrorAction Stop | Out-Null
-            Write-Output "GitHub variable '$env:GSA_LAW_SUFFIX_GH_VAR_NAME' updated to '$newLawSuffix'."
-          }
-          catch {
-            Write-Warning "Could not update GitHub variable '$env:GSA_LAW_SUFFIX_GH_VAR_NAME': $_"
-            Write-Warning "Manually set it to '$newLawSuffix' so the next run cleans up correctly."
-          }
+          Write-Output "Azure steps complete. LAW run suffix for this deployment: '$newLawSuffix'."
+
+    - name: Record new LAW run suffix in GitHub variable
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        # GSA_LAW_RUN_SUFFIX was written to GITHUB_ENV by the previous step.
+        # gh variable set updates the environment variable so the next run knows
+        # which LAW to clean up. Runs after Azure teardown so a failed cleanup
+        # leaves the variable pointing at the old deployment, allowing a retry.
+        gh variable set "${{ inputs.law-run-suffix-github-variable-name }}" \
+          --body "$GSA_LAW_RUN_SUFFIX" \
+          --env "${{ inputs.github-environment-name }}" \
+          --repo "$GITHUB_REPOSITORY"
+        echo "GitHub variable '${{ inputs.law-run-suffix-github-variable-name }}' updated to '$GSA_LAW_RUN_SUFFIX'."
