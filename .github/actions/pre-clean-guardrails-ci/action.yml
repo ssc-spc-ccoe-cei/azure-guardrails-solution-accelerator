@@ -31,15 +31,15 @@ inputs:
   unique-name-suffix:
     required: true
     description: |
-      Static suffix used for all resources except LAW
-      (e.g. ${{ vars.UNIQUENAME_SUFFIX }}). Passed through to uniqueNameSuffix
-      in config.json unchanged.
+      Static suffix used for all resources except LAW (e.g. the value of
+      vars.UNIQUENAME_SUFFIX). Passed through to uniqueNameSuffix in config.json
+      unchanged.
   previous-law-run-suffix:
     required: false
     default: ''
     description: |
       LAW-specific suffix from the previous run (e.g. r141).
-      Pass ${{ vars.LAW_RUN_SUFFIX }} (or the dev equivalent).
+      Pass the value of vars.LAW_RUN_SUFFIX (or the dev equivalent).
       Leave empty on the first run — LAW teardown is skipped.
   law-run-suffix-github-variable-name:
     required: true
