@@ -1,20 +1,17 @@
 name: Pre-clean Guardrails CI deployment
 description: |
-  Removes the previously deployed Guardrails environment and prepares config for
-  the next deployment.
+  Removes the existing Guardrails deployment and writes a fresh config.json
+  with a new unique LAW name for the next deployment.
 
   All resources (KV, storage, AA, RG) continue to use the same static
   uniqueNameSuffix as before — no behaviour change there.
-  Only the Log Analytics Workspace gets an additional run-specific prefix
-  (r<GITHUB_RUN_NUMBER>) embedded in logAnalyticsworkspaceName so each
-  deployment creates a fresh workspace with a unique name.
 
-  The previous run's LAW suffix is tracked in a dedicated GitHub environment
-  variable (e.g. LAW_RUN_SUFFIX) so pre-clean can construct the exact previous
-  workspace name for teardown.
+  Only logAnalyticsworkspaceName gets a run-specific prefix (r<GITHUB_RUN_NUMBER>)
+  so each deployment creates a fresh workspace with a unique name.
 
-  Exposes GSA_LAW_RUN_SUFFIX to GITHUB_ENV so the deploy step can write
-  logAnalyticsworkspaceName correctly in its own config.json.
+  The previous LAW is discovered at runtime by listing workspaces in the
+  existing resource group — no external state (GitHub variables, storage, tags)
+  is required.
 
   Requires a prior azure/login@v2 step in the calling job.
 
@@ -26,32 +23,13 @@ inputs:
     required: true
     description: |
       GITHUB_ENV variable that receives the static unique-name-suffix for use
-      in subsequent steps (e.g. CI_UNIQUENAME_SUFFIX). Behaviour unchanged from
-      the original action.
+      in subsequent steps (e.g. CI_UNIQUENAME_SUFFIX). Behaviour unchanged.
   unique-name-suffix:
     required: true
     description: |
       Static suffix used for all resources except LAW (e.g. the value of
       vars.UNIQUENAME_SUFFIX). Passed through to uniqueNameSuffix in config.json
       unchanged.
-  previous-law-run-suffix:
-    required: false
-    default: ''
-    description: |
-      LAW-specific suffix from the previous run (e.g. r141).
-      Pass the value of vars.LAW_RUN_SUFFIX (or the dev equivalent).
-      Leave empty on the first run — LAW teardown is skipped.
-  law-run-suffix-github-variable-name:
-    required: true
-    description: |
-      GitHub environment variable to update with the new LAW run suffix after
-      cleanup (e.g. LAW_RUN_SUFFIX or LAW_RUN_SUFFIX_DEV).
-  github-environment-name:
-    required: true
-    description: GitHub Actions environment that owns the variable (e.g. 'test' or 'dev').
-  github-token:
-    required: true
-    description: GITHUB_TOKEN passed to gh CLI for updating the LAW suffix variable.
   key-vault-name:
     required: true
     description: Base Key Vault name for config.json.
@@ -116,7 +94,6 @@ runs:
         GSA_SUBSCRIPTION_ID:            ${{ inputs.subscription-id }}
         GSA_SUFFIX_ENV_NAME:            ${{ inputs.suffix-environment-variable-name }}
         GSA_STATIC_SUFFIX:              ${{ inputs.unique-name-suffix }}
-        GSA_PREVIOUS_LAW_SUFFIX:        ${{ inputs.previous-law-run-suffix }}
         GSA_KEY_VAULT_NAME:             ${{ inputs.key-vault-name }}
         GSA_RESOURCE_GROUP:             ${{ inputs.resource-group }}
         GSA_STORAGE_ACCOUNT_NAME:       ${{ inputs.storage-account-name }}
@@ -146,32 +123,27 @@ runs:
         inlineScript: |
           $ErrorActionPreference = 'Stop'
 
-          $subscriptionId    = $env:GSA_SUBSCRIPTION_ID
-          # Static suffix — applied to KV, storage, AA, RG, and also appended to LAW
-          # by Confirm-GSAConfigurationParameters (behaviour unchanged from before).
-          $staticSuffix      = $env:GSA_STATIC_SUFFIX
-          # LAW-specific run suffix from the previous pipeline run (empty on first run).
-          $previousLawSuffix = $env:GSA_PREVIOUS_LAW_SUFFIX
-          # New LAW run suffix for this run. 'r' prefix: Azure names must start with a letter.
-          $newLawSuffix      = "r$env:GITHUB_RUN_NUMBER"
+          $subscriptionId = $env:GSA_SUBSCRIPTION_ID
+          $staticSuffix   = $env:GSA_STATIC_SUFFIX
+          $lawBase        = $env:GSA_LAW_NAME
+          $rgName         = "$($env:GSA_RESOURCE_GROUP)-$staticSuffix"
+          # New unique LAW prefix for this run. 'r' prefix: Azure names must start with a letter.
+          $newLawSuffix   = "r$env:GITHUB_RUN_NUMBER"
+          $newLawBase     = "$lawBase-$newLawSuffix"
 
           Set-AzContext -SubscriptionId $subscriptionId
 
           $actionRepoRoot = Resolve-Path $env:GSA_ACTION_REPO_ROOT | Select-Object -ExpandProperty Path
           Import-Module (Join-Path $actionRepoRoot 'src/GuardrailsSolutionAcceleratorSetup')
 
-          # ── Helper: build a config hashtable ────────────────────────────────────────
-          # $lawNameOverride lets teardown supply the previous run's LAW base name
-          # (e.g. "logcac-r141") while keeping uniqueNameSuffix = static for all
-          # other resources. For normal config, pass $null to use the bare base name.
-          function New-Config([string]$suffix, [string]$lawNameOverride = $null) {
-            $lawName = if ($lawNameOverride) { $lawNameOverride } else { $env:GSA_LAW_NAME }
+          # ── Helper: build a config hashtable for a given LAW base name ───────────────
+          function New-Config([string]$lawNameForConfig) {
             return [ordered]@{
               keyVaultName                       = $env:GSA_KEY_VAULT_NAME
               resourcegroup                      = $env:GSA_RESOURCE_GROUP
               region                             = 'CanadaCentral'
               storageaccountName                 = $env:GSA_STORAGE_ACCOUNT_NAME
-              logAnalyticsworkspaceName          = $lawName
+              logAnalyticsworkspaceName          = $lawNameForConfig
               autoMationAccountName              = $env:GSA_AUTOMATION_ACCOUNT_NAME
               FirstBreakGlassAccountUPN          = $env:GSA_BGA1
               SecondBreakGlassAccountUPN         = $env:GSA_BGA2
@@ -189,7 +161,7 @@ runs:
               lighthouseTargetManagementGroupID  = $env:GSA_LIGHTHOUSE_TARGET_MG_ID
               subscriptionId                     = $subscriptionId
               SSCReadOnlyServicePrincipalNameAPPID = $env:GSA_READONLY_SPN_APPID
-              uniqueNameSuffix                   = $suffix
+              uniqueNameSuffix                   = $staticSuffix
               securityRetentionDays              = $env:GSA_SECURITY_RETENTION_DAYS
               cloudUsageProfiles                 = $env:GSA_CLOUD_USAGE_PROFILES
               tenantId                           = $env:GSA_TENANT_ID
@@ -198,65 +170,55 @@ runs:
 
           $configFilePath = Join-Path $env:GITHUB_WORKSPACE 'config.json'
 
-          # ── 1. Tear down the previous deployment ─────────────────────────────────────
-          # All resources use $staticSuffix (unchanged). The LAW teardown targets the
-          # previous run's workspace: "$lawBase-$previousLawSuffix" — Confirm-GSAConfigurationParameters
-          # appends "-$staticSuffix" to produce the full workspace name, e.g.
-          # "logcac-r141-abc123". All other resources resolve normally via $staticSuffix.
-          if (-not [string]::IsNullOrWhiteSpace($previousLawSuffix)) {
-            $previousRGName  = "$($env:GSA_RESOURCE_GROUP)-$staticSuffix"
-            $previousLAWBase = "$($env:GSA_LAW_NAME)-$previousLawSuffix"
-            Write-Output "Tearing down previous deployment (RG: '$previousRGName', LAW base: '$previousLAWBase-$staticSuffix')..."
+          # ── 1. Tear down the existing deployment ─────────────────────────────────────
+          # The RG name is static ($rgBase-$staticSuffix) so we always know where to look.
+          # We discover the current LAW by listing workspaces in the RG — no state
+          # tracking needed.
+          if (Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue) {
+            # Find the existing LAW whose name starts with the base name pattern.
+            $existingLAW = Get-AzOperationalInsightsWorkspace -ResourceGroupName $rgName `
+              -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -like "$lawBase-*" } |
+              Select-Object -First 1
 
-            if (Get-AzResourceGroup -Name $previousRGName -ErrorAction SilentlyContinue) {
-              New-Config $staticSuffix $previousLAWBase |
-                ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
-
-              Push-Location -Path (Join-Path $actionRepoRoot 'setup')
-              try {
-                Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
-                Remove-GSACentralizedDefenderCustomerComponents  -Force -configFilePath $configFilePath
-                Remove-GSACoreResources -Force -Wait              -configFilePath $configFilePath
-              }
-              finally { Pop-Location }
+            if ($existingLAW) {
+              # Strip the static suffix from the full LAW name to recover the base
+              # (e.g. "logcac-r141-abc123" → "logcac-r141") so Confirm-GSAConfigurationParameters
+              # can re-append "-$staticSuffix" and arrive at the correct full name.
+              $existingLAWBase = $existingLAW.Name -replace "-$([regex]::Escape($staticSuffix))$", ''
+              Write-Output "Found existing LAW '$($existingLAW.Name)' (base: '$existingLAWBase')."
             }
             else {
-              Write-Output "RG '$previousRGName' not found — skipping teardown."
+              # No run-specific LAW found — fall back to the bare base name so
+              # Remove-GSACoreResources can still clean up the rest of the RG.
+              $existingLAWBase = $lawBase
+              Write-Output "No existing LAW matching '$lawBase-*' found in '$rgName'. Using bare base name for teardown."
             }
+
+            New-Config $existingLAWBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+
+            Push-Location -Path (Join-Path $actionRepoRoot 'setup')
+            try {
+              Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+              Remove-GSACentralizedDefenderCustomerComponents  -Force -configFilePath $configFilePath
+              Remove-GSACoreResources -Force -Wait              -configFilePath $configFilePath
+            }
+            finally { Pop-Location }
           }
           else {
-            Write-Output "No previous LAW suffix supplied — skipping teardown (first run)."
+            Write-Output "RG '$rgName' not found — skipping teardown (first run or already clean)."
           }
 
           # ── 2. Write config.json for the new deployment ──────────────────────────────
-          # logAnalyticsworkspaceName = "$lawBase-$newLawSuffix" (e.g. "logcac-r142").
-          # Confirm-GSAConfigurationParameters then appends "-$staticSuffix" giving the
-          # final unique workspace name (e.g. "logcac-r142-abc123").
-          # All other resources continue to use $staticSuffix unchanged.
-          $newLAWBase = "$($env:GSA_LAW_NAME)-$newLawSuffix"
-          New-Config $staticSuffix $newLAWBase |
-            ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
-          Write-Output "config.json written (LAW base: '$newLAWBase', static suffix: '$staticSuffix')."
+          # logAnalyticsworkspaceName = "$lawBase-r<run>" so Confirm-GSAConfigurationParameters
+          # appends "-$staticSuffix" to produce a fully unique name each run
+          # (e.g. "logcac-r142-abc123"). All other resources use $staticSuffix unchanged.
+          New-Config $newLawBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+          Write-Output "config.json written (new LAW base: '$newLawBase', static suffix: '$staticSuffix')."
 
-          # Expose values to subsequent steps in this job:
-          #   CI_UNIQUENAME_SUFFIX — unchanged; deploy step uses this for uniqueNameSuffix
-          #   GSA_LAW_RUN_SUFFIX   — new; deploy step uses this for logAnalyticsworkspaceName
-          "$($env:GSA_SUFFIX_ENV_NAME)=$staticSuffix"  | Out-File -FilePath $env:GITHUB_ENV -Append
-          "GSA_LAW_RUN_SUFFIX=$newLawSuffix"            | Out-File -FilePath $env:GITHUB_ENV -Append
-
-          Write-Output "Azure steps complete. LAW run suffix for this deployment: '$newLawSuffix'."
-
-    - name: Record new LAW run suffix in GitHub variable
-      shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
-      run: |
-        # GSA_LAW_RUN_SUFFIX was written to GITHUB_ENV by the previous step.
-        # gh variable set updates the environment variable so the next run knows
-        # which LAW to clean up. Runs after Azure teardown so a failed cleanup
-        # leaves the variable pointing at the old deployment, allowing a retry.
-        gh variable set "${{ inputs.law-run-suffix-github-variable-name }}" \
-          --body "$GSA_LAW_RUN_SUFFIX" \
-          --env "${{ inputs.github-environment-name }}" \
-          --repo "$GITHUB_REPOSITORY"
-        echo "GitHub variable '${{ inputs.law-run-suffix-github-variable-name }}' updated to '$GSA_LAW_RUN_SUFFIX'."
+          # Expose to subsequent steps:
+          #   CI_UNIQUENAME_SUFFIX — static suffix, unchanged; deploy step uses for uniqueNameSuffix
+          #   GSA_LAW_RUN_SUFFIX   — run-specific LAW prefix; deploy step uses for logAnalyticsworkspaceName
+          "$($env:GSA_SUFFIX_ENV_NAME)=$staticSuffix" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "GSA_LAW_RUN_SUFFIX=$newLawSuffix"          | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "Deployment suffix: '$staticSuffix'  LAW run suffix: '$newLawSuffix'."

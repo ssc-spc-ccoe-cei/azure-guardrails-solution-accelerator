@@ -13,7 +13,6 @@ concurrency:
       
 permissions:
   id-token: write
-  variables: write
 
 env:
   ARTIFACT_NAME: PowerShell.Workflows.ScriptSigning
@@ -120,10 +119,6 @@ jobs:
           subscription-id: ${{ vars.DEVSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX_DEV
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-          previous-law-run-suffix: ${{ vars.LAW_RUN_SUFFIX_DEV }}
-          law-run-suffix-github-variable-name: LAW_RUN_SUFFIX_DEV
-          github-environment-name: dev
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           key-vault-name: kvcac
           resource-group: guardrailscacdev
           storage-account-name: stcac

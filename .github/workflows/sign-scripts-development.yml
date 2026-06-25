@@ -133,10 +133,6 @@ jobs:
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX }}
-          previous-law-run-suffix: ${{ vars.LAW_RUN_SUFFIX }}
-          law-run-suffix-github-variable-name: LAW_RUN_SUFFIX
-          github-environment-name: test
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           key-vault-name: gsapipe
           resource-group: guardrailscac_test
           storage-account-name: gsapipe
