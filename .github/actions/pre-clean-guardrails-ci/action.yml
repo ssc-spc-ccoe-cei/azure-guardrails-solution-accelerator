@@ -70,7 +70,7 @@ inputs:
     description: Health Log Analytics workspace resource ID.
   lighthouse-service-provider-tenant-id:
     required: true
-    description: Lighthouse principal display name.
+    description: Lighthouse service provider tenant ID.
   lighthouse-principal-display-name:
     required: true
     description: Lighthouse principal display name.
@@ -82,7 +82,7 @@ inputs:
     description: Lighthouse target management group ID.
   ssc-readonly-service-principal-appid:
     required: true
-    description: SSC read-only service principal app ID.    
+    description: SSC read-only service principal app ID.
   cloud-usage-profiles:
     required: true
     description: Cloud usage profiles value
@@ -92,7 +92,7 @@ inputs:
   department-number:
     required: false
     default: '163'
-    description: Department number.    
+    description: Department number.
   locale:
     required: false
     default: en-CA
@@ -100,7 +100,7 @@ inputs:
   security-retention-days:
     required: false
     default: '730'
-    description: Security retention days.    
+    description: Security retention days.
 
 runs:
   using: composite
