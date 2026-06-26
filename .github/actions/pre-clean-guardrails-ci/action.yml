@@ -10,8 +10,7 @@ description: |
   so each deployment creates a fresh workspace with a unique name.
 
   The previous LAW is discovered at runtime by listing workspaces in the
-  existing resource group — no external state (GitHub variables, storage, tags)
-  is required.
+  existing resource group — no external state tracking is required.
 
   Requires a prior azure/login@v2 step in the calling job.
 
@@ -47,43 +46,61 @@ inputs:
     description: Base Automation Account name for config.json.
   first-break-glass-account-upn:
     required: true
+    description: First break-glass account UPN.    
   second-break-glass-account-upn:
     required: true
+    description: Second break-glass account UPN.    
   pbmm-policy-id:
     required: true
+    description: PBMM policy ID.    
   allowed-location-policy-id:
     required: true
+    description: Allowed location policy ID.    
   allowed-location-initiative-id:
     required: true
+    description: Allowed location initiative ID.    
   cbs-subscription-name:
     required: true
+    description: CBS subscription name.
   security-law-resource-id:
     required: true
+    description: Security Log Analytics workspace resource ID.    
   health-law-resource-id:
     required: true
+    description: Health Log Analytics workspace resource ID.
   lighthouse-service-provider-tenant-id:
     required: true
+    description: Lighthouse principal display name.    
   lighthouse-principal-display-name:
     required: true
+    description: Lighthouse principal display name.
   lighthouse-principal-id:
     required: true
+    description: Lighthouse principal ID.    
   lighthouse-target-management-group-id:
     required: true
+    description: Lighthouse target management group ID.
   ssc-readonly-service-principal-appid:
     required: true
+    description: SSC read-only service principal app ID.    
   cloud-usage-profiles:
     required: true
+    description: Cloud usage profiles value
   tenant-id:
     required: true
+    description: Tenant ID.
   department-number:
     required: false
     default: '163'
+    description: Department number.    
   locale:
     required: false
     default: en-CA
+    description: Locale.    
   security-retention-days:
     required: false
     default: '730'
+    description: Security retention days.    
 
 runs:
   using: composite
