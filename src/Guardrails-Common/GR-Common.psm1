@@ -2858,14 +2858,15 @@ function Get-allowedLocationCAPCompliance {
 
     # Required IP-ranges for compliant patterns
     $requiredIPRanges = @()
+    # Read UPN files from storage with .csv extensions, add possible file extensions
+    $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
 
     # If IP address based named location exists, then read allowed IP ranges from document in blob storage 
     if($ipLocations.Count -gt 0){
         # --------------------------------
         # Check if document exists in blob
         # --------------------------------
-        # Add possible file extensions
-        $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
+
         $subName = ""
 
         try {
@@ -2876,43 +2877,33 @@ function Get-allowedLocationCAPCompliance {
             $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
             throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
         }
+        
         try {
             # Use Entra/RBAC blob access because the Guardrails storage account no longer allows Shared Key auth.
             $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
         }
         catch {
             $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that the storage account exists and that you have permissions to it. Error: $_"
-            $ErrorList.Add($storageErrorMessage) | Out-Null
 
-            return [PSCustomObject]@{
-                ComplianceResults = $null
-                Errors            = $ErrorList
-            }
+            Write-Warning "Warning: $storageErrorMessage"
+            Write-Host "Warning: $storageErrorMessage"
         }
 
         $baseFileNameFound = $false
         $blobFound = $false
 
-
-        try {
-            # Report error on blob RBAC issues so they are reported as storage access problems instead of missing files while the control continues the other checks
-            $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
-        }catch {
-            $storageErrorMessage = "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that blob data access is available. Error: $_"
-            $ErrorList.Add($storageErrorMessage) | Out-Null
-            # return [PSCustomObject]@{
-            #     ComplianceResults = $null
-            #     Errors            = $ErrorList
-            # }
-            Write-Warning "Could not read from storage account '$storageAccountName' container '$ContainerName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that blob data access is available. Error: $_"
-            Write-Host "Could not read blob. Verify that blob data access is available. Continue checking the named locations"
-        }
-
-        if($null -eq $blobs){
+        # Get a list of filenames uploaded in the blob storage
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
+        if ($null -eq $blobs) {            
+            # a blob with the name $DocumentName was not located in the specified storage account
+            $warningMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it."
+            Write-Warning $warningMsg
+                
             $blobFound = $false
+            $baseFileNameFound = $false
             $Comments += "Missing required document in storage account" -f $DocumentName
-            Write-Warning "Missing required document in storage account" -f $DocumentName
-            Write-Host "Continue checking the named locations"
+            Write-Host "Missing required document '$DocumentName' in storage account"
         }
         else{
             $fileNamesList = @()
@@ -2940,7 +2931,14 @@ function Get-allowedLocationCAPCompliance {
                     # Read the content of the blob and save IP ranges into array
                     $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $matchingFiles -Context $StorageContext -Force -ErrorAction Stop
                     $requiredIPRanges = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
-                    Write-Host " Sucessfully read IP ranges from blob storage: $($requiredIPRanges -join ', ')"
+                    if ($requiredIPRanges -eq 0){
+                        $Comments += "The required document in storage account is empty. Add the IP ranges to the document." -f $DocumentName
+                        Write-Host "The required document '$DocumentName' in storage account is empty. Add the IP ranges to the document."
+                    }
+                    else{
+                        Write-Host "Sucessfully read IP ranges from blob storage: $($requiredIPRanges -join ', ')"
+                    }
+                    
 
                 }
             }
@@ -2953,33 +2951,6 @@ function Get-allowedLocationCAPCompliance {
             # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
             $Comments += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
             $Comments += "Unable to evaluate the IP-based named location. Upload the document with correct extension."
-            # $IsCompliant = $false
-
-            # $C = [PSCustomObject]@{
-            #     SubscriptionName = $subName
-            #     ComplianceStatus = $IsCompliant
-            #     ControlName      = $ControlName
-            #     Comments         = $Comments
-            #     ItemName         = $ItemName
-            #     ReportTime       = $ReportTime
-            #     itsgcode         = $itsgcode
-            # }
-
-            # # Add profile information if MCUP feature is enabled
-            # if ($EnableMultiCloudProfiles) {
-            #     $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
-            #     Write-Host "$result"
-            #     $PsObject.Add($result) | Out-Null
-            # } else {
-            #     $PsObject.Add($C) | Out-Null
-            # }
-        
-            # $moduleOutput = [PSCustomObject]@{ 
-            #     ComplianceResults = $PsObject
-            #     Errors            = $ErrorList
-            # }
-            # return $moduleOutput
-
         }
         elseif ($blobFound){
         # ----------------------
@@ -2994,38 +2965,14 @@ function Get-allowedLocationCAPCompliance {
             # ----------------------
             $Comments += $msgTable.approvedIPrangeFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
             $Comments += "Unable to evaluate the IP-based named location. Upload the document in storage account."
-            # $IsCompliant = $false
-            
-            # $C= [PSCustomObject]@{
-            #     SubscriptionName = $subName
-            #     ComplianceStatus = $IsCompliant
-            #     ControlName      = $ControlName
-            #     Comments         = $Comments
-            #     ItemName         = $ItemName
-            #     ReportTime       = $ReportTime
-            #     itsgcode         = $itsgcode
-            # }
-
-            # # Add profile information if MCUP feature is enabled
-            # if ($EnableMultiCloudProfiles) {
-            #     $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $SubscriptionID -ErrorList $ErrorList
-            #     Write-Host "$result"
-            #     $PsObject.Add($result) | Out-Null
-            # } else {
-            #     $PsObject.Add($C) | Out-Null
-            # }
         
-            # $moduleOutput = [PSCustomObject]@{ 
-            #     ComplianceResults = $PsObject
-            #     Errors            = $ErrorList
-            # }
-            # return $moduleOutput
         }
 
     }
 
     # ----------------------
-    # DOC Case 2 extension: Correct document exists (i.e. blobfound) - proceed with checking IP based allowed location - Conditional Access Policy
+    # DOC Case 2 extension: Regardless of correct document exists (i.e. blobfound) - 
+    #                       proceed with checking IP based allowed location - Conditional Access Policy and compliance evaluation
     # ----------------------
 
     # -------------------------------------------------------------
@@ -3040,7 +2987,7 @@ function Get-allowedLocationCAPCompliance {
     $someNotValidIpnamedLocations = @()     # Ip named locations that are missing one or more required CIDR ranges
     $someNotValidIpnamedLocationsIds = @()       
 
-    if($blobFound){
+    if($blobFound -and ($null -ne $requiredIPRanges)){
         # Collect Ip-baeed named location IDs for use in CAP pattern matching
         foreach ($ipLoc in $ipLocations) {
             try{
@@ -3091,6 +3038,10 @@ function Get-allowedLocationCAPCompliance {
             }
 
         }
+    }
+    else{
+        $Comments += $msgTable.approvedIPrangesNotFound -f $DocumentName[0]
+        Comments += "Unable to evaluate the IP-based named location. Add the IP ranges to the document."
     }
     
 
