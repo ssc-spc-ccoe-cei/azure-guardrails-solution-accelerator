@@ -180,11 +180,11 @@ Function Confirm-GSAConfigurationParameters {
         }
         FirstBreakGlassAccountUPN         = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+            ValidationPattern = "^[a-zA-Z0-9_.+'-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
         }
         SecondBreakGlassAccountUPN        = @{
             IsRequired        = $true
-            ValidationPattern = '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+            ValidationPattern = "^[a-zA-Z0-9_.+'-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
         }
         DepartmentNumber                  = @{
             IsRequired       = $true
