@@ -29,11 +29,52 @@ function Check-CloudAccountsMFA {
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
     }
     
+    function Test-RequiresMfaOrAuthenticationStrength {
+        param (
+            [Parameter(Mandatory=$false)]
+            [psobject] $Policy
+        )
+
+        if (-not $Policy -or -not $Policy.grantControls) {
+            return $false
+        }
+
+        $hasMfaBuiltInControl = @($Policy.grantControls.builtInControls) -contains 'mfa'
+        if ($hasMfaBuiltInControl) {
+            return $true
+        }
+
+        if ($Policy.grantControls.PSObject.Properties.Match('authenticationStrength').Count -eq 0) {
+            return $false
+        }
+
+        $authenticationStrength = $Policy.grantControls.authenticationStrength
+        if ($null -eq $authenticationStrength) {
+            return $false
+        }
+
+        if ($authenticationStrength -is [string]) {
+            return -not [string]::IsNullOrWhiteSpace($authenticationStrength)
+        }
+
+        if ($authenticationStrength.PSObject.Properties.Match('id').Count -gt 0 -and
+            -not [string]::IsNullOrWhiteSpace([string]$authenticationStrength.id)) {
+            return $true
+        }
+
+        if ($authenticationStrength.PSObject.Properties.Match('displayName').Count -gt 0 -and
+            -not [string]::IsNullOrWhiteSpace([string]$authenticationStrength.displayName)) {
+            return $true
+        }
+
+        return $false
+    }
+
     # check for a conditional access policy which meets these requirements:
     # 1. state =  'enabled'
     # 2. includedUsers = 'All'
     # 3. includedApplications = 'All'
-    # 4. grantControls.builtInControls contains 'mfa'
+    # 4. grantControls.builtInControls contains 'mfa' OR grantControls.authenticationStrength is configured
     # 5. clientAppTypes contains 'all' (or all individual types selected: browser, mobileAppsAndDesktopClients, exchangeActiveSync, other)
     # 6. userRiskLevels = @()
     # 7. signInRiskLevels = @()
@@ -47,7 +88,7 @@ function Check-CloudAccountsMFA {
         $_.conditions.users.includeUsers -contains 'All' -and
         ($_.conditions.applications.includeApplications -contains 'All' -or
          $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
-        $_.grantControls.builtInControls -contains 'mfa' -and
+        (Test-RequiresMfaOrAuthenticationStrength -Policy $_) -and
         ($_.conditions.clientAppTypes -contains 'all' -or
          ($_.conditions.clientAppTypes -contains 'browser' -and
           $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and

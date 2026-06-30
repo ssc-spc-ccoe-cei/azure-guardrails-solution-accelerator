@@ -238,9 +238,11 @@ function Check-ApplicationGatewayCertificateValidity {
                         # Certificate is stored in Key Vault - need to retrieve and validate it
                         # Parse the Key Vault URL: https://testappgateway.vault.azure.net/secrets/myapp
                         $keyVaultUrlParts = $keyVaultSecretId -split '/'
-                        $keyVaultName = $keyVaultUrlParts[2] -replace '\.vault\.azure\.net', ''
-                        $secretName = $keyVaultUrlParts[-1]
-                        
+                        # Strip .vault.azure.net and any explicit port (e.g. :443) from the hostname
+                        $keyVaultName = $keyVaultUrlParts[2] -replace '\.vault\.azure\.net(:\d+)?$', ''
+                        # Use last non-empty segment to handle URLs with a trailing slash
+                        $secretName = ($keyVaultUrlParts | Where-Object { $_ -ne '' } | Select-Object -Last 1)
+                                                
                         # Validate that we have the required values
                         if ([string]::IsNullOrEmpty($keyVaultName) -or [string]::IsNullOrEmpty($secretName)) {
                             Write-Warning "Failed to parse Key Vault URL properly"
@@ -365,15 +367,59 @@ function Check-ApplicationGatewayCertificateValidity {
                     $allWellKnownCA = $true
                     foreach ($backendSetting in $httpsBackendSettings) {
                         if ($backendSetting.TrustedRootCertificates.Count -gt 0) {
-                            $subComments += " " + $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                            # Manual trusted root certs are present — this backend setting is not using
+                            # a built-in well-known CA, so clear the gateway-level flag regardless of
+                            # whether the roots turn out to be approved or not.
                             $allWellKnownCA = $false
+
+                            # Separately, check every root cert against the ApprovedCAList.
+                            # Department-approved CAs (e.g. internal government PKI roots) must be
+                            # configured as manual trusted roots because Azure does not include them
+                            # in its built-in trust store.
+                            $allRootCertsApproved = $true
+                            foreach ($trustedRootCertRef in $backendSetting.TrustedRootCertificates) {
+                                $rootCertName = $trustedRootCertRef.Id.Split('/')[-1]
+                                $rootCertObj  = $appGateway.TrustedRootCertificates | Where-Object { $_.Name -eq $rootCertName }
+
+                                if ($rootCertObj -and $rootCertObj.Data) {
+                                    try {
+                                        $rootCertBytes = [System.Convert]::FromBase64String($rootCertObj.Data)
+                                        $rootX509      = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList @(,$rootCertBytes)
+
+                                        $isApprovedRootCA = $false
+                                        foreach ($approvedCA in $ApprovedCAList) {
+                                            if ($rootX509.Subject -like "*$approvedCA*" -or $approvedCA -like "*$($rootX509.Subject)*") {
+                                                $isApprovedRootCA = $true
+                                                break
+                                            }
+                                        }
+
+                                        if (-not $isApprovedRootCA) {
+                                            $allRootCertsApproved = $false
+                                            $subComments += " " + $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                                        }
+                                    }
+                                    catch {
+                                        $allRootCertsApproved = $false
+                                        $subComments += " " + $msgTable.unableToProcessCertData -f $backendSetting.Name, $appGateway.Name, $_.Exception.Message
+                                    }
+                                } else {
+                                    $allRootCertsApproved = $false
+                                    $subComments += " " + $msgTable.manualTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                                }
+                            }
+
+                            # $allRootCertsApproved drives compliance directly — independent of $allWellKnownCA
+                            if ($allRootCertsApproved) {
+                                $subComments += " " + $msgTable.approvedTrustedRootCertsFound -f $appGateway.Name, $backendSetting.Name
+                            } else {
+                                $isSubCompliant = $false
+                            }
                         }
                     }
 
                     if ($allWellKnownCA) {
                         $subComments += " " + $msgTable.allBackendSettingsUseWellKnownCA -f $appGateway.Name
-                    } else {
-                        $isSubCompliant = $false
                     }
                 }
             }
