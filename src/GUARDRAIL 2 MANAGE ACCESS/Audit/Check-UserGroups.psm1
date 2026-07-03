@@ -62,12 +62,39 @@ function Check-UserGroups {
     }
 
     # Azure Automation uses managed identity, but the Graph header still contains a short-lived bearer token.
+    # Refreshing this token during long scans prevents avoidable 401 failures in large tenants.
     function Get-GraphAuthorizationHeader {
         $accessToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/').Token
         return "Bearer $accessToken"
     }
 
+    # Graph 429 responses can tell us exactly how long to wait before retrying.
+    # Honoring Retry-After reduces false fail-closed results caused by retrying too quickly.
+    function Get-GraphRetryDelay {
+        param(
+            [Parameter(Mandatory=$true)]
+            $ErrorRecord,
+            [int] $DefaultDelaySeconds = 5
+        )
+
+        $retryAfter = $null
+        if ($ErrorRecord.Exception.Response -and $ErrorRecord.Exception.Response.Headers) {
+            $retryAfterValues = $null
+            if ($ErrorRecord.Exception.Response.Headers.TryGetValues('Retry-After', [ref]$retryAfterValues)) {
+                $retryAfter = $retryAfterValues | Select-Object -First 1
+            }
+        }
+
+        $retryAfterSeconds = 0
+        if ($null -ne $retryAfter -and [int]::TryParse([string]$retryAfter, [ref]$retryAfterSeconds) -and $retryAfterSeconds -gt 0) {
+            return $retryAfterSeconds
+        }
+
+        return $DefaultDelaySeconds
+    }
+
     # Use one retry helper for normal Graph reads so transient failures do not fail the control immediately.
+    # This supports the compliance goal by retrying throttling/server errors, while real 4xx failures still fail closed.
     function Invoke-GraphGetWithRetry {
         param(
             [Parameter(Mandatory=$true)]
@@ -93,28 +120,17 @@ function Check-UserGroups {
                     throw
                 }
 
-                Write-Warning "Retryable Graph error calling '$Uri' (attempt $attempt/$MaxRetries): $($_.Exception.Message). Retrying in $RetryDelaySeconds seconds..."
-                Start-Sleep -Seconds $RetryDelaySeconds
+                $delaySeconds = Get-GraphRetryDelay -ErrorRecord $_ -DefaultDelaySeconds $RetryDelaySeconds
+                Write-Warning "Retryable Graph error calling '$Uri' (attempt $attempt/$MaxRetries): $($_.Exception.Message). Retrying in $delaySeconds seconds..."
+                Start-Sleep -Seconds $delaySeconds
             }
         }
     }
 
-    # Count calls are used for reporting; the compliance proof comes from user IDs below.
-    function Get-GraphCount {
-        param(
-            [Parameter(Mandatory=$true)]
-            [string] $UrlPath,
-            [Parameter(Mandatory=$true)]
-            [hashtable] $Headers
-        )
-
-        $countUri = "https://graph.microsoft.com/v1.0$UrlPath"
-        $countResponse = Invoke-GraphGetWithRetry -Uri $countUri -Headers $Headers -MaxRetries $maxRetries -RetryDelaySeconds $retryDelaySeconds
-        return [int]$countResponse
-    }
-
-    # Build remediation output for up to 20 uncovered users.
-    # Fetch only a small sample so large tenants do not spend extra memory/time loading every missing user's details.
+    # Build remediation output for a small sample of uncovered users.
+    # The scan keeps only user IDs to save memory in large tenants.
+    # If users are missing from groups, fetch details for up to 20 examples
+    # so the report is useful without loading every uncovered user's profile.
     function Get-UserWithoutGroupResult {
         param(
             [Parameter(Mandatory=$true)]
@@ -141,7 +157,7 @@ function Check-UserGroups {
 
             $user = $null
             try {
-                # Fetch details lazily so we do not keep every tenant user's display data in memory.
+                # Fetch details only when building the sample report, not during the full compliance scan.
                 $userUri = "https://graph.microsoft.com/v1.0/users/$userId?`$select=id,displayName,givenName,userPrincipalName"
                 $user = Invoke-GraphGetWithRetry -Uri $userUri -Headers $Headers -MaxRetries $maxRetries -RetryDelaySeconds $retryDelaySeconds
             }
@@ -187,10 +203,14 @@ function Check-UserGroups {
         return "Error: Failed to get access token for Microsoft Graph API: $_"
     }
 
-    # Build the compliance baseline as user IDs only; this keeps memory low for 200k+ tenants.
+    # Build the compliance baseline as user IDs only.
+    # Later, each group member ID is removed from this set; any IDs left over are users not found in a group.
+    # This is the core compliance improvement: prove coverage for actual users instead of comparing totals.
     $userBaselineStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     $uncoveredUserIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $userBaselineComplete = $true
+    $memberCount = 0
+    $guestCount = 0
     $usersUrl = "https://graph.microsoft.com/v1.0/users?`$select=id,userType&`$top=999"
 
     try {
@@ -198,8 +218,14 @@ function Check-UserGroups {
             $usersResp = Invoke-GraphGetWithRetry -Uri $usersUrl -Headers $headers -MaxRetries $maxRetries -RetryDelaySeconds $retryDelaySeconds
             foreach ($user in @($usersResp.value)) {
                 if ($user.id -and $user.userType -in @("Member", "Guest")) {
-                    # User IDs are the compliance baseline; display names are fetched only for remediation samples.
+                    # Store only the ID here. Display names and UPNs are loaded later only for the small remediation sample.
                     $uncoveredUserIds.Add($user.id) | Out-Null
+                    if ($user.userType -eq "Member") {
+                        $memberCount++
+                    }
+                    else {
+                        $guestCount++
+                    }
                 }
             }
             $usersUrl = $usersResp.'@odata.nextLink'
@@ -211,39 +237,14 @@ function Check-UserGroups {
     }
     & $writePhaseTiming "user-baseline" $userBaselineStopwatch
 
-    # Keep the member/guest/group counts for the report text, not for the pass/fail decision.
-    $memberCount = 0
-    $guestCount = 0
+    # Member/Guest counts come from the same user baseline used for compliance.
+    # This keeps report stats aligned with the users we actually evaluated.
     $groupCount = 0
-    try {
-        $memberCount = Get-GraphCount -UrlPath "/users/`$count?`$filter=userType eq 'Member'" -Headers $headers
-    }
-    catch {
-        $ErrorList.Add("Failed to get member count: $_") | Out-Null
-    }
-    try {
-        $guestCount = Get-GraphCount -UrlPath "/users/`$count?`$filter=userType eq 'Guest'" -Headers $headers
-    }
-    catch {
-        $ErrorList.Add("Failed to get guest count: $_") | Out-Null
-    }
-    try {
-        $groupCount = Get-GraphCount -UrlPath "/groups/`$count" -Headers $headers
-    }
-    catch {
-        $ErrorList.Add("Failed to get group count: $_") | Out-Null
-    }
 
     $allUserCount = $uncoveredUserIds.Count
-    if ($allUserCount -eq 0 -and ($memberCount + $guestCount) -gt 0) {
-        # Keep the report text useful if user enumeration failed; compliance still fails closed below.
-        $allUserCount = $memberCount + $guestCount
-    }
-
-    Write-Output "Members: $memberCount, Guests: $guestCount, Groups: $groupCount"
-    Write-Host "Current user baseline: $($uncoveredUserIds.Count)"
 
     # Fetch group IDs first so membership reads can be processed in controlled parallel batches.
+    # This improves runtime for large tenants without changing the compliance question being answered.
     $groupsStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     $groupIds = New-Object System.Collections.Generic.List[string]
     $groupListComplete = $true
@@ -263,19 +264,28 @@ function Check-UserGroups {
         $groupListComplete = $false
         $ErrorList.Add("Failed to get groups: $_") | Out-Null
     }
+    # Use the enumerated group list for checks and reporting instead of a separate /groups/$count call.
+    # This avoids count-vs-enumeration mismatch and prevents a failed count call from producing the wrong verdict.
+    $groupCount = $groupIds.Count
+    Write-Host "Members: $memberCount, Guests: $guestCount, Groups: $groupCount"
+    Write-Host "Current user baseline: $($uncoveredUserIds.Count)"
     & $writePhaseTiming "group-list" $groupsStopwatch
 
     # If the group list is incomplete, the membership scan cannot prove coverage for missing groups.
+    # Keep that state so the final result can fail closed instead of passing on partial data.
     $groupScanComplete = $groupListComplete
     $groupMembershipStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     $tokenRefreshStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     if ($groupIds.Count -gt 0 -and $uncoveredUserIds.Count -gt 0) {
-        # Batch size is larger than throttle to reduce runspace setup cost while keeping concurrency at 8.
-        # PowerShell 7.2 supports -Parallel here; batch size 24 does not mean 24 Graph calls at once.
+        # Batch size is larger than throttle to reduce runspace setup cost.
+        # Throttle still limits active Graph reads to 8 at a time; batch size 24 does not mean 24 calls at once.
+        # This balances performance with memory and Graph throttling risk.
         for ($batchStart = 0; $batchStart -lt $groupIds.Count -and $uncoveredUserIds.Count -gt 0; $batchStart += $groupBatchSize) {
             if ($tokenRefreshStopwatch.Elapsed.TotalMinutes -ge $tokenRefreshIntervalMinutes) {
                 try {
-                    # Refresh between batches only; workers in the next batch receive the fresh header.
+                    # Refresh between batches only. Running workers keep their current header,
+                    # and the next batch receives the fresh token.
+                    # This keeps long scans moving without adding shared-token logic inside parallel workers.
                     $headers.Authorization = Get-GraphAuthorizationHeader
                     $tokenRefreshStopwatch.Restart()
                 }
@@ -289,7 +299,9 @@ function Check-UserGroups {
             $batchEnd = [Math]::Min($batchStart + $groupBatchSize - 1, $groupIds.Count - 1)
             $groupBatch = @($groupIds[$batchStart..$batchEnd])
 
-            # Workers only read Graph and return user IDs. The main runspace updates the shared uncovered set.
+            # Workers only read Graph and return user IDs.
+            # The main runspace updates the uncovered set so parallel workers do not edit shared state.
+            # This keeps the faster parallel scan from creating race conditions in the compliance result.
             $batchResults = $groupBatch | ForEach-Object -Parallel {
                 $groupId = $_
                 $memberIds = New-Object System.Collections.Generic.List[string]
@@ -298,6 +310,7 @@ function Check-UserGroups {
                 try {
                     do {
                         # Retry each group-members page on throttling or transient Graph failures.
+                        # A completed group read gives trusted coverage data; an incomplete read fails closed later.
                         $success = $false
                         for ($attempt = 1; $attempt -le $using:maxRetries -and -not $success; $attempt++) {
                             try {
@@ -315,11 +328,26 @@ function Check-UserGroups {
                                     throw
                                 }
 
-                                Start-Sleep -Seconds $using:retryDelaySeconds
+                                $delaySeconds = $using:retryDelaySeconds
+                                $retryAfter = $null
+                                if ($_.Exception.Response -and $_.Exception.Response.Headers) {
+                                    $retryAfterValues = $null
+                                    if ($_.Exception.Response.Headers.TryGetValues('Retry-After', [ref]$retryAfterValues)) {
+                                        $retryAfter = $retryAfterValues | Select-Object -First 1
+                                    }
+                                }
+
+                                $retryAfterSeconds = 0
+                                if ($null -ne $retryAfter -and [int]::TryParse([string]$retryAfter, [ref]$retryAfterSeconds) -and $retryAfterSeconds -gt 0) {
+                                    $delaySeconds = $retryAfterSeconds
+                                }
+
+                                Start-Sleep -Seconds $delaySeconds
                             }
                         }
 
-                        # Workers return direct user member IDs; the main runspace decides which IDs still matter.
+                        # Return direct user member IDs. Nested group membership is not expanded by this endpoint.
+                        # The compliance result is therefore based on direct group membership, matching the endpoint used.
                         foreach ($member in @($response.value)) {
                             if ($member.id) {
                                 $memberIds.Add($member.id) | Out-Null
@@ -336,7 +364,9 @@ function Check-UserGroups {
                     }
                 }
                 catch {
-                    # Return the failure to the main runspace so it can fail closed with the group ID in the error.
+                    # Return the failure to the main runspace.
+                    # Partial member IDs from this group are discarded because the group read was incomplete.
+                    # This avoids marking users as covered from data we know may be incomplete.
                     [PSCustomObject]@{
                         GroupId = $groupId
                         Success = $false
@@ -346,8 +376,9 @@ function Check-UserGroups {
                 }
             } -ThrottleLimit $groupScanThrottleLimit
 
-            # Parallel workers only return user IDs; they do not modify the shared uncovered set.
-            # The main runspace removes IDs one at a time to avoid race conditions and keep compliance results reliable.
+            # Merge worker results in one place.
+            # Removing IDs here avoids race conditions and keeps the compliance result based on a complete, trusted set.
+            # Once the set is empty, every current Member/Guest user has been proven to be in at least one group.
             foreach ($result in @($batchResults)) {
                 if (-not $result.Success) {
                     $groupScanComplete = $false
@@ -373,6 +404,7 @@ function Check-UserGroups {
 
     if (-not $userBaselineComplete) {
         # Fail closed when the current user baseline cannot be trusted.
+        # Without a complete user list, the control cannot prove who should have group coverage.
         $IsCompliant = $false
         $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.userCountGroupNoMatch
     }
@@ -380,10 +412,11 @@ function Check-UserGroups {
         $commentsArray += $msgTable.isCompliant + " " + $msgTable.userCountOne
         $IsCompliant = $true
     }
-    elseif ($groupCount -lt 2) {
+    elseif ($groupListComplete -and $groupCount -lt 2) {
         $IsCompliant = $false
         $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.userGroupsMany
         # Include a small remediation sample when there are too few groups.
+        # This helps operators fix the issue without loading every affected user into memory.
         $userResults = Get-UserWithoutGroupResult -UncoveredUserIds $uncoveredUserIds -Headers $headers -MessageTable $msgTable -CurrentReportTime $ReportTime -ItsgCode $itsgcode
         if ($null -ne $userResults) {
             $AdditionalResults = $userResults
@@ -398,6 +431,8 @@ function Check-UserGroups {
             $data = $response.Content
             if ($null -ne $data -and $null -ne $data.value) {
                 $caps = $data.value
+                # User coverage alone is not enough for this control.
+                # It also requires an enabled Conditional Access policy that includes or excludes groups.
                 $validPolicies = $caps | Where-Object {
                     $_.state -eq 'enabled' -and
                     ($_.conditions.users.includeGroups.Count -ge 1 -or
@@ -421,6 +456,7 @@ function Check-UserGroups {
     }
     elseif (-not $groupScanComplete) {
         # Fail closed when incomplete group reads leave user coverage unproven.
+        # This is intentionally conservative for compliance: unknown coverage is not treated as compliant.
         $IsCompliant = $false
         $commentsArray += $msgTable.isNotCompliant + " " + $msgTable.userCountGroupNoMatch
         # Show sample users still uncovered after the incomplete scan.
