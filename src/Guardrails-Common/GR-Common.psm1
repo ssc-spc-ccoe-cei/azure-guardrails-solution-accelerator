@@ -2956,7 +2956,7 @@ function Get-allowedLocationCAPCompliance {
         # ----------------------
         # DOC Case 2: file exists in blob storage
         # ----------------------
-            $Comments += $msgTable.approvedIPrangeFileFound -f $DocumentName
+            $Comments += $msgTable.approvedIPrangeFileFound -f $DocumentName[0]
             Write-Host "Continue with IP named location evaluation"
         }
         else {
@@ -3041,7 +3041,7 @@ function Get-allowedLocationCAPCompliance {
     }
     else{
         $Comments += $msgTable.approvedIPrangesNotFound -f $DocumentName[0]
-        Comments += "Unable to evaluate the IP-based named location. Add the IP ranges to the document."
+        $Comments += "Unable to evaluate the IP-based named location. Add the IP ranges to the document."
     }
     
 
