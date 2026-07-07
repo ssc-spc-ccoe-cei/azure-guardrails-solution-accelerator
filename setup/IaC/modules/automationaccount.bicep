@@ -264,7 +264,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
-        version: '1.0.6'
+        version: '1.0.7'
       }
     }
   }
