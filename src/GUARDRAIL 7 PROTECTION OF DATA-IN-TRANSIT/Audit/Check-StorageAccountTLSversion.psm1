@@ -159,6 +159,7 @@ function Verify-TLSForStorageAccount {
                 Type             = [string]"subscription"
                 Id               = [string]$obj.Id
                 Name             = [string]$obj.Name
+                SubscriptionName = [string]$obj.Name
                 DisplayName      = [string]$DisplayName
                 ComplianceStatus = [boolean]$IsCompliant
                 Comments         = [string]$Comments
