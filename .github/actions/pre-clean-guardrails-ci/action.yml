@@ -1,9 +1,18 @@
 name: Pre-clean Guardrails CI deployment
 description: |
-  Selects the configured CI suffix, writes config.json, and removes the current
-  Guardrails deployment.
+  Removes the existing Guardrails deployment and writes a fresh config.json
+  with a new unique LAW name for the next deployment.
 
-  Requires a prior azure/login@v2 step in the calling job to establish Az context.
+  All resources (KV, storage, AA, RG) continue to use the same static
+  uniqueNameSuffix as before — no behaviour change there.
+
+  Only logAnalyticsworkspaceName gets a run-specific prefix (r<GITHUB_RUN_NUMBER>)
+  so each deployment creates a fresh workspace with a unique name.
+
+  The previous LAW is discovered at runtime by listing workspaces in the
+  existing resource group — no external state tracking is required.
+
+  Requires a prior azure/login@v2 step in the calling job.
 
 inputs:
   subscription-id:
@@ -11,10 +20,15 @@ inputs:
     description: Azure subscription ID used for the Guardrails deployment.
   suffix-environment-variable-name:
     required: true
-    description: Environment variable name that receives the selected unique suffix.
+    description: |
+      GITHUB_ENV variable that receives the static unique-name-suffix for use
+      in subsequent steps (e.g. CI_UNIQUENAME_SUFFIX). Behaviour unchanged.
   unique-name-suffix:
     required: true
-    description: Stable unique suffix used for the current deployment.
+    description: |
+      Static suffix used for all resources except LAW (e.g. the value of
+      vars.UNIQUENAME_SUFFIX). Passed through to uniqueNameSuffix in config.json
+      unchanged.
   key-vault-name:
     required: true
     description: Base Key Vault name for config.json.
@@ -26,7 +40,7 @@ inputs:
     description: Base Storage Account name for config.json.
   log-analytics-workspace-name:
     required: true
-    description: Base Log Analytics workspace name for config.json.
+    description: Base Log Analytics workspace name for config.json (without any suffix).
   automation-account-name:
     required: true
     description: Base Automation Account name for config.json.
@@ -71,7 +85,7 @@ inputs:
     description: SSC read-only service principal app ID.
   cloud-usage-profiles:
     required: true
-    description: Cloud usage profiles value.
+    description: Cloud usage profiles value
   tenant-id:
     required: true
     description: Tenant ID.
@@ -82,7 +96,7 @@ inputs:
   locale:
     required: false
     default: en-CA
-    description: Locale.
+    description: Locale.    
   security-retention-days:
     required: false
     default: '730'
@@ -91,103 +105,137 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Set configured deployment suffix
-      shell: pwsh
-      run: |
-        $suffix = '${{ inputs.unique-name-suffix }}'
-        if ([string]::IsNullOrWhiteSpace($suffix)) {
-          throw 'unique-name-suffix input is required.'
-        }
-        '${{ inputs.suffix-environment-variable-name }}=' + $suffix | Out-File -FilePath $env:GITHUB_ENV -Append
-        Write-Output "Using configured CI deployment suffix '$suffix'."
-
-    - name: Pre-clean Guardrails resources
+    - name: Pre-clean and prepare deployment suffix
       uses: azure/powershell@v2
       env:
-        GSA_SUBSCRIPTION_ID: ${{ inputs.subscription-id }}
-        GSA_SUFFIX_ENV_NAME: ${{ inputs.suffix-environment-variable-name }}
-        GSA_KEY_VAULT_NAME: ${{ inputs.key-vault-name }}
-        GSA_RESOURCE_GROUP: ${{ inputs.resource-group }}
-        GSA_STORAGE_ACCOUNT_NAME: ${{ inputs.storage-account-name }}
-        GSA_LAW_NAME: ${{ inputs.log-analytics-workspace-name }}
-        GSA_AUTOMATION_ACCOUNT_NAME: ${{ inputs.automation-account-name }}
-        GSA_BGA1: ${{ inputs.first-break-glass-account-upn }}
-        GSA_BGA2: ${{ inputs.second-break-glass-account-upn }}
-        GSA_PBMM_POLICY_ID: ${{ inputs.pbmm-policy-id }}
+        GSA_SUBSCRIPTION_ID:            ${{ inputs.subscription-id }}
+        GSA_SUFFIX_ENV_NAME:            ${{ inputs.suffix-environment-variable-name }}
+        GSA_STATIC_SUFFIX:              ${{ inputs.unique-name-suffix }}
+        GSA_KEY_VAULT_NAME:             ${{ inputs.key-vault-name }}
+        GSA_RESOURCE_GROUP:             ${{ inputs.resource-group }}
+        GSA_STORAGE_ACCOUNT_NAME:       ${{ inputs.storage-account-name }}
+        GSA_LAW_NAME:                   ${{ inputs.log-analytics-workspace-name }}
+        GSA_AUTOMATION_ACCOUNT_NAME:    ${{ inputs.automation-account-name }}
+        GSA_BGA1:                       ${{ inputs.first-break-glass-account-upn }}
+        GSA_BGA2:                       ${{ inputs.second-break-glass-account-upn }}
+        GSA_PBMM_POLICY_ID:             ${{ inputs.pbmm-policy-id }}
         GSA_ALLOWED_LOCATION_POLICY_ID: ${{ inputs.allowed-location-policy-id }}
         GSA_ALLOWED_LOCATION_INITIATIVE_ID: ${{ inputs.allowed-location-initiative-id }}
-        GSA_DEPARTMENT_NUMBER: ${{ inputs.department-number }}
-        GSA_CBS_SUBSCRIPTION_NAME: ${{ inputs.cbs-subscription-name }}
-        GSA_SECURITY_LAW_RESOURCE_ID: ${{ inputs.security-law-resource-id }}
-        GSA_HEALTH_LAW_RESOURCE_ID: ${{ inputs.health-law-resource-id }}
-        GSA_LOCALE: ${{ inputs.locale }}
-        GSA_LIGHTHOUSE_TENANT_ID: ${{ inputs.lighthouse-service-provider-tenant-id }}
-        GSA_LIGHTHOUSE_DISPLAY_NAME: ${{ inputs.lighthouse-principal-display-name }}
-        GSA_LIGHTHOUSE_PRINCIPAL_ID: ${{ inputs.lighthouse-principal-id }}
-        GSA_LIGHTHOUSE_TARGET_MG_ID: ${{ inputs.lighthouse-target-management-group-id }}
-        GSA_READONLY_SPN_APPID: ${{ inputs.ssc-readonly-service-principal-appid }}
-        GSA_SECURITY_RETENTION_DAYS: ${{ inputs.security-retention-days }}
-        GSA_CLOUD_USAGE_PROFILES: ${{ inputs.cloud-usage-profiles }}
-        GSA_TENANT_ID: ${{ inputs.tenant-id }}
-        GSA_ACTION_REPO_ROOT: ${{ github.action_path }}/../../..
+        GSA_DEPARTMENT_NUMBER:          ${{ inputs.department-number }}
+        GSA_CBS_SUBSCRIPTION_NAME:      ${{ inputs.cbs-subscription-name }}
+        GSA_SECURITY_LAW_RESOURCE_ID:   ${{ inputs.security-law-resource-id }}
+        GSA_HEALTH_LAW_RESOURCE_ID:     ${{ inputs.health-law-resource-id }}
+        GSA_LOCALE:                     ${{ inputs.locale }}
+        GSA_LIGHTHOUSE_TENANT_ID:       ${{ inputs.lighthouse-service-provider-tenant-id }}
+        GSA_LIGHTHOUSE_DISPLAY_NAME:    ${{ inputs.lighthouse-principal-display-name }}
+        GSA_LIGHTHOUSE_PRINCIPAL_ID:    ${{ inputs.lighthouse-principal-id }}
+        GSA_LIGHTHOUSE_TARGET_MG_ID:    ${{ inputs.lighthouse-target-management-group-id }}
+        GSA_READONLY_SPN_APPID:         ${{ inputs.ssc-readonly-service-principal-appid }}
+        GSA_SECURITY_RETENTION_DAYS:    ${{ inputs.security-retention-days }}
+        GSA_CLOUD_USAGE_PROFILES:       ${{ inputs.cloud-usage-profiles }}
+        GSA_TENANT_ID:                  ${{ inputs.tenant-id }}
+        GSA_ACTION_REPO_ROOT:           ${{ github.action_path }}/../../..
       with:
         azPSVersion: latest
         inlineScript: |
           $ErrorActionPreference = 'Stop'
-          Set-AzContext -SubscriptionId $env:GSA_SUBSCRIPTION_ID
+
+          $subscriptionId = $env:GSA_SUBSCRIPTION_ID
+          $staticSuffix   = $env:GSA_STATIC_SUFFIX
+          $lawBase        = $env:GSA_LAW_NAME
+          $rgName         = "$($env:GSA_RESOURCE_GROUP)-$staticSuffix"
+          # New unique LAW prefix for this run. 'r' prefix: Azure names must start with a letter.
+          $newLawSuffix   = "r$env:GITHUB_RUN_NUMBER"
+          $newLawBase     = "$lawBase-$newLawSuffix"
+
+          Set-AzContext -SubscriptionId $subscriptionId
+
           $actionRepoRoot = Resolve-Path $env:GSA_ACTION_REPO_ROOT | Select-Object -ExpandProperty Path
           Import-Module (Join-Path $actionRepoRoot 'src/GuardrailsSolutionAcceleratorSetup')
 
-          $uniqueNameSuffix = [Environment]::GetEnvironmentVariable($env:GSA_SUFFIX_ENV_NAME)
-
-          $configFilePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath 'config.json'
-          $config = [ordered]@{
-            keyVaultName = $env:GSA_KEY_VAULT_NAME
-            resourcegroup = $env:GSA_RESOURCE_GROUP
-            region = 'CanadaCentral'
-            storageaccountName = $env:GSA_STORAGE_ACCOUNT_NAME
-            logAnalyticsworkspaceName = $env:GSA_LAW_NAME
-            autoMationAccountName = $env:GSA_AUTOMATION_ACCOUNT_NAME
-            FirstBreakGlassAccountUPN = $env:GSA_BGA1
-            SecondBreakGlassAccountUPN = $env:GSA_BGA2
-            PBMMPolicyID = $env:GSA_PBMM_POLICY_ID
-            AllowedLocationPolicyId = $env:GSA_ALLOWED_LOCATION_POLICY_ID
-            AllowedLocationInitiativeId = $env:GSA_ALLOWED_LOCATION_INITIATIVE_ID
-            DepartmentNumber = $env:GSA_DEPARTMENT_NUMBER
-            CBSSubscriptionName = $env:GSA_CBS_SUBSCRIPTION_NAME
-            securityLAWResourceId = $env:GSA_SECURITY_LAW_RESOURCE_ID
-            healthLAWResourceId = $env:GSA_HEALTH_LAW_RESOURCE_ID
-            Locale = $env:GSA_LOCALE
-            lighthouseServiceProviderTenantID = $env:GSA_LIGHTHOUSE_TENANT_ID
-            lighthousePrincipalDisplayName = $env:GSA_LIGHTHOUSE_DISPLAY_NAME
-            lighthousePrincipalId = $env:GSA_LIGHTHOUSE_PRINCIPAL_ID
-            lighthouseTargetManagementGroupID = $env:GSA_LIGHTHOUSE_TARGET_MG_ID
-            subscriptionId = $env:GSA_SUBSCRIPTION_ID
-            SSCReadOnlyServicePrincipalNameAPPID = $env:GSA_READONLY_SPN_APPID
-            uniqueNameSuffix = $uniqueNameSuffix
-            securityRetentionDays = $env:GSA_SECURITY_RETENTION_DAYS
-            cloudUsageProfiles = $env:GSA_CLOUD_USAGE_PROFILES
-            tenantId = $env:GSA_TENANT_ID
+          # ── Helper: build a config hashtable for a given LAW base name ───────────────
+          function New-Config([string]$lawNameForConfig) {
+            return [ordered]@{
+              keyVaultName                       = $env:GSA_KEY_VAULT_NAME
+              resourcegroup                      = $env:GSA_RESOURCE_GROUP
+              region                             = 'CanadaCentral'
+              storageaccountName                 = $env:GSA_STORAGE_ACCOUNT_NAME
+              logAnalyticsworkspaceName          = $lawNameForConfig
+              autoMationAccountName              = $env:GSA_AUTOMATION_ACCOUNT_NAME
+              FirstBreakGlassAccountUPN          = $env:GSA_BGA1
+              SecondBreakGlassAccountUPN         = $env:GSA_BGA2
+              PBMMPolicyID                       = $env:GSA_PBMM_POLICY_ID
+              AllowedLocationPolicyId            = $env:GSA_ALLOWED_LOCATION_POLICY_ID
+              AllowedLocationInitiativeId        = $env:GSA_ALLOWED_LOCATION_INITIATIVE_ID
+              DepartmentNumber                   = $env:GSA_DEPARTMENT_NUMBER
+              CBSSubscriptionName                = $env:GSA_CBS_SUBSCRIPTION_NAME
+              securityLAWResourceId              = $env:GSA_SECURITY_LAW_RESOURCE_ID
+              healthLAWResourceId                = $env:GSA_HEALTH_LAW_RESOURCE_ID
+              Locale                             = $env:GSA_LOCALE
+              lighthouseServiceProviderTenantID  = $env:GSA_LIGHTHOUSE_TENANT_ID
+              lighthousePrincipalDisplayName     = $env:GSA_LIGHTHOUSE_DISPLAY_NAME
+              lighthousePrincipalId              = $env:GSA_LIGHTHOUSE_PRINCIPAL_ID
+              lighthouseTargetManagementGroupID  = $env:GSA_LIGHTHOUSE_TARGET_MG_ID
+              subscriptionId                     = $subscriptionId
+              SSCReadOnlyServicePrincipalNameAPPID = $env:GSA_READONLY_SPN_APPID
+              uniqueNameSuffix                   = $staticSuffix
+              securityRetentionDays              = $env:GSA_SECURITY_RETENTION_DAYS
+              cloudUsageProfiles                 = $env:GSA_CLOUD_USAGE_PROFILES
+              tenantId                           = $env:GSA_TENANT_ID
+            }
           }
-          $config | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
 
-          $currentResourceGroupName = "$($env:GSA_RESOURCE_GROUP)-$uniqueNameSuffix"
-          Push-Location -Path (Join-Path $actionRepoRoot 'setup')
-          try {
-            Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
-            Remove-GSACentralizedDefenderCustomerComponents -Force -configFilePath $configFilePath
+          $configFilePath = Join-Path $env:GITHUB_WORKSPACE 'config.json'
 
-            if (Get-AzResourceGroup -Name $currentResourceGroupName -ErrorAction SilentlyContinue) {
-              Remove-GSACoreResources -Force -Wait -configFilePath $configFilePath
+          # ── 1. Tear down the existing deployment ─────────────────────────────────────
+          # The RG name is static ($rgBase-$staticSuffix) so we always know where to look.
+          # We discover the current LAW by listing workspaces in the RG — no state
+          # tracking needed.
+          if (Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue) {
+            # Find the existing LAW whose name starts with the base name pattern.
+            $existingLAW = Get-AzOperationalInsightsWorkspace -ResourceGroupName $rgName `
+              -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -like "$lawBase-*" } |
+              Select-Object -First 1
+
+            if ($existingLAW) {
+              # Strip the static suffix from the full LAW name to recover the base
+              # (e.g. "logcac-r141-abc123" → "logcac-r141") so Confirm-GSAConfigurationParameters
+              # can re-append "-$staticSuffix" and arrive at the correct full name.
+              $existingLAWBase = $existingLAW.Name -replace "-$([regex]::Escape($staticSuffix))$", ''
+              Write-Output "Found existing LAW '$($existingLAW.Name)' (base: '$existingLAWBase')."
             }
             else {
-              Write-Output "Current resource group '$currentResourceGroupName' does not exist yet. Skipping current core RG cleanup."
+              # No run-specific LAW found — fall back to the bare base name so
+              # Remove-GSACoreResources can still clean up the rest of the RG.
+              $existingLAWBase = $lawBase
+              Write-Output "No existing LAW matching '$lawBase-*' found in '$rgName'. Using bare base name for teardown."
             }
+
+            New-Config $existingLAWBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+
+            Push-Location -Path (Join-Path $actionRepoRoot 'setup')
+            try {
+              Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+              Remove-GSACentralizedDefenderCustomerComponents  -Force -configFilePath $configFilePath
+              Remove-GSACoreResources -Force -Wait              -configFilePath $configFilePath
+            }
+            finally { Pop-Location }
           }
-          catch {
-            throw "Failed test deploy of solution with error: $_"
+          else {
+            Write-Output "RG '$rgName' not found — skipping teardown (first run or already clean)."
           }
-          finally {
-            Pop-Location
-          }
-          
+
+          # ── 2. Write config.json for the new deployment ──────────────────────────────
+          # logAnalyticsworkspaceName = "$lawBase-r<run>" so Confirm-GSAConfigurationParameters
+          # appends "-$staticSuffix" to produce a fully unique name each run
+          # (e.g. "logcac-r142-abc123"). All other resources use $staticSuffix unchanged.
+          New-Config $newLawBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+          Write-Output "config.json written (new LAW base: '$newLawBase', static suffix: '$staticSuffix')."
+
+          # Expose to subsequent steps:
+          #   CI_UNIQUENAME_SUFFIX — static suffix, unchanged; deploy step uses for uniqueNameSuffix
+          #   GSA_LAW_RUN_SUFFIX   — run-specific LAW prefix; deploy step uses for logAnalyticsworkspaceName
+          "$($env:GSA_SUFFIX_ENV_NAME)=$staticSuffix" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "GSA_LAW_RUN_SUFFIX=$newLawSuffix"          | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "Deployment suffix: '$staticSuffix'  LAW run suffix: '$newLawSuffix'."
