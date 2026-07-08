@@ -248,6 +248,24 @@ Function Confirm-GSAConfigurationParameters {
         }
     }
 
+    # Pass 1 — check that every required key in the validation table is present in the
+    # config. This catches parameters that were added in a new version of the solution
+    # but are absent from an older config.json (e.g. upgrading v3 → v4 without updating
+    # config.json). Without this check the loop below silently skips missing keys because
+    # it only iterates over keys that already exist in the config.
+    $missingParams = $paramsValidationTable.GetEnumerator() |
+        Where-Object { $_.Value.IsRequired -and -not $config.ContainsKey($_.Key) } |
+        Select-Object -ExpandProperty Key
+
+    if ($missingParams.Count -gt 0) {
+        Write-Error ("The following required parameter(s) are missing from config.json: " +
+            ($missingParams -join ', ') + ". " +
+            "This config.json may be from an older version of the solution. " +
+            "Add the missing parameter(s) and re-run the prerequisite check.")
+        break
+    }
+
+    # Pass 2 — validate the value of every key that is present in the config.
     ForEach ($configParam in $config.GetEnumerator()) {
         $paramName = $configParam.Key
         $paramValue = $configParam.Value
@@ -265,10 +283,6 @@ Function Confirm-GSAConfigurationParameters {
         elseif (!$paramValidation.IsRequired -and [string]::IsNUllOrEmpty($paramValue)) {
             Write-Verbose "Parameter '$paramName' is not required and is empty, skipping."
             continue
-        }
-        if ($paramValidation.IsRequired -and [string]::IsNUllOrEmpty($paramValue)) {
-            Write-Error "Parameter '$paramName' is required but not specified."
-            break
         }
         if (![string]::IsNUllOrEmpty($paramValue) -and $null -ne $paramValidation.ValidationList -and $paramValue -notin $paramValidation.ValidationList) {
             Write-Error "Parameter '$paramName' value '$paramValue' is not in the expected list of values '$($paramValidation.ValidationList -join ', ')."
@@ -428,4 +442,3 @@ Function Confirm-GSAConfigurationParameters {
 
     Write-Verbose "Validation of configuration file and parameters complete"
 }
-
