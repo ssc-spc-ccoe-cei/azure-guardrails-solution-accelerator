@@ -263,33 +263,52 @@ function Check-DedicatedAdminAccounts {
                     $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dupRegAccount
                 }
                 else{
+                    $hpUPNinRegFound = $false
                     $regUPNinPAFound = $false
                     $hpUPNnotGA = $false
-    
-                    # validate: check HP users ONLY have HP admin role assignments
-                    foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
-                        
-                        # Check the privileged-admin lookup instead of comparing against a full tenant user list.
-                        if ( $hpAdminUpnLookup.Contains($hpAdmin)){
-                            # Each highly privileged admin has an active Global Administrator or Privileged Role Administrator assignment.
-                            # Validate that regular accounts do not have either of those privileged role assignments.
-                            foreach ($regUPN in $UserAccountUPNs.regular_account_UPN){
-                                # A regular account with a privileged role makes this control non-compliant.
-                                if ( $hpAdminUpnLookup.Contains($regUPN)){
-                                    $regUPNinPAFound = $true
-                                    break
-                                }
+
+                    # Build a small lookup from the CSV so we can prove HP admin accounts are dedicated.
+                    # This replaces the old full /users scan: if the same UPN is also listed as a regular account,
+                    # then the admin account is not dedicated, even if the tenant has hundreds of thousands of users.
+                    $regularAccountUpnLookup = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+                    foreach ($regUPN in $UserAccountUPNs.regular_account_UPN) {
+                        if (-not [string]::IsNullOrWhiteSpace($regUPN)) {
+                            $regUPNForLookup = $regUPN.Trim()
+                            $regularAccountUpnLookup.Add($regUPNForLookup) | Out-Null
+
+                            # Regular accounts must not have Global Administrator or Privileged Role Administrator.
+                            # This check only needs to run once per regular account, not once per HP admin row.
+                            if ($hpAdminUpnLookup.Contains($regUPNForLookup)) {
+                                $regUPNinPAFound = $true
                             }
                         }
-                        else{
-                            # listed admin UPN doesn't have active GA
+                    }
+    
+                    # Validate the documented account split:
+                    # HP admin UPNs must have a highly privileged role, and regular UPNs must not have one.
+                    foreach ($hpAdmin in $UserAccountUPNs.HP_admin_account_UPN){
+                        $hpAdminForLookup = $hpAdmin.Trim()
+
+                        # A dedicated HP admin account must not also be documented as a regular account.
+                        if ($regularAccountUpnLookup.Contains($hpAdminForLookup)){
+                            $hpUPNinRegFound = $true
+                            break
+                        }
+
+                        # Check the privileged-admin lookup instead of comparing against a full tenant user list.
+                        if (-not $hpAdminUpnLookup.Contains($hpAdminForLookup)){
+                            # The listed HP admin UPN does not have an active Global Administrator or Privileged Role Administrator role.
                             $hpUPNnotGA = $true
                             break
                         }
                     }
     
                     # Compliance status
-                    if($regUPNinPAFound){
+                    if($hpUPNinRegFound){
+                        $IsCompliant = $false
+                        $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.dedicatedAdminAccNotExist
+                    }
+                    elseif($regUPNinPAFound){
                         $IsCompliant = $false
                         $commentsArray = $msgTable.isNotCompliant + " " + $msgTable.regAccHasHProle
                     }
