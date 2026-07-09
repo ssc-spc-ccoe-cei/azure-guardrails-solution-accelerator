@@ -86,7 +86,7 @@ function Test-CommonFilters {
             $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
             ($_.conditions.applications.includeApplications -contains 'All' -or
             $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
-            $acceptedRiskConfiguration -and
+            # $acceptedRiskConfiguration -and
             $_.conditions.clientAppTypes -contains 'all' -and
             ($_.conditions.clientAppTypes -contains 'all'  -or 
                 ($_.conditions.clientAppTypes -contains 'browser' -and
