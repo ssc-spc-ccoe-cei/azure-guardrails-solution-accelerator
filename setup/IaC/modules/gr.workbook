@@ -2399,7 +2399,7 @@
       "name": "Overall Compliance Status",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary(\"{RunTime}\", 24)",
+        "query": "gr_summary(\"{RunTime}\")",
         "size": 4,
         "title": "Overall Compliance Status",
         "timeContext": {
@@ -2444,7 +2444,7 @@
       "name": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary_by_prefix_alla(\"{RunTime}\", 24, \"\")",
+        "query": "gr_summary_by_prefix_alla(\"{RunTime}\", \"\")",
         "size": 0,
         "title": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
         "timeContext": {
@@ -2494,7 +2494,7 @@
       "name": "Compliance Status by Guardrail (Mandatory Controls)",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary_by_prefix_all(\"{RunTime}\", 24, true)",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", true)",
         "size": 0,
         "title": "Compliance Status by Guardrail (Mandatory Controls)",
         "timeContext": {
@@ -2539,7 +2539,7 @@
       "name": "Compliance Status by Guardrail (Recommended Controls)",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary_by_prefix_all(\"{RunTime}\", 24, false)",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", false)",
         "size": 0,
         "title": "Compliance Status by Guardrail (Recommended Controls)",
         "timeContext": {
