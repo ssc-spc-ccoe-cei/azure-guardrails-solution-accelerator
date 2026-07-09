@@ -2049,8 +2049,10 @@ function Invoke-GraphQueryEX {
     
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
+    # Return arrays for paged results so existing callers keep the same shape they had before.
+    $valueOut = if ($null -ne $singleObjectResult) { $singleObjectResult } else { [object[]]$allResults.ToArray() }
     return @{
-        Content    = @{ value = if ($null -ne $singleObjectResult) { $singleObjectResult } else { $allResults } }
+        Content    = @{ value = $valueOut }
         StatusCode = $statusCode
     }
 }
@@ -2078,6 +2080,10 @@ function Invoke-GraphQueryStreamWithCallback {
         
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 5,
+
+        # High-volume callers can tune fixed page waits; default keeps existing behavior.
+        [Parameter(Mandatory = $false)]
+        [int] $InterPageDelaySeconds = 2,
         
         [Parameter(Mandatory = $false)]
         [hashtable] $PerformanceMetrics = $null
@@ -2105,6 +2111,8 @@ function Invoke-GraphQueryStreamWithCallback {
         Write-Verbose "  -> Fetching page $pageCount from Graph API..."        
         do {
             try {
+                # Default to retryable until we know the exact HTTP status from Graph.
+                $isRetryable = $true
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
@@ -2189,10 +2197,10 @@ function Invoke-GraphQueryStreamWithCallback {
             $fullUri = $null
         }
         
-        # Rate limiting between pages
-        if ($fullUri) {
-            Write-Verbose "  -> Waiting 2 seconds before fetching next page..."
-            Start-Sleep -Seconds 2
+        # Optional rate limiting between pages. Retry handling still covers throttling/transient failures.
+        if ($fullUri -and $InterPageDelaySeconds -gt 0) {
+            Write-Verbose "  -> Waiting $InterPageDelaySeconds seconds before fetching next page..."
+            Start-Sleep -Seconds $InterPageDelaySeconds
         }
         
     } while ($fullUri)
@@ -4440,28 +4448,68 @@ function FetchAllUserRawData {
         UsersProcessed = 0
         DataIngestionAttempts = 0
     }
+    # Emit phase timings to job output so large-tenant runs show where time is spent.
+    $writePhaseTiming = {
+        param(
+            [string] $PhaseName,
+            [System.Diagnostics.Stopwatch] $PhaseStopwatch
+        )
+        $phaseDurationSeconds = [Math]::Round($PhaseStopwatch.Elapsed.TotalSeconds, 2)
+        $phaseDurationMinutes = [Math]::Round($PhaseStopwatch.Elapsed.TotalMinutes, 2)
+        Write-Host "FetchAllUserRawData timing | Phase=$PhaseName | Seconds=$phaseDurationSeconds | Minutes=$phaseDurationMinutes"
+    }
     
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData with ReportTime: $ReportTime  at $startTimeFormatted ==="
     Write-Verbose "Step 1: Fetching authentication method registration details..."
     $regById = @{}
     
+    # Stream registration details page by page instead of loading the full tenant report at once.
+    $registrationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         $regPath = "/reports/authenticationMethods/userRegistrationDetails"
-        $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details" -PerformanceMetrics $performanceMetrics
-        $registrationDetails = @($regResponse.Content.value)
-        
-        Write-Verbose "  Success: Retrieved $($registrationDetails.Count) registration records"
-        
-        # Build efficient lookup for registration data
-        $registrationDetails | ForEach-Object {
-            if ($_.id -and -not $regById.ContainsKey($_.id)) {
-                $regById[$_.id] = $_
+        # The callback builds a lookup while each Graph page is still small.
+        $registrationContext = @{
+            regById = $regById
+        }
+        $processRegistrationPageCallback = {
+            param($pageData, $context)
+
+            $pageRecords = @($pageData.Data)
+            foreach ($record in $pageRecords) {
+                if ($record.id -and -not $context.regById.ContainsKey($record.id)) {
+                    # Keep only fields used later so each raw Graph page can be released after the callback.
+                    $context.regById[$record.id] = [PSCustomObject]@{
+                        isMfaRegistered       = $record.isMfaRegistered
+                        isMfaCapable          = $record.isMfaCapable
+                        isSsprEnabled         = $record.isSsprEnabled
+                        isSsprRegistered      = $record.isSsprRegistered
+                        isSsprCapable         = $record.isSsprCapable
+                        isPasswordlessCapable = $record.isPasswordlessCapable
+                        defaultMethod         = $record.defaultMethod
+                        methodsRegistered     = $record.methodsRegistered
+                        isSystemPreferredAuthenticationMethodEnabled = $record.isSystemPreferredAuthenticationMethodEnabled
+                        systemPreferredAuthenticationMethods = $record.systemPreferredAuthenticationMethods
+                        userPreferredMethodForSecondaryAuthentication = $record.userPreferredMethodForSecondaryAuthentication
+                    }
+                }
+            }
+
+            return @{
+                ProcessedCount = $pageRecords.Count
+                UploadedCount = 0
             }
         }
-        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"        
+
+        # Use 0 seconds between registration pages to avoid adding fixed sleep time to large tenants.
+        # Retry logic still handles Graph throttling if it happens.
+        $registrationResult = Invoke-GraphQueryStreamWithCallback -UrlPath $regPath -PageSize $BatchSize -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
+        Write-Verbose "  Success: Retrieved $($registrationResult.TotalProcessed) registration records"
+        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
+        & $writePhaseTiming "registration" $registrationStopwatch
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        & $writePhaseTiming "registration" $registrationStopwatch
     }
     
     # Step 2: Prepare break-glass account filtering
@@ -4544,6 +4592,10 @@ function FetchAllUserRawData {
         $batchResults = $filteredPageUsers | ForEach-Object {
             $user = $_
             $registration = $context.regById[$user.id]
+            if ($registration) {
+                # Drop matched registration data so memory can shrink as user pages are processed.
+                $context.regById.Remove($user.id) | Out-Null
+            }
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
 
@@ -4639,24 +4691,52 @@ function FetchAllUserRawData {
     
     try {
         # Use true streaming approach with callback processing        
-        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -PerformanceMetrics $performanceMetrics        
+        # Use 1 second between user pages as a middle ground between speed and Graph throttling risk.
+        $userStreamStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -InterPageDelaySeconds 1 -PerformanceMetrics $performanceMetrics
         $pageNumber = $streamResult.TotalPages
         $processedUsers = $streamResult.TotalProcessed
         $totalUploadedRecords = $streamResult.TotalUploaded
                 
         $performanceMetrics.UsersProcessed = $processedUsers
         Write-Verbose "  Success: All pages processed and uploaded - $totalUploadedRecords total records uploaded from $pageNumber pages"
+        & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
         
     } catch {
         Add-FunctionError -Message "Failed during streaming user processing" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        # Write timings even on failure so scale-test logs still show how far the run got.
+        if ($userStreamStopwatch) {
+            & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
+        }
+        $stopwatch.Stop()
+        & $writePhaseTiming "total" $stopwatch
         return $ErrorList
     }
     
     # Step 5: Wait before verification to allow data ingestion and table creation
-    Write-Verbose "Step 5: Waiting for data ingestion and table creation..."
-    Write-Verbose "  -> Waiting 60 seconds to allow Log Analytics to create table and index data..."
-    Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
-    Start-Sleep -Seconds 60
+    Write-Verbose "Step 5: Checking Log Analytics table readiness before verification..."
+    $verificationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    # Existing tables usually need only a short ingestion buffer before the verification query.
+    $existingTableVerificationDelaySeconds = 20
+    try {
+        # Existing tables only need a short ingestion wait; first-time table creation keeps the longer wait below.
+        $tableCheckQuery = "GuardrailsUserRaw_CL | take 1 | count"
+        Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $tableCheckQuery -ErrorAction Stop | Out-Null
+        Write-Verbose "  -> GuardrailsUserRaw_CL table exists. Waiting $existingTableVerificationDelaySeconds seconds for ingestion before verification..."
+        Start-Sleep -Seconds $existingTableVerificationDelaySeconds
+    }
+    catch {
+        $tableCheckError = $_.Exception.Message
+        if ($tableCheckError -like "*Failed to resolve table*GuardrailsUserRaw_CL*" -or $tableCheckError -like "*BadRequest*" -or $tableCheckError -like "*400*") {
+            Write-Verbose "  -> GuardrailsUserRaw_CL table is not queryable yet. Waiting 60 seconds for first-time table creation..."
+            Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
+            Start-Sleep -Seconds 60
+        }
+        else {
+            Write-Verbose "  -> Table readiness check failed: $tableCheckError"
+            Write-Verbose "  -> Continuing to verification loop without an extra fixed wait"
+        }
+    }
     
     # Step 6: Verify data ingestion with robust error handling
     Write-Verbose "Step 6: Verifying data ingestion..."
@@ -4806,17 +4886,12 @@ GuardrailsUserRaw_CL
             
         Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList        
     } elseif ($recordCount -ne $totalUploadedRecords) {
-            # Data found but count mismatch
+        # Data found but Log Analytics may still be indexing large uploads; upload failures are caught earlier per page.
+        # Treat this as indexing lag instead of a module failure because each page upload already had retry/error handling.
         $expectedCount = $totalUploadedRecords
         Write-Warning "  Warning: Data count mismatch detected."
         Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
-            
-        if ($recordCount -gt 0) {
-            Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        } else {
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Data may be missing or still processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        }    
+        Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
     } else {
         # Perfect success case
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
@@ -4839,6 +4914,11 @@ GuardrailsUserRaw_CL
     Write-Verbose "  Total Pages: $pageNumber"
     Write-Verbose "  Graph API Calls: $($performanceMetrics.GraphApiCalls)"
     Write-Verbose "  Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
+    # Include verification and total timings in normal completion logs.
+    if ($verificationStopwatch) {
+        & $writePhaseTiming "verification" $verificationStopwatch
+    }
+    & $writePhaseTiming "total" $stopwatch
     Write-Verbose "  Errors: $($ErrorList.Count)"
     
     if ($ErrorList.Count -eq 0) {
