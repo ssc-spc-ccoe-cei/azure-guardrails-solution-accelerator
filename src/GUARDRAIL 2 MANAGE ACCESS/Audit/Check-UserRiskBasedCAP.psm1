@@ -86,6 +86,13 @@ function Test-CommonFilters {
             $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
             ($_.conditions.applications.includeApplications -contains 'All' -or
             $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
+            (
+                (
+                    $_.grantControls.builtInControls -contains 'mfa' -and
+                    $_.grantControls.builtInControls -contains 'passwordChange'
+                ) -or
+                $_.grantControls.builtInControls -contains 'block'
+            ) -and
             # $acceptedRiskConfiguration -and
             $_.conditions.clientAppTypes -contains 'all' -and
             ($_.conditions.clientAppTypes -contains 'all'  -or 
@@ -93,6 +100,7 @@ function Test-CommonFilters {
                     $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and
                     $_.conditions.clientAppTypes -contains 'exchangeActiveSync' -and
                     $_.conditions.clientAppTypes -contains 'other')) -and
+            $_.conditions.userRiskLevels -contains 'high' -and
             (
                 # IF block → sessionControls must be empty
                 (
