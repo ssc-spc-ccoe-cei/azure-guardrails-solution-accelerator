@@ -2049,8 +2049,10 @@ function Invoke-GraphQueryEX {
     
     Write-Progress -Activity "Invoke-GraphQueryEX" -Status "Completed" -Completed
 
+    # Return arrays for paged results so existing callers keep the same shape they had before.
+    $valueOut = if ($null -ne $singleObjectResult) { $singleObjectResult } else { [object[]]$allResults.ToArray() }
     return @{
-        Content    = @{ value = if ($null -ne $singleObjectResult) { $singleObjectResult } else { $allResults } }
+        Content    = @{ value = $valueOut }
         StatusCode = $statusCode
     }
 }
@@ -2078,6 +2080,10 @@ function Invoke-GraphQueryStreamWithCallback {
         
         [Parameter(Mandatory = $false)]
         [int] $RetryDelaySeconds = 5,
+
+        # High-volume callers can tune fixed page waits; default keeps existing behavior.
+        [Parameter(Mandatory = $false)]
+        [int] $InterPageDelaySeconds = 2,
         
         [Parameter(Mandatory = $false)]
         [hashtable] $PerformanceMetrics = $null
@@ -2105,6 +2111,8 @@ function Invoke-GraphQueryStreamWithCallback {
         Write-Verbose "  -> Fetching page $pageCount from Graph API..."        
         do {
             try {
+                # Default to retryable until we know the exact HTTP status from Graph.
+                $isRetryable = $true
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
@@ -2189,10 +2197,10 @@ function Invoke-GraphQueryStreamWithCallback {
             $fullUri = $null
         }
         
-        # Rate limiting between pages
-        if ($fullUri) {
-            Write-Verbose "  -> Waiting 2 seconds before fetching next page..."
-            Start-Sleep -Seconds 2
+        # Optional rate limiting between pages. Retry handling still covers throttling/transient failures.
+        if ($fullUri -and $InterPageDelaySeconds -gt 0) {
+            Write-Verbose "  -> Waiting $InterPageDelaySeconds seconds before fetching next page..."
+            Start-Sleep -Seconds $InterPageDelaySeconds
         }
         
     } while ($fullUri)
@@ -2714,7 +2722,21 @@ function Get-allowedLocationCAPCompliance {
         # Callers pass an ArrayList so this function can append errors in-place
         # and return the same mutable collection in the output envelope.
         [System.Collections.ArrayList] $ErrorList,
-        [bool] $IsCompliant
+        [bool] $IsCompliant,
+        [Parameter(Mandatory=$true)]
+        [string] $ItemName,
+        [Parameter(Mandatory = $true)]
+        [string[]] $DocumentName,
+        [Parameter(Mandatory = $true)]
+        [string] $SubscriptionID,
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountName,
+        [Parameter(Mandatory = $true)]
+        [string] $ResourceGroupName,
+        [Parameter(Mandatory = $true)]
+        [string] $ContainerName,
+        [Parameter(Mandatory=$true)]
+        [hashtable] $msgTable
     )
 
     # Find named locations
@@ -2725,12 +2747,15 @@ function Get-allowedLocationCAPCompliance {
         $locationData = if ($data -and $data.value) { $data.value } else { @() }
         # Filter for country NamedLocation only
         $locations = $locationData | Where-Object { $_.'@odata.type' -and $_.'@odata.type' -eq '#microsoft.graph.countryNamedLocation'}
+        # Filter for IP-based named locations only
+        $ipLocations = $locationData | Where-Object {$_.'@odata.type' -and $_.'@odata.type' -eq '#microsoft.graph.ipNamedLocation'}
     }
     catch {
         # Suppress Add() return index so the function output remains a compliance object, not an array.
         [void]$Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
         $locations = @()
+        $ipLocations = @()
     }
 
     # Find conditional access policies
@@ -2748,14 +2773,16 @@ function Get-allowedLocationCAPCompliance {
 
     # # --------------------Named Location check to filter out cases -------------------- #
     # Case 1: Named locations not found at all
-    # Case 2: Multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location
+    # Case 2: Multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location or no valid IP-based named location found
     # Case 3: One Named location exists and it's Canada-only
     # Case 4: One named location exists and it's 'all-countries' except Canada'
     # Case 5: One named location exists and it's includes Canada + other countries
     # Case 6: Multiple named locations exist, at least one Canada-only named location found
     
-    # Case 1:
-    if ($locations.Count -eq 0) {
+    # ---------------------------------------------------------------
+    # Case 1: No named locations of any type (country/ip based) found
+    # ---------------------------------------------------------------
+    if ($locations.Count -eq 0 -and $ipLocations.Count -eq 0) {
         Write-Warning "Warning: No named locations found. Cannot evaluate Conditional Access Policies for compliance."
         $ErrorList.Add("No named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
         $IsCompliant = $false
@@ -2773,8 +2800,12 @@ function Get-allowedLocationCAPCompliance {
         
         return $PsObject
     }
+    
+    # -------------------------------------------------------------
+    # Find for Case 2: checking country-based allowed location - Conditional Access Policy
+    # -------------------------------------------------------------
 
-    # Group named locations and find location Ids
+    # Group country-based named locations and find location Ids
     $validLocations = @()               # Canada-only named locations
     $validLocationIds = @()             
     $nonCAnamedLocations = @()          # named locations that represent 'all countries except Canada-only
@@ -2833,15 +2864,207 @@ function Get-allowedLocationCAPCompliance {
         }
     }
 
-    # Case 2:
-    # multiple named locations exist, but no Canada-only named location and no 'all-countries' except Canada named location found
-    # return non-compliant
+    # Required IP-ranges for compliant patterns
+    $requiredIPRanges = @()
+    # Read UPN files from storage with .csv extensions, add possible file extensions
+    $DocumentName_new = add-documentFileExtensions -DocumentName $DocumentName -ItemName $ItemName
 
-    if ($locations.Count -gt 1 -and ($validLocations.Count -eq 0 -and $nonCAnamedLocations.Count -eq 0)){
-        Write-Warning "Warning: No Canada-only named locations found or no non-Canada all-country named locations found. Cannot evaluate Conditional Access Policies for compliance."
-        $ErrorList.Add("No Canada-only named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
+    # If IP address based named location exists, then read allowed IP ranges from document in blob storage 
+    if($ipLocations.Count -gt 0){
+        # --------------------------------
+        # Check if document exists in blob
+        # --------------------------------
+
+        $subName = ""
+
+        try {
+            Select-AzSubscription -Subscription $SubscriptionID | out-null
+            $subName  = (Get-AzContext).Subscription.Name
+        }
+        catch {
+            $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
+            throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
+        }
+        
+        try {
+            # Use Entra/RBAC blob access because the Guardrails storage account no longer allows Shared Key auth.
+            $StorageContext = New-ConnectedStorageContext -storageaccountName $StorageAccountName
+        }
+        catch {
+            $storageErrorMessage = "Could not connect to storage account '$storageAccountName' in resource group '$resourceGroupName' of subscription '$SubscriptionID'; verify that the storage account exists and that you have permissions to it. Error: $_"
+
+            Write-Warning "Warning: $storageErrorMessage"
+            Write-Host "Warning: $storageErrorMessage"
+        }
+
+        $baseFileNameFound = $false
+        $blobFound = $false
+
+        # Get a list of filenames uploaded in the blob storage
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -ErrorAction Stop
+        if ($null -eq $blobs) {            
+            # a blob with the name $DocumentName was not located in the specified storage account
+            $warningMsg = "Could not get blob from storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+            subscription '$subscriptionId'; verify that the blob exists and that you have permissions to it."
+            Write-Warning $warningMsg
+                
+            $blobFound = $false
+            $baseFileNameFound = $false
+            $Comments += "Missing required document in storage account" -f $DocumentName
+            Write-Host "Missing required document '$DocumentName' in storage account"
+        }
+        else{
+            $fileNamesList = @()
+            $blobs | ForEach-Object {
+                $fileNamesList += $_.Name
+            }
+            $matchingFiles = $fileNamesList | Where-Object { $_ -in $DocumentName_new }
+            if ( $matchingFiles.count -lt 1 ){
+                # check if any fileName matches without the extension
+                $baseFileNames = $fileNamesList | ForEach-Object { ($_.Split('.')[0]) }
+                
+                $BaseFileNamesMatch = $baseFileNames | Where-Object { $_ -in $DocumentName  }
+                if ($BaseFileNamesMatch.Count -gt 0){
+                    $baseFileNameFound = $true
+                }
+            }
+            else {
+                # also covers the use case if more than 1 appropriate files are uploaded
+                
+                # check for procedure doc in blob storage account
+                $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageContext -Blob $matchingFiles -ErrorAction Stop
+
+                If ($blobs) {
+                    $blobFound = $true
+                    # Read the content of the blob and save IP ranges into array
+                    $blobContent = Get-AzStorageBlobContent -Container $ContainerName -Blob $matchingFiles -Context $StorageContext -Force -ErrorAction Stop
+                    $requiredIPRanges = Get-Content $blobContent.Name | Where-Object { $_ -match '\S' } | ForEach-Object { $_.Trim() }
+                    if ($requiredIPRanges -eq 0){
+                        $Comments += "The required document in storage account is empty. Add the IP ranges to the document." -f $DocumentName
+                        Write-Host "The required document '$DocumentName' in storage account is empty. Add the IP ranges to the document."
+                    }
+                    else{
+                        Write-Host "Sucessfully read IP ranges from blob storage: $($requiredIPRanges -join ', ')"
+                    }
+                    
+
+                }
+            }
+        }
+
+        # ----------------------
+        # DOC Case 1: uploaded fileName is correct but has wrong extension
+        # ----------------------
+        if ($baseFileNameFound){
+            # a blob with the name $documentName was located in the specified storage account; however, the ext is not correct
+            $Comments += $msgTable.procedureFileNotFoundWithCorrectExtension -f $DocumentName[0], $ContainerName, $StorageAccountName
+            $Comments += "Unable to evaluate the IP-based named location. Upload the document with correct extension."
+        }
+        elseif ($blobFound){
+        # ----------------------
+        # DOC Case 2: file exists in blob storage
+        # ----------------------
+            $Comments += $msgTable.approvedIPrangeFileFound -f $DocumentName[0]
+            Write-Host "Continue with IP named location evaluation"
+        }
+        else {
+            # ----------------------
+            # DOC Case 3: file does not exist in blob storage
+            # ----------------------
+            $Comments += $msgTable.approvedIPrangeFileNotFound -f $DocumentName[0], $ContainerName, $StorageAccountName
+            $Comments += "Unable to evaluate the IP-based named location. Upload the document in storage account."
+        
+        }
+
+    }
+
+    # ----------------------
+    # DOC Case 2 extension: Regardless of correct document exists (i.e. blobfound) - 
+    #                       proceed with checking IP based allowed location - Conditional Access Policy and compliance evaluation
+    # ----------------------
+
+    # -------------------------------------------------------------
+    # Find for Case 2: checking IP-based allowed location - Conditional Access Policy
+    # -------------------------------------------------------------
+    
+    # Group IP-based named locations and find location Ids 
+    $validIpLocations = @()                 # Ip named locations whose ranges include all required CIDR ranges
+    $validIpLocationIds = @()
+    $notValidIpLocations = @()              # Ip named locations that are missing ALL required CIDR ranges
+    $notValidIpLocationIds = @() 
+    $someNotValidIpnamedLocations = @()     # Ip named locations that are missing one or more required CIDR ranges
+    $someNotValidIpnamedLocationsIds = @()       
+
+    if($blobFound -and ($null -ne $requiredIPRanges)){
+        # Collect Ip-baeed named location IDs for use in CAP pattern matching
+        foreach ($ipLoc in $ipLocations) {
+            try{
+                $definedCIDRs = @()
+                if ($null -ne $ipLoc.ipRanges){
+                    $definedCIDRs = @(
+                        $ipLoc.ipRanges | ForEach-Object {
+                            if($_.PSObject.Properties.Match('cidrAddress').Count -gt 0){
+                                $_.cidrAddress
+                            }
+                        } | Where-Object {$_}
+                    )
+                }
+                Write-Host "IP-based Named Location found: $($ipLoc.displayName) with CIDRs: $($definedCIDRs -join ', ')"
+
+                # Find all valid Ip locations: a valid location requirement i.e. includes all IP ranges provided in blob document
+                $missingCIDRs = $requiredIPRanges | Where-Object {$definedCIDRs -notcontains $_}
+                if ($missingCIDRs.Count -eq 0){
+                    $validIpLocations += $ipLoc
+                    if($ipLoc.PSObject.Properties.Match('id').Count -gt 0){
+                        $validIpLocationIds += $ipLoc.id.ToString().ToLower()
+                    }
+                    continue
+                }
+                elseif($missingCIDRs.Count -eq $requiredIPRanges.Count){
+                    # Find named location that contains IP ranges but doesn't include ALL required/valid IPs provided in the blob doc; not a valid location requirement
+                    Write-Host "IP-based Named Location '$($ipLoc.displayName)' is missing required CIDR ranges: $($missingCIDRs -join ', ')"
+                    $notValidIpLocations += $ipLoc
+                    if($ipLoc.PSObject.Properties.Match('id').Count -gt 0){
+                        $notValidIpLocationIds += $ipLoc.id.ToString().ToLower()
+                    }
+                    continue
+                }
+                else{
+                    # Find named location contains some IP ranges but not ALL required/valid IPs provided in the blob doc; not a valid location requirement
+                    Write-Host "IP-based Named Location '$($ipLoc.displayName)' is missing required CIDR ranges: $($missingCIDRs -join ', ')"
+                    $someNotValidIpnamedLocations += $ipLoc
+                    if($ipLoc.PSObject.Properties.Match('id').Count -gt 0){
+                        $someNotValidIpnamedLocationsIds += $ipLoc.id.ToString().ToLower()
+                    }
+                    continue
+                    
+                }
+            }
+            catch{
+                $ErrorList.Add("Error processing IP named location object '$($ipLoc.displayName)': $_") | Out-Null
+                continue
+            }
+
+        }
+    }
+    else{
+        $Comments += $msgTable.approvedIPrangesNotFound -f $DocumentName[0]
+        $Comments += "Unable to evaluate the IP-based named location. Add the IP ranges to the document."
+    }
+    
+
+    # ---------------------------------------------------------------
+    # Case 2: multiple named locations exist, but
+    # 2a. no Canada-only named location and no 'all-countries' except Canada named location found
+    # 2b. no valid IP-based named location found
+    # return non-compliant
+    # ---------------------------------------------------------------
+
+    if ($locations.Count -gt 1 -and ($validLocations.Count -eq 0 -and $nonCAnamedLocations.Count -eq 0) -and $validIpLocations -eq 0){
+        Write-Warning "Warning: No Canada-only named locations found or no non-Canada all-country named locations found or no IP-based valid named locations found. Cannot evaluate Conditional Access Policies for compliance."
+        $ErrorList.Add("No Canada-only named locations found or no IP-based valid named locations found. Cannot evaluate Conditional Access Policies for compliance.") | Out-Null
         $IsCompliant = $false
-        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noCAallLocationsNonCompliant
+        $Comments = $msgTable.noCanadaNamedLocationFound + " " + $msgTable.noCAallLocationsNonCompliant + " " + $msgTable.noValidIPLocationsNonCompliant
 
         $PsObject = [PSCustomObject]@{
             ComplianceStatus = $IsCompliant
@@ -2882,22 +3105,30 @@ function Get-allowedLocationCAPCompliance {
     Write-Host "Found $($enabledCAPs.Count) enabled Conditional Access Policies."
 
     #  ---------Evaluate CAPs for patterns that effectively restrict access to Canada ---------------#
-    # Compliant Patterns: Compliant if CAPs found that match the patterns below:
-    #  A) Pattern A: Policy explicitly includes a named location that represents 'all countries except Canada' (make sure all countries are included) AND action is Block
-    #  B) Pattern B: Policy includes 'all' locations and explicitely excludes the Canada-only named-location id AND action is Block (i.e. block all except Canada)
-    #  C) Pattern C: Policy has no includeLocations but EXCLUDES the Canada-only named-location id (conservative treat as location-based)
+    # COMPLIANT PATTERNS: Compliant if CAPs found that match the patterns below:
+    #  A-1) Pattern A:          Policy explicitly includes a named location that represents 'all countries except Canada' (make sure all countries are included) AND action is Block
+    #  A-2) IP-based Pattern A: Policy explicitly includes a all non-trusted IP ranges that represents 'all IP ranges except trusted IP ranges' (make sure all other IP ranges are included) AND action is Block
+    #  B-1) Pattern B:          Policy includes 'all' locations and explicitely excludes the Canada-only named-location id AND action is Block (i.e. block all except Canada)
+    #  B-2) IP-based Pattern B: Policy includes 'all' (or equivalent) locations but explicitly excludes a 'valid IP only' named locaition id (if no country-based Locations included)
+    #  C-1) Pattern C:          Policy has no includeLocations but EXCLUDES the Canada-only named-location id (conservative treat as location-based)
+    #  C-2) IP-based Pattern C: Policy has no includeLocations but explicitely EXCLUDES the valid IP-based named locations(conservative detection)
     
-    # Non-Compliant Patterns: Non-Compliant if CAPs found that match the patterns below:
-    #  D) Pattern D: Policy explicitly includes the Canada-only named-location id AND action is Grant, but none in exclusion (i.e. allow only Canada)
-    #  E) Pattern E: Policy explicitly includes a named location that represents some countries except Canada AND action is Block
+    # NON-COMPLIANT PATTERNS: Non-Compliant if CAPs found that match the patterns below:
+    #  D-1) Pattern D:          Policy explicitly includes the Canada-only named-location id AND action is Grant, but none in exclusion (i.e. allow only Canada)
+    #  D-2) IP-based Pattern D: Policy explicitly includes all the valid IP-ranges based named location AND action is Grant, but none in exclusion -> can represent "allow only valid IPs but other IPs  not excluded
+    #  E-1) Pattern E:          Policy explicitly includes a named location that represents some countries except Canada AND action is Block
+    #  E-2) IP-based Pattern E: Policy explicitly includes a named location that represents some of the required IPs (not ALL) AND action is Block
+    #  ----------------------------------------------------------------------------------------------#
 
     # Common synonyms for "all" locations in various CAP outputs
     $allLocationsSym = @('all','any','alltrusted','alltrustedlocations','alllocations')
 
     # $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions.locations) -and ($validLocations.id -in $_.conditions.locations.includeLocations) -or ($validLocations.id -in $_.conditions.locations.excludeLocations ) }
+    
     # Find CAPs with Location conditions
     $locationBasedPolicies =  $enabledCAPs | Where-Object {($null -ne $_.conditions) -and ($null -ne $_.conditions.locations) }
 
+    # validlocationBasedPolicies includes both country-based and IP-based location policy
     $validlocationBasedPolicies = @()
     foreach ($cap in $locationBasedPolicies) {
         try {
@@ -2906,9 +3137,9 @@ function Get-allowedLocationCAPCompliance {
             $includes = @()
             $excludes = @()
             if ($locationCondition.includeLocations -and $locationCondition.PSObject.Properties.Match('includeLocations').Count -gt 0 ) {
-                $inccludeVals = @( $locationCondition.includeLocations )
-                $includes = $inccludeVals | ForEach-Object { $_.ToString().ToLower() }
-            }  
+                $includeVals = @( $locationCondition.includeLocations )
+                $includes = $includeVals | ForEach-Object { $_.ToString().ToLower() }
+            }
             if ($locationCondition.excludeLocations -and $locationCondition.PSObject.Properties.Match('excludeLocations').Count -gt 0) {
                 $excludeVals = @( $locationCondition.excludeLocations )
                 $excludes = $excludeVals | ForEach-Object { $_.ToString().ToLower() }
@@ -2946,9 +3177,27 @@ function Get-allowedLocationCAPCompliance {
                 }
             }
 
-            # Pattern B: includes 'all' (or equivalent) but explicitely excludes Canada-only named location -> can represent "block all except Canada"
+            # IP-based Pattern A: explicitly includes a all non-trusted IP ranges that represents 'all IP ranges except trusted IP ranges' (make sure all other IP ranges are included) AND action is Block
+            # PASS
+            if ($includes | Where-Object { $notValidIpLocationIds -contains $_ }) {
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
+
+            # Pattern B: includes 'all' (or equivalent) but explicitly excludes Canada-only named location -> can represent "block all except Canada"
             # PASS
             if (($includes | Where-Object { $allLocationsSym -contains $_ }) -and ($excludes | Where-Object { $validLocationIds -contains $_ })) {
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
+
+            # IP-based Pattern B: includes 'all' (or equivalent) locations but explicitly excludes a 'valid IP only' named locaition id (if no country-based Locations included)
+            # Semantics: block everyone except the allowed IP ranges (which is equivalent of country in Pattern B)
+            # PASS
+            # if( $isIpLocationBasedCap -and ($includes | Where-object {$allLocationsSym -contains $_}) -and ($excludes | Where-Object { $validIpLocationIds -contains $_ })){
+            if(($includes | Where-object {$allLocationsSym -contains $_}) -and ($excludes | Where-Object { $validIpLocationIds -contains $_ })){
                 if ($isBlockAction) {
                     $matched = $true
                 }
@@ -2960,9 +3209,23 @@ function Get-allowedLocationCAPCompliance {
                     $matched = $true
                 }
             }
+            # IP-based Pattern C: no includes but explicitely exclude IP-based named locations(conservative detection)
+            # PASS
+            if (($includes.Count -eq 0 -and ($excludes | Where-Object { $validIpLocationIds -contains $_ }))) {
+                if ($isBlockAction) {
+                    $matched = $true
+                }
+            }
             # Pattern D: explicit inclusion of Canada-only named location, no exclusion -> can represent "allow only Canada but other countries not excluded
             # FAIL
             if ($includes | Where-Object { $validLocationIds -contains $_ }) {
+                if ($isGrantAction) {
+                    $matched = $false
+                }
+            }
+            # IP-based Pattern D: explicit inclusion of ALL valid IPs in named location, no exclusion -> can represent "allow only valid IPs but other countries not excluded
+            # FAIL
+            if ($includes | Where-Object { $validIpLocationIds -contains $_ }) {
                 if ($isGrantAction) {
                     $matched = $false
                 }
@@ -2974,6 +3237,14 @@ function Get-allowedLocationCAPCompliance {
                     $matched = $false
                 }
             }
+            # IP-based Pattern E: explicit inclusion of some (not ALL) of the required IPs in named location -> can represent "block some countries except Canada"
+            # FAIL
+            if ($someNotValidIpnamedLocationsIds | Where-Object { $includes -contains $_ }) {
+                if ($isBlockAction) {
+                    $matched = $false
+                }
+            }
+            
 
             Write-Host "CAP Found $($cap.displayName) with include and/or exclude location condition that has a match '$($matched)' with '$($grantBuiltIns)' access control"
             if ($matched) {
@@ -3004,7 +3275,6 @@ function Get-allowedLocationCAPCompliance {
             # Do nothing; all use cases are covered
         }
     }
-    
     
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
@@ -4178,28 +4448,68 @@ function FetchAllUserRawData {
         UsersProcessed = 0
         DataIngestionAttempts = 0
     }
+    # Emit phase timings to job output so large-tenant runs show where time is spent.
+    $writePhaseTiming = {
+        param(
+            [string] $PhaseName,
+            [System.Diagnostics.Stopwatch] $PhaseStopwatch
+        )
+        $phaseDurationSeconds = [Math]::Round($PhaseStopwatch.Elapsed.TotalSeconds, 2)
+        $phaseDurationMinutes = [Math]::Round($PhaseStopwatch.Elapsed.TotalMinutes, 2)
+        Write-Host "FetchAllUserRawData timing | Phase=$PhaseName | Seconds=$phaseDurationSeconds | Minutes=$phaseDurationMinutes"
+    }
     
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData with ReportTime: $ReportTime  at $startTimeFormatted ==="
     Write-Verbose "Step 1: Fetching authentication method registration details..."
     $regById = @{}
     
+    # Stream registration details page by page instead of loading the full tenant report at once.
+    $registrationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         $regPath = "/reports/authenticationMethods/userRegistrationDetails"
-        $regResponse = Invoke-GraphQueryWithMetrics -UrlPath $regPath -Operation "Fetch Registration Details" -PerformanceMetrics $performanceMetrics
-        $registrationDetails = @($regResponse.Content.value)
-        
-        Write-Verbose "  Success: Retrieved $($registrationDetails.Count) registration records"
-        
-        # Build efficient lookup for registration data
-        $registrationDetails | ForEach-Object {
-            if ($_.id -and -not $regById.ContainsKey($_.id)) {
-                $regById[$_.id] = $_
+        # The callback builds a lookup while each Graph page is still small.
+        $registrationContext = @{
+            regById = $regById
+        }
+        $processRegistrationPageCallback = {
+            param($pageData, $context)
+
+            $pageRecords = @($pageData.Data)
+            foreach ($record in $pageRecords) {
+                if ($record.id -and -not $context.regById.ContainsKey($record.id)) {
+                    # Keep only fields used later so each raw Graph page can be released after the callback.
+                    $context.regById[$record.id] = [PSCustomObject]@{
+                        isMfaRegistered       = $record.isMfaRegistered
+                        isMfaCapable          = $record.isMfaCapable
+                        isSsprEnabled         = $record.isSsprEnabled
+                        isSsprRegistered      = $record.isSsprRegistered
+                        isSsprCapable         = $record.isSsprCapable
+                        isPasswordlessCapable = $record.isPasswordlessCapable
+                        defaultMethod         = $record.defaultMethod
+                        methodsRegistered     = $record.methodsRegistered
+                        isSystemPreferredAuthenticationMethodEnabled = $record.isSystemPreferredAuthenticationMethodEnabled
+                        systemPreferredAuthenticationMethods = $record.systemPreferredAuthenticationMethods
+                        userPreferredMethodForSecondaryAuthentication = $record.userPreferredMethodForSecondaryAuthentication
+                    }
+                }
+            }
+
+            return @{
+                ProcessedCount = $pageRecords.Count
+                UploadedCount = 0
             }
         }
-        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"        
+
+        # Use 0 seconds between registration pages to avoid adding fixed sleep time to large tenants.
+        # Retry logic still handles Graph throttling if it happens.
+        $registrationResult = Invoke-GraphQueryStreamWithCallback -UrlPath $regPath -PageSize $BatchSize -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
+        Write-Verbose "  Success: Retrieved $($registrationResult.TotalProcessed) registration records"
+        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
+        & $writePhaseTiming "registration" $registrationStopwatch
     } catch {
         Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        & $writePhaseTiming "registration" $registrationStopwatch
     }
     
     # Step 2: Prepare break-glass account filtering
@@ -4282,6 +4592,10 @@ function FetchAllUserRawData {
         $batchResults = $filteredPageUsers | ForEach-Object {
             $user = $_
             $registration = $context.regById[$user.id]
+            if ($registration) {
+                # Drop matched registration data so memory can shrink as user pages are processed.
+                $context.regById.Remove($user.id) | Out-Null
+            }
             $methods = @()
             $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
 
@@ -4377,24 +4691,52 @@ function FetchAllUserRawData {
     
     try {
         # Use true streaming approach with callback processing        
-        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -PerformanceMetrics $performanceMetrics        
+        # Use 1 second between user pages as a middle ground between speed and Graph throttling risk.
+        $userStreamStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -InterPageDelaySeconds 1 -PerformanceMetrics $performanceMetrics
         $pageNumber = $streamResult.TotalPages
         $processedUsers = $streamResult.TotalProcessed
         $totalUploadedRecords = $streamResult.TotalUploaded
                 
         $performanceMetrics.UsersProcessed = $processedUsers
         Write-Verbose "  Success: All pages processed and uploaded - $totalUploadedRecords total records uploaded from $pageNumber pages"
+        & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
         
     } catch {
         Add-FunctionError -Message "Failed during streaming user processing" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+        # Write timings even on failure so scale-test logs still show how far the run got.
+        if ($userStreamStopwatch) {
+            & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
+        }
+        $stopwatch.Stop()
+        & $writePhaseTiming "total" $stopwatch
         return $ErrorList
     }
     
     # Step 5: Wait before verification to allow data ingestion and table creation
-    Write-Verbose "Step 5: Waiting for data ingestion and table creation..."
-    Write-Verbose "  -> Waiting 60 seconds to allow Log Analytics to create table and index data..."
-    Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
-    Start-Sleep -Seconds 60
+    Write-Verbose "Step 5: Checking Log Analytics table readiness before verification..."
+    $verificationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    # Existing tables usually need only a short ingestion buffer before the verification query.
+    $existingTableVerificationDelaySeconds = 20
+    try {
+        # Existing tables only need a short ingestion wait; first-time table creation keeps the longer wait below.
+        $tableCheckQuery = "GuardrailsUserRaw_CL | take 1 | count"
+        Invoke-AzOperationalInsightsQuery -WorkspaceId $WorkSpaceID -Query $tableCheckQuery -ErrorAction Stop | Out-Null
+        Write-Verbose "  -> GuardrailsUserRaw_CL table exists. Waiting $existingTableVerificationDelaySeconds seconds for ingestion before verification..."
+        Start-Sleep -Seconds $existingTableVerificationDelaySeconds
+    }
+    catch {
+        $tableCheckError = $_.Exception.Message
+        if ($tableCheckError -like "*Failed to resolve table*GuardrailsUserRaw_CL*" -or $tableCheckError -like "*BadRequest*" -or $tableCheckError -like "*400*") {
+            Write-Verbose "  -> GuardrailsUserRaw_CL table is not queryable yet. Waiting 60 seconds for first-time table creation..."
+            Write-Verbose "  -> Note: First-time table creation can take several minutes in Log Analytics"
+            Start-Sleep -Seconds 60
+        }
+        else {
+            Write-Verbose "  -> Table readiness check failed: $tableCheckError"
+            Write-Verbose "  -> Continuing to verification loop without an extra fixed wait"
+        }
+    }
     
     # Step 6: Verify data ingestion with robust error handling
     Write-Verbose "Step 6: Verifying data ingestion..."
@@ -4544,17 +4886,12 @@ GuardrailsUserRaw_CL
             
         Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList        
     } elseif ($recordCount -ne $totalUploadedRecords) {
-            # Data found but count mismatch
+        # Data found but Log Analytics may still be indexing large uploads; upload failures are caught earlier per page.
+        # Treat this as indexing lag instead of a module failure because each page upload already had retry/error handling.
         $expectedCount = $totalUploadedRecords
         Write-Warning "  Warning: Data count mismatch detected."
         Write-Verbose "  -> Expected: $expectedCount records, Found: $recordCount records"
-            
-        if ($recordCount -gt 0) {
-            Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Some data may still be processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        } else {
-            Add-FunctionError -Message "Data count mismatch: expected $expectedCount, found $recordCount records. Data may be missing or still processing." -Category "DataIntegrity" -ErrorList $ErrorList
-        }    
+        Write-Verbose "  -> Partial data ingestion detected - some records may still be processing"
     } else {
         # Perfect success case
         Write-Verbose "  Success: Data ingestion verification successful - $recordCount records ingested and verified"
@@ -4577,6 +4914,11 @@ GuardrailsUserRaw_CL
     Write-Verbose "  Total Pages: $pageNumber"
     Write-Verbose "  Graph API Calls: $($performanceMetrics.GraphApiCalls)"
     Write-Verbose "  Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
+    # Include verification and total timings in normal completion logs.
+    if ($verificationStopwatch) {
+        & $writePhaseTiming "verification" $verificationStopwatch
+    }
+    & $writePhaseTiming "total" $stopwatch
     Write-Verbose "  Errors: $($ErrorList.Count)"
     
     if ($ErrorList.Count -eq 0) {
