@@ -54,6 +54,62 @@ function Remove-GSATemporaryDeployerBlobAccess {
     }
 }
 
+function Export-GSAConfigToKeyVault {
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]
+        $config,
+
+        [Parameter(Mandatory = $true)]
+        [bool]
+        $useVerbose
+    )
+
+    Write-Host "Exporting configuration to GSA KeyVault "
+    Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
+
+    # Windows and Linux/Cloud Shell use different environment variables for the local username.
+    $deployerLocalUsername = if ($env:USERNAME) {
+        $env:USERNAME
+    }
+    elseif ($env:USER) {
+        $env:USER
+    }
+    else {
+        [Environment]::UserName
+    }
+
+    $templateParams = @{
+        keyVaultName          = $config['runtime']['keyVaultName']
+        configValue           = ConvertTo-Json $config -Depth 10
+        deploymentTimestamp   = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
+        deployerLocalUsername = $deployerLocalUsername
+        deployerAzureId       = $config['runtime']['userId']
+    }
+
+    try {
+        # Use ARM deployment so Cloud Shell does not need a separate Key Vault data-plane token.
+        $deployment = New-AzResourceGroupDeployment `
+            -ResourceGroupName $config['runtime']['resourceGroup'] `
+            -Name "guardrails-config-export-$(Get-Date -Format 'yyyyMMddHHmmss')" `
+            -TemplateFile "$PSScriptRoot/../../../../setup/IaC/exportedconfig.bicep" `
+            -TemplateParameterObject $templateParams `
+            -WarningAction SilentlyContinue `
+            -ErrorAction Stop `
+            -Verbose:$useVerbose
+
+        if ($deployment.ProvisioningState -ne 'Succeeded') {
+            throw "ARM deployment finished with provisioning state '$($deployment.ProvisioningState)'."
+        }
+
+        Write-Host "Successfully exported gsaConfigExportLatest to Key Vault '$($config['runtime']['keyVaultName'])'" -ForegroundColor Green
+    }
+    catch {
+        $recoveryMessage = "Run Connect-AzAccount -Tenant '$($config['runtime']['tenantId'])' -Subscription '$($config['runtime']['subscriptionId'])' -Scope Process, then retry without deleting existing resources; use -update when recovering an existing core deployment. If Cloud Shell or device-code sign-in is blocked by Conditional Access or location policy, run from an approved local PowerShell session or use service principal authentication with ARM deployment access to the Guardrails resource group."
+        throw "Failed to export gsaConfigExportLatest to Key Vault '$($config['runtime']['keyVaultName'])' through Azure Resource Manager. $recoveryMessage Last error: $($_.Exception.Message)"
+    }
+}
+
 Function New-GSACoreResourceDeploymentParamObject {
     param (
         # config object
@@ -369,6 +425,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         If (!$update.IsPresent) {
             Write-Host "Deploying Guardrails Solution Accelerator components ($($newComponents -join ','))..." -ForegroundColor Green
             Write-Verbose "Performing a new deployment of the Guardrails Solution Accelerator..."
+            $configExported = $false
 
             # confirms that prerequisites are met and that deployment can proceed
             Confirm-GSAPrerequisites -config $config -newComponents $newComponents -Verbose:$useVerbose
@@ -379,12 +436,16 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     Write-Host "Deploying CoreComponents..." -ForegroundColor Green
                     Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
 
-                    # Upload modules.json and add the runbooks after the core resources are ready.
+                    # Store the config as soon as the core resources and final runtime values are ready.
+                    Export-GSAConfigToKeyVault -config $config -useVerbose $useVerbose
+                    $configExported = $true
+
+                    # Upload modules.json and add the runbooks only after their required config exists.
                     Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
                     Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
                 }
                 catch {
-                    Write-Error "Error while deploying core components and automation runbooks. $_"
+                    throw "Error while deploying core components, exporting config, or adding automation runbooks. $_"
                 }
                 finally {
                     # Always try to drop the deployer's temporary blob role once this block no longer needs it.
@@ -420,6 +481,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         Else {
             Write-Host "Updating Guardrails Solution Accelerator components ($($componentsToUpdate -join ','))..." -ForegroundColor Green
             Write-Verbose "Updating an existing deployment of the Guardrails Solution Accelerator..."
+            $configExported = $false
         
             # skip deployment of LAW and KV as they should exist already
             $paramObject.deployKV = $false
@@ -491,7 +553,12 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "Completed update deployment."
         }
 
-        # after successful deployment or update
+        if (-not $configExported) {
+            Export-GSAConfigToKeyVault -config $config -useVerbose $useVerbose
+            $configExported = $true
+        }
+
+        # after successful config export
         Write-Host "Invoking manual execution of Azure Automation runbooks..."
         try{
             Invoke-GSARunbooks -config $config -Verbose:$useVerbose
@@ -500,69 +567,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Error "Error in invoking Azure automation runbook. $_"
         }
 
-        Write-Host "Exporting configuration to GSA KeyVault "
-        Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
-        $configSecretName = 'gsaConfigExportLatest'
-        $secretTags = @{
-            'deploymentTimestamp'   = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')
-            'deployerLocalUsername' = $env:USERNAME
-            'deployerAzureID'       = $config['runtime']['userId']
-        }
-
-        # Enhanced error handling for Key Vault secret upload with retry logic
-        $maxRetries = 3
-        $retryDelay = 10  # seconds
-        $secretUploadSuccess = $false
-
-        for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
-            try {
-                Write-Verbose "Attempt $attempt of $maxRetries : Uploading gsaConfigExportLatest secret to Key Vault..."
-                
-                # Add delay for role assignment propagation on first attempt
-                if ($attempt -eq 1) {
-                    Write-Verbose "Waiting $retryDelay seconds for Key Vault role assignments to propagate..."
-                    Start-Sleep -Seconds $retryDelay
-                }
-
-                $secureConfig = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
-                $encryptedConfig = $secureConfig | ConvertFrom-SecureString
-                $secureConfig.Dispose()
-                
-                $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue ($encryptedConfig | ConvertTo-SecureString) -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose -ErrorAction Stop
-                
-                # Verify the secret was actually created
-                $verifySecret = Get-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -ErrorAction Stop
-                if ($verifySecret) {
-                    Write-Host "Successfully uploaded gsaConfigExportLatest secret to Key Vault '$($config['runtime']['keyVaultName'])'" -ForegroundColor Green
-                    $secretUploadSuccess = $true
-                    break
-                } else {
-                    throw "Secret verification failed - secret was not found after upload"
-                }
-            }
-            catch {
-                $errorMessage = $_.Exception.Message
-                Write-Warning "Attempt $attempt of $maxRetries failed to upload gsaConfigExportLatest secret: $errorMessage"
-                
-                if ($attempt -lt $maxRetries) {
-                    $nextDelay = $retryDelay * $attempt  # Exponential backoff
-                    Write-Verbose "Retrying in $nextDelay seconds..."
-                    Start-Sleep -Seconds $nextDelay
-                } else {
-                    Write-Error "Failed to upload gsaConfigExportLatest secret after $maxRetries attempts. This will cause compliance data collection to fail."
-                    Write-Error "Last error: $errorMessage"
-                    Write-Error "Please check Key Vault permissions and network access settings."
-                    throw "Critical: Failed to upload gsaConfigExportLatest secret to Key Vault '$($config['runtime']['keyVaultName'])' after $maxRetries attempts. Error: $errorMessage"
-                }
-            }
-        }
-
-        if ($secretUploadSuccess) {
-            Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
-        } else {
-            Write-Error "Deployment completed with errors - gsaConfigExportLatest secret upload failed. Compliance data collection will not work."
-            throw "Deployment failed - gsaConfigExportLatest secret upload unsuccessful"
-        }
+        Write-Host "Completed deployment of the Guardrails Solution Accelerator!" -ForegroundColor Green
     }
 }
 
