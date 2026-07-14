@@ -123,9 +123,9 @@ userInGroup = Pas d'utilisateurs sans groupes
 
 riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'risques
 locationBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'emplacement
-nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur.
+nonCompliantC1= Configurez l'une des stratégies d'accès conditionnel requises afin d'imposer un changement de mot de passe ou de bloquer les connexions en fonction du risque lié à l’utilisateur ou du risque de connexion. Consultez le guide de remédiation pour déterminer quelle stratégie est suffisante pour votre organisation.
 nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir d'emplacements nommés non approuvés.
-compliantC1 = La politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur a été configurée.
+compliantC1 =  L'une des stratégies d'accès conditionnel requises a été configurée et satisfait aux exigences de ce contrôle.
 compliantC2 = La politique d'accès conditionnel visant à empêcher les connexions à partir d'emplacements nommés non approuvés a été configurée.
 
 # nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
