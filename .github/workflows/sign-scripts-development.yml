@@ -88,7 +88,7 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: ./psmodules/*.zip
   deploy:
-    name: Deploy CAC to a tenant
+    name: Deploy CAC to Test tenant
     needs: sign_and_publish_scripts
     runs-on: ubuntu-latest
     environment: test
@@ -128,6 +128,7 @@ jobs:
           SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Pre-Clean Test environment
+        if: ${{ vars.TEST_UPGRADE_VAR != 'true'}}
         uses: ./.github/actions/pre-clean-guardrails-ci
         with:
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
@@ -174,7 +175,16 @@ jobs:
               $LIGHTHOUSEPROVIDER_TENANTID = $env:LIGHTHOUSEPROVIDER_TENANTID
               $LIGHTHOUSEPROVIDER_PRINCIPALID = $env:LIGHTHOUSEPROVIDER_PRINCIPALID
               $LIGHTHOUSEPROVIDER_MGMTGRPID = $env:LIGHTHOUSEPROVIDER_MGMTGRPID
-              $UNIQUENAME_SUFFIX = $env:CI_UNIQUENAME_SUFFIX
+              if ($env:DEV_UPGRADE_VAR -eq "true") {
+                $UNIQUENAME_SUFFIX = $env:UNIQUENAME_SUFFIX
+              }
+              else {
+                $UNIQUENAME_SUFFIX = $env:CI_UNIQUENAME_SUFFIX
+              }
+                if ([string]::IsNullOrWhiteSpace($UNIQUENAME_SUFFIX)) {
+              throw "Unique name suffix is not set for this deployment."
+              }
+              "CI_UNIQUENAME_SUFFIX=$UNIQUENAME_SUFFIX" | Out-File -FilePath $env:GITHUB_ENV -Append
               $TESTTENANT_BGA1 = $env:TESTTENANT_BGA1
               $TESTTENANT_BGA2 = $env:TESTTENANT_BGA2
               $PBMMPOLICY_ID = $env:PBMMPOLICY_ID
@@ -185,6 +195,7 @@ jobs:
               $ENABLE_MULTICLOUD_PROFILES = $env:ENABLE_MULTICLOUD_PROFILES
               $TEST_CLOUDUSAGEPROFILES = $env:TEST_CLOUDUSAGEPROFILES
               $TESTTENANT_SPN_APPID = $env:TESTTENANT_SPN_APPID
+              $TEST_UPGRADE_VAR = $env:TEST_UPGRADE_VAR
               $TESTTENANT_ID = $env:TESTTENANT_ID
               $configContent = @"
               {
@@ -251,7 +262,16 @@ jobs:
               try {
                   $ErrorActionPreference = 'Stop'
                   ipmo ./src/GuardrailsSolutionAcceleratorSetup
-                  Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerReportingSupport -Yes @optionalParams
+                  if ($TEST_UPGRADE_VAR -eq "true"){
+                    Write-Output "Upgrade workflow flag is set to '$TEST_UPGRADE_VAR'"
+                    Write-Output "Upgrading the CaC solution"
+                    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -update -Yes @optionalParams
+                  }
+                  else {
+                    Write-Output "Upgrade workflow flag is set to '$TEST_UPGRADE_VAR'"
+                    Write-Output "Deploying a new installation of the CaC solution"
+                    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerReportingSupport -Yes @optionalParams
+                  }
               }
               catch {
                   throw "Failed test deploy of solution with error: $_"
@@ -280,6 +300,7 @@ jobs:
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
           TEST_CLOUDUSAGEPROFILES: ${{ vars.TEST_CLOUDUSAGEPROFILES}}
+          TEST_UPGRADE_VAR: ${{ vars.TEST_UPGRADE_VAR}}
           TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
       - name: Check AA Jobs Started
         uses: ./.github/actions/check-guardrails-aa-jobs
