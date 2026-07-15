@@ -755,9 +755,22 @@ function Check-UpdateAvailable {
         [string]
         $ResourceGroupName
     )
-    #fetches current public version (from repo...maybe should download the zip...)
-    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-    $tagsFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
+    # /releases/latest skips pre-releases, so if the newest published release is a beta
+    # it won't show up there. Grab the full list and pick the highest version ourselves.
+    # created_at breaks ties (e.g. v4.0.0 stable wins over v4.0.0beta).
+    $allReleases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
+    $latestRelease = $allReleases |
+        Sort-Object @(
+            @{ Expression = {
+                try   { [version]::Parse(($_.tag_name -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]*$', '$1')) }
+                catch { [version]'0.0.0' }
+            }; Descending = $true },
+            @{ Expression = { $_.created_at }; Descending = $true }
+        ) |
+        Select-Object -First 1
+
+    # .name is the release title, not the git tag — use .tag_name for the raw file URL.
+    $tagsFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/tags.json" -f $latestRelease.tag_name
     $tags = Invoke-RestMethod $tagsFileURI -Verbose:$false
 
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
@@ -802,7 +815,6 @@ function Check-UpdateAvailable {
 
     Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
 }
-
 function get-itsgdata {
     [CmdletBinding()]
     param (
