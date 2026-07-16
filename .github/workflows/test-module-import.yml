@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Test Module Imports
-      shell: powershell
+      shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
 

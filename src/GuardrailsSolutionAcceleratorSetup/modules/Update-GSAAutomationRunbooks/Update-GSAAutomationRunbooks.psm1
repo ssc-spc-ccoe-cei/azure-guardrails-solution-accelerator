@@ -11,6 +11,10 @@
 
 #>
 
+# Import-AzAutomationRunbook cannot preserve a named Runtime Environment link. This helper republishes each
+# runbook through the Runtime Environment API and verifies that it remains on Guardrails PowerShell 7.6.
+Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'Manage-GSAAutomationRuntime/Manage-GSAAutomationRuntime.psd1') -ErrorAction Stop
+
 Function Update-GSAAutomationRunbooks {
     param (
         # config
@@ -29,22 +33,24 @@ Function Update-GSAAutomationRunbooks {
     $currentMainRunbook = Get-AzAutomationRunbook -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['automationAccountName'] -Name $mainRunbookName
     $currentBackendRunbook = Get-AzAutomationRunbook -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['automationAccountName'] -Name $backendRunbookName
 
-    # define runbook import parameters
-    $updateRunbookParams = @{
-        automationAccountName = $config['runtime']['automationAccountName']
-        resourceGroupName     = $config['runtime']['resourceGroup']
-        type                  = 'PowerShell72'
-        tags                  = @{version = $config['runtime']['tagsTable'].ReleaseVersion; releaseDate = $config['runtime']['tagsTable'].ReleaseDate } 
-        force                 = $true
-        published             = $true
+    # The 7.6 runtime helper builds the runbook REST payload, so pass its tags explicitly.
+    # Confirm-GSAConfigurationParameters loads these values from setup/tags.json so the refreshed tags
+    # identify the release that last published each Azure runbook.
+    $runbookTags = @{
+        version = $config['runtime']['tagsTable'].ReleaseVersion
+        releaseDate = $config['runtime']['tagsTable'].ReleaseDate
     }
     Write-Verbose "Importing updated Runbooks..."
 
     Write-Verbose "Importing 'main' runbook version '$($config['runtime']['tagsTable'].ReleaseVersion)', replacing version '$($currentMainRunbook.Tags['version'])'..."
-    $null = Import-AzAutomationRunbook -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" -Description "$mainRunbookDescription V.$($config['runtime']['tagsTable'].ReleaseVersion)" @updateRunbookParams
+    # Publish the new script and confirm that the runbook remains linked to the PowerShell 7.6 environment.
+    Set-GSAAutomationRunbook -Config $config -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" `
+        -Description "$mainRunbookDescription V.$($config['runtime']['tagsTable'].ReleaseVersion)" -Tags $runbookTags
 
     Write-Verbose "Importing 'backend' runbook version '$($config['runtime']['tagsTable'].ReleaseVersion)', replacing version '$($currentBackendRunbook.Tags['version'])'..."
-    $null = Import-AzAutomationRunbook -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" -Description "$backendRunbookDescription V.$($config['runtime']['tagsTable'].ReleaseVersion)" @updateRunbookParams
+    # Apply the same PowerShell 7.6 publication and verification steps to the backend runbook.
+    Set-GSAAutomationRunbook -Config $config -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" `
+        -Description "$backendRunbookDescription V.$($config['runtime']['tagsTable'].ReleaseVersion)" -Tags $runbookTags
 
     Write-Verbose "Exporting modules.json to Storage Account '$($config['runtime']['StorageAccountName'])' for runbook consumption"
 
@@ -56,6 +62,9 @@ Function Update-GSAAutomationRunbooks {
     }
     
     Write-Verbose "Uploading modules.json to blob storage container 'configuration'..."
+    Write-Host "Uploading modules.json and confirming Blob Storage access (up to 10 minutes if RBAC is still propagating)..."
+    $blobProgressTimer = [System.Diagnostics.Stopwatch]::StartNew()
+    $nextBlobProgressReportSeconds = 30
     $temporaryBlobContributorCreated = $false
     $storageAccountId = $null
     try {
@@ -101,6 +110,7 @@ Function Update-GSAAutomationRunbooks {
                 }
 
                 Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified.UtcDateTime) (UTC)"
+                $blobProgressTimer.Stop()
                 Write-Host "Successfully updated modules.json in blob storage container 'configuration' (LastModified: $($blob.LastModified.UtcDateTime.ToString('yyyy-MM-dd HH:mm:ss')) UTC)" -ForegroundColor Green
                 break
             }
@@ -108,6 +118,13 @@ Function Update-GSAAutomationRunbooks {
                 # Keep retrying while RBAC settles, but stop immediately once the final attempt is exhausted.
                 if ($attempt -eq $maxBlobAttempts -or -not (Test-GSARetryableBlobError -ErrorRecord $_)) {
                     throw
+                }
+
+                if ($blobProgressTimer.Elapsed.TotalSeconds -ge $nextBlobProgressReportSeconds) {
+                    Write-Host "Still waiting for Blob Storage access. Attempt $attempt of $maxBlobAttempts; elapsed: $(Format-GSAElapsedTime -Elapsed $blobProgressTimer.Elapsed)."
+                    do {
+                        $nextBlobProgressReportSeconds += 30
+                    } while ($nextBlobProgressReportSeconds -le $blobProgressTimer.Elapsed.TotalSeconds)
                 }
 
                 Write-Verbose "Attempt $attempt of $maxBlobAttempts could not upload or verify modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"

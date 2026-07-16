@@ -1,0 +1,187 @@
+[
+  {
+    "name": "Check-BreakGlassAccountOwnersInformation",
+    "version": "1.1.9"
+  },
+  {
+    "name": "Check-BreakGlassAccountIdentityProtectionLicense",
+    "version": "1.2.0"
+  },
+  {
+    "name": "Check-DeprecatedAccounts",
+    "version": "1.2.6"
+  },
+  {
+    "name": "Check-ExternalAccounts",
+    "version": "1.2.10"
+  },
+  {
+    "name": "Check-PrivilegedExternalAccounts",
+    "version": "1.0.7"
+  },
+  {
+    "name": "Check-SubnetComplianceStatus",
+    "version": "1.1.13"
+  },
+  {
+    "name": "Check-VNetComplianceStatus",
+    "version": "1.2.0"
+  },
+  {
+    "name": "Detect-UserBGAUsersAuthMethods",
+    "version": "1.2.8"
+  },
+  {
+    "name": "Get-AzureADLicenseType",
+    "version": "1.1.11"
+  },
+  {
+    "name": "GR-Common",
+    "version": "1.5.3"
+  },
+  {
+    "name": "Validate-BreakGlassAccount",
+    "version": "1.1.0"
+  },
+  {
+    "name": "Check-AllowedLocationPolicy",
+    "version": "1.2.4"
+  },
+  {
+    "name": "Check-PrivateMarketPlace",
+    "version": "1.1.9"
+  },
+  {
+    "name": "Az.Marketplace",
+    "version": "0.3.0",
+    "uri": "https://devopsgallerystorage.blob.core.windows.net:443/packages/az.marketplace.0.3.0.nupkg"
+  },
+  {
+    "name": "Check-CyberSecurityServices",
+    "version": "1.1.8"
+  },
+  {
+    "name": "GR-ComplianceChecks",
+    "version": "1.4.23"
+  },
+  {
+    "name": "Check-ProtectionDataAtRest",
+    "version": "1.3.8"
+  },
+  {
+    "name": "Check-SecureConnectionInTransit",
+    "version": "1.2.13"
+  },
+  {
+    "name": "Check-CloudConsoleAccess",
+    "version": "1.1.0"
+  },
+  {
+    "name": "Check-NetworkWatcherEnabled",
+    "version": "1.0.8"
+  },
+  {
+    "name": "Check-ServicePrincipal",
+    "version": "1.3.5"
+  },
+  {
+    "name": "Check-ServicePrincipalSecrets",
+    "version": "1.0.4"
+  },
+  {
+    "name": "Check-AllUserMFARequired",
+    "version": "1.1.3"
+  },
+  {
+    "name": "Check-GAUserCountMFARequired",
+    "version": "1.0.8"
+  },
+  {
+    "name": "Check-AdminAccess",
+    "version": "1.0.6"
+  },
+  {
+    "name": "Check-UserAccountGCEventLogging",
+    "version": "1.0.8"
+  },
+  {
+    "name": "Check-UserGroups",
+    "version": "1.0.8"
+  },
+  {
+    "name": "Check-OnlineAttackCountermeasures",
+    "version": "1.0.5"
+  },
+  {
+    "name": "Check-ApplicationGatewayCertificateValidity",
+    "version": "1.0.8"
+  },
+  {
+    "name": "Check-CloudAccountsMFA",
+    "version": "1.0.5"
+  },
+  {
+    "name": "Check-DedicatedAdminAccounts",
+    "version": "1.1.1"
+  },
+  {
+    "name": "Check-UserRiskBasedCAP",
+    "version": "1.0.5"
+  },
+  {
+    "name": "Check-LocationBasedCAP",
+    "version": "1.0.3"
+  },
+  {
+    "name": "Monitor-BreakGlassAccount",
+    "version": "1.1.1"
+  },
+  {
+    "name": "Check-NetworkSecurityTools",
+    "version": "1.0.3"
+  },
+  {
+    "name": "Check-AlertsMonitor",
+    "version": "1.1.0"
+  },
+  {
+    "name": "Check-StorageAccountTLSversion",
+    "version": "1.1.1"
+  },
+  {
+    "name": "Check-AppServiceHTTPSConfiguration",
+    "version": "1.0.0"
+  },
+  {
+    "name": "Check-FunctionAppHTTPSConfiguration",
+    "version": "1.0.0"
+  },
+  {
+    "name": "Check-FinOpsToolStatus",
+    "version": "1.0.4"
+  },
+  {
+    "name": "Check-UserRoleReviews",
+    "version": "1.0.6"
+  },
+  {
+    "name": "Check-ServiceHealthAlerts",
+    "version": "1.0.8"
+  },
+  {
+    "name": "Check-DefenderForCloudAlerts",
+    "version": "1.2.2"
+  },
+  {
+    "name": "Check-GuestRoleReviews",
+    "version": "1.0.6"
+  },
+  {
+    "name": "Check-TLSConfiguration",
+    "version": "1.1.0"
+  },
+  {
+    "name": "Check-NetworkInterfaceIPs",
+    "version": "1.0.1"
+  }
+]

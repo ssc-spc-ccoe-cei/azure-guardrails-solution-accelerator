@@ -77,8 +77,8 @@ function Get-DefenderPricingBySubscription {
     .PARAMETER SubscriptionId
         The Azure subscription ID to query for Defender pricing information.
 
-    .PARAMETER AuthHeader
-        A hashtable containing the Authorization header with a valid Bearer token for Azure REST API calls.
+    .PARAMETER AccessToken
+        A secure access token for Azure REST API calls.
 
     .PARAMETER ErrorList
         An optional ArrayList to collect error messages encountered during execution.
@@ -90,7 +90,7 @@ function Get-DefenderPricingBySubscription {
         [Parameter(Mandatory)]
         [string]$SubscriptionId,
         [Parameter(Mandatory)]
-        [hashtable]$AuthHeader,
+        [securestring]$AccessToken,
         [AllowEmptyCollection()]
         [System.Collections.ArrayList]$ErrorList
     )
@@ -102,7 +102,10 @@ function Get-DefenderPricingBySubscription {
     $uri = "https://management.azure.com/subscriptions/$SubscriptionId/providers/Microsoft.Security/pricings?api-version=2023-01-01"
 
     try {
-        $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers $AuthHeader -ErrorAction Stop
+        # The 7.6 migration uses the secure token path provided by the upgraded Az modules.
+        # Pass that token directly to PowerShell instead of rebuilding the old plain-text authorization header.
+        # This API returns JSON; ErrorAction Stop sends HTTP failures to the catch block below.
+        $resp = Invoke-RestMethod -Uri $uri -Method Get -Authentication Bearer -Token $AccessToken -ContentType 'application/json' -ErrorAction Stop
         if ($resp -and $resp.value) {
             foreach ($p in $resp.value) {
                 $name = [string]$p.name
@@ -408,19 +411,18 @@ function Get-DefenderForCloudAlerts {
 
         try { Set-AzContext -SubscriptionId $subId -ErrorAction Stop | Out-Null } catch {}
 
-        # Build auth header once per subscription context
-        $authHeader = $null
+        # The PowerShell 7.6 migration also upgrades the Runtime Environment's Az modules.
+        # Use their secure token path instead of depending on the older plain-text token response.
+        # Reuse the secure ARM token for every REST check below; the Defender compliance logic is unchanged.
+        # ErrorAction Stop makes token failures reach the catch block instead of allowing incomplete checks to continue.
+        $accessToken = $null
         try {
             $azContext = Get-AzContext
-            $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId -ErrorAction Stop
-            $authHeader = @{
-                'Content-Type'  = 'application/json'
-                'Authorization' = 'Bearer ' + $token.Token
-            }
+            $accessToken = (Get-AzAccessToken -TenantId $azContext.Subscription.TenantId -AsSecureString -ErrorAction Stop).Token
         }
         catch {
             [void]$ErrorList.Add("Failed to get access token for $subName ($subId): $_")
-            $authHeader = $null
+            $accessToken = $null
         }
 
         # -------------------------
@@ -428,7 +430,7 @@ function Get-DefenderForCloudAlerts {
         # -------------------------
         $subRegisteredOk = $true
         $subRegisteredComment = $null
-        if (-not $authHeader) {
+        if (-not $accessToken) {
             $subRegisteredOk = $false
             $subRegisteredComment = "Unable to evaluate Defender for Cloud registration (missing auth token)."
         }
@@ -438,7 +440,7 @@ function Get-DefenderForCloudAlerts {
 
             $regUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security?api-version=2020-01-01"
             try{
-                $response = Invoke-RestMethod -Uri $regUri -Method Get -Headers $authHeader -ErrorAction Stop
+                $response = Invoke-RestMethod -Uri $regUri -Method Get -Authentication Bearer -Token $accessToken -ContentType 'application/json' -ErrorAction Stop
                 
                 $subRegisteredOk = if($response.registrationState -eq "Registered"){ $true } else { $false }
                 if($subRegisteredOk){
@@ -488,8 +490,8 @@ function Get-DefenderForCloudAlerts {
             # B) Determine paid tier status (Defender CSPM / CWP)
             # -------------------------
             $pricingByPlan = @{}
-            if ($authHeader) {
-                $pricingByPlan = Get-DefenderPricingBySubscription -SubscriptionId $subId -AuthHeader $authHeader -ErrorList $ErrorList
+            if ($accessToken) {
+                $pricingByPlan = Get-DefenderPricingBySubscription -SubscriptionId $subId -AccessToken $accessToken -ErrorList $ErrorList
             }
 
             # Check if Defender CSPM (paid tier) is active
@@ -524,14 +526,14 @@ function Get-DefenderForCloudAlerts {
             $notifOk = $true
             $notifComment = $null
 
-            if (-not $authHeader) {
+            if (-not $accessToken) {
                 $notifOk = $false
                 $notifComment = $msgTable.errorRetrievingNotifications
             }
             else {
                 $restUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security/securityContacts/default?api-version=2023-12-01-preview"
                 try {
-                    $response = Invoke-RestMethod -Uri $restUri -Method Get -Headers $authHeader -ErrorAction Stop
+                    $response = Invoke-RestMethod -Uri $restUri -Method Get -Authentication Bearer -Token $accessToken -ContentType 'application/json' -ErrorAction Stop
                     $r = Get-DFCAcheckComplianceStatus -apiResponse $response -msgTable $msgTable -subscriptionId $subId -SubscriptionName $subName
                     $notifOk = [bool]$r.isCompliant
                     $notifComment = $r.Comments
@@ -539,7 +541,7 @@ function Get-DefenderForCloudAlerts {
                 catch {
                     $restUri2 = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security/securityContacts?api-version=2023-12-01-preview"
                     try {
-                        $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Headers $authHeader -ErrorAction Stop
+                        $response2 = Invoke-RestMethod -Uri $restUri2 -Method Get -Authentication Bearer -Token $accessToken -ContentType 'application/json' -ErrorAction Stop
                         if (-not $response2.value -or $response2.value.Count -eq 0) {
                             $notifOk = $false
                             $notifComment = $msgTable.DefenderEnabledNonCompliant
@@ -564,7 +566,7 @@ function Get-DefenderForCloudAlerts {
             # D) CWP evaluation - informational only (does NOT affect compliance)
             # -------------------------
             $cwpInfoComment = $null
-            if ($cwpPlansActive -and $authHeader) {
+            if ($cwpPlansActive -and $accessToken) {
                 $cov = Get-CwpCoverageForSubscription -SubscriptionId $subId -CountsBySub $countsBySub -TypeToPlanMap $TypeToPlanMap -PricingByPlan $pricingByPlan -msgTable $msgTable
                 $cwpInfoComment = $msgTable.CwpInformational -f $cov.comment
                 Write-Verbose "CWP informational for $subName : $cwpInfoComment"

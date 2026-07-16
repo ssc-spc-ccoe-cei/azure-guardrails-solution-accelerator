@@ -1,6 +1,10 @@
 param AllowedLocationPolicyId string
 param AllowedLocationInitiativeId string
 param automationAccountName string
+// These values create the named PowerShell 7.6 environment and select its Azure-managed Az module version.
+param automationRuntimeAzVersion string
+param automationRuntimeEnvironmentName string
+param automationRuntimeVersion string
 param CBSSubscriptionName string
 param containername string
 param ModuleBaseURL string
@@ -26,6 +30,14 @@ param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
 param mfaGracePeriod string
 
+// The 7.6 Runtime Environment replaces the old list of separate PowerShell 7.2 module resources.
+// Bicep and the deployment scripts share this manifest so they deploy and validate the same module set.
+var guardrailsRuntimeModules = loadJsonContent('../../automation-runtime-modules.json')
+
+// guardrailsAC is the Bicep symbol used to reference this resource within the template.
+// The Automation Account name shown in Azure comes from automationAccountName.
+// The parent account stays on its existing 2023-11-01 contract; the 7.6 child resources below
+// use 2024-10-23 because that contract exposes Runtime Environments and their modules.
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
   location: location
@@ -47,423 +59,45 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
         identity: {}
     }
   }
-  resource module1 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-BreakGlassAccountOwnersInformation'
+
+  // Create the environment on a fresh install and reconcile it only when modules are selected for update.
+  // Core-only updates leave its Az and Guardrails module versions unchanged, including one-off client hotfixes.
+  resource guardrailsRuntimeEnvironment 'runtimeEnvironments@2024-10-23' = if (newDeployment || updatePSModules) {
+    name: automationRuntimeEnvironmentName
+    location: location
+    tags: {
+      releaseVersion: releaseVersion
+      releasedate: releaseDate
+    }
     properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
-        version: '1.1.9'        
-      }}
-  }
-  resource module2 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-BreakGlassAccountIdentityProtectionLicense'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
-        version: '1.2.0'
-      }}
-  }
-  resource module3 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-DeprecatedAccounts'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-DeprecatedAccounts.zip'
-        version: '1.2.6'
-      }}
-  }
-  resource module4 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ExternalAccounts'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ExternalAccounts.zip'
-        version: '1.2.10'
-      }}
-  }
-  resource module5 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-PrivilegedExternalAccounts'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
-        version: '1.0.7'
-      }}
-  }
-  resource module7 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-SubnetComplianceStatus'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-SubnetComplianceStatus.zip'
-        version: '1.1.13'
-      }}
-  }
-  resource module8 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-VNetComplianceStatus'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
-        version: '1.2.0'
-      }}
-  }
-  resource module9 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Detect-UserBGAUsersAuthMethods'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
-        version: '1.2.8'
-      }}
-  }
-  resource module10 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Get-AzureADLicenseType'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Get-AzureADLicenseType.zip'
-        version: '1.1.11'
+      description: 'Guardrails PowerShell runtime environment'
+      runtime: {
+        language: 'PowerShell'
+        version: automationRuntimeVersion
+      }
+      defaultPackages: {
+        // Azure calls this property defaultPackages, but Az is the default PowerShell module for this environment.
+        // The Az rollup supplies Az.Accounts and Az.ResourceGraph, avoiding separate older copies.
+        Az: automationRuntimeAzVersion
       }
     }
-  }
-  resource module11 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'GR-Common'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.5.2'
-      }}
-  }
-  resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Validate-BreakGlassAccount'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
-        version: '1.1.0'
-      }}
-  }
-  resource module13 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-AllowedLocationPolicy'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
-        version: '1.2.3'
+
+    // The old PowerShell 7.2 setup used separate legacy module resources, so it did not need this batching.
+    // Azure's Runtime Environment API calls PowerShell modules "packages" and accepts up to ten additions at a time.
+    // Deploy every Guardrails module in sequential groups of ten instead of sending the entire set at once.
+    @batchSize(10)
+    resource guardrailsModules 'packages@2024-10-23' = [for runtimeModule in guardrailsRuntimeModules: if (newDeployment || updatePSModules) {
+      name: runtimeModule.name
+      properties: {
+        contentLink: {
+          // Most modules come from the selected Guardrails release. A manifest entry can provide a different
+          // source for an external module such as Az.Marketplace.
+          #disable-next-line no-hardcoded-env-urls
+          uri: runtimeModule.?uri ?? '${ModuleBaseURL}/${runtimeModule.name}.zip'
+          version: runtimeModule.version
+        }
       }
-    }
-  }
-  resource module14 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-PrivateMarketPlace'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-PrivateMarketPlace.zip'
-        version: '1.1.9'
-      }}
-  }
-  resource module15 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.Marketplace'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.marketplace.0.3.0.nupkg'
-        version: '0.3.0'
-      }}
-  }
-  resource module16 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-CyberSecurityServices'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-CyberSecurityServices.zip'
-        version: '1.1.8'
-      }
-    }
-  }
-  resource module18 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'GR-ComplianceChecks'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.23'
-      }}
-  }
-  resource module19 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ProtectionDataAtRest'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
-        version: '1.3.8'
-      }}
-  }
-  resource module20 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-SecureConnectionInTransit'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-SecureConnectionInTransit.zip'
-        version: '1.2.13'
-      }}
-  }
-  resource module21 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-CloudConsoleAccess'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-CloudConsoleAccess.zip'
-        version: '1.1.0'
-      }}
-  }
-  resource module23 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-NetworkWatcherEnabled'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
-        version: '1.0.8'
-      }}
-  }
-  resource module26 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ServicePrincipal'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
-        version: '1.3.5'
-      }}
-  }
-  resource module27 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ServicePrincipalSecrets'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip'
-        version: '1.0.4'
-      }}
-  }
-  resource module28 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-AllUserMFARequired'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.1.3'
-      }}
-  }
-  resource module29 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-GAUserCountMFARequired'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-GAUserCountMFARequired.zip'
-        version: '1.0.8'
-      }
-    }
-  }
-  resource module30 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-AdminAccess'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
-        version: '1.0.6'
-      }}
-  }
-  resource module31 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-UserAccountGCEventLogging'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-UserAccountGCEventLogging.zip'
-        version: '1.0.8'
-      }}
-  }
-  resource module32 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-UserGroups'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-UserGroups.zip'
-        version: '1.0.7'
-      }
-    }
-  }
-  resource module33 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-OnlineAttackCountermeasures'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-OnlineAttackCountermeasures.zip'
-        version: '1.0.5'
-      }
-    }
-  }
-
-  resource module34 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ApplicationGatewayCertificateValidity'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
-        version: '1.0.8'
-      }}
-  }
-        
-  resource module35 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-CloudAccountsMFA'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-CloudAccountsMFA.zip'
-        version: '1.0.5'
-      }
-    }
-  }
-
-  resource module36 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-DedicatedAdminAccounts'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-DedicatedAdminAccounts.zip'
-        version: '1.1.1'
-      }
-    }
-  }
-
-  // Splitting Module37
-  resource module37a 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-UserRiskBasedCAP'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-UserRiskBasedCAP.zip'
-        version: '1.0.5'
-      }
-    }
-  }
-
-  resource module37b 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-LocationBasedCAP'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-LocationBasedCAP.zip'
-        version: '1.0.3'
-      }}
-  }
-
-  resource module38 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Monitor-BreakGlassAccount'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
-        version: '1.1.1'
-      }}
-  }
-
-  resource module39 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-NetworkSecurityTools'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-NetworkSecurityTools.zip'
-        version: '1.0.3'
-      }}
-  }
-        
-  resource module40 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-AlertsMonitor'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
-        version: '1.1.0'
-      }}
-  }
-
-  resource module41 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-StorageAccountTLSversion'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
-        version: '1.1.0'
-      }}
-  }
-
-  resource module42 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-AppServiceHTTPSConfiguration'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-AppServiceHTTPSConfiguration.zip'
-        version: '1.0.0'
-      }}
-  }
-
-  resource module43 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-FunctionAppHTTPSConfiguration'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-FunctionAppHTTPSConfiguration.zip'
-        version: '1.0.0'
-      }}
-  }
-
-  resource module44 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-FinOpsToolStatus'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
-        version: '1.0.4'
-      }}
-  }
-  
-  resource module45 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-UserRoleReviews'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-UserRoleReviews.zip'
-        version: '1.0.6'
-      }
-    }
-  }
-
-  resource module46 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-ServiceHealthAlerts'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-ServiceHealthAlerts.zip'
-        version: '1.0.8'
-      }
-    }
-  }
-  
-  resource module47 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-DefenderForCloudAlerts'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.2.1'
-      }
-    }
-  }
-
-  resource module48 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-GuestRoleReviews'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-GuestRoleReviews.zip'
-        version: '1.0.6'
-      }
-    }
-  }
-
-  resource module49 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-TLSConfiguration'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-TLSConfiguration.zip'
-        version: '1.1.0'
-      }}
-  }
-
-  resource module50 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.ResourceGraph'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.1.0.nupkg'
-        version: '1.1.0'
-      }}
-  }
-
-  resource module51 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.Accounts'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
-        version: '4.0.2'
-      }}
-  }
-
-  resource module52 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Check-NetworkInterfaceIPs'
-    properties: {
-      contentLink: {
-        uri: '${ModuleBaseURL}/Check-NetworkInterfaceIPs.zip'
-        version: '1.0.1'
-      }}
+    }]
   }
 
   // Variables for Runbooks

@@ -151,7 +151,8 @@ Function Confirm-GSAConfigurationParameters {
             ValidationPattern = '^(?=.*guardrails)[a-z0-9-_]{2,64}$'
         }
         region                            = @{
-            IsRequired     = $false
+            # Every deployment needs a location, including the API request that creates or updates each runbook.
+            IsRequired     = $true
             ValidationList = (Get-AzLocation).Location
         }
         storageaccountName                = @{
@@ -378,6 +379,12 @@ Function Confirm-GSAConfigurationParameters {
 
     # generate run-time config parameters
     $config['runtime'] = @{}
+
+    # This is the single runtime tested by Guardrails. Fresh installs create it and future updates reuse it.
+    # These are internal deployment settings, not client inputs.
+    $config['runtime']['automationRuntimeEnvironmentName'] = 'Guardrails-PowerShell-7-6'
+    $config['runtime']['automationRuntimeVersion'] = '7.6'
+    $config['runtime']['automationRuntimeAzVersion'] = '15.1.0'
 
     ## add department name
     $config['runtime']['DepartmentName'] = $departmentName

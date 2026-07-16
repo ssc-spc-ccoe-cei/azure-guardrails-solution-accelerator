@@ -39,7 +39,11 @@ function Check-UserGroups {
     # list all users in the tenant
     
     try {
-        $accessToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/').Token
+        # The PowerShell 7.6 migration also upgrades the Runtime Environment's Az modules.
+        # Use their secure token path so this check no longer depends on the older plain-text token response.
+        # This is an Az compatibility change; it does not change which users or groups are checked.
+        # ErrorAction Stop makes a token failure reach the catch block and return a clear module error.
+        $accessToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/' -AsSecureString -ErrorAction Stop).Token
     }
     catch {
         $ErrorList.Add("Failed to get access token for Microsoft Graph API: $_")
@@ -47,7 +51,6 @@ function Check-UserGroups {
     }
 
     $headers = @{
-        Authorization    = "Bearer $accessToken"
         ConsistencyLevel = "eventual"
     }
 
@@ -64,7 +67,8 @@ function Check-UserGroups {
 
         for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
             try {
-                return Invoke-RestMethod -Method Get -Uri $Uri -Headers $Headers -ErrorAction Stop
+                # Pass the secure token directly to PowerShell instead of rebuilding the old plain-text authorization header.
+                return Invoke-RestMethod -Method Get -Uri $Uri -Authentication Bearer -Token $accessToken -Headers $Headers -ErrorAction Stop
             } catch {
                 if ($attempt -eq $MaxRetries) {
                     throw
