@@ -82,10 +82,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       }
     }
 
-    // The old PowerShell 7.2 setup used separate legacy module resources, so it did not need this batching.
-    // Azure's Runtime Environment API calls PowerShell modules "packages" and accepts up to ten additions at a time.
-    // Deploy every Guardrails module in sequential groups of ten instead of sending the entire set at once.
-    @batchSize(10)
+    // Submit the modules in parallel, as the previous PowerShell 7.2 deployment did.
+    // The setup code still checks that every expected module is ready before importing the runbooks.
     resource guardrailsModules 'packages@2024-10-23' = [for runtimeModule in guardrailsRuntimeModules: if (newDeployment || updatePSModules) {
       name: runtimeModule.name
       properties: {
