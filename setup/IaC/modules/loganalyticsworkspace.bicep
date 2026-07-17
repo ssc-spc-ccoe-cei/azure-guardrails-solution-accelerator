@@ -800,7 +800,7 @@ resource f2 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="false","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="false","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -813,7 +813,7 @@ resource gr3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01'
     category: 'gr_functions'
     displayName: 'gr_data3'
     // Profile gating removed from this query so profile 1 rows are not hidden in workbook output.
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data3'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -920,7 +920,7 @@ resource f3 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data567'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="false","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="false","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data567'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -933,7 +933,7 @@ resource grdata56 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-0
     category: 'gr_functions'
     displayName: 'gr_data56'
     // Profile gating removed from this query so run output rows are shown as emitted.
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data56'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -946,7 +946,7 @@ resource grdata7 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     category: 'gr_functions'
     displayName: 'gr_data7'
     // Profile gating removed from this query so valid profile rows are not suppressed.
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| extend SubscriptionName = coalesce(column_ifexists("SubscriptionName_s", ""), iff(column_ifexists("Type_s", "") == "subscription", column_ifexists("DisplayName_s", ""), ""))\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n    ["Subscription Name"]=SubscriptionName,\n    Comments=column_ifexists("Comments_s", ""),\n    Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),\n    ["ITSG Control"]=column_ifexists("itsgcode_s", ""),\n    Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")),\n    Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data7'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -959,7 +959,7 @@ resource grdata9 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08
     category: 'gr_functions'
     displayName: 'gr_data9'
     // Profile gating removed from this query so valid profile rows are not suppressed.
-    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\n GuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix  and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n ["Subscription Name"]=column_ifexists("SubscriptionName_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'), Comments=column_ifexists("Comments_s", ""), ["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\n GuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix  and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="False","(R) ", "(M) "), column_ifexists("ItemName_s", "")),\n ["Subscription Name"]=column_ifexists("SubscriptionName_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'), Comments=column_ifexists("Comments_s", ""), ["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data9'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -971,7 +971,7 @@ resource f4 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
   properties: {
     category: 'gr_functions'
     displayName: 'gr_data11'
-    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n| where TimeGenerated > ago (24h)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="false","(R) ", "(M) "), column_ifexists("ItemName_s", "")), ["Subscription Name"] = column_ifexists("SubscriptionName_s", ""), Comments=column_ifexists("Comments_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
+    query: 'let itsgcodes=GRITSGControls_CL | summarize arg_max(TimeGenerated, *) by itsgcode_s;\nGuardrailsCompliance_CL\n| where column_ifexists("ControlName_s", "") has ctrlprefix and column_ifexists("ReportTime_s", "") == ReportTime and column_ifexists("Required_s", "") != tostring(showNonRequired)\n|join kind=leftouter (itsgcodes) on itsgcode_s\n| project  ["Item Name"]=strcat(iff(column_ifexists("Required_s", "")=="false","(R) ", "(M) "), column_ifexists("ItemName_s", "")), ["Subscription Name"] = column_ifexists("SubscriptionName_s", ""), Comments=column_ifexists("Comments_s", ""), Status=case(column_ifexists("ComplianceStatus_b", bool(null)) == true, \'✔️\', column_ifexists("ComplianceStatus_b", bool(null)) == false, \'❌\', \'➖\'),["ITSG Control"]=column_ifexists("itsgcode_s", ""), Remediation=gr_geturl(replace_string(ctrlprefix," ",""),column_ifexists("itsgcode_s", "")), Profile=iff(isnotempty(column_ifexists("Profile_d", "")), tostring(toint(column_ifexists("Profile_d", ""))), "")\n'
     functionAlias: 'gr_data11'
     functionParameters: 'ctrlprefix:string, ReportTime:string, showNonRequired:string'
     version: 2
@@ -1379,9 +1379,9 @@ resource grSummaryByPrefix 'Microsoft.OperationalInsights/workspaces/savedSearch
     //  - ReportTime: exact report timestamp (string) to match records
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let base = GuardrailsCompliance_CL\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix'
-    functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'Guardrail:string, ReportTime:string, showIfRequired:string'
     version: 2 
   }
 }
@@ -1392,9 +1392,9 @@ resource grSummaryByPrefixa 'Microsoft.OperationalInsights/workspaces/savedSearc
     category: 'gr_functions'
     displayName: 'gr_summary_by_prefix_a'
     // KQL function: summarize per Guardrail, nonCompliant number includes both mandatory and recommended controls, but status only reflects mandatory controls
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false  and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let base = GuardrailsCompliance_CL\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false  and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix_a'
-    functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'Guardrail:string, ReportTime:string, showIfRequired:string'
     version: 2 
   }
 }
@@ -1410,9 +1410,9 @@ resource grSummaryByPrefix3 'Microsoft.OperationalInsights/workspaces/savedSearc
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let base = GuardrailsCompliance_CL\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix3'
-    functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'Guardrail:string, ReportTime:string, showIfRequired:string'
     version: 2 
   }
 }
@@ -1429,9 +1429,9 @@ resource grSummaryByPrefix3a 'Microsoft.OperationalInsights/workspaces/savedSear
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // status only reflects mandatory controls
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let base = GuardrailsCompliance_CL\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix3a'
-    functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'Guardrail:string, ReportTime:string, showIfRequired:string'
     version: 2 
   }
 }
@@ -1447,9 +1447,9 @@ resource grSummaryByPrefix56 'Microsoft.OperationalInsights/workspaces/savedSear
     //  - TimeWindowHours: lookback window in hours
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let base = GuardrailsCompliance_CL\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix56'
-    functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'Guardrail:string, ReportTime:string, showIfRequired:string'
     version: 2 
   }
 }
@@ -1466,9 +1466,9 @@ resource grSummaryByPrefix56a 'Microsoft.OperationalInsights/workspaces/savedSea
     //  - showNonRequired: string toggle; when "False", only mandatory (Required_s == "True")
     // status only reflects mandatory controls
     // Profile gating removed from this query to keep summary totals aligned to emitted rows.
-    query: 'let windowHours = toint(TimeWindowHours);\nlet base = GuardrailsCompliance_CL\n| where TimeGenerated > ago(windowHours * 1h)\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
+    query: 'let base = GuardrailsCompliance_CL\n| where column_ifexists("ReportTime_s","") == ReportTime\n| where column_ifexists("ControlName_s","") has Guardrail\n| where isempty(showIfRequired) or column_ifexists("Required_s","") == tostring(showIfRequired);\nbase\n| extend ComplianceStatus = column_ifexists("ComplianceStatus_b", bool(null))\n| summarize TotalControls = count(), NonCompliantItems = countif(ComplianceStatus == false), NonCompliantItems1 = countif(ComplianceStatus == false and column_ifexists("Required_s","") == "True"), UnknownItems = countif(isnull(ComplianceStatus))\n| extend HasNonCompliance = NonCompliantItems1 > 0\n| extend Status = iff(HasNonCompliance, "❌", "✔️")\n| project Guardrail, ["Total # Items"]=TotalControls, ["NonCompliant Items"]=NonCompliantItems, ["Unknown Items"]=UnknownItems, Status'
     functionAlias: 'gr_summary_by_prefix56a'
-    functionParameters: 'Guardrail:string, ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'Guardrail:string, ReportTime:string, showIfRequired:string'
     version: 2 
   }
 }
@@ -1484,23 +1484,23 @@ resource grSummaryByPrefixAll 'Microsoft.OperationalInsights/workspaces/savedSea
     //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
     query: '''
 union
-    gr_summary_by_prefix("GUARDRAIL 1", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix("GUARDRAIL 2", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix("GUARDRAIL 4", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix("GUARDRAIL 8", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired)
+    gr_summary_by_prefix("GUARDRAIL 1", ReportTime, showIfRequired),
+    gr_summary_by_prefix("GUARDRAIL 2", ReportTime, showIfRequired),
+    gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, showIfRequired),
+    gr_summary_by_prefix("GUARDRAIL 4", ReportTime, showIfRequired),
+    gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, showIfRequired),
+    gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, showIfRequired),
+    gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, showIfRequired),
+    gr_summary_by_prefix("GUARDRAIL 8", ReportTime, showIfRequired),
+    gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, showIfRequired),
+    gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, showIfRequired),
+    gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, showIfRequired),
+    gr_summary_by_prefix("GUARDRAIL 12", ReportTime, showIfRequired),
+    gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, showIfRequired)
 | order by toint(extract(@"\d+", 0, Guardrail)) asc
 '''
     functionAlias: 'gr_summary_by_prefix_all'
-    functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'ReportTime:string, showIfRequired:string'
     version: 2
   }
 }
@@ -1517,23 +1517,23 @@ resource grSummaryByPrefixAlla 'Microsoft.OperationalInsights/workspaces/savedSe
     // status only reflects mandatory controls
     query: '''
 union
-    gr_summary_by_prefix_a("GUARDRAIL 1", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix_a("GUARDRAIL 2", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3a("GUARDRAIL 3", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix_a("GUARDRAIL 4", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix56a("GUARDRAIL 5", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix56a("GUARDRAIL 6", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3a("GUARDRAIL 7", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix_a("GUARDRAIL 8", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3a("GUARDRAIL 9", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3a("GUARDRAIL 10", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3a("GUARDRAIL 11", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix_a("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired),
-    gr_summary_by_prefix3a("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired)
+    gr_summary_by_prefix_a("GUARDRAIL 1", ReportTime, showIfRequired),
+    gr_summary_by_prefix_a("GUARDRAIL 2", ReportTime, showIfRequired),
+    gr_summary_by_prefix3a("GUARDRAIL 3", ReportTime, showIfRequired),
+    gr_summary_by_prefix_a("GUARDRAIL 4", ReportTime, showIfRequired),
+    gr_summary_by_prefix56a("GUARDRAIL 5", ReportTime, showIfRequired),
+    gr_summary_by_prefix56a("GUARDRAIL 6", ReportTime, showIfRequired),
+    gr_summary_by_prefix3a("GUARDRAIL 7", ReportTime, showIfRequired),
+    gr_summary_by_prefix_a("GUARDRAIL 8", ReportTime, showIfRequired),
+    gr_summary_by_prefix3a("GUARDRAIL 9", ReportTime, showIfRequired),
+    gr_summary_by_prefix3a("GUARDRAIL 10", ReportTime, showIfRequired),
+    gr_summary_by_prefix3a("GUARDRAIL 11", ReportTime, showIfRequired),
+    gr_summary_by_prefix_a("GUARDRAIL 12", ReportTime, showIfRequired),
+    gr_summary_by_prefix3a("GUARDRAIL 13", ReportTime, showIfRequired)
 | order by toint(extract(@"\d+", 0, Guardrail)) asc
 '''
     functionAlias: 'gr_summary_by_prefix_alla'
-    functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'ReportTime:string, showIfRequired:string'
     version: 2
   }
 }
@@ -1547,19 +1547,19 @@ resource grSummaryAll 'Microsoft.OperationalInsights/workspaces/savedSearches@20
     // status only reflects mandatory controls
     query: '''
 union isfuzzy=true
-  (gr_summary_by_prefix_a("GUARDRAIL 1",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix_a("GUARDRAIL 2",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3a("GUARDRAIL 3", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix_a("GUARDRAIL 4",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix56a("GUARDRAIL 5", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix56a("GUARDRAIL 6", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3a("GUARDRAIL 7", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix_a("GUARDRAIL 8",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3a("GUARDRAIL 9", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3a("GUARDRAIL 10", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3a("GUARDRAIL 11", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix_a("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3a("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
+  (gr_summary_by_prefix_a("GUARDRAIL 1",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix_a("GUARDRAIL 2",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3a("GUARDRAIL 3", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix_a("GUARDRAIL 4",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix56a("GUARDRAIL 5", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix56a("GUARDRAIL 6", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3a("GUARDRAIL 7", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix_a("GUARDRAIL 8",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3a("GUARDRAIL 9", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3a("GUARDRAIL 10", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3a("GUARDRAIL 11", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix_a("GUARDRAIL 12", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3a("GUARDRAIL 13", ReportTime, showIfRequired))
 | project
     TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
@@ -1579,7 +1579,7 @@ union isfuzzy=true
 
 
     functionAlias: 'gr_summary_all'
-    functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'ReportTime:string, showIfRequired:string'
     version: 2
   }
 }
@@ -1595,19 +1595,19 @@ resource grSummaryMandatory 'Microsoft.OperationalInsights/workspaces/savedSearc
     //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
     query: '''
 union isfuzzy=true
-  (gr_summary_by_prefix("GUARDRAIL 1",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 2",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 4",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 8",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
+  (gr_summary_by_prefix("GUARDRAIL 1",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 2",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 4",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 8",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, showIfRequired))
 | project
     TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
@@ -1627,7 +1627,7 @@ union isfuzzy=true
 
 
     functionAlias: 'gr_summary_mandatory'
-    functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'ReportTime:string, showIfRequired:string'
     version: 2
   }
 }
@@ -1644,19 +1644,19 @@ resource grSummaryRecommended 'Microsoft.OperationalInsights/workspaces/savedSea
     //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
     query: '''
 union isfuzzy=true
-  (gr_summary_by_prefix("GUARDRAIL 1",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 2",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 4",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 8",  ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, TimeWindowHours, showIfRequired)),
-  (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, TimeWindowHours, showIfRequired))
+  (gr_summary_by_prefix("GUARDRAIL 1",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 2",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 3", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 4",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 5", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix56("GUARDRAIL 6", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 7", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 8",  ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 9", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 10", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 11", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix("GUARDRAIL 12", ReportTime, showIfRequired)),
+  (gr_summary_by_prefix3("GUARDRAIL 13", ReportTime, showIfRequired))
 | project
     TotalControls_norm     = tolong(column_ifexists("TotalControls",      column_ifexists("Total # Items", 0))),
     NonCompliantItems_norm = tolong(column_ifexists("NonCompliantItems",  column_ifexists("NonCompliant Items", 0))),
@@ -1676,7 +1676,7 @@ union isfuzzy=true
 
 
     functionAlias: 'gr_summary_recommended'
-    functionParameters: 'ReportTime:string, TimeWindowHours:int, showIfRequired:string'
+    functionParameters: 'ReportTime:string, showIfRequired:string'
     version: 2
   }
 }
@@ -1692,12 +1692,12 @@ resource grSummary 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-
     //  - showIfRequired: string toggle; when "False", only mandatory (Required_s == "True")
     query: '''
 union
-    gr_summary_all(ReportTime, TimeWindowHours, ""),
-    gr_summary_mandatory(ReportTime, TimeWindowHours, true),
-    gr_summary_recommended(ReportTime, TimeWindowHours, false)
+    gr_summary_all(ReportTime, ""),
+    gr_summary_mandatory(ReportTime, true),
+    gr_summary_recommended(ReportTime, false)
 '''
     functionAlias: 'gr_summary'
-    functionParameters: 'ReportTime:string, TimeWindowHours:int'
+    functionParameters: 'ReportTime:string'
     version: 2
   }
 }
