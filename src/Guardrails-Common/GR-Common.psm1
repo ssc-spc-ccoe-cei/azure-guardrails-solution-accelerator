@@ -3295,8 +3295,8 @@ function Test-PolicyExemptionExists {
         [array]  $requiredPolicyExemptionIds
     )
     [PSCustomObject] $policyExemptionList = New-Object System.Collections.ArrayList     
-    # $exemptionsIds = Get-AzPolicyExemption -Scope $ScopeId | Select-Object -ExpandProperty Properties| Select-Object PolicyDefinitionReferenceIds
-    $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds
+    # Az 15 returns this list through the singular generated-model property name.
+    $exemptionsIds = (Get-AzPolicyExemption -Scope $ScopeId).PolicyDefinitionReferenceId
     $isExempt =  $false
 
     if ($null -ne $exemptionsIds)
@@ -3448,12 +3448,14 @@ function Check-PBMMPolicies {
             $AssignedPolicyList = $policyAssignmentCache[$assignmentCacheKey]
         }
         else {
-            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter | `
-                Select-Object -ExpandProperty properties
+            # The PowerShell 7.6 runtime uses Az 15, where assignment fields are returned directly.
+            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter
             $policyAssignmentCache[$assignmentCacheKey] = $AssignedPolicyList
         }
 
-        If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
+        # Az 15 calls this list `NotScope` in its generated model.
+        $hasExcludedScopes = @($AssignedPolicyList.NotScope).Count -gt 0
+        If ($null -eq $AssignedPolicyList -or $hasExcludedScopes)
         {
             # PBMM initiative not applied
             $ComplianceStatus=$false
@@ -3482,11 +3484,11 @@ function Check-PBMMPolicies {
                 catch {
                     Write-Verbose "Direct lookup for policy set '$policySetCacheKey' failed. Falling back to tenant scan. Error: $_"
                     $policySetDefinition = Get-AzPolicySetDefinition | `
-                        Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" }
+                        Where-Object { $_.Id -like "*$PolicyID*" }
                 }
             }
 
-            $listPolicies = $policySetDefinition.Properties.policyDefinitions
+            $listPolicies = $policySetDefinition.PolicyDefinition
             # Check all 3 policies are applied for this scope
             $appliedPolicies = $listPolicies.policyDefinitionReferenceId | Where-Object { $requiredPolicyExemptionIds -contains $_ }
             if($appliedPolicies.Count -ne  $requiredPolicyExemptionIds.Count){
@@ -3878,7 +3880,7 @@ function Check-BuiltInPolicies {
         # Get policy definition details
         try {
             $policyDefinition = Get-AzPolicyDefinition -Id $policyId -ErrorAction Stop
-            $policyDisplayName = $policyDefinition.Properties.DisplayName
+            $policyDisplayName = $policyDefinition.DisplayName
         } catch {
             $ErrorList.Add("Error getting policy definition: $_")
             $policyDisplayName = "Unknown Policy"
@@ -3910,9 +3912,9 @@ function Check-BuiltInPolicies {
             # Check for policy exemptions
             foreach ($assignment in $tenantPolicyAssignments) {
                 try {
-                    if ($null -ne $assignment -and $null -ne $assignment.PolicyAssignmentId ) {
-                        Write-Host "Checking exemptions for assignment: $($assignment.PolicyAssignmentId)"
-                        $policyExemptions = Get-AzPolicyExemption -Scope $rootScope -PolicyAssignmentId $assignment.PolicyAssignmentId  -ErrorAction Stop
+                    if ($null -ne $assignment -and -not [string]::IsNullOrWhiteSpace($assignment.Id)) {
+                        Write-Host "Checking exemptions for assignment: $($assignment.Id)"
+                        $policyExemptions = Get-AzPolicyExemption -Scope $rootScope -PolicyAssignmentIdFilter $assignment.Id -ErrorAction Stop
                         if ($policyExemptions) {
                             $hasExemptions = $true
                             break

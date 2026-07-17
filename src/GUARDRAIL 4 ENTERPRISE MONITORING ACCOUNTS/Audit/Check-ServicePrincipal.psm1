@@ -15,7 +15,9 @@ function Verify-Roles {
 
     $PrivateMarketplaceAdmin = Get-AzRoleAssignment -Scope $MarketplaceScope | Where-Object { $_.ObjectId -eq $SPNObjectID -and $_.RoleDefinitionName -eq "Marketplace Admin" } -ErrorAction SilentlyContinue 
 
-    if ([string]::IsNullOrEmpty($CostManagmentReader)) {
+    # Az 15 returns role assignments as rich objects. Count the results instead of converting
+    # those objects to text, which can fail when Azure exposes duplicate property names.
+    if (@($CostManagmentReader).Count -eq 0) {
 
         $isCompliantR = $false
     
@@ -27,7 +29,7 @@ function Verify-Roles {
     
         $ServicePrincipal.ComplianceComments += $msgTable.ServicePrincipalNameHasReaderRole
     }
-    if ([string]::IsNullOrEmpty($PRivateMarketplaceAdmin)) {
+    if (@($PrivateMarketplaceAdmin).Count -eq 0) {
 
         $isCompliantMPA = $false
  
@@ -69,7 +71,9 @@ function Check-DepartmentServicePrincipalName {
 
     $SPNObject = Get-AzADServicePrincipal -ApplicationId $SPNID -ErrorAction SilentlyContinue
 
-    if ([string]::IsNullOrEmpty($SPNObject)) {
+    # Test the Az 15 service-principal object directly. String conversion is unnecessary and can
+    # throw when the returned object contains both `Id` and `id` metadata.
+    if ($null -eq $SPNObject) {
         $servicePrincipalName.ServicePrincipalNameAPPID = $msgTable.NoSPN
         $servicePrincipalName.ServicePrincipalNameID = $null
         $ServicePrincipalName.ComplianceStatus = $false

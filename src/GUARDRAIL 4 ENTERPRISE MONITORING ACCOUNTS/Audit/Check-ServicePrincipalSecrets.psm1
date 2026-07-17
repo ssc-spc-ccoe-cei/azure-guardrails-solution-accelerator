@@ -34,7 +34,9 @@ function Get-DepartmentServicePrincipalNameSecrets {
         $ServicePrincipalName.ComplianceComments = $msgTable.NoSPN
     }
 
-    if ([string]::IsNullOrEmpty($SPNObject)) {
+    # Az 15 returns a rich service-principal object. Check for no result directly instead of
+    # converting that object to text, which can fail on duplicate property names.
+    if ($null -eq $SPNObject) {
         $servicePrincipalName.ServicePrincipalNameAPPID = $msgTable.NoSPN
         $servicePrincipalName.ServicePrincipalNameID = $null
         $ServicePrincipalName.ComplianceStatus = $false
