@@ -300,7 +300,7 @@ policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonne
 policyAssignedSub = La politique requise est attribuée à une portée couvrant cet abonnement : {0}.
 
 # GuardRail #10
-cbsSubscription = CBS Subscription
+cbsSubscription = Abonnement au capteurs au niveau du nuage
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
 cbcSensorsdontExist = Les capteurs CBS attendus n'existent pas dans ces abonnements :
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
