@@ -755,9 +755,22 @@ function Check-UpdateAvailable {
         [string]
         $ResourceGroupName
     )
-    #fetches current public version (from repo...maybe should download the zip...)
-    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-    $tagsFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
+    # /releases/latest skips pre-releases, so if the newest published release is a beta
+    # it won't show up there. Grab the full list and pick the highest version ourselves.
+    # created_at breaks ties (e.g. v4.0.0 stable wins over v4.0.0beta).
+    $allReleases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
+    $latestRelease = $allReleases |
+        Sort-Object @(
+            @{ Expression = {
+                try   { [version]::Parse(($_.tag_name -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]*$', '$1')) }
+                catch { [version]'0.0.0' }
+            }; Descending = $true },
+            @{ Expression = { $_.created_at }; Descending = $true }
+        ) |
+        Select-Object -First 1
+
+    # .name is the release title, not the git tag — use .tag_name for the raw file URL.
+    $tagsFileURI = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/setup/tags.json" -f $latestRelease.tag_name
     $tags = Invoke-RestMethod $tagsFileURI -Verbose:$false
 
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
@@ -780,14 +793,41 @@ function Check-UpdateAvailable {
     if ($debug) { Write-Output "Resource Group Tag (deployed version): $deployedVersion; $deployedVersionVersion"}
     if ($debug) { Write-Output "Latest available version from GitHub: $currentVersion; $currentVersionVersion"}
     
-    if ($deployedVersionVersion -lt $currentVersionVersion)
-    {
-        $updateNeeded=$true
-    }
-    elseif(($deployedVersionVersion -eq $currentVersionVersion) -and 
-        ($deployedVersion -match 'beta') -and 
-        ($currentVersion -notmatch 'beta')) {
+    if ($deployedVersionVersion -lt $currentVersionVersion) {
         $updateNeeded = $true
+    }
+    elseif ($deployedVersionVersion -eq $currentVersionVersion) {
+        # Same numeric version — check whether the available release is further along
+        # in the pre-release progression: alpha < beta < rc < stable.
+        $preReleaseRank = @{ alpha = 0; beta = 1; rc = 2 }
+
+        $deployedLabel = if    ($deployedVersion -match 'alpha') { 'alpha' }
+                         elseif ($deployedVersion -match 'beta')  { 'beta'  }
+                         elseif ($deployedVersion -match 'rc')    { 'rc'    }
+                         else                                      { 'stable'}
+
+        $currentLabel  = if    ($currentVersion -match 'alpha') { 'alpha' }
+                         elseif ($currentVersion -match 'beta')  { 'beta'  }
+                         elseif ($currentVersion -match 'rc')    { 'rc'    }
+                         else                                     { 'stable'}
+
+        $deployedRank = if ($preReleaseRank.ContainsKey($deployedLabel)) { $preReleaseRank[$deployedLabel] } else { 3 }
+        $currentRank  = if ($preReleaseRank.ContainsKey($currentLabel))  { $preReleaseRank[$currentLabel]  } else { 3 }
+
+        if ($currentRank -gt $deployedRank) {
+            # e.g. alpha → beta, beta → stable
+            $updateNeeded = $true
+        }
+        elseif ($currentRank -eq $deployedRank -and $deployedRank -lt 3) {
+            # Same pre-release type — compare the sequence number.
+            # A label with no trailing number (e.g. 'beta') is treated as 1.
+            $deployedNum = if ($deployedVersion -match "$deployedLabel(\d+)") { [int]$Matches[1] } else { 1 }
+            $currentNum  = if ($currentVersion  -match "$currentLabel(\d+)")  { [int]$Matches[1] } else { 1 }
+            $updateNeeded = $currentNum -gt $deployedNum
+        }
+        else {
+            $updateNeeded = $false
+        }
     }
     else {
         $updateNeeded = $false
