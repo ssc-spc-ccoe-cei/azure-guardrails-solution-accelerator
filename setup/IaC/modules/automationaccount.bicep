@@ -53,7 +53,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
         version: '1.1.9'        
-      }}
+      }
+    }
   }
   resource module2 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-BreakGlassAccountIdentityProtectionLicense'
@@ -61,7 +62,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-BreakGlassAccountIdentityProtectionLicense.zip'
         version: '1.2.0'
-      }}
+      }
+    }
   }
   resource module3 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-DeprecatedAccounts'
@@ -69,7 +71,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DeprecatedAccounts.zip'
         version: '1.2.6'
-      }}
+      }
+    }
   }
   resource module4 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ExternalAccounts'
@@ -85,7 +88,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-PrivilegedExternalAccounts.zip'
         version: '1.0.7'
-      }}
+      }
+    }
   }
   resource module7 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SubnetComplianceStatus'
@@ -93,7 +97,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SubnetComplianceStatus.zip'
         version: '1.1.13'
-      }}
+      }
+    }
   }
   resource module8 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-VNetComplianceStatus'
@@ -101,7 +106,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
         version: '1.2.0'
-      }}
+      }
+    }
   }
   resource module9 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Detect-UserBGAUsersAuthMethods'
@@ -109,7 +115,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Detect-UserBGAUsersAuthMethods.zip'
         version: '1.2.8'
-      }}
+      }
+    }
   }
   resource module10 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Get-AzureADLicenseType'
@@ -125,8 +132,9 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.5.4'
-      }}
+        version: '1.5.5'
+      }
+    }
   }
   resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Validate-BreakGlassAccount'
@@ -134,7 +142,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Validate-BreakGlassAccount.zip'
         version: '1.1.0'
-      }}
+      }
+    }
   }
   resource module13 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AllowedLocationPolicy'
@@ -176,7 +185,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
         version: '1.4.23'
-      }}
+      }
+    }
   }
   resource module19 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ProtectionDataAtRest'
@@ -184,7 +194,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
         version: '1.3.8'
-      }}
+      }
+    }
   }
   resource module20 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-SecureConnectionInTransit'
@@ -200,7 +211,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudConsoleAccess.zip'
         version: '1.1.0'
-      }}
+      }
+    }
   }
   resource module23 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkWatcherEnabled'
@@ -208,7 +220,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
         version: '1.0.8'
-      }}
+      }
+    }
   }
   resource module26 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipal'
@@ -216,7 +229,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipal.zip'
         version: '1.3.5'
-      }}
+      }
+    }
   }
   resource module27 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-ServicePrincipalSecrets'
@@ -224,7 +238,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServicePrincipalSecrets.zip'
         version: '1.0.4'
-      }}
+      }
+    }
   }
   resource module28 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-AllUserMFARequired'
@@ -249,7 +264,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AdminAccess.zip'
         version: '1.0.6'
-      }}
+      }
+    }
   }
   resource module31 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserAccountGCEventLogging'
@@ -257,7 +273,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserAccountGCEventLogging.zip'
         version: '1.0.8'
-      }}
+      }
+    }
   }
   resource module32 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-UserGroups'
@@ -284,7 +301,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
         version: '1.0.8'
-      }}
+      }
+    }
   }
         
   resource module35 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -333,7 +351,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Monitor-BreakGlassAccount.zip'
         version: '1.1.1'
-      }}
+      }
+    }
   }
 
   resource module39 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -342,7 +361,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkSecurityTools.zip'
         version: '1.0.3'
-      }}
+      }
+    }
   }
         
   resource module40 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -351,7 +371,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AlertsMonitor.zip'
         version: '1.1.0'
-      }}
+      }
+    }
   }
 
   resource module41 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -360,7 +381,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
         version: '1.1.0'
-      }}
+      }
+    }
   }
 
   resource module42 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -369,7 +391,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AppServiceHTTPSConfiguration.zip'
         version: '1.0.0'
-      }}
+      }
+    }
   }
 
   resource module43 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -378,7 +401,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FunctionAppHTTPSConfiguration.zip'
         version: '1.0.0'
-      }}
+      }
+    }
   }
 
   resource module44 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -387,7 +411,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FinOpsToolStatus.zip'
         version: '1.0.4'
-      }}
+      }
+    }
   }
   
   resource module45 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -436,7 +461,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-TLSConfiguration.zip'
         version: '1.1.0'
-      }}
+      }
+    }
   }
 
   resource module50 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -445,7 +471,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.1.0.nupkg'
         version: '1.1.0'
-      }}
+      }
+    }
   }
 
   resource module51 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -454,7 +481,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
         version: '4.0.2'
-      }}
+      }
+    }
   }
 
   resource module52 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -463,7 +491,8 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkInterfaceIPs.zip'
         version: '1.0.1'
-      }}
+      }
+    }
   }
 
   // Variables for Runbooks
@@ -577,46 +606,46 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
 
   resource variable16 'variables' = if (newDeployment || updateCoreResources) {
     name: 'lighthouseTargetManagementGroupID'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${lighthouseTargetManagementGroupID}"'
+    properties: {
+      isEncrypted: true
+      value: '"${lighthouseTargetManagementGroupID}"'
   }
   }
 
   resource variable17 'variables' = if (newDeployment || updateCoreResources) {
     name: 'DepartmentName'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${DepartmentName}"'
+    properties: {
+      isEncrypted: true
+      value: '"${DepartmentName}"'
   }
   }
   resource variable18 'variables' = if (newDeployment || updateCoreResources) {
     name: 'reservedSubnetList'
-    'properties': {
-      'isEncrypted': true
-      'value': '"GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet"'
+    properties: {
+      isEncrypted: true
+      value: '"GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet"'
   }
   }
   
   resource variable19 'variables' = if (newDeployment || updateCoreResources) {
     name: 'SSCReadOnlyServicePrincipalNameAPPID'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${SSCReadOnlyServicePrincipalNameAPPID}"'
+    properties: {
+      isEncrypted: true
+      value: '"${SSCReadOnlyServicePrincipalNameAPPID}"'
   }
   }
   resource variable20 'variables' = if (newDeployment || updateCoreResources) {
     name: 'securityRetentionDays'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${securityRetentionDays}"'
+    properties: {
+      isEncrypted: true
+      value: '"${securityRetentionDays}"'
   }
   }
   resource variable21 'variables' = if (newDeployment || updateCoreResources) {
     name: 'cloudUsageProfiles'
-    'properties': {
-      'isEncrypted': true
-      'value': '"${cloudUsageProfiles}"'
+    properties: {
+      isEncrypted: true
+      value: '"${cloudUsageProfiles}"'
   }
   }
   resource variable22 'variables' = if (newDeployment || updateCoreResources) {
