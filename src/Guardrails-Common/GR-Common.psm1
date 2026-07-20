@@ -1303,6 +1303,52 @@ function Send-GuardrailsData {
 
     # Per API docs, encode the body explicitly as UTF-8 to prevent data transmission issues.
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Data)
+
+    # The DCR ingestion endpoint rejects payloads over 1 MB. Large tenants (e.g. 18K+ users)
+    # can easily blow past this with a single page of results, so we split proactively at 900 KB
+    # to leave a bit of room.
+    $maxBytesPerRequest = 900 * 1024
+
+    if ($bodyBytes.Length -gt $maxBytesPerRequest) {
+        Write-Warning "Send-GuardrailsData: payload for '$LogType' is $($bodyBytes.Length) bytes, which exceeds the DCR ingestion limit of 1 MB. Splitting into sub-1 MB chunks."
+
+        $records = $Data | ConvertFrom-Json -Depth 20
+        if ($records -isnot [array]) { $records = @($records) }
+
+        # Compact-serialize each record once up front. Using the same strings for both the
+        # size check and the final payload means what we measure is exactly what we send.
+        $serializedRecords = @($records | ForEach-Object { ConvertTo-Json -InputObject $_ -Depth 20 -Compress })
+
+        $chunks  = [System.Collections.Generic.List[string[]]]::new()
+        $current = [System.Collections.Generic.List[string]]::new()
+        $currentBytes = 2  # opening '[' + closing ']'
+
+        foreach ($recordJson in $serializedRecords) {
+            $recordBytes = [System.Text.Encoding]::UTF8.GetByteCount($recordJson)
+            $commaBytes  = if ($current.Count -gt 0) { 1 } else { 0 }
+
+            if (($currentBytes + $recordBytes + $commaBytes) -gt $maxBytesPerRequest -and $current.Count -gt 0) {
+                $chunks.Add($current.ToArray())
+                $current = [System.Collections.Generic.List[string]]::new()
+                $currentBytes = 2
+                $commaBytes = 0
+            }
+
+            $current.Add($recordJson)
+            $currentBytes += $recordBytes + $commaBytes
+        }
+
+        if ($current.Count -gt 0) { $chunks.Add($current.ToArray()) }
+
+        Write-Verbose "Send-GuardrailsData: split '$LogType' payload into $($chunks.Count) chunk(s) for DCR ingestion."
+
+        foreach ($chunk in $chunks) {
+            $chunkJson = '[' + ($chunk -join ',') + ']'
+            Send-GuardrailsData -Data $chunkJson -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkSpaceKey
+        }
+        return
+    }
+
     $retryDelaysInSeconds = @(30, 60, 120)
 
     for ($attempt = 1; $attempt -le ($retryDelaysInSeconds.Count + 1); $attempt++) {
