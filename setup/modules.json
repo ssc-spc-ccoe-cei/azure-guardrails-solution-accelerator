@@ -908,7 +908,7 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName 'CBS Subscription' -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
+    "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName $msgTable.cbsSubscription -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString",
     "variables": [
       {
         "Name": "cbssubscriptionName",
