@@ -352,7 +352,7 @@ CwpInformational = [Informational] {0}
 
 
 # GuardRail #12
-mktPlaceCreation = Market Place Creation
+mktPlaceCreation = Marketplace Creation
 mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
 mktPlaceCreatedNotEnabled = The Private Marketplace has been created but not enabled.
 mktPlaceNotCreated = The Private Marketplace has not been created.
