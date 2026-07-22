@@ -68,27 +68,21 @@ function Export-GSAConfigToKeyVault {
     Write-Host "Exporting configuration to GSA KeyVault "
     Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
 
-    # Windows and Linux/Cloud Shell use different environment variables for the local username.
-    $deployerLocalUsername = if ($env:USERNAME) {
-        $env:USERNAME
-    }
-    elseif ($env:USER) {
-        $env:USER
-    }
-    else {
-        [Environment]::UserName
-    }
-
+    # Keep the same audit details as the old export. Environment.UserName works in both
+    # Windows PowerShell and Linux-based Cloud Shell without separate OS-specific checks.
     $templateParams = @{
         keyVaultName          = $config['runtime']['keyVaultName']
         configValue           = ConvertTo-Json $config -Depth 10
         deploymentTimestamp   = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
-        deployerLocalUsername = $deployerLocalUsername
+        deployerLocalUsername = [Environment]::UserName
         deployerAzureId       = $config['runtime']['userId']
     }
 
     try {
-        # Use ARM deployment so Cloud Shell does not need a separate Key Vault data-plane token.
+        # The old Set-AzKeyVaultSecret command requested a separate Key Vault token near the end
+        # of a long installation. That token request could expire, time out, or trigger a blocked
+        # device login. This ARM deployment uses the same Azure session as the rest of the install,
+        # so saving the config does not introduce that second Key Vault authentication step.
         $deployment = New-AzResourceGroupDeployment `
             -ResourceGroupName $config['runtime']['resourceGroup'] `
             -Name "guardrails-config-export-$(Get-Date -Format 'yyyyMMddHHmmss')" `
@@ -98,6 +92,7 @@ function Export-GSAConfigToKeyVault {
             -ErrorAction Stop `
             -Verbose:$useVerbose
 
+        # Do not report a successful installation unless Azure confirms that it saved the secret.
         if ($deployment.ProvisioningState -ne 'Succeeded') {
             throw "ARM deployment finished with provisioning state '$($deployment.ProvisioningState)'."
         }
@@ -105,7 +100,7 @@ function Export-GSAConfigToKeyVault {
         Write-Host "Successfully exported gsaConfigExportLatest to Key Vault '$($config['runtime']['keyVaultName'])'" -ForegroundColor Green
     }
     catch {
-        $recoveryMessage = "Run Connect-AzAccount -Tenant '$($config['runtime']['tenantId'])' -Subscription '$($config['runtime']['subscriptionId'])' -Scope Process, then retry without deleting existing resources; use -update when recovering an existing core deployment. If Cloud Shell or device-code sign-in is blocked by Conditional Access or location policy, run from an approved local PowerShell session or use service principal authentication with ARM deployment access to the Guardrails resource group."
+        $recoveryMessage = "Run Connect-AzAccount -Tenant '$($config['runtime']['tenantId'])' -Subscription '$($config['runtime']['subscriptionId'])' -Scope Process, then re-run the same deployment command. Existing resources do not need to be deleted. If Cloud Shell or device-code sign-in is blocked by Conditional Access or location policy, run from an approved local PowerShell session or use service principal authentication with ARM deployment access to the Guardrails resource group."
         throw "Failed to export gsaConfigExportLatest to Key Vault '$($config['runtime']['keyVaultName'])' through Azure Resource Manager. $recoveryMessage Last error: $($_.Exception.Message)"
     }
 }
@@ -422,10 +417,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
         
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
 
+        # A fresh core install saves the config immediately after creating the core resources.
+        # Update and non-core paths save it at the shared step below. This flag keeps the export
+        # to one successful attempt per deployment while preserving the earlier fail-fast path.
+        $configExported = $false
+
         If (!$update.IsPresent) {
             Write-Host "Deploying Guardrails Solution Accelerator components ($($newComponents -join ','))..." -ForegroundColor Green
             Write-Verbose "Performing a new deployment of the Guardrails Solution Accelerator..."
-            $configExported = $false
 
             # confirms that prerequisites are met and that deployment can proceed
             Confirm-GSAPrerequisites -config $config -newComponents $newComponents -Verbose:$useVerbose
@@ -436,11 +435,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     Write-Host "Deploying CoreComponents..." -ForegroundColor Green
                     Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
 
-                    # Store the config as soon as the core resources and final runtime values are ready.
+                    # Save the final config as soon as the core resources exist. If authentication
+                    # is unavailable, stop here instead of failing after Lighthouse is also deployed.
+                    # Saving before runbook setup also guarantees the secret exists before the first run.
                     Export-GSAConfigToKeyVault -config $config -useVerbose $useVerbose
                     $configExported = $true
 
-                    # Upload modules.json and add the runbooks only after their required config exists.
+                    # The runbooks do not read the config while they are uploaded, but they require it
+                    # when they run. At this point their first execution cannot race the secret export.
                     Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
                     Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
                 }
@@ -481,7 +483,6 @@ Function Deploy-GuardrailsSolutionAccelerator {
         Else {
             Write-Host "Updating Guardrails Solution Accelerator components ($($componentsToUpdate -join ','))..." -ForegroundColor Green
             Write-Verbose "Updating an existing deployment of the Guardrails Solution Accelerator..."
-            $configExported = $false
         
             # skip deployment of LAW and KV as they should exist already
             $paramObject.deployKV = $false
@@ -553,12 +554,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "Completed update deployment."
         }
 
+        # Updates and deployments without new core resources did not use the early export above.
+        # Save their config here so every path completes the export before starting the runbooks.
         if (-not $configExported) {
             Export-GSAConfigToKeyVault -config $config -useVerbose $useVerbose
-            $configExported = $true
         }
 
-        # after successful config export
+        # Start the runbooks only after the config secret is confirmed. The runbook jobs start in
+        # the background, so reversing these steps could let a job read the secret before it exists.
         Write-Host "Invoking manual execution of Azure Automation runbooks..."
         try{
             Invoke-GSARunbooks -config $config -Verbose:$useVerbose
