@@ -124,9 +124,9 @@ userInGroup = No users without groups
 
 riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
 locationBasedConditionalPolicy = Authentication Mechanisms: Location Based Conditional Access Policies
-nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
+nonCompliantC1= Configure one of the required conditional access policies to force password changes or block sign-ins based on user risk or sign-in risk. Refer to the remediation guide to determine which policy is sufficient for your organization.
 nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
-compliantC1 = The conditional access policy to force password changes based on user risk has been configured.
+compliantC1 = One of the required conditional access policies has been configured and meets the requirements for this control.
 compliantC2 = The conditional access policy to prevent sign-in's from unapproved named locations has been configured.
 
 # nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
