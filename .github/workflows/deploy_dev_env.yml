@@ -19,12 +19,17 @@ env:
 
 jobs:
   sign-scripts:
+    # Automatic deployments should run only after a successful release. Manual runs remain available.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Validate, test and publish Powershell scripts as pipeline artifacts
     runs-on: windows-latest
     environment: test
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
+        with:
+          # Automatic runs use the released commit; manual runs use the branch selected in GitHub.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - name: Test Module Imports
         shell: powershell
         run: |
@@ -86,6 +91,9 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v3
+        with:
+          # Use the same source for deployment that was used to build the module artifacts above.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - name: Download zipped modules and replace old ones
         uses: actions/download-artifact@v4
         with:
