@@ -299,6 +299,7 @@ policyNotConfiguredSub = Required policy is not assigned to this subscription: {
 policyAssignedSub = Required policy is assigned at a scope covering this subscription: {0}.
 
 # GuardRail #10
+cbsSubscription = CBS Subscription
 cbsSubDoesntExist = CBS Subscription doesnt exist
 cbcSensorsdontExist = The expected CBS sensors do not exist in these subscriptions:
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
@@ -351,7 +352,7 @@ CwpInformational = [Informational] {0}
 
 
 # GuardRail #12
-mktPlaceCreation = MarketPlaceCreation
+mktPlaceCreation = Marketplace Creation
 mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
 mktPlaceCreatedNotEnabled = The Private Marketplace has been created but not enabled.
 mktPlaceNotCreated = The Private Marketplace has not been created.

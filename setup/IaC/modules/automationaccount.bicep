@@ -125,7 +125,11 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
+<<<<<<< HEAD
         version: '1.5.3'
+=======
+        version: '1.5.4'
+>>>>>>> cbe7b639bd2ae8692f92e05b16983d4003b42c0e
       }}
   }
   resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
