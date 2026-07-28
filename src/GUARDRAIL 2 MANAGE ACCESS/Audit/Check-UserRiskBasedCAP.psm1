@@ -56,6 +56,7 @@ function Test-CommonFilters {
     # 20. excludeGuestsOrExternalUsers = null
     # 21. excludeUsers/excludeGroups
     $validPolicies =  $policy | Where-Object {
+        Write-Host "Evaluating policy: $($_.displayName)"
         
         $userRiskPasswordChange =
             $_.conditions.userRiskLevels -contains 'high' -and
@@ -116,9 +117,9 @@ function Test-CommonFilters {
                     $_.sessionControls.signInFrequency.isEnabled -eq $true
                 )
             ) -and
-            $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
-            $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
-            $_.sessionControls.signInFrequency.isEnabled -eq $true -and
+            # $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
+            # $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
+            # $_.sessionControls.signInFrequency.isEnabled -eq $true -and
             (Test-IsNullOrEmptyArray $_.conditions.platforms) -and
             (Test-IsNullOrEmptyArray $_.conditions.locations) -and
             (Test-IsNullOrEmptyArray $_.conditions.devices) -and
