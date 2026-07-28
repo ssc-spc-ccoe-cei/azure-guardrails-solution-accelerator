@@ -19,6 +19,7 @@ CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 # Global
 isCompliant = Compliant.
 isNotCompliant = Non-compliant.
+subEvaluationNotApplicable = The subscription '{0}' is not applicable for evaluation. It may be cancelled and pending automatic deletion.
 
 # Guardrail #1
 MSEntIDLicense = Microsoft Entra ID License Type
@@ -396,6 +397,6 @@ globalAdminMinAccnts = There must be at least two global administrator accounts.
 
 globalAdminAccntsMFADisabled1 = The following account: {0} does not have multi-factor authentication (MFA) enabled
 globalAdminAccntsMFADisabled2 = The following accounts: {0} do not have multi-factor authentication (MFA) enabled 
-globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled 
+globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled
 
 '@
