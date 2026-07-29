@@ -94,14 +94,14 @@ function Test-CommonFilters {
                 ) -or
                 $_.grantControls.builtInControls -contains 'block'
             ) -and
-            $acceptedRiskConfiguration -and
+            # $acceptedRiskConfiguration -and
             $_.conditions.clientAppTypes -contains 'all' -and
             ($_.conditions.clientAppTypes -contains 'all'  -or 
                 ($_.conditions.clientAppTypes -contains 'browser' -and
                     $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and
                     $_.conditions.clientAppTypes -contains 'exchangeActiveSync' -and
                     $_.conditions.clientAppTypes -contains 'other')) -and
-            $_.conditions.userRiskLevels -contains 'high' -and
+            # $_.conditions.userRiskLevels -contains 'high' -and
             (
                 # IF block → sessionControls must be empty
                 (
