@@ -324,8 +324,23 @@ function Check-ApplicationGatewayCertificateValidity {
                             $certBytes = [System.Convert]::FromBase64String($cert.PublicCertData)
                             $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
                             $certCollection.Import($certBytes)
-                            $x509cert = $certCollection[0]
-                        
+
+                            # When a PFX or chain is imported the collection can contain the leaf cert
+                            # plus one or more intermediates. Index [0] is not guaranteed to be the
+                            # leaf — find it explicitly: the leaf is the cert whose Subject does not
+                            # appear as the Issuer of any other cert in the collection.
+                            $x509cert = $certCollection | Where-Object {
+                                $subject    = $_.Subject
+                                $thumbprint = $_.Thumbprint
+                                -not ($certCollection | Where-Object { $_.Issuer -eq $subject -and $_.Thumbprint -ne $thumbprint })
+                            } | Select-Object -First 1
+
+                            if (-not $x509cert) {
+                                # Single cert or couldn't determine leaf — fall back to index 0
+                                Write-Verbose "Could not identify leaf cert in chain for listener '$($listener.Name)'; falling back to first cert."
+                                $x509cert = $certCollection[0]
+                            }
+
                             if ($x509cert.NotAfter -le (Get-Date)) {
                                 $subComments += " " +$msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
                                 $isSubCompliant = $false
