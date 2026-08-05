@@ -274,7 +274,18 @@ function Check-ApplicationGatewayCertificateValidity {
                                     $certBytes = [System.Convert]::FromBase64String($plainTextSecret)
                                     $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
                                     $certCollection.Import($certBytes)
-                                    $x509cert = $certCollection[0]
+
+                                    $x509cert = $certCollection | Where-Object {
+                                        $subject    = $_.Subject
+                                        $thumbprint = $_.Thumbprint
+                                        -not ($certCollection | Where-Object { $_.Issuer -eq $subject -and $_.Thumbprint -ne $thumbprint })
+                                    } | Select-Object -First 1
+
+                                    if (-not $x509cert) {
+                                        Write-Verbose "Could not identify leaf cert in chain for listener '$($listener.Name)'; falling back to first cert."
+                                        $x509cert = $certCollection[0]
+                                    }
+
                                     Write-Verbose "Successfully imported certificate from Key Vault"
                                 }
                                 catch [System.FormatException] {                                    
