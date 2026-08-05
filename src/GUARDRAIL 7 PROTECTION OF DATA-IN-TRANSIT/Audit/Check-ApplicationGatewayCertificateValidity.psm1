@@ -186,7 +186,24 @@ function Check-ApplicationGatewayCertificateValidity {
     # ----------------------
 
     # Get all subscriptions in tenant scope
-    $subscriptions = Get-AzSubscription
+    # $subscriptions = Get-AzSubscription
+    $allSubscriptions = Get-AzSubscription
+    $subscriptions = $allSubscriptions | Where-Object { $_.State -eq 'Enabled' }
+    $skippedSubscriptions = $allSubscriptions | Where-Object { $_.State -ne 'Enabled' }
+
+    foreach ($skippedSubscription in $skippedSubscriptions) {
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName    = $skippedSubscription.Name
+            ComplianceStatus    = false
+            Comments            = ""
+            ItemName            = $ItemName
+            ControlName         = $ControlName
+            ReportTime          = $ReportTime
+            itsgcode            = $itsgcode
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSubscription -msgTable $msgTable
+        $PsObject.Add($notEvaluatedResult) | Out-Null
+    }
 
     foreach ($subscription in $subscriptions) {
 
