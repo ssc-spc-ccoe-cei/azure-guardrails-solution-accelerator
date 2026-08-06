@@ -20,7 +20,10 @@ function Verify-FunctionAppHTTPSConfiguration {
 
     #Check Subscriptions
     try {
-        $objs = Get-AzSubscription -ErrorAction Stop| Where-Object {$_.State -eq "Enabled"} 
+        # $objs = Get-AzSubscription -ErrorAction Stop| Where-Object {$_.State -eq "Enabled"}
+        $allObjs = Get-AzSubscription -ErrorAction Stop
+        $objs = @($allObjs | Where-Object {$_.State -eq "Enabled"})
+        $skippedObjs = @($allObjs | Where-Object {$_.State -ne "Enabled"})
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of `
@@ -31,9 +34,9 @@ function Verify-FunctionAppHTTPSConfiguration {
     [string]$type = "subscription"
 
     if ($EnableMultiCloudProfiles) {
-        $ObjectList += Check-PBMMPolicies -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles
+        $ObjectList += Check-PBMMPolicies -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -skippedObjList $skippedObjs
     } else {
-        $ObjectList += Check-PBMMPolicies -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
+        $ObjectList += Check-PBMMPolicies -objList $objs -objType $type -itsgcode $itsgcode -requiredPolicyExemptionIds $grRequiredPolicies -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName -skippedObjList $skippedObjs
     }
     Write-Host "$type(s) compliance results are collected"
 

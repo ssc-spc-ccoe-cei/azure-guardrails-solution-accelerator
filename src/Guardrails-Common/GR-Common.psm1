@@ -3496,12 +3496,30 @@ function Check-PBMMPolicies {
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles
+        [switch] $EnableMultiCloudProfiles,
+        [System.Object] $skippedObjList
 
     )   
     [System.Collections.ArrayList] $tempObjectList = New-Object System.Collections.ArrayList
     $policyAssignmentCache = @{}
     $policySetDefinitionCache = @{}
+
+    foreach ($skippedObj in $skippedObjList){
+        $notEvaluatedResult = [PSCustomObject]@{
+            Type                = [string]$objType
+            Id                  = [string]$skippedObj.Id
+            # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
+            SubscriptionName = $(if ($objType -eq "subscription") { [string]$skippedObj.Name } else { "" })
+            ComplianceStatus = [boolean]$false
+            Comments = ''
+            ItemName = [string]$ItemName
+            itsgcode = [string]$itsgcode
+            ControlName = [string]$ControlName
+            ReportTime = [string]$ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedObj -msgTable $msgTable
+        $tempObjectList.Add($notEvaluatedResult) | Out-Null
+    }
 
     foreach ($obj in $objList)
     {

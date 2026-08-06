@@ -93,18 +93,48 @@ function Verify-TLSForStorageAccount {
     }
 
     try {
-        $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
-        if (-not $objs) {
-            $errorMsg = "No enabled subscriptions found"
-            $ErrorList.Add($errorMsg)
-            Write-Warning $errorMsg
-            return $moduleOutput
-        }
+        # $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
+        # if (-not $objs) {
+        #     $errorMsg = "No enabled subscriptions found"
+        #     $ErrorList.Add($errorMsg)
+        #     Write-Warning $errorMsg
+        #     return $moduleOutput
+        # }
+        $allObjs = Get-AzSubscription -ErrorAction Stop
+        $objs = @($allObjs | Where-Object {$_.State -eq "Enabled"})
+        $skippedObjs = @($allObjs | Where-Object {$_.State -ne "Enabled"})
+
     }
     catch {
         $errorMsg = "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installation of the Az.Resources module; returned error message: $_"
         $ErrorList.Add($errorMsg)
         Write-Warning $errorMsg
+        return $moduleOutput
+    }
+
+    foreach ($skippedObj in $skippedObjs) {
+        $notEvaluatedResult = [PSCustomObject]@{
+            Type             = [string]"subscription"
+            Id               = [string]$skippedObj.Id
+            Name             = [string]$skippedObj.Name
+            SubscriptionName = [string]$skippedObj.Name
+            DisplayName      = [string]$(if ($null -eq $skippedObj.DisplayName){ $skippedObj.Name } else { $skippedObj.DisplayName })
+            ComplianceStatus = [boolean]$false
+            Comments         = [string]$Comments
+            ItemName         = [string]$ItemName
+            itsgcode         = [string]$itsgcode
+            ControlName      = [string]$ControlName
+            ReportTime       = [string]$ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedObj -msgTable $msgTable
+        $ObjectList.Add($notEvaluatedResult) | Out-Null
+    }
+
+    if (-not $objs -or $objs.Count -eq 0) {
+        $errorMsg = "No enabled subscriptions found to evaluate"
+        $ErrorList.Add($errorMsg)
+        Write-Warning $errorMsg
+        $moduleOutput.ComplianceResults = $ObjectList
         return $moduleOutput
     }
 
