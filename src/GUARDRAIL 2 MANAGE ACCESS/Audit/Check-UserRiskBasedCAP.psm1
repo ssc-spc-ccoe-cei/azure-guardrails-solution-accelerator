@@ -94,8 +94,8 @@ function Test-CommonFilters {
                 ) -or
                 $_.grantControls.builtInControls -contains 'block'
             ) -and
-            # $acceptedRiskConfiguration -and
-            $_.conditions.clientAppTypes -contains 'all' -and
+            $acceptedRiskConfiguration -and
+            # $_.conditions.clientAppTypes -contains 'all' -and
             ($_.conditions.clientAppTypes -contains 'all'  -or 
                 ($_.conditions.clientAppTypes -contains 'browser' -and
                     $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and
