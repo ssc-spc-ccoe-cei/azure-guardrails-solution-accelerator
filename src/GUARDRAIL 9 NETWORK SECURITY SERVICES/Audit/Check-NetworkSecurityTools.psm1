@@ -86,12 +86,29 @@ function Check-NetworkSecurityTools {
     $ErrorList = [System.Collections.ArrayList]::new()
 
     try {
-        $subs = @(Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' })
+        $allSubs = Get-AzSubscription -ErrorAction Stop
+        $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
+        $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"})
     }
     catch {
         $errorMessage = "Failed to get subscriptions. Error: $_"
         $ErrorList.Add($errorMessage) | Out-Null
         throw $errorMessage
+    }
+
+    foreach ($skippedSub in $skippedSubs){
+        # Segmentation
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName = $skippedSub.Name
+            ComplianceStatus = $false
+            Comments         = ''
+            ItemName         = $ItemName
+            ControlName      = $ControlName
+            itsgcode         = $itsgcode
+            ReportTime       = $ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $ResultsList.Add($notEvaluatedResult) | Out-Null
     }
 
     if ($subs.Count -eq 0) {

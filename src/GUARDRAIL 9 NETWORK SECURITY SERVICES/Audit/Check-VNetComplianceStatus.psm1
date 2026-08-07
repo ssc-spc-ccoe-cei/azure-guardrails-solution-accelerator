@@ -186,12 +186,30 @@ function Get-VNetComplianceInformation {
 
     # Get the enabled subscriptions this module should inspect.
     try {
-        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq 'Enabled' }
+        $allSubs = Get-AzSubscription -ErrorAction Stop
+        $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
+        $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"})
     }
     catch {
         $errorMessage = "Failed to execute 'Get-AzSubscription'. Verify permissions and Az.Accounts module installation. Error: $_"
         $ErrorList.Add($errorMessage) | Out-Null
         throw $errorMessage
+    }
+
+    foreach ($skippedSub in $skippedSubs){
+        # Segmentation
+        $notEvaluatedResult = [PSCustomObject]@{
+            VNETName         = $msgTable.subscriptionScope
+            SubscriptionName = $skippedSub.Name
+            ComplianceStatus = $false
+            Comments         = ''
+            ItemName         = $msgTable.vnetDDosConfig
+            ControlName      = $ControlName
+            itsgcode         = $itsgcode
+            ReportTime       = $ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $ResultList.Add($notEvaluatedResult) | Out-Null
     }
 
     # Convert the comma-separated exclusion list into an array so name matching is simple.
