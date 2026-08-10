@@ -104,7 +104,7 @@ function Check-PolicyStatus {
         $CloudUsageProfiles = "3",
         [string] $ModuleProfiles,
         [switch] $EnableMultiCloudProfiles, # default to false
-        [hashtable] $ComplianceCache = @{}
+        [hashtable] $ComplianceCache = @{},
         [System.Object] $skippedObjList = @()
     )
 
