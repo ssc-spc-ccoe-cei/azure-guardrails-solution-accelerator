@@ -105,9 +105,27 @@ function Check-PolicyStatus {
         [string] $ModuleProfiles,
         [switch] $EnableMultiCloudProfiles, # default to false
         [hashtable] $ComplianceCache = @{}
+        [System.Object] $skippedObjList = @()
     )
 
     [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+
+    foreach ($skippedObj in $skippedObjList){
+        $notEvaluatedResult = [PSCustomObject]@{
+            Type = [string]$objType
+            Id = [string]$skippedObj.Id
+            SubscriptionName = [string]$skippedObj.Name
+            ComplianceStatus = $false
+            Comments = ''
+            ItemName = [string]$ItemName
+            itsgcode = [string]$itsgcode
+            ControlName = [string]$ControlName
+            ReportTime = [string]$ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $tempObjectList.Add($notEvaluatedResult) | Out-Null
+    }
+
     $TotalInitResources = 0
     $TotalPolicyResources = 0
     $InitNonCompliantResources = 0
@@ -349,7 +367,10 @@ function Verify-AllowedLocationPolicy {
     }
     #Check Subscriptions
     try {
-        $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
+        # $objs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"}
+        $allObjs = Get-AzSubscription -ErrorAction Stop
+        $objs = @($allObjs | Where-Object {$_.State -eq "Enabled"})
+        $skippedObjs = @($allObjs | Where-Object {$_.State -ne "Enabled"})
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
@@ -375,9 +396,9 @@ function Verify-AllowedLocationPolicy {
         $ErrorActionPreference = 'Stop'
         $type = "subscription"
         if ($EnableMultiCloudProfiles) {
-            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ComplianceCache $ComplianceCache
+            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ComplianceCache $ComplianceCache -skippedObjList $skippedObjs
         } else {
-            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ComplianceCache $ComplianceCache
+            $ObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -InitiativeID $InitiativeID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ComplianceCache $ComplianceCache -skippedObjList $skippedObjs
         }
     }
     catch {
