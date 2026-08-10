@@ -56,6 +56,29 @@ function Test-CommonFilters {
     # 20. excludeGuestsOrExternalUsers = null
     # 21. excludeUsers/excludeGroups
     $validPolicies =  $policy | Where-Object {
+        Write-Host "Evaluating policy: $($_.displayName)"
+        
+        $userRiskPasswordChange =
+            $_.conditions.userRiskLevels -contains 'high' -and
+            $_.grantControls.builtInControls -contains 'mfa' -and
+            $_.grantControls.builtInControls -contains 'passwordChange'
+
+        $userRiskBlock =
+            $_.conditions.userRiskLevels -contains 'high' -and
+            $_.grantControls.builtInControls -contains 'block'
+
+        $signInRiskBlock =
+            (
+                $_.conditions.signInRiskLevels -contains 'medium' -or
+                $_.conditions.signInRiskLevels -contains 'high'
+            ) -and
+            $_.grantControls.builtInControls -contains 'block'
+
+        $acceptedRiskConfiguration =
+            $userRiskPasswordChange -or
+            $userRiskBlock -or
+            $signInRiskBlock
+
         (
             $_.state -eq "enabled" -and
             $_.conditions.users.includeUsers -contains 'All' -and
@@ -71,13 +94,14 @@ function Test-CommonFilters {
                 ) -or
                 $_.grantControls.builtInControls -contains 'block'
             ) -and
-            $_.conditions.clientAppTypes -contains 'all' -and
+            $acceptedRiskConfiguration -and
+            # $_.conditions.clientAppTypes -contains 'all' -and
             ($_.conditions.clientAppTypes -contains 'all'  -or 
                 ($_.conditions.clientAppTypes -contains 'browser' -and
                     $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and
                     $_.conditions.clientAppTypes -contains 'exchangeActiveSync' -and
                     $_.conditions.clientAppTypes -contains 'other')) -and
-            $_.conditions.userRiskLevels -contains 'high' -and
+            # $_.conditions.userRiskLevels -contains 'high' -and
             (
                 # IF block → sessionControls must be empty
                 (
@@ -93,10 +117,9 @@ function Test-CommonFilters {
                     $_.sessionControls.signInFrequency.isEnabled -eq $true
                 )
             ) -and
-            $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
-            $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
-            $_.sessionControls.signInFrequency.isEnabled -eq $true -and
-            (Test-IsNullOrEmptyArray $_.conditions.signInRiskLevels) -and
+            # $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
+            # $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
+            # $_.sessionControls.signInFrequency.isEnabled -eq $true -and
             (Test-IsNullOrEmptyArray $_.conditions.platforms) -and
             (Test-IsNullOrEmptyArray $_.conditions.locations) -and
             (Test-IsNullOrEmptyArray $_.conditions.devices) -and
