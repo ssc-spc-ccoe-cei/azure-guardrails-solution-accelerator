@@ -348,14 +348,30 @@ function Get-DefenderForCloudAlerts {
     $ErrorList = New-Object System.Collections.ArrayList
 
     # -------------------------
-    # 1) Get enabled subscriptions
+    # 1) Get enabled/disabled subscriptions
     # -------------------------
     try {
-        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object { $_.State -eq "Enabled" }
+        $allSubs = Get-AzSubscription -ErrorAction Stop
+        $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
+        $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"})
     }
     catch {
         [void]$ErrorList.Add("Failed Get-AzSubscription. Verify Az.Resources + permissions. Error: $_")
         throw "Error: Failed Get-AzSubscription. Verify Az.Resources + permissions. Error: $_"
+    }
+
+    foreach ($skippedSub in $skippedSubs){
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName = $skippedSub.Name
+            ComplianceStatus = $false
+            Comments         = ''
+            ItemName         = $ItemName
+            ControlName      = $ControlName
+            itsgcode         = $itsgcode
+            ReportTime       = $ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        [void]$PsObject.Add($notEvaluatedResult) | Out-Null
     }
 
     # -------------------------
