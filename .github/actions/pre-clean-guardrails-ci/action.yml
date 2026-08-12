@@ -104,32 +104,32 @@ runs:
     - name: Pre-clean Guardrails resources
       uses: azure/powershell@v2
       env:
-        GSA_SUBSCRIPTION_ID: ${{ inputs.subscription-id }}
-        GSA_SUFFIX_ENV_NAME: ${{ inputs.suffix-environment-variable-name }}
-        GSA_KEY_VAULT_NAME: ${{ inputs.key-vault-name }}
-        GSA_RESOURCE_GROUP: ${{ inputs.resource-group }}
-        GSA_STORAGE_ACCOUNT_NAME: ${{ inputs.storage-account-name }}
-        GSA_LAW_NAME: ${{ inputs.log-analytics-workspace-name }}
-        GSA_AUTOMATION_ACCOUNT_NAME: ${{ inputs.automation-account-name }}
-        GSA_BGA1: ${{ inputs.first-break-glass-account-upn }}
-        GSA_BGA2: ${{ inputs.second-break-glass-account-upn }}
-        GSA_PBMM_POLICY_ID: ${{ inputs.pbmm-policy-id }}
-        GSA_ALLOWED_LOCATION_POLICY_ID: ${{ inputs.allowed-location-policy-id }}
+        GSA_SUBSCRIPTION_ID:                ${{ inputs.subscription-id }}
+        GSA_SUFFIX_ENV_NAME:                ${{ inputs.suffix-environment-variable-name }}
+        GSA_KEY_VAULT_NAME:                 ${{ inputs.key-vault-name }}
+        GSA_RESOURCE_GROUP:                 ${{ inputs.resource-group }}
+        GSA_STORAGE_ACCOUNT_NAME:           ${{ inputs.storage-account-name }}
+        GSA_LAW_NAME:                       ${{ inputs.log-analytics-workspace-name }}
+        GSA_AUTOMATION_ACCOUNT_NAME:        ${{ inputs.automation-account-name }}
+        GSA_BGA1:                           ${{ inputs.first-break-glass-account-upn }}
+        GSA_BGA2:                           ${{ inputs.second-break-glass-account-upn }}
+        GSA_PBMM_POLICY_ID:                 ${{ inputs.pbmm-policy-id }}
+        GSA_ALLOWED_LOCATION_POLICY_ID:     ${{ inputs.allowed-location-policy-id }}
         GSA_ALLOWED_LOCATION_INITIATIVE_ID: ${{ inputs.allowed-location-initiative-id }}
-        GSA_DEPARTMENT_NUMBER: ${{ inputs.department-number }}
-        GSA_CBS_SUBSCRIPTION_NAME: ${{ inputs.cbs-subscription-name }}
-        GSA_SECURITY_LAW_RESOURCE_ID: ${{ inputs.security-law-resource-id }}
-        GSA_HEALTH_LAW_RESOURCE_ID: ${{ inputs.health-law-resource-id }}
-        GSA_LOCALE: ${{ inputs.locale }}
-        GSA_LIGHTHOUSE_TENANT_ID: ${{ inputs.lighthouse-service-provider-tenant-id }}
-        GSA_LIGHTHOUSE_DISPLAY_NAME: ${{ inputs.lighthouse-principal-display-name }}
-        GSA_LIGHTHOUSE_PRINCIPAL_ID: ${{ inputs.lighthouse-principal-id }}
-        GSA_LIGHTHOUSE_TARGET_MG_ID: ${{ inputs.lighthouse-target-management-group-id }}
-        GSA_READONLY_SPN_APPID: ${{ inputs.ssc-readonly-service-principal-appid }}
-        GSA_SECURITY_RETENTION_DAYS: ${{ inputs.security-retention-days }}
-        GSA_CLOUD_USAGE_PROFILES: ${{ inputs.cloud-usage-profiles }}
-        GSA_TENANT_ID: ${{ inputs.tenant-id }}
-        GSA_ACTION_REPO_ROOT: ${{ github.action_path }}/../../..
+        GSA_DEPARTMENT_NUMBER:              ${{ inputs.department-number }}
+        GSA_CBS_SUBSCRIPTION_NAME:          ${{ inputs.cbs-subscription-name }}
+        GSA_SECURITY_LAW_RESOURCE_ID:       ${{ inputs.security-law-resource-id }}
+        GSA_HEALTH_LAW_RESOURCE_ID:         ${{ inputs.health-law-resource-id }}
+        GSA_LOCALE:                         ${{ inputs.locale }}
+        GSA_LIGHTHOUSE_TENANT_ID:           ${{ inputs.lighthouse-service-provider-tenant-id }}
+        GSA_LIGHTHOUSE_DISPLAY_NAME:        ${{ inputs.lighthouse-principal-display-name }}
+        GSA_LIGHTHOUSE_PRINCIPAL_ID:        ${{ inputs.lighthouse-principal-id }}
+        GSA_LIGHTHOUSE_TARGET_MG_ID:        ${{ inputs.lighthouse-target-management-group-id }}
+        GSA_READONLY_SPN_APPID:             ${{ inputs.ssc-readonly-service-principal-appid }}
+        GSA_SECURITY_RETENTION_DAYS:        ${{ inputs.security-retention-days }}
+        GSA_CLOUD_USAGE_PROFILES:           ${{ inputs.cloud-usage-profiles }}
+        GSA_TENANT_ID:                      ${{ inputs.tenant-id }}
+        GSA_ACTION_REPO_ROOT:               ${{ github.action_path }}/../../..
       with:
         azPSVersion: latest
         inlineScript: |
@@ -168,6 +168,7 @@ runs:
             securityRetentionDays = $env:GSA_SECURITY_RETENTION_DAYS
             cloudUsageProfiles = $env:GSA_CLOUD_USAGE_PROFILES
             tenantId = $env:GSA_TENANT_ID
+            mfaGracePeriod = $env:GSA_MFA_GRACE_PERIOD
           }
           $config | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
 
