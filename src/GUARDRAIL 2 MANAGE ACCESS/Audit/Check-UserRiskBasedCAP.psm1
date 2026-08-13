@@ -41,7 +41,7 @@ function Test-CommonFilters {
     # 5. clientAppTypes contains 'all'  or all individual types selected: 'browser', 'mobileAppsAndDesktopClients', 'exchangeActiveSync', 'other'
     # 6. userRiskLevels = 'high'
     # 7. signInRiskLevels = @() or null
-    # 8. platforms = null
+    # 8. platforms = null or platforms contains 'all' (or all individual types selected: android, iOS, windows, macOS)
     # 9. locations = null
     # 10. devices = null
     # 11. clientApplications = null
@@ -95,13 +95,11 @@ function Test-CommonFilters {
                 $_.grantControls.builtInControls -contains 'block'
             ) -and
             $acceptedRiskConfiguration -and
-            # $_.conditions.clientAppTypes -contains 'all' -and
             ($_.conditions.clientAppTypes -contains 'all'  -or 
                 ($_.conditions.clientAppTypes -contains 'browser' -and
                     $_.conditions.clientAppTypes -contains 'mobileAppsAndDesktopClients' -and
                     $_.conditions.clientAppTypes -contains 'exchangeActiveSync' -and
                     $_.conditions.clientAppTypes -contains 'other')) -and
-            # $_.conditions.userRiskLevels -contains 'high' -and
             (
                 # IF block → sessionControls must be empty
                 (
@@ -117,10 +115,17 @@ function Test-CommonFilters {
                     $_.sessionControls.signInFrequency.isEnabled -eq $true
                 )
             ) -and
+            # # Remove SignInFrequency check for block policies
             # $_.sessionControls.signInFrequency.frequencyInterval -contains 'everyTime' -and
             # $_.sessionControls.signInFrequency.authenticationType -contains 'primaryAndSecondaryAuthentication' -and
             # $_.sessionControls.signInFrequency.isEnabled -eq $true -and
-            (Test-IsNullOrEmptyArray $_.conditions.platforms) -and
+            ((Test-IsNullOrEmptyArray $_.conditions.platforms) -or
+                ($_.conditions.platforms.includePlatforms -contains 'all' -or
+                    ($_.conditions.platforms.includePlatforms -contains 'android' -and
+                    $_.conditions.platforms.includePlatforms -contains 'iOS' -and
+                    $_.conditions.platforms.includePlatforms -contains 'windows' -and
+                    $_.conditions.platforms.includePlatforms -contains 'macOS' -and
+                    $_.conditions.platforms.includePlatforms -contains 'linux'))) -and
             (Test-IsNullOrEmptyArray $_.conditions.locations) -and
             (Test-IsNullOrEmptyArray $_.conditions.devices) -and
             (Test-IsNullOrEmptyArray $_.conditions.clientApplications) -and
