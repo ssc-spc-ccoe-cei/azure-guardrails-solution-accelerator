@@ -1343,7 +1343,7 @@ function Check-UserGroups {
             [void]$items.Add([PSCustomObject]@{
                 Key      = [string]$userId
                 EntityId = [string]$userId
-                Url      = "/users/$userId?`$select=id,displayName,givenName,userPrincipalName"
+                Url      = "/users/$($userId)?`$select=id,displayName,givenName,userPrincipalName"
             })
         }
 
