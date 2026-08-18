@@ -5550,7 +5550,7 @@ function Set-SubscriptionNotEvaluatedStatus{
     )
 
     $Result.ComplianceStatus = "Not applicable"
-    $Result.Comments = $msgTable.subEvaluationNotApplicable -f $Subscription.SubscriptionName
+    $Result.Comments = $msgTable.subEvaluationNotApplicable -f $Subscription.Name
     return $Result
 
 
