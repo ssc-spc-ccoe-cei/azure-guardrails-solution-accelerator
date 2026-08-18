@@ -125,7 +125,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.5.5'
+        version: '1.5.6'
       }}
   }
   resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -292,7 +292,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-CloudAccountsMFA.zip'
-        version: '1.0.5'
+        version: '1.0.6'
       }
     }
   }
@@ -313,7 +313,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserRiskBasedCAP.zip'
-        version: '1.0.5'
+        version: '1.0.7'
       }
     }
   }

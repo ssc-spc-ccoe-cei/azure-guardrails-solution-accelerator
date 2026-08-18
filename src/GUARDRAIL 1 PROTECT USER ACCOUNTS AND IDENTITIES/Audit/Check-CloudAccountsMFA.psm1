@@ -78,9 +78,9 @@ function Check-CloudAccountsMFA {
     # 5. clientAppTypes contains 'all' (or all individual types selected: browser, mobileAppsAndDesktopClients, exchangeActiveSync, other)
     # 6. userRiskLevels = @()
     # 7. signInRiskLevels = @()
-    # 8. platforms = null
+    # 8. platforms = null or platforms contains 'all' (or all individual types selected: android, iOS, windows, macOS)
     # 9. locations = null
-    # 10. devices = null
+    # 10. devices = null 
     # 11. clientApplications = null
 
     $validPolicies = $caps | Where-Object {
@@ -96,7 +96,13 @@ function Check-CloudAccountsMFA {
           $_.conditions.clientAppTypes -contains 'other')) -and
         [string]::IsNullOrEmpty($_.conditions.userRiskLevels) -and
         [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
-        [string]::IsNullOrEmpty($_.conditions.platforms) -and
+        ([string]::IsNullOrEmpty($_.conditions.platforms) -or
+         ($_.conditions.platforms.includePlatforms -contains 'all' -or
+          ($_.conditions.platforms.includePlatforms -contains 'android' -and
+           $_.conditions.platforms.includePlatforms -contains 'iOS' -and
+           $_.conditions.platforms.includePlatforms -contains 'windows' -and
+           $_.conditions.platforms.includePlatforms -contains 'macOS' -and
+           $_.conditions.platforms.includePlatforms -contains 'linux'))) -and
         [string]::IsNullOrEmpty($_.conditions.locations) -and
         [string]::IsNullOrEmpty($_.conditions.devices)  -and
         [string]::IsNullOrEmpty($_.conditions.clientApplications) 
