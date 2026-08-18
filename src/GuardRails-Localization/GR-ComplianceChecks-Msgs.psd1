@@ -19,7 +19,7 @@ CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 # Global
 isCompliant = Compliant.
 isNotCompliant = Non-compliant.
-subEvaluationNotApplicable = The subscription '{0}' is not applicable for evaluation. It may be cancelled and pending automatic deletion.
+subEvaluationNotApplicable = The subscription {0} is not applicable for evaluation. It may be cancelled and pending automatic deletion.
 
 # Guardrail #1
 MSEntIDLicense = Microsoft Entra ID License Type
