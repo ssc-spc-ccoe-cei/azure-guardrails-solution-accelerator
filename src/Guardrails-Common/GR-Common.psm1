@@ -4558,7 +4558,7 @@ policyresources
             $notEvalResult = [PSCustomObject]@{
                 Type             = 'subscription'
                 Id               = $skippedSubId
-                SubscriptionName = $skippedSub.Name
+                SubscriptionName = $skippedSub
                 ComplianceStatus = $false
                 Comments         = ""
                 ItemName         = "$ItemName - $policyDisplayName"
