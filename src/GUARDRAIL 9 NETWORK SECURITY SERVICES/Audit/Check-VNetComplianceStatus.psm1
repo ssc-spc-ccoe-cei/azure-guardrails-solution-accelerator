@@ -208,7 +208,7 @@ function Get-VNetComplianceInformation {
             itsgcode         = $itsgcode
             ReportTime       = $ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
         $ResultList.Add($notEvaluatedResult) | Out-Null
     }
 

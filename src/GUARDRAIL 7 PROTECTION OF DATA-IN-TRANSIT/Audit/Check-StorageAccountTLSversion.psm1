@@ -126,7 +126,7 @@ function Verify-TLSForStorageAccount {
             ControlName      = [string]$ControlName
             ReportTime       = [string]$ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedObj -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedObj.Name -msgTable $msgTable
         $ObjectList.Add($notEvaluatedResult) | Out-Null
     }
 

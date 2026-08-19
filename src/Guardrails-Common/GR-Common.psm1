@@ -3517,7 +3517,7 @@ function Check-PBMMPolicies {
             ControlName = [string]$ControlName
             ReportTime = [string]$ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedObj -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedObj.Name -msgTable $msgTable
         $tempObjectList.Add($notEvaluatedResult) | Out-Null
     }
 
@@ -3941,7 +3941,7 @@ function Check-BuiltInPoliciesPerSubscription {
             ReportTime          = $ReportTime
             itsgcode            = $itsgcode
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSubscription -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSubscription.Name -msgTable $msgTable
         $results.Add($notEvaluatedResult) | Out-Null
     }
 
@@ -4567,7 +4567,7 @@ policyresources
                 itsgcode         = $itsgcode
             }
 
-            $notEvalResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvalResult -Subscription $skippedSub -msgTable $msgTable
+            $notEvalResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvalResult -SubscriptionName $skippedSub -msgTable $msgTable
             if ($EnableMultiCloudProfiles) {
                 $notEvalResult = Add-ProfileInformation -Result $notEvalResult -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
             }
@@ -5543,14 +5543,14 @@ function Set-SubscriptionNotEvaluatedStatus{
         [Parameter(Mandatory=$true)]
         [PSCustomObject] $Result,
         [Parameter(Mandatory=$true)]
-        $Subscription,
+        $SubscriptionName,
         [Parameter(Mandatory=$true)]
         [hashtable] $msgTable
         
     )
 
     $Result.ComplianceStatus = "Not applicable"
-    $Result.Comments = $msgTable.subEvaluationNotApplicable -f $Subscription.Name
+    $Result.Comments = $msgTable.subEvaluationNotApplicable -f $SubscriptionName
     return $Result
 
 

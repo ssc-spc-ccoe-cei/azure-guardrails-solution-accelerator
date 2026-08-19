@@ -230,7 +230,7 @@ function Get-ServiceHealthAlerts {
             itsgcode         = $itsgcode
             ReportTime       = $ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
         [void]$PsObject.Add($notEvaluatedResult) | Out-Null
     }
 

@@ -56,7 +56,7 @@ function Get-NetworkWatcherStatus {
             itsgcode         = $itsgcode
             ReportTime       = $ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
         $RegionList.Add($notEvaluatedResult) | Out-Null
     }
 

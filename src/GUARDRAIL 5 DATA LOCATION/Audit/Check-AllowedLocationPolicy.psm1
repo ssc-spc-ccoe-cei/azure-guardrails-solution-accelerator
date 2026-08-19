@@ -122,7 +122,7 @@ function Check-PolicyStatus {
             ControlName = [string]$ControlName
             ReportTime = [string]$ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedObj.Name -msgTable $msgTable
         $tempObjectList.Add($notEvaluatedResult) | Out-Null
     }
 

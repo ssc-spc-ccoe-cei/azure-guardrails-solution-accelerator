@@ -201,7 +201,7 @@ function Check-ApplicationGatewayCertificateValidity {
             ReportTime          = $ReportTime
             itsgcode            = $itsgcode
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSubscription -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSubscription.Name -msgTable $msgTable
         $PsObject.Add($notEvaluatedResult) | Out-Null
     }
 

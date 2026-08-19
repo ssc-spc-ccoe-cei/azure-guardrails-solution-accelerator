@@ -93,7 +93,7 @@ function Get-SubnetComplianceInformation {
             itsgcode         = $itsgcodesegmentation
             ReportTime       = $ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
         $SubnetList.Add($notEvaluatedResult) | Out-Null
 
         # Separation
@@ -107,7 +107,7 @@ function Get-SubnetComplianceInformation {
             itsgcode         = $itsgcodeseparation
             ReportTime       = $ReportTime
         }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -Subscription $skippedSub -msgTable $msgTable
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
         $SubnetList.Add($notEvaluatedResult) | Out-Null
     }
 
