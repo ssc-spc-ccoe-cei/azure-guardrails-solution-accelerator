@@ -136,19 +136,9 @@ function Check-UserGroups {
         Details    = [System.Collections.Generic.List[string]]::new()
     }
 
-    # Clients sometimes test by uploading only this module, without the matching localization package.
-    # Prefer localized text when available, but keep standalone tests readable when a newer key is missing.
+    # Use the matching localization package for operator-facing compliance and statistics text.
     $userGroupScanIncompleteMessage = [string]$msgTable['userGroupScanIncomplete']
-    if ([string]::IsNullOrWhiteSpace($userGroupScanIncompleteMessage)) {
-        $userGroupScanIncompleteMessage = 'User group compliance could not be fully evaluated because Microsoft Graph data retrieval did not complete.'
-    }
     $userStatsMessageTemplate = [string]$msgTable['userStats']
-    if ([string]::IsNullOrWhiteSpace($userStatsMessageTemplate) -or
-        $userStatsMessageTemplate -match 'Group Users \(Total - Unique\)|Utilisateurs de groupe \(Total - Unique\)') {
-        # A one-off module upload can still have the older localization package. Use an accurate
-        # built-in label rather than describing this exact covered-user value as the old UPN total.
-        $userStatsMessageTemplate = 'User stats - Total Users: {0}; Covered Member/Guest Users (Unique): {1}; Members in Tenants: {2}; Guests in Tenants: {3}'
-    }
 
     # Capture both working-set and private memory because Azure's sandbox limit does not map cleanly
     # to one process metric. Processor time helps show whether Graph waits or local CPU dominate.
