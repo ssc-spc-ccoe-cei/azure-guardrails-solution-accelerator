@@ -23,6 +23,20 @@ function Check-AllUserMFARequired {
     [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
+    # Return a real compliance row when current source data is unavailable. This
+    # lets the workbook show Not Applicable instead of retaining a false pass or
+    # receiving no row at all, while the Errors collection records the failure.
+    function New-MfaNotAssessedResult {
+        return [PSCustomObject]@{
+            ComplianceStatus = 'Not Applicable'
+            ControlName      = $ControlName
+            ItemName         = $ItemName
+            Comments         = [string]$msgTable['allUserMfaNotAssessedIncompleteData']
+            ReportTime       = $ReportTime
+            itsgcode         = $itsgcode
+        }
+    }
+
     # FetchAllUserRawData runs earlier in the same main runbook. If it reports an
     # incomplete collection, do not turn the absence of current rows into a false pass.
     $rawCollectionState = Get-Variable -Name GuardrailsUserRawDataCollectionComplete -Scope Global -ErrorAction SilentlyContinue
@@ -31,7 +45,7 @@ function Check-AllUserMFARequired {
         Write-Error $errorMessage
         [void]$ErrorList.Add($errorMessage)
         return [PSCustomObject]@{
-            ComplianceResults = $null
+            ComplianceResults = (New-MfaNotAssessedResult)
             Errors = $ErrorList
         }
     }
@@ -117,7 +131,14 @@ gr_mfa_evaluation('$ReportTime', '$mfaGracePeriod')
         [void]$ErrorList.Add("Failed to call gr_mfa_evaluation KQL function: $_")
     }
 
-    # Add Profile information to compliance result if KQL function was successful
+    # Every unsuccessful query path now returns an explicit Not Applicable row.
+    # This keeps missing or partially ingested source data out of the compliance
+    # calculation without causing main.ps1 to attempt to upload a null result.
+    if ($null -eq $complianceResult) {
+        $complianceResult = New-MfaNotAssessedResult
+    }
+
+    # Add profile information to either an evaluated or Not Applicable result.
     if ($complianceResult -and $EnableMultiCloudProfiles) {
         try {
             Write-Verbose "Adding Profile information to compliance result"
