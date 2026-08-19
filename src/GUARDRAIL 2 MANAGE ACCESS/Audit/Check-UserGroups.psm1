@@ -1,5 +1,5 @@
 function Check-UserGroups {
-    param (      
+    param (
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
         [Parameter(Mandatory=$true)]
@@ -10,15 +10,19 @@ function Check-UserGroups {
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string] $ReportTime,
-        [string] $CheckUserGroupsScanMode,
-        [object[]] $CheckUserGroupsGroupIds,
-        [string] 
-        $CloudUsageProfiles = "3",  # Passed as a string
+        [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] 
-        $EnableMultiCloudProfiles # New feature flag, default to false
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false
     )
 
+    # High-level flow:
+    # 1. Load the IDs of all current Member and Guest users into one "uncovered" set.
+    # 2. For a large tenant, sample up to 40 users to find groups that may cover a large part of that set.
+    # 3. Scan useful broad groups first and remove every user ID found from the set.
+    # 4. Finish by checking the remaining users directly or by scanning the remaining groups,
+    #    whichever is estimated to require fewer Microsoft Graph requests.
+    # 5. Report coverage only when every required Graph read completes; an empty set proves that
+    #    every in-scope user belongs to at least one group.
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
@@ -28,23 +32,37 @@ function Check-UserGroups {
     # Keep detailed validation diagnostics for the first representative scale runs. After those
     # results answer the open tuning questions, change this to Operational to reduce routine output.
     $diagnosticLevel = 'Validation'
+    # Microsoft Graph returns these large collections in pages. Using 999 records per page stays
+    # within the endpoint limit while minimizing the number of sequential page requests.
     $userPageSize = 999
     $membershipPageSize = 999
+    # Forty users require only two Graph batches and give a more stable tenant-wide sample than 20.
+    # Groups must appear for at least 10% of the sample, and only the best 20 candidates are retained.
     $probeSampleSize = 40
     $probeCandidateLimit = 20
     $probeFrequencyPercent = 10
+    # On small tenants, probing costs about as much as simply completing the scan, so skip it when
+    # no more than 40 users or 60 groups remain.
     $smallUserThreshold = 40
     $smallGroupThreshold = 60
+    # Run at most one fresh probe when the original sample has fewer than 10 uncovered users left,
+    # more than 1,000 real users remain, and either fallback would still take at least six rounds.
     $reprobeMinimumUsers = 1000
     $reprobeMinimumRounds = 6
     $minimumResidualSampleSize = 10
+    # During a full group scan, reconsider the cheaper completion path every 250 completed groups
+    # or every five minutes so a long-tail tenant can switch to direct user checks when that becomes faster.
     $groupPathRecheckInterval = 250
 
     # Graph accepts at most 20 inner requests. Known full continuation pages use a lower cap
     # because several 999-record responses in one batch create a much larger memory spike.
     $graphBatchRequestSize = 20
     $fullContinuationBatchSize = 5
+    # Send one outer Graph batch at a time. This avoids multiplying inner request concurrency and
+    # keeps response memory bounded while the first scale tests establish safe tenant limits.
     $concurrentGraphBatchCalls = 1
+    # Retry transient Graph failures no more than three times, using five seconds when Graph does
+    # not supply its own Retry-After value.
     $defaultMaxRetries = 3
     $defaultRetryDelaySeconds = 5
     # Keep diagnostics useful but bounded so logging does not become part of the scale problem.
@@ -70,14 +88,13 @@ function Check-UserGroups {
     }
     $graphMetrics = [PSCustomObject]@{
         DirectAttempts                = 0
+        SingleRequestDirectCalls      = 0
         BatchCalls                    = 0
         InnerAttempts                 = 0
         Retries                       = 0
         Throttles429                  = 0
         ResourceUnits                 = 0.0
-        ResourceUnitResponses         = 0
         MaximumThrottlePercentage     = 0.0
-        ThrottlePercentageResponses   = 0
         MaximumBatchRecords           = 0
     }
     $scanMetrics = [PSCustomObject]@{
@@ -85,10 +102,7 @@ function Check-UserGroups {
         UserRecordsReturned      = 0
         SkippedUserRecords       = 0
         ProbeRuns                = 0
-        ProbeUsers               = 0
         ProbeTruncatedResponses  = 0
-        CandidateCounts          = 0
-        CandidateGroupsScanned   = 0
         GroupListPages           = 0
         GroupsStarted            = 0
         GroupsCompleted          = 0
@@ -213,7 +227,8 @@ function Check-UserGroups {
 
     Write-CheckUserGroupStage -Stage 'Module' -State 'Started' -Stopwatch $moduleStopwatch -Details "Implementation=$implementationId; DiagnosticLevel=$diagnosticLevel; UserPageSize=$userPageSize; MembershipPageSize=$membershipPageSize; GraphBatchLimit=$graphBatchRequestSize; FullContinuationLimit=$fullContinuationBatchSize; ConcurrentBatchCalls=$concurrentGraphBatchCalls"
 
-    # Seed AdditionalResults so the LA table always exists
+    # Keep one placeholder row so the Log Analytics remediation table continues to exist on passing
+    # runs. A complete scan that finds uncovered users replaces it with up to 20 examples.
     $AdditionalResults = [PSCustomObject]@{
         logType = "GR2UsersWithoutGroups"
         records = @([PSCustomObject]@{
@@ -335,7 +350,6 @@ function Check-UserGroups {
         if ($null -ne $resourceUnitText -and
             [double]::TryParse([string]$resourceUnitText, [ref]$resourceUnits)) {
             $graphMetrics.ResourceUnits += $resourceUnits
-            $graphMetrics.ResourceUnitResponses++
         }
 
         $throttleText = & $getHeaderValue $ResponseHeaders 'x-ms-throttle-limit-percentage'
@@ -343,7 +357,6 @@ function Check-UserGroups {
         if ($null -ne $throttleText -and
             [double]::TryParse(([string]$throttleText).TrimEnd('%'), [ref]$throttlePercentage)) {
             $graphMetrics.MaximumThrottlePercentage = [Math]::Max($graphMetrics.MaximumThrottlePercentage, $throttlePercentage)
-            $graphMetrics.ThrottlePercentageResponses++
         }
     }
 
@@ -376,7 +389,8 @@ function Check-UserGroups {
         return $DefaultDelaySeconds
     }
 
-    # Small local retry wrapper for this module's direct Graph calls.
+    # Read one Graph page directly with bounded retries. This is used for sequential paging and for
+    # one-request work where wrapping the request in JSON batching would add latency without parallel work.
     function Invoke-GraphGetWithRetry {
         param (
             [Parameter(Mandatory=$true)]
@@ -395,6 +409,9 @@ function Check-UserGroups {
                 $graphMetrics.DirectAttempts++
                 $response = Invoke-RestMethod -Method Get -Uri $Uri -Headers $Headers -ResponseHeadersVariable responseHeaders -ErrorAction Stop
                 Add-GraphHeaderMetric -ResponseHeaders $responseHeaders
+                if ($null -eq $response) {
+                    throw "Microsoft Graph returned an empty response for '$Uri'."
+                }
                 return $response
             } catch {
                 $statusCode = $null
@@ -455,6 +472,22 @@ function Check-UserGroups {
         return $relativeUrl
     }
 
+    # Direct requests need an absolute URL. Reuse the batch URL normalization so an initial
+    # relative path and a later absolute nextLink resolve to the same Microsoft Graph endpoint.
+    function ConvertTo-GraphAbsoluteUrl {
+        param(
+            [Parameter(Mandatory=$true)]
+            [string] $Url
+        )
+
+        $relativeUrl = ConvertTo-GraphBatchRelativeUrl -Url $Url
+        if (-not $relativeUrl.StartsWith('/')) {
+            $relativeUrl = "/$relativeUrl"
+        }
+
+        return "https://graph.microsoft.com/v1.0$relativeUrl"
+    }
+
     # Retry-After is carried inside each JSON batch response rather than on the outer HTTP response.
     function Get-GraphBatchResponseRetryDelay {
         param(
@@ -500,7 +533,6 @@ function Check-UserGroups {
 
         $batchUri = 'https://graph.microsoft.com/v1.0/$batch'
         $batchPayload = @{ requests = $Requests } | ConvertTo-Json -Depth 8 -Compress
-        $outerThrottleCount = 0
 
         for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
             try {
@@ -514,10 +546,7 @@ function Check-UserGroups {
                 }
 
                 return [PSCustomObject]@{
-                    Response             = $response
-                    Attempts             = $attempt
-                    RetryCount           = $attempt - 1
-                    ThrottleResponseCount = $outerThrottleCount
+                    Response = $response
                 }
             }
             catch {
@@ -526,7 +555,6 @@ function Check-UserGroups {
                     $statusCode = [int]$_.Exception.Response.StatusCode
                 }
                 if ($statusCode -eq 429) {
-                    $outerThrottleCount++
                     $graphMetrics.Throttles429++
                 }
 
@@ -645,6 +673,8 @@ function Check-UserGroups {
         }
     }
 
+    # Convert a normal PowerShell web error into the same bounded failure format used for JSON batch
+    # errors. Keeping one format makes incomplete reads visible without producing one error row per group.
     function Add-ErrorRecordFailure {
         param(
             [Parameter(Mandatory=$true)]
@@ -661,40 +691,6 @@ function Check-UserGroups {
 
         $context = Get-GraphFailureContext -ErrorRecord $ErrorRecord
         Add-CheckUserGroupFailure -Kind $Kind -Stage $Stage -Endpoint $Endpoint -StatusCode $context.StatusCode -GraphCode $context.GraphCode -EntityId $EntityId -Message $context.Message
-    }
-
-    # Optional-path failures matter only when no later exact path proves coverage.
-    function Merge-PendingFailure {
-        foreach ($detail in $pendingFailureStore.Details) {
-            if ($terminalFailureStore.Details.Count -lt 20) {
-                [void]$terminalFailureStore.Details.Add($detail)
-            }
-        }
-
-        foreach ($categoryKey in $pendingFailureStore.Categories.Keys) {
-            $pendingCategory = $pendingFailureStore.Categories[$categoryKey]
-            if (-not $terminalFailureStore.Categories.ContainsKey($categoryKey)) {
-                $terminalFailureStore.Categories[$categoryKey] = [PSCustomObject]@{
-                    Stage       = $pendingCategory.Stage
-                    Endpoint    = $pendingCategory.Endpoint
-                    StatusCode  = $pendingCategory.StatusCode
-                    GraphCode   = $pendingCategory.GraphCode
-                    Count       = 0
-                    DetailCount = 0
-                    EntityIds   = [System.Collections.Generic.List[string]]::new()
-                }
-            }
-
-            $terminalCategory = $terminalFailureStore.Categories[$categoryKey]
-            $terminalCategory.Count += $pendingCategory.Count
-            foreach ($entityId in $pendingCategory.EntityIds) {
-                if ($terminalCategory.EntityIds.Count -lt 10 -and -not $terminalCategory.EntityIds.Contains($entityId)) {
-                    [void]$terminalCategory.EntityIds.Add($entityId)
-                }
-            }
-        }
-
-        $terminalFailureStore.Total += $pendingFailureStore.Total
     }
 
     # Materialize bounded detail and summary rows only once, after the final result is known.
@@ -717,8 +713,9 @@ function Check-UserGroups {
         }
     }
 
-    # Execute independent Graph requests in batches of at most 20. Failed inner requests retry on their
-    # own so successful work is preserved rather than repeating the whole outer batch.
+    # Execute independent Graph requests in batches of at most 20. A one-request set uses a direct
+    # GET because wrapping one dependent page in JSON batching added substantial client latency.
+    # Both paths use the same bounded retries and return shape, so coverage logic remains unchanged.
     function Invoke-GraphBatchRequestSet {
         param(
             [Parameter(Mandatory=$true)]
@@ -760,6 +757,35 @@ function Check-UserGroups {
             for ($offset = 0; $offset -lt $pendingItems.Count; $offset += $graphBatchRequestSize) {
                 $lastIndex = [Math]::Min($offset + $graphBatchRequestSize - 1, $pendingItems.Count - 1)
                 $chunk = @($pendingItems[$offset..$lastIndex])
+
+                # A single nextLink is sequential work and gains nothing from a JSON batch wrapper.
+                # Read it directly to reduce latency while retaining the existing retry and token-refresh behavior.
+                if ($chunk.Count -eq 1) {
+                    $pendingItem = $chunk[0]
+                    # A request that already failed inside a batch keeps only its unused attempts,
+                    # preventing the direct fallback from silently expanding the three-attempt limit.
+                    $remainingAttempts = [Math]::Max(1, $defaultMaxRetries - [int]$pendingItem.Attempt + 1)
+                    $graphMetrics.SingleRequestDirectCalls++
+                    try {
+                        $directResponse = Invoke-GraphGetWithRetry -Uri (ConvertTo-GraphAbsoluteUrl -Url $pendingItem.Url) -Headers $headers -MaxRetries $remainingAttempts
+                        [void]$successfulResults.Add([PSCustomObject]@{
+                            Item   = $pendingItem
+                            Status = 200
+                            Body   = $directResponse
+                        })
+                    }
+                    catch {
+                        $failureContext = Get-GraphFailureContext -ErrorRecord $_
+                        Add-CheckUserGroupFailure -Kind $FailureKind -Stage $Stage -Endpoint $Endpoint -StatusCode $failureContext.StatusCode -GraphCode $failureContext.GraphCode -EntityId $pendingItem.EntityId -Message $failureContext.Message
+                        [void]$failedResults.Add([PSCustomObject]@{
+                            Item      = $pendingItem
+                            Status    = $failureContext.StatusCode
+                            GraphCode = $failureContext.GraphCode
+                        })
+                    }
+                    continue
+                }
+
                 $batchRequests = [System.Collections.Generic.List[object]]::new()
                 $itemByRequestId = @{}
                 $requestId = 1
@@ -909,13 +935,12 @@ function Check-UserGroups {
         $probeStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $sampleIds = Get-UniformUserSample -UserIds $UncoveredUserIds -Limit $probeSampleSize
         $scanMetrics.ProbeRuns++
-        $scanMetrics.ProbeUsers += $sampleIds.Count
         Write-CheckUserGroupStage -Stage 'BroadGroupProbe' -State 'Started' -Stopwatch $probeStopwatch -Details "Probe=$ProbeNumber; Reason=$Reason; SampleSize=$($sampleIds.Count); Uncovered=$($UncoveredUserIds.Count)"
         if ($diagnosticLevel -eq 'Validation' -and $sampleIds.Count -gt 0) {
             Write-CheckUserGroupDiagnostic -Message "Check-UserGroups probe sample: Probe=$ProbeNumber; UserIds=$($sampleIds -join ',')"
         }
 
-        # Keep at most 40 user-to-group arrays plus one integer per observed group. Creating a
+        # Keep only the bounded sample's user-to-group arrays plus one integer per observed group. Creating a
         # separate HashSet for every possible group would add avoidable object overhead in memory.
         $groupFrequency = [System.Collections.Generic.Dictionary[Guid, int]]::new()
         $sampleGroupsByUser = [System.Collections.Generic.Dictionary[Guid, Guid[]]]::new()
@@ -924,7 +949,6 @@ function Check-UserGroups {
             $items = [System.Collections.Generic.List[object]]::new()
             foreach ($userId in @($sampleIds[$offset..$lastIndex])) {
                 [void]$items.Add([PSCustomObject]@{
-                    Key      = [string]$userId
                     EntityId = [string]$userId
                     Url      = "/users/$userId/memberOf/microsoft.graph.group?`$select=id&`$top=$membershipPageSize&`$count=true"
                 })
@@ -956,6 +980,8 @@ function Check-UserGroups {
             }
         }
 
+        # Require a group to contain at least two sampled users and at least 10% of the sample. This
+        # filters incidental memberships while retaining groups likely to remove substantial work.
         $minimumHits = [Math]::Max(2, [int][Math]::Ceiling($sampleIds.Count * ($probeFrequencyPercent / 100.0)))
         $rankedGroupIds = @($groupFrequency.GetEnumerator() |
             Where-Object { $_.Value -ge $minimumHits } |
@@ -1002,7 +1028,6 @@ function Check-UserGroups {
         $items = [System.Collections.Generic.List[object]]::new()
         foreach ($candidate in $Candidates) {
             [void]$items.Add([PSCustomObject]@{
-                Key      = [string]$candidate.GroupId
                 EntityId = [string]$candidate.GroupId
                 Url      = "/groups/$($candidate.GroupId)/members/microsoft.graph.user?`$select=id&`$top=1&`$count=true"
             })
@@ -1014,7 +1039,6 @@ function Check-UserGroups {
             $countValue = 0L
             if ($null -ne $success.Body.'@odata.count' -and [long]::TryParse([string]$success.Body.'@odata.count', [ref]$countValue)) {
                 $countByGroup[[string]$success.Item.EntityId] = $countValue
-                $scanMetrics.CandidateCounts++
             }
         }
 
@@ -1070,14 +1094,12 @@ function Check-UserGroups {
 
             $groupKey = [string]$groupId
             $groupStates[$groupKey] = [PSCustomObject]@{
-                GroupId       = $groupId
                 PageCount     = 0
                 RecordCount   = 0
                 NewlyCovered  = 0
                 StartedAt     = $null
             }
             $queue.Enqueue([PSCustomObject]@{
-                Key                   = "$groupKey|1"
                 EntityId              = $groupKey
                 Url                   = "/groups/$groupKey/members/microsoft.graph.user?`$select=id&`$top=$membershipPageSize&`$count=true"
                 GroupId               = $groupId
@@ -1136,6 +1158,8 @@ function Check-UserGroups {
                 $users = @($success.Body.value)
                 $batchRecordCount += $users.Count
                 $beforeCount = $UncoveredUserIds.Count
+                # Remove every returned ID from the uncovered set. HashSet removal is safe when the
+                # same user belongs to several groups: the first match removes it and later matches do nothing.
                 foreach ($user in $users) {
                     $userId = [Guid]::Empty
                     if ([Guid]::TryParse([string]$user.id, [ref]$userId)) {
@@ -1153,7 +1177,6 @@ function Check-UserGroups {
                 $nextLink = [string]$success.Body.'@odata.nextLink'
                 if ($nextLink -and $UncoveredUserIds.Count -gt 0) {
                     $queue.Enqueue([PSCustomObject]@{
-                        Key                   = "$groupId|$($item.PageNumber + 1)"
                         EntityId              = [string]$groupId
                         Url                   = $nextLink
                         GroupId               = $groupId
@@ -1216,8 +1239,9 @@ function Check-UserGroups {
         }
     }
 
-    # Check the remaining users directly. The endpoint is cast to groups, so directory roles and
-    # administrative units cannot incorrectly count as group coverage.
+    # Check the remaining users directly and request only one group because the answer needed is
+    # simply "does this user belong to any group?" The endpoint is cast to groups so directory roles
+    # and administrative units cannot incorrectly count as group coverage.
     function Invoke-DirectUserCompletion {
         param(
             [Parameter(Mandatory=$true)]
@@ -1233,7 +1257,6 @@ function Check-UserGroups {
             $items = [System.Collections.Generic.List[object]]::new()
             foreach ($userId in @($userIds[$offset..$lastIndex])) {
                 [void]$items.Add([PSCustomObject]@{
-                    Key      = [string]$userId
                     EntityId = [string]$userId
                     Url      = "/users/$userId/memberOf/microsoft.graph.group?`$select=id&`$top=1&`$count=true"
                 })
@@ -1341,7 +1364,6 @@ function Check-UserGroups {
         $items = [System.Collections.Generic.List[object]]::new()
         foreach ($userId in $sampleIds) {
             [void]$items.Add([PSCustomObject]@{
-                Key      = [string]$userId
                 EntityId = [string]$userId
                 Url      = "/users/$($userId)?`$select=id,displayName,givenName,userPrincipalName"
             })
@@ -1374,8 +1396,9 @@ function Check-UserGroups {
         }
     }
 
-    # Compare the remaining user work with the lower bound for remaining group work.
-    # These estimates choose an execution path only; exact user IDs still decide compliance.
+    # Estimate how many Graph batch rounds remain for two exact options: ask each uncovered user
+    # whether it belongs to a group, or scan the remaining groups. Choose the smaller estimate and
+    # use direct users for a tie. This affects speed only; exact user IDs still decide compliance.
     function Get-CompletionPlan {
         param(
             [Parameter(Mandatory=$true)]
@@ -1410,64 +1433,6 @@ function Check-UserGroups {
             CheapestRounds    = [Math]::Min($directRounds, $groupRounds)
         }
     }
-
-    # Normalize optional client settings. Priority mode changes scan order only; configured-only
-    # mode intentionally limits which groups are allowed to prove coverage.
-    $configurationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-    Write-CheckUserGroupStage -Stage 'Configuration' -State 'Started' -Stopwatch $configurationStopwatch
-    $requestedMode = if ([string]::IsNullOrWhiteSpace($CheckUserGroupsScanMode)) { '' } else { $CheckUserGroupsScanMode.Trim() }
-    $rawConfiguredGroupIds = @($CheckUserGroupsGroupIds | Where-Object { $null -ne $_ -and -not [string]::IsNullOrWhiteSpace([string]$_) })
-    $scanMode = 'Automatic'
-    $configurationRequiresFailure = $false
-    if ($requestedMode -in @('Automatic', 'PriorityThenAutomatic', 'ConfiguredGroupsOnly')) {
-        $scanMode = $requestedMode
-    }
-    elseif ($requestedMode) {
-        Write-CheckUserGroupDiagnostic -Message "Check-UserGroups configuration warning: UnknownMode=$requestedMode; Action=UseAutomatic"
-    }
-
-    # Automatic discovery does not consume client-provided IDs. Warn instead of silently ignoring
-    # them so operators know which explicit mode to select for priority or restricted scanning.
-    if ($scanMode -eq 'Automatic' -and $rawConfiguredGroupIds.Count -gt 0) {
-        Write-CheckUserGroupDiagnostic -Message "Check-UserGroups configuration warning: GroupIdsProvided=$($rawConfiguredGroupIds.Count); Mode=Automatic; Action=IgnoreGroupIds; ValidModes=PriorityThenAutomatic,ConfiguredGroupsOnly"
-    }
-
-    $configuredGroupIds = [System.Collections.Generic.List[Guid]]::new()
-    $configuredGroupIdSet = [System.Collections.Generic.HashSet[Guid]]::new()
-    $malformedConfiguredGroupIds = 0
-    $duplicateConfiguredGroupIds = 0
-    if ($scanMode -ne 'Automatic') {
-        foreach ($rawGroupId in $rawConfiguredGroupIds) {
-            $groupId = [Guid]::Empty
-            if (-not [Guid]::TryParse(([string]$rawGroupId).Trim(), [ref]$groupId)) {
-                $malformedConfiguredGroupIds++
-                Write-CheckUserGroupDiagnostic -Message "Check-UserGroups configuration warning: InvalidGroupId=$rawGroupId; Action=Skip"
-                continue
-            }
-            if (-not $configuredGroupIdSet.Add($groupId)) {
-                $duplicateConfiguredGroupIds++
-                continue
-            }
-            [void]$configuredGroupIds.Add($groupId)
-        }
-    }
-
-    if ($scanMode -eq 'PriorityThenAutomatic' -and $configuredGroupIds.Count -eq 0) {
-        Write-CheckUserGroupDiagnostic -Message 'Check-UserGroups configuration warning: PriorityThenAutomatic has no usable group IDs; Action=UseAutomatic'
-        $scanMode = 'Automatic'
-    }
-    elseif ($scanMode -eq 'ConfiguredGroupsOnly' -and $configuredGroupIds.Count -eq 0) {
-        $configurationRequiresFailure = $true
-        Add-CheckUserGroupFailure -Kind 'Terminal' -Stage 'Configuration' -Endpoint 'ConfiguredGroups' -StatusCode 'NoStatus' -GraphCode 'InvalidConfiguration' -Message 'ConfiguredGroupsOnly requires at least one valid group object ID.'
-    }
-
-    $acceptedConfiguredIds = if ($configuredGroupIds.Count -le 50) {
-        $configuredGroupIds -join ','
-    }
-    else {
-        "$(@($configuredGroupIds | Select-Object -First 10) -join ','),...($($configuredGroupIds.Count - 10) more)"
-    }
-    Write-CheckUserGroupStage -Stage 'Configuration' -State $(if ($configurationRequiresFailure) { 'Failed' } else { 'Completed' }) -Stopwatch $configurationStopwatch -Details "Mode=$scanMode; Provided=$($rawConfiguredGroupIds.Count); Valid=$($configuredGroupIds.Count); Malformed=$malformedConfiguredGroupIds; Duplicates=$duplicateConfiguredGroupIds; AcceptedIds=$acceptedConfiguredIds"
 
     # Build one exact, ID-only baseline. Storing GUIDs instead of full profiles keeps memory bounded,
     # while Member/Guest totals come from the same records that the compliance decision evaluates.
@@ -1539,29 +1504,19 @@ function Check-UserGroups {
     Write-CheckUserGroupStage -Stage 'GroupCount' -State $(if ($groupCountComplete) { 'Completed' } else { 'Failed' }) -Stopwatch $groupCountStopwatch -Details "Groups=$groupCount"
 
     Write-CheckUserGroupDiagnostic -Message "Check-UserGroups directory summary: Members=$memberCount; Guests=$guestCount; InScopeUsers=$allUserCount; Groups=$groupCount; BaselineComplete=$baselineComplete; GroupCountComplete=$groupCountComplete"
-    Write-CheckUserGroupDiagnostic -Message "Check-UserGroups scan settings: Implementation=$implementationId; Mode=$scanMode; GraphBatchLimit=$graphBatchRequestSize; FullContinuationLimit=$fullContinuationBatchSize; ConcurrentBatchCalls=$concurrentGraphBatchCalls; ProbeSample=$probeSampleSize; CandidateLimit=$probeCandidateLimit; MaxRetries=$defaultMaxRetries"
+    Write-CheckUserGroupDiagnostic -Message "Check-UserGroups scan settings: Implementation=$implementationId; GraphBatchLimit=$graphBatchRequestSize; FullContinuationLimit=$fullContinuationBatchSize; ConcurrentBatchCalls=$concurrentGraphBatchCalls; ProbeSample=$probeSampleSize; CandidateLimit=$probeCandidateLimit; MaxRetries=$defaultMaxRetries"
 
     $completedGroupIds = [System.Collections.Generic.HashSet[Guid]]::new()
     $attemptedGroupIds = [System.Collections.Generic.HashSet[Guid]]::new()
-    $completionReadComplete = $baselineComplete -and $groupCountComplete -and -not $configurationRequiresFailure
+    $completionReadComplete = $baselineComplete -and $groupCountComplete
     # Fewer than two groups already fails the inherited minimum-group rule, so a tenant-wide
     # membership scan cannot change the result and would only add avoidable Graph work.
     $coverageWorkRequired = $completionReadComplete -and $allUserCount -gt 1 -and $groupCount -ge 2
-    $configuredOnly = $scanMode -eq 'ConfiguredGroupsOnly'
     $candidatePool = @()
     $probeState = $null
     $reprobeUsed = $false
 
-    if ($coverageWorkRequired -and $configuredGroupIds.Count -gt 0) {
-        $configuredSource = if ($configuredOnly) { 'ConfiguredOnly' } else { 'ConfiguredPriority' }
-        $configuredScan = Invoke-GroupMembershipScan -GroupIds $configuredGroupIds.ToArray() -UncoveredUserIds $uncoveredUserIds -CompletedGroupIds $completedGroupIds -AttemptedGroupIds $attemptedGroupIds -Source $configuredSource -FailureKind 'Pending'
-        if ($uncoveredUserIds.Count -eq 0) {
-            $scanMetrics.SelectedPath = $configuredSource
-        }
-        Write-CheckUserGroupDiagnostic -Message "Check-UserGroups configured-group result: Mode=$scanMode; Requested=$($configuredGroupIds.Count); Completed=$($completedGroupIds.Count); Failed=$($configuredScan.FailedGroupIds.Count); Uncovered=$($uncoveredUserIds.Count); NextAction=$(if ($configuredOnly) { 'DecideConfiguredOnly' } elseif ($uncoveredUserIds.Count -eq 0) { 'CoverageProven' } else { 'AutomaticDiscovery' })"
-    }
-
-    if ($coverageWorkRequired -and -not $configuredOnly -and $uncoveredUserIds.Count -gt 0) {
+    if ($coverageWorkRequired -and $uncoveredUserIds.Count -gt 0) {
         # Probe only when both sides are large enough that choosing better work can save meaningful time.
         if ($uncoveredUserIds.Count -gt $smallUserThreshold -and $groupCount -gt $smallGroupThreshold) {
             $probeNumber = 1
@@ -1588,6 +1543,9 @@ function Check-UserGroups {
                             continue
                         }
 
+                        # Estimate how much work this candidate could remove from the remaining exact scan.
+                        # Scan it only when the expected saving is at least twice its own page cost, which
+                        # avoids spending time on broad-looking groups that are unlikely to improve runtime.
                         $estimatedCoverage = [long][Math]::Ceiling($uncoveredUserIds.Count * ($remainingHits / [double]$remainingSampleIds.Count))
                         $estimatedCoverage = [Math]::Min($uncoveredUserIds.Count, [Math]::Min([long]$candidate.DirectUserCount, $estimatedCoverage))
                         $projectedUncovered = [Math]::Max(0, $uncoveredUserIds.Count - $estimatedCoverage)
@@ -1599,7 +1557,6 @@ function Check-UserGroups {
                         [void]$evaluatedCandidates.Add([PSCustomObject]@{
                             Candidate         = $candidate
                             RemainingHits     = $remainingHits
-                            SampleRemaining   = $remainingSampleIds.Count
                             EstimatedCoverage = $estimatedCoverage
                             ExpectedSavings   = $expectedSavings
                             RequiredSavings   = $requiredSavings
@@ -1621,7 +1578,6 @@ function Check-UserGroups {
 
                     Write-CheckUserGroupDiagnostic -Message "Check-UserGroups candidate selected: Probe=$probeNumber; GroupId=$($selectedCandidate.Candidate.GroupId); EstimatedPages=$($selectedCandidate.Candidate.EstimatedPages); EstimatedCoverage=$($selectedCandidate.EstimatedCoverage); ExpectedSavings=$($selectedCandidate.ExpectedSavings); RequiredSavings=$($selectedCandidate.RequiredSavings); UncoveredBefore=$($uncoveredUserIds.Count)"
                     $candidateScan = Invoke-GroupMembershipScan -GroupIds ([Guid[]]@($selectedCandidate.Candidate.GroupId)) -UncoveredUserIds $uncoveredUserIds -CompletedGroupIds $completedGroupIds -AttemptedGroupIds $attemptedGroupIds -Source 'BroadCandidate' -FailureKind 'Pending'
-                    $scanMetrics.CandidateGroupsScanned++
                     if ($uncoveredUserIds.Count -eq 0) {
                         $scanMetrics.SelectedPath = 'BroadCandidate'
                     }
@@ -1640,6 +1596,8 @@ function Check-UserGroups {
                 }
                 else { 0 }
                 $fallbackPlan = Get-CompletionPlan -UncoveredCount $uncoveredUserIds.Count -TotalGroupCount $groupCount -CompletedGroupIds $completedGroupIds -KnownCandidates $candidatePool
+                # A broad group may remove most sampled users while thousands of other users remain.
+                # Take one fresh sample only when the old sample is too small to guide an expensive fallback.
                 $shouldReprobe = -not $reprobeUsed -and
                     $remainingSampleCount -lt $minimumResidualSampleSize -and
                     $uncoveredUserIds.Count -gt $reprobeMinimumUsers -and
@@ -1657,6 +1615,8 @@ function Check-UserGroups {
             }
         }
 
+        # Broad candidates are only an optimization. If IDs remain, always finish with an exact user
+        # or group path so sampling can never decide the compliance result by itself.
         if ($uncoveredUserIds.Count -gt 0) {
             $completionPlan = Get-CompletionPlan -UncoveredCount $uncoveredUserIds.Count -TotalGroupCount $groupCount -CompletedGroupIds $completedGroupIds -KnownCandidates $candidatePool
             $scanMetrics.SelectedPath = $completionPlan.SelectedPath
@@ -1695,7 +1655,7 @@ function Check-UserGroups {
                         }
                     }
                     else {
-                        # Full enumeration retries configured/candidate groups that failed earlier, so clear
+                        # Full enumeration retries candidate groups that failed earlier, so clear
                         # their provisional failures before this required complete path starts.
                         $pendingFailureStore.Total = 0
                         $pendingFailureStore.Categories.Clear()
@@ -1729,16 +1689,10 @@ function Check-UserGroups {
             }
         }
     }
-    elseif ($coverageWorkRequired -and $configuredOnly) {
-        $scanMetrics.SelectedPath = 'ConfiguredGroupsOnly'
-        if ($uncoveredUserIds.Count -gt 0 -and $pendingFailureStore.Total -gt 0) {
-            $completionReadComplete = $false
-            Merge-PendingFailure
-        }
-    }
 
-    # Once exact coverage is proved, optional-path failures cannot invalidate it. If required reads
-    # are incomplete and IDs remain, fail closed and do not publish potentially innocent user names.
+    # Once exact coverage is proved, optional planning failures cannot invalidate it. If a required
+    # read is incomplete and IDs remain, report the check as incomplete/non-compliant and do not name
+    # those users as violations because the missing Graph data may be the reason they remain.
     $coverageProven = $baselineComplete -and $uncoveredUserIds.Count -eq 0
     if ($coverageProven) {
         $pendingFailureStore.Total = 0
@@ -1746,7 +1700,7 @@ function Check-UserGroups {
         $pendingFailureStore.Details.Clear()
     }
     $totalCoveredUsers = [Math]::Max(0, $allUserCount - $uncoveredUserIds.Count)
-    $coverageIncomplete = -not $baselineComplete -or -not $groupCountComplete -or $configurationRequiresFailure -or (-not $coverageProven -and -not $completionReadComplete)
+    $coverageIncomplete = -not $baselineComplete -or -not $groupCountComplete -or (-not $coverageProven -and -not $completionReadComplete)
 
     $complianceStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-CheckUserGroupStage -Stage 'CoverageEvaluation' -State 'Started' -Stopwatch $complianceStopwatch -Details "Baseline=$allUserCount; Covered=$totalCoveredUsers; Uncovered=$($uncoveredUserIds.Count); RequiredReadsComplete=$(-not $coverageIncomplete)"
@@ -1825,7 +1779,7 @@ function Check-UserGroups {
         [Math]::Round(($diagnosticMetrics.WriteMs / $moduleStopwatch.Elapsed.TotalMilliseconds) * 100, 3)
     }
     else { 0 }
-    Write-CheckUserGroupDiagnostic -Message "Check-UserGroups final summary: Implementation=$implementationId; Mode=$scanMode; Path=$($scanMetrics.SelectedPath); Users=$allUserCount; Covered=$totalCoveredUsers; Uncovered=$($uncoveredUserIds.Count); Groups=$groupCount; UserPages=$($scanMetrics.UserBaselinePages); GroupListPages=$($scanMetrics.GroupListPages); GroupsStarted=$($scanMetrics.GroupsStarted); GroupsCompleted=$($scanMetrics.GroupsCompleted); MembershipPages=$($scanMetrics.MembershipPages); FirstPages=$($scanMetrics.FirstPages); ContinuationPages=$($scanMetrics.ContinuationPages); PageBuckets=1:$($scanMetrics.SinglePageGroups),2-5:$($scanMetrics.TwoToFivePageGroups),6-20:$($scanMetrics.SixToTwentyPageGroups),21Plus:$($scanMetrics.OverTwentyPageGroups); MembershipRecords=$($scanMetrics.MembershipRecords); DirectUsersChecked=$($scanMetrics.DirectUsersChecked); ProbeRuns=$($scanMetrics.ProbeRuns); Reprobes=$($scanMetrics.Reprobes); BatchCalls=$($graphMetrics.BatchCalls); InnerAttempts=$($graphMetrics.InnerAttempts); DirectAttempts=$($graphMetrics.DirectAttempts); Retries=$($graphMetrics.Retries); Throttles429=$($graphMetrics.Throttles429); MaximumBatchRecords=$($graphMetrics.MaximumBatchRecords); ResourceUnits=$([Math]::Round($graphMetrics.ResourceUnits, 1)); MaximumThrottlePercentage=$($graphMetrics.MaximumThrottlePercentage); PlanningFailures=$($planningFailureStore.Total); TerminalFailures=$($terminalFailureStore.Total); StructuredErrors=$($ErrorList.Count); IsCompliant=$IsCompliant; Elapsed=$($moduleStopwatch.Elapsed); PrivateMemory=$($finalMemory.PrivateMb) MB; PeakMemory=$($finalMemory.PeakMb) MB; ProcessorSeconds=$($finalMemory.ProcessorSeconds); DiagnosticLines=$($diagnosticMetrics.Lines + 1); DiagnosticCharacters=$($diagnosticMetrics.Characters); DiagnosticWriteMs=$([Math]::Round($diagnosticMetrics.WriteMs, 1)); DiagnosticRuntimePercent=$diagnosticPercent"
+    Write-CheckUserGroupDiagnostic -Message "Check-UserGroups final summary: Implementation=$implementationId; Path=$($scanMetrics.SelectedPath); Users=$allUserCount; Covered=$totalCoveredUsers; Uncovered=$($uncoveredUserIds.Count); Groups=$groupCount; UserPages=$($scanMetrics.UserBaselinePages); GroupListPages=$($scanMetrics.GroupListPages); GroupsStarted=$($scanMetrics.GroupsStarted); GroupsCompleted=$($scanMetrics.GroupsCompleted); MembershipPages=$($scanMetrics.MembershipPages); FirstPages=$($scanMetrics.FirstPages); ContinuationPages=$($scanMetrics.ContinuationPages); PageBuckets=1:$($scanMetrics.SinglePageGroups),2-5:$($scanMetrics.TwoToFivePageGroups),6-20:$($scanMetrics.SixToTwentyPageGroups),21Plus:$($scanMetrics.OverTwentyPageGroups); MembershipRecords=$($scanMetrics.MembershipRecords); DirectUsersChecked=$($scanMetrics.DirectUsersChecked); ProbeRuns=$($scanMetrics.ProbeRuns); Reprobes=$($scanMetrics.Reprobes); BatchCalls=$($graphMetrics.BatchCalls); InnerAttempts=$($graphMetrics.InnerAttempts); DirectAttempts=$($graphMetrics.DirectAttempts); SingleRequestDirectCalls=$($graphMetrics.SingleRequestDirectCalls); Retries=$($graphMetrics.Retries); Throttles429=$($graphMetrics.Throttles429); MaximumBatchRecords=$($graphMetrics.MaximumBatchRecords); ResourceUnits=$([Math]::Round($graphMetrics.ResourceUnits, 1)); MaximumThrottlePercentage=$($graphMetrics.MaximumThrottlePercentage); PlanningFailures=$($planningFailureStore.Total); TerminalFailures=$($terminalFailureStore.Total); StructuredErrors=$($ErrorList.Count); IsCompliant=$IsCompliant; Elapsed=$($moduleStopwatch.Elapsed); PrivateMemory=$($finalMemory.PrivateMb) MB; PeakMemory=$($finalMemory.PeakMb) MB; ProcessorSeconds=$($finalMemory.ProcessorSeconds); DiagnosticLines=$($diagnosticMetrics.Lines + 1); DiagnosticCharacters=$($diagnosticMetrics.Characters); DiagnosticWriteMs=$([Math]::Round($diagnosticMetrics.WriteMs, 1)); DiagnosticRuntimePercent=$diagnosticPercent"
 
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
@@ -1846,13 +1800,13 @@ function Check-UserGroups {
         $profileState = if ($ErrorList.Count -gt $profileErrorStart) { 'CompletedWithErrors' } else { 'Completed' }
         Write-CheckUserGroupStage -Stage 'ProfileEnrichment' -State $profileState -Stopwatch $profileStopwatch
     }
-    
-    $moduleOutput= [PSCustomObject]@{ 
+
+    $moduleOutput = [PSCustomObject]@{
         ComplianceResults = $PsObject
-        Errors=$ErrorList
+        Errors            = $ErrorList
         AdditionalResults = $AdditionalResults
     }
     $moduleState = if ($ErrorList.Count -gt 0) { 'CompletedWithErrors' } else { 'Completed' }
     Write-CheckUserGroupStage -Stage 'Module' -State $moduleState -Stopwatch $moduleStopwatch -Details "IsCompliant=$IsCompliant; TotalErrors=$($ErrorList.Count)"
-    return $moduleOutput   
+    return $moduleOutput
 }
