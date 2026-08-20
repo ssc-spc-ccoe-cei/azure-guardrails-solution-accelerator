@@ -19,6 +19,7 @@ CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 # Global
 isCompliant = Conforme.
 isNotCompliant = Non conforme.
+subEvaluationNotApplicable = L'abonnement {0} n'est pas admissible à une évaluation. Il est peut-être annulé et en attente de suppression automatique.
 
 # Guardrail #1
 MSEntIDLicense = Type de licence Microsoft Entra ID

@@ -92,7 +92,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SubnetComplianceStatus.zip'
-        version: '1.1.13'
+        version: '1.2.0'
       }}
   }
   resource module8 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -100,7 +100,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-VNetComplianceStatus.zip'
-        version: '1.2.0'
+        version: '1.2.1'
       }}
   }
   resource module9 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -125,7 +125,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.5.5'
+        version: '1.5.6'
       }}
   }
   resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -141,7 +141,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllowedLocationPolicy.zip'
-        version: '1.2.3'
+        version: '1.2.5'
       }
     }
   }
@@ -175,7 +175,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.4.22'
+        version: '1.5.0'
       }}
   }
   resource module19 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -183,7 +183,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ProtectionDataAtRest.zip'
-        version: '1.3.8'
+        version: '1.3.9'
       }}
   }
   resource module20 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -191,7 +191,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-SecureConnectionInTransit.zip'
-        version: '1.2.13'
+        version: '1.3.0'
       }}
   }
   resource module21 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -207,7 +207,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkWatcherEnabled.zip'
-        version: '1.0.8'
+        version: '1.0.9'
       }}
   }
   resource module26 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -283,7 +283,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ApplicationGatewayCertificateValidity.zip'
-        version: '1.0.9'
+        version: '1.1.0'
       }}
   }
         
@@ -341,7 +341,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-NetworkSecurityTools.zip'
-        version: '1.0.3'
+        version: '1.0.4'
       }}
   }
         
@@ -359,7 +359,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-StorageAccountTLSversion.zip'
-        version: '1.1.0'
+        version: '1.1.2'
       }}
   }
 
@@ -368,7 +368,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AppServiceHTTPSConfiguration.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }}
   }
 
@@ -377,7 +377,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-FunctionAppHTTPSConfiguration.zip'
-        version: '1.0.0'
+        version: '1.0.1'
       }}
   }
 
@@ -405,7 +405,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-ServiceHealthAlerts.zip'
-        version: '1.0.8'
+        version: '1.0.9'
       }
     }
   }
@@ -415,7 +415,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.2.1'
+        version: '1.2.2'
       }
     }
   }
