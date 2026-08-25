@@ -27,7 +27,7 @@
             },
             "jsonData": "[\n    { \"value\":\"Other\", \"label\":\"Yes\" },\n    { \"value\":\"False\", \"label\":\"No\", \"selected\":true }\n]",
             "timeContext": {
-              "durationMs": 86400000
+              "durationMs": 2592000000
             },
             "value": "False"
           }
@@ -215,7 +215,7 @@
         "size": 0,
         "title": "GR 1",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -268,7 +268,7 @@
         "size": 4,
         "title": "Guardrail 1 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -309,7 +309,7 @@
         "size": 4,
         "title": "Guardrail 1 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -380,7 +380,7 @@
             },
             "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Yes\" },\n    { \"value\":\"no\", \"label\":\"No\", \"selected\":true }\n]",
             "timeContext": {
-              "durationMs": 86400000
+              "durationMs": 2592000000
             }
           }
         ],
@@ -402,7 +402,7 @@
         "query": "gr_non_mfa_users('{RunTime}','__MFA_GRACE_PERIOD__')",
         "size": 0,
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -429,7 +429,7 @@
         "size": 0,
         "title": "GR 2",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -482,7 +482,7 @@
         "size": 4,
         "title": "Guardrail 2 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -523,7 +523,7 @@
         "size": 4,
         "title": "Guardrail 2 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -581,7 +581,7 @@
             },
             "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Yes\" },\n    { \"value\":\"no\", \"label\":\"No\", \"selected\":true }\n]",
             "timeContext": {
-              "durationMs": 86400000
+              "durationMs": 2592000000
             }
           }
         ],
@@ -603,7 +603,7 @@
         "query": "GR2ExternalUsers_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    Mail_s = column_ifexists(\"Mail_s\", \"\"),\n    Subscription_s = column_ifexists(\"Subscription_s\", \"\"),\n    Role_s = column_ifexists(\"Role_s\", \"\"),\n    PrivilegedRole_s = column_ifexists(\"PrivilegedRole_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")",
         "size": 0,
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -640,7 +640,7 @@
             },
             "jsonData": "[\n    { \"value\":\"yes\", \"label\":\"Yes\" },\n    { \"value\":\"no\", \"label\":\"No\", \"selected\":true }\n]",
             "timeContext": {
-              "durationMs": 86400000
+              "durationMs": 2592000000
             }
           }
         ],
@@ -675,7 +675,7 @@
         "query": "GR2UsersWithoutGroups_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    UserPrincipalName_s = column_ifexists(\"UserPrincipalName_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")",
         "size": 0,
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -702,7 +702,7 @@
         "size": 0,
         "title": "GR 3",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -755,7 +755,7 @@
         "size": 4,
         "title": "Guardrail 3 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -796,7 +796,7 @@
         "size": 4,
         "title": "Guardrail 3 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -844,7 +844,7 @@
         "size": 0,
         "title": "GR 4",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -897,7 +897,7 @@
         "size": 4,
         "title": "Guardrail 4 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -938,7 +938,7 @@
         "size": 4,
         "title": "Guardrail 4 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -986,7 +986,7 @@
         "size": 0,
         "title": "GR 5",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1037,7 +1037,7 @@
         "size": 4,
         "title": "Guardrail 5 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1078,7 +1078,7 @@
         "size": 4,
         "title": "Guardrail 5 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1126,7 +1126,7 @@
         "size": 0,
         "title": "GR 6",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "exportToExcelOptions": "all",
         "queryType": 0,
@@ -1178,7 +1178,7 @@
         "size": 4,
         "title": "Guardrail 6 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1219,7 +1219,7 @@
         "size": 4,
         "title": "Guardrail 6 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1267,7 +1267,7 @@
         "size": 0,
         "title": "GR 7",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1318,7 +1318,7 @@
         "size": 4,
         "title": "Guardrail 7 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1359,7 +1359,7 @@
         "size": 4,
         "title": "Guardrail 7 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1403,11 +1403,11 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n| where TimeGenerated > ago (24h)\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = strcat(iff(column_ifexists(\"Required_s\", \"\")==\"False\",\"(R) \", \"(M) \"), column_ifexists(\"ItemName_s\", \"\")),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = strcat(iff(column_ifexists(\"Required_s\", \"\")==\"False\",\"(R) \", \"(M) \"), column_ifexists(\"ItemName_s\", \"\")),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc",
         "size": 0,
         "title": "GR 8",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1458,7 +1458,7 @@
         "size": 4,
         "title": "Guardrail 8 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1499,7 +1499,7 @@
         "size": 4,
         "title": "Guardrail 8 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1547,7 +1547,7 @@
         "size": 0,
         "title": "GR 9",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1606,7 +1606,7 @@
         "size": 4,
         "title": "Guardrail 9 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1647,7 +1647,7 @@
         "size": 4,
         "title": "Guardrail 9 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1695,7 +1695,7 @@
         "size": 0,
         "title": "GR 10",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1748,7 +1748,7 @@
         "size": 4,
         "title": "Guardrail 10 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1789,7 +1789,7 @@
         "size": 4,
         "title": "Guardrail 10 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1837,7 +1837,7 @@
         "size": 0,
         "title": "GR 11",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1896,7 +1896,7 @@
         "size": 4,
         "title": "Guardrail 11 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1937,7 +1937,7 @@
         "size": 4,
         "title": "Guardrail 11 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1985,7 +1985,7 @@
         "size": 0,
         "title": "GR 12",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2038,7 +2038,7 @@
         "size": 4,
         "title": "Guardrail 12 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2079,7 +2079,7 @@
         "size": 4,
         "title": "Guardrail 12 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2127,7 +2127,7 @@
         "size": 0,
         "title": "GR 13",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2180,7 +2180,7 @@
         "size": 4,
         "title": "Guardrail 13 Mandatory Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2221,7 +2221,7 @@
         "size": 4,
         "title": "Guardrail 13 Recommended Compliance",
         "timeContext": {
-            "durationMs": 86400000
+            "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2269,7 +2269,7 @@
         "size": 3,
         "title": "Overall Mandatory Compliance",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2332,7 +2332,7 @@
         "size": 3,
         "title": "Overall Recommended Compliance",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2399,11 +2399,11 @@
       "name": "Overall Compliance Status",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary(\"{RunTime}\", 24)",
+        "query": "gr_summary(\"{RunTime}\")",
         "size": 4,
         "title": "Overall Compliance Status",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2444,11 +2444,11 @@
       "name": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary_by_prefix_alla(\"{RunTime}\", 24, \"\")",
+        "query": "gr_summary_by_prefix_alla(\"{RunTime}\", \"\")",
         "size": 0,
         "title": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2494,11 +2494,11 @@
       "name": "Compliance Status by Guardrail (Mandatory Controls)",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary_by_prefix_all(\"{RunTime}\", 24, true)",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", true)",
         "size": 0,
         "title": "Compliance Status by Guardrail (Mandatory Controls)",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2539,11 +2539,11 @@
       "name": "Compliance Status by Guardrail (Recommended Controls)",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_summary_by_prefix_all(\"{RunTime}\", 24, false)",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", false)",
         "size": 0,
         "title": "Compliance Status by Guardrail (Recommended Controls)",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2591,7 +2591,7 @@
         "query": "GuardrailsCompliance_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}'\n| summarize by column_ifexists(\"ControlName_s\", \"\")\n| count \n| extend Title=\"Total # of Items\"",
         "size": 4,
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2629,7 +2629,7 @@
         "size": 4,
         "title": "Guardrails Version Information",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"
@@ -2649,7 +2649,7 @@
         "size": 4,
         "title": "Cloud Usage Profile Configuration",
         "timeContext": {
-          "durationMs": 86400000
+          "durationMs": 2592000000
         },
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces"

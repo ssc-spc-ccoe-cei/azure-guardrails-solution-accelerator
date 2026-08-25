@@ -186,7 +186,24 @@ function Check-ApplicationGatewayCertificateValidity {
     # ----------------------
 
     # Get all subscriptions in tenant scope
-    $subscriptions = Get-AzSubscription
+    # $subscriptions = Get-AzSubscription
+    $allSubscriptions = Get-AzSubscription
+    $subscriptions = $allSubscriptions | Where-Object { $_.State -eq 'Enabled' }
+    $skippedSubscriptions = $allSubscriptions | Where-Object { $_.State -ne 'Enabled' }
+
+    foreach ($skippedSubscription in $skippedSubscriptions) {
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName    = $skippedSubscription.Name
+            ComplianceStatus    = false
+            Comments            = ""
+            ItemName            = $ItemName
+            ControlName         = $ControlName
+            ReportTime          = $ReportTime
+            itsgcode            = $itsgcode
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSubscription.Name -msgTable $msgTable
+        $PsObject.Add($notEvaluatedResult) | Out-Null
+    }
 
     foreach ($subscription in $subscriptions) {
 
@@ -238,9 +255,11 @@ function Check-ApplicationGatewayCertificateValidity {
                         # Certificate is stored in Key Vault - need to retrieve and validate it
                         # Parse the Key Vault URL: https://testappgateway.vault.azure.net/secrets/myapp
                         $keyVaultUrlParts = $keyVaultSecretId -split '/'
-                        $keyVaultName = $keyVaultUrlParts[2] -replace '\.vault\.azure\.net', ''
-                        $secretName = $keyVaultUrlParts[-1]
-                        
+                        # Strip .vault.azure.net and any explicit port (e.g. :443) from the hostname
+                        $keyVaultName = $keyVaultUrlParts[2] -replace '\.vault\.azure\.net(:\d+)?$', ''
+                        # Use last non-empty segment to handle URLs with a trailing slash
+                        $secretName = ($keyVaultUrlParts | Where-Object { $_ -ne '' } | Select-Object -Last 1)
+                                                
                         # Validate that we have the required values
                         if ([string]::IsNullOrEmpty($keyVaultName) -or [string]::IsNullOrEmpty($secretName)) {
                             Write-Warning "Failed to parse Key Vault URL properly"

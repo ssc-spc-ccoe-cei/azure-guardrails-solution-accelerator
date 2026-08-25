@@ -14,7 +14,7 @@
 RootModule = 'Check-SubnetComplianceStatus'
 
 # Version number of this module.
-ModuleVersion = '1.1.13'
+ModuleVersion = '1.2.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

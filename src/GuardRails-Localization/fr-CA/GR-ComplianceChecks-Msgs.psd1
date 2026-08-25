@@ -19,6 +19,7 @@ CtrName13 = GUARDRAIL 13: PLANIFIER LA CONTINUITÉ
 # Global
 isCompliant = Conforme.
 isNotCompliant = Non conforme.
+subEvaluationNotApplicable = L'abonnement {0} n'est pas admissible à une évaluation. Il est peut-être annulé et en attente de suppression automatique.
 
 # Guardrail #1
 MSEntIDLicense = Type de licence Microsoft Entra ID
@@ -123,9 +124,9 @@ userInGroup = Pas d'utilisateurs sans groupes
 
 riskBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'risques
 locationBasedConditionalPolicy = Mécanismes d'authentification : politiques d'accès conditionnel basées sur l'emplacement
-nonCompliantC1= Configurez la politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur.
+nonCompliantC1= Configurez l'une des stratégies d'accès conditionnel requises afin d'imposer un changement de mot de passe ou de bloquer les connexions en fonction du risque lié à l’utilisateur ou du risque de connexion. Consultez le guide de remédiation pour déterminer quelle stratégie est suffisante pour votre organisation.
 nonCompliantC2= Configurez la politique d'accès conditionnel pour empêcher les connexions à partir d'emplacements nommés non approuvés.
-compliantC1 = La politique d'accès conditionnel pour forcer les changements de mot de passe en fonction du risque lié à l'utilisateur a été configurée.
+compliantC1 =  L'une des stratégies d'accès conditionnel requises a été configurée et satisfait aux exigences de ce contrôle.
 compliantC2 = La politique d'accès conditionnel visant à empêcher les connexions à partir d'emplacements nommés non approuvés a été configurée.
 
 # nonCompliantC1C2 = Configurez les politiques d'accès conditionnel décrites dans les conseils de remédiation.
@@ -135,6 +136,10 @@ noCanadaNamedLocationFound = Aucun endroit n'a seulement le Canada en eux.
 noCAallLocationsNonCompliant = Aucun endroit n'a tous les pays sauf le Canada en eux.
 noEnabledPoliciesFound = Aucune politique d'accès conditionnel activée n'a été trouvée.
 noNamedLocationFound = Aucune localisation nommée trouvée dans la stratégie d'accès conditionnel.
+approvedIPrangeFileFound = Le fichier de liste des plages IP approuvées '{0}' a été trouvé et traité.
+approvedIPrangeFileNotFound = Le fichier de liste des plages IP approuvées '{0}' est introuvable dans le conteneur '{1}' du compte de stockage '{2}'. Impossible de vérifier les emplacements nommés basés sur les plages IP.
+approvedIPrangesNotFound = La liste de plages IP approuvées est introuvable dans le fichier '{0}'. Impossible de vérifier les emplacements nommés basés sur les plages IP.
+noValidIPLocationsNonCompliant = Aucun emplacement nommé basé sur des adresses IP valides n'a été trouvé. 
 
 automatedRoleForUsers = Révisions automatisées des rôles : Attributions de rôles pour les utilisateurs et les administrateurs généraux
 noAutomatedAccessReviewForUsers = Aucune révision automatisée d'accès n'est configurée pour les rôles de répertoire « Microsoft Entra ID ». Configurez une révision annuelle d'accès pour un rôle hautement privilégié.
@@ -296,6 +301,7 @@ policyNotConfiguredSub = La politique requise n'est pas attribuée à cet abonne
 policyAssignedSub = La politique requise est attribuée à une portée couvrant cet abonnement : {0}.
 
 # GuardRail #10
+cbsSubscription = Abonnement au capteurs au niveau du nuage
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
 cbcSensorsdontExist = Les capteurs CBS attendus n'existent pas dans ces abonnements :
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.

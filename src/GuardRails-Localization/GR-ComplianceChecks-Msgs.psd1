@@ -19,6 +19,7 @@ CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 # Global
 isCompliant = Compliant.
 isNotCompliant = Non-compliant.
+subEvaluationNotApplicable = The subscription {0} is not applicable for evaluation. It may be cancelled and pending automatic deletion.
 
 # Guardrail #1
 MSEntIDLicense = Microsoft Entra ID License Type
@@ -124,9 +125,9 @@ userInGroup = No users without groups
 
 riskBasedConditionalPolicy = Authentication Mechanisms: Risk Based Conditional Access Policies
 locationBasedConditionalPolicy = Authentication Mechanisms: Location Based Conditional Access Policies
-nonCompliantC1= Configure the conditional access policy to force password changes based on user risk.
+nonCompliantC1= Configure one of the required conditional access policies to force password changes or block sign-ins based on user risk or sign-in risk. Refer to the remediation guide to determine which policy is sufficient for your organization.
 nonCompliantC2= Configure the conditional access policy to prevent sign-in's from unapproved named locations.
-compliantC1 = The conditional access policy to force password changes based on user risk has been configured.
+compliantC1 = One of the required conditional access policies has been configured and meets the requirements for this control.
 compliantC2 = The conditional access policy to prevent sign-in's from unapproved named locations has been configured.
 
 # nonCompliantC1C2 = Configure the conditional access policies outlined in the remediation guidance.
@@ -136,7 +137,10 @@ noCanadaNamedLocationFound = No locations have only Canada in them.
 noCAallLocationsNonCompliant = No locations have all countries except Canada in them.
 noEnabledPoliciesFound = No enabled conditional access policy found.
 noNamedLocationFound = No named location found in the conditional access policies.
-
+approvedIPrangeFileFound = Approved IP range list file '{0}' found and processed.
+approvedIPrangeFileNotFound = Approved IP range list file '{0}' not found in container '{1}' of storage account '{2}'. Unable to verify IP range based named locations.
+approvedIPrangesNotFound = Approved IP range list not found in file '{0}'. Unable to verify IP range based named locations.
+noValidIPLocationsNonCompliant = No valid IP-based named locations found. 
 
 automatedRoleForUsers = Automated Role Reviews: Role Assignments for Users and Global Administrators
 noAutomatedAccessReviewForUsers = There are no automated access reviews configured for Microsoft Entra ID directory roles. Set up an annual access review for a highly privileged role.
@@ -296,6 +300,7 @@ policyNotConfiguredSub = Required policy is not assigned to this subscription: {
 policyAssignedSub = Required policy is assigned at a scope covering this subscription: {0}.
 
 # GuardRail #10
+cbsSubscription = CBS Subscription
 cbsSubDoesntExist = CBS Subscription doesnt exist
 cbcSensorsdontExist = The expected CBS sensors do not exist in these subscriptions:
 cbssMitigation = Check subscription provided: {0} or check existence of the CBS solution in the provided subscription.
@@ -348,7 +353,7 @@ CwpInformational = [Informational] {0}
 
 
 # GuardRail #12
-mktPlaceCreation = MarketPlaceCreation
+mktPlaceCreation = Marketplace Creation
 mktPlaceCreatedEnabled = The Private Marketplace has been created and enabled.
 mktPlaceCreatedNotEnabled = The Private Marketplace has been created but not enabled.
 mktPlaceNotCreated = The Private Marketplace has not been created.
@@ -392,6 +397,6 @@ globalAdminMinAccnts = There must be at least two global administrator accounts.
 
 globalAdminAccntsMFADisabled1 = The following account: {0} does not have multi-factor authentication (MFA) enabled
 globalAdminAccntsMFADisabled2 = The following accounts: {0} do not have multi-factor authentication (MFA) enabled 
-globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled 
+globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled
 
 '@
