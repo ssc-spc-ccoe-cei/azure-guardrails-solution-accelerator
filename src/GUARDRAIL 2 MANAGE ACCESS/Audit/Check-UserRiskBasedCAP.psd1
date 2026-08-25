@@ -14,7 +14,7 @@
 RootModule = 'Check-UserRiskBasedCAP'
 
 # Version number of this module.
-ModuleVersion = '1.0.5'
+ModuleVersion = '1.0.7'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

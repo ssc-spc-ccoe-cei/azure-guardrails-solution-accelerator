@@ -32,7 +32,9 @@ function Get-NetworkWatcherStatus {
 
 
     try {
-        $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled'}  
+        $allSubs = Get-AzSubscription -ErrorAction Stop
+        $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
+        $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"}) 
     }
     catch {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
@@ -42,6 +44,22 @@ function Get-NetworkWatcherStatus {
     {
         $ExcludedVNetsList=$ExcludedVNets.Split(",")
     }
+
+    foreach ($skippedSub in $skippedSubs){
+        # Segmentation
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName = $skippedSub.Name
+            ComplianceStatus = $false
+            Comments         = ''
+            ItemName         = $msgTable.networkWatcherConfig
+            ControlName      = $ControlName
+            itsgcode         = $itsgcode
+            ReportTime       = $ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
+        $RegionList.Add($notEvaluatedResult) | Out-Null
+    }
+
     foreach ($sub in $subs)
     {
         Write-Verbose "Selecting subscription..."

@@ -3496,11 +3496,30 @@ function Check-PBMMPolicies {
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
+        [switch] $EnableMultiCloudProfiles,
+        [System.Object] $skippedObjList
+
     )   
     [System.Collections.ArrayList] $tempObjectList = New-Object System.Collections.ArrayList
     $policyAssignmentCache = @{}
     $policySetDefinitionCache = @{}
+
+    foreach ($skippedObj in $skippedObjList){
+        $notEvaluatedResult = [PSCustomObject]@{
+            Type                = [string]$objType
+            Id                  = [string]$skippedObj.Id
+            # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
+            SubscriptionName = $(if ($objType -eq "subscription") { [string]$skippedObj.Name } else { "" })
+            ComplianceStatus = [boolean]$false
+            Comments = ''
+            ItemName = [string]$ItemName
+            itsgcode = [string]$itsgcode
+            ControlName = [string]$ControlName
+            ReportTime = [string]$ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedObj.Name -msgTable $msgTable
+        $tempObjectList.Add($notEvaluatedResult) | Out-Null
+    }
 
     foreach ($obj in $objList)
     {
@@ -3902,8 +3921,29 @@ function Check-BuiltInPoliciesPerSubscription {
     )
 
 
-    $subscriptions = Get-AzSubscription
+    # $subscriptions = Get-AzSubscription
+    # $results = New-Object System.Collections.ArrayList
+    $allSubscriptions = Get-AzSubscription
+    $subscriptions = $allSubscriptions | Where-Object { $_.State -eq 'Enabled' }
+    $skippedSubscriptions = $allSubscriptions | Where-Object { $_.State -ne 'Enabled' }
+    
+    
     $results = New-Object System.Collections.ArrayList
+    foreach ($skippedSubscription in $skippedSubscriptions) {
+        $notEvaluatedResult = [PSCustomObject]@{
+            Type                = "subscription"
+            Id                  = $skippedSubscription.Id
+            SubscriptionName    = $skippedSubscription.Name
+            ComplianceStatus    = false
+            Comments            = ""
+            ItemName            = "$ItemName"
+            ControlName         = $ControlName
+            ReportTime          = $ReportTime
+            itsgcode            = $itsgcode
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSubscription.Name -msgTable $msgTable
+        $results.Add($notEvaluatedResult) | Out-Null
+    }
 
     foreach ($subscription in $subscriptions) {
         try {
@@ -3917,7 +3957,7 @@ function Check-BuiltInPoliciesPerSubscription {
         $result = Check-BuiltInPolicies -requiredPolicyIds $requiredPolicyIds -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName -subScope $scope -subscription $subscription -itsgcode $itsgcode -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -EnableMultiCloudProfiles -ErrorList $ErrorList
         $results.Add($result)
     }
-    Write-Host "Completed policy compliance check. Found $($results.Count) results"
+    Write-Host "Completed policy compliance check. Found $($results.Count) results ($skippedSubscriptions.Count) subscription(s) not enabled)."
     return $results
 }
 
@@ -3939,7 +3979,7 @@ function Check-BuiltInPolicies {
         [string]$itsgcode,
         [string]$CloudUsageProfiles = "3",
         [string]$ModuleProfiles,
-                             [switch]$EnableMultiCloudProfiles,
+        [switch]$EnableMultiCloudProfiles,
         [System.Collections.ArrayList]$ErrorList
     )
     
@@ -4316,9 +4356,13 @@ policyresources
     # Using mv-expand + union inside a single resourcecontainers query avoids
     # returning nested dynamic arrays that are fragile to deserialize in
     # PowerShell, and also avoids cross-table let statements unsupported in ARG.
+
+    # ── Query 2a: ─────────────────────
+    # Only 'Enabled' subscriptions are considered; disabled subscriptions are skipped and reported as non-evaluated 
     $subScopeQuery = @"
 resourcecontainers
 | where type =~ 'microsoft.resources/subscriptions'
+| where properties.state =~ 'Enabled'
 | extend subId   = tolower(subscriptionId)
 | extend subName = name
 | mv-expand ancestor = properties.managementGroupAncestorsChain
@@ -4327,6 +4371,7 @@ resourcecontainers
 | union (
     resourcecontainers
     | where type =~ 'microsoft.resources/subscriptions'
+    | where properties.state =~ 'Enabled'
     | project subId        = tolower(subscriptionId),
               subName      = name,
               coveringScope = tolower(strcat('/subscriptions/', subscriptionId))
@@ -4350,8 +4395,33 @@ resourcecontainers
     } catch {
         $ErrorList.Add("ARG subscription covering-scopes query failed: $_") | Out-Null
     }
+    # ── Query 2b: Subscriptions NOT in 'enabled' state ─────────────────────
+    # These subscriptions are excluded from query 2a and will be reported as non-evaluated/not applicable in the final results.
+    # These are skipped subs from evaluation and accounted for in the final results with a message indicating they are not evaluated.
+    $skippedSubQuery = @"
+    resourcecontainers
+    | where type =~ 'microsoft.resources/subscriptions'
+    | where properties.state !~ 'Enabled'
+    | project subId        = tolower(subscriptionId),
+              subName      = name,
+              coveringScope = tolower(strcat('/subscriptions/', subscriptionId))
+"@
+    $skippedSubscriptions = @{}   # subId → subName
+    try{
+        Write-Host "ARG: fetching non-enabled or skipped subscriptions..."
+        $skippedRows = Invoke-ARGQueryAllPages -Query $skippedSubQuery
+        foreach ($row in $skippedRows) {
+            $skippedSubscriptions[$row.subId] = $row.subName
+            
+        }
+        Write-Host "ARG: found $($skippedSubscriptions.Count) non-enabled or skipped subscriptions"
+    } catch {
+        $ErrorList.Add("ARG skipped subscription query failed: $_") | Out-Null
+    }
 
-    # ── Query 3: Policy assignments (scope + ID) for the required policy IDs ──
+
+
+    # ── Query 3: Policy assignments (scope + ID) for the required policy IDs ─────────────────────
     # The assignment ID is required to match against exemptions in Query 4.
     $assignQuery = @"
 policyresources
@@ -4481,9 +4551,31 @@ policyresources
 
             $results.Add($r) | Out-Null
         }
+
+        # Add 'not evaluated comment and compliance status for non-enabled subscriptions
+        foreach ($skippedSubId in $skippedSubscriptions.Keys) {
+            $skippedSub = $skippedSubscriptions[$skippedSubId]
+            $notEvalResult = [PSCustomObject]@{
+                Type             = 'subscription'
+                Id               = $skippedSubId
+                SubscriptionName = $skippedSub
+                ComplianceStatus = $false
+                Comments         = ""
+                ItemName         = "$ItemName - $policyDisplayName"
+                ControlName      = $ControlName
+                ReportTime       = $ReportTime
+                itsgcode         = $itsgcode
+            }
+
+            $notEvalResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvalResult -SubscriptionName $skippedSub -msgTable $msgTable
+            if ($EnableMultiCloudProfiles) {
+                $notEvalResult = Add-ProfileInformation -Result $notEvalResult -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -ErrorList $ErrorList
+            }
+            $results.Add($notEvalResult) | Out-Null
+        }
     }
 
-    Write-Host "ARG policy assignment coverage check completed. $($results.Count) results ($($allSubscriptions.Count) subscriptions x $($requiredPolicyIds.Count) policies)"
+    Write-Host "ARG policy assignment coverage check completed. $($results.Count) results ($($allSubscriptions.Count) evaluated + $($skippedSubscriptions.Count) skipped not-evaluated subscriptions x $($requiredPolicyIds.Count) policies)"
     return $results
 }
 
@@ -5434,4 +5526,32 @@ function Upload-CrossTenantAccessData {
     }
     
     return $ErrorList
+}
+
+
+function Set-SubscriptionNotEvaluatedStatus{
+    <#
+    .SYNOPSIS
+    Sets the subscription status to "Not applicable".
+
+    .DESCRIPTION
+    Mirrors the compliance status as 'Not applicable' convention used by Add-ProfileInformation for profile skipped rows. 
+    It takes an existing result object and overwrites its compliance status and comments to reflect that it is not evaluated.
+    This is used when a subscription is not evaluated due to being excluded by the user or by the system.
+    #>
+    param (
+        [Parameter(Mandatory=$true)]
+        [PSCustomObject] $Result,
+        [Parameter(Mandatory=$true)]
+        $SubscriptionName,
+        [Parameter(Mandatory=$true)]
+        [hashtable] $msgTable
+        
+    )
+
+    $Result.ComplianceStatus = "Not applicable"
+    $Result.Comments = $msgTable.subEvaluationNotApplicable -f $SubscriptionName
+    return $Result
+
+
 }
