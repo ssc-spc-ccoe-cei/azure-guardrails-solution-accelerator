@@ -114,11 +114,12 @@ guestHasPrivilegedRole = Ce compte d'utilisateur invité a un ou plusieurs rôle
 
 accManagementUserGroupsCheck = Gestion des comptes : Groupes d'utilisateurs
 userCountGroupNoMatch = Tous les utilisateurs n'ont pas été assignés à un groupe d'utilisateurs privilégiés ou non privilégiés.
+userGroupScanIncomplete = L'évaluation de la conformité des groupes d'utilisateurs n'a pas pu être terminée, car la récupération des données Microsoft Graph était incomplète.
 noCAPforAnyGroups = Aucune des politiques d'accès conditionnel ne fait référence à l'un de vos groupes d'utilisateurs (privilégiés ou non privilégiés).
 userCountOne = Il n'y a seulement un utilisateur dans l'environnement. Des groupes d'utilisateurs ne sont pas nécessaires.
 userGroupsMany =  Le nombre de groupes d'utilisateurs est insuffisant par rapport au nombre actuel d'utilisateurs. Au moins 2 groupes d'utilisateurs sont nécessaires.
 reqPolicyUserGroupExists = Tous les utilisateurs ont été assignés à un groupe d'utilisateurs et au moins une politique d'accès conditionnel fait référence à un groupe d'utilisateurs pour le contrôle d'accès.
-userStats = Statistiques d'utilisateur - Utilisateurs totaux : {0} ; Utilisateurs de groupe (Total - Unique) : {1} ; Membres dans les locataires : {2} ; Invités dans les locataires : {3}
+userStats = Statistiques d'utilisateur - Utilisateurs totaux : {0} ; Utilisateurs membres/invités couverts (uniques) : {1} ; Membres dans les locataires : {2} ; Invités dans les locataires : {3}
 userNotInGroup = L'utilisateur n'est associé à aucun groupe d'utilisateurs.
 userInGroup = Pas d'utilisateurs sans groupes
 
