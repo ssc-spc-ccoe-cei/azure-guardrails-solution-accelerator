@@ -1000,6 +1000,7 @@
               }
             }
           ],
+          "rowLimit": 1500,
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -1141,6 +1142,7 @@
               }
             }
           ],
+          "rowLimit": 1500,
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -1281,6 +1283,7 @@
               }
             }
           ],
+          "rowLimit": 1500,
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -1421,6 +1424,7 @@
               }
             }
           ],
+          "rowLimit": 1500,
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -1569,6 +1573,7 @@
               }
             }
           ],
+          "rowLimit": 1500,
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
@@ -1859,6 +1864,7 @@
               }
             }
           ],
+          "rowLimit": 1500,
           "hierarchySettings": {
             "treeType": 1,
             "groupBy": [
