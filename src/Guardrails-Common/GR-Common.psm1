@@ -2183,7 +2183,56 @@ function Invoke-GraphQueryStreamWithCallback {
         $urlPath = "$urlPath$separator`$top=$PageSize"
     }
 
-    
+    # Graph can tell us how long to wait after throttling. Reading that value keeps
+    # normal paging fast while still backing off for the tenant that needs it.
+    function Get-GraphRetryAfterSeconds {
+        param(
+            $Headers,
+            [int] $DefaultDelaySeconds
+        )
+
+        $retryAfter = $null
+        if ($null -ne $Headers) {
+            try {
+                if ($Headers -is [System.Collections.IDictionary]) {
+                    foreach ($key in $Headers.Keys) {
+                        if ([string]$key -ieq 'Retry-After') {
+                            $retryAfter = @($Headers[$key]) | Select-Object -First 1
+                            break
+                        }
+                    }
+                }
+                elseif ($Headers.PSObject.Methods.Name -contains 'TryGetValues') {
+                    $retryAfterValues = $null
+                    if ($Headers.TryGetValues('Retry-After', [ref]$retryAfterValues)) {
+                        $retryAfter = @($retryAfterValues) | Select-Object -First 1
+                    }
+                }
+                else {
+                    $retryAfterProperty = $Headers.PSObject.Properties |
+                        Where-Object { $_.Name -ieq 'Retry-After' } |
+                        Select-Object -First 1
+                    if ($retryAfterProperty) {
+                        $retryAfter = @($retryAfterProperty.Value) | Select-Object -First 1
+                    }
+                }
+            }
+            catch {
+                # A malformed or unfamiliar header shape must not prevent the retry.
+                $retryAfter = $null
+            }
+        }
+
+        $retryAfterSeconds = 0
+        if ($null -ne $retryAfter -and
+            [int]::TryParse([string]$retryAfter, [ref]$retryAfterSeconds) -and
+            $retryAfterSeconds -gt 0) {
+            return $retryAfterSeconds
+        }
+
+        return $DefaultDelaySeconds
+    }
+
     $fullUri = "$baseUri$urlPath"
     $pageCount = 0
     $totalProcessed = 0
@@ -2199,6 +2248,8 @@ function Invoke-GraphQueryStreamWithCallback {
             try {
                 # Default to retryable until we know the exact HTTP status from Graph.
                 $isRetryable = $true
+                $retryDelayForAttempt = $RetryDelaySeconds
+                $statusCode = $null
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
@@ -2215,6 +2266,9 @@ function Invoke-GraphQueryStreamWithCallback {
                 } else {
                     # Handle non-success status codes
                     $errorContent = $response.Content
+                    if ($statusCode -eq 429) {
+                        $retryDelayForAttempt = Get-GraphRetryAfterSeconds -Headers $response.Headers -DefaultDelaySeconds $RetryDelaySeconds
+                    }
 
                     # Determine if this is a retryable error
                     $isRetryable = switch ($statusCode) {
@@ -2241,13 +2295,27 @@ function Invoke-GraphQueryStreamWithCallback {
             catch {
                 $retryCount++
                 $errorMessage = $_.Exception.Message
+                if ($_.Exception.Response -and $_.Exception.Response.Headers) {
+                    if ($null -ne $_.Exception.Response.StatusCode) {
+                        $statusCode = [int]$_.Exception.Response.StatusCode
+                    }
+                    $retryDelayForAttempt = Get-GraphRetryAfterSeconds -Headers $_.Exception.Response.Headers -DefaultDelaySeconds $retryDelayForAttempt
+                }
+
+                if ($PerformanceMetrics -and $statusCode -eq 429) {
+                    $PerformanceMetrics.GraphThrottles429++
+                }
                                 
                 if ($retryCount -ge $MaxRetries) {
                     Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $errorMessage at page $pageCount"
                     throw [System.Exception]::new("Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $errorMessage at page $pageCount")
                 } elseif ($isRetryable) {
-                    Write-Warning "Retryable error calling Graph API (attempt $retryCount/$MaxRetries): $errorMessage. Retrying in $RetryDelaySeconds seconds..."
-                    Start-Sleep -Seconds $RetryDelaySeconds
+                    if ($PerformanceMetrics) {
+                        $PerformanceMetrics.GraphApiRetries++
+                        $PerformanceMetrics.GraphRetryDelaySeconds += $retryDelayForAttempt
+                    }
+                    Write-Warning "Retryable error calling Graph API (attempt $retryCount/$MaxRetries): $errorMessage. Retrying in $retryDelayForAttempt seconds..."
+                    Start-Sleep -Seconds $retryDelayForAttempt
                 } else {
                     Write-Error "Non-retryable error calling Graph API: $errorMessage"
                     throw [System.Exception]::new("Non-retryable error calling Graph API: $errorMessage")
@@ -2349,8 +2417,10 @@ function Add-FunctionError {
     
     Write-Warning $errorMsg
     
-    if ($ErrorList) {
-        $ErrorList.Add($errorMsg)
+    # PowerShell treats an empty list like false. Check whether the list exists so
+    # the first error is added even when the list does not contain anything yet.
+    if ($null -ne $ErrorList) {
+        [void]$ErrorList.Add($errorMsg)
     }
 }
 
@@ -4619,14 +4689,23 @@ function FetchAllUserRawData {
     
     # Initialize error tracking and performance monitoring
     $ErrorList = [System.Collections.Generic.List[string]]::new()
+    # The MFA control reads this state later in the same main runbook. Start with
+    # incomplete and change it only after every temporary bucket is processed and
+    # uploaded, so missing user data can never become a false compliance pass.
+    $Global:GuardrailsUserRawDataCollectionComplete = $false
+    $Global:GuardrailsUserRawDataExpectedRecordCount = 0
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     $performanceMetrics = @{
         StartTime = Get-Date
         GraphApiCalls = 0
+        GraphApiRetries = 0
+        GraphThrottles429 = 0
+        GraphRetryDelaySeconds = 0
         UsersProcessed = 0
         DataIngestionAttempts = 0
     }
-    # Emit phase timings to job output so large-tenant runs show where time is spent.
+    # Report each major phase separately so an interrupted large-tenant run shows
+    # where it stopped and whether Graph, temporary files, or upload took the time.
     $writePhaseTiming = {
         param(
             [string] $PhaseName,
@@ -4634,265 +4713,578 @@ function FetchAllUserRawData {
         )
         $phaseDurationSeconds = [Math]::Round($PhaseStopwatch.Elapsed.TotalSeconds, 2)
         $phaseDurationMinutes = [Math]::Round($PhaseStopwatch.Elapsed.TotalMinutes, 2)
-        Write-Host "FetchAllUserRawData timing | Phase=$PhaseName | Seconds=$phaseDurationSeconds | Minutes=$phaseDurationMinutes"
+        # Warning is preserved in the Automation job export used by operations;
+        # host output from this callback was absent in the client evidence.
+        Write-Warning "FetchAllUserRawData timing | Phase=$PhaseName | Seconds=$phaseDurationSeconds | Minutes=$phaseDurationMinutes"
+    }
+
+    # Emit live progress while Graph pages are being written to temporary files.
+    # These messages survive the Automation log export, so a timeout or OOM still
+    # leaves the last completed page, record count, memory, and disk use in the log.
+    $writeCollectionProgress = {
+        param(
+            [string] $PhaseName,
+            [string] $EventName,
+            [int] $PageNumber,
+            [long] $RecordCount,
+            [string] $Directory,
+            [System.Diagnostics.Stopwatch] $PhaseStopwatch
+        )
+
+        try {
+            $temporaryBytes = [long](Get-ChildItem -LiteralPath $Directory -File | Measure-Object -Property Length -Sum).Sum
+            $temporaryStorageMb = [Math]::Round($temporaryBytes / 1MB, 2)
+            $memoryMb = [Math]::Round([System.Diagnostics.Process]::GetCurrentProcess().PrivateMemorySize64 / 1MB, 0)
+            $elapsedMinutes = [Math]::Round($PhaseStopwatch.Elapsed.TotalMinutes, 2)
+            Write-Warning "FetchAllUserRawData collection progress | Phase=$PhaseName | Event=$EventName | Pages=$PageNumber | Records=$RecordCount | TemporaryStorageMb=$temporaryStorageMb | MemoryMb=$memoryMb | Minutes=$elapsedMinutes"
+        }
+        catch {
+            # Diagnostics must never turn an otherwise healthy collection into a failure.
+            Write-Warning "FetchAllUserRawData collection progress unavailable | Phase=$PhaseName | Event=$EventName | Pages=$PageNumber | Records=$RecordCount | Error=$($_.Exception.Message)"
+        }
+    }
+
+    # A partition below means one numbered bucket stored in this Automation job's
+    # local temporary directory, not in an Azure Storage Account. Each of the 64
+    # buckets has one compressed registration file and one compressed user file,
+    # for up to 128 temporary files. Processing one pair at a time keeps only about
+    # 1/64 of the registration lookup in memory. The same Entra user ID always goes
+    # to the same bucket in both files so the records can be matched safely.
+    $partitionCount = 64
+    # Fifty pages is frequent enough to leave useful evidence before a hard stop,
+    # but sparse enough to avoid slowing large tenants or flooding their job logs.
+    $collectionProgressIntervalPages = 50
+    # Graph can return 999 users per page, but the richer Log Analytics rows are
+    # larger. Uploading 650 at a time keeps typical payloads below the existing
+    # 900 KB safety limit and avoids parsing and splitting the same payload twice.
+    # The byte-based ingestion splitter remains the fallback for unusually large rows.
+    $userRawUploadBatchSize = 650
+    $partitionDirectory = $null
+    $registrationStore = $null
+    $userStore = $null
+
+    # Create one compressed temporary file and writer for each numbered bucket.
+    # Compression limits temporary-disk use, and small writers let all 64 buckets
+    # stay open without recreating the memory problem this design is fixing.
+    $newPartitionStore = {
+        param(
+            [string] $Directory,
+            [string] $Prefix,
+            [int] $Count
+        )
+
+        $paths = [string[]]::new($Count)
+        $writers = [System.IO.StreamWriter[]]::new($Count)
+        $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
+        # Each open file uses a small 8 KB write buffer. This keeps the combined
+        # writer memory low while still writing the compressed files efficiently.
+        $partitionBufferSize = 8192
+
+        try {
+            for ($index = 0; $index -lt $Count; $index++) {
+                $path = Join-Path $Directory ("{0}-{1:D3}.jsonl.gz" -f $Prefix, $index)
+                $fileStream = [System.IO.FileStream]::new(
+                    $path,
+                    [System.IO.FileMode]::Create,
+                    [System.IO.FileAccess]::Write,
+                    [System.IO.FileShare]::None,
+                    $partitionBufferSize,
+                    [System.IO.FileOptions]::SequentialScan
+                )
+                $gzipStream = [System.IO.Compression.GZipStream]::new(
+                    $fileStream,
+                    [System.IO.Compression.CompressionLevel]::Fastest,
+                    $false
+                )
+                $writers[$index] = [System.IO.StreamWriter]::new($gzipStream, $utf8WithoutBom, $partitionBufferSize, $false)
+                $paths[$index] = $path
+            }
+        }
+        catch {
+            foreach ($writer in $writers) {
+                if ($null -ne $writer) {
+                    $writer.Dispose()
+                }
+            }
+            throw
+        }
+
+        return [PSCustomObject]@{
+            Paths = $paths
+            Writers = $writers
+            Count = $Count
+        }
+    }
+
+    # Close every writer so all compressed data is fully saved before it is read.
+    # If a file cannot be closed cleanly, fail the collection rather than letting
+    # incomplete temporary data produce an incorrect compliance result.
+    $closePartitionStore = {
+        param($Store)
+
+        if ($null -eq $Store -or $null -eq $Store.Writers) {
+            return
+        }
+
+        $firstCloseError = $null
+        foreach ($writer in $Store.Writers) {
+            if ($null -ne $writer) {
+                try {
+                    $writer.Dispose()
+                }
+                catch {
+                    if ($null -eq $firstCloseError) {
+                        $firstCloseError = $_
+                    }
+                }
+            }
+        }
+        $Store.Writers = $null
+
+        # Report the first close failure after attempting to close every file.
+        if ($null -ne $firstCloseError) {
+            throw $firstCloseError
+        }
+    }
+
+    # Split one Graph page across the numbered buckets and write it immediately.
+    # This lets the original Graph page leave memory while preserving the user ID
+    # needed to match registration and user data later.
+    $writePartitionedPage = {
+        param(
+            [object[]] $Records,
+            $Store
+        )
+
+        $partitionBuckets = [System.Collections.Generic.List[object][]]::new($Store.Count)
+        foreach ($record in $Records) {
+            $recordId = [string]$record.id
+            if ($recordId.Length -lt 2) {
+                throw "Graph returned a record without a valid user ID."
+            }
+
+            # Use the first part of the Entra ID to choose a stable bucket. GUIDs
+            # normally spread records across the buckets, and matching IDs always
+            # choose the same bucket in both Graph passes.
+            try {
+                $partitionIndex = [Convert]::ToInt32($recordId.Substring(0, 2), 16) % $Store.Count
+            }
+            catch {
+                throw "Graph returned an invalid user ID '$recordId'."
+            }
+
+            if ($null -eq $partitionBuckets[$partitionIndex]) {
+                $partitionBuckets[$partitionIndex] = [System.Collections.Generic.List[object]]::new()
+            }
+            $partitionBuckets[$partitionIndex].Add($record)
+        }
+
+        for ($index = 0; $index -lt $Store.Count; $index++) {
+            $bucket = $partitionBuckets[$index]
+            if ($null -eq $bucket -or $bucket.Count -eq 0) {
+                continue
+            }
+
+            # Store this page's records for one bucket as a compressed line. The
+            # line can later be read by itself instead of loading the full tenant.
+            $bucketRecords = $bucket.ToArray()
+            $json = ConvertTo-Json -InputObject $bucketRecords -Depth 12 -Compress
+            $Store.Writers[$index].WriteLine($json)
+        }
+    }
+
+    # Open one compressed bucket for sequential reading. Data is decompressed as
+    # it is read, so neither the whole file nor the whole tenant enters memory.
+    $openPartitionReader = {
+        param([string] $Path)
+
+        $fileStream = [System.IO.FileStream]::new(
+            $Path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::Read,
+            65536,
+            [System.IO.FileOptions]::SequentialScan
+        )
+        $gzipStream = [System.IO.Compression.GZipStream]::new(
+            $fileStream,
+            [System.IO.Compression.CompressionMode]::Decompress,
+            $false
+        )
+        return [System.IO.StreamReader]::new($gzipStream, [System.Text.Encoding]::UTF8, $true, 65536, $false)
+    }
+
+    # Log which bucket is about to enter memory, along with both compressed file
+    # sizes. If processing stops inside one bucket, the last start line identifies
+    # the bucket and whether unusually large input contributed to the failure.
+    $writeBucketStart = {
+        param(
+            [int] $BucketIndex,
+            [int] $BucketCount,
+            [string] $RegistrationPath,
+            [string] $UserPath,
+            [System.Diagnostics.Stopwatch] $PhaseStopwatch
+        )
+
+        try {
+            $registrationFileMb = [Math]::Round(([System.IO.FileInfo]::new($RegistrationPath).Length / 1MB), 2)
+            $userFileMb = [Math]::Round(([System.IO.FileInfo]::new($UserPath).Length / 1MB), 2)
+            $memoryMb = [Math]::Round([System.Diagnostics.Process]::GetCurrentProcess().PrivateMemorySize64 / 1MB, 0)
+            $elapsedMinutes = [Math]::Round($PhaseStopwatch.Elapsed.TotalMinutes, 2)
+            Write-Warning "FetchAllUserRawData bucket start | Bucket=$($BucketIndex + 1)/$BucketCount | RegistrationFileMb=$registrationFileMb | UserFileMb=$userFileMb | MemoryMb=$memoryMb | Minutes=$elapsedMinutes"
+        }
+        catch {
+            # Continue into the real read so a diagnostic problem cannot hide or cause a data failure.
+            Write-Warning "FetchAllUserRawData bucket diagnostic unavailable | Bucket=$($BucketIndex + 1)/$BucketCount | Error=$($_.Exception.Message)"
+        }
     }
     
     $startTimeFormatted = $performanceMetrics.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
     Write-Verbose "=== Starting FetchAllUserRawData with ReportTime: $ReportTime  at $startTimeFormatted ==="
-    Write-Verbose "Step 1: Fetching authentication method registration details..."
-    $regById = @{}
-    
-    # Stream registration details page by page instead of loading the full tenant report at once.
-    $registrationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Verbose "Step 1: Spooling authentication registration details into bounded partitions..."
+
+    # Prepare a small lookup of break-glass accounts. Filtering them during the
+    # final match keeps the two Graph collection passes simple and memory-safe.
+    $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+        ForEach-Object { $_.ToLowerInvariant() }
+    $bgUpnLookup = @{}
+    $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
+
+    $registrationResult = $null
+    $userSpoolResult = $null
+    $pageNumber = 0
+    $processedUsers = 0
+    $totalUploadedRecords = 0
+    $totalReadUserRecords = 0
+    $domainTenantCache = @{}
+
     try {
-        $regPath = "/reports/authenticationMethods/userRegistrationDetails"
-        # The callback builds a lookup while each Graph page is still small.
+        # Use a unique folder in this Automation job's temporary storage. Nothing
+        # is shared with another run or retained as compliance evidence afterward.
+        $partitionDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("guardrails-userraw-{0}" -f [guid]::NewGuid().ToString('N'))
+        [void][System.IO.Directory]::CreateDirectory($partitionDirectory)
+
+        # Keep only registration fields used in the final GuardrailsUserRaw row.
+        # Smaller temporary records reduce disk use and memory during matching.
+        $registrationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $registrationStore = & $newPartitionStore $partitionDirectory 'registration' $partitionCount
         $registrationContext = @{
-            regById = $regById
+            Store = $registrationStore
+            WritePartitionedPage = $writePartitionedPage
+            WriteCollectionProgress = $writeCollectionProgress
+            Directory = $partitionDirectory
+            PhaseStopwatch = $registrationStopwatch
+            ProgressIntervalPages = $collectionProgressIntervalPages
+            TotalRecords = [long]0
         }
+        # Convert each Graph registration page to smaller records and write them
+        # to temporary buckets immediately. This replaces the tenant-wide lookup
+        # that ran out of memory in the reported large tenant.
         $processRegistrationPageCallback = {
             param($pageData, $context)
 
             $pageRecords = @($pageData.Data)
+            $projectedRecords = [System.Collections.Generic.List[object]]::new($pageRecords.Count)
             foreach ($record in $pageRecords) {
-                if ($record.id -and -not $context.regById.ContainsKey($record.id)) {
-                    # Keep only fields used later so each raw Graph page can be released after the callback.
-                    $context.regById[$record.id] = [PSCustomObject]@{
-                        isMfaRegistered       = $record.isMfaRegistered
-                        isMfaCapable          = $record.isMfaCapable
-                        isSsprEnabled         = $record.isSsprEnabled
-                        isSsprRegistered      = $record.isSsprRegistered
-                        isSsprCapable         = $record.isSsprCapable
-                        isPasswordlessCapable = $record.isPasswordlessCapable
-                        defaultMethod         = $record.defaultMethod
-                        methodsRegistered     = $record.methodsRegistered
-                        isSystemPreferredAuthenticationMethodEnabled = $record.isSystemPreferredAuthenticationMethodEnabled
-                        systemPreferredAuthenticationMethods = $record.systemPreferredAuthenticationMethods
-                        userPreferredMethodForSecondaryAuthentication = $record.userPreferredMethodForSecondaryAuthentication
+                if (-not $record.id) {
+                    continue
+                }
+
+                $projectedRecords.Add([PSCustomObject]@{
+                    id = $record.id
+                    isMfaRegistered = $record.isMfaRegistered
+                    isMfaCapable = $record.isMfaCapable
+                    isSsprEnabled = $record.isSsprEnabled
+                    isSsprRegistered = $record.isSsprRegistered
+                    isSsprCapable = $record.isSsprCapable
+                    isPasswordlessCapable = $record.isPasswordlessCapable
+                    defaultMethod = $record.defaultMethod
+                    methodsRegistered = $record.methodsRegistered
+                    isSystemPreferredAuthenticationMethodEnabled = $record.isSystemPreferredAuthenticationMethodEnabled
+                    systemPreferredAuthenticationMethods = $record.systemPreferredAuthenticationMethods
+                    userPreferredMethodForSecondaryAuthentication = $record.userPreferredMethodForSecondaryAuthentication
+                })
+            }
+
+            & $context.WritePartitionedPage $projectedRecords.ToArray() $context.Store
+            $context.TotalRecords += $projectedRecords.Count
+            if (($pageData.PageNumber % $context.ProgressIntervalPages) -eq 0 -or -not $pageData.HasMore) {
+                & $context.WriteCollectionProgress 'registration-write' 'Progress' $pageData.PageNumber $context.TotalRecords $context.Directory $context.PhaseStopwatch
+            }
+            return @{ ProcessedCount = $pageRecords.Count; UploadedCount = 0 }
+        }
+
+        # Read registration pages without a fixed delay because hundreds of pages
+        # would turn that delay into minutes. The shared Graph reader still retries
+        # throttling and temporary failures.
+        & $writeCollectionProgress 'registration-write' 'Start' 0 0 $partitionDirectory $registrationStopwatch
+        try {
+            $registrationResult = Invoke-GraphQueryStreamWithCallback -UrlPath '/reports/authenticationMethods/userRegistrationDetails' -PageSize $BatchSize -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
+        }
+        catch {
+            Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+            throw
+        }
+        finally {
+            & $closePartitionStore $registrationStore
+        }
+        Write-Verbose "  Success: Spooled $($registrationResult.TotalProcessed) registration records"
+        & $writePhaseTiming 'registration-spool' $registrationStopwatch
+
+        # Write users with the same 64-bucket ID rule used for registrations. This
+        # places matching records together without keeping either full list in memory.
+        Write-Verbose "Step 2: Spooling enabled users into bounded partitions..."
+        $selectFields = 'displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes'
+        $usersPath = "/users?`$select=$selectFields&`$filter=accountEnabled eq true"
+        $userSpoolStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $userStore = & $newPartitionStore $partitionDirectory 'user' $partitionCount
+        $userSpoolContext = @{
+            Store = $userStore
+            WritePartitionedPage = $writePartitionedPage
+            WriteCollectionProgress = $writeCollectionProgress
+            Directory = $partitionDirectory
+            PhaseStopwatch = $userSpoolStopwatch
+            ProgressIntervalPages = $collectionProgressIntervalPages
+            TotalRecords = [long]0
+        }
+        # Write each Graph user page to temporary buckets immediately so the page
+        # can leave memory before the next page is requested.
+        $processUserSpoolPageCallback = {
+            param($pageData, $context)
+
+            $pageUsers = @($pageData.Data)
+            & $context.WritePartitionedPage $pageUsers $context.Store
+            $context.TotalRecords += $pageUsers.Count
+            if (($pageData.PageNumber % $context.ProgressIntervalPages) -eq 0 -or -not $pageData.HasMore) {
+                & $context.WriteCollectionProgress 'user-write' 'Progress' $pageData.PageNumber $context.TotalRecords $context.Directory $context.PhaseStopwatch
+            }
+            return @{ ProcessedCount = $pageUsers.Count; UploadedCount = 0 }
+        }
+
+        # Request the next /users page immediately. If Graph needs a slower rate,
+        # the shared reader honours Retry-After and pauses only for that response.
+        & $writeCollectionProgress 'user-write' 'Start' 0 0 $partitionDirectory $userSpoolStopwatch
+        try {
+            $userSpoolResult = Invoke-GraphQueryStreamWithCallback -UrlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processUserSpoolPageCallback -CallbackContext $userSpoolContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
+        }
+        catch {
+            Add-FunctionError -Message "Failed to fetch users from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
+            throw
+        }
+        finally {
+            & $closePartitionStore $userStore
+        }
+        $pageNumber = $userSpoolResult.TotalPages
+        $processedUsers = $userSpoolResult.TotalProcessed
+        $performanceMetrics.UsersProcessed = $processedUsers
+        Write-Verbose "  Success: Spooled $processedUsers enabled users from $pageNumber pages"
+        & $writePhaseTiming 'user-spool' $userSpoolStopwatch
+
+        $spoolBytes = [long](Get-ChildItem -LiteralPath $partitionDirectory -File | Measure-Object -Property Length -Sum).Sum
+        $spoolSizeMb = [Math]::Round($spoolBytes / 1MB, 2)
+        # Include retry totals in a captured Automation stream so scale tests can
+        # confirm that faster paging did not simply trade elapsed time for throttling.
+        Write-Warning "FetchAllUserRawData bounded join | Partitions=$partitionCount | UploadBatchSize=$userRawUploadBatchSize | TemporaryStorageMb=$spoolSizeMb | GraphCalls=$($performanceMetrics.GraphApiCalls) | GraphRetries=$($performanceMetrics.GraphApiRetries) | Graph429=$($performanceMetrics.GraphThrottles429) | GraphRetryWaitSeconds=$($performanceMetrics.GraphRetryDelaySeconds)"
+
+        # Both Graph reads and all temporary-file writers are finished. Ask .NET
+        # once to release their unused buffers before matching begins. Doing this
+        # once avoids the large slowdown that collection inside the user loop causes.
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+        [System.GC]::Collect()
+
+        # Process one matching bucket pair at a time. Load only that bucket's
+        # registration lookup, read its users, combine the records, and upload them.
+        # Keeping roughly 1/64 of the lookup in memory is the main OOM protection.
+        Write-Verbose "Step 3: Joining and uploading one bounded partition at a time..."
+        $joinStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        # Upload one existing-size Log Analytics batch. Retry a temporary failure
+        # up to three times; if all attempts fail, stop the collection so the MFA
+        # control cannot treat partially uploaded data as complete.
+        $sendUploadBatch = {
+            param(
+                [object[]] $BatchData,
+                [int] $PartitionIndex,
+                [string] $TargetWorkSpaceID,
+                [string] $TargetWorkspaceKey,
+                [hashtable] $TargetRetryConfig,
+                [System.Collections.Generic.List[string]] $TargetErrorList
+            )
+
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+                try {
+                    New-LogAnalyticsData -Data $BatchData -WorkSpaceID $TargetWorkSpaceID -WorkspaceKey $TargetWorkspaceKey -LogType 'GuardrailsUserRaw' | Out-Null
+                    return $BatchData.Count
+                }
+                catch {
+                    if ($attempt -eq 3) {
+                        $errorMsg = "Failed to upload partition $PartitionIndex after 3 attempts: $($_.Exception.Message)"
+                        Add-FunctionError -Message $errorMsg -Exception $_.Exception -Category 'LogAnalytics' -ErrorList $TargetErrorList
+                        throw [System.Exception]::new($errorMsg)
+                    }
+                    Start-Sleep -Seconds (Get-BackoffDelay -Attempt $attempt -Config $TargetRetryConfig)
+                }
+            }
+        }
+
+        # Complete one bucket before opening the next. The registration side is a
+        # small ID lookup, while the matching user file is read gradually.
+        for ($partitionIndex = 0; $partitionIndex -lt $partitionCount; $partitionIndex++) {
+            & $writeBucketStart $partitionIndex $partitionCount $registrationStore.Paths[$partitionIndex] $userStore.Paths[$partitionIndex] $joinStopwatch
+            $registrationLookup = @{}
+            $registrationReader = & $openPartitionReader $registrationStore.Paths[$partitionIndex]
+            try {
+                while (-not $registrationReader.EndOfStream) {
+                    $line = $registrationReader.ReadLine()
+                    if ([string]::IsNullOrWhiteSpace($line)) {
+                        continue
+                    }
+                    foreach ($registration in @($line | ConvertFrom-Json)) {
+                        if ($registration.id -and -not $registrationLookup.ContainsKey($registration.id)) {
+                            $registrationLookup[$registration.id] = $registration
+                        }
                     }
                 }
             }
+            finally {
+                $registrationReader.Dispose()
+            }
 
-            return @{
-                ProcessedCount = $pageRecords.Count
-                UploadedCount = 0
-            }
-        }
-
-        # Use 0 seconds between registration pages to avoid adding fixed sleep time to large tenants.
-        # Retry logic still handles Graph throttling if it happens.
-        $registrationResult = Invoke-GraphQueryStreamWithCallback -UrlPath $regPath -PageSize $BatchSize -ProcessPageCallback $processRegistrationPageCallback -CallbackContext $registrationContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
-        Write-Verbose "  Success: Retrieved $($registrationResult.TotalProcessed) registration records"
-        Write-Verbose "  Success: Built lookup table for $($regById.Count) registration records"
-        & $writePhaseTiming "registration" $registrationStopwatch
-    } catch {
-        Add-FunctionError -Message "Failed to fetch registration details from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
-        & $writePhaseTiming "registration" $registrationStopwatch
-    }
-    
-    # Step 2: Prepare break-glass account filtering
-    Write-Verbose "Step 2: Preparing break-glass account filtering..."
-        $bgUpns = @($FirstBreakGlassUPN, $SecondBreakGlassUPN) | 
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-            ForEach-Object { $_.ToLower() }
-            
-            # Use hashtable for O(1) lookup performance
-            $bgUpnLookup = @{}
-            $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
-            
-    if ($bgUpns.Count -gt 0) {
-        $bgUpnList = $bgUpns -join ', '
-        Write-Verbose "  -> Will filter out break-glass accounts: $bgUpnList"
-    }
-    
-    # Step 3: Setup streaming user processing
-    Write-Verbose "Step 3: Starting streaming user processing..."
-    $selectFields = "displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes"
-    $filterQuery = "accountEnabled eq true"
-    $usersPath = "/users?$" + "select=$selectFields&$" + "filter=$filterQuery"
-
-    # Step 4: True streaming - process and upload users page by page as they're fetched
-    Write-Verbose "Step 4: True streaming user processing with page size $BatchSize..."
-    
-    # Create a context object with all variables needed by the callback
-    $callbackContext = @{
-        WorkSpaceID = $WorkSpaceID
-        WorkspaceKey = $WorkspaceKey
-        ReportTime = $ReportTime
-        bgUpnLookup = $bgUpnLookup
-        regById = $regById
-        RetryConfig = $RetryConfig
-        ErrorList = $ErrorList
-        domainTenantCache = @{}  # Cache for guest domain → tenant ID mapping
-    }
-    
-    # Define the callback function that processes each page immediately
-    $processPageCallback = {
-        param($pageData, $context)
-        
-        $pageNumber = $pageData.PageNumber
-        $pageUsers = $pageData.Data
-        $hasMore = $pageData.HasMore
-        
-        if (-not $pageUsers -or $pageUsers.Count -eq 0) {
-            Write-Verbose "  -> Page $pageNumber : No users returned, skipping..."
-            return @{ ProcessedCount = 0; UploadedCount = 0 }
-        }
-        
-        Write-Verbose "  -> Page $pageNumber : Processing $($pageUsers.Count) users from Graph API..."
-                
-        # Filter out break-glass accounts from this page
-        $filteredPageUsers = $pageUsers | Where-Object { 
-            $upn = $_.userPrincipalName
-            if ([string]::IsNullOrWhiteSpace($upn)) { 
-                return $false 
-            }
-            
-            $isNotBreakGlass = -not $context.bgUpnLookup.ContainsKey($upn.ToLower())
-            if (-not $isNotBreakGlass) { 
-                Write-Verbose "    Filtered out break-glass account: $upn" 
-            }
-            return $isNotBreakGlass
-        }
-        
-        $filteredCount = $filteredPageUsers.Count
-        $removedCount = $pageUsers.Count - $filteredCount
-        if ($removedCount -gt 0) {
-            Write-Verbose "  -> Page $pageNumber : Filtered $($pageUsers.Count) -> $filteredCount users (removed $removedCount break-glass accounts)"
-        }
-        
-        if ($filteredCount -eq 0) {
-            Write-Verbose "  -> Page $pageNumber : No users remaining after filtering, skipping upload..."
-            return @{ ProcessedCount = $pageUsers.Count; UploadedCount = 0 }
-        }
-        
-        # Process current page users
-        $batchResults = $filteredPageUsers | ForEach-Object {
-            $user = $_
-            $registration = $context.regById[$user.id]
-            if ($registration) {
-                # Drop matched registration data so memory can shrink as user pages are processed.
-                $context.regById.Remove($user.id) | Out-Null
-            }
-            $methods = @()
-            $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
-
-            # Get home tenant ID for guest users using cache
-            $homeTenantId = $null
-            $homeTenantResolved = $false
-            if ($user.userType -eq "Guest") {
-                $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
-                
-                if ($domain) {
-                    # Get from cache or resolve (with automatic caching)
-                    $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $context.domainTenantCache
-                    $homeTenantId = $resolutionResult.TenantId
-                    $homeTenantResolved = $resolutionResult.ResolutionSucceeded
-                    Write-Verbose "    Guest user $($user.displayName) → domain: $domain → tenant: $homeTenantId → resolved: $homeTenantResolved"
-                }
-                else {
-                    Write-Verbose "    Guest user $($user.displayName) → could not extract domain from UPN/mail"
-                }
-            }            
-            
-            if ($registration -and $registration.methodsRegistered) {
-                $methods = @($registration.methodsRegistered)
-            }
-            
-            [PSCustomObject]@{
-                id                = $user.id
-                userPrincipalName = $user.userPrincipalName
-                displayName       = $user.displayName
-                mail              = $user.mail
-                createdDateTime   = $user.createdDateTime
-                userType          = $user.userType
-                homeTenantId      = $homeTenantId
-                homeTenantResolved = $homeTenantResolved
-                accountEnabled    = $user.accountEnabled
-                signInActivity    = $user.signInActivity
-                customSecurityAttributes = $user.customSecurityAttributes
-                guardrailsExcludedMfa    = $guardrailsExcluded
-                isMfaRegistered       = if ($registration) { $registration.isMfaRegistered } else { $null }
-                isMfaCapable          = if ($registration) { $registration.isMfaCapable } else { $null }
-                isSsprEnabled         = if ($registration) { $registration.isSsprEnabled } else { $null }
-                isSsprRegistered      = if ($registration) { $registration.isSsprRegistered } else { $null }
-                isSsprCapable         = if ($registration) { $registration.isSsprCapable } else { $null }
-                isPasswordlessCapable = if ($registration) { $registration.isPasswordlessCapable } else { $null }
-                defaultMethod         = if ($registration) { $registration.defaultMethod } else { $null }
-                methodsRegistered     = $methods
-                isSystemPreferredAuthenticationMethodEnabled = if ($registration) { $registration.isSystemPreferredAuthenticationMethodEnabled } else { $null }
-                systemPreferredAuthenticationMethods = if ($registration) { $registration.systemPreferredAuthenticationMethods } else { $null }
-                userPreferredMethodForSecondaryAuthentication = if ($registration) { $registration.userPreferredMethodForSecondaryAuthentication } else { $null }
-                ReportTime        = $context.ReportTime
-            }
-        }
-        
-        Write-Verbose "  -> Page $pageNumber : Processing complete. $filteredCount records prepared for upload"        
-        # Upload current page to Log Analytics
-        Write-Verbose "  -> Page $pageNumber : Uploading $($batchResults.Count) records to Log Analytics..."
-        
-        $pageUploadSuccessful = $false
-        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            $uploadBatch = [System.Collections.Generic.List[object]]::new($userRawUploadBatchSize)
+            $userReader = & $openPartitionReader $userStore.Paths[$partitionIndex]
             try {
-                New-LogAnalyticsData -Data $batchResults -WorkSpaceID $context.WorkSpaceID -WorkSpaceKey $context.WorkspaceKey -LogType "GuardrailsUserRaw" | Out-Null
-                $pageUploadSuccessful = $true
-                Write-Verbose "  Success: Page $pageNumber upload successful on attempt $attempt"
-                break
-            }
-            catch {
-                if ($attempt -eq 3) {
-                    $errorMsg = "Failed to upload page $pageNumber after 3 attempts: $($_.Exception.Message)"
-                    Add-FunctionError -Message $errorMsg -Exception $_.Exception -Category "LogAnalytics" -ErrorList $context.ErrorList
-                    throw [System.Exception]::new($errorMsg)
-                } else {
-                    $delay = Get-BackoffDelay -Attempt $attempt -Config $context.RetryConfig
-                    Start-Sleep -Seconds $delay
+                while (-not $userReader.EndOfStream) {
+                    $line = $userReader.ReadLine()
+                    if ([string]::IsNullOrWhiteSpace($line)) {
+                        continue
+                    }
+
+                    foreach ($user in @($line | ConvertFrom-Json)) {
+                        $totalReadUserRecords++
+                        $upn = [string]$user.userPrincipalName
+                        if ([string]::IsNullOrWhiteSpace($upn) -or $bgUpnLookup.ContainsKey($upn.ToLowerInvariant())) {
+                            continue
+                        }
+
+                        $registration = $registrationLookup[$user.id]
+                        $methods = if ($registration -and $registration.methodsRegistered) { @($registration.methodsRegistered) } else { @() }
+                        $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
+
+                        # Reuse guest-tenant results across all buckets so the memory
+                        # redesign does not repeat the same external-domain lookup.
+                        $homeTenantId = $null
+                        $homeTenantResolved = $false
+                        if ($user.userType -eq 'Guest') {
+                            $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
+                            if ($domain) {
+                                $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $domainTenantCache
+                                $homeTenantId = $resolutionResult.TenantId
+                                $homeTenantResolved = $resolutionResult.ResolutionSucceeded
+                            }
+                        }
+
+                        $uploadBatch.Add([PSCustomObject]@{
+                            id = $user.id
+                            userPrincipalName = $user.userPrincipalName
+                            displayName = $user.displayName
+                            mail = $user.mail
+                            createdDateTime = $user.createdDateTime
+                            userType = $user.userType
+                            homeTenantId = $homeTenantId
+                            homeTenantResolved = $homeTenantResolved
+                            accountEnabled = $user.accountEnabled
+                            signInActivity = $user.signInActivity
+                            customSecurityAttributes = $user.customSecurityAttributes
+                            guardrailsExcludedMfa = $guardrailsExcluded
+                            isMfaRegistered = if ($registration) { $registration.isMfaRegistered } else { $null }
+                            isMfaCapable = if ($registration) { $registration.isMfaCapable } else { $null }
+                            isSsprEnabled = if ($registration) { $registration.isSsprEnabled } else { $null }
+                            isSsprRegistered = if ($registration) { $registration.isSsprRegistered } else { $null }
+                            isSsprCapable = if ($registration) { $registration.isSsprCapable } else { $null }
+                            isPasswordlessCapable = if ($registration) { $registration.isPasswordlessCapable } else { $null }
+                            defaultMethod = if ($registration) { $registration.defaultMethod } else { $null }
+                            methodsRegistered = $methods
+                            isSystemPreferredAuthenticationMethodEnabled = if ($registration) { $registration.isSystemPreferredAuthenticationMethodEnabled } else { $null }
+                            systemPreferredAuthenticationMethods = if ($registration) { $registration.systemPreferredAuthenticationMethods } else { $null }
+                            userPreferredMethodForSecondaryAuthentication = if ($registration) { $registration.userPreferredMethodForSecondaryAuthentication } else { $null }
+                            ReportTime = $ReportTime
+                        })
+
+                        if ($uploadBatch.Count -ge $userRawUploadBatchSize) {
+                            $batchData = $uploadBatch.ToArray()
+                            $totalUploadedRecords += (& $sendUploadBatch $batchData $partitionIndex $WorkSpaceID $WorkspaceKey $RetryConfig $ErrorList)
+                            $uploadBatch.Clear()
+                        }
+                    }
+                }
+
+                # Upload the remaining records even when they do not fill a complete batch.
+                if ($uploadBatch.Count -gt 0) {
+                    $batchData = $uploadBatch.ToArray()
+                    $totalUploadedRecords += (& $sendUploadBatch $batchData $partitionIndex $WorkSpaceID $WorkspaceKey $RetryConfig $ErrorList)
+                    $uploadBatch.Clear()
                 }
             }
+            finally {
+                $userReader.Dispose()
+                $registrationLookup.Clear()
+            }
+
+            # Delete this completed file pair immediately. Temporary disk use then
+            # falls throughout the run instead of remaining at its peak until the end.
+            [System.IO.File]::Delete($registrationStore.Paths[$partitionIndex])
+            [System.IO.File]::Delete($userStore.Paths[$partitionIndex])
+
+            # Report every eight buckets so operations can locate a timeout or OOM
+            # without producing a warning line for every bucket.
+            if ((($partitionIndex + 1) % 8) -eq 0 -or $partitionIndex -eq ($partitionCount - 1)) {
+                $memoryMb = [Math]::Round([System.Diagnostics.Process]::GetCurrentProcess().PrivateMemorySize64 / 1MB, 0)
+                $elapsedMinutes = [Math]::Round($joinStopwatch.Elapsed.TotalMinutes, 2)
+                Write-Warning "FetchAllUserRawData bucket progress | BucketsCompleted=$($partitionIndex + 1)/$partitionCount | UsersRead=$totalReadUserRecords/$processedUsers | Uploaded=$totalUploadedRecords | MemoryMb=$memoryMb | Minutes=$elapsedMinutes"
+            }
         }
-        
-        if (-not $pageUploadSuccessful) {
-            $errorMsg = "Failed to upload page $pageNumber after 3 attempts"
-            Add-FunctionError -Message $errorMsg -Category "LogAnalytics" -ErrorList $context.ErrorList
-            throw [System.Exception]::new($errorMsg)
+
+        # Confirm that every user written to temporary storage was read again. A
+        # mismatch means data was lost or incomplete, so do not approve MFA input.
+        if ($totalReadUserRecords -ne $processedUsers) {
+            throw "Temporary partition validation failed. Spooled $processedUsers users but read $totalReadUserRecords users during the join."
         }
-        
-        # Progress reporting
-        $statusMsg = if ($hasMore) { "more pages remaining..." } else { "final page" }
-        Write-Verbose "  -> Page $pageNumber : Upload complete ($statusMsg)"
-        
-        return @{ 
-            ProcessedCount = $pageUsers.Count
-            UploadedCount = $batchResults.Count 
-        }
+
+        # Only a complete Graph read, partition join, and upload can mark this run
+        # safe for the downstream MFA compliance query.
+        $Global:GuardrailsUserRawDataExpectedRecordCount = $totalUploadedRecords
+        $Global:GuardrailsUserRawDataCollectionComplete = $true
+        Write-Verbose "  Success: Joined and uploaded $totalUploadedRecords records"
+        & $writePhaseTiming 'partition-join-upload' $joinStopwatch
     }
-    
-    try {
-        # Use true streaming approach with callback processing        
-        # Use 1 second between user pages as a middle ground between speed and Graph throttling risk.
-        $userStreamStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-        $streamResult = Invoke-GraphQueryStreamWithCallback -urlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processPageCallback -CallbackContext $callbackContext -InterPageDelaySeconds 1 -PerformanceMetrics $performanceMetrics
-        $pageNumber = $streamResult.TotalPages
-        $processedUsers = $streamResult.TotalProcessed
-        $totalUploadedRecords = $streamResult.TotalUploaded
-                
-        $performanceMetrics.UsersProcessed = $processedUsers
-        Write-Verbose "  Success: All pages processed and uploaded - $totalUploadedRecords total records uploaded from $pageNumber pages"
-        & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
-        
-    } catch {
-        Add-FunctionError -Message "Failed during streaming user processing" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
-        # Write timings even on failure so scale-test logs still show how far the run got.
-        if ($userStreamStopwatch) {
-            & $writePhaseTiming "user-stream-upload" $userStreamStopwatch
+    catch {
+        # Detailed Graph and upload failures are normally recorded where they occur.
+        # Add a fallback only when none exists, preventing Errors=0 without duplicates.
+        if ($ErrorList.Count -eq 0) {
+            Add-FunctionError -Message "Failed during bounded user-data processing" -Exception $_.Exception -Category 'UserData' -ErrorList $ErrorList
         }
         $stopwatch.Stop()
-        & $writePhaseTiming "total" $stopwatch
+        & $writePhaseTiming 'total' $stopwatch
         return $ErrorList
     }
+    finally {
+        # Remove temporary files after normal completion and handled errors. If the
+        # process is forcibly stopped, the Automation sandbox owns its job-local cleanup.
+        try { & $closePartitionStore $registrationStore } catch { Write-Warning "Could not close registration partition files: $($_.Exception.Message)" }
+        try { & $closePartitionStore $userStore } catch { Write-Warning "Could not close user partition files: $($_.Exception.Message)" }
+        if ($partitionDirectory -and [System.IO.Directory]::Exists($partitionDirectory)) {
+            try {
+                [System.IO.Directory]::Delete($partitionDirectory, $true)
+            }
+            catch {
+                Write-Warning "Could not remove temporary user-data directory '$partitionDirectory': $($_.Exception.Message)"
+            }
+        }
+    }
     
-    # Step 5: Wait before verification to allow data ingestion and table creation
-    Write-Verbose "Step 5: Checking Log Analytics table readiness before verification..."
+    # Step 4: Wait before verification to allow data ingestion and table creation
+    Write-Verbose "Step 4: Checking Log Analytics table readiness before verification..."
     $verificationStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     # Existing tables usually need only a short ingestion buffer before the verification query.
     $existingTableVerificationDelaySeconds = 20
@@ -4916,8 +5308,8 @@ function FetchAllUserRawData {
         }
     }
     
-    # Step 6: Verify data ingestion with robust error handling
-    Write-Verbose "Step 6: Verifying data ingestion..."
+    # Step 5: Verify data ingestion with robust error handling
+    Write-Verbose "Step 5: Verifying data ingestion..."
     
     $dataIngested = $false
     $recordCount = 0
@@ -5030,8 +5422,8 @@ GuardrailsUserRaw_CL
         }
     }
     
-    # Step 7: Final validation and reporting with graceful error handling
-    Write-Verbose "Step 7: Final validation and reporting..."
+    # Step 6: Final validation and reporting with graceful error handling
+    Write-Verbose "Step 6: Final validation and reporting..."
     
     if ($verificationSkipped) {
         if ($permissionError) {
@@ -5089,8 +5481,12 @@ GuardrailsUserRaw_CL
     Write-Verbose "  Users Processed: $($performanceMetrics.UsersProcessed)"
     Write-Verbose "  Records Uploaded: $totalUploadedRecords"
     Write-Verbose "  Page Size: $BatchSize"
+    Write-Verbose "  Upload Batch Size: $userRawUploadBatchSize"
     Write-Verbose "  Total Pages: $pageNumber"
     Write-Verbose "  Graph API Calls: $($performanceMetrics.GraphApiCalls)"
+    Write-Verbose "  Graph API Retries: $($performanceMetrics.GraphApiRetries)"
+    Write-Verbose "  Graph 429 Responses: $($performanceMetrics.GraphThrottles429)"
+    Write-Verbose "  Graph Retry Wait: $($performanceMetrics.GraphRetryDelaySeconds) seconds"
     Write-Verbose "  Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
     # Include verification and total timings in normal completion logs.
     if ($verificationStopwatch) {
