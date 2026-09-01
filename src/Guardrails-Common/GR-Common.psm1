@@ -2183,7 +2183,56 @@ function Invoke-GraphQueryStreamWithCallback {
         $urlPath = "$urlPath$separator`$top=$PageSize"
     }
 
-    
+    # Graph can tell us how long to wait after throttling. Reading that value keeps
+    # normal paging fast while still backing off for the tenant that needs it.
+    function Get-GraphRetryAfterSeconds {
+        param(
+            $Headers,
+            [int] $DefaultDelaySeconds
+        )
+
+        $retryAfter = $null
+        if ($null -ne $Headers) {
+            try {
+                if ($Headers -is [System.Collections.IDictionary]) {
+                    foreach ($key in $Headers.Keys) {
+                        if ([string]$key -ieq 'Retry-After') {
+                            $retryAfter = @($Headers[$key]) | Select-Object -First 1
+                            break
+                        }
+                    }
+                }
+                elseif ($Headers.PSObject.Methods.Name -contains 'TryGetValues') {
+                    $retryAfterValues = $null
+                    if ($Headers.TryGetValues('Retry-After', [ref]$retryAfterValues)) {
+                        $retryAfter = @($retryAfterValues) | Select-Object -First 1
+                    }
+                }
+                else {
+                    $retryAfterProperty = $Headers.PSObject.Properties |
+                        Where-Object { $_.Name -ieq 'Retry-After' } |
+                        Select-Object -First 1
+                    if ($retryAfterProperty) {
+                        $retryAfter = @($retryAfterProperty.Value) | Select-Object -First 1
+                    }
+                }
+            }
+            catch {
+                # A malformed or unfamiliar header shape must not prevent the retry.
+                $retryAfter = $null
+            }
+        }
+
+        $retryAfterSeconds = 0
+        if ($null -ne $retryAfter -and
+            [int]::TryParse([string]$retryAfter, [ref]$retryAfterSeconds) -and
+            $retryAfterSeconds -gt 0) {
+            return $retryAfterSeconds
+        }
+
+        return $DefaultDelaySeconds
+    }
+
     $fullUri = "$baseUri$urlPath"
     $pageCount = 0
     $totalProcessed = 0
@@ -2199,6 +2248,8 @@ function Invoke-GraphQueryStreamWithCallback {
             try {
                 # Default to retryable until we know the exact HTTP status from Graph.
                 $isRetryable = $true
+                $retryDelayForAttempt = $RetryDelaySeconds
+                $statusCode = $null
                 $uri = $fullUri -as [uri]
                 $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
                 $statusCode = $response.StatusCode
@@ -2215,6 +2266,9 @@ function Invoke-GraphQueryStreamWithCallback {
                 } else {
                     # Handle non-success status codes
                     $errorContent = $response.Content
+                    if ($statusCode -eq 429) {
+                        $retryDelayForAttempt = Get-GraphRetryAfterSeconds -Headers $response.Headers -DefaultDelaySeconds $RetryDelaySeconds
+                    }
 
                     # Determine if this is a retryable error
                     $isRetryable = switch ($statusCode) {
@@ -2241,13 +2295,27 @@ function Invoke-GraphQueryStreamWithCallback {
             catch {
                 $retryCount++
                 $errorMessage = $_.Exception.Message
+                if ($_.Exception.Response -and $_.Exception.Response.Headers) {
+                    if ($null -ne $_.Exception.Response.StatusCode) {
+                        $statusCode = [int]$_.Exception.Response.StatusCode
+                    }
+                    $retryDelayForAttempt = Get-GraphRetryAfterSeconds -Headers $_.Exception.Response.Headers -DefaultDelaySeconds $retryDelayForAttempt
+                }
+
+                if ($PerformanceMetrics -and $statusCode -eq 429) {
+                    $PerformanceMetrics.GraphThrottles429++
+                }
                                 
                 if ($retryCount -ge $MaxRetries) {
                     Write-Error "Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $errorMessage at page $pageCount"
                     throw [System.Exception]::new("Failed to call Microsoft Graph REST API at URL '$fullUri' after $MaxRetries attempts; error: $errorMessage at page $pageCount")
                 } elseif ($isRetryable) {
-                    Write-Warning "Retryable error calling Graph API (attempt $retryCount/$MaxRetries): $errorMessage. Retrying in $RetryDelaySeconds seconds..."
-                    Start-Sleep -Seconds $RetryDelaySeconds
+                    if ($PerformanceMetrics) {
+                        $PerformanceMetrics.GraphApiRetries++
+                        $PerformanceMetrics.GraphRetryDelaySeconds += $retryDelayForAttempt
+                    }
+                    Write-Warning "Retryable error calling Graph API (attempt $retryCount/$MaxRetries): $errorMessage. Retrying in $retryDelayForAttempt seconds..."
+                    Start-Sleep -Seconds $retryDelayForAttempt
                 } else {
                     Write-Error "Non-retryable error calling Graph API: $errorMessage"
                     throw [System.Exception]::new("Non-retryable error calling Graph API: $errorMessage")
@@ -4538,6 +4606,9 @@ function FetchAllUserRawData {
     $performanceMetrics = @{
         StartTime = Get-Date
         GraphApiCalls = 0
+        GraphApiRetries = 0
+        GraphThrottles429 = 0
+        GraphRetryDelaySeconds = 0
         UsersProcessed = 0
         DataIngestionAttempts = 0
     }
@@ -4591,6 +4662,11 @@ function FetchAllUserRawData {
     # Fifty pages is frequent enough to leave useful evidence before a hard stop,
     # but sparse enough to avoid slowing large tenants or flooding their job logs.
     $collectionProgressIntervalPages = 50
+    # Graph can return 999 users per page, but the richer Log Analytics rows are
+    # larger. Uploading 650 at a time keeps typical payloads below the existing
+    # 900 KB safety limit and avoids parsing and splitting the same payload twice.
+    # The byte-based ingestion splitter remains the fallback for unusually large rows.
+    $userRawUploadBatchSize = 650
     $partitionDirectory = $null
     $registrationStore = $null
     $userStore = $null
@@ -4894,11 +4970,11 @@ function FetchAllUserRawData {
             return @{ ProcessedCount = $pageUsers.Count; UploadedCount = 0 }
         }
 
-        # Keep the existing one-second pause between /users pages to reduce Graph
-        # throttling risk while still processing large tenants at a steady rate.
+        # Request the next /users page immediately. If Graph needs a slower rate,
+        # the shared reader honours Retry-After and pauses only for that response.
         & $writeCollectionProgress 'user-write' 'Start' 0 0 $partitionDirectory $userSpoolStopwatch
         try {
-            $userSpoolResult = Invoke-GraphQueryStreamWithCallback -UrlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processUserSpoolPageCallback -CallbackContext $userSpoolContext -InterPageDelaySeconds 1 -PerformanceMetrics $performanceMetrics
+            $userSpoolResult = Invoke-GraphQueryStreamWithCallback -UrlPath $usersPath -PageSize $BatchSize -ProcessPageCallback $processUserSpoolPageCallback -CallbackContext $userSpoolContext -InterPageDelaySeconds 0 -PerformanceMetrics $performanceMetrics
         }
         catch {
             Add-FunctionError -Message "Failed to fetch users from Microsoft Graph" -Exception $_.Exception -Category "GraphAPI" -ErrorList $ErrorList
@@ -4915,7 +4991,9 @@ function FetchAllUserRawData {
 
         $spoolBytes = [long](Get-ChildItem -LiteralPath $partitionDirectory -File | Measure-Object -Property Length -Sum).Sum
         $spoolSizeMb = [Math]::Round($spoolBytes / 1MB, 2)
-        Write-Warning "FetchAllUserRawData bounded join | Partitions=$partitionCount | TemporaryStorageMb=$spoolSizeMb"
+        # Include retry totals in a captured Automation stream so scale tests can
+        # confirm that faster paging did not simply trade elapsed time for throttling.
+        Write-Warning "FetchAllUserRawData bounded join | Partitions=$partitionCount | UploadBatchSize=$userRawUploadBatchSize | TemporaryStorageMb=$spoolSizeMb | GraphCalls=$($performanceMetrics.GraphApiCalls) | GraphRetries=$($performanceMetrics.GraphApiRetries) | Graph429=$($performanceMetrics.GraphThrottles429) | GraphRetryWaitSeconds=$($performanceMetrics.GraphRetryDelaySeconds)"
 
         # Both Graph reads and all temporary-file writers are finished. Ask .NET
         # once to release their unused buffers before matching begins. Doing this
@@ -4981,7 +5059,7 @@ function FetchAllUserRawData {
                 $registrationReader.Dispose()
             }
 
-            $uploadBatch = [System.Collections.Generic.List[object]]::new($BatchSize)
+            $uploadBatch = [System.Collections.Generic.List[object]]::new($userRawUploadBatchSize)
             $userReader = & $openPartitionReader $userStore.Paths[$partitionIndex]
             try {
                 while (-not $userReader.EndOfStream) {
@@ -5041,7 +5119,7 @@ function FetchAllUserRawData {
                             ReportTime = $ReportTime
                         })
 
-                        if ($uploadBatch.Count -ge $BatchSize) {
+                        if ($uploadBatch.Count -ge $userRawUploadBatchSize) {
                             $batchData = $uploadBatch.ToArray()
                             $totalUploadedRecords += (& $sendUploadBatch $batchData $partitionIndex $WorkSpaceID $WorkspaceKey $RetryConfig $ErrorList)
                             $uploadBatch.Clear()
@@ -5311,8 +5389,12 @@ GuardrailsUserRaw_CL
     Write-Verbose "  Users Processed: $($performanceMetrics.UsersProcessed)"
     Write-Verbose "  Records Uploaded: $totalUploadedRecords"
     Write-Verbose "  Page Size: $BatchSize"
+    Write-Verbose "  Upload Batch Size: $userRawUploadBatchSize"
     Write-Verbose "  Total Pages: $pageNumber"
     Write-Verbose "  Graph API Calls: $($performanceMetrics.GraphApiCalls)"
+    Write-Verbose "  Graph API Retries: $($performanceMetrics.GraphApiRetries)"
+    Write-Verbose "  Graph 429 Responses: $($performanceMetrics.GraphThrottles429)"
+    Write-Verbose "  Graph Retry Wait: $($performanceMetrics.GraphRetryDelaySeconds) seconds"
     Write-Verbose "  Data Ingestion Attempts: $($performanceMetrics.DataIngestionAttempts)"
     # Include verification and total timings in normal completion logs.
     if ($verificationStopwatch) {
