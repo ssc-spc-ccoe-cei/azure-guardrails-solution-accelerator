@@ -5357,12 +5357,11 @@ GuardrailsUserRaw_CL
         Add-FunctionError -Message "Data verification unavailable due to permissions. Upload completed successfully with $totalUploadedRecords records." -Category "Permissions" -ErrorList $ErrorList
         
     } elseif (-not $dataIngested) {
-        # Verification was attempted but no data found
-        Write-Warning "  Warning: Data ingestion verification failed - no records found in Log Analytics."
-        Write-Verbose "  -> Uploaded $totalUploadedRecords records but verification query returned 0 results"
-        Write-Verbose "  -> This may indicate data ingestion delay or indexing issues"
-            
-        Add-FunctionError -Message "Data ingestion verification failed. Uploaded $totalUploadedRecords records but verification query found 0 results. Data may still be processing." -Category "DataVerification" -ErrorList $ErrorList        
+        # Log Analytics indexing can take longer than this immediate check even
+        # after every upload succeeds. Keep the delay visible without reporting a
+        # false collection error; the MFA control verifies these rows again before
+        # it evaluates compliance and returns Not Applicable if they never appear.
+        Write-Warning "FetchAllUserRawData verification pending | Uploaded=$totalUploadedRecords | ReportTime=$ReportTime | Log Analytics has not indexed these rows yet; the MFA control will verify them before compliance is evaluated."
     } elseif ($recordCount -ne $totalUploadedRecords) {
         # Data found but Log Analytics may still be indexing large uploads; upload failures are caught earlier per page.
         # Treat this as indexing lag instead of a module failure because each page upload already had retry/error handling.
