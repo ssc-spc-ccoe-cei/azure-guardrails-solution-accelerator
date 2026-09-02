@@ -125,7 +125,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.5.6'
+        version: '1.5.7'
       }}
   }
   resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -175,7 +175,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.5.0'
+        version: '1.5.2'
       }}
   }
   resource module19 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -231,7 +231,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-AllUserMFARequired.zip'
-        version: '1.1.3'
+        version: '1.1.4'
       }}
   }
   resource module29 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -264,7 +264,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
-        version: '1.0.7'
+        version: '2.0.0'
       }
     }
   }
