@@ -1,3 +1,60 @@
+function Get-CentralViewAccessToken {
+    <#
+    .SYNOPSIS
+        Returns an OAuth access token as plain text regardless of the installed Az.Accounts version.
+    .DESCRIPTION
+        Kept local so the Function App package remains self-contained.
+
+        Az.Accounts 5.0.0 (Az 14.0.0) changes the Token property returned by Get-AzAccessToken from
+        String to SecureString, and earlier versions log an upcoming-breaking-change warning on every
+        call made without -AsSecureString. The switch was introduced in Az.Accounts 2.12.0, so this
+        function passes it whenever the installed cmdlet declares it and converts the SecureString
+        back to the plain text needed for an Authorization header. Capability is read from the cmdlet
+        metadata rather than inferred from a failed call, so a genuine token failure is never
+        misreported as a missing parameter.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)] [string] $ResourceUrl
+    )
+
+    if ($null -eq $script:AccessTokenSupportsSecureString) {
+        try {
+            $tokenCommand = Get-Command -Name 'Get-AzAccessToken' -ErrorAction Stop | Select-Object -First 1
+            $script:AccessTokenSupportsSecureString = [bool]($tokenCommand.Parameters.ContainsKey('AsSecureString'))
+        }
+        catch {
+            Write-Verbose "Unable to inspect Get-AzAccessToken parameters ($($_.Exception.Message)); requesting a plain text token."
+            $script:AccessTokenSupportsSecureString = $false
+        }
+    }
+
+    $tokenParameters = @{
+        ResourceUrl = $ResourceUrl
+        ErrorAction = 'Stop'
+    }
+
+    if ($script:AccessTokenSupportsSecureString) {
+        $tokenParameters['AsSecureString'] = $true
+    }
+
+    $tokenResponse = Get-AzAccessToken @tokenParameters
+
+    $accessToken = if ($tokenResponse.Token -is [System.Security.SecureString]) {
+        [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
+    }
+    else {
+        [string]$tokenResponse.Token
+    }
+
+    if ([string]::IsNullOrWhiteSpace($accessToken)) {
+        throw "Get-AzAccessToken returned an empty access token for resource '$ResourceUrl'."
+    }
+
+    return $accessToken
+}
+
 function Send-GuardrailsData {
     # Kept local so the Function App package remains self-contained.
     [CmdletBinding()]
@@ -98,14 +155,7 @@ function Send-GuardrailsData {
         Write-Warning "Send-GuardrailsData: could not normalize payload ($($_.Exception.Message)); attempting raw send."
     }
 
-    try {
-        $tokenResponse = Get-AzAccessToken -ResourceUrl 'https://monitor.azure.com' -AsSecureString -ErrorAction Stop
-        $tokenPlain    = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
-    }
-    catch {
-        $tokenResponse = Get-AzAccessToken -ResourceUrl 'https://monitor.azure.com'
-        $tokenPlain    = $tokenResponse.Token
-    }
+    $tokenPlain = Get-CentralViewAccessToken -ResourceUrl 'https://monitor.azure.com'
 
     $uri     = "$logsIngestionEndpoint/dataCollectionRules/$dcrImmutableId/streams/$streamName" + '?api-version=2023-01-01'
     $body    = [System.Text.Encoding]::UTF8.GetBytes($jsonData)

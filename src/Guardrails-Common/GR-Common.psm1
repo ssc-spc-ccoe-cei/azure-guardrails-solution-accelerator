@@ -379,6 +379,84 @@ function Add-LogAnalyticsResults {
     Send-GuardrailsData -Data $JSON -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkSpaceKey $workspaceKey 
 }
 
+function ConvertFrom-GuardrailsSecureString {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        $SecureValue
+    )
+
+    if ($null -eq $SecureValue) {
+        return $null
+    }
+
+    if ($SecureValue -is [System.Security.SecureString]) {
+        return [System.Net.NetworkCredential]::new('', $SecureValue).Password
+    }
+
+    return [string]$SecureValue
+}
+
+function Get-GuardrailsAccessToken {
+    <#
+    .SYNOPSIS
+        Returns an OAuth access token as plain text regardless of the installed Az.Accounts version.
+    .DESCRIPTION
+        Az.Accounts 5.0.0 (Az 14.0.0) changes the Token property returned by Get-AzAccessToken from
+        String to SecureString, and earlier versions log an upcoming-breaking-change warning on every
+        call made without -AsSecureString. The switch was introduced in Az.Accounts 2.12.0, so this
+        function passes it whenever the installed cmdlet declares it and converts the SecureString
+        back to the plain text needed for an Authorization header. Capability is read from the cmdlet
+        metadata rather than inferred from a failed call, so a genuine token failure is never
+        misreported as a missing parameter.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$ResourceUrl,
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId
+    )
+
+    if ($null -eq $script:GuardrailsAccessTokenSupportsSecureString) {
+        try {
+            $tokenCommand = Get-Command -Name 'Get-AzAccessToken' -ErrorAction Stop | Select-Object -First 1
+            $script:GuardrailsAccessTokenSupportsSecureString = [bool]($tokenCommand.Parameters.ContainsKey('AsSecureString'))
+        }
+        catch {
+            Write-Verbose "Unable to inspect Get-AzAccessToken parameters ($($_.Exception.Message)); requesting a plain text token."
+            $script:GuardrailsAccessTokenSupportsSecureString = $false
+        }
+    }
+
+    $tokenParameters = @{ ErrorAction = 'Stop' }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResourceUrl)) {
+        $tokenParameters['ResourceUrl'] = $ResourceUrl
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($TenantId)) {
+        $tokenParameters['TenantId'] = $TenantId
+    }
+
+    if ($script:GuardrailsAccessTokenSupportsSecureString) {
+        $tokenParameters['AsSecureString'] = $true
+    }
+
+    $tokenResponse = Get-AzAccessToken @tokenParameters
+    $accessToken = ConvertFrom-GuardrailsSecureString -SecureValue $tokenResponse.Token
+
+    if ([string]::IsNullOrWhiteSpace($accessToken)) {
+        $audience = if ([string]::IsNullOrWhiteSpace($ResourceUrl)) { 'the Azure Resource Manager audience' } else { "resource '$ResourceUrl'" }
+        throw "Get-AzAccessToken returned an empty access token for $audience."
+    }
+
+    return $accessToken
+}
+
 function Get-GuardrailIdentityPermissions {
     [CmdletBinding()]
     param (
@@ -499,8 +577,8 @@ function Get-GuardrailIdentityPermissions {
         $resourceUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId"
         try {
             # Use a Graph-scoped token and Invoke-RestMethod (PS 5.1 friendly)
-            $graphToken = Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com" -ErrorAction Stop
-            $authHeader = @{ 'Authorization' = "Bearer $($graphToken.Token)"; 'Content-Type' = 'application/json' }
+            $graphToken = Get-GuardrailsAccessToken -ResourceUrl "https://graph.microsoft.com"
+            $authHeader = @{ 'Authorization' = "Bearer $graphToken"; 'Content-Type' = 'application/json' }
 
             $appRoles = $null
 
@@ -1400,15 +1478,7 @@ function Send-GuardrailsData {
             # Invoke-AzRestMethod cannot determine the authentication audience for DCR ingestion endpoints
             # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
             # the Azure Monitor audience (no trailing slash per API docs) using Invoke-RestMethod.
-            # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
-            try {
-                $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com" -AsSecureString -ErrorAction Stop
-                $tokenPlain = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
-            }
-            catch {
-                $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com"
-                $tokenPlain = $tokenResponse.Token
-            }
+            $tokenPlain = Get-GuardrailsAccessToken -ResourceUrl "https://monitor.azure.com"
 
             $headers = @{
                 Authorization            = "Bearer $tokenPlain"

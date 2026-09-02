@@ -234,21 +234,9 @@ function Check-UserGroups {
 
     # Managed identity issues the token, but the bearer token in the header can expire during a long scan.
     function Get-GraphAuthorizationHeader {
-        try {
-            # Az.Accounts versions differ on whether Token is plain text or SecureString.
-            # Requesting a SecureString first and converting it here keeps the header valid in either runtime.
-            $tokenResponse = Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/' -AsSecureString -ErrorAction Stop
-            $accessToken = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
-        }
-        catch {
-            $tokenResponse = Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com/' -ErrorAction Stop
-            if ($tokenResponse.Token -is [System.Security.SecureString]) {
-                $accessToken = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
-            }
-            else {
-                $accessToken = [string]$tokenResponse.Token
-            }
-        }
+        # Get-GuardrailsAccessToken (GR-Common) normalizes the plain text and SecureString token
+        # shapes returned by different Az.Accounts versions, so the header stays valid in either runtime.
+        $accessToken = Get-GuardrailsAccessToken -ResourceUrl 'https://graph.microsoft.com/'
 
         return "Bearer $accessToken"
     }

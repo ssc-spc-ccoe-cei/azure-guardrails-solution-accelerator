@@ -14,7 +14,7 @@
 RootModule = 'Check-UserGroups'
 
 # Version number of this module.
-ModuleVersion = '2.0.0'
+ModuleVersion = '2.0.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

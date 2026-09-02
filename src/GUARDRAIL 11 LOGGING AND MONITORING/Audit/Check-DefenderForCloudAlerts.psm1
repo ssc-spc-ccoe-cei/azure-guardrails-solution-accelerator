@@ -428,10 +428,10 @@ function Get-DefenderForCloudAlerts {
         $authHeader = $null
         try {
             $azContext = Get-AzContext
-            $token = Get-AzAccessToken -TenantId $azContext.Subscription.TenantId -ErrorAction Stop
+            $token = Get-GuardrailsAccessToken -TenantId $azContext.Subscription.TenantId
             $authHeader = @{
                 'Content-Type'  = 'application/json'
-                'Authorization' = 'Bearer ' + $token.Token
+                'Authorization' = 'Bearer ' + $token
             }
         }
         catch {
