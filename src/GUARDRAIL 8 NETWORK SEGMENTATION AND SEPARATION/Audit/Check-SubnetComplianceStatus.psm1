@@ -71,11 +71,44 @@ function Get-SubnetComplianceInformation {
     $allexcluded = $ExcludedSubnets + $reservedSubnetNames
     $evalResult = $null
     try {
-        $subs = Get-AzSubscription -ErrorAction Stop  | Where-Object { $_.State -eq 'Enabled' }
+        $allSubs = Get-AzSubscription -ErrorAction Stop
+        $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
+        $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"})
     }
     catch {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
+    }
+
+    # Evaluate skipped subs
+    foreach ($skippedSub in $skippedSubs){
+        # Segmentation
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName = $skippedSub.Name
+            SubnetName       = $msgTable.noSubnets
+            ComplianceStatus = $false
+            Comments         = ''
+            ItemName         = $msgTable.networkSegmentation
+            ControlName      = $ControlName
+            itsgcode         = $itsgcodesegmentation
+            ReportTime       = $ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
+        $SubnetList.Add($notEvaluatedResult) | Out-Null
+
+        # Separation
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName = $skippedSub.Name
+            SubnetName       = $msgTable.noSubnets
+            ComplianceStatus = $false
+            Comments         = ''
+            ItemName         = $msgTable.networkSeparation
+            ControlName      = $ControlName
+            itsgcode         = $itsgcodeseparation
+            ReportTime       = $ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
+        $SubnetList.Add($notEvaluatedResult) | Out-Null
     }
 
     foreach ($sub in $subs) {

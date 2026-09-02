@@ -211,11 +211,27 @@ function Get-ServiceHealthAlerts {
 
     # Get All the Subscriptions
     try {
-        $subs = Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq "Enabled"} 
+        $allSubs = Get-AzSubscription -ErrorAction Stop
+        $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
+        $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"})
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
+    }
+
+    foreach ($skippedSub in $skippedSubs){
+        $notEvaluatedResult = [PSCustomObject]@{
+            SubscriptionName = $skippedSub.Name
+            ComplianceStatus = $false
+            Comments         = ''
+            ItemName         = $ItemName
+            ControlName      = $ControlName
+            itsgcode         = $itsgcode
+            ReportTime       = $ReportTime
+        }
+        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedSub.Name -msgTable $msgTable
+        [void]$PsObject.Add($notEvaluatedResult) | Out-Null
     }
 
 

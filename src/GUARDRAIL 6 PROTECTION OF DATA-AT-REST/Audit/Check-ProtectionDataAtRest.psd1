@@ -14,7 +14,7 @@
 RootModule = 'Check-ProtectionDataAtRest'
 
 # Version number of this module.
-ModuleVersion = '1.3.8'
+ModuleVersion = '1.3.9'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
