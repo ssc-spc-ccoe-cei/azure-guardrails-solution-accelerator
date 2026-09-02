@@ -19,6 +19,7 @@ CtrName13 = GUARDRAIL 13: PLAN FOR CONTINUITY
 # Global
 isCompliant = Compliant.
 isNotCompliant = Non-compliant.
+subEvaluationNotApplicable = The subscription {0} is not applicable for evaluation. It may be cancelled and pending automatic deletion.
 
 # Guardrail #1
 MSEntIDLicense = Microsoft Entra ID License Type
@@ -45,6 +46,7 @@ gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator ac
 allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
+allUserMfaNotAssessedIncompleteData = MFA compliance was not assessed because complete current user data was unavailable.
 
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly
 
@@ -114,11 +116,12 @@ guestHasPrivilegedRole = This Guest user account has one or more privileged role
 
 accManagementUserGroupsCheck = Account Management: User Groups
 userCountGroupNoMatch = Not all users have been assigned to a privileged or non-privileged user group.
+userGroupScanIncomplete = User group compliance could not be fully evaluated because Microsoft Graph data retrieval did not complete.
 noCAPforAnyGroups = None of the conditional access policies refer to one of your user groups (privileged or non-privileged).
 userCountOne = There is only one user in the environment. User groups are not required. 
 userGroupsMany = The number of user groups is insufficient for the current number of users. At least 2 user groups are needed. 
 reqPolicyUserGroupExists = All users have been assigned to a user group, and at least one conditional access policy references a user group for access control. 
-userStats = User stats - Total Users: {0}; Group Users (Total - Unique): {1}; Members in Tenants: {2}; Guests in Tenants: {3}
+userStats = User stats - Total Users: {0}; Covered Member/Guest Users (Unique): {1}; Members in Tenants: {2}; Guests in Tenants: {3}
 userNotInGroup = User is not associated with any user group.
 userInGroup = No users without groups
 
@@ -396,6 +399,6 @@ globalAdminMinAccnts = There must be at least two global administrator accounts.
 
 globalAdminAccntsMFADisabled1 = The following account: {0} does not have multi-factor authentication (MFA) enabled
 globalAdminAccntsMFADisabled2 = The following accounts: {0} do not have multi-factor authentication (MFA) enabled 
-globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled 
+globalAdminAccntsMFADisabled3 = None of the global administrator accounts have multi-factor authentication (MFA) enabled
 
 '@

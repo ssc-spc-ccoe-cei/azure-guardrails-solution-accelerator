@@ -14,7 +14,7 @@
 RootModule = 'Check-VNetComplianceStatus'
 
 # Version number of this module.
-ModuleVersion = '1.2.1
+ModuleVersion = '1.2.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
