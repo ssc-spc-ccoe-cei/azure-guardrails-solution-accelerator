@@ -45,6 +45,7 @@ noAlertRuleforCaps = Créez une alerte pour les modifications et les mises à jo
 allCloudUserAccountsMFACheck = Tous les comptes d'utilisateurs infonuagiques stratégie d'accès conditionnel AMF
 allUserAccountsMFACheck = Vérification de l'AMF de tous les comptes d'utilisateurs infonuagiques
 allUserHaveMFA = Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.
+allUserMfaNotAssessedIncompleteData = La conformité à l'AMF n'a pas été évaluée, car les données utilisateur actuelles complètes n'étaient pas disponibles.
 
 userMisconfiguredMFA = Un ou plusieurs comptes d'utilisateurs natifs n'ont pas été configuré(s) correctement pour l'AMF
 

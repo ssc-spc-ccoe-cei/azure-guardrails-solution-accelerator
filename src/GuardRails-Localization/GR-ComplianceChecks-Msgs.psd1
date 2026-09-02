@@ -45,6 +45,7 @@ gaUserMisconfiguredMFA = Some (one or more) Azure native global administrator ac
 allCloudUserAccountsMFACheck = All Cloud User Accounts MFA Conditional Access Policy
 allUserAccountsMFACheck = All Cloud User Accounts MFA Check
 allUserHaveMFA = Native user accounts have been identified, and all users accounts have 2+ methods of authentication enabled.
+allUserMfaNotAssessedIncompleteData = MFA compliance was not assessed because complete current user data was unavailable.
 
 userMisconfiguredMFA = One or more Native User Accounts have not configured MFA properly
 
