@@ -448,14 +448,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       }}
   }
 
-  resource module51 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.Accounts'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.5.4.0.nupkg'
-        version: '5.4.0'
-      }}
-  }
 
   resource module52 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkInterfaceIPs'
