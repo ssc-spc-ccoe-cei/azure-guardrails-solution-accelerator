@@ -439,16 +439,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       }}
   }
 
-  resource module50 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.ResourceGraph'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.1.0.nupkg'
-        version: '1.1.0'
-      }}
-  }
-
-
   resource module52 'powerShell72Modules' = if (newDeployment || updatePSModules) {
     name: 'Check-NetworkInterfaceIPs'
     properties: {
