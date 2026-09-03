@@ -125,7 +125,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-Common.zip'
-        version: '1.5.7'
+        version: '1.5.8'
       }}
   }
   resource module12 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -264,7 +264,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserGroups.zip'
-        version: '2.0.0'
+        version: '2.0.1'
       }
     }
   }
@@ -415,7 +415,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-DefenderForCloudAlerts.zip'
-        version: '1.2.2'
+        version: '1.2.3'
       }
     }
   }
@@ -436,24 +436,6 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
       contentLink: {
         uri: '${ModuleBaseURL}/Check-TLSConfiguration.zip'
         version: '1.1.0'
-      }}
-  }
-
-  resource module50 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.ResourceGraph'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.1.1.0.nupkg'
-        version: '1.1.0'
-      }}
-  }
-
-  resource module51 'powerShell72Modules' = if (newDeployment || updatePSModules) {
-    name: 'Az.Accounts'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.4.0.2.nupkg'
-        version: '4.0.2'
       }}
   }
 

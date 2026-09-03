@@ -220,12 +220,25 @@ function Get-VNetComplianceInformation {
         Write-Verbose "Processing subscription: $($sub.Name)"
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
 
-        # Read all VNets in the subscription.
-        # Then remove any VNet that is excluded by tag or by the explicit exclusion list.
+        # Read all VNets in the subscription, then filter out any that should be skipped.
+        # A VNet is excluded when the tag exists with any non-empty value (not just 'true')
+        # so that operators can set the tag to whatever makes sense to them ('yes', 'true', etc.).
         $allVNETs = Get-AzVirtualNetwork
-        $includedVNETs = @($allVNETs | Where-Object {
-            $_.Tag.$ExcludeVnetTag -ine 'true' -and $_.Name -notin $ExcludedVNetsList
-        })
+        $includedVNETs = [System.Collections.Generic.List[object]]::new()
+
+        foreach ($vnet in $allVNETs) {
+            $tagValue      = if ($vnet.Tag) { $vnet.Tag[$ExcludeVnetTag] } else { $null }
+            $excludedByTag  = -not [string]::IsNullOrWhiteSpace($tagValue)
+            $excludedByName = $vnet.Name -in $ExcludedVNetsList
+
+            if ($excludedByTag -or $excludedByName) {
+                Write-Verbose "Excluding VNet '$($vnet.Name)' from GR9 compliance check (tag '$ExcludeVnetTag' = '$tagValue', name in exclusion list: $excludedByName)."
+            }
+            else {
+                $includedVNETs.Add($vnet) | Out-Null
+            }
+        }
+
         Write-Verbose "Subscription '$($sub.Name)': Found $(@($allVNETs).Count) VNet(s); $($includedVNETs.Count) included after exclusions."
 
         # Read the public IP counts and protection counts for the same subscription.
