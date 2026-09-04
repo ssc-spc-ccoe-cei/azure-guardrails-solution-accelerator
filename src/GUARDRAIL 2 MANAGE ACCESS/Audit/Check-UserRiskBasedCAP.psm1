@@ -28,10 +28,10 @@ function Test-CommonFilters {
     param(
         [PSCustomObject]$policy,
         [string] $FirstBreakGlassID,
-        [string] $SecondBreakGlassID
+        [string] $SecondBreakGlassID,
+        $uniqueGroupIdBG
 
     )
-
     
     # check for a conditional access policy which meets these requirements:
     # 1. state =  'enabled'
@@ -79,12 +79,19 @@ function Test-CommonFilters {
             $userRiskBlock -or
             $signInRiskBlock
 
+        # check for break glass account users and groups in excludeUsers and excludeGroups
+        $accepedBreakGlassAccConfiguration = 
+            ($_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
+            $_.conditions.users.excludeUsers -contains $SecondBreakGlassID) -or
+            ($_.conditions.users.excludeGroups | Where-Object { $_ -in $uniqueGroupIdBG })
+
         (
             $_.state -eq "enabled" -and
             $_.conditions.users.includeUsers -contains 'All' -and
             $_.conditions.users.excludeUsers.Count -le 2 -and
-            $_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
-            $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
+            # $_.conditions.users.excludeUsers -contains $FirstBreakGlassID -and
+            # $_.conditions.users.excludeUsers -contains $SecondBreakGlassID -and
+            $accepedBreakGlassAccConfiguration -and
             ($_.conditions.applications.includeApplications -contains 'All' -or
             $_.conditions.applications.includeApplications -contains 'MicrosoftAdminPortals') -and
             (
@@ -284,7 +291,7 @@ function Get-UserRiskBasedCAP {
     #   - OR Policy excludes BG users individually (excludeUsers) with no extra groups excluded
     # This provides flexibility for customers who exclude BG accounts by user ID rather than group
     
-    $validPolicies = @(Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID)
+    $validPolicies = @(Test-CommonFilters -policy $caps -FirstBreakGlassID $FirstBreakGlassID -SecondBreakGlassID $SecondBreakGlassID -uniqueGroupIdBG $uniqueGroupIdBG)
     Write-Host "Policies passing common filters: $($validPolicies.Count)"
     
     if ($validPolicies.Count -gt 0){
