@@ -14,7 +14,7 @@
 RootModule = 'GR-ComplianceChecks'
 
 # Version number of this module.
-ModuleVersion = '1.4.23'
+ModuleVersion = '1.4.25'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
