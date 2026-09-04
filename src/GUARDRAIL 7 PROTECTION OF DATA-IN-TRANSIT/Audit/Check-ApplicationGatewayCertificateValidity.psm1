@@ -32,7 +32,7 @@ function Check-ApplicationGatewayCertificateValidity {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ApprovedCAList = @()
 
-  # --------------------------------
+    # --------------------------------
     # Check if document exists in blob
     # --------------------------------
     # Add possible file extensions
@@ -106,7 +106,7 @@ function Check-ApplicationGatewayCertificateValidity {
             Errors            = $ErrorList
         }
     }
-      
+    
 
     # ----------------------
     # Case 1: uploaded fileName is correct but has wrong extension
@@ -274,7 +274,9 @@ function Check-ApplicationGatewayCertificateValidity {
                                     $certBytes = [System.Convert]::FromBase64String($plainTextSecret)
                                     $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
                                     $certCollection.Import($certBytes)
-                                    $x509cert = $certCollection[0]
+
+                                    $x509cert = Get-LeafCertificate -CertificateCollection $certCollection
+
                                     Write-Verbose "Successfully imported certificate from Key Vault"
                                 }
                                 catch [System.FormatException] {                                    
@@ -289,17 +291,12 @@ function Check-ApplicationGatewayCertificateValidity {
                                     $isSubCompliant = $false
                                 }
                                 
-                                # Check if certificate is from an approved CA
-                                $isApprovedCA = $false
-                                foreach ($approvedCA in $ApprovedCAList) {
-                                    if ($x509cert.Issuer -like "*$approvedCA*" -or $approvedCA -like "*$($x509cert.Issuer)*") {
-                                        $isApprovedCA = $true
-                                        break
-                                    }
-                                }
-                                
-                                if (-not $isApprovedCA) {
-                                    $subComments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                                # Check if certificate chains up to an approved CA
+                                $caResult = Test-CertificateAuthorityApproved -Certificate $x509cert -CertificateCollection $certCollection -ApprovedCAList $ApprovedCAList
+
+                                if (-not $caResult.IsApproved) {
+                                    $issuerDetail = "$($x509cert.Issuer) [$($caResult.ChainPath)]"
+                                    $subComments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $issuerDetail
                                     $isSubCompliant = $false
                                 }
                             }
@@ -324,24 +321,20 @@ function Check-ApplicationGatewayCertificateValidity {
                             $certBytes = [System.Convert]::FromBase64String($cert.PublicCertData)
                             $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
                             $certCollection.Import($certBytes)
-                            $x509cert = $certCollection[0]
-                        
+
+                            $x509cert = Get-LeafCertificate -CertificateCollection $certCollection
+
                             if ($x509cert.NotAfter -le (Get-Date)) {
                                 $subComments += " " +$msgTable.expiredCertificateFound -f $listener.Name, $appGateway.Name
                                 $isSubCompliant = $false
                             }
 
-                            # Check if certificate is from an approved CA
-                            $isApprovedCA = $false
-                            foreach ($approvedCA in $ApprovedCAList) {
-                                if ($x509cert.Issuer -like "*$approvedCA*" -or $approvedCA -like "*$($x509cert.Issuer)*") {
-                                    $isApprovedCA = $true
-                                    break
-                                }
-                            }
+                            # Check if certificate chains up to an approved CA
+                            $caResult = Test-CertificateAuthorityApproved -Certificate $x509cert -CertificateCollection $certCollection -ApprovedCAList $ApprovedCAList
 
-                            if (-not $isApprovedCA) {
-                                $subComments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $x509cert.Issuer
+                            if (-not $caResult.IsApproved) {
+                                $issuerDetail = "$($x509cert.Issuer) [$($caResult.ChainPath)]"
+                                $subComments += " " + $msgTable.unapprovedCAFound -f $listener.Name, $appGateway.Name, $issuerDetail
                                 $isSubCompliant = $false
                             }
                         }
@@ -490,4 +483,133 @@ function Test-KeyVaultAccess {
         $result.Error = $_.Exception.Message
     }
     return $result
+}
+
+function Get-LeafCertificate {
+    <#
+    .SYNOPSIS
+        Returns the end-entity (leaf) certificate from an imported certificate collection.
+    .DESCRIPTION
+        A PFX or PKCS#7 payload uploaded to an Application Gateway can hold the leaf certificate
+        plus one or more CA certificates, in any order, so the collection cannot be indexed blindly.
+        The leaf is the certificate whose Subject is not the Issuer of any other certificate in
+        the collection.
+    #>
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Security.Cryptography.X509Certificates.X509Certificate2[]] $CertificateCollection
+    )
+
+    $leaf = $CertificateCollection | Where-Object {
+        $subject    = $_.Subject
+        $thumbprint = $_.Thumbprint
+        -not ($CertificateCollection | Where-Object { $_.Issuer -eq $subject -and $_.Thumbprint -ne $thumbprint })
+    } | Select-Object -First 1
+
+    if (-not $leaf) {
+        Write-Verbose "Could not identify the leaf certificate in the collection; falling back to the first certificate."
+        $leaf = $CertificateCollection[0]
+    }
+
+    return $leaf
+}
+
+function Test-CertificateAuthorityApproved {
+    <#
+    .SYNOPSIS
+        Determines whether a certificate chains up to a Certificate Authority on the approved CA list.
+    .DESCRIPTION
+        The approved CA list names trust anchors (for example 'ISRG Root X1'), but publicly trusted
+        certificates are nearly always signed by an intermediate CA (for example Let's Encrypt 'R10').
+        Comparing only the leaf certificate's immediate issuer therefore reports legitimate
+        certificates as unapproved, so every CA in the certificate's trust chain is considered.
+
+        Authorities are gathered from three sources so that a match is still possible when the
+        chain cannot be completed: the leaf's immediate issuer, the certificates bundled alongside
+        the leaf, and the chain built by the platform. The Issuer of the top-most bundled CA
+        certificate names the root even when the root certificate itself was not uploaded.
+    .OUTPUTS
+        PSCustomObject with IsApproved, MatchedCA and ChainPath properties.
+    #>
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] $Certificate,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2[]] $CertificateCollection,
+        [string[]] $ApprovedCAList
+    )
+
+    $authorities = [System.Collections.Generic.List[string]]::new()
+    $chainPath   = [System.Collections.Generic.List[string]]::new()
+
+    $authorities.Add($Certificate.Issuer)
+
+    if ($CertificateCollection) {
+        foreach ($bundledCert in $CertificateCollection) {
+            if ($bundledCert.Thumbprint -ne $Certificate.Thumbprint) {
+                $authorities.Add($bundledCert.Subject)
+            }
+            $authorities.Add($bundledCert.Issuer)
+        }
+    }
+
+    $chain = $null
+    try {
+        $chain = [System.Security.Cryptography.X509Certificates.X509Chain]::new()
+        # Revocation endpoints are not reliably reachable from the Automation sandbox, and an
+        # expired or untrusted chain must still be walked so its CAs can be compared to the list.
+        $chain.ChainPolicy.RevocationMode = [System.Security.Cryptography.X509Certificates.X509RevocationMode]::NoCheck
+        $chain.ChainPolicy.VerificationFlags = [System.Security.Cryptography.X509Certificates.X509VerificationFlags]::AllowUnknownCertificateAuthority
+        # Bound the AIA lookup used to locate a missing issuer.
+        $chain.ChainPolicy.UrlRetrievalTimeout = [TimeSpan]::FromSeconds(15)
+
+        if ($CertificateCollection) {
+            foreach ($bundledCert in $CertificateCollection) {
+                if ($bundledCert.Thumbprint -ne $Certificate.Thumbprint) {
+                    $null = $chain.ChainPolicy.ExtraStore.Add($bundledCert)
+                }
+            }
+        }
+
+        $null = $chain.Build($Certificate)
+
+        foreach ($element in $chain.ChainElements) {
+            $chainPath.Add($element.Certificate.Subject)
+            $authorities.Add($element.Certificate.Subject)
+            $authorities.Add($element.Certificate.Issuer)
+        }
+    }
+    catch {
+        Write-Verbose "Unable to build the trust chain for '$($Certificate.Subject)': $($_.Exception.Message)"
+    }
+    finally {
+        if ($chain) { $chain.Dispose() }
+    }
+
+    if ($chainPath.Count -eq 0) {
+        $chainPath.Add($Certificate.Subject)
+    }
+
+    # An empty entry on either side of the comparison turns the wildcard match into "*", which
+    # would approve every certificate.
+    $candidateAuthorities = $authorities | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+
+    $matchedCA = $null
+    foreach ($approvedCA in $ApprovedCAList) {
+        if ([string]::IsNullOrWhiteSpace($approvedCA)) { continue }
+
+        foreach ($authority in $candidateAuthorities) {
+            if ($authority -like "*$approvedCA*" -or $approvedCA -like "*$authority*") {
+                $matchedCA = $approvedCA
+                break
+            }
+        }
+
+        if ($matchedCA) { break }
+    }
+
+    return [PSCustomObject]@{
+        IsApproved = [bool]$matchedCA
+        MatchedCA  = $matchedCA
+        ChainPath  = ($chainPath -join ' > ')
+    }
 }

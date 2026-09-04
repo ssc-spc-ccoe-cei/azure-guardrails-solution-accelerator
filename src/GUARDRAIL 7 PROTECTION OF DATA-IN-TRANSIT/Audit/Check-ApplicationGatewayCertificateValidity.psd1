@@ -14,7 +14,7 @@
 RootModule = 'Check-ApplicationGatewayCertificateValidity'
 
 # Version number of this module.
-ModuleVersion = '1.0.8'
+ModuleVersion = '1.0.10'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
