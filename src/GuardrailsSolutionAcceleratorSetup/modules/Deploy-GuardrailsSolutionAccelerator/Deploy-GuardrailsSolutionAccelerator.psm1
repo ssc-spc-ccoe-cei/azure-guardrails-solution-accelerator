@@ -346,6 +346,13 @@ Function Deploy-GuardrailsSolutionAccelerator {
     }
     Else {
         # new deployment or update deployment
+        # Check the release's module list before changing Azure resources, rather than waiting for impossible versions later.
+        # Bootstrap calls this installer too. Updates that leave modules alone do not need this check.
+        if (($update.IsPresent -and $componentsToUpdate -contains 'GuardrailPowerShellModules') -or
+            (-not $update.IsPresent -and $newComponents -contains 'CoreComponents')) {
+            & (Join-Path $PSScriptRoot '../../../../tools/Check-AutomationRuntimeModuleVersions.ps1')
+        }
+
         # confirms the provided values in config.json and appends runtime values, then returns the config object
         If ($PSCmdlet.ParameterSetName -in 'newDeployment-configString','updateDeployment-configString') {
             $config = Confirm-GSAConfigurationParameters -configString $configString -Verbose:$useVerbose
