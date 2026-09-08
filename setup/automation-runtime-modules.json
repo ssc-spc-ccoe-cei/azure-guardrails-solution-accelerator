@@ -25,7 +25,7 @@
   },
   {
     "name": "Check-VNetComplianceStatus",
-    "version": "1.2.1"
+    "version": "1.2.2"
   },
   {
     "name": "Detect-UserBGAUsersAuthMethods",
@@ -114,7 +114,7 @@
   },
   {
     "name": "Check-ApplicationGatewayCertificateValidity",
-    "version": "1.1.0"
+    "version": "1.1.1"
   },
   {
     "name": "Check-CloudAccountsMFA",
@@ -126,7 +126,7 @@
   },
   {
     "name": "Check-UserRiskBasedCAP",
-    "version": "1.0.7"
+    "version": "1.0.8"
   },
   {
     "name": "Check-LocationBasedCAP",
