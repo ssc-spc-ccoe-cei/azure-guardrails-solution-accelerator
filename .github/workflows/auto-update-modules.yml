@@ -76,7 +76,10 @@ jobs:
             }
           }
       - name: Test Module Imports
-        shell: powershell
+        # Azure Automation previously ran these modules on PowerShell 7.2, while this CI
+        # import check still used Windows PowerShell 5.1. Use pwsh so validation runs in
+        # PowerShell 7 for the move to the 7.6 Runtime Environment.
+        shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
 

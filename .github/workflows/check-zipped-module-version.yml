@@ -57,3 +57,6 @@ jobs:
                 }
             }
         }
+    - name: Check Runtime Environment Module Versions Against Source
+      shell: pwsh
+      run: ./tools/Check-AutomationRuntimeModuleVersions.ps1
