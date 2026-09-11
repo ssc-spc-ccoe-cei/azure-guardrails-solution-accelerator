@@ -114,6 +114,12 @@ Function New-GSACoreResourceDeploymentParamObject {
         [hashtable]
         $config,
 
+        # Empty for component-only updates, which leave installed modules alone.
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [object[]]
+        $RuntimeModules,
+
         # alternate module url
         [Parameter(Mandatory = $false)]
         [string]
@@ -129,6 +135,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'automationRuntimeAzVersion'            = $config['runtime']['automationRuntimeAzVersion']
         'automationRuntimeEnvironmentName'      = $config['runtime']['automationRuntimeEnvironmentName']
         'automationRuntimeVersion'              = $config['runtime']['automationRuntimeVersion']
+        'guardrailsRuntimeModules'              = $RuntimeModules
         'breakglassAccount1'                    = $config.firstBreakGlassAccountUPN
         'breakglassAccount2'                    = $config.secondBreakGlassAccountUPN    
         'CBSSubscriptionName'                   = $config.CBSSubscriptionName
@@ -346,11 +353,12 @@ Function Deploy-GuardrailsSolutionAccelerator {
     }
     Else {
         # new deployment or update deployment
-        # Check the release's module list before changing Azure resources, rather than waiting for impossible versions later.
+        # Resolve and validate the release's module versions once before changing Azure resources.
         # Bootstrap calls this installer too. Updates that leave modules alone do not need this check.
+        $runtimeModules = @()
         if (($update.IsPresent -and $componentsToUpdate -contains 'GuardrailPowerShellModules') -or
             (-not $update.IsPresent -and $newComponents -contains 'CoreComponents')) {
-            & (Join-Path $PSScriptRoot '../../../../tools/Check-AutomationRuntimeModuleVersions.ps1')
+            $runtimeModules = @(Get-GSAExpectedAutomationRuntimeModules)
         }
 
         # confirms the provided values in config.json and appends runtime values, then returns the config object
@@ -434,7 +442,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "The release $releaseVersion contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
         }
         
-        $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
+        $paramObject = New-GSACoreResourceDeploymentParamObject -config $config -RuntimeModules $runtimeModules @params -Verbose:$useVerbose
 
         # A fresh core install saves the config immediately after creating the core resources.
         # Update and non-core paths save it at the shared step below. This flag keeps the export
@@ -463,7 +471,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     # The runbooks do not read the config while they are uploaded, but they require it
                     # when they run. At this point their first execution cannot race the secret export.
                     Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
-                    Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                    Add-GSAAutomationRunbooks -config $config -RuntimeModules $runtimeModules -Verbose:$useVerbose
                 }
                 catch {
                     throw "Error while deploying core components, exporting config, or adding automation runbooks. $_"
@@ -562,7 +570,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             # A module update is not complete until Azure reports the requested versions as ready.
             # Other component updates leave modules unchanged, including any one-off client hotfixes.
             If ($componentsToUpdate -contains 'GuardrailPowerShellModules') {
-                Wait-GSAAutomationRuntimeModules -Config $config
+                Wait-GSAAutomationRuntimeModules -Config $config -ExpectedModules $runtimeModules
             }
             
             # update runbook definitions in AA

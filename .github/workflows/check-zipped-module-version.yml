@@ -60,3 +60,6 @@ jobs:
     - name: Check Runtime Environment Module Versions Against Source
       shell: pwsh
       run: ./tools/Check-AutomationRuntimeModuleVersions.ps1
+    - name: Test Single-Source Module Version Handling
+      shell: pwsh
+      run: ./tools/Test-AutomationRuntimeModuleVersions.ps1

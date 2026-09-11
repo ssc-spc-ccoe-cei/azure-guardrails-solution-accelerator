@@ -10,6 +10,7 @@
     PowerShellVersion = '7.0'
     FunctionsToExport = @(
         'Format-GSAElapsedTime'
+        'Get-GSAExpectedAutomationRuntimeModules'
         'Assert-GSAAutomationRuntimeEnvironment'
         'Wait-GSAAutomationRuntimeModules'
         'Set-GSAAutomationRunbook'

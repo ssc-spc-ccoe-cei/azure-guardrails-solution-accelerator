@@ -5,6 +5,8 @@ param automationAccountName string
 param automationRuntimeAzVersion string
 param automationRuntimeEnvironmentName string
 param automationRuntimeVersion string
+// Install the same resolved module list that the PowerShell readiness checks will verify.
+param guardrailsRuntimeModules array
 param CBSSubscriptionName string
 param containername string
 param ModuleBaseURL string
@@ -29,10 +31,6 @@ param updateCoreResources bool = false
 param securityRetentionDays string
 param cloudUsageProfiles string = 'default'
 param mfaGracePeriod string
-
-// The 7.6 Runtime Environment replaces the old list of separate PowerShell 7.2 module resources.
-// Bicep and the deployment scripts share this manifest so they deploy and validate the same module set.
-var guardrailsRuntimeModules = loadJsonContent('../../automation-runtime-modules.json')
 
 // guardrailsAC is the Bicep symbol used to reference this resource within the template.
 // The Automation Account name shown in Azure comes from automationAccountName.

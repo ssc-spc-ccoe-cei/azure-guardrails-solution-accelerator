@@ -8,7 +8,13 @@ Function Add-GSAAutomationRunbooks {
         # config
         [Parameter(mandatory = $true)]
         [psobject]
-        $config
+        $config,
+
+        # These are the versions already validated and deployed by the installer.
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [object[]]
+        $RuntimeModules
     )
     $ErrorActionPreference = 'Stop'
 
@@ -137,7 +143,7 @@ Function Add-GSAAutomationRunbooks {
     }
 
     # Do not publish or start runbooks until every module in their 7.6 environment is usable.
-    Wait-GSAAutomationRuntimeModules -Config $config
+    Wait-GSAAutomationRuntimeModules -Config $config -ExpectedModules $RuntimeModules
 
     Write-Verbose "Importing runbook definitions..."
     #region Import main runbook

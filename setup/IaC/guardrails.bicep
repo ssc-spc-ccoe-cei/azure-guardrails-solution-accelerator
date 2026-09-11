@@ -8,6 +8,8 @@ param automationAccountName string = 'guardrails-AC'
 param automationRuntimeAzVersion string
 param automationRuntimeEnvironmentName string
 param automationRuntimeVersion string
+// The installer resolves names and source-manifest versions before deployment. Component-only updates pass an empty list.
+param guardrailsRuntimeModules array
 param CBSSubscriptionName string 
 param currentUserObjectId string = ''
 param ModuleBaseURL string
@@ -66,6 +68,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     automationRuntimeAzVersion: automationRuntimeAzVersion
     automationRuntimeEnvironmentName: automationRuntimeEnvironmentName
     automationRuntimeVersion: automationRuntimeVersion
+    guardrailsRuntimeModules: guardrailsRuntimeModules
     CBSSubscriptionName: CBSSubscriptionName
     containername: containername
     ModuleBaseURL: ModuleBaseURL

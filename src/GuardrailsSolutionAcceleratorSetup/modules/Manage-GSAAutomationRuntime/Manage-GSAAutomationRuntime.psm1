@@ -116,10 +116,18 @@ function Assert-GSAAutomationRuntimeEnvironment {
     }
 }
 
-# Read the shared module manifest that Bicep also uses when it creates the Runtime Environment.
-# Keeping one source of module names and versions prevents deployment and validation from drifting apart.
+# JSON selects the modules to install; each Guardrails source manifest owns its version.
+# CI and the installer use this same reader before Azure resources change.
 function Get-GSAExpectedAutomationRuntimeModules {
-    $manifestPath = Join-Path $PSScriptRoot '../../../../setup/automation-runtime-modules.json'
+    [CmdletBinding()]
+    param (
+        [string]
+        $RepositoryRoot = (Join-Path $PSScriptRoot '../../../..')
+    )
+
+    # ZIP APIs use the process directory, which can differ from PowerShell's current location.
+    $RepositoryRoot = (Resolve-Path -LiteralPath $RepositoryRoot -ErrorAction Stop).ProviderPath
+    $manifestPath = Join-Path $RepositoryRoot 'setup/automation-runtime-modules.json'
     if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
         throw "The Guardrails Runtime Environment module manifest was not found at '$manifestPath'."
     }
@@ -132,30 +140,73 @@ function Get-GSAExpectedAutomationRuntimeModules {
         throw "Could not read the Guardrails Runtime Environment module manifest. $($_.Exception.Message)"
     }
 
-    # Fail before publishing runbooks if required metadata is missing or an external source is not HTTPS.
-    $invalidModules = @(
-        foreach ($module in $modules) {
-            $invalidUri = $false
-            if ($module.PSObject.Properties.Name -contains 'uri') {
-                $uri = [string]$module.uri
-                $parsedUri = $null
-                $invalidUri = [string]::IsNullOrWhiteSpace($uri) -or
-                    -not [Uri]::TryCreate($uri, [UriKind]::Absolute, [ref]$parsedUri) -or
-                    $parsedUri.Scheme -ne 'https'
-            }
-
-            if ([string]::IsNullOrWhiteSpace($module.name) -or
-                [string]::IsNullOrWhiteSpace($module.version) -or $invalidUri) {
-                $module
-            }
-        }
-    )
+    $invalidModules = @($modules | Where-Object { $_.name -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$' })
     $duplicateNames = @($modules | Group-Object -Property name | Where-Object { $_.Count -gt 1 })
     if ($modules.Count -eq 0 -or $invalidModules.Count -gt 0 -or $duplicateNames.Count -gt 0) {
-        throw 'The Guardrails Runtime Environment module manifest must contain unique module names, a version for every module, and a valid HTTPS URI when a custom source is provided.'
+        throw 'The Guardrails Runtime Environment module manifest must contain a non-empty list of unique, valid module names.'
     }
 
-    $modules
+    # Index source manifests once, but resolve only names explicitly listed in JSON.
+    # Duplicate source names are ambiguous even when they appear in different folders.
+    $sourceManifests = @(Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'src') -Filter '*.psd1' -Recurse -File -ErrorAction Stop)
+    $manifestsByName = $sourceManifests | Group-Object -Property BaseName -AsHashTable -AsString
+    if ($null -eq $manifestsByName) { $manifestsByName = @{} }
+    $resolvedModules = [System.Collections.Generic.List[object]]::new()
+    foreach ($module in $modules) {
+        $name = [string]$module.name
+        if ($module.PSObject.Properties.Name -contains 'uri') {
+            # External modules have no source manifest here, so their version and HTTPS URL stay in JSON.
+            $uri = $null
+            if (-not [Uri]::TryCreate([string]$module.uri, [UriKind]::Absolute, [ref]$uri) -or
+                $uri.Scheme -ne 'https' -or -not ([string]$module.version -as [version])) {
+                throw "External module '$name' requires a valid version and an HTTPS download URL."
+            }
+            $resolvedModules.Add(@{ name = $name; version = [string]$module.version; uri = [string]$module.uri })
+            continue
+        }
+
+        if ($module.PSObject.Properties.Name -contains 'version') {
+            throw "Guardrails module '$name' must declare its version only in its source .psd1, not in automation-runtime-modules.json."
+        }
+        $matchingManifests = @($manifestsByName[$name] | Where-Object { $null -ne $_ })
+        if ($matchingManifests.Count -ne 1) {
+            throw "Runtime module '$name' must have exactly one matching source manifest under src; found $($matchingManifests.Count)."
+        }
+        $sourceManifest = Import-PowerShellDataFile -LiteralPath $matchingManifests[0].FullName -ErrorAction Stop
+        $version = [string]$sourceManifest.ModuleVersion
+        if (-not ($version -as [version])) {
+            throw "Runtime module '$name' has an invalid ModuleVersion in its source manifest."
+        }
+
+        # A source version is deployable only when its ZIP has been rebuilt with the same version.
+        # Read the manifest as data, without importing or executing code from the archive.
+        $zipPath = Join-Path $RepositoryRoot "psmodules/$name.zip"
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+        try {
+            $entries = @($archive.Entries | Where-Object { $_.Name -eq "$name.psd1" })
+            if ($entries.Count -ne 1) {
+                throw "Runtime module '$name' must have exactly one matching manifest in its deployment ZIP."
+            }
+            $reader = [System.IO.StreamReader]::new($entries[0].Open())
+            try { $content = $reader.ReadToEnd() }
+            finally { $reader.Dispose() }
+            $parseErrors = $null
+            $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$parseErrors)
+            $dataAst = $ast.Find({ param($node) $node -is [System.Management.Automation.Language.HashtableAst] }, $false)
+            if ($parseErrors.Count -gt 0 -or $null -eq $dataAst) {
+                throw "Runtime module '$name' has an invalid manifest in its deployment ZIP."
+            }
+            $zipManifest = $dataAst.SafeGetValue()
+            if ([string]$zipManifest.ModuleVersion -ne $version) {
+                throw "Runtime module '$name' source is version $version, but its ZIP contains version $($zipManifest.ModuleVersion). Rebuild the ZIP before deployment."
+            }
+        }
+        finally { $archive.Dispose() }
+        $resolvedModules.Add(@{ name = $name; version = $version })
+    }
+
+    # Return only after every entry passes validation, so callers cannot deploy a partial list.
+    $resolvedModules.ToArray()
 }
 
 # Read every PowerShell module Azure currently reports for the Guardrails Runtime Environment.
@@ -209,6 +260,12 @@ function Wait-GSAAutomationRuntimeModules {
         [hashtable]
         $Config,
 
+        # Use the same resolved list that was supplied to Bicep; do not read source versions again mid-deployment.
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [object[]]
+        $ExpectedModules,
+
         [Parameter(Mandatory = $false)]
         [int]
         $TimeoutMinutes = 30,
@@ -221,8 +278,7 @@ function Wait-GSAAutomationRuntimeModules {
     # Confirm the PowerShell environment itself before waiting for modules that belong to it.
     Assert-GSAAutomationRuntimeEnvironment -Config $Config
 
-    # The manifest defines custom modules; configuration defines the Azure-managed default Az module.
-    $expectedModules = @(Get-GSAExpectedAutomationRuntimeModules)
+    # The installer supplies custom module versions; configuration defines the Azure-managed default Az module.
     $expectedModuleNames = @($expectedModules.name)
     $expectedAzVersion = [string]$Config['runtime']['automationRuntimeAzVersion']
     if ([string]::IsNullOrWhiteSpace($expectedAzVersion)) {
@@ -282,7 +338,7 @@ function Wait-GSAAutomationRuntimeModules {
 
         $pendingModules = @($managedModules | Where-Object { $_.properties.provisioningState -ne 'Succeeded' })
         # An update can briefly report the old successful module while the replacement becomes visible.
-        # Keep polling until each successful module reports the exact version from the shared manifest.
+        # Keep polling until each successful module reports the exact version supplied to Bicep.
         $moduleVersionMismatches = @(
             foreach ($expectedModule in $expectedModules) {
                 $moduleName = [string]$expectedModule.name
@@ -629,10 +685,10 @@ function Set-GSAAutomationRunbook {
     throw "Runbook '$Name' was not published with Runtime Environment '$runtimeEnvironmentName' within 5 minutes."
 }
 
-# Keep REST and parsing helpers private. The elapsed-time formatter is shared with the runbook setup modules
-# so every long deployment wait uses the same readable time format.
+# Share the version reader with CI and the formatter with setup modules; keep REST helpers private.
 Export-ModuleMember -Function @(
     'Format-GSAElapsedTime'
+    'Get-GSAExpectedAutomationRuntimeModules'
     'Assert-GSAAutomationRuntimeEnvironment'
     'Wait-GSAAutomationRuntimeModules'
     'Set-GSAAutomationRunbook'
