@@ -78,7 +78,7 @@ jobs:
           }
 
       - name: Test Module Imports
-        shell: powershell
+        shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1

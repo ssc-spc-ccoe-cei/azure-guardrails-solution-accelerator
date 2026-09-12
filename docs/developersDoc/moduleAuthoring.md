@@ -1,6 +1,6 @@
 # Creating a new module
 
-Modules in the Guardrails solution are defined in a file called modules.json, with the structure described below.
+Checks to run are configured in `setup/modules.json`, with the structure described below. PowerShell modules to install are listed separately in `setup/automation-runtime-modules.json`.
 
 {
   "ModuleName": "",
@@ -35,25 +35,7 @@ The general steps to create a module are:
 
 - Write PowerShell Module, sign it and zip it.
 - Store the compress file in the psmodules folder
-- Add module import to the bicep file. For example:
-
-  resource module1 'modules' ={
-
-    name: 'Check-BreakGlassAccountOwnersInformation'
-
-    properties: {
-
-      contentLink: {
-
-        uri: '${ModuleBaseURL}/Check-BreakGlassAccountOwnersInformation.zip'
-
-        version: '1.0.0'
-
-      }
-
-    }
-
-  }
+- Add the module's name to `setup/automation-runtime-modules.json`, for example `{ "name": "Check-BreakGlassAccountOwnersInformation" }`. The installer reads its version from the matching source `.psd1` and supplies it to Bicep's existing module resource loop.
 
 - Update modules.json file with the modules information:
 {
@@ -106,6 +88,26 @@ secrets: references to keyvault secrets.
 - Add automation account variable to the bicep file and update setup/config/etc if required.
     - Config.json file needs to receive a new entry.
     - In setup.ps1, the entry must be referred and, if needed, replaced in the bicep parameters template file.
+
+## Module versions and deployment
+
+For a Guardrails module update, increment `ModuleVersion` in its source `.psd1` once for the feature or fix, then rebuild its ZIP. JSON contains only its name, so there is no second version to edit. External modules such as `Az.Marketplace` retain their version and HTTPS download URL in JSON because they have no source manifest in this repository.
+
+```text
+JSON installation list + source .psd1 versions + matching ZIPs
+                            |
+              Installer validation
+                            |
+            One resolved list, held in memory
+                            |
+               Bicep and readiness checks
+```
+
+The installer uses `Get-GSAExpectedAutomationRuntimeModules` in `Manage-GSAAutomationRuntime.psm1` to resolve source versions and validate local ZIPs. It rejects missing or ambiguous manifests, invalid entries, and stale ZIP versions before deployment.
+
+Use source files and ZIPs from the same selected release or branch. With alternate module URLs, publish the matching ZIPs there as well; checking local ZIPs does not verify remote files. Normal runbook execution does not read this installation list. One-off client hotfixes still run from the installed modules, and component-only updates leave module versions alone.
+
+Direct Bicep callers must now supply `guardrailsRuntimeModules` with the resolved array instead of relying on Bicep to read JSON. Obtain that array with the exported `Get-GSAExpectedAutomationRuntimeModules` function after importing `Manage-GSAAutomationRuntime.psd1`. Supply an empty array only for updates where both `newDeployment` and `updatePSModules` are false. The normal installer handles this automatically.
 
 ## Standard variables
 

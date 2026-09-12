@@ -4,6 +4,12 @@ targetScope = 'resourceGroup'
 param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
 param AllowedLocationInitiativeId string = 'N/A'
 param automationAccountName string = 'guardrails-AC'
+// These values tell the Automation Account module which named PowerShell 7.6 environment and Az version to deploy.
+param automationRuntimeAzVersion string
+param automationRuntimeEnvironmentName string
+param automationRuntimeVersion string
+// The installer resolves names and source-manifest versions before deployment. Component-only updates pass an empty list.
+param guardrailsRuntimeModules array
 param CBSSubscriptionName string 
 param currentUserObjectId string = ''
 param ModuleBaseURL string
@@ -58,6 +64,11 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     AllowedLocationPolicyId: AllowedLocationPolicyId
     AllowedLocationInitiativeId: AllowedLocationInitiativeId
     automationAccountName: automationAccountName
+    // Pass the validated PowerShell 7.6 settings from the installer to the Automation Account template.
+    automationRuntimeAzVersion: automationRuntimeAzVersion
+    automationRuntimeEnvironmentName: automationRuntimeEnvironmentName
+    automationRuntimeVersion: automationRuntimeVersion
+    guardrailsRuntimeModules: guardrailsRuntimeModules
     CBSSubscriptionName: CBSSubscriptionName
     containername: containername
     ModuleBaseURL: ModuleBaseURL

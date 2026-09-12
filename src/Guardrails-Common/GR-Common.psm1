@@ -498,13 +498,17 @@ function Get-GuardrailIdentityPermissions {
         # Use direct Graph call (not Invoke-GraphQueryEX) so appRoles aren't hidden under Content.value and AppRoleValue stays populated.
         $resourceUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId"
         try {
-            # Use a Graph-scoped token and Invoke-RestMethod (PS 5.1 friendly)
-            $graphToken = Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com" -ErrorAction Stop
-            $authHeader = @{ 'Authorization' = "Bearer $($graphToken.Token)"; 'Content-Type' = 'application/json' }
+            # The PowerShell 7.6 migration also upgrades the Runtime Environment's Az modules.
+            # Use their secure token path instead of depending on the older plain-text token response.
+            # This changes token handling only; the identity permission check is unchanged.
+            # ErrorAction Stop sends authentication failures to the catch block below.
+            $graphToken = (Get-AzAccessToken -ResourceUrl 'https://graph.microsoft.com' -AsSecureString -ErrorAction Stop).Token
 
             $appRoles = $null
 
-            $resourcePayload = Invoke-RestMethod -Method Get -Uri $resourceUri -Headers $authHeader -ErrorAction Stop
+            # Pass the secure token directly to PowerShell instead of rebuilding the old plain-text authorization header.
+            # The Graph response is JSON.
+            $resourcePayload = Invoke-RestMethod -Method Get -Uri $resourceUri -Authentication Bearer -Token $graphToken -ContentType 'application/json' -ErrorAction Stop
             $appRoles = if ($resourcePayload.appRoles) { $resourcePayload.appRoles }
                        elseif ($resourcePayload.value) {
                            $valueObj = $resourcePayload.value
@@ -1400,24 +1404,19 @@ function Send-GuardrailsData {
             # Invoke-AzRestMethod cannot determine the authentication audience for DCR ingestion endpoints
             # (*.ingest.monitor.azure.com is not an ARM endpoint). Explicitly request a token for
             # the Azure Monitor audience (no trailing slash per API docs) using Invoke-RestMethod.
-            # -AsSecureString is preferred (Az.Accounts 2.12+); fall back to plain string if unavailable.
-            try {
-                $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com" -AsSecureString -ErrorAction Stop
-                $tokenPlain = [System.Net.NetworkCredential]::new('', $tokenResponse.Token).Password
-            }
-            catch {
-                $tokenResponse = Get-AzAccessToken -ResourceUrl "https://monitor.azure.com"
-                $tokenPlain = $tokenResponse.Token
-            }
+            # The PowerShell 7.6 migration also upgrades the Runtime Environment's Az modules.
+            # Use their secure token path instead of converting the token back to plain text for this request.
+            # This changes token handling only; the Log Analytics upload and retry behavior are unchanged.
+            # ErrorAction Stop sends token failures into this operation's retry handling.
+            $monitorToken = (Get-AzAccessToken -ResourceUrl 'https://monitor.azure.com' -AsSecureString -ErrorAction Stop).Token
 
             $headers = @{
-                Authorization            = "Bearer $tokenPlain"
-                'Content-Type'           = 'application/json'
                 'x-ms-client-request-id' = [System.Guid]::NewGuid().ToString()
             }
 
-            # Invoke-RestMethod throws on 4xx/5xx when -ErrorAction Stop is set.
-            Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $bodyBytes -ErrorAction Stop | Out-Null
+            # Pass the secure token directly to PowerShell; ContentType identifies the JSON body.
+            # Invoke-RestMethod throws on 4xx/5xx so the existing retry handling can decide whether to try again.
+            Invoke-RestMethod -Uri $uri -Method POST -Authentication Bearer -Token $monitorToken -ContentType 'application/json' -Headers $headers -Body $bodyBytes -ErrorAction Stop | Out-Null
 
             Write-Verbose "Successfully sent data to Log Analytics table '$LogType' via DCR stream '$($target.StreamName)' ($($bodyBytes.Length) bytes)"
             return
@@ -3452,8 +3451,8 @@ function Test-PolicyExemptionExists {
         [array]  $requiredPolicyExemptionIds
     )
     [PSCustomObject] $policyExemptionList = New-Object System.Collections.ArrayList     
-    # $exemptionsIds = Get-AzPolicyExemption -Scope $ScopeId | Select-Object -ExpandProperty Properties| Select-Object PolicyDefinitionReferenceIds
-    $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds
+    # Az 15 returns this list through the singular generated-model property name.
+    $exemptionsIds = (Get-AzPolicyExemption -Scope $ScopeId).PolicyDefinitionReferenceId
     $isExempt =  $false
 
     if ($null -ne $exemptionsIds)
@@ -3624,12 +3623,15 @@ function Check-PBMMPolicies {
             $AssignedPolicyList = $policyAssignmentCache[$assignmentCacheKey]
         }
         else {
-            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter | `
-                Select-Object -ExpandProperty properties
+            # The PowerShell 7.6 runtime uses Az 15, where assignment fields are returned directly.
+            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter
             $policyAssignmentCache[$assignmentCacheKey] = $AssignedPolicyList
         }
 
-        If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
+        # Az 15 calls this list `NotScope` in its generated model. A missing list is null, which
+        # PowerShell would otherwise count as one item, so remove null values before counting.
+        $hasExcludedScopes = @($AssignedPolicyList.NotScope | Where-Object { $null -ne $_ }).Count -gt 0
+        If ($null -eq $AssignedPolicyList -or $hasExcludedScopes)
         {
             # PBMM initiative not applied
             $ComplianceStatus=$false
@@ -3658,11 +3660,11 @@ function Check-PBMMPolicies {
                 catch {
                     Write-Verbose "Direct lookup for policy set '$policySetCacheKey' failed. Falling back to tenant scan. Error: $_"
                     $policySetDefinition = Get-AzPolicySetDefinition | `
-                        Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" }
+                        Where-Object { $_.Id -like "*$PolicyID*" }
                 }
             }
 
-            $listPolicies = $policySetDefinition.Properties.policyDefinitions
+            $listPolicies = $policySetDefinition.PolicyDefinition
             # Check all 3 policies are applied for this scope
             $appliedPolicies = $listPolicies.policyDefinitionReferenceId | Where-Object { $requiredPolicyExemptionIds -contains $_ }
             if($appliedPolicies.Count -ne  $requiredPolicyExemptionIds.Count){
@@ -4075,7 +4077,7 @@ function Check-BuiltInPolicies {
         # Get policy definition details
         try {
             $policyDefinition = Get-AzPolicyDefinition -Id $policyId -ErrorAction Stop
-            $policyDisplayName = $policyDefinition.Properties.DisplayName
+            $policyDisplayName = $policyDefinition.DisplayName
         } catch {
             $ErrorList.Add("Error getting policy definition: $_")
             $policyDisplayName = "Unknown Policy"
@@ -4107,9 +4109,9 @@ function Check-BuiltInPolicies {
             # Check for policy exemptions
             foreach ($assignment in $tenantPolicyAssignments) {
                 try {
-                    if ($null -ne $assignment -and $null -ne $assignment.PolicyAssignmentId ) {
-                        Write-Host "Checking exemptions for assignment: $($assignment.PolicyAssignmentId)"
-                        $policyExemptions = Get-AzPolicyExemption -Scope $rootScope -PolicyAssignmentId $assignment.PolicyAssignmentId  -ErrorAction Stop
+                    if ($null -ne $assignment -and -not [string]::IsNullOrWhiteSpace($assignment.Id)) {
+                        Write-Host "Checking exemptions for assignment: $($assignment.Id)"
+                        $policyExemptions = Get-AzPolicyExemption -Scope $rootScope -PolicyAssignmentIdFilter $assignment.Id -ErrorAction Stop
                         if ($policyExemptions) {
                             $hasExemptions = $true
                             break

@@ -47,7 +47,7 @@ jobs:
           ref: ${{ github.event.inputs.version_tag }}
 
       - name: Test Module Imports
-        shell: powershell
+        shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $moduleFiles = Get-ChildItem -Path ./* -Recurse -Include *.psm1
