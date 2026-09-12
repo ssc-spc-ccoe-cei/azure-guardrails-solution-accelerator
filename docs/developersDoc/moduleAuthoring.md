@@ -96,18 +96,14 @@ For a Guardrails module update, increment `ModuleVersion` in its source `.psd1` 
 ```text
 JSON installation list + source .psd1 versions + matching ZIPs
                             |
-              Shared PowerShell validation
+              Installer validation
                             |
             One resolved list, held in memory
                             |
                Bicep and readiness checks
 ```
 
-CI and installation use `Get-GSAExpectedAutomationRuntimeModules` in `Manage-GSAAutomationRuntime.psm1`. It replaces the duplicated JSON version declarations and the separate CI version reader. It rejects missing or ambiguous manifests, invalid entries, and stale ZIP versions before deployment. Run the same check locally from the repository root:
-
-```powershell
-./tools/Check-AutomationRuntimeModuleVersions.ps1
-```
+The installer uses `Get-GSAExpectedAutomationRuntimeModules` in `Manage-GSAAutomationRuntime.psm1` to resolve source versions and validate local ZIPs. It rejects missing or ambiguous manifests, invalid entries, and stale ZIP versions before deployment.
 
 Use source files and ZIPs from the same selected release or branch. With alternate module URLs, publish the matching ZIPs there as well; checking local ZIPs does not verify remote files. Normal runbook execution does not read this installation list. One-off client hotfixes still run from the installed modules, and component-only updates leave module versions alone.
 

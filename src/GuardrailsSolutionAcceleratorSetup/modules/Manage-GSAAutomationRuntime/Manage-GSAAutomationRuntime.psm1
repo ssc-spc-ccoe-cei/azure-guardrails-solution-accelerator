@@ -101,7 +101,7 @@ function Assert-GSAAutomationRuntimeEnvironment {
 }
 
 # JSON selects the modules to install; each Guardrails source manifest owns its version.
-# CI and the installer use this same reader before Azure resources change.
+# The installer resolves and validates this list before Azure resources change.
 function Get-GSAExpectedAutomationRuntimeModules {
     [CmdletBinding()]
     param (
@@ -639,7 +639,7 @@ function Set-GSAAutomationRunbook {
     throw "Runbook '$Name' was not published with Runtime Environment '$runtimeEnvironmentName' within 5 minutes."
 }
 
-# Share the version reader with CI; keep REST helpers private.
+# Export the deployment functions; keep REST helpers private.
 Export-ModuleMember -Function @(
     'Get-GSAExpectedAutomationRuntimeModules'
     'Assert-GSAAutomationRuntimeEnvironment'

@@ -77,12 +77,6 @@ jobs:
                   Write-Host "Neither the manifest '$($moduleCodeFile.FullName.toLower())' or script file '$($moduleManifestFile.FullName.ToLower())' for module '$($moduleCodeFile.BaseName)' was changed, skipping zipping..."
               }
           }
-      # Fail here before the deployment job can delete or change Azure resources.
-      # Older releases without either runtime-list file keep their existing validation flow.
-      - name: Check Runtime Environment Module Versions Against Source
-        if: ${{ hashFiles('setup/automation-runtime-modules.json', 'tools/Check-AutomationRuntimeModuleVersions.ps1') != '' }}
-        shell: pwsh
-        run: ./tools/Check-AutomationRuntimeModuleVersions.ps1
       - name: Publish artifacts
         uses: actions/upload-artifact@v4
         with:

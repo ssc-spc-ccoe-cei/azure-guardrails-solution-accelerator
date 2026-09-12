@@ -67,12 +67,6 @@ jobs:
               Compress-Archive -Path $filesToZip -DestinationPath $destPath -Force
             }
           }
-      # Fail here before the deployment job can delete or change Azure resources.
-      # Older releases without either runtime-list file keep their existing validation flow.
-      - name: Check Runtime Environment Module Versions Against Source
-        if: ${{ hashFiles('setup/automation-runtime-modules.json', 'tools/Check-AutomationRuntimeModuleVersions.ps1') != '' }}
-        shell: pwsh
-        run: ./tools/Check-AutomationRuntimeModuleVersions.ps1
       - name: Publish artifacts
         uses: actions/upload-artifact@v4
         with:
