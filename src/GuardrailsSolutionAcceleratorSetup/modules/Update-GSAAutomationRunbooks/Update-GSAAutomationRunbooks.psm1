@@ -62,9 +62,6 @@ Function Update-GSAAutomationRunbooks {
     }
     
     Write-Verbose "Uploading modules.json to blob storage container 'configuration'..."
-    Write-Host "Uploading modules.json and confirming Blob Storage access (up to 10 minutes if RBAC is still propagating)..."
-    $blobProgressTimer = [System.Diagnostics.Stopwatch]::StartNew()
-    $nextBlobProgressReportSeconds = 30
     $temporaryBlobContributorCreated = $false
     $storageAccountId = $null
     try {
@@ -110,7 +107,6 @@ Function Update-GSAAutomationRunbooks {
                 }
 
                 Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified.UtcDateTime) (UTC)"
-                $blobProgressTimer.Stop()
                 Write-Host "Successfully updated modules.json in blob storage container 'configuration' (LastModified: $($blob.LastModified.UtcDateTime.ToString('yyyy-MM-dd HH:mm:ss')) UTC)" -ForegroundColor Green
                 break
             }
@@ -118,13 +114,6 @@ Function Update-GSAAutomationRunbooks {
                 # Keep retrying while RBAC settles, but stop immediately once the final attempt is exhausted.
                 if ($attempt -eq $maxBlobAttempts -or -not (Test-GSARetryableBlobError -ErrorRecord $_)) {
                     throw
-                }
-
-                if ($blobProgressTimer.Elapsed.TotalSeconds -ge $nextBlobProgressReportSeconds) {
-                    Write-Host "Still waiting for Blob Storage access. Attempt $attempt of $maxBlobAttempts; elapsed: $(Format-GSAElapsedTime -Elapsed $blobProgressTimer.Elapsed)."
-                    do {
-                        $nextBlobProgressReportSeconds += 30
-                    } while ($nextBlobProgressReportSeconds -le $blobProgressTimer.Elapsed.TotalSeconds)
                 }
 
                 Write-Verbose "Attempt $attempt of $maxBlobAttempts could not upload or verify modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"

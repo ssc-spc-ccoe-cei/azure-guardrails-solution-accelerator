@@ -8,22 +8,6 @@
 # the Runtime Environment and runbook-link properties used by this module.
 $script:AutomationApiVersion = '2024-10-23'
 
-# Format wait times consistently in the normal deployment output.
-function Format-GSAElapsedTime {
-    param (
-        [Parameter(Mandatory = $true)]
-        [TimeSpan]
-        $Elapsed
-    )
-
-    $wholeSeconds = [int][Math]::Floor($Elapsed.TotalSeconds)
-    if ($wholeSeconds -lt 60) {
-        return "${wholeSeconds}s"
-    }
-
-    '{0}m {1}s' -f [int][Math]::Floor($Elapsed.TotalMinutes), $Elapsed.Seconds
-}
-
 # Build the Azure Resource Manager path for the named Runtime Environment used by Guardrails.
 # Other functions use this path directly or add Azure's `/packages` endpoint for PowerShell modules.
 function Get-GSAAutomationRuntimeBasePath {
@@ -292,8 +276,6 @@ function Wait-GSAAutomationRuntimeModules {
     $moduleVersionMismatches = @()
     $actualAzVersion = $null
     $azVersionReady = $false
-    $progressTimer = [System.Diagnostics.Stopwatch]::StartNew()
-    $nextProgressReportSeconds = 30
     Write-Host "Waiting for $($expectedModules.Count) Guardrails PowerShell modules and Az $expectedAzVersion to become ready (up to $TimeoutMinutes minutes)..."
 
     # Module imports are asynchronous. Read fresh Azure state on every pass until all checks agree.
@@ -361,21 +343,14 @@ function Wait-GSAAutomationRuntimeModules {
         # Runbooks are safe to publish only when nothing is missing, importing, stale, or on the wrong Az version.
         if ($missingModuleNames.Count -eq 0 -and $pendingModules.Count -eq 0 -and
             $moduleVersionMismatches.Count -eq 0 -and $azVersionReady) {
-            $progressTimer.Stop()
             Write-Verbose "All $($expectedModules.Count) Guardrails Runtime Environment modules and Az $expectedAzVersion are ready."
-            Write-Host "All Guardrails PowerShell modules and Az $expectedAzVersion are ready after $(Format-GSAElapsedTime -Elapsed $progressTimer.Elapsed)." -ForegroundColor Green
+            Write-Host "All Guardrails PowerShell modules and Az $expectedAzVersion are ready." -ForegroundColor Green
             return
         }
 
         # Report progress without treating normal Azure provisioning time as an error.
         $azVersionStatus = if ($azVersionReady) { 'ready' } else { "waiting for $expectedAzVersion (currently '$actualAzVersion')" }
         Write-Verbose "Waiting for $($pendingModules.Count) module import(s), $($missingModuleNames.Count) module registration(s), and $($moduleVersionMismatches.Count) module version update(s). Az is $azVersionStatus."
-        if ($progressTimer.Elapsed.TotalSeconds -ge $nextProgressReportSeconds) {
-            Write-Host "Still waiting for PowerShell modules: $($pendingModules.Count) importing, $($missingModuleNames.Count) missing, $($moduleVersionMismatches.Count) updating; Az is $azVersionStatus. Elapsed: $(Format-GSAElapsedTime -Elapsed $progressTimer.Elapsed)."
-            do {
-                $nextProgressReportSeconds += 30
-            } while ($nextProgressReportSeconds -le $progressTimer.Elapsed.TotalSeconds)
-        }
 
         $currentTime = Get-Date
         if ($currentTime -ge $deadline) {
@@ -516,8 +491,6 @@ function Wait-GSAAzureOperation {
     # Respect Azure's requested delay where possible, while keeping each pause between one and thirty seconds.
     $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
     $retryAfter = Get-GSAResponseHeaderValue -Headers $Headers -Name 'Retry-After'
-    $progressTimer = [System.Diagnostics.Stopwatch]::StartNew()
-    $nextProgressReportSeconds = 30
     Write-Host "Waiting for Azure to finish $Description (up to $TimeoutMinutes minutes)..."
     do {
         $delaySeconds = 2
@@ -545,18 +518,10 @@ function Wait-GSAAzureOperation {
 
         # Azure operation endpoints are not fully uniform: success may be in the body or implied by a non-202 response.
         if ([int]$pollStatusCode -ne 202 -and ([string]::IsNullOrWhiteSpace($operationStatus) -or $operationStatus -eq 'Succeeded')) {
-            $progressTimer.Stop()
-            Write-Host "Azure finished $Description after $(Format-GSAElapsedTime -Elapsed $progressTimer.Elapsed)." -ForegroundColor Green
+            Write-Host "Azure finished $Description." -ForegroundColor Green
             return
         }
 
-        if ($progressTimer.Elapsed.TotalSeconds -ge $nextProgressReportSeconds) {
-            $reportedStatus = if ([string]::IsNullOrWhiteSpace($operationStatus)) { 'still processing' } else { $operationStatus }
-            Write-Host "Still waiting for Azure to finish $Description. Status: $reportedStatus. Elapsed: $(Format-GSAElapsedTime -Elapsed $progressTimer.Elapsed)."
-            do {
-                $nextProgressReportSeconds += 30
-            } while ($nextProgressReportSeconds -le $progressTimer.Elapsed.TotalSeconds)
-        }
 
         $retryAfter = Get-GSAResponseHeaderValue -Headers $pollHeaders -Name 'Retry-After'
     } while ((Get-Date) -lt $deadline)
@@ -647,8 +612,6 @@ function Set-GSAAutomationRunbook {
 
     # Operation completion alone is not enough. Re-read the runbook until Azure exposes the final state and link.
     $publishDeadline = (Get-Date).AddMinutes(5)
-    $publishProgressTimer = [System.Diagnostics.Stopwatch]::StartNew()
-    $nextProgressReportSeconds = 30
     Write-Host "Confirming runbook '$Name' is published and linked to Runtime Environment '$runtimeEnvironmentName' (up to 5 minutes)..."
     while ($true) {
         $runbookResponse = Invoke-AzRestMethod -Method GET -Path "${runbookPath}?api-version=$script:AutomationApiVersion" -ErrorAction Stop
@@ -657,20 +620,11 @@ function Set-GSAAutomationRunbook {
         }
         $runbook = $runbookResponse.Content | ConvertFrom-Json -Depth 20
         if ($runbook.properties.state -eq 'Published' -and $runbook.properties.runtimeEnvironment -eq $runtimeEnvironmentName) {
-            $publishProgressTimer.Stop()
             Write-Verbose "Runbook '$Name' is published and linked to Runtime Environment '$runtimeEnvironmentName'."
-            Write-Host "Runbook '$Name' is published and linked to Runtime Environment '$runtimeEnvironmentName' after $(Format-GSAElapsedTime -Elapsed $publishProgressTimer.Elapsed)." -ForegroundColor Green
+            Write-Host "Runbook '$Name' is published and linked to Runtime Environment '$runtimeEnvironmentName'." -ForegroundColor Green
             return
         }
 
-        if ($publishProgressTimer.Elapsed.TotalSeconds -ge $nextProgressReportSeconds) {
-            $reportedState = if ([string]::IsNullOrWhiteSpace($runbook.properties.state)) { 'not reported' } else { $runbook.properties.state }
-            $reportedRuntime = if ([string]::IsNullOrWhiteSpace($runbook.properties.runtimeEnvironment)) { 'not reported' } else { $runbook.properties.runtimeEnvironment }
-            Write-Host "Still confirming runbook '$Name'. State: $reportedState; Runtime Environment: $reportedRuntime. Elapsed: $(Format-GSAElapsedTime -Elapsed $publishProgressTimer.Elapsed)."
-            do {
-                $nextProgressReportSeconds += 30
-            } while ($nextProgressReportSeconds -le $publishProgressTimer.Elapsed.TotalSeconds)
-        }
 
         $currentTime = Get-Date
         if ($currentTime -ge $publishDeadline) {
@@ -685,9 +639,8 @@ function Set-GSAAutomationRunbook {
     throw "Runbook '$Name' was not published with Runtime Environment '$runtimeEnvironmentName' within 5 minutes."
 }
 
-# Share the version reader with CI and the formatter with setup modules; keep REST helpers private.
+# Share the version reader with CI; keep REST helpers private.
 Export-ModuleMember -Function @(
-    'Format-GSAElapsedTime'
     'Get-GSAExpectedAutomationRuntimeModules'
     'Assert-GSAAutomationRuntimeEnvironment'
     'Wait-GSAAutomationRuntimeModules'

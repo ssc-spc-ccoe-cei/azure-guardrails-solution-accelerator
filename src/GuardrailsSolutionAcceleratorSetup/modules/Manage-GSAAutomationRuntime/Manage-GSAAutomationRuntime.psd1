@@ -9,7 +9,6 @@
     # The deployment configuration and Bicep template explicitly select PowerShell 7.6 for the runbooks.
     PowerShellVersion = '7.0'
     FunctionsToExport = @(
-        'Format-GSAElapsedTime'
         'Get-GSAExpectedAutomationRuntimeModules'
         'Assert-GSAAutomationRuntimeEnvironment'
         'Wait-GSAAutomationRuntimeModules'

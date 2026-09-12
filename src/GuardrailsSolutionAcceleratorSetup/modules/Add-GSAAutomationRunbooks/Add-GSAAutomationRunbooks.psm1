@@ -31,7 +31,6 @@ Function Add-GSAAutomationRunbooks {
     # which solution release published each Azure runbook.
     $runbookTags = @{
         version = $config['runtime']['tagsTable'].ReleaseVersion
-        releaseDate = $config['runtime']['tagsTable'].ReleaseDate
     }
 
     function Invoke-GSARunbookSetupStep {
@@ -91,9 +90,6 @@ Function Add-GSAAutomationRunbooks {
     }
     
     Write-Verbose "Uploading modules.json to blob storage container 'configuration'..."
-    Write-Host "Uploading modules.json and confirming Blob Storage access (up to 10 minutes if RBAC is still propagating)..."
-    $blobProgressTimer = [System.Diagnostics.Stopwatch]::StartNew()
-    $nextBlobProgressReportSeconds = 30
     try {
         # Wait up to 10 minutes for the temporary Blob Contributor role to become usable by the deployer.
         $maxBlobAttempts = 30
@@ -114,7 +110,6 @@ Function Add-GSAAutomationRunbooks {
                 }
 
                 Write-Verbose "Successfully uploaded and verified modules.json to blob storage. Blob LastModified: $($blob.LastModified)"
-                $blobProgressTimer.Stop()
                 Write-Host "Successfully uploaded modules.json to blob storage container 'configuration'" -ForegroundColor Green
                 break
             }
@@ -124,12 +119,6 @@ Function Add-GSAAutomationRunbooks {
                     throw
                 }
 
-                if ($blobProgressTimer.Elapsed.TotalSeconds -ge $nextBlobProgressReportSeconds) {
-                    Write-Host "Still waiting for Blob Storage access. Attempt $attempt of $maxBlobAttempts; elapsed: $(Format-GSAElapsedTime -Elapsed $blobProgressTimer.Elapsed)."
-                    do {
-                        $nextBlobProgressReportSeconds += 30
-                    } while ($nextBlobProgressReportSeconds -le $blobProgressTimer.Elapsed.TotalSeconds)
-                }
 
                 Write-Verbose "Attempt $attempt of $maxBlobAttempts could not upload or verify modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"
                 Start-Sleep -Seconds $blobRetryDelaySeconds
