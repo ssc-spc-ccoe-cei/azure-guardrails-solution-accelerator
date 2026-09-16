@@ -28,20 +28,24 @@ function Get-ActionGroupContactTokens {
     .SYNOPSIS
         Extracts contact tokens from an Azure Action Group.
     .DESCRIPTION
-        Gathers all notification targets (email addresses and owner-role tokens)
+        Gathers all notification targets (email addresses and owner-role and ARM role receiver tokens)
         from the specified action group(s). Returns a unified set of "contact tokens"
         that can be used for counting unique contacts. Email addresses are returned
-        as-is, while Owner role receivers are prefixed with "Owner::" to distinguish
-        them from direct email contacts.
+        as-is. Owner role receivers are prefixed with "Owner::" to distinguish
+        them from direct email contacts, since the number of contacts they represent depends on actual number of subscription owners.
+        Monitoring Contributor and Monitoring Reader role receivers -- also valid Action Group "Email Azure Resource Manager role" 
+        targets -- are prefixed with "Role::" and, like email contacts, each unique receiver counts as a single contact.
     #>
     param (
         [Parameter(Mandatory=$true)]
         [Object[]] $ActionGroup
     )
 
-    # Azure built-in Owner role ID (constant across all Azure tenants)
+    # Azure built-in role IDs (constant across all Azure tenants)
     # Used as fallback when RoleName property is not populated
     $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+    $monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
+    $monitoringReaderRoleId = '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
 
     $emailTokens = @(
         $ActionGroup | ForEach-Object {
@@ -68,8 +72,30 @@ function Get-ActionGroupContactTokens {
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | Sort-Object -Unique
 
+    # Monitoring Contributor / Monitoring Reader ARM role receivers are also valid
+    # Action Group notification targets. Unlike Owner, they do not map to a variable
+    # subscription-owner count, so each unique receiver simply counts as one contact.
+
+    $monitoringRoleTokens = @(
+        $ActionGroup | ForEach-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
+                    $_.RoleName -eq 'Monitoring Contributor' -or $_.RoleId -eq $monitoringContributorRoleId -or
+                    $_.RoleName -eq 'Monitoring Reader' -or $_.RoleId -eq $monitoringReaderRoleId
+                } | ForEach-Object {
+                    if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
+                        $_.Name.Trim()
+                    }
+                    elseif ($_.RoleId -is [string] -and $_.RoleId.Trim().Length -gt 0) {
+                        $_.RoleId.Trim()
+                    }
+                }
+            }
+        } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
+    ) | Sort-Object -Unique
+
     # Return array as single object (leading comma prevents PowerShell from unrolling the array)
-    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }))
+    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + (monitoringRoleTokens | ForEach-Object { "Role::" + $_ }))
 }
 
 function Validate-ActionGroups {
@@ -154,11 +180,12 @@ function Validate-ActionGroups {
     
 
     # Separate owner tokens from other contact tokens (e.g., email addresses)
+    # Monitoring Contributor / Monitoring Reader ARM role receivers
     $ownerTokens = @($uniqueContacts | Where-Object { $_ -like 'Owner::*' })
     $nonOwnerTokens = @($uniqueContacts | Where-Object { $_ -notlike 'Owner::*' })
 
     # Calculate effective contact count
-    # Non-owner contacts (emails, etc.) count as 1 each
+    # Non-owner contacts (emails, Monitoring Contributor/Reader role receivers, etc.) count as 1 each
     $effectiveContactCount = $nonOwnerTokens.Count
 
     # If subscription owners are being used as notification targets, check actual owner count
