@@ -175,7 +175,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/GR-ComplianceChecks.zip'
-        version: '1.5.2'
+        version: '1.5.3'
       }}
   }
   resource module19 'powerShell72Modules' = if (newDeployment || updatePSModules) {
@@ -256,7 +256,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
     properties: {
       contentLink: {
         uri: '${ModuleBaseURL}/Check-UserAccountGCEventLogging.zip'
-        version: '1.0.8'
+        version: '1.0.9'
       }}
   }
   resource module32 'powerShell72Modules' = if (newDeployment || updatePSModules) {
