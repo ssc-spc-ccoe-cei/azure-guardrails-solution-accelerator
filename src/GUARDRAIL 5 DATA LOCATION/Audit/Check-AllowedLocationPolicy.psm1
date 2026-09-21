@@ -153,8 +153,14 @@ function Check-PolicyStatus {
             Write-Error "Error: Failed to retrieve policy or initiative assignments for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" 
         }
 
+        # Az 15 returns assignment fields directly. Its generated model uses the singular names
+        # `NotScope` and `Parameter`, even though those fields can contain multiple values.
+        # When no exclusions exist, NotScope is null. Filter that null before counting because
+        # PowerShell otherwise wraps it as a one-item array and incorrectly reports an exclusion.
+        $policyHasExcludedScopes = @($AssignedPolicyList.NotScope | Where-Object { $null -ne $_ }).Count -gt 0
+        $initiativeHasExcludedScopes = @($AssignedInitiatives.NotScope | Where-Object { $null -ne $_ }).Count -gt 0
         If (($null -eq $AssignedPolicyList -and ($null -eq $AssignedInitiatives -or $AssignedInitiatives -eq "N/A")) -or `
-            ((-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) -or (-not ([string]::IsNullOrEmpty(($AssignedInitiatives.Properties.NotScopesScope))))))
+            $policyHasExcludedScopes -or $initiativeHasExcludedScopes)
         {
             $Comment=$($msgTable.policyNotAssigned -f $objType)
             $ComplianceStatus=$false
@@ -167,7 +173,7 @@ function Check-PolicyStatus {
             if ($null -ne $AssignedPolicyList){
                 if (!([string]::IsNullOrEmpty($AllowedLocations)))
                 {
-                    $AssignedLocations = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
+                    $AssignedLocations = $AssignedPolicyList.Parameter.listOfAllowedLocations.value # gets currently assigned locations
                     foreach ($AssignedLocation in $AssignedLocations) {
                         if ( $AssignedLocation -notin $AllowedLocations) {
                             $ComplianceStatus=$false
@@ -180,7 +186,7 @@ function Check-PolicyStatus {
             if ($null -ne $AssignedInitiatives -and $AssignedInitiatives -ne "N/A"){
                 if (!([string]::IsNullOrEmpty($AllowedLocations)))
                 {
-                    $AssignedLocations = $AssignedInitiatives.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
+                    $AssignedLocations = $AssignedInitiatives.Parameter.listOfAllowedLocations.value # gets currently assigned locations
                     foreach ($AssignedLocation in $AssignedLocations) {
                         if ( $AssignedLocation -notin $AllowedLocations) {
                             $ComplianceStatus=$false
