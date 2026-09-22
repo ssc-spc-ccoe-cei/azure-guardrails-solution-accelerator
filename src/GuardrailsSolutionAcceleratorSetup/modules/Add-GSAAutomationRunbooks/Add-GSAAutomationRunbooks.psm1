@@ -1,10 +1,20 @@
+# Import-AzAutomationRunbook cannot attach a named Runtime Environment. This helper publishes each runbook
+# through the Runtime Environment API and verifies that Azure linked it to Guardrails PowerShell 7.6.
+Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'Manage-GSAAutomationRuntime/Manage-GSAAutomationRuntime.psd1') -ErrorAction Stop
+
 Function Add-GSAAutomationRunbooks {
 
     param (
         # config
         [Parameter(mandatory = $true)]
         [psobject]
-        $config
+        $config,
+
+        # These are the versions already validated and deployed by the installer.
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [object[]]
+        $RuntimeModules
     )
     $ErrorActionPreference = 'Stop'
 
@@ -15,6 +25,13 @@ Function Add-GSAAutomationRunbooks {
     $backendRunbookName = "backend"
     $backendRunbookDescription = "Guardrails Backend Runbook"
     $scheduleName = "GR-Daily"
+
+    # The 7.6 runtime helper builds the runbook REST payload, so pass its tags explicitly.
+    # Confirm-GSAConfigurationParameters loads these values from setup/tags.json so operators can see
+    # which solution release published each Azure runbook.
+    $runbookTags = @{
+        version = $config['runtime']['tagsTable'].ReleaseVersion
+    }
 
     function Invoke-GSARunbookSetupStep {
         param (
@@ -102,6 +119,7 @@ Function Add-GSAAutomationRunbooks {
                     throw
                 }
 
+
                 Write-Verbose "Attempt $attempt of $maxBlobAttempts could not upload or verify modules.json yet. Waiting $blobRetryDelaySeconds seconds before retrying. Error: $($_.Exception.Message)"
                 Start-Sleep -Seconds $blobRetryDelaySeconds
             }
@@ -113,13 +131,17 @@ Function Add-GSAAutomationRunbooks {
         throw $errorMessage
     }
 
+    # Do not publish or start runbooks until every module in their 7.6 environment is usable.
+    Wait-GSAAutomationRuntimeModules -Config $config -ExpectedModules $RuntimeModules
+
     Write-Verbose "Importing runbook definitions..."
     #region Import main runbook
     Write-Verbose "Importing 'main' Runbook." #main runbook, runs the modules.
     Invoke-GSARunbookSetupStep -Description "Importing 'main' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'" -ScriptBlock {
         Write-Verbose "`tImporting 'main' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'"
-        Import-AzAutomationRunbook -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" -Description $mainRunbookDescription -Type PowerShell72 -Published `
-            -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
+        # Create or update the runbook, link it to the PowerShell 7.6 environment, upload its script, publish it, and verify the link.
+        Set-GSAAutomationRunbook -Config $config -Name $mainRunbookName -Path "$PSScriptRoot/../../../../setup/main.ps1" `
+            -Description $mainRunbookDescription -Tags $runbookTags
     }
 
     $startTime = (Get-Date).Date.AddHours(7).ToUniversalTime()
@@ -142,8 +164,9 @@ Function Add-GSAAutomationRunbooks {
     Write-Verbose "Importing 'Backend' Runbook." #backend runbooks. gets information about tenant, version and itsgcontrols.
     Invoke-GSARunbookSetupStep -Description "Importing 'backend' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'" -ScriptBlock {
         Write-Verbose "`tImporting 'backend' Runbook to Azure Automation Account '$($config['runtime']['AutomationAccountName'])'"
-        Import-AzAutomationRunbook -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" -Description $backendRunbookDescription -Type PowerShell72 -Published `
-            -ResourceGroupName $config['runtime']['resourceGroup'] -AutomationAccountName $config['runtime']['autoMationAccountName'] -Tags @{version = $config['runtime']['tagsTable'].ReleaseVersion } | Out-Null
+        # Apply the same PowerShell 7.6 publication and verification steps to the backend runbook.
+        Set-GSAAutomationRunbook -Config $config -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" `
+            -Description $backendRunbookDescription -Tags $runbookTags
     }
 
     Write-Verbose "Registering 'Backend' Runbook to schedule."
