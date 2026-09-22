@@ -80,8 +80,7 @@ function Get-ActionGroupContactTokens {
         $ActionGroup | ForEach-Object {
             if ($_.ArmRoleReceiver) {
                 $_.ArmRoleReceiver | Where-Object {
-                    $_.RoleName -eq 'Monitoring Contributor' -or $_.RoleId -eq $monitoringContributorRoleId -or
-                    $_.RoleName -eq 'Monitoring Reader' -or $_.RoleId -eq $monitoringReaderRoleId
+                    $_.RoleId -eq $monitoringContributorRoleId -or $_.RoleId -eq $monitoringReaderRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
                         $_.Name.Trim()
