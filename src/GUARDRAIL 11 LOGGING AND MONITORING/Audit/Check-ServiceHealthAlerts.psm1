@@ -94,7 +94,7 @@ function Get-ActionGroupContactTokens {
     ) | Sort-Object -Unique
 
     # Return array as single object (leading comma prevents PowerShell from unrolling the array)
-    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + (monitoringRoleTokens | ForEach-Object { "Role::" + $_ }))
+    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + ($monitoringRoleTokens | ForEach-Object { "Role::" + $_ }))
 }
 
 function Validate-ActionGroups {
