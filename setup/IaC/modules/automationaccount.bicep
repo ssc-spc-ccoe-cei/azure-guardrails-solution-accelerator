@@ -1,3 +1,5 @@
+// Include all three mandatory tags so normal deployments satisfy tag enforcement.
+param solution string
 param AllowedLocationPolicyId string
 param AllowedLocationInitiativeId string
 param automationAccountName string
@@ -40,6 +42,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
   name: automationAccountName
   location: location
   tags: {
+    Solution: solution
     releaseVersion:releaseVersion
     releasedate: releaseDate
   }

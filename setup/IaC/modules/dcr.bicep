@@ -1,6 +1,8 @@
 // Data Collection Rules (DCRs) for DCR-based Log Ingestion API.
 // DCRs are kind 'Direct' and expose their own logsIngestion endpoints, so no separate endpoint resource is required.
 
+// Include all three mandatory tags so normal deployments satisfy tag enforcement.
+param solution string
 param location string
 param logAnalyticsWorkspaceResourceId string
 // Workspace name is used to declare table existing-resource references so ARM enforces
@@ -78,6 +80,7 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
   name: dcrName
   location: location
   tags: {
+    Solution: solution
     releaseVersion: releaseVersion
     releaseDate: releaseDate
   }
@@ -734,6 +737,7 @@ resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11'
   name: dcrName2
   location: location
   tags: {
+    Solution: solution
     releaseVersion: releaseVersion
     releaseDate: releaseDate
   }

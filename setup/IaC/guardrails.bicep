@@ -27,6 +27,8 @@ param location string = 'canadacentral'
 param logAnalyticsWorkspaceName string = 'guardrails-LAW'
 param newDeployment bool = true
 param PBMMPolicyID string = '4c4a5f27-de81-430b-b4e5-9cbd50595a87'
+// Mandatory values are resolved from the selected official release by the installer.
+param solution string
 param releaseDate string 
 param releaseVersion string
 param SecurityLAWResourceId string
@@ -85,6 +87,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     newDeployment: newDeployment
     PBMMPolicyID: PBMMPolicyID
     releaseDate: releaseDate
+    solution: solution
     releaseVersion: releaseVersion
     SecurityLAWResourceId: SecurityLAWResourceId
     SSCReadOnlyServicePrincipalNameAPPID:SSCReadOnlyServicePrincipalNameAPPID
@@ -94,6 +97,16 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
+  }
+}
+// The backend repairs mandatory tags using the saved Key Vault configuration.
+// Its existing Reader access can inspect resources but cannot change their tags.
+// Grant tag-only write access to this resource group on installs and core updates;
+// the runbook still limits its writes to the three mandatory keys.
+module mandatoryTagRepairRole 'modules/mandatorytagrepairrole.bicep' = if (newDeployment || updateCoreResources) {
+  name: 'guardrails-mandatory-tag-repair-role'
+  params: {
+    automationAccountMSI: aa!.outputs.guardrailsAutomationAccountMSI
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -107,6 +120,7 @@ module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
     breakglassAccount2: breakglassAccount2
     logAnalyticsWorkspaceName: split(LAW.outputs.logAnalyticsResourceId,'/')[8]
     vaultUri: vaultUri
+    solution: solution
     releaseVersion: releaseVersion
     releaseDate: releaseDate
     deployKV: deployKV
@@ -118,6 +132,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     location: location
+    solution: solution
     releaseVersion: releaseVersion
     releaseDate: releaseDate
     rg: rg
@@ -143,6 +158,7 @@ module DCR 'modules/dcr.bicep' = if (deployLAW && (newDeployment || updateCoreRe
     #disable-next-line BCP318    
     logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
+    solution: solution
     releaseVersion: releaseVersion
     releaseDate: releaseDate
     newDeployment: newDeployment
@@ -172,6 +188,11 @@ module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployme
 module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
   name: 'guardrails-storageaccount'
   params: {
+    mandatoryTags: {
+      Solution: solution
+      ReleaseVersion: releaseVersion
+      ReleaseDate: releaseDate
+    }
     storageAccountName: storageAccountName
     location: location
     containername: containername
@@ -185,6 +206,11 @@ module alertNewVersion 'modules/alert.bicep' = {
     LAW
   ]
   params: {
+    mandatoryTags: {
+      Solution: solution
+      ReleaseVersion: releaseVersion
+      ReleaseDate: releaseDate
+    }
     alertRuleDescription: 'Alerts when a new version of the Guardrails Solution Accelerator is available'
     alertRuleName: 'GuardrailsNewVersion'
     alertRuleDisplayName: 'Guardrails New Version Available.'

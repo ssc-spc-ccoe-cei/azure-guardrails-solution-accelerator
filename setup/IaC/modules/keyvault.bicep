@@ -1,3 +1,5 @@
+// Include all three mandatory tags so normal deployments satisfy tag enforcement.
+param solution string
 param kvName string
 param location string
 param currentUserObjectId string = ''
@@ -21,6 +23,7 @@ resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = if (deplo
   name: kvName
   location: location
   tags: {
+    Solution: solution
     releaseVersion:releaseVersion
     releasedate: releaseDate
   }

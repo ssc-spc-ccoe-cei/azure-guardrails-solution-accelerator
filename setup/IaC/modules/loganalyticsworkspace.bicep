@@ -1,3 +1,5 @@
+// Include all three mandatory tags so normal deployments satisfy tag enforcement.
+param solution string
 param subscriptionId string
 param rg string
 param logAnalyticsWorkspaceName  string
@@ -23,6 +25,7 @@ resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-0
   name: logAnalyticsWorkspaceName
   location: location
   tags: {
+    Solution: solution
     releaseVersion:releaseVersion
     releasedate: releaseDate
   }
@@ -1357,6 +1360,11 @@ union
 }
 resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   location: location
+  tags: {
+    Solution: solution
+    ReleaseVersion: releaseVersion
+    ReleaseDate: releaseDate
+  }
   kind: 'shared'
   name: guid('guardrails')
   properties:{

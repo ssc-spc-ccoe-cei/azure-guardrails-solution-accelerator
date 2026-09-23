@@ -23,6 +23,68 @@ function Get-GSAAutomationVariable {
     }
 }
 
+function Repair-GSAMandatoryTags {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$RuntimeConfig)
+
+    # Key Vault is the source of truth for repair. Use only its three mandatory
+    # values, never the current resource tags or a newer release from GitHub.
+    # Older exported configurations may contain a single-object tags array.
+    $savedTags = @($RuntimeConfig.tagsTable)
+    if ($savedTags.Count -ne 1) { throw 'The saved configuration must contain one mandatory tag table.' }
+    $mandatoryTags = @{}
+    foreach ($key in @('Solution', 'ReleaseVersion', 'ReleaseDate')) {
+        $value = $savedTags[0].$key
+        if ($value -isnot [string] -or [string]::IsNullOrWhiteSpace($value)) {
+            throw "The saved configuration has no valid '$key' value; mandatory tags were not repaired."
+        }
+        $mandatoryTags[$key] = $value
+    }
+
+    # Keep repair inside the deployment's configured subscription and RG. In
+    # particular, do not discover targets by Solution: that tag may be missing.
+    $context = Get-AzContext -ErrorAction Stop
+    if ($context.Subscription.Id -ne $RuntimeConfig.subscriptionId -or
+        $context.Tenant.Id -ne $RuntimeConfig.tenantId -or
+        [string]::IsNullOrWhiteSpace($RuntimeConfig.resourceGroup)) {
+        throw 'The Azure context does not match the saved deployment scope; mandatory tags were not repaired.'
+    }
+    $resourceGroup = Get-AzResourceGroup -Name $RuntimeConfig.resourceGroup -ErrorAction Stop
+    # Get-AzResource also returns child resources such as Automation runbooks.
+    # Keep only two-part types (provider/resourceType), matching the policy's
+    # top-level scope and avoiding a repair/redeployment cycle on child tags.
+    $resources = @(Get-AzResource -ResourceGroupName $RuntimeConfig.resourceGroup -ErrorAction Stop |
+        Where-Object { @($_.ResourceType -split '/').Count -eq 2 })
+    $resourceIds = @($resourceGroup.ResourceId) + @($resources | Select-Object -ExpandProperty ResourceId)
+
+    foreach ($resourceId in ($resourceIds | Sort-Object -Unique)) {
+        try {
+            # Read immediately before comparing. Azure treats tag names without
+            # regard to case, but the saved values must match exactly.
+            $currentTags = @{} + ((Get-AzTag -ResourceId $resourceId -ErrorAction Stop).Properties.TagsProperty ?? @{})
+            $different = @($mandatoryTags.Keys | Where-Object { $currentTags[$_] -cne $mandatoryTags[$_] })
+            if ($different.Count -eq 0) { continue }
+
+            # Merge only the reserved keys so custom tags are neither replaced
+            # nor removed. Azure rejects unsupported resources or a full tag set;
+            # never delete client tags to make room for the mandatory values.
+            $updated = Update-AzTag -ResourceId $resourceId -Tag $mandatoryTags -Operation Merge -ErrorAction Stop
+            $updatedTags = @{} + ($updated.Properties.TagsProperty ?? @{})
+            foreach ($key in $mandatoryTags.Keys) {
+                if ($updatedTags[$key] -cne $mandatoryTags[$key]) {
+                    throw "Azure did not return the expected '$key' value after repair."
+                }
+            }
+            Write-Output "Restored mandatory tags on '$resourceId'."
+        }
+        catch {
+            # A deleted resource, denied write, or tag limit must not stop repair
+            # of other resources or the backend's unrelated maintenance work.
+            Write-Warning "Could not repair mandatory tags on '$resourceId': $_"
+        }
+    }
+}
+
 #Standard variables
 $WorkSpaceID=Get-GSAAutomationVariable -Name "WorkSpaceID" 
 $KeyVaultName=Get-GSAAutomationVariable -Name "KeyVaultName" 
@@ -54,6 +116,16 @@ try {
 }
 catch {
     throw "Failed to retrieve config json with secret name gsaConfigExportLatest from KeyVault '$KeyVaultName'. Error message: $_"
+}
+
+# Run repair after loading the saved deployment scope and before other backend
+# tasks can switch Azure context. A bad baseline or failed inventory read skips
+# repair for this run; the other backend tasks can still proceed.
+try {
+    Repair-GSAMandatoryTags -RuntimeConfig $RuntimeConfig -ErrorAction Stop
+}
+catch {
+    Write-Warning "Mandatory tag repair was skipped: $_"
 }
 
 $SubID = (Get-AzContext).Subscription.Id
