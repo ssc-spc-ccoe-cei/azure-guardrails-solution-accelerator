@@ -142,12 +142,13 @@ function Check-UserAccountGCEventLogging {
         $lock = Get-AzResourceLock -ResourceGroupName $resourceGroupName -ResourceName $lawName -ResourceType "Microsoft.OperationalInsights/workspaces" -ErrorAction SilentlyContinue
         $hasApprovedLock = $false
         if ($lock) {
+            # Retrieve the lock level for the Log Analytics Workspace, if multiple locks exists, consider putting them in comma seperated string for Comments
             $lvl = $lock.Properties.level
-            if ($lvl -eq 'ReadOnly' -or $lvl -eq 'CanNotDelete') {
+            if($lvl -contains 'ReadOnly' -or $lvl -contains 'CanNotDelete') {
                 $hasApprovedLock = $true
-                $Comments += $msgTable.lockLevelApproved -f $lawName, $lvl
+                $Comments += $msgTable.lockLevelApproved -f $lawName, $($lvl -join ', ')
             } else {
-                $Comments += $msgTable.lockLevelNotApproved -f $lawName, $lvl
+                $Comments += $msgTable.lockLevelNotApproved -f $lawName, $($lvl -join ', ')
             }
         }
 

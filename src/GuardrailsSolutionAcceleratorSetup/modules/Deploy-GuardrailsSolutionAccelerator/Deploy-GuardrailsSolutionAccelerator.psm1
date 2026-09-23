@@ -9,6 +9,8 @@ Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Deploy-GSACentralizedRepor
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Deploy-GSACentralizedReportingProviderComponents\Deploy-GSACentralizedReportingProviderComponents.psd1")
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Update-GSACoreResources\Update-GSACoreResources.psd1")
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Update-GSAAutomationRunbooks\Update-GSAAutomationRunbooks.psd1")
+# The deployment flow uses this helper to validate the named PowerShell 7.6 environment before updates and runbook starts.
+Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Manage-GSAAutomationRuntime\Manage-GSAAutomationRuntime.psd1")
 
 Function Invoke-GSARunbooks {
     param (
@@ -112,6 +114,12 @@ Function New-GSACoreResourceDeploymentParamObject {
         [hashtable]
         $config,
 
+        # Empty for component-only updates, which leave installed modules alone.
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [object[]]
+        $RuntimeModules,
+
         # alternate module url
         [Parameter(Mandatory = $false)]
         [string]
@@ -123,6 +131,11 @@ Function New-GSACoreResourceDeploymentParamObject {
         'AllowedLocationInitiativeId'           = $config.AllowedLocationInitiativeId
         'AllowedLocationPolicyId'               = $config.AllowedLocationPolicyId
         'automationAccountName'                 = $config['runtime']['autoMationAccountName']
+        # Give Bicep the fixed runtime settings that create or reuse the Guardrails PowerShell 7.6 environment.
+        'automationRuntimeAzVersion'            = $config['runtime']['automationRuntimeAzVersion']
+        'automationRuntimeEnvironmentName'      = $config['runtime']['automationRuntimeEnvironmentName']
+        'automationRuntimeVersion'              = $config['runtime']['automationRuntimeVersion']
+        'guardrailsRuntimeModules'              = $RuntimeModules
         'breakglassAccount1'                    = $config.firstBreakGlassAccountUPN
         'breakglassAccount2'                    = $config.secondBreakGlassAccountUPN    
         'CBSSubscriptionName'                   = $config.CBSSubscriptionName
@@ -340,6 +353,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
     }
     Else {
         # new deployment or update deployment
+        # Resolve and validate the release's module versions once before changing Azure resources.
+        # Bootstrap calls this installer too. Updates that leave modules alone do not need this check.
+        $runtimeModules = @()
+        if (($update.IsPresent -and $componentsToUpdate -contains 'GuardrailPowerShellModules') -or
+            (-not $update.IsPresent -and $newComponents -contains 'CoreComponents')) {
+            $runtimeModules = @(Get-GSAExpectedAutomationRuntimeModules)
+        }
+
         # confirms the provided values in config.json and appends runtime values, then returns the config object
         If ($PSCmdlet.ParameterSetName -in 'newDeployment-configString','updateDeployment-configString') {
             $config = Confirm-GSAConfigurationParameters -configString $configString -Verbose:$useVerbose
@@ -356,6 +377,12 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Error "Show-GSADeploymentSummary did not complete sucessfully. Check for errors."
         }
         Write-Verbose "Release version: $releaseVersion"
+
+        # Future updates reuse the named 7.6 environment created by a fresh installation.
+        # An older 7.2 installation does not have it, so this read-only check stops before resource changes begin.
+        if ($update.IsPresent) {
+            Assert-GSAAutomationRuntimeEnvironment -Config $config -Verbose:$useVerbose
+        }
 
         # set module install or update source URL
         $params = @{}
@@ -415,7 +442,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Write-Verbose "The release $releaseVersion contains the 'GR-Common.zip' file as an asset, continuing with `$moduleBaseURL of '$moduleBaseURL'"
         }
         
-        $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
+        $paramObject = New-GSACoreResourceDeploymentParamObject -config $config -RuntimeModules $runtimeModules @params -Verbose:$useVerbose
 
         # A fresh core install saves the config immediately after creating the core resources.
         # Update and non-core paths save it at the shared step below. This flag keeps the export
@@ -444,7 +471,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                     # The runbooks do not read the config while they are uploaded, but they require it
                     # when they run. At this point their first execution cannot race the secret export.
                     Write-Host "Adding runbooks to automation account..." -ForegroundColor Green
-                    Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                    Add-GSAAutomationRunbooks -config $config -RuntimeModules $runtimeModules -Verbose:$useVerbose
                 }
                 catch {
                     throw "Error while deploying core components, exporting config, or adding automation runbooks. $_"
@@ -538,6 +565,12 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 catch{
                     Write-Error "Error in updating GSA core resources. $_"
                 }
+            }
+
+            # A module update is not complete until Azure reports the requested versions as ready.
+            # Other component updates leave modules unchanged, including any one-off client hotfixes.
+            If ($componentsToUpdate -contains 'GuardrailPowerShellModules') {
+                Wait-GSAAutomationRuntimeModules -Config $config -ExpectedModules $runtimeModules
             }
             
             # update runbook definitions in AA
