@@ -109,6 +109,68 @@ function Test-GuardrailsMfaExclusion {
 
     return ($attributeProperty.Value -eq $true)
 }
+
+function Get-GuardrailsAgentUserIds {
+    <#
+    .SYNOPSIS
+        Returns the object IDs of Microsoft Entra Agent ID user accounts in the tenant.
+    .DESCRIPTION
+        Agents created by Microsoft services (Security Copilot and other agentic features) get an
+        agentUser account. These are a subtype of user, so they appear in /users alongside people,
+        are enabled, and never register MFA because no one can sign in to them interactively. They
+        are created dynamically, so a custom security attribute cannot be applied at creation time
+        and GCCloudGuardrails.ExcludeFromMFA cannot cover them.
+
+        The agentUser subtype cast returns only these accounts, so the tenant-wide user collection
+        query is left untouched. A tenant without the feature, or without permission to read the
+        cast, reports Succeeded = false and the caller evaluates every account exactly as before.
+    #>
+    [CmdletBinding()]
+    [OutputType([psobject])]
+    param ()
+
+    $agentUserIds = @{}
+
+    # A tenant without the Agent ID feature, or without the permission to read the cast,
+    # fails the same way on every attempt. Two short attempts absorb a transient blip
+    # without adding the default 15 seconds of retry delay to every collection run.
+    try {
+        $response = Invoke-GraphQueryEX -urlPath '/users/microsoft.graph.AgentUser?$select=id,userPrincipalName' -MaxRetries 2 -RetryDelaySeconds 2 -ErrorAction Stop
+    }
+    catch {
+        return [PSCustomObject]@{
+            Ids          = $agentUserIds
+            Count        = 0
+            Succeeded    = $false
+            ErrorMessage = $_.Exception.Message
+        }
+    }
+
+    if ($null -eq $response -or $null -eq $response.Content) {
+        $responseError = if ($response -and $response.Error) { [string]$response.Error } else { 'Microsoft Graph returned no content for the agentUser query.' }
+        return [PSCustomObject]@{
+            Ids          = $agentUserIds
+            Count        = 0
+            Succeeded    = $false
+            ErrorMessage = $responseError
+        }
+    }
+
+    foreach ($agentUser in @($response.Content.value)) {
+        $agentUserId = [string]$agentUser.id
+        if (-not [string]::IsNullOrWhiteSpace($agentUserId)) {
+            $agentUserIds[$agentUserId] = $true
+        }
+    }
+
+    return [PSCustomObject]@{
+        Ids          = $agentUserIds
+        Count        = $agentUserIds.Count
+        Succeeded    = $true
+        ErrorMessage = $null
+    }
+}
+
 function New-ConnectedStorageContext {
     [CmdletBinding()]
     param (
@@ -4953,6 +5015,19 @@ function FetchAllUserRawData {
     $bgUpnLookup = @{}
     $bgUpns | ForEach-Object { $bgUpnLookup[$_] = $true }
 
+    # Agent ID user accounts cannot register MFA and cannot be tagged with the exclusion
+    # attribute because Microsoft services create them on demand. Read them once here and
+    # flag the matching rows during the join. A failure leaves the lookup empty, which
+    # evaluates every account as before rather than silently passing the control.
+    $agentUserResult = Get-GuardrailsAgentUserIds
+    $agentUserIdLookup = $agentUserResult.Ids
+    if ($agentUserResult.Succeeded) {
+        Write-Verbose "Identified $($agentUserResult.Count) Agent ID user account(s) to exclude from MFA evaluation."
+    }
+    else {
+        Add-FunctionError -Message "Failed to enumerate Agent ID user accounts; agent accounts will be evaluated as regular users" -Exception ([System.Exception]::new([string]$agentUserResult.ErrorMessage)) -Category "GraphAPI" -ErrorList $ErrorList
+    }
+
     $registrationResult = $null
     $userSpoolResult = $null
     $pageNumber = 0
@@ -5172,6 +5247,7 @@ function FetchAllUserRawData {
                         $registration = $registrationLookup[$user.id]
                         $methods = if ($registration -and $registration.methodsRegistered) { @($registration.methodsRegistered) } else { @() }
                         $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
+                        $isAgentUser = $agentUserIdLookup.ContainsKey([string]$user.id)
 
                         # Reuse guest-tenant results across all buckets so the memory
                         # redesign does not repeat the same external-domain lookup.
@@ -5199,6 +5275,7 @@ function FetchAllUserRawData {
                             signInActivity = $user.signInActivity
                             customSecurityAttributes = $user.customSecurityAttributes
                             guardrailsExcludedMfa = $guardrailsExcluded
+                            guardrailsExcludedAgentUser = $isAgentUser
                             isMfaRegistered = if ($registration) { $registration.isMfaRegistered } else { $null }
                             isMfaCapable = if ($registration) { $registration.isMfaCapable } else { $null }
                             isSsprEnabled = if ($registration) { $registration.isSsprEnabled } else { $null }
