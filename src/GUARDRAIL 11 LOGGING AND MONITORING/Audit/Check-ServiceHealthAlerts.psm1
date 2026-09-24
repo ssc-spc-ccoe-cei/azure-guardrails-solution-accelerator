@@ -84,8 +84,8 @@ function Get-ActionGroupContactTokens {
 
     $ownerTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceivers) {
-                $_.ArmRoleReceivers | Where-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
                     $_.RoleName -eq 'Owner' -or $_.RoleId -eq $ownerRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -105,8 +105,8 @@ function Get-ActionGroupContactTokens {
 
     $monitoringRoleTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceivers) {
-                $_.ArmRoleReceivers | Where-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
                     $_.RoleId -eq $monitoringContributorRoleId -or $_.RoleId -eq $monitoringReaderRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
