@@ -23,6 +23,33 @@ function Get-SubscriptionOwnerCount {
     }
 }
 
+function Get-SubscriptionMonitoringRoleCount {
+    <#
+    .SYNOPSIS
+        Returns the number of Monitoring role assignments (Contributor or Reader) assigned to the current subscription.
+    .DESCRIPTION
+        Queries Azure RBAC to count how many principals have the Monitoring roles
+        (Contributor or Reader) at the subscription scope. This is used to determine how many contacts
+        the "Monitoring" notification target actually represents.
+    #>
+    [CmdletBinding()]
+    param()
+
+    # Azure built-in Monitoring role IDs (constant across all Azure tenants)
+    $monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
+    $monitoringReaderRoleId = '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
+
+    try {
+        $monitoringAssignments = Get-AzRoleAssignment -RoleDefinitionId $monitoringContributorRoleId -ErrorAction Stop | Where-Object { $_.ObjectType -ne 'ServicePrincipal' }
+        $monitoringAssignments += Get-AzRoleAssignment -RoleDefinitionId $monitoringReaderRoleId -ErrorAction Stop | Where-Object { $_.ObjectType -ne 'ServicePrincipal' }
+        return @($monitoringAssignments).Count
+    }
+    catch {
+        Write-Output "Failed to retrieve subscription monitoring role assignments: $_"
+        return 0
+    }
+}
+
 function Get-ActionGroupContactTokens {
     <#
     .SYNOPSIS
@@ -57,8 +84,8 @@ function Get-ActionGroupContactTokens {
 
     $ownerTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceiver) {
-                $_.ArmRoleReceiver | Where-Object {
+            if ($_.ArmRoleReceivers) {
+                $_.ArmRoleReceivers | Where-Object {
                     $_.RoleName -eq 'Owner' -or $_.RoleId -eq $ownerRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -78,8 +105,8 @@ function Get-ActionGroupContactTokens {
 
     $monitoringRoleTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceiver) {
-                $_.ArmRoleReceiver | Where-Object {
+            if ($_.ArmRoleReceivers) {
+                $_.ArmRoleReceivers | Where-Object {
                     $_.RoleId -eq $monitoringContributorRoleId -or $_.RoleId -eq $monitoringReaderRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -94,7 +121,7 @@ function Get-ActionGroupContactTokens {
     ) | Sort-Object -Unique
 
     # Return array as single object (leading comma prevents PowerShell from unrolling the array)
-    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + ($monitoringRoleTokens | ForEach-Object { "Role::" + $_ }))
+    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + ($monitoringRoleTokens | ForEach-Object { "MonitoringRole::" + $_ }))
 }
 
 function Validate-ActionGroups {
@@ -103,11 +130,11 @@ function Validate-ActionGroups {
         Validates action groups associated with service health alerts.
     .DESCRIPTION
         Evaluates each action group's notification contacts and returns aggregate
-        compliance results. When subscription owners are configured as notification
+        compliance results. When subscription owners and monitoring roles are configured as notification
         targets, the effective contact count depends on the actual number of owners
         assigned to the subscription:
-        - 1 owner assigned -> counts as 1 contact
-        - 2 or more owners assigned -> counts as 2 contacts
+        - 1 owner or monitoring role assigned -> counts as 1 contact
+        - 2 or more owners or monitoring roles assigned -> counts as 2 contacts
         Returns a PSCustomObject containing unique contacts, effective contact count,
         comments, and any errors encountered during validation.
     #>
@@ -122,8 +149,8 @@ function Validate-ActionGroups {
     # Evaluate each action group's contacts and surface aggregate results back to the caller.
     # When subscription owners are used as notification targets, the effective contact count
     # depends on the actual number of owners assigned to the subscription:
-    #   - 1 owner assigned -> counts as 1 contact
-    #   - 2 or more owners assigned -> counts as 2 contacts
+    #   - 1 owner or monitoring role assigned -> counts as 1 contact
+    #   - 2 or more owners or monitoring roles assigned -> counts as 2 contacts
 
     # Retrieve action group IDs from alerts
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
@@ -178,10 +205,10 @@ function Validate-ActionGroups {
     }
     
 
-    # Separate owner tokens from other contact tokens (e.g., email addresses)
-    # Monitoring Contributor / Monitoring Reader ARM role receivers
+    # Separate owner tokens from other contact tokens (e.g., email addresses, Monitoring Contributor/Reader ARM role receivers
     $ownerTokens = @($uniqueContacts | Where-Object { $_ -like 'Owner::*' })
-    $nonOwnerTokens = @($uniqueContacts | Where-Object { $_ -notlike 'Owner::*' })
+    $monitoringRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringRole::*' })
+    $nonOwnerTokens = @($uniqueContacts | Where-Object { {$_ -notlike 'Owner::*' } -and $_ -notlike 'MonitoringRole::*' })
 
     # Calculate effective contact count
     # Non-owner contacts (emails, Monitoring Contributor/Reader role receivers, etc.) count as 1 each
@@ -204,6 +231,27 @@ function Validate-ActionGroups {
             $effectiveContactCount += 2
         }
     }
+
+    # If subscription monitoring roles are being used as notification targets, check actual monitoring role count  
+    if ($monitoringRoleTokens.Count -gt 0) {
+        
+        $monitoringRoleCount = Get-SubscriptionMonitoringRoleCount
+        
+        if ($monitoringRoleCount -eq 0) {
+            # No monitoring roles found
+            $errors.Add("No subscription monitoring roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
+        }
+        elseif ($monitoringRoleCount -eq 1) {
+            # Only 1 monitoring role assigned -> counts as 1 contact
+            $effectiveContactCount += 1
+        }
+        else {
+            # 2 or more monitoring roles assigned -> counts as 2 contacts
+            $effectiveContactCount += 2
+        }
+
+    }
+
 
     return [PSCustomObject]@{
         UniqueContacts = @($uniqueContacts)
@@ -386,8 +434,8 @@ function Get-ServiceHealthAlerts {
                     }
 
                     # Use EffectiveContactCount which accounts for subscription owner count logic:
-                    # - If owners are used and only 1 owner is assigned -> counts as 1 contact
-                    # - If owners are used and 2+ owners are assigned -> counts as 2 contacts
+                    # - If owners or monitoring roles are used and only 1 owner/monitoring role is assigned -> counts as 1 contact
+                    # - If owners/monitoring roles are used and 2+ owners/monitoring roles are assigned -> counts as 2 contacts
                     $totalContacts = $evaluation.EffectiveContactCount
                     if ($totalContacts -ge 2) {
                         $isCompliant = $true
