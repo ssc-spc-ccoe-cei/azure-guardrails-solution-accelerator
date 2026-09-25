@@ -279,7 +279,7 @@ function Check-ApplicationGatewayCertificateValidity {
                             continue
                         }
                         try {
-                            $keyVaultCert = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -ErrorAction Stop
+                            $keyVaultCert = $kvAccessResult.Secret
                             
                             if ($keyVaultCert.SecretValue) {
                                 # Convert SecureString to plain text first, then to certificate
@@ -492,16 +492,16 @@ function Test-KeyVaultAccess {
         [Parameter(Mandatory=$true)]
         [string]$SecretName
     )
-    $result = @{ Success = $false; Error = $null }
+    $result = @{ Success = $false; Error = $null; Secret = $null}
     try {
         $secret = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $SecretName -ErrorAction Stop
         $result.Success = $true
+        $result.Secret = $secret
     } catch {
         $result.Error = $_.Exception.Message
     }
     return $result
 }
-
 function Get-LeafCertificate {
     <#
     .SYNOPSIS
