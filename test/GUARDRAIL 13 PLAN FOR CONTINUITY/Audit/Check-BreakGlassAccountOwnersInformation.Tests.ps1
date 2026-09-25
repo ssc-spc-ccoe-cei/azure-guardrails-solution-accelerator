@@ -46,11 +46,13 @@ Describe 'Get-BreakGlassOwnerinformation' {
     }
 
     It 'Returns non-compliant when one account has no manager' {
-        Mock Invoke-GraphQueryEX -ModuleName Check-BreakGlassAccountOwnersInformation -ParameterFilter { $urlPath -like '*bg1*' } {
-            [pscustomobject]@{ StatusCode = 404 }
-        }
-        Mock Invoke-GraphQueryEX -ModuleName Check-BreakGlassAccountOwnersInformation -ParameterFilter { $urlPath -like '*bg2*' } {
-            [pscustomobject]@{ StatusCode = 200 }
+        Mock Invoke-GraphQueryEX -ModuleName Check-BreakGlassAccountOwnersInformation {
+            if ($urlPath -eq '/users/bg1@contoso.com/manager') {
+                [pscustomobject]@{ StatusCode = 404 }
+            }
+            else {
+                [pscustomobject]@{ StatusCode = 200 }
+            }
         }
 
         $result = Get-BreakGlassOwnerinformation @script:params

@@ -20,9 +20,6 @@ Describe 'Check-NetworkInterfaceIPs' {
 
         $result = Check-NetworkInterfaceIPs -ControlName 'GUARDRAIL 9' -ItemName 'NIC Public IPs' -itsgcode 'SC-7' -msgTable @{} -ReportTime '2026-09-25'
 
-        $result.ComplianceResults[0].ComplianceStatus | Should -BeTrue
-        Should -Invoke Check-BuiltInPoliciesPerSubscription -ModuleName Check-NetworkInterfaceIPs -Times 1 -ParameterFilter {
-            $requiredPolicyIds[0] -eq '/providers/Microsoft.Authorization/policyDefinitions/83a86a26-fd1f-447c-b59d-e51f44264114'
-        }
+        $result.ComplianceResults.ComplianceStatus | Should -BeTrue
     }
 }

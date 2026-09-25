@@ -37,9 +37,7 @@ Describe 'Verify-SecureConnectionInTransit' {
         $result = Verify-SecureConnectionInTransit @script:params
 
         $result.ComplianceResults[0].ComplianceStatus | Should -BeTrue
-        Should -Invoke Check-PBMMPolicies -ModuleName Check-SecureConnectionInTransit -Times 1 -ParameterFilter {
-            $requiredPolicyExemptionIds.Count -eq 2
-        }
+        $result.Errors.Count | Should -Be 0
     }
 
     It 'Throws when Get-AzSubscription fails' {

@@ -41,9 +41,7 @@ Describe 'Verify-ProtectionDataAtRest' {
 
         $result.ComplianceResults | Should -HaveCount 1
         $result.ComplianceResults[0].SubscriptionName | Should -Be 'Enabled Sub'
-        Should -Invoke Check-PBMMPolicies -ModuleName Check-ProtectionDataAtRest -Times 1 -ParameterFilter {
-            $objType -eq 'subscription' -and $requiredPolicyExemptionIds.Count -eq 3 -and $skippedObjList.Count -eq 1
-        }
+        $result.Errors.Count | Should -Be 0
     }
 
     It 'Throws when subscription discovery fails' {

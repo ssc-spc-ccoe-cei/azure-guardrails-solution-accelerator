@@ -41,7 +41,7 @@ Describe 'Get-BreakGlassAccountLicense' {
             [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = '2' } } }
         }
         Mock Invoke-GraphQueryEX -ModuleName Check-BreakGlassAccountIdentityProtectionLicense -ParameterFilter { $urlPath -like '*/licenseDetails' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = @([pscustomobject]@{ servicePlans = @([pscustomobject]@{ ServicePlanName = 'AAD_PREMIUM_P2' }) }) } }
+            [pscustomobject]@{ Content = [pscustomobject]@{ value = ,([pscustomobject]@{ servicePlans = @([pscustomobject]@{ ServicePlanName = 'AAD_PREMIUM_P2' }) }) } }
         }
 
         $result = Get-BreakGlassAccountLicense @script:params

@@ -43,23 +43,15 @@ Describe 'Test-BreakGlassAccounts' {
 
     It 'Returns compliant when both accounts exist and signed in recently' {
         $recentDate = [datetimeoffset]::UtcNow.AddDays(-30).ToString('o')
-        Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount -ParameterFilter { $urlPath -eq '/users/bg1@contoso.com?$select=userPrincipalName,id,userType' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-1' } } }
-        }
-        Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount -ParameterFilter { $urlPath -eq '/users/bg2@contoso.com?$select=userPrincipalName,id,userType' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-2' } } }
-        }
-        Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount -ParameterFilter { $urlPath -eq '/users/bg1@contoso.com?$select=id' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-1' } } }
-        }
-        Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount -ParameterFilter { $urlPath -eq '/users/bg2@contoso.com?$select=id' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-2' } } }
-        }
-        Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount -ParameterFilter { $urlPath -eq '/users/id-1?$select=userPrincipalName,signInActivity' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ signInActivity = [pscustomobject]@{ lastSuccessfulSignInDateTime = $recentDate } } } }
-        }
-        Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount -ParameterFilter { $urlPath -eq '/users/id-2?$select=userPrincipalName,signInActivity' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ signInActivity = [pscustomobject]@{ lastSuccessfulSignInDateTime = $recentDate } } } }
+        Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount {
+            switch ($urlPath) {
+                '/users/bg1@contoso.com?$select=userPrincipalName,id,userType' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-1' } } } ; break }
+                '/users/bg2@contoso.com?$select=userPrincipalName,id,userType' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-2' } } } ; break }
+                '/users/bg1@contoso.com?$select=id' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-1' } } } ; break }
+                '/users/bg2@contoso.com?$select=id' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-2' } } } ; break }
+                '/users/id-1?$select=userPrincipalName,signInActivity' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ signInActivity = [pscustomobject]@{ lastSuccessfulSignInDateTime = $recentDate } } } } ; break }
+                '/users/id-2?$select=userPrincipalName,signInActivity' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ signInActivity = [pscustomobject]@{ lastSuccessfulSignInDateTime = $recentDate } } } } ; break }
+            }
         }
 
         $result = Test-BreakGlassAccounts @script:baseParams -FirstBreakGlassUPN 'bg1@contoso.com' -SecondBreakGlassUPN 'bg2@contoso.com'

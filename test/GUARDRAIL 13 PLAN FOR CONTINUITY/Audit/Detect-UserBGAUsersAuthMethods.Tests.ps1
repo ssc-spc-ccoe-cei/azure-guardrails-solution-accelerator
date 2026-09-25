@@ -40,11 +40,13 @@ Describe 'Get-UserAuthenticationMethod' {
     }
 
     It 'Returns non-compliant when an MFA method is present' {
-        Mock Invoke-GraphQueryEX -ModuleName Detect-UserBGAUsersAuthMethods -ParameterFilter { $urlPath -like '*bg1*' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = @([pscustomobject]@{ '@odata.type' = '#microsoft.graph.phoneAuthenticationMethod' }) } }
-        }
-        Mock Invoke-GraphQueryEX -ModuleName Detect-UserBGAUsersAuthMethods -ParameterFilter { $urlPath -like '*bg2*' } {
-            [pscustomobject]@{ Content = [pscustomobject]@{ value = @() } }
+        Mock Invoke-GraphQueryEX -ModuleName Detect-UserBGAUsersAuthMethods {
+            if ($urlPath -like '*bg1*') {
+                [pscustomobject]@{ Content = [pscustomobject]@{ value = @([pscustomobject]@{ '@odata.type' = '#microsoft.graph.phoneAuthenticationMethod' }) } }
+            }
+            else {
+                [pscustomobject]@{ Content = [pscustomobject]@{ value = @() } }
+            }
         }
 
         $result = Get-UserAuthenticationMethod @script:params

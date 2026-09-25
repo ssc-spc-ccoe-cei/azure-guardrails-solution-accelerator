@@ -37,7 +37,7 @@ Describe 'Get-LeafCertificate and Test-CertificateAuthorityApproved' {
             [System.Security.Cryptography.HashAlgorithmName]::SHA256,
             [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
         )
-        $rootCert = $rootRequest.CreateSelfSigned([datetimeoffset]::UtcNow.AddDays(-1), [datetimeoffset]::UtcNow.AddDays(30))
+        $rootCert = $rootRequest.CreateSelfSigned([datetimeoffset]::UtcNow.AddDays(-1), [datetimeoffset]::UtcNow.AddDays(365))
 
         $leafRequest = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
             'CN=Leaf Cert',
@@ -46,7 +46,7 @@ Describe 'Get-LeafCertificate and Test-CertificateAuthorityApproved' {
             [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
         )
         $serial = [byte[]](1,2,3,4)
-        $script:leafCert = $leafRequest.Create($rootCert, [datetimeoffset]::UtcNow.AddDays(-1), [datetimeoffset]::UtcNow.AddDays(30), $serial)
+        $script:leafCert = $leafRequest.Create($rootCert, [datetimeoffset]::UtcNow.AddDays(-1), [datetimeoffset]::UtcNow.AddDays(90), $serial)
         $script:certCollection = @($script:leafCert, $rootCert)
     }
 

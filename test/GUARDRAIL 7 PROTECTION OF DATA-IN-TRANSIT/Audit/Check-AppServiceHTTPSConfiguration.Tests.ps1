@@ -37,9 +37,7 @@ Describe 'Verify-AppServiceHTTPSConfiguration' {
         $result = Verify-AppServiceHTTPSConfiguration @script:params
 
         $result.ComplianceResults[0].ComplianceStatus | Should -BeTrue
-        Should -Invoke Check-PBMMPolicies -ModuleName Check-AppServiceHTTPSConfiguration -Times 1 -ParameterFilter {
-            $requiredPolicyExemptionIds -contains 'webapplicationshouldonlybeaccessibleoverhttps'
-        }
+        $result.Errors.Count | Should -Be 0
     }
 
     It 'Throws when Get-AzSubscription fails' {

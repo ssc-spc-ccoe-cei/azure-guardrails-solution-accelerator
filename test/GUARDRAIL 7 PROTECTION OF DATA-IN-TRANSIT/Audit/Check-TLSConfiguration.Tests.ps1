@@ -30,7 +30,7 @@ Describe 'Verify-TLSConfiguration' {
 
     It 'Maps app service items to four policy ids' {
         Mock Check-BuiltInPoliciesWithResourceGraph -ModuleName Check-TLSConfiguration {
-            @([pscustomobject]@{ ComplianceStatus = $true })
+            ,@([pscustomobject]@{ ComplianceStatus = $true })
         }
 
         $result = Verify-TLSConfiguration @script:baseParams -ItemName $script:msgTable.appServiceTLSConfig
@@ -43,7 +43,7 @@ Describe 'Verify-TLSConfiguration' {
 
     It 'Maps function app items to two policy ids' {
         Mock Check-BuiltInPoliciesWithResourceGraph -ModuleName Check-TLSConfiguration {
-            @([pscustomobject]@{ ComplianceStatus = $true })
+            ,@([pscustomobject]@{ ComplianceStatus = $true })
         }
 
         [void](Verify-TLSConfiguration @script:baseParams -ItemName $script:msgTable.functionAppTLSConfig)

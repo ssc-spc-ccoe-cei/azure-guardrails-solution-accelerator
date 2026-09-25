@@ -3,12 +3,14 @@ BeforeAll {
     $global:ErrorActionPreference = 'Continue'
 
     function global:Add-ProfileInformation { param($Result) return $Result }
+    function global:Get-AzMarketplacePrivateStore { }
 
     Import-Module (Join-Path $PSScriptRoot '..\..\..\src\GUARDRAIL 12 CONFIGURATION OF CLOUD MARKETPLACES\Audit\Check-PrivateMarketPlace.psm1') -Force
 }
 
 AfterAll {
     Remove-Item Function:\Add-ProfileInformation -ErrorAction SilentlyContinue
+    Remove-Item Function:\Get-AzMarketplacePrivateStore -ErrorAction SilentlyContinue
     $global:ErrorActionPreference = $script:originalEAP
 }
 
