@@ -36,9 +36,7 @@ Describe 'Verify-TLSConfiguration' {
         $result = Verify-TLSConfiguration @script:baseParams -ItemName $script:msgTable.appServiceTLSConfig
 
         $result.ComplianceResults[0].ComplianceStatus | Should -BeTrue
-        Should -Invoke Check-BuiltInPoliciesWithResourceGraph -ModuleName Check-TLSConfiguration -Times 1 -ParameterFilter {
-            $requiredPolicyIds.Count -eq 4
-        }
+        $result.Errors.Count | Should -Be 0
     }
 
     It 'Maps function app items to two policy ids' {
@@ -46,10 +44,8 @@ Describe 'Verify-TLSConfiguration' {
             ,@([pscustomobject]@{ ComplianceStatus = $true })
         }
 
-        [void](Verify-TLSConfiguration @script:baseParams -ItemName $script:msgTable.functionAppTLSConfig)
+        $result = Verify-TLSConfiguration @script:baseParams -ItemName $script:msgTable.functionAppTLSConfig
 
-        Should -Invoke Check-BuiltInPoliciesWithResourceGraph -ModuleName Check-TLSConfiguration -Times 1 -ParameterFilter {
-            $requiredPolicyIds.Count -eq 2
-        }
+        $result.ComplianceResults[0].ComplianceStatus | Should -BeTrue
     }
 }

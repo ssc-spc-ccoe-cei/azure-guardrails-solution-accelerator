@@ -41,6 +41,7 @@ Describe 'Get-UserAuthenticationMethod' {
 
     It 'Returns non-compliant when an MFA method is present' {
         Mock Invoke-GraphQueryEX -ModuleName Detect-UserBGAUsersAuthMethods {
+            param($urlPath)
             if ($urlPath -like '*bg1*') {
                 [pscustomobject]@{ Content = [pscustomobject]@{ value = @([pscustomobject]@{ '@odata.type' = '#microsoft.graph.phoneAuthenticationMethod' }) } }
             }

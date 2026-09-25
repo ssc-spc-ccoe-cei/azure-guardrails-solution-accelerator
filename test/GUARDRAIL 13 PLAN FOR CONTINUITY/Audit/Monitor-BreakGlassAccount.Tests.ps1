@@ -44,6 +44,7 @@ Describe 'Test-BreakGlassAccounts' {
     It 'Returns compliant when both accounts exist and signed in recently' {
         $recentDate = [datetimeoffset]::UtcNow.AddDays(-30).ToString('o')
         Mock Invoke-GraphQueryEX -ModuleName Monitor-BreakGlassAccount {
+            param($urlPath)
             switch ($urlPath) {
                 '/users/bg1@contoso.com?$select=userPrincipalName,id,userType' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-1' } } } ; break }
                 '/users/bg2@contoso.com?$select=userPrincipalName,id,userType' { [pscustomobject]@{ Content = [pscustomobject]@{ value = [pscustomobject]@{ id = 'id-2' } } } ; break }

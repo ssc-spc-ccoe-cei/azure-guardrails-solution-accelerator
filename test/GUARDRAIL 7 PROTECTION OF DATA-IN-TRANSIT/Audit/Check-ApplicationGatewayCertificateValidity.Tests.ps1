@@ -37,6 +37,8 @@ Describe 'Get-LeafCertificate and Test-CertificateAuthorityApproved' {
             [System.Security.Cryptography.HashAlgorithmName]::SHA256,
             [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
         )
+        $rootRequest.CertificateExtensions.Add([System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension]::new($true, $false, 0, $true))
+        $rootRequest.CertificateExtensions.Add([System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension]::new($rootRequest.PublicKey, $false))
         $rootCert = $rootRequest.CreateSelfSigned([datetimeoffset]::UtcNow.AddDays(-1), [datetimeoffset]::UtcNow.AddDays(365))
 
         $leafRequest = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
