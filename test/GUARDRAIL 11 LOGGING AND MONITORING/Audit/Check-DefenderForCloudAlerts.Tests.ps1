@@ -70,7 +70,11 @@ Describe 'Get-DefenderForCloudAlerts' {
         Mock Get-ResourceCountsFromARG -ModuleName Check-DefenderForCloudAlerts { @{} }
         Mock Set-AzContext -ModuleName Check-DefenderForCloudAlerts { }
         Mock Get-AzContext -ModuleName Check-DefenderForCloudAlerts { [pscustomobject]@{ Subscription = [pscustomobject]@{ TenantId = 'tenant-1' } } }
-        Mock Get-AzAccessToken -ModuleName Check-DefenderForCloudAlerts { [pscustomobject]@{ Token = (ConvertTo-SecureString 'token' -AsPlainText -Force) } }
+        Mock Get-AzAccessToken -ModuleName Check-DefenderForCloudAlerts {
+            $secureToken = New-Object System.Security.SecureString
+            'token'.ToCharArray() | ForEach-Object { $secureToken.AppendChar($_) }
+            [pscustomobject]@{ Token = $secureToken }
+        }
         Mock Invoke-RestMethod -ModuleName Check-DefenderForCloudAlerts -ParameterFilter { $Uri -like '*/providers/Microsoft.Security?*' } { [pscustomobject]@{ registrationState = 'Unregistered' } }
 
         $result = Get-DefenderForCloudAlerts -ControlName 'GUARDRAIL 11' -ItemName 'Defender Alerts' -itsgcode 'SI-4' -msgTable $msgTable -ReportTime '2026-09-25'
