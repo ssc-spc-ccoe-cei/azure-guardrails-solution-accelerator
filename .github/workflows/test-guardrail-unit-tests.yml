@@ -16,6 +16,9 @@ on:
       - 'src/GUARDRAIL */**'
       - 'test/GUARDRAIL */**'
 
+permissions:
+  contents: read
+
 jobs:
   pester-tests:
     runs-on: windows-latest
