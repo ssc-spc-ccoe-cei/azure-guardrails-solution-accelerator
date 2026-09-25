@@ -1,11 +1,9 @@
-// Include all three mandatory tags so normal deployments satisfy tag enforcement.
-param solution string
+// Use the trusted tag set passed by the root deployment.
+param mandatoryTags object
 param kvName string
 param location string
 param currentUserObjectId string = ''
 param automationAccountMSI string = ''
-param releaseVersion string
-param releaseDate string
 param vaultUri string
 param tenantId string
 param deployKV bool
@@ -22,11 +20,7 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10
 resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = if (deployKV) {
   name: kvName
   location: location
-  tags: {
-    Solution: solution
-    releaseVersion:releaseVersion
-    releasedate: releaseDate
-  }
+  tags: mandatoryTags
   properties: {
     sku: {
       family: 'A'

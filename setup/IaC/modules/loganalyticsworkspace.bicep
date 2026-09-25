@@ -1,11 +1,9 @@
-// Include all three mandatory tags so normal deployments satisfy tag enforcement.
-param solution string
+// Use one trusted tag set for the workspace and workbook.
+param mandatoryTags object
 param subscriptionId string
 param rg string
 param logAnalyticsWorkspaceName  string
 param location  string
-param releaseVersion  string
-param releaseDate string
 param deployLAW bool
 param GRDocsBaseUrl string
 param newDeployment bool = true
@@ -24,11 +22,7 @@ var wbConfig='${wbWithMfaGrace}${wbConfig2}'
 resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: logAnalyticsWorkspaceName
   location: location
-  tags: {
-    Solution: solution
-    releaseVersion:releaseVersion
-    releasedate: releaseDate
-  }
+  tags: mandatoryTags
   properties: {
     retentionInDays:90
     sku: {
@@ -1377,17 +1371,13 @@ union
 }
 resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   location: location
-  tags: {
-    Solution: solution
-    ReleaseVersion: releaseVersion
-    ReleaseDate: releaseDate
-  }
+  tags: mandatoryTags
   kind: 'shared'
   name: guid('guardrails')
   properties:{
     displayName: 'Guardrails'
     serializedData: wbConfig
-    version: releaseVersion
+    version: mandatoryTags.ReleaseVersion
     category: 'workbook'
     sourceId: guardrailsLogAnalytics.id
   }

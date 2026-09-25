@@ -1,5 +1,5 @@
-// Include all three mandatory tags so normal deployments satisfy tag enforcement.
-param solution string
+// The account and runtime environment use the trusted tag set from the root deployment.
+param mandatoryTags object
 param AllowedLocationPolicyId string
 param AllowedLocationInitiativeId string
 param automationAccountName string
@@ -23,8 +23,6 @@ param Locale string
 param location string
 param newDeployment bool = true
 param PBMMPolicyID string
-param releaseDate string
-param releaseVersion string
 param SecurityLAWResourceId string
 param SSCReadOnlyServicePrincipalNameAPPID string
 param TenantDomainUPN string
@@ -41,11 +39,7 @@ param mfaGracePeriod string
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
   location: location
-  tags: {
-    Solution: solution
-    releaseVersion:releaseVersion
-    releasedate: releaseDate
-  }
+  tags: mandatoryTags
   identity: {
      type: 'SystemAssigned'
   }
@@ -66,10 +60,7 @@ resource guardrailsAC 'Microsoft.Automation/automationAccounts@2023-11-01' = if 
   resource guardrailsRuntimeEnvironment 'runtimeEnvironments@2024-10-23' = if (newDeployment || updatePSModules) {
     name: automationRuntimeEnvironmentName
     location: location
-    tags: {
-      releaseVersion: releaseVersion
-      releasedate: releaseDate
-    }
+    tags: mandatoryTags
     properties: {
       description: 'Guardrails PowerShell runtime environment'
       runtime: {
