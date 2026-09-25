@@ -143,7 +143,7 @@ Describe 'Get-AdminAccess' {
             $result.ComplianceResults.ComplianceStatus | Should -BeFalse
             $result.ComplianceResults.Comments | Should -Be $script:msgTable.noCompliantPoliciesAdmin
             $result.Errors.Count | Should -Be 1
-            $result.Errors[0] | Should -BeLike '*Failed to call Microsoft Graph REST API*'
+            ([string]$result.Errors) | Should -BeLike '*Failed to call Microsoft Graph REST API*'
         }
     }
 

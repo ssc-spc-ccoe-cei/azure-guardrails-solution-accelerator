@@ -114,7 +114,7 @@ Describe 'Get-DepartmentServicePrincipalNameSecrets' {
             $result = Get-DepartmentServicePrincipalNameSecrets @script:commonParams
 
             $result.Errors.Count | Should -Be 1
-            $result.Errors[0] | Should -BeLike '*Failed to retrieve Service Principal*'
+            ([string]$result.Errors) | Should -BeLike '*Failed to retrieve Service Principal*'
             $result.ComplianceResults.Comments | Should -Be $script:msgTable.NoSPN
         }
     }
