@@ -33,8 +33,9 @@
 .PARAMETER source
     GitHub branch, tag, or commit to download and run.
 .PARAMETER tagsFile
-    Optional path to a tags.json file to use instead of the downloaded ref's default setup/tags.json.
-    This is the bootstrap equivalent of manually replacing setup/tags.json before running Deploy-GuardrailsSolutionAccelerator directly.
+    Optional client tags file. When the selected installer supports tag protection, only custom tags are applied
+    from this file; Solution, ReleaseVersion, and ReleaseDate come from setup/tags.json on GitHub at -source.
+    Older installers retain their original tag handling.
 .PARAMETER update
     Update an existing deployment.
 .PARAMETER newComponents
@@ -55,14 +56,14 @@
     # Account PowerShell modules, runbooks, Lighthouse reporting support, and Defender for Cloud support.
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -newComponents CoreComponents,CentralizedCustomerReportingSupport,CentralizedCustomerDefenderForCloudSupport
 .EXAMPLE
-    # Replace the downloaded setup/tags.json with a client-specific tags file before a fresh install.
+    # Supply custom tags from a client-specific file before a fresh install.
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -tagsFile ./tags.json
 .EXAMPLE
     # Update the full default update set: workbook content, Guardrails PowerShell modules,
     # Automation Account runbooks, and core template-driven resources.
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -update
 .EXAMPLE
-    # Replace the downloaded setup/tags.json with a client-specific tags file before an update.
+    # Supply custom tags from a client-specific file before an update.
     ./Deploy-Bootstrap.ps1 -keyVault guardrails-12345 -source main -update -tagsFile ./tags.json
 .EXAMPLE
     # Update only the Guardrails PowerShell modules in the Automation Account using a local config file.
@@ -263,7 +264,8 @@ function Test-BootstrapSource {
     $modulesUrl
 }
 
-# Replace the downloaded setup/tags.json file with an operator-supplied one.
+# Copy the supplied tags file into the downloaded source so its installer can read
+# it from the usual location. The selected installer determines how tags are applied.
 function Set-BootstrapDownloadedTagsFile {
     param(
         [Parameter(Mandatory = $true)]
@@ -445,7 +447,9 @@ try {
         $commonCommandParams.Debug = $true
     }
 
-    # Start building the deploy command input with the module URL, then add the rest.
+    # The official module URL includes -source. Installers with tag protection read
+    # that ref from the URL to fetch mandatory tags. Pass only the existing URL
+    # parameter so older installers, which lack -gitHubSourceRef, still accept the call.
     $deployParams = @{
         alternatePSModulesURL = $moduleBaseUrl
     }

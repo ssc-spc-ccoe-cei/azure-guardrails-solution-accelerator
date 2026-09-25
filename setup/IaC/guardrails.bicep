@@ -27,6 +27,8 @@ param location string = 'canadacentral'
 param logAnalyticsWorkspaceName string = 'guardrails-LAW'
 param newDeployment bool = true
 param PBMMPolicyID string = '4c4a5f27-de81-430b-b4e5-9cbd50595a87'
+// Mandatory values are resolved from the selected official release by the installer.
+param solution string
 param releaseDate string 
 param releaseVersion string
 param SecurityLAWResourceId string
@@ -45,6 +47,13 @@ param breakglassAccount1 string = ''
 param breakglassAccount2 string = ''
 param mfaGracePeriod string
 var containername = 'guardrailsstorage'
+// Define the trusted tag set once for resources that receive these tags.
+// Policy and backend repair still target only the RG and top-level resources.
+var mandatoryTags = {
+  Solution: solution
+  ReleaseVersion: releaseVersion
+  ReleaseDate: releaseDate
+}
 // var GRDocsBaseUrl='https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/tree/main/docs'
 var GRDocsBaseUrl='https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
@@ -84,8 +93,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     location: location
     newDeployment: newDeployment
     PBMMPolicyID: PBMMPolicyID
-    releaseDate: releaseDate
-    releaseVersion: releaseVersion
+    mandatoryTags: mandatoryTags
     SecurityLAWResourceId: SecurityLAWResourceId
     SSCReadOnlyServicePrincipalNameAPPID:SSCReadOnlyServicePrincipalNameAPPID
     TenantDomainUPN: TenantDomainUPN
@@ -94,6 +102,16 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
     cloudUsageProfiles: cloudUsageProfiles
+  }
+}
+// The backend repairs mandatory tags using the saved Key Vault configuration.
+// Its existing Reader access can inspect resources but cannot change their tags.
+// Grant tag-only write access to this resource group on installs and core updates;
+// the runbook still limits its writes to the three mandatory keys.
+module mandatoryTagRepairRole 'modules/mandatorytagrepairrole.bicep' = if (newDeployment || updateCoreResources) {
+  name: 'guardrails-mandatory-tag-repair-role'
+  params: {
+    automationAccountMSI: aa!.outputs.guardrailsAutomationAccountMSI
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
@@ -107,8 +125,7 @@ module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
     breakglassAccount2: breakglassAccount2
     logAnalyticsWorkspaceName: split(LAW.outputs.logAnalyticsResourceId,'/')[8]
     vaultUri: vaultUri
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
+    mandatoryTags: mandatoryTags
     deployKV: deployKV
     tenantId: subscription().tenantId
   }
@@ -118,8 +135,7 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     location: location
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
+    mandatoryTags: mandatoryTags
     rg: rg
     deployLAW: deployLAW
     subscriptionId: subscriptionId
@@ -143,8 +159,7 @@ module DCR 'modules/dcr.bicep' = if (deployLAW && (newDeployment || updateCoreRe
     #disable-next-line BCP318    
     logAnalyticsWorkspaceResourceId: LAW.outputs.logAnalyticsResourceId
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
+    mandatoryTags: mandatoryTags
     newDeployment: newDeployment
     updateCoreResources: updateCoreResources
   }
@@ -172,6 +187,7 @@ module DCRRBAC 'modules/dcrroleassignment.bicep' = if (deployLAW && (newDeployme
 module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
   name: 'guardrails-storageaccount'
   params: {
+    mandatoryTags: mandatoryTags
     storageAccountName: storageAccountName
     location: location
     containername: containername
@@ -185,6 +201,7 @@ module alertNewVersion 'modules/alert.bicep' = {
     LAW
   ]
   params: {
+    mandatoryTags: mandatoryTags
     alertRuleDescription: 'Alerts when a new version of the Guardrails Solution Accelerator is available'
     alertRuleName: 'GuardrailsNewVersion'
     alertRuleDisplayName: 'Guardrails New Version Available.'

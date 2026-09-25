@@ -1,3 +1,4 @@
+Import-Module "$PSScriptRoot/../Manage-GSATags/Manage-GSATags.psd1"
 # import sub-modules
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Confirm-GSAConfigurationParameters\Confirm-GSAConfigurationParameters.psd1")
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Confirm-GSAPrerequisites\Confirm-GSAPrerequisites.psd1")
@@ -152,6 +153,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'location'                              = $config.region
         'logAnalyticsWorkspaceName'             = $config['runtime']['logAnalyticsworkspaceName']
         'PBMMPolicyID'                          = $config.PBMMPolicyID
+        'solution'                              = $config['runtime']['tagsTable'].Solution
         'releasedate'                           = $config['runtime']['tagsTable'].ReleaseDate
         'releaseVersion'                        = $config['runtime']['tagsTable'].ReleaseVersion
         'SecurityLAWResourceId'                 = $config.SecurityLAWResourceId
@@ -295,6 +297,14 @@ Function Deploy-GuardrailsSolutionAccelerator {
         [string]
         $alternatePSModulesURL,
 
+        # Staged Blob modules have no GitHub ref in their URL, so GitHub Actions
+        # supplies the checked-out commit here. Deploy-Bootstrap instead supplies
+        # its source through the official GitHub module URL, which is parsed below.
+        # The ref must exist on the official repository.
+        [Parameter(Mandatory = $false)]
+        [string]
+        $gitHubSourceRef,
+
         # specify a release to deploy or update to - ex: 'v1.0.9', 'prerelease-v1.0.8.1'. If not specified, the latest release will be used
         # the 'latest' release is typically the last full release, unless a critcal bug fix was applied since the last full release
         [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
@@ -384,49 +394,65 @@ Function Deploy-GuardrailsSolutionAccelerator {
             Assert-GSAAutomationRuntimeEnvironment -Config $config -Verbose:$useVerbose
         }
 
-        # set module install or update source URL
-        $params = @{}
-        If ($alternatePSModulesURL) {
-            Write-Verbose "-alternatePSModulesURL specified, using alternate URL for Guardrails PowerShell modules: $alternatePSModulesURL"
-            $params = @{ moduleBaseURL = $alternatePSModulesURL }
+        # Previously, source selection only chose where to download modules; tags came
+        # from the local configuration. These steps replace that selection with one
+        # official GitHub ref for the mandatory tags as well as the default module URL.
+        # Deploy-GuardrailsSolutionAccelerator still accepts -releaseVersion or defaults
+        # to the latest stable release. Deploy-Bootstrap includes its existing -source
+        # in the official module URL. GitHub Actions stages modules in Blob and passes
+        # the checked-out commit through -gitHubSourceRef.
+        # If both source arguments are supplied, require identical refs rather than
+        # silently choosing one and potentially labelling modules as another release.
+        $sourceRef = $gitHubSourceRef
+        if ($sourceRef -and $releaseVersion -and $sourceRef -cne $releaseVersion) {
+            throw '-gitHubSourceRef and -releaseVersion must identify the same source when both are supplied.'
         }
-        ElseIf ([string]::IsNullOrEmpty($releaseVersion) -and !$prerelease.IsPresent) {
-            # getting latest release from GitHub
-            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -Verbose:$false
-            $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/psmodules" -f $latestRelease.name
-
-            Write-Verbose "Using latest release from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
-            $params = @{ moduleBaseURL = $moduleBaseURL }
+        if (-not $sourceRef) { $sourceRef = $releaseVersion }
+        if ($releaseVersion) {
+            # Keep Deploy-GuardrailsSolutionAccelerator's published-release check, but look up the
+            # requested tag directly instead of searching release display names.
+            # The actual tag identifies the files to deploy; GitHub's prerelease flag
+            # determines whether to warn. This also applies with an alternate module
+            # URL, where -releaseVersion previously had no effect.
+            $release = Invoke-RestMethod -Uri ('https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/tags/{0}' -f [uri]::EscapeDataString($releaseVersion)) -ErrorAction Stop -Verbose:$false
+            if ($release.prerelease) { Write-Warning "Deploying prerelease '$releaseVersion'; prereleases are not recommended for production." }
         }
-        ElseIf ($releaseVersion) {
-            # check if prerelease version was specified 
-            If ($releaseVersion -like 'prerelease-*') {
-                Write-Warning "-releaseVersion specified with a pre-release version, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
+        # An official GitHub module URL already includes its source ref, so existing
+        # callers using this URL need no additional argument. Check any explicit ref
+        # against it to keep the module source and mandatory tag source consistent.
+        $officialUrl = '^https://github\.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/(.+)/psmodules/?$'
+        if ($alternatePSModulesURL -match $officialUrl) {
+            $urlSourceRef = [uri]::UnescapeDataString($Matches[1])
+            if ($sourceRef -and $sourceRef -cne $urlSourceRef) {
+                throw 'The GitHub module URL and tag metadata source must identify the same ref.'
             }
-
-            # get releases from GitHub
-            $releases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
-            
-            If ($releases.name -contains $releaseVersion) {
-                Write-Verbose "Found a release on GitHub match for $releaseVersion"
-                $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/psmodules" -f $releaseVersion
-
-                Write-Verbose "Using release $releaseVersion from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
-                $params = @{ moduleBaseURL = $moduleBaseURL }
-            }
+            $sourceRef = $urlSourceRef
         }
-        # ElseIf ($prerelease) {
-        #     Write-Warning "-Prerelease specified, using pre-release URL for Guardrails PowerShell modules. Running pre-release code is not recommended for production deployments."
-
-        #     # getting all release from github
-        #     $releases = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases' -Verbose:$false
-        #     $latestPreRelease = $releases | Where-Object { $_.prerelease -eq 'True' } | 
-        #         Sort-Object -Property published_at -Descending | 
-        #         Select-Object -First 1
-
-        #     $releaseVersion = $latestPreRelease.name
-        #     $moduleBaseURL = "https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/download/{0}/" -f $releaseVersion
-        # }
+        # Blob and other alternate URLs do not identify an official GitHub source.
+        # They now need -gitHubSourceRef or a published -releaseVersion. Do not guess
+        # the latest release or fall back to editable local mandatory tags: either
+        # could describe a different release from the staged modules.
+        if (-not $sourceRef -and $alternatePSModulesURL) {
+            throw 'An alternate module URL requires -gitHubSourceRef identifying the GitHub source being deployed.'
+        }
+        # When Deploy-GuardrailsSolutionAccelerator receives no source or alternate URL,
+        # use GitHub's latest stable release. Use its tag, not its editable title,
+        # so the module download and mandatory tags refer to the same source.
+        if (-not $sourceRef) {
+            $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/releases/latest' -ErrorAction Stop -Verbose:$false
+            $sourceRef = $latestRelease.tag_name
+            if ([string]::IsNullOrWhiteSpace($sourceRef)) { throw 'GitHub did not return a release tag.' }
+        }
+        # For both installs and updates, replace only Solution, ReleaseVersion and
+        # ReleaseDate with values from the selected official source, keeping client
+        # custom tags. Fetch failures stop deployment instead of trusting local values.
+        $config.runtime.tagsTable = Get-GSADeploymentTags -SourceRef $sourceRef -ClientTags $config.runtime.tagsTable
+        # Keep an explicitly supplied module download URL; otherwise build it from
+        # the resolved ref. The existing deployment code still receives moduleBaseURL.
+        $moduleBaseURL = if ($alternatePSModulesURL) { $alternatePSModulesURL } else {
+            'https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/raw/{0}/psmodules' -f [uri]::EscapeDataString($sourceRef)
+        }
+        $params = @{ moduleBaseURL = $moduleBaseURL }
 
         # if installing from a published release, check that the release contains zip assets
         If (-NOT($alternatePSModulesURL)) {
@@ -443,6 +469,11 @@ Function Deploy-GuardrailsSolutionAccelerator {
         }
         
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config -RuntimeModules $runtimeModules @params -Verbose:$useVerbose
+
+        # Prepare policy permissions and accepted release values before any resource
+        # writes. Failed deployments deliberately retain both sets so the saved
+        # baseline remains usable; rerunning the deployment completes the transition.
+        Set-GSATagPolicies -Config $config -Prepare -Verbose:$useVerbose
 
         # A fresh core install saves the config immediately after creating the core resources.
         # Update and non-core paths save it at the shared step below. This flag keeps the export
@@ -592,6 +623,11 @@ Function Deploy-GuardrailsSolutionAccelerator {
         if (-not $configExported) {
             Export-GSAConfigToKeyVault -config $config -useVerbose $useVerbose
         }
+
+        # Narrow enforcement only after every selected component and the Key Vault
+        # export succeed. This also covers runbook-only and other partial updates:
+        # backend repair will bring unchanged resources to the newly saved baseline.
+        Set-GSATagPolicies -Config $config -Verbose:$useVerbose
 
         # Start the runbooks only after the config secret is confirmed. The runbook jobs start in
         # the background, so reversing these steps could let a job read the secret before it exists.
