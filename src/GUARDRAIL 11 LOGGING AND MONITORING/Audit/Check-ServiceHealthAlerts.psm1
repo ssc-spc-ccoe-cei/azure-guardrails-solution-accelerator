@@ -14,7 +14,7 @@ function Get-SubscriptionOwnerCount {
     $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
 
     try {
-        $ownerAssignments = Get-AzRoleAssignment -RoleDefinitionId $ownerRoleId -ErrorAction Stop 
+        $ownerAssignments = Get-AzRoleAssignment -RoleDefinitionId $ownerRoleId -ErrorAction Stop
         return @($ownerAssignments).Count
     }
     catch {
@@ -24,6 +24,7 @@ function Get-SubscriptionOwnerCount {
 }
 
 function Get-SubscriptionMonitoringRoleCount {
+    
     <#
     .SYNOPSIS
         Returns the number of Monitoring role assignments (Contributor or Reader) assigned to the current subscription.
@@ -33,15 +34,13 @@ function Get-SubscriptionMonitoringRoleCount {
         the "Monitoring" notification target actually represents.
     #>
     [CmdletBinding()]
-    param()
-
-    # Azure built-in Monitoring role IDs (constant across all Azure tenants)
-    $monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
-    $monitoringReaderRoleId = '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $monitoringRoleId
+    )
 
     try {
-        $monitoringAssignments = Get-AzRoleAssignment -RoleDefinitionId $monitoringContributorRoleId -ErrorAction Stop | Where-Object { $_.ObjectType -ne 'ServicePrincipal' }
-        $monitoringAssignments += Get-AzRoleAssignment -RoleDefinitionId $monitoringReaderRoleId -ErrorAction Stop | Where-Object { $_.ObjectType -ne 'ServicePrincipal' }
+        $monitoringAssignments = Get-AzRoleAssignment -RoleDefinitionId $monitoringRoleId -ErrorAction Stop | Where-Object { $_.ObjectType -ne 'ServicePrincipal' }
         return @($monitoringAssignments).Count
     }
     catch {
@@ -49,6 +48,7 @@ function Get-SubscriptionMonitoringRoleCount {
         return 0
     }
 }
+
 
 function Get-ActionGroupContactTokens {
     <#
@@ -76,16 +76,16 @@ function Get-ActionGroupContactTokens {
 
     $emailTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.EmailReceiver) {
-                $_.EmailReceiver | ForEach-Object { $_.EmailAddress }
+            if ($_.EmailReceivers) {
+                $_.EmailReceivers | ForEach-Object { $_.EmailAddress }
             }
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | ForEach-Object { $_.Trim() } | Sort-Object -Unique
 
     $ownerTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceiver) {
-                $_.ArmRoleReceiver | Where-Object {
+            if ($_.ArmRoleReceivers) {
+                $_.ArmRoleReceivers | Where-Object {
                     $_.RoleName -eq 'Owner' -or $_.RoleId -eq $ownerRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -100,14 +100,28 @@ function Get-ActionGroupContactTokens {
     ) | Sort-Object -Unique
 
     # Monitoring Contributor / Monitoring Reader ARM role receivers are also valid
-    # Action Group notification targets. Unlike Owner, they do not map to a variable
-    # subscription-owner count, so each unique receiver simply counts as one contact.
-
-    $monitoringRoleTokens = @(
+    $monitoringContributorRoleTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceiver) {
-                $_.ArmRoleReceiver | Where-Object {
-                    $_.RoleId -eq $monitoringContributorRoleId -or $_.RoleId -eq $monitoringReaderRoleId
+            if ($_.ArmRoleReceivers) {
+                $_.ArmRoleReceivers | Where-Object {
+                    $_.RoleId -eq $monitoringContributorRoleId
+                } | ForEach-Object {
+                    if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
+                        $_.Name.Trim()
+                    }
+                    elseif ($_.RoleId -is [string] -and $_.RoleId.Trim().Length -gt 0) {
+                        $_.RoleId.Trim()
+                    }
+                }
+            }
+        } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
+    ) | Sort-Object -Unique
+
+    $monitoringReaderRoleTokens = @(
+        $ActionGroup | ForEach-Object {
+            if ($_.ArmRoleReceivers) {
+                $_.ArmRoleReceivers | Where-Object {
+                    $_.RoleId -eq $monitoringReaderRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
                         $_.Name.Trim()
@@ -121,7 +135,7 @@ function Get-ActionGroupContactTokens {
     ) | Sort-Object -Unique
 
     # Return array as single object (leading comma prevents PowerShell from unrolling the array)
-    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + ($monitoringRoleTokens | ForEach-Object { "MonitoringRole::" + $_ }))
+    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + ($monitoringContributorRoleTokens | ForEach-Object { "MonitoringContributor::" + $_ }) + ($monitoringReaderRoleTokens | ForEach-Object { "MonitoringReader::" + $_ }))
 }
 
 function Validate-ActionGroups {
@@ -207,16 +221,22 @@ function Validate-ActionGroups {
 
     # Separate owner tokens from other contact tokens (e.g., email addresses, Monitoring Contributor/Reader ARM role receivers
     $ownerTokens = @($uniqueContacts | Where-Object { $_ -like 'Owner::*' })
-    $monitoringRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringRole::*' })
-    $nonOwnerTokens = @($uniqueContacts | Where-Object { {$_ -notlike 'Owner::*' } -and $_ -notlike 'MonitoringRole::*' })
+    $monitoringContributorRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringContributor::*' })
+    $monitoringReaderRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringReader::*' })
+    $nonOwnerTokens = @($uniqueContacts | Where-Object { {$_ -notlike 'Owner::*' } -and {$_ -notlike 'MonitoringContributor::*' } -and {$_ -notlike 'MonitoringReader::*' }})
 
     # Calculate effective contact count
     # Non-owner contacts (emails, Monitoring Contributor/Reader role receivers, etc.) count as 1 each
     $effectiveContactCount = $nonOwnerTokens.Count
 
+    # Azure built-in Monitoring role IDs (constant across all Azure tenants)
+    $monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
+    $monitoringReaderRoleId = 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
+
     # If subscription owners are being used as notification targets, check actual owner count
     if ($ownerTokens.Count -gt 0) {
         $subscriptionOwnerCount = Get-SubscriptionOwnerCount
+        Write-Output "Retrieved $($subscriptionOwnerCount.Count) owner assignments for the current Subscription: $SubscriptionName"
         
         if ($subscriptionOwnerCount -eq 0) {
             # No owners found - this is unusual, log a warning
@@ -232,16 +252,38 @@ function Validate-ActionGroups {
         }
     }
 
-    # If subscription monitoring roles are being used as notification targets, check actual monitoring role count  
-    if ($monitoringRoleTokens.Count -gt 0) {
+    # If subscription monitoring contributor roles are being used as notification targets, check actual monitoring role count  
+    if ($monitoringContributorRoleTokens.Count -gt 0) {
         
-        $monitoringRoleCount = Get-SubscriptionMonitoringRoleCount
+        $monitoringContributorCount = Get-SubscriptionMonitoringRoleCount -monitoringRoleId $monitoringContributorRoleId
+        Write-Output "Retrieved $($monitoringContributorCount.Count) monitoring role assignments for the current Subscription: $SubscriptionName"
         
-        if ($monitoringRoleCount -eq 0) {
+        if ($monitoringContributorCount -eq 0) {
             # No monitoring roles found
-            $errors.Add("No subscription monitoring roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
+            Write-output "No subscription monitoring contributor roles found for subscription '$SubscriptionName'."
+            # $errors.Add("No subscription monitoring contributor roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
         }
-        elseif ($monitoringRoleCount -eq 1) {
+        elseif ($monitoringContributorCount -eq 1) {
+            # Only 1 monitoring role assigned -> counts as 1 contact
+            $effectiveContactCount += 1
+        }
+        else {
+            # 2 or more monitoring roles assigned -> counts as 2 contacts
+            $effectiveContactCount += 2
+        }
+    }
+
+    # If subscription monitoring reader roles are being used as notification targets, check actual monitoring readerrole count  
+    if ($monitoringReaderRoleTokens.Count -gt 0) {
+        
+        $monitoringReaderCount = Get-SubscriptionMonitoringRoleCount -monitoringRoleId $monitoringReaderRoleId
+        Write-Output "Retrieved $($monitoringReaderCount.Count) monitoring role assignments for the current Subscription: $SubscriptionName"
+        
+        if ($monitoringReaderCount -eq 0) {
+            # No monitoring roles found
+            $errors.Add("No subscription monitoring reader roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
+        }
+        elseif ($monitoringReaderCount -eq 1) {
             # Only 1 monitoring role assigned -> counts as 1 contact
             $effectiveContactCount += 1
         }
@@ -277,7 +319,7 @@ function Get-ServiceHealthAlerts {
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
         [switch] 
-        $EnableMultiCloudProfiles # feature flag, default to false
+        $EnableMultiCloudProfiles # feature flag
     )
 
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
