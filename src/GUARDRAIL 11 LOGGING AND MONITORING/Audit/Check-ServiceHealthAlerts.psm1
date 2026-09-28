@@ -223,7 +223,11 @@ function Validate-ActionGroups {
     $ownerTokens = @($uniqueContacts | Where-Object { $_ -like 'Owner::*' })
     $monitoringContributorRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringContributor::*' })
     $monitoringReaderRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringReader::*' })
-    $nonOwnerTokens = @($uniqueContacts | Where-Object { {$_ -notlike 'Owner::*' } -and {$_ -notlike 'MonitoringContributor::*' } -and {$_ -notlike 'MonitoringReader::*' }})
+    $nonOwnerTokens = @($uniqueContacts |
+        Where-Object { $_ -notlike 'Owner::*'} |
+        Where-Object { $_ -notlike 'MonitoringContributor::*'} |
+        Where-Object { $_ -notlike 'MonitoringReader::*' }
+    )
 
     # Calculate effective contact count
     # Non-owner contacts (emails, Monitoring Contributor/Reader role receivers, etc.) count as 1 each
