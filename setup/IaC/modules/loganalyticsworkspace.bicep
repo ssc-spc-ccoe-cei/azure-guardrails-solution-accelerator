@@ -1071,29 +1071,31 @@ let excludedUsers = rawUserData
 // Agent ID user accounts cannot register MFA and cannot carry the exclusion attribute.
 let excludedAgentUsers = rawUserData
 | where guardrailsExcluded == false and agentUserExcluded == true;
-let guestUsers = rawUserData
-| where guardrailsExcluded == false and agentUserExcluded == false and userType == "Guest";
-let memberUsers = rawUserData
-| where guardrailsExcluded == false and agentUserExcluded == false and userType != "Guest";
+let externalUsers = rawUserData
+| where guardrailsExcluded == false
+| where isnotempty(homeTenantId);
+let internalUsers = rawUserData
+| where guardrailsExcluded == false
+| where homeTenantResolved_b == false or isempty(homeTenantId);
 // Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
-let guestsWithTrustInfo = guestUsers
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+let externalUsersWithTrustInfo = externalUsers
+| extend userHomeTenantId = tostring(homeTenantId)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
-) on $left.guestHomeTenantId == $right.PartnerTenantId
+) on $left.userHomeTenantId == $right.PartnerTenantId
 | extend 
     effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled, 
+    shouldExcludeExternalUser = iff(crossTenantFeatureEnabled, 
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), 
         false);
-let guestsToExclude = guestsWithTrustInfo
-| where shouldExcludeGuest == true;
-let guestsToEvaluate = guestsWithTrustInfo
-| where shouldExcludeGuest == false
-| project-away PartnerTenantId, InboundMfaTrust, effectiveMfaTrust, shouldExcludeGuest, guestHomeTenantId;
-let excludedGuestCount = toscalar(guestsToExclude | summarize count());
-let userData = union memberUsers, guestsToEvaluate;
+let externalUsersToExclude = externalUsersWithTrustInfo
+| where shouldExcludeExternalUser == true;
+let externalUsersToEvaluate = externalUsersWithTrustInfo
+| where shouldExcludeExternalUser == false
+| project-away PartnerTenantId, InboundMfaTrust, effectiveMfaTrust, shouldExcludeExternalUser, userHomeTenantId;
+let excludedExternalUserCount = toscalar(externalUsersToExclude | summarize count());
+let userData = union internalUsers, externalUsersToEvaluate;
 // users within grace
 let usersWithinGrace = userData
 | extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
@@ -1164,10 +1166,10 @@ let finalSummary = summary
             strcat("Exclusion de ", tostring(coalesce(excludedAgentUserCount, 0)), " comptes d'utilisateur Agent ID, qui ne peuvent pas enregistrer d'AMF"),
             strcat("Excluded ", tostring(coalesce(excludedAgentUserCount, 0)), " Agent ID user accounts, which cannot register MFA"))),
         Comments)
-| extend Comments = iff(crossTenantFeatureEnabled and excludedGuestCount > 0,
+| extend Comments = iff(crossTenantFeatureEnabled and excludedExternalUserCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
-            strcat("Exclusion de ", tostring(excludedGuestCount), " comptes invités avec confiance AMF inter-locataire et politique d'accès conditionnel"),
-            strcat("Excluded ", tostring(excludedGuestCount), " guest accounts with cross-tenant MFA trust and conditional access policy"))),
+            strcat("Exclusion de ", tostring(excludedExternalUserCount), " Exclusion de X comptes externes avec confiance AMF inter-locataire et politique d'accès conditionnel"),
+            strcat("Excluded ", tostring(excludedExternalUserCount), " externally authenticated accounts with cross-tenant MFA trust and conditional access policy"))),
         Comments)
 | extend Comments = iff(gracePeriodCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
