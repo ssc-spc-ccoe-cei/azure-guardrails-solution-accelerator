@@ -203,6 +203,10 @@ function Validate-ActionGroups {
         Where-Object { $_ -notlike 'MonitoringContributor::*'} |
         Where-Object { $_ -notlike 'MonitoringReader::*' }
     )
+    Write-Output "Retrieved $($ownerTokens.Count) owner tokens for subscription '$SubscriptionName'"
+    Write-Output "Retrieved $($monitoringContributorRoleTokens.Count) monitoring contributor role tokens for subscription '$SubscriptionName'"
+    Write-Output "Retrieved $($monitoringReaderRoleTokens.Count) monitoring reader role tokens for subscription '$SubscriptionName'"
+    Write-Output "Retrieved $($nonOwnerTokens.Count) non-owner tokens for subscription '$SubscriptionName'"
 
     # Calculate effective contact count
     # Non-owner contacts (emails, Monitoring Contributor/Reader role receivers, etc.) count as 1 each
@@ -257,11 +261,11 @@ function Validate-ActionGroups {
     if ($monitoringReaderRoleTokens.Count -gt 0) {
         
         $monitoringReaderCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $monitoringReaderRoleId
-        Write-Host "Retrieved $monitoringReaderCount monitoring role assignments for the current Subscription: $SubscriptionName"
+        Write-Output "Retrieved $monitoringReaderCount monitoring role assignments for the current Subscription: $SubscriptionName"
         
         if ($monitoringReaderCount -eq 0) {
             # No monitoring roles found
-            $errors.Add("No subscription monitoring reader roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
+            $errors.Add("No subscription monitoring reader roles found for subscription '$SubscriptionName'.") | Out-Null
         }
         elseif ($monitoringReaderCount -eq 1) {
             # Only 1 monitoring role assigned -> counts as 1 contact
@@ -274,6 +278,8 @@ function Validate-ActionGroups {
 
     }
 
+    Write-Output "Effective contact count for subscription '$SubscriptionName': $effectiveContactCount"
+
 
     return [PSCustomObject]@{
         UniqueContacts = @($uniqueContacts)
@@ -283,79 +289,6 @@ function Validate-ActionGroups {
     }
 }
 
-function Evaluate-EachSubscriptionHealthAlerts {
-    <#
-    .SYNOPSIS 
-        Retrieves and evaluates service health alerts for each subscription.
-    .DESCRIPTION
-        This function evaluates the service health alerts based on the configured action groups and notification targets.
-    #>
-    param (
-        [Parameter(Mandatory=$true)]
-        [Object[]] $filteredAlerts
-    )
-
-    $checkActionGroupNext = $false
-
-    # Case: when all the alert event types are selected from the conditions/properties.incidentType
-    $allAnyOfNullOrEmpty = $filteredAlerts.ConditionAllOf -notmatch '\S' -or ($filteredAlerts.ConditionAllOf | ForEach-Object {
-        if ($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0) {$true} else {$false}
-    }) -notcontains $false
-
-    #Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
-    $filteredAlertsContions = $filteredAlerts | Where-Object {
-        # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
-        ($_.ConditionAllOf | Where-Object {
-            $_.AnyOf | Where-Object { 
-                $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
-            }
-        }).Count -eq 1
-    }
-
-    if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsContions)){
-        $checkActionGroupNext = $true  
-        }
-        # Check if event types not configured for any service health alert i.e. Condition: non-compliant if null
-        elseif($null -eq $filteredAlertsContions.Count){
-            $isCompliant = $false
-            $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
-        }
-        else{
-            $requiredFilteredAlerts = $filteredAlertsContions | where-object {
-                $_.ConditionAllOf | Where-Object {
-                    $_.AnyOf | Where-Object { 
-                        $_.Field -eq "properties.incidentType"
-                }}
-            }
-            $incidentTypes = $requiredFilteredAlerts | ForEach-Object {
-                $_.ConditionAllOf | ForEach-Object {
-                    $_.AnyOf | Where-Object {
-                        $_.Field -eq "properties.incidentType"
-                    }
-                }
-            }
-
-            # Condition: non-compliant if alert conditions<3
-            if ($incidentTypes.Count -lt 3) {
-                $isCompliant = $false
-                $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
-            }
-            # Condition: if allAnyOfNullOrEmpty is true, means All ConditionAllOf.AnyOf are null or empty -> all 4 conditions are selected
-            elseif($allAnyOfNullOrEmpty -and $filteredAlerts.Count -eq 3){
-                $checkActionGroupNext = $true
-            }
-            # Condition: non-compliant if not meet the 3 requires alert conditions ("Service Issues" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security")
-            elseif (($incidentTypes.Count -ge- 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
-                $checkActionGroupNext = $true
-            }
-            else{
-                # Condition: non-compliant if 3 correct alert conditions are not met
-                $isCompliant = $false
-                $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
-            }
-        }                                                               
-
-}
 
 function Get-ServiceHealthAlerts {
     <#
@@ -484,7 +417,6 @@ function Get-ServiceHealthAlerts {
                 }
 
                 #Filter alerts where 3 required event types are selected
-
                 #Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
                 $filteredAlertsConditions = $alertEventTypeSelectionds  | Where-Object {
                     # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
@@ -498,7 +430,7 @@ function Get-ServiceHealthAlerts {
             
 
                 if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsConditions)){
-                    # Possible case where all event types are selected. Follow the next step to check the action group configuration.
+                    Write-Output "Checking action group configuration next..."
                     $checkActionGroupNext = $true  
                 }
                 # Check if event types not configured for any service health alert i.e. Condition: non-compliant if null
@@ -507,6 +439,7 @@ function Get-ServiceHealthAlerts {
                     $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                 }
                 else{
+                    Write-Output "Selected required alert event types. Evaluating alert event types for the subscription '$($subscription.Name)'..."
                     # event types selected; check of required condition
                     $requiredFilteredAlerts = $filteredAlertsConditions | where-object {
                         $_.ConditionAllOf | Where-Object {
@@ -522,7 +455,9 @@ function Get-ServiceHealthAlerts {
                         }
                     }
 
-                    # Condition: non-compliant if alert conditions<3
+                    # Evaluating alert event types
+
+                    # Condition: non-compliant if alert conditions < 3
                     if ($incidentTypes.Count -lt 3) {
                         $isCompliant = $false
                         $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
@@ -543,6 +478,7 @@ function Get-ServiceHealthAlerts {
                 }
                 
                 if($checkActionGroupNext){
+                    Write-Output "Evaluating action groups for subscription '$($subscription.Name)'"
                     # Store compliance state of each action group
                     $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable -allEnabledActionGroups $allEnabledActionGroups
 
@@ -564,6 +500,7 @@ function Get-ServiceHealthAlerts {
                     # - If owners or monitoring roles are used and only 1 owner/monitoring role is assigned -> counts as 1 contact
                     # - If owners/monitoring roles are used and 2+ owners/monitoring roles are assigned -> counts as 2 contacts
                     $totalContacts = $evaluation.EffectiveContactCount
+                    Write-Output "Total effective contacts for subscription '$($subscription.Name)': $totalContacts"
                     if ($totalContacts -ge 2) {
                         $isCompliant = $true
                         if ([string]::IsNullOrWhiteSpace($Comments)) {
