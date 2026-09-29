@@ -1073,11 +1073,13 @@ let excludedAgentUsers = rawUserData
 | where guardrailsExcluded == false and agentUserExcluded == true;
 let externalUsers = rawUserData
 | where guardrailsExcluded == false
+| where agentUserExcluded == false
 | where isnotempty(homeTenantId);
 let internalUsers = rawUserData
 | where guardrailsExcluded == false
+| where agentUserExcluded == false
 | where homeTenantResolved_b == false or isempty(homeTenantId);
-// Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
+// Match each externally authenticated user to their home tenant's MFA trust setting (only if feature is enabled)
 let externalUsersWithTrustInfo = externalUsers
 | extend userHomeTenantId = tostring(homeTenantId)
 | join kind=leftouter (
@@ -1168,7 +1170,7 @@ let finalSummary = summary
         Comments)
 | extend Comments = iff(crossTenantFeatureEnabled and excludedExternalUserCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
-            strcat("Exclusion de ", tostring(excludedExternalUserCount), " Exclusion de X comptes externes avec confiance AMF inter-locataire et politique d'accès conditionnel"),
+            strcat("Exclusion de ", tostring(excludedExternalUserCount), " comptes externes avec confiance AMF inter-locataire et politique d'accès conditionnel"),
             strcat("Excluded ", tostring(excludedExternalUserCount), " externally authenticated accounts with cross-tenant MFA trust and conditional access policy"))),
         Comments)
 | extend Comments = iff(gracePeriodCount > 0,
@@ -1329,17 +1331,17 @@ let mfaAnalysis = userData
 let nonCompliantUsers = mfaAnalysis
 // | where isWithinGracePeriod == false
 | where isMfaCompliant == false
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| extend userHomeTenantId = tostring(homeTenantId)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
-) on $left.guestHomeTenantId == $right.PartnerTenantId
+) on $left.userHomeTenantId == $right.PartnerTenantId
 | extend 
     effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest",
+    shouldExcludeExternalUser = iff(crossTenantFeatureEnabled and isnotempty(homeTenantId),
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false),
         false)
-| where shouldExcludeGuest == false
+| where shouldExcludeExternalUser == false
 | sort by signInActivity_lastSignInDateTime_t
 | project 
     DisplayName = column_ifexists("displayName_s", ""), 
