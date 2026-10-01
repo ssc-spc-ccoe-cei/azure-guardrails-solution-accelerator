@@ -34,7 +34,7 @@ resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = if (deplo
     enabledForDeployment: false
     enabledForDiskEncryption: false
     enabledForTemplateDeployment: false
-    enableSoftDelete: false
+    enableSoftDelete: true
     softDeleteRetentionInDays: 90
     enableRbacAuthorization: true
     vaultUri: vaultUri

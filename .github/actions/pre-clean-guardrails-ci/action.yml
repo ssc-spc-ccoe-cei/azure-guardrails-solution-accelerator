@@ -1,10 +1,10 @@
 name: Pre-clean Guardrails CI deployment
 description: |
   Removes the existing Guardrails deployment and writes a fresh config.json
-  with a new unique LAW name for the next deployment.
+  with a new unique LAW name for the next deployment. Purges the matching
+  soft-deleted CI Key Vault and waits for Azure to release its name.
 
-  All resources (KV, storage, AA, RG) continue to use the same static
-  uniqueNameSuffix as before — no behaviour change there.
+  KV, storage, AA, and RG names still use the same static uniqueNameSuffix.
 
   Only logAnalyticsworkspaceName gets a run-specific prefix (r<GITHUB_RUN_NUMBER>)
   so each deployment creates a fresh workspace with a unique name.
@@ -149,6 +149,7 @@ runs:
           $staticSuffix   = $env:GSA_STATIC_SUFFIX
           $lawBase        = $env:GSA_LAW_NAME
           $rgName         = "$($env:GSA_RESOURCE_GROUP)-$staticSuffix"
+          $keyVaultName   = "$($env:GSA_KEY_VAULT_NAME)-$staticSuffix"
           # New unique LAW prefix for this run. 'r' prefix: Azure names must start with a letter.
           $newLawSuffix   = "r$env:GITHUB_RUN_NUMBER"
           $newLawBase     = "$lawBase-$newLawSuffix"
@@ -230,6 +231,76 @@ runs:
           }
           else {
             Write-Output "RG '$rgName' not found — skipping teardown (first run or already clean)."
+          }
+
+          # Key Vault soft-delete keeps the globally unique vault name reserved after the
+          # resource group is deleted. CI fresh installs deliberately replace this disposable
+          # environment while keeping its static names, so purge only this expected CI vault
+          # and wait for Azure to release the name before starting the next deployment.
+          $expectedKeyVaultResourceId = "/subscriptions/$subscriptionId/resourceGroups/$rgName/providers/Microsoft.KeyVault/vaults/$keyVaultName"
+          $keyVaultNameCheckUri = "https://management.azure.com/subscriptions/$subscriptionId/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview"
+          $keyVaultNameCheckPayload = @{
+            name = $keyVaultName
+            type = 'Microsoft.KeyVault/vaults'
+          } | ConvertTo-Json -Compress
+
+          function Test-KeyVaultNameAvailable {
+            $response = Invoke-AzRest -Method Post -Uri $keyVaultNameCheckUri -Payload $keyVaultNameCheckPayload -ErrorAction Stop
+            $result = $response.Content | ConvertFrom-Json
+            # API errors have no nameAvailable value. Fail now instead of treating them
+            # as a name collision and waiting for a vault that may not exist.
+            if ($null -eq $result.nameAvailable) {
+              throw "Key Vault name check failed (HTTP $($response.StatusCode)): $($response.Content)"
+            }
+            return [bool]$result.nameAvailable
+          }
+
+          $deletedKeyVaultDeadline = (Get-Date).AddMinutes(10)
+          do {
+            $deletedKeyVault = Get-AzKeyVault -InRemovedState -ErrorAction Stop |
+              Where-Object { $_.VaultName -eq $keyVaultName } |
+              Select-Object -First 1
+
+            if ($deletedKeyVault) {
+              # A matching global name alone does not prove that this vault belonged to
+              # the disposable CI resource group. Never purge another deployment's vault.
+              if ($deletedKeyVault.ResourceId -ine $expectedKeyVaultResourceId) {
+                throw "Refusing to purge Key Vault '$keyVaultName': deleted resource ID '$($deletedKeyVault.ResourceId)' does not match expected CI resource ID '$expectedKeyVaultResourceId'."
+              }
+              Write-Output "Purging soft-deleted CI Key Vault '$keyVaultName' in '$($deletedKeyVault.Location)'."
+              Remove-AzKeyVault -VaultName $keyVaultName -Location $deletedKeyVault.Location `
+                -InRemovedState -Force -ErrorAction Stop
+              break
+            }
+
+            if (Test-KeyVaultNameAvailable) {
+              Write-Output "Key Vault name '$keyVaultName' is available."
+              break
+            }
+
+            if ((Get-Date) -ge $deletedKeyVaultDeadline) {
+              throw "Timed out waiting for Key Vault name '$keyVaultName' to become available. No deleted vault is visible in subscription '$subscriptionId'; an active vault elsewhere may be holding the name."
+            }
+
+            Write-Output "Waiting for deleted CI Key Vault '$keyVaultName' to become available for purge."
+            Start-Sleep -Seconds 10
+          } while ($true)
+
+          if ($deletedKeyVault) {
+            $keyVaultReleaseDeadline = (Get-Date).AddMinutes(10)
+            do {
+              if (Test-KeyVaultNameAvailable) {
+                Write-Output "Purged CI Key Vault name '$keyVaultName' is available for the fresh deployment."
+                break
+              }
+
+              if ((Get-Date) -ge $keyVaultReleaseDeadline) {
+                throw "Timed out waiting for Azure to release purged CI Key Vault name '$keyVaultName'."
+              }
+
+              Write-Output "Waiting for Azure to release purged CI Key Vault name '$keyVaultName'."
+              Start-Sleep -Seconds 10
+            } while ($true)
           }
 
           # ── 2. Write config.json for the new deployment ──────────────────────────────
