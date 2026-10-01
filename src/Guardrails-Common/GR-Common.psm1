@@ -4750,7 +4750,9 @@ function FetchAllUserRawData {
             BackoffMultiplier = 2
         }
     )
-    
+    ###
+    $currentTenantId = [string](Get-AzContext).Tenant.Id
+
     # Initialize error tracking and performance monitoring
     $ErrorList = [System.Collections.Generic.List[string]]::new()
     # The MFA control reads this state later in the same main runbook. Start with
@@ -5112,7 +5114,7 @@ function FetchAllUserRawData {
         # Write users with the same 64-bucket ID rule used for registrations. This
         # places matching records together without keeping either full list in memory.
         Write-Verbose "Step 2: Spooling enabled users into bounded partitions..."
-        $selectFields = 'displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes'
+        $selectFields = 'displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes,identities'
         $usersPath = "/users?`$select=$selectFields&`$filter=accountEnabled eq true"
         $userSpoolStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $userStore = & $newPartitionStore $partitionDirectory 'user' $partitionCount
@@ -5253,12 +5255,20 @@ function FetchAllUserRawData {
                         # redesign does not repeat the same external-domain lookup.
                         $homeTenantId = $null
                         $homeTenantResolved = $false
-                        if ($user.userType -eq 'Guest') {
-                            $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
-                            if ($domain) {
-                                $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $domainTenantCache
-                                $homeTenantId = $resolutionResult.TenantId
-                                $homeTenantResolved = $resolutionResult.ResolutionSucceeded
+                        # Resolve the home tenant for external B2B users regardless of whether
+                        # Entra represents the account as Guest or Member.
+                        $domain = Get-ExternalUserHomeDomain -User $user
+
+                        if ($domain) {
+                            $resolutionResult = Get-TenantIdWithCache `
+                                -Domain $domain `
+                                -Cache $domainTenantCache
+                            if ($resolutionResult.ResolutionSucceeded) {
+                                $resolvedTenantId = [string]$resolutionResult.TenantId
+                                if ($resolvedTenantId -ne $currentTenantId) {
+                                    $homeTenantId = $resolvedTenantId
+                                    $homeTenantResolved = $true
+                                }
                             }
                         }
 
@@ -5613,6 +5623,43 @@ function Get-GuestUserHomeDomain {
     return $null
 }
 
+function Get-ExternalUserHomeDomain {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [psobject] $User
+    )
+
+    # Preferred source:
+    # Microsoft Graph identities[].issuer
+    if ($User.identities) {
+        foreach ($identity in @($User.identities)) {
+
+            $issuer = [string]$identity.issuer
+
+            if (-not [string\]::IsNullOrWhiteSpace($issuer) -and
+                $issuer -ne 'MicrosoftAccount' -and
+                $issuer -ne 'ExternalAzureAD') {
+
+                return $issuer
+            }
+        }
+    }
+
+    # B2B guest/member UPN in #EXT# format.
+    $upn = [string]$User.userPrincipalName
+
+    if ($upn -match '.*_([^_#]+)#EXT#') {
+        return $Matches[1]
+    }
+
+    # Final fallback: mail domain.
+    if ($User.mail -and $User.mail -match '@(.+)$') {
+        return $Matches[1]
+    }
+
+    return $null
+}
 # Function to resolve tenant ID from domain (single domain)
 # Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
 # Includes retry logic for transient failures (DNS timeout, throttling, 5xx errors)
