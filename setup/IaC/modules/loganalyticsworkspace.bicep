@@ -1064,6 +1064,9 @@ let rawUserData = GuardrailsUserRaw_CL
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
+// test start
+| where tolower(userPrincipalName_s) !contains "test"
+// test end
 // new logic for created Date
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let excludedUsers = rawUserData
@@ -1289,6 +1292,9 @@ let userData = GuardrailsUserRaw_CL
 | where guardrailsExcluded == false
 // Agent ID user accounts cannot register MFA, so they are not remediable findings.
 | where agentUserExcluded == false
+// test start
+| where tolower(userPrincipalName_s) !contains "test"
+// test end
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
