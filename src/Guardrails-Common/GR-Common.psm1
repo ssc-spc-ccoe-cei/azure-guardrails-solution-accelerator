@@ -5637,7 +5637,7 @@ function Get-ExternalUserHomeDomain {
 
             $issuer = [string]$identity.issuer
 
-            if (-not [string\]::IsNullOrWhiteSpace($issuer) -and
+            if (-not [string]::IsNullOrWhiteSpace($issuer) -and
                 $issuer -ne 'MicrosoftAccount' -and
                 $issuer -ne 'ExternalAzureAD') {
 
