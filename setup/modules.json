@@ -954,7 +954,7 @@
     "Status": "Enabled",
     "Required": "True",
     "Profiles": [2, 3, 4, 5, 6],
-    "Script": "Get-ServiceHealthAlerts -ControlName $msgTable.CtrName11 -ItemName $msgTable.serviceHealthAlerts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString -workspaceGuid $WorkspaceGuid -workspaceKey $WorkspaceKey",
+    "Script": "Get-ServiceHealthAlerts -ControlName $msgTable.CtrName11 -ItemName $msgTable.serviceHealthAlerts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode -CloudUsageProfiles $cloudUsageProfilesString -ModuleProfiles $ModuleProfilesString -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey",
     "localVariables": [
       {
         "Name": "itsgcode",
