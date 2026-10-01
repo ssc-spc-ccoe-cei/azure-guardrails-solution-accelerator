@@ -538,6 +538,14 @@ foreach ($module in $modules) {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
 
+            # Module output is captured in $results; explicitly forward any runlog entries
+            # so they appear in this main runbook's Azure Automation job output.
+            if ($null -ne $results.RunLog) {
+                foreach ($runLogEntry in @($results.RunLog)) {
+                    Write-Output "[$($module.ModuleName)] $runLogEntry"
+                }
+            }
+
             if ($enableMultiCloudProfiles -and $null -ne $results.ComplianceResults) {
                 # Some modules can return compliance rows without a Profile value.
                 # This fallback fills Profile before upload so workbook filtering stays accurate.
