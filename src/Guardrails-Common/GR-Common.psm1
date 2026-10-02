@@ -5630,30 +5630,29 @@ function Get-ExternalUserHomeDomain {
         [psobject] $User
     )
 
-    # Preferred source:
-    # Microsoft Graph identities[].issuer
+    $upn = [string]$User.userPrincipalName
+
+    # 1. B2B external UPN is the most direct source when present.
+    # Example:
+    # test_gmail.com#EXT#@testhotmail.onmicrosoft.com -> gmail.com
+    if ($upn -match '.*_([^_#]+)#EXT#') {
+        return $Matches[1]
+    }
+
+    # 2. Check identities for external Member users that do not have #EXT# UPN.
     if ($User.identities) {
         foreach ($identity in @($User.identities)) {
-
             $issuer = [string]$identity.issuer
 
-            if (-not [string]::IsNullOrWhiteSpace($issuer) -and
+            if (-not [string\]::IsNullOrWhiteSpace($issuer) -and
                 $issuer -ne 'MicrosoftAccount' -and
                 $issuer -ne 'ExternalAzureAD') {
-
                 return $issuer
             }
         }
     }
 
-    # B2B guest/member UPN in #EXT# format.
-    $upn = [string]$User.userPrincipalName
-
-    if ($upn -match '.*_([^_#]+)#EXT#') {
-        return $Matches[1]
-    }
-
-    # Final fallback: mail domain.
+    # 3. Last fallback to mail domain.
     if ($User.mail -and $User.mail -match '@(.+)$') {
         return $Matches[1]
     }
