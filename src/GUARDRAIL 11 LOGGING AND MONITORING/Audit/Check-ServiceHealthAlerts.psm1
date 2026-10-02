@@ -474,7 +474,7 @@ function Get-ServiceHealthAlerts {
                 if($checkActionGroupNext){
                     Write-Verbose "Evaluating action groups for subscription '$($subscription.Name)'"
                     # Store compliance state of each action group
-                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable -allEnabledActionGroups $allEnabledActionGroups -RunLog $RunLog -workspaceGuid $workspaceGuid -workspaceKey $workspaceKey
+                    $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable -allEnabledActionGroups $allEnabledActionGroups
 
                     if ($evaluation.Comments.Count -gt 0) {
                         # Merge any helper-supplied context (e.g., missing action group) with existing comments.
