@@ -5255,23 +5255,33 @@ function FetchAllUserRawData {
                         # redesign does not repeat the same external-domain lookup.
                         $homeTenantId = $null
                         $homeTenantResolved = $false
-                        # Resolve the home tenant for external B2B users regardless of whether
-                        # Entra represents the account as Guest or Member.
-                        $domain = Get-ExternalUserHomeDomain -User $user
+                        try {
+                            # Resolve the home tenant for external B2B users regardless of whether
+                            # Entra represents the account as Guest or Member.
+                            Write-Verbose "Home tenant check: UPN='$($user.userPrincipalName)', UserType='$($user.userType)'"
+                            $domain = Get-ExternalUserHomeDomain -User $user
+                            Write-Verbose "Home tenant domain: UPN='$($user.userPrincipalName)', Domain='$domain'"
 
-                        if ($domain) {
-                            $resolutionResult = Get-TenantIdWithCache `
-                                -Domain $domain `
-                                -Cache $domainTenantCache
-                            if ($resolutionResult.ResolutionSucceeded) {
-                                $resolvedTenantId = [string]$resolutionResult.TenantId
-                                if ($resolvedTenantId -ne $currentTenantId) {
-                                    $homeTenantId = $resolvedTenantId
-                                    $homeTenantResolved = $true
+                            if ($domain) {
+                                $resolutionResult = Get-TenantIdWithCache `
+                                    -Domain $domain `
+                                    -Cache $domainTenantCache
+                                Write-Verbose "Home tenant resolution: UPN='$($user.userPrincipalName)', Domain='$domain', TenantId='$($resolutionResult.TenantId)', Success='$($resolutionResult.ResolutionSucceeded)'"
+                                if ($resolutionResult.ResolutionSucceeded) {
+                                    $resolvedTenantId = [string]$resolutionResult.TenantId
+                                    if ($resolvedTenantId -ne $currentTenantId) {
+                                        $homeTenantId = $resolvedTenantId
+                                        $homeTenantResolved = $true
+                                    }
                                 }
                             }
                         }
-
+                        catch {
+                                Write-Warning "Unable to resolve home tenant for '$($user.userPrincipalName)': $($_.Exception.Message)"
+                                 
+                                $homeTenantId = $null
+                                $homeTenantResolved = $false
+                        }
                         $uploadBatch.Add([PSCustomObject]@{
                             id = $user.id
                             userPrincipalName = $user.userPrincipalName
@@ -5632,28 +5642,45 @@ function Get-ExternalUserHomeDomain {
 
     $upn = [string]$User.userPrincipalName
 
-    # 1. B2B external UPN is the most direct source when present.
+    # 1. B2B accounts with #EXT# UPN.
     # Example:
-    # test_gmail.com#EXT#@testhotmail.onmicrosoft.com -> gmail.com
+    # test_gmail.com#EXT#@resourceTenant.onmicrosoft.com
+    # -> gmail.com
     if ($upn -match '.*_([^_#]+)#EXT#') {
         return $Matches[1]
     }
 
-    # 2. Check identities for external Member users that do not have #EXT# UPN.
+    # 2. Check identity issuer.
+    #
+    # This is needed for external users that have been converted
+    # from Guest to Member and no longer have a #EXT# UPN.
     if ($User.identities) {
+
         foreach ($identity in @($User.identities)) {
+
             $issuer = [string]$identity.issuer
 
-            if (-not [string]::IsNullOrWhiteSpace($issuer) -and
-                $issuer -ne 'MicrosoftAccount' -and
-                $issuer -ne 'ExternalAzureAD') {
-                return $issuer
+            if ([string]::IsNullOrWhiteSpace($issuer)) {
+                continue
             }
+
+            if ($issuer -eq 'MicrosoftAccount' -or
+                $issuer -eq 'ExternalAzureAD') {
+                continue
+            }
+
+            return $issuer
         }
     }
 
-    # 3. Last fallback to mail domain.
-    if ($User.mail -and $User.mail -match '@(.+)$') {
+    # 3. Mail-domain fallback should only be used for Guest users.
+    #
+    # Do not use every Member's email domain because ordinary
+    # internal users are also Member users.
+    if ($User.userType -eq 'Guest' -and
+        $User.mail -and
+        $User.mail -match '@(.+)$') {
+
         return $Matches[1]
     }
 
