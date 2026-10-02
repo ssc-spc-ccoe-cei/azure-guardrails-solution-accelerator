@@ -51,16 +51,16 @@ function Get-ActionGroupContactTokens {
 
     $emailTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.EmailReceivers) {
-                $_.EmailReceivers | ForEach-Object { $_.EmailAddress }
+            if ($_.EmailReceiver) {
+                $_.EmailReceiver | ForEach-Object { $_.EmailAddress }
             }
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | ForEach-Object { $_.Trim() } | Sort-Object -Unique
 
     $ownerTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceivers) {
-                $_.ArmRoleReceivers | Where-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
                     $_.RoleName -eq 'Owner' -or $_.RoleId -eq $ownerRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -77,8 +77,8 @@ function Get-ActionGroupContactTokens {
     # Monitoring Contributor / Monitoring Reader ARM role receivers are also valid
     $monitoringContributorRoleTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceivers) {
-                $_.ArmRoleReceivers | Where-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
                     $_.RoleId -eq $monitoringContributorRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -94,8 +94,8 @@ function Get-ActionGroupContactTokens {
 
     $monitoringReaderRoleTokens = @(
         $ActionGroup | ForEach-Object {
-            if ($_.ArmRoleReceivers) {
-                $_.ArmRoleReceivers | Where-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
                     $_.RoleId -eq $monitoringReaderRoleId
                 } | ForEach-Object {
                     if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
@@ -157,6 +157,7 @@ function Validate-ActionGroups {
 
         # Get action group IDs
         $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
+            Write-Verbose "Retrieved $($actionGroupIdsArray.Count) enabled action group IDs for subscription '$SubscriptionName'"
         if ($actionGroupIdsArray.Count -eq 0) {
             $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
             $errors.Add("No action groups were returned for this Service Health alert evaluation for the subscription: $SubscriptionName") | Out-Null
@@ -317,6 +318,7 @@ function Get-ServiceHealthAlerts {
         $allSubs = Get-AzSubscription -ErrorAction Stop
         $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
         $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"})
+        Write-Verbose "Total enabled subscriptions: $($subs.Count)"
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
@@ -366,12 +368,13 @@ function Get-ServiceHealthAlerts {
         # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
+        Write-Verbose "Evaluating service health alerts for subscription '$($subscription.Name)'"
         
         try{
             # List activity log alerts (service health alerts) under current subscription set by the context
             $alerts = Get-AzActivityLogAlert
             $enabledAlerts = $alerts | Where-Object { $_.Enabled -eq $true }
-
+            
             # Filter for Service Health Alerts with specific conditions
             $filteredAlerts = $enabledAlerts | Where-Object {
                 # Check if any condition in ConditionAllOf matches the criteria
@@ -379,6 +382,7 @@ function Get-ServiceHealthAlerts {
                     $_.Field -eq "category" -and $_.Equal -eq "ServiceHealth" 
                 }
             }
+            Write-Verbose "Total enabled service health alerts: $($filteredAlerts.Count) for the subscription '$($subscription.Name)'"
             
             # Condition: Non-compliant if no health alert found for any sub
             if($null -eq $filteredAlerts){
@@ -410,8 +414,8 @@ function Get-ServiceHealthAlerts {
                     $allAnyOfNullOrEmpty = $true
                 }
 
-                #Filter alerts where 3 required event types are selected
-                #Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
+                # Filter alerts where 3 required event types are selected
+                # Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
                 $filteredAlertsConditions = $alertEventTypeSelectionds  | Where-Object {
                     # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
                     ($_.ConditionAllOf | Where-Object {
@@ -420,8 +424,7 @@ function Get-ServiceHealthAlerts {
                         }
                     }).Count -eq 1
                 }
-                
-            
+                Write-Verbose "Retrieved the filtered alerts with required event types for subscription '$($subscription.Name)': $($filteredAlertsConditions.Count)"
 
                 if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsConditions)){
                     Write-Verbose "Checking action group configuration next for subscription '$($subscription.Name)'..." 
