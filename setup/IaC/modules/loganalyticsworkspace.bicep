@@ -1064,9 +1064,6 @@ let rawUserData = GuardrailsUserRaw_CL
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
-// test start
-| where tolower(userPrincipalName_s) !contains "test"
-// test end
 // new logic for created Date
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let excludedUsers = rawUserData
