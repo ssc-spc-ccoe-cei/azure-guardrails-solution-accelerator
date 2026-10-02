@@ -197,7 +197,9 @@ runs:
           # The RG name is static ($rgBase-$staticSuffix) so we always know where to look.
           # We discover the current LAW by listing workspaces in the RG — no state
           # tracking needed.
-          if (Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue) {
+          $resourceGroupExists = [bool](Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue)
+          $existingLAWBase = $lawBase
+          if ($resourceGroupExists) {
             # Find the existing LAW whose name starts with the base name pattern.
             $existingLAW = Get-AzOperationalInsightsWorkspace -ResourceGroupName $rgName `
               -ErrorAction SilentlyContinue |
@@ -218,18 +220,24 @@ runs:
               Write-Output "No existing LAW matching '$lawBase-*' found in '$rgName'. Using bare base name for teardown."
             }
 
-            New-Config $existingLAWBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+          }
+          else {
+            Write-Output "RG '$rgName' not found — skipping resource teardown (first run or already clean)."
+          }
 
-            Push-Location -Path (Join-Path $actionRepoRoot 'setup')
-            try {
-              Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+          New-Config $existingLAWBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+
+          Push-Location -Path (Join-Path $actionRepoRoot 'setup')
+          try {
+            # Lighthouse assignments can remain after the resource group is deleted.
+            Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
+            if ($resourceGroupExists) {
               Remove-GSACentralizedDefenderCustomerComponents  -Force -configFilePath $configFilePath
               Remove-GSACoreResources -Force -Wait              -configFilePath $configFilePath
             }
-            finally { Pop-Location }
           }
-          else {
-            Write-Output "RG '$rgName' not found — skipping teardown (first run or already clean)."
+          finally {
+            Pop-Location
           }
 
           # ── 2. Write config.json for the new deployment ──────────────────────────────
