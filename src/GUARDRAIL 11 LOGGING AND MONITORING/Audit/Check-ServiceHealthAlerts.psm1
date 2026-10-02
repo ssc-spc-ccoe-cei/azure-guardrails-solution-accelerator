@@ -1,25 +1,4 @@
 
-function Write-ServiceHealthRunLog {
-    param (
-        [Parameter(Mandatory=$true)][string] $Message,
-        [Parameter(Mandatory=$true)][System.Collections.Generic.List[string]] $RunLog,
-        [Parameter(Mandatory=$true)][string] $WorkspaceGuid,
-        [Parameter(Mandatory=$true)][string] $WorkspaceKey,
-        [ValidateSet('Critical', 'Error', 'Warning', 'Information', 'Debug')]
-        [string] $Severity = 'Information',
-        [hashtable] $AdditionalValues = @{}
-    )
-
-    [void]$RunLog.Add($Message)
-    try {
-        Add-LogEntry $Severity $Message -moduleName 'Check-ServiceHealthAlerts' -additionalValues $AdditionalValues -workspaceGuid $WorkspaceGuid -workspaceKey $WorkspaceKey | Out-Null
-    }
-    catch {
-        [void]$RunLog.Add("Failed to persist Service Health diagnostic to Log Analytics: $($_.Exception.Message)")
-    }
-}
-
-
 function Get-SubscriptionRequiredRoleCount {
     <#
     .SYNOPSIS
@@ -32,11 +11,7 @@ function Get-SubscriptionRequiredRoleCount {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
-        [string] $requiredRoleId,
-        [Parameter(Mandatory=$true)][string] $SubscriptionName,
-        [Parameter(Mandatory=$true)][System.Collections.Generic.List[string]] $RunLog,
-        [Parameter(Mandatory=$true)][string] $WorkspaceGuid,
-        [Parameter(Mandatory=$true)][string] $WorkspaceKey
+        [string] $requiredRoleId
     )
 
     try {
@@ -44,7 +19,7 @@ function Get-SubscriptionRequiredRoleCount {
         return @($roleAssignments).Count
     }
     catch {
-        Write-ServiceHealthRunLog -Message "Failed to retrieve subscription required role assignments: $_" -Severity Warning -RunLog $RunLog -WorkspaceGuid $WorkspaceGuid -WorkspaceKey $WorkspaceKey -AdditionalValues @{ subscriptionName = $SubscriptionName }
+        Write-Output "Failed to retrieve subscription required role assignments: $_"
         return 0
     }
 }
@@ -157,10 +132,7 @@ function Validate-ActionGroups {
         [Parameter(Mandatory=$true)][string] $SubscriptionName,
         [Parameter(Mandatory=$true)][string] $SubscriptionId,
         [Parameter(Mandatory=$true)][hashtable] $MsgTable,
-        [Object[]] $allEnabledActionGroups,
-        [Parameter(Mandatory=$true)][System.Collections.Generic.List[string]] $RunLog,
-        [Parameter(Mandatory=$true)][string] $workspaceGuid,
-        [Parameter(Mandatory=$true)][string] $workspaceKey
+        [Object[]] $allEnabledActionGroups
     )
 
     # Evaluate each action group's contacts and surface aggregate results back to the caller.
@@ -231,11 +203,10 @@ function Validate-ActionGroups {
         Where-Object { $_ -notlike 'MonitoringContributor::*'} |
         Where-Object { $_ -notlike 'MonitoringReader::*' }
     )
-    Write-ServiceHealthRunLog -Message "Retrieved $($ownerTokens.Count) owner tokens, $($monitoringContributorRoleTokens.Count) monitoring contributor role tokens, $($monitoringReaderRoleTokens.Count) monitoring reader role tokens, and $($nonOwnerTokens.Count) non-owner tokens for subscription '$SubscriptionName'" -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $SubscriptionName }
-    # Write-Verbose "Retrieved $($ownerTokens.Count) owner tokens for subscription '$SubscriptionName'"
-    # Write-Output "Retrieved $($monitoringContributorRoleTokens.Count) monitoring contributor role tokens for subscription '$SubscriptionName'"
-    # Write-Output "Retrieved $($monitoringReaderRoleTokens.Count) monitoring reader role tokens for subscription '$SubscriptionName'"
-    # Write-Output "Retrieved $($nonOwnerTokens.Count) non-owner tokens for subscription '$SubscriptionName'"
+    Write-Verbose "Retrieved $($ownerTokens.Count) owner tokens for subscription '$SubscriptionName'"
+    Write-Verbose "Retrieved $($monitoringContributorRoleTokens.Count) monitoring contributor role tokens for subscription '$SubscriptionName'"
+    Write-Verbose "Retrieved $($monitoringReaderRoleTokens.Count) monitoring reader role tokens for subscription '$SubscriptionName'"
+    Write-Verbose "Retrieved $($nonOwnerTokens.Count) non-owner tokens for subscription '$SubscriptionName'"
 
     # Calculate effective contact count
     # Non-owner contacts (emails, Monitoring Contributor/Reader role receivers, etc.) count as 1 each
@@ -248,8 +219,8 @@ function Validate-ActionGroups {
 
     # If subscription owners are being used as notification targets, check actual owner count
     if ($ownerTokens.Count -gt 0) {
-        $subscriptionOwnerCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $ownerRoleId -SubscriptionName $SubscriptionName -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey
-        Write-ServiceHealthRunLog -Message "Retrieved $subscriptionOwnerCount owner assignments for the current Subscription: $SubscriptionName" -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $SubscriptionName }
+        $subscriptionOwnerCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $ownerRoleId
+        Write-Verbose "Retrieved $subscriptionOwnerCount owner assignments for the current Subscription: $SubscriptionName"
         
         if ($subscriptionOwnerCount -eq 0) {
             # No owners found - this is unusual, log a warning
@@ -268,13 +239,12 @@ function Validate-ActionGroups {
     # If subscription monitoring contributor roles are being used as notification targets, check actual monitoring role count  
     if ($monitoringContributorRoleTokens.Count -gt 0) {
         
-        $monitoringContributorCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $monitoringContributorRoleId -SubscriptionName $SubscriptionName -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey
-        Write-ServiceHealthRunLog -Message "Retrieved $monitoringContributorCount monitoring role assignments for the current Subscription: $SubscriptionName" -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $SubscriptionName }
-        
+        $monitoringContributorCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $monitoringContributorRoleId
+        Write-Verbose "Retrieved $monitoringContributorCount assignments for the current Subscription: $SubscriptionName"
+                
         if ($monitoringContributorCount -eq 0) {
             # No monitoring roles found
-            Write-ServiceHealthRunLog -Message "No subscription monitoring contributor roles found for subscription '$SubscriptionName'." -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $SubscriptionName }
-            # $errors.Add("No subscription monitoring contributor roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
+            $errors.Add("No subscription monitoring contributor roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
         }
         elseif ($monitoringContributorCount -eq 1) {
             # Only 1 monitoring role assigned -> counts as 1 contact
@@ -289,9 +259,8 @@ function Validate-ActionGroups {
     # If subscription monitoring reader roles are being used as notification targets, check actual monitoring readerrole count  
     if ($monitoringReaderRoleTokens.Count -gt 0) {
         
-        $monitoringReaderCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $monitoringReaderRoleId -SubscriptionName $SubscriptionName -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey
-        Write-ServiceHealthRunLog -Message "Retrieved $monitoringReaderCount monitoring role assignments for the current Subscription: $SubscriptionName" -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $SubscriptionName }
-        
+        $monitoringReaderCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $monitoringReaderRoleId
+        Write-Verbose "Retrieved $monitoringReaderCount assignments for the current Subscription: $SubscriptionName"
         if ($monitoringReaderCount -eq 0) {
             # No monitoring roles found
             $errors.Add("No subscription monitoring reader roles found for subscription '$SubscriptionName'.") | Out-Null
@@ -305,8 +274,6 @@ function Validate-ActionGroups {
             $effectiveContactCount += 2
         }
     }
-
-    Write-ServiceHealthRunLog -Message "Effective contact count for subscription '$SubscriptionName': $effectiveContactCount" -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $SubscriptionName }
 
 
     return [PSCustomObject]@{
@@ -339,15 +306,12 @@ function Get-ServiceHealthAlerts {
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles, # feature flag
-        [Parameter(Mandatory=$true)][string]$workspaceGuid,
-        [Parameter(Mandatory=$true)][string]$workspaceKey
+        [switch] $EnableMultiCloudProfiles # feature flag
     )
 
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-    $RunLog = [System.Collections.Generic.List[string]]::new()
-
+    
     # Get All the Subscriptions
     try {
         $allSubs = Get-AzSubscription -ErrorAction Stop
@@ -391,7 +355,7 @@ function Get-ServiceHealthAlerts {
         $ErrorList.Add("Failed to execute the 'Get-AzActionGroup' command--verify your permissions and the installion of the Az.Monitor module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzActionGroup' command--verify your permissions and the installion of the Az.Monitor module; returned error message: $_"
     }
-
+    
     # Evaluate service health alerts and their associated action groups
     foreach($subscription in $subs){
         # Initialize
@@ -402,7 +366,7 @@ function Get-ServiceHealthAlerts {
         # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
-
+        
         try{
             # List activity log alerts (service health alerts) under current subscription set by the context
             $alerts = Get-AzActivityLogAlert
@@ -415,7 +379,7 @@ function Get-ServiceHealthAlerts {
                     $_.Field -eq "category" -and $_.Equal -eq "ServiceHealth" 
                 }
             }
-
+            
             # Condition: Non-compliant if no health alert found for any sub
             if($null -eq $filteredAlerts){
                 $isCompliant = $false
@@ -460,7 +424,7 @@ function Get-ServiceHealthAlerts {
             
 
                 if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsConditions)){
-                    Write-ServiceHealthRunLog -Message "Checking action group configuration next for subscription '$($subscription.Name)'..." -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $subscription.Name }
+                    Write-Verbose "Checking action group configuration next for subscription '$($subscription.Name)'..." 
                     $checkActionGroupNext = $true  
                 }
                 # Check if event types not configured for any service health alert i.e. Condition: non-compliant if null
@@ -469,7 +433,7 @@ function Get-ServiceHealthAlerts {
                     $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                 }
                 else{
-                    Write-ServiceHealthRunLog -Message "Selected required alert event types. Evaluating alert event types for the subscription '$($subscription.Name)'..." -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $subscription.Name }
+                    Write-Verbose "Selected required alert event types. Evaluating alert event types for the subscription '$($subscription.Name)'..." 
                     # event types selected; check of required condition
                     $requiredFilteredAlerts = $filteredAlertsConditions | where-object {
                         $_.ConditionAllOf | Where-Object {
@@ -508,7 +472,7 @@ function Get-ServiceHealthAlerts {
                 }
                 
                 if($checkActionGroupNext){
-                    Write-ServiceHealthRunLog -Message "Evaluating action groups for subscription '$($subscription.Name)'" -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $subscription.Name }
+                    Write-Verbose "Evaluating action groups for subscription '$($subscription.Name)'"
                     # Store compliance state of each action group
                     $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable -allEnabledActionGroups $allEnabledActionGroups -RunLog $RunLog -workspaceGuid $workspaceGuid -workspaceKey $workspaceKey
 
@@ -530,7 +494,7 @@ function Get-ServiceHealthAlerts {
                     # - If owners or monitoring roles are used and only 1 owner/monitoring role is assigned -> counts as 1 contact
                     # - If owners/monitoring roles are used and 2+ owners/monitoring roles are assigned -> counts as 2 contacts
                     $totalContacts = $evaluation.EffectiveContactCount
-                    Write-ServiceHealthRunLog -Message "Total effective contacts for subscription '$($subscription.Name)': $totalContacts" -RunLog $RunLog -WorkspaceGuid $workspaceGuid -WorkspaceKey $workspaceKey -AdditionalValues @{ subscriptionName = $subscription.Name }
+                    Write-Verbose "Total effective contacts for subscription '$($subscription.Name)': $totalContacts"
                     if ($totalContacts -ge 2) {
                         $isCompliant = $true
                         if ([string]::IsNullOrWhiteSpace($Comments)) {
@@ -563,7 +527,7 @@ function Get-ServiceHealthAlerts {
             ReportTime = $ReportTime
             itsgcode = $itsgcode
         }
-
+        
         # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
             $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
@@ -578,7 +542,6 @@ function Get-ServiceHealthAlerts {
     $moduleOutput = [PSCustomObject]@{
         ComplianceResults = $PsObject
         Errors = $ErrorList
-        RunLog = $RunLog
     }
 
     return $moduleOutput

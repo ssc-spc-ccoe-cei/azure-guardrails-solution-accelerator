@@ -2,7 +2,7 @@ param (
     [switch]$localExecution,
     [string]$keyVaultName
 )
-
+$VerbosePreference = "Continue"
 $diagnosticRunbookStart = Get-Date
 Write-Verbose ("Diagnostics: Runbook entry at {0}" -f $diagnosticRunbookStart)
 
@@ -537,14 +537,6 @@ foreach ($module in $modules) {
         try {
             Write-Output "Invoking Script for $($module.modulename)"
             $results = $NewScriptBlock.Invoke()
-
-            # Module output is captured in $results; explicitly forward any runlog entries
-            # so they appear in this main runbook's Azure Automation job output.
-            if ($null -ne $results.RunLog) {
-                foreach ($runLogEntry in @($results.RunLog)) {
-                    Write-Output "[$($module.ModuleName)] $runLogEntry"
-                }
-            }
 
             if ($enableMultiCloudProfiles -and $null -ne $results.ComplianceResults) {
                 # Some modules can return compliance rows without a Profile value.
