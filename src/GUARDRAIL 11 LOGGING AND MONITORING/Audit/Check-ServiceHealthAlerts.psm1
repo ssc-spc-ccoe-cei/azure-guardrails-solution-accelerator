@@ -1,47 +1,53 @@
-function Get-SubscriptionOwnerCount {
+
+function Get-SubscriptionRequiredRoleCount {
     <#
     .SYNOPSIS
-        Returns the number of owners assigned to the current subscription.
+        Returns the number of Owners/Monitoring role assignments (Contributor or Reader) assigned to the current subscription.
     .DESCRIPTION
-        Queries Azure RBAC to count how many principals have the Owner role
-        at the subscription scope. This is used to determine how many contacts
-        the "Owner" notification target actually represents.
+        Queries Azure RBAC to count how many principals have the Owner/Monitoring roles
+        (Contributor or Reader) at the subscription scope. This is used to determine how many contacts
+        the "Owners"/"Monitoring" notification target actually represents excluding the service pricipals.
     #>
     [CmdletBinding()]
-    param()
-
-    # Azure built-in Owner role ID (constant across all Azure tenants)
-    $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+    param (
+        [Parameter(Mandatory=$true)]
+        [string] $requiredRoleId
+    )
 
     try {
-        $ownerAssignments = Get-AzRoleAssignment -RoleDefinitionId $ownerRoleId -ErrorAction Stop 
-        return @($ownerAssignments).Count
+        $roleAssignments = Get-AzRoleAssignment -RoleDefinitionId $requiredRoleId -ErrorAction Stop | Where-Object { $_.ObjectType -ne 'ServicePrincipal' }
+        return @($roleAssignments).Count
     }
     catch {
-        Write-Output "Failed to retrieve subscription owner assignments: $_"
+        Write-Output "Failed to retrieve subscription required role assignments: $_"
         return 0
     }
 }
+
 
 function Get-ActionGroupContactTokens {
     <#
     .SYNOPSIS
         Extracts contact tokens from an Azure Action Group.
     .DESCRIPTION
-        Gathers all notification targets (email addresses and owner-role tokens)
+        Gathers all notification targets (email addresses and owner-role and ARM role receiver tokens)
         from the specified action group(s). Returns a unified set of "contact tokens"
         that can be used for counting unique contacts. Email addresses are returned
-        as-is, while Owner role receivers are prefixed with "Owner::" to distinguish
-        them from direct email contacts.
+        as-is. Owner role receivers are prefixed with "Owner::" to distinguish
+        them from direct email contacts, since the number of contacts they represent depends on actual number of subscription owners.
+        Monitoring Contributor and Monitoring Reader role receivers -- also valid Action Group "Email Azure Resource Manager role" 
+        targets -- are prefixed with "Role::" and, like email contacts, each unique receiver counts as a single contact.
     #>
     param (
         [Parameter(Mandatory=$true)]
         [Object[]] $ActionGroup
     )
 
-    # Azure built-in Owner role ID (constant across all Azure tenants)
+    # Azure built-in role IDs (constant across all Azure tenants)
     # Used as fallback when RoleName property is not populated
     $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+    $monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
+    $monitoringReaderRoleId = '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
 
     $emailTokens = @(
         $ActionGroup | ForEach-Object {
@@ -68,8 +74,43 @@ function Get-ActionGroupContactTokens {
         } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
     ) | Sort-Object -Unique
 
+    # Monitoring Contributor / Monitoring Reader ARM role receivers are also valid
+    $monitoringContributorRoleTokens = @(
+        $ActionGroup | ForEach-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
+                    $_.RoleId -eq $monitoringContributorRoleId
+                } | ForEach-Object {
+                    if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
+                        $_.Name.Trim()
+                    }
+                    elseif ($_.RoleId -is [string] -and $_.RoleId.Trim().Length -gt 0) {
+                        $_.RoleId.Trim()
+                    }
+                }
+            }
+        } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
+    ) | Sort-Object -Unique
+
+    $monitoringReaderRoleTokens = @(
+        $ActionGroup | ForEach-Object {
+            if ($_.ArmRoleReceiver) {
+                $_.ArmRoleReceiver | Where-Object {
+                    $_.RoleId -eq $monitoringReaderRoleId
+                } | ForEach-Object {
+                    if ($_.Name -is [string] -and $_.Name.Trim().Length -gt 0) {
+                        $_.Name.Trim()
+                    }
+                    elseif ($_.RoleId -is [string] -and $_.RoleId.Trim().Length -gt 0) {
+                        $_.RoleId.Trim()
+                    }
+                }
+            }
+        } | Where-Object { $_ -is [string] -and $_.Trim().Length -gt 0 }
+    ) | Sort-Object -Unique
+
     # Return array as single object (leading comma prevents PowerShell from unrolling the array)
-    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }))
+    return ,(@($emailTokens) + ($ownerTokens | ForEach-Object { "Owner::" + $_ }) + ($monitoringContributorRoleTokens | ForEach-Object { "MonitoringContributor::" + $_ }) + ($monitoringReaderRoleTokens | ForEach-Object { "MonitoringReader::" + $_ }))
 }
 
 function Validate-ActionGroups {
@@ -78,11 +119,11 @@ function Validate-ActionGroups {
         Validates action groups associated with service health alerts.
     .DESCRIPTION
         Evaluates each action group's notification contacts and returns aggregate
-        compliance results. When subscription owners are configured as notification
+        compliance results. When subscription owners and monitoring roles are configured as notification
         targets, the effective contact count depends on the actual number of owners
         assigned to the subscription:
-        - 1 owner assigned -> counts as 1 contact
-        - 2 or more owners assigned -> counts as 2 contacts
+        - 1 owner or monitoring role assigned -> counts as 1 contact
+        - 2 or more owners or monitoring roles assigned -> counts as 2 contacts
         Returns a PSCustomObject containing unique contacts, effective contact count,
         comments, and any errors encountered during validation.
     #>
@@ -96,9 +137,9 @@ function Validate-ActionGroups {
 
     # Evaluate each action group's contacts and surface aggregate results back to the caller.
     # When subscription owners are used as notification targets, the effective contact count
-    # depends on the actual number of owners assigned to the subscription:
-    #   - 1 owner assigned -> counts as 1 contact
-    #   - 2 or more owners assigned -> counts as 2 contacts
+    # depends on the actual number of owners/monitoring roles assigned to the subscription:
+    #   - 1 owner or monitoring role assigned -> counts as 1 contact
+    #   - 2 or more owners or monitoring roles assigned -> counts as 2 contacts
 
     # Retrieve action group IDs from alerts
     $actionGroupIds = $alerts | Select-Object -ExpandProperty ActionGroup | Select-Object -ExpandProperty Id
@@ -116,6 +157,7 @@ function Validate-ActionGroups {
 
         # Get action group IDs
         $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
+            Write-Verbose "Retrieved $($actionGroupIdsArray.Count) enabled action group IDs for subscription '$SubscriptionName'"
         if ($actionGroupIdsArray.Count -eq 0) {
             $comments.Add($MsgTable.noServiceHealthActionGroups -f $SubscriptionName) | Out-Null
             $errors.Add("No action groups were returned for this Service Health alert evaluation for the subscription: $SubscriptionName") | Out-Null
@@ -153,17 +195,33 @@ function Validate-ActionGroups {
     }
     
 
-    # Separate owner tokens from other contact tokens (e.g., email addresses)
+    # Separate owner tokens from other contact tokens (e.g., email addresses, Monitoring Contributor/Reader ARM role receivers
     $ownerTokens = @($uniqueContacts | Where-Object { $_ -like 'Owner::*' })
-    $nonOwnerTokens = @($uniqueContacts | Where-Object { $_ -notlike 'Owner::*' })
+    $monitoringContributorRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringContributor::*' })
+    $monitoringReaderRoleTokens = @($uniqueContacts | Where-Object { $_ -like 'MonitoringReader::*' })
+    $nonOwnerTokens = @($uniqueContacts |
+        Where-Object { $_ -notlike 'Owner::*'} |
+        Where-Object { $_ -notlike 'MonitoringContributor::*'} |
+        Where-Object { $_ -notlike 'MonitoringReader::*' }
+    )
+    Write-Verbose "Retrieved $($ownerTokens.Count) owner tokens for subscription '$SubscriptionName'"
+    Write-Verbose "Retrieved $($monitoringContributorRoleTokens.Count) monitoring contributor role tokens for subscription '$SubscriptionName'"
+    Write-Verbose "Retrieved $($monitoringReaderRoleTokens.Count) monitoring reader role tokens for subscription '$SubscriptionName'"
+    Write-Verbose "Retrieved $($nonOwnerTokens.Count) non-owner tokens for subscription '$SubscriptionName'"
 
     # Calculate effective contact count
-    # Non-owner contacts (emails, etc.) count as 1 each
+    # Non-owner contacts (emails, Monitoring Contributor/Reader role receivers, etc.) count as 1 each
     $effectiveContactCount = $nonOwnerTokens.Count
+
+    # Azure built-in Owner/Monitoring role role ID (constant across all Azure tenants)
+    $ownerRoleId = '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+    $monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
+    $monitoringReaderRoleId = '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
 
     # If subscription owners are being used as notification targets, check actual owner count
     if ($ownerTokens.Count -gt 0) {
-        $subscriptionOwnerCount = Get-SubscriptionOwnerCount
+        $subscriptionOwnerCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $ownerRoleId
+        Write-Verbose "Retrieved $subscriptionOwnerCount owner assignments for the current Subscription: $SubscriptionName"
         
         if ($subscriptionOwnerCount -eq 0) {
             # No owners found - this is unusual, log a warning
@@ -179,6 +237,46 @@ function Validate-ActionGroups {
         }
     }
 
+    # If subscription monitoring contributor roles are being used as notification targets, check actual monitoring role count  
+    if ($monitoringContributorRoleTokens.Count -gt 0) {
+        
+        $monitoringContributorCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $monitoringContributorRoleId
+        Write-Verbose "Retrieved $monitoringContributorCount assignments for the current Subscription: $SubscriptionName"
+                
+        if ($monitoringContributorCount -eq 0) {
+            # No monitoring roles found
+            $errors.Add("No subscription monitoring contributor roles found for subscription '$SubscriptionName' despite non-owner contacts being configured as notification targets.") | Out-Null
+        }
+        elseif ($monitoringContributorCount -eq 1) {
+            # Only 1 monitoring role assigned -> counts as 1 contact
+            $effectiveContactCount += 1
+        }
+        else {
+            # 2 or more monitoring roles assigned -> counts as 2 contacts
+            $effectiveContactCount += 2
+        }
+    }
+
+    # If subscription monitoring reader roles are being used as notification targets, check actual monitoring readerrole count  
+    if ($monitoringReaderRoleTokens.Count -gt 0) {
+        
+        $monitoringReaderCount = Get-SubscriptionRequiredRoleCount -requiredRoleId $monitoringReaderRoleId
+        Write-Verbose "Retrieved $monitoringReaderCount assignments for the current Subscription: $SubscriptionName"
+        if ($monitoringReaderCount -eq 0) {
+            # No monitoring roles found
+            $errors.Add("No subscription monitoring reader roles found for subscription '$SubscriptionName'.") | Out-Null
+        }
+        elseif ($monitoringReaderCount -eq 1) {
+            # Only 1 monitoring role assigned -> counts as 1 contact
+            $effectiveContactCount += 1
+        }
+        else {
+            # 2 or more monitoring roles assigned -> counts as 2 contacts
+            $effectiveContactCount += 2
+        }
+    }
+
+
     return [PSCustomObject]@{
         UniqueContacts = @($uniqueContacts)
         EffectiveContactCount = $effectiveContactCount
@@ -187,7 +285,14 @@ function Validate-ActionGroups {
     }
 }
 
+
 function Get-ServiceHealthAlerts {
+    <#
+    .SYNOPSIS
+        Retrieves service health alerts for the specified subscriptions.
+    .DESCRIPTION
+        This function queries Azure Monitor to get all enabled action groups and evaluates the service health alerts for the subscriptions.
+    #>
     param (
         [Parameter(Mandatory=$true)]
         [string]$ControlName,
@@ -202,18 +307,18 @@ function Get-ServiceHealthAlerts {
         [string] 
         $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] 
-        $EnableMultiCloudProfiles # feature flag, default to false
+        [switch] $EnableMultiCloudProfiles # feature flag
     )
 
     [PSCustomObject] $PsObject = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-
+    
     # Get All the Subscriptions
     try {
         $allSubs = Get-AzSubscription -ErrorAction Stop
         $subs = @($allSubs | Where-Object {$_.State -eq "Enabled"})
         $skippedSubs = @($allSubs | Where-Object {$_.State -ne "Enabled"})
+        Write-Verbose "Total enabled subscriptions: $($subs.Count)"
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
@@ -252,7 +357,7 @@ function Get-ServiceHealthAlerts {
         $ErrorList.Add("Failed to execute the 'Get-AzActionGroup' command--verify your permissions and the installion of the Az.Monitor module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzActionGroup' command--verify your permissions and the installion of the Az.Monitor module; returned error message: $_"
     }
-
+    
     # Evaluate service health alerts and their associated action groups
     foreach($subscription in $subs){
         # Initialize
@@ -263,12 +368,13 @@ function Get-ServiceHealthAlerts {
         # find subscription information
         $subId = $subscription.Id
         Set-AzContext -SubscriptionId $subId
-
+        Write-Verbose "Evaluating service health alerts for subscription '$($subscription.Name)'"
+        
         try{
             # List activity log alerts (service health alerts) under current subscription set by the context
             $alerts = Get-AzActivityLogAlert
             $enabledAlerts = $alerts | Where-Object { $_.Enabled -eq $true }
-
+            
             # Filter for Service Health Alerts with specific conditions
             $filteredAlerts = $enabledAlerts | Where-Object {
                 # Check if any condition in ConditionAllOf matches the criteria
@@ -276,20 +382,41 @@ function Get-ServiceHealthAlerts {
                     $_.Field -eq "category" -and $_.Equal -eq "ServiceHealth" 
                 }
             }
-
+            Write-Verbose "Total enabled service health alerts: $($filteredAlerts.Count) for the subscription '$($subscription.Name)'"
+            
             # Condition: Non-compliant if no health alert found for any sub
             if($null -eq $filteredAlerts){
                 $isCompliant = $false
                 $Comments = $msgTable.noEnabledHealthAlert
             }
             else{
-                # Case: when all the alert event types are selected from the conditions/properties.incidentType
-                $allAnyOfNullOrEmpty = $filteredAlerts.ConditionAllOf -notmatch '\S' -or ($filteredAlerts.ConditionAllOf | ForEach-Object {
-                    if ($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0) {$true} else {$false}
-                }) -notcontains $false
+                # Case: consider multiple alerts exists for the subscription;
+                # When all event types are selected from the conditions/properties.incidentType
 
-                #Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
-                $filteredAlertsContions = $filteredAlerts | Where-Object {
+                # Create object with each alert and boolean indicating if all event types are selected
+                $alertEventTypeSelectionds = @(
+                    foreach($alert in $filteredAlerts){
+                        $isAllEventTypesSelected = $alert.ConditionAllOf -notmatch '\S' -or ($_.ConditionAllOf | ForEach-Object {
+                            if ($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0) {$true} else {$false}
+                        }) -notcontains $false
+
+                        [PSCustomObject]@{
+                            Alert                   = $alert
+                            IsAllEventTypesSelected = $isAllEventTypesSelected
+                        }
+                    }
+                )
+
+                # Filter alerts where all event types are selected
+                $allAnyOfNullOrEmpty = $false
+                $alertsWithAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $true }
+                if($alertsWithAllEventTypesSelected.Count -gt 0){
+                    $allAnyOfNullOrEmpty = $true
+                }
+
+                # Filter alerts where 3 required event types are selected
+                # Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
+                $filteredAlertsConditions = $alertEventTypeSelectionds  | Where-Object {
                     # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
                     ($_.ConditionAllOf | Where-Object {
                         $_.AnyOf | Where-Object { 
@@ -297,17 +424,21 @@ function Get-ServiceHealthAlerts {
                         }
                     }).Count -eq 1
                 }
+                Write-Verbose "Retrieved the filtered alerts with required event types for subscription '$($subscription.Name)': $($filteredAlertsConditions.Count)"
 
-                if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsContions)){
+                if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsConditions)){
+                    Write-Verbose "Checking action group configuration next for subscription '$($subscription.Name)'..." 
                     $checkActionGroupNext = $true  
                 }
                 # Check if event types not configured for any service health alert i.e. Condition: non-compliant if null
-                elseif($null -eq $filteredAlertsContions.Count){
+                elseif($null -eq $filteredAlertsConditions.Count){
                     $isCompliant = $false
                     $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                 }
                 else{
-                    $requiredFilteredAlerts = $filteredAlertsContions | where-object {
+                    Write-Verbose "Selected required alert event types. Evaluating alert event types for the subscription '$($subscription.Name)'..." 
+                    # event types selected; check of required condition
+                    $requiredFilteredAlerts = $filteredAlertsConditions | where-object {
                         $_.ConditionAllOf | Where-Object {
                             $_.AnyOf | Where-Object { 
                                 $_.Field -eq "properties.incidentType"
@@ -321,7 +452,9 @@ function Get-ServiceHealthAlerts {
                         }
                     }
 
-                    # Condition: non-compliant if alert conditions<3
+                    # Evaluating alert event types
+
+                    # Condition: non-compliant if alert conditions < 3
                     if ($incidentTypes.Count -lt 3) {
                         $isCompliant = $false
                         $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
@@ -342,6 +475,7 @@ function Get-ServiceHealthAlerts {
                 }
                 
                 if($checkActionGroupNext){
+                    Write-Verbose "Evaluating action groups for subscription '$($subscription.Name)'"
                     # Store compliance state of each action group
                     $evaluation = Validate-ActionGroups -alerts $filteredAlerts -SubscriptionName $subscription.Name -SubscriptionId $subId -MsgTable $msgTable -allEnabledActionGroups $allEnabledActionGroups
 
@@ -360,9 +494,10 @@ function Get-ServiceHealthAlerts {
                     }
 
                     # Use EffectiveContactCount which accounts for subscription owner count logic:
-                    # - If owners are used and only 1 owner is assigned -> counts as 1 contact
-                    # - If owners are used and 2+ owners are assigned -> counts as 2 contacts
+                    # - If owners or monitoring roles are used and only 1 owner/monitoring role is assigned -> counts as 1 contact
+                    # - If owners/monitoring roles are used and 2+ owners/monitoring roles are assigned -> counts as 2 contacts
                     $totalContacts = $evaluation.EffectiveContactCount
+                    Write-Verbose "Total effective contacts for subscription '$($subscription.Name)': $totalContacts"
                     if ($totalContacts -ge 2) {
                         $isCompliant = $true
                         if ([string]::IsNullOrWhiteSpace($Comments)) {
@@ -395,7 +530,7 @@ function Get-ServiceHealthAlerts {
             ReportTime = $ReportTime
             itsgcode = $itsgcode
         }
-
+        
         # Add profile information if MCUP feature is enabled
         if ($EnableMultiCloudProfiles) {
             $result = Add-ProfileInformation -Result $C -CloudUsageProfiles $CloudUsageProfiles -ModuleProfiles $ModuleProfiles -SubscriptionId $subId -ErrorList $ErrorList
