@@ -5258,15 +5258,15 @@ function FetchAllUserRawData {
                         try {
                             # Resolve the home tenant for external B2B users regardless of whether
                             # Entra represents the account as Guest or Member.
-                            Write-Verbose "Home tenant check: UPN='$($user.userPrincipalName)', UserType='$($user.userType)'"
+                            #Write-Verbose "Home tenant check: UPN='$($user.userPrincipalName)', UserType='$($user.userType)'"
                             $domain = Get-ExternalUserHomeDomain -User $user
-                            Write-Verbose "Home tenant domain: UPN='$($user.userPrincipalName)', Domain='$domain'"
+                            #Write-Verbose "Home tenant domain: UPN='$($user.userPrincipalName)', Domain='$domain'"
 
                             if ($domain) {
                                 $resolutionResult = Get-TenantIdWithCache `
                                     -Domain $domain `
                                     -Cache $domainTenantCache
-                                Write-Verbose "Home tenant resolution: UPN='$($user.userPrincipalName)', Domain='$domain', TenantId='$($resolutionResult.TenantId)', Success='$($resolutionResult.ResolutionSucceeded)'"
+                                #Write-Verbose "Home tenant resolution: UPN='$($user.userPrincipalName)', Domain='$domain', TenantId='$($resolutionResult.TenantId)', Success='$($resolutionResult.ResolutionSucceeded)'"
                                 if ($resolutionResult.ResolutionSucceeded) {
                                     $resolvedTenantId = [string]$resolutionResult.TenantId
                                     if ($resolvedTenantId -ne $currentTenantId) {
