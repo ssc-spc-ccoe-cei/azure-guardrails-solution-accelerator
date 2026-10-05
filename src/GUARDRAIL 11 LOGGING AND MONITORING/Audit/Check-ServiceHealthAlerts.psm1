@@ -416,11 +416,7 @@ function Get-ServiceHealthAlerts {
                 )
 
                 # Filter alerts where all event types are selected
-                $allAnyOfNullOrEmpty = $false
                 $alertsWithAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $true }
-                if($alertsWithAllEventTypesSelected.Count -gt 0){
-                    $allAnyOfNullOrEmpty = $true
-                }
 
                 # Filter alerts without 'select all' for all event types
                 $alertsWithoutAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $false }
