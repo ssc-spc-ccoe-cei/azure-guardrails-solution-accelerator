@@ -1074,6 +1074,7 @@ let excludedAgentUsers = rawUserData
 let externalUsers = rawUserData
 | where guardrailsExcluded == false
 | where agentUserExcluded == false
+| where homeTenantResolved_b == true
 | where isnotempty(homeTenantId);
 let internalUsers = rawUserData
 | where guardrailsExcluded == false

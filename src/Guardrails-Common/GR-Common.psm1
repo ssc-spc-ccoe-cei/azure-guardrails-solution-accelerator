@@ -5677,8 +5677,8 @@ function Get-ExternalUserHomeDomain {
     #
     # Do not use every Member's email domain because ordinary
     # internal users are also Member users.
-    if ($User.userType -eq 'Guest' -and
-        $User.mail -and
+    #if ($User.userType -eq 'Guest' -and
+    if ($User.mail -and
         $User.mail -match '@(.+)$') {
 
         return $Matches[1]
