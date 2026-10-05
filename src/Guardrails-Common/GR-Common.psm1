@@ -5609,29 +5609,7 @@ GuardrailsUserRaw_CL
 # Guest User Cross-Tenant MFA Trust Functions
 # ============================================================================
 
-# Function to extract domain from guest user UPN or email
-function Get-GuestUserHomeDomain {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory=$true)]
-        [string] $UserPrincipalName,
-        
-        [Parameter(Mandatory=$false)]
-        [string] $Mail
-    )
-    
-    # Extract domain from UPN (format: user_domain.com#EXT#@hosttenant.com)
-    # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
-    if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
-        return $Matches[1]
-    }
-    # Or extract from mail
-    elseif ($Mail -and $Mail -match '@(.+)$') {
-        return $Matches[1]
-    }
-    
-    return $null
-}
+# Function to extract domain from a user identities, issuer domains, or external tenant resolution.
 
 function Get-ExternalUserHomeDomain {
     [CmdletBinding()]
