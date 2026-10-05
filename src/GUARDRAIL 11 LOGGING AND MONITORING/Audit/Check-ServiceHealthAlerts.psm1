@@ -154,7 +154,6 @@ function Validate-ActionGroups {
 
     # Get all enabled action groups for the subscription
     try{
-
         # Get action group IDs
         $actionGroupIdsArray = [System.Collections.ArrayList]@($actionGroupIds | Where-Object { $_ -in $allEnabledActionGroups.Id })
             Write-Verbose "Retrieved $($actionGroupIdsArray.Count) enabled action group IDs for subscription '$SubscriptionName'"
@@ -364,6 +363,7 @@ function Get-ServiceHealthAlerts {
         $isCompliant = $false
         $Comments = ""
         $checkActionGroupNext = $false
+        $eventTypeConditionPass = $false
 
         # find subscription information
         $subId = $subscription.Id
@@ -394,11 +394,19 @@ function Get-ServiceHealthAlerts {
                 # When all event types are selected from the conditions/properties.incidentType
 
                 # Create object with each alert and boolean indicating if all event types are selected
+
                 $alertEventTypeSelectionds = @(
                     foreach($alert in $filteredAlerts){
-                        $isAllEventTypesSelected = $alert.ConditionAllOf -notmatch '\S' -or ($_.ConditionAllOf | ForEach-Object {
-                            if ($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0) {$true} else {$false}
-                        }) -notcontains $false
+                        $isAllEventTypesSelected = 
+                            if ($alert.ConditionAllOf.Count -gt 1) {
+                                $false
+                            } 
+                            else{
+                                $alert.ConditionAllOf -notmatch '\S' -or ($_.ConditionAllOf | ForEach-Object {
+                                    if ($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0) {$true} else {$false}
+                                }) -notcontains $false
+                            }
+                        
 
                         [PSCustomObject]@{
                             Alert                   = $alert
@@ -414,36 +422,51 @@ function Get-ServiceHealthAlerts {
                     $allAnyOfNullOrEmpty = $true
                 }
 
+                # Filter alerts without 'select all' for all event types
+                $alertsWithoutAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $false }
+
                 # Filter alerts where 3 required event types are selected
                 # Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
-                $filteredAlertsConditions = $alertEventTypeSelectionds  | Where-Object {
+                $filteredAlertsConditions = $alertsWithoutAllEventTypesSelected  | Where-Object {
                     # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
                     ($_.ConditionAllOf | Where-Object {
+
                         $_.AnyOf | Where-Object { 
                             $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
                         }
-                    }).Count -eq 1
+                    }).Count -eq 0
                 }
-                Write-Verbose "Retrieved the filtered alerts with required event types for subscription '$($subscription.Name)': $($filteredAlertsConditions.Count)"
-
-                if($allAnyOfNullOrEmpty -and ($null -eq $filteredAlertsConditions)){
-                    Write-Verbose "Checking action group configuration next for subscription '$($subscription.Name)'..." 
-                    $checkActionGroupNext = $true  
-                }
-                # Check if event types not configured for any service health alert i.e. Condition: non-compliant if null
-                elseif($null -eq $filteredAlertsConditions.Count){
+                $totalAlertsWithRequiredEventTypes = $alertsWithAllEventTypesSelected.Count + $filteredAlertsConditions.Count
+                Write-Verbose "Retrieved the filtered alerts with required event types for subscription '$($subscription.Name)': $($totalAlertsWithRequiredEventTypes.Count)"
+                if($null -eq $alertsWithAllEventTypesSelected -and ($null -eq $filteredAlertsConditions)){
+                    # CASE:alert condition event types does not meet required condition
+                    # checkActionGroupNext remains false
                     $isCompliant = $false
                     $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                 }
-                else{
-                    Write-Verbose "Selected required alert event types. Evaluating alert event types for the subscription '$($subscription.Name)'..." 
+                elseif($alertsWithAllEventTypesSelected.Count -gt 0 -and ($null -eq $filteredAlertsConditions)){
+                    # CASE: Alert condition event types have met the required criteria; check action group condition
+                    Write-Verbose "Checking action group configuration next for subscription '$($subscription.Name)'..." 
+                    # $checkActionGroupNext = $true
+                    $eventTypeConditionPass = $true
+                      
+                }
+                elseif($null -eq $alertsWithAllEventTypesSelected  -and $filteredAlertsConditions.Count -gt 0){
+                    # CASE: Alert condition event types are selected; evaluate for 3 required event types
+                    Write-Verbose "Selected alert event types. Evaluating alert event types for the subscription '$($subscription.Name)'..." 
                     # event types selected; check of required condition
-                    $requiredFilteredAlerts = $filteredAlertsConditions | where-object {
-                        $_.ConditionAllOf | Where-Object {
-                            $_.AnyOf | Where-Object { 
-                                $_.Field -eq "properties.incidentType"
-                        }}
+                    $requiredFilteredAlerts = $filteredAlertsConditions | Select-Object -ExpandProperty Alert |where-object {
+                        (
+                            $_.ConditionAllOf | Where-Object {
+                            # ($null -ne $_.AnyOf) -and 
+                                ($_.AnyOf.Count -gt 0) -and
+                                    ($_.AnyOf | Where-Object { 
+                                        $_.Field -eq "properties.incidentType"
+                                    })
+                            }
+                        ).Count -gt 0
                     }
+                    
                     $incidentTypes = $requiredFilteredAlerts | ForEach-Object {
                         $_.ConditionAllOf | ForEach-Object {
                             $_.AnyOf | Where-Object {
@@ -459,21 +482,75 @@ function Get-ServiceHealthAlerts {
                         $isCompliant = $false
                         $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                     }
-                    # Condition: if allAnyOfNullOrEmpty is true, means All ConditionAllOf.AnyOf are null or empty -> all 4 conditions are selected
-                    elseif($allAnyOfNullOrEmpty -and $filteredAlerts.Count -eq 3){
-                       $checkActionGroupNext = $true
-                    }
-                    # Condition: non-compliant if not meet the 3 requires alert conditions ("Service Issues" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security")
+                    # Condition: Meets the 3 requires alert conditions ("Service Issues" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security")
                     elseif (($incidentTypes.Count -ge- 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
-                        $checkActionGroupNext = $true
+                        Write-Verbose "Meets the 3 requires alert conditions for subscription '$($subscription.Name)'. Checking action group condition next"
+                        # $checkActionGroupNext = $true
+                        $eventTypeConditionPass = $true
                     }
                     else{
                         # Condition: non-compliant if 3 correct alert conditions are not met
+                        Write-Verbose "The condition for the required 3 event types are not met"
                         $isCompliant = $false
                         $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                     }
                 }
+                elseif($alertsWithAllEventTypesSelected.Count -gt 0  -and $filteredAlertsConditions.Count -gt 0){
+                    # multiple service alert exists for the same subscription with carious alert event type selection
+                    # Evaluate each filtered alert for compliance
+
+                    # First, evaluate each filtered alert for the required 3 event types
+                    #any of the filtered alerts must meet the 3 required event types to proceed with action group evaluation
+                    $eventTypeConditionPass = @()
+                    foreach ($alert in $filteredAlertsConditions) {
+                        $pass = $false
+                        # $incidentTypes = $alert.Properties | Where-Object { $_.Name -eq "IncidentType" } | Select-Object -ExpandProperty Value
+                        $requiredFilteredAlerts = $filteredAlertsConditions | Select-Object -ExpandProperty Alert |where-object {
+                            (
+                                $_.ConditionAllOf | Where-Object {
+                                # ($null -ne $_.AnyOf) -and 
+                                    ($_.AnyOf.Count -gt 0) -and
+                                        ($_.AnyOf | Where-Object { 
+                                            $_.Field -eq "properties.incidentType"
+                                        })
+                                }
+                            ).Count -gt 0
+                        }
+                        
+                        $incidentTypes = $requiredFilteredAlerts | ForEach-Object {
+                            $_.ConditionAllOf | ForEach-Object {
+                                $_.AnyOf | Where-Object {
+                                    $_.Field -eq "properties.incidentType"
+                                }
+                            }
+                        }
+                        if (($incidentTypes.Count -ge 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
+                            Write-Verbose "Filtered alert '$($alert.Name)' meets the 3 required event types for subscription '$($subscription.Name)'."
+                            $checkActionGroupNext = $true
+                            $pass = $true
+                        }
+                        else {
+                            Write-Verbose "Filtered alert '$($alert.Name)' does not meet the 3 required event types for subscription '$($subscription.Name)'."
+                            # Do not proceed to evaluate action groups for this alert as it does not meet the required event types.
+                            # Proceed to the next alert without evaluating action groups for this one.
+                            $pass = $false
+                        }
+                        $eventTypeConditionPass += $pass
+                    }
+
+                    # add to eventTypeConditionPass for the alerts in $alertsWithAllEventTypesSelected
+                    if ($alertsWithAllEventTypesSelected) {
+                        $pass = $true
+                        # Evaluate each alert with all event types selected
+                        $eventTypeConditionPass += $pass
+                    }
+                }
                 
+                # Determine if any alerts passed the event type condition
+                $checkActionGroupNext = $eventTypeConditionPass -contains $true
+
+                
+                # Proceed to evaluate action groups as previous per previous evaluation condition
                 if($checkActionGroupNext){
                     Write-Verbose "Evaluating action groups for subscription '$($subscription.Name)'"
                     # Store compliance state of each action group
