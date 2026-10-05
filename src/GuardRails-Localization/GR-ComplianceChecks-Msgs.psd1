@@ -56,8 +56,8 @@ nonCompliantLaw = The LAW {0} does not match the config.json file.
 logsNotCollected = Not all of the required logs are being collected.
 gcEventLogging = User Account GC Event Logging Check
 gcEventLoggingCompliantComment = Logs are collected, stored and retained to meet this control's requirements.
-lockLevelApproved = The Log Analytics Workspace {0} has an approved lock level of {1}. 
-lockLevelNotApproved = The Log Analytics Workspace {0} has a lock level of {1} which is not approved. Approved lock levels are 'ReadOnly' or 'DeleteOnly'.
+lockLevelApproved = The Log Analytics Workspace {0} has approved lock level(s): {1}. 
+lockLevelNotApproved = The Log Analytics Workspace {0} has unapproved lock level(s): {1}. Approved lock levels are 'ReadOnly' or 'DeleteOnly'.
 tagFound = The Log Analytics Workspace {0} has a resource tag 'sentinel' with a value of 'true' which indicates that it is being used for Sentinel. 'DeleteOnly' lock is recommended. 
 sentinelTablesFound = The Log Analytics Workspace {0} has Sentinel tables configured. The Log Analytics Workspace is missing the Sentinel resource tag expected, please update or add the tag to: sentinel=true.
 noLockNoTagNoTables = The Log Analytics Workspace {0} does not have an approved  'ReadOnly' or 'DeleteOnly' lock in place. Refer to the Remediation Guide for more information.
