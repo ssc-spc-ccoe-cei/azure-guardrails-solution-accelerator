@@ -1,14 +1,14 @@
 // Data Collection Rules (DCRs) for DCR-based Log Ingestion API.
 // DCRs are kind 'Direct' and expose their own logsIngestion endpoints, so no separate endpoint resource is required.
 
+// Both top-level DCRs use the same trusted tag set as the other resources.
+param mandatoryTags object
 param location string
 param logAnalyticsWorkspaceResourceId string
 // Workspace name is used to declare table existing-resource references so ARM enforces
 // resource-level readiness before the DCR is created or updated (prevents InvalidOutputTable).
 param logAnalyticsWorkspaceName string
 param dcrName string = 'guardrails-dcr'
-param releaseVersion string
-param releaseDate string
 param newDeployment bool = true
 param updateCoreResources bool = false
 
@@ -77,10 +77,7 @@ resource tableGR2ExternalUsers 'Microsoft.OperationalInsights/workspaces/tables@
 resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' = if (newDeployment || updateCoreResources) {
   name: dcrName
   location: location
-  tags: {
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
-  }
+  tags: mandatoryTags
   kind: 'Direct'
   // Wait for every output-stream table to reach Succeeded before ARM validates the DCR.
   // Module-level dependsOn alone (deployment granularity) is insufficient — ARM can mark a
@@ -737,10 +734,7 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2024-03-11' 
 resource dataCollectionRule2 'Microsoft.Insights/dataCollectionRules@2024-03-11' = if (newDeployment || updateCoreResources) {
   name: dcrName2
   location: location
-  tags: {
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
-  }
+  tags: mandatoryTags
   kind: 'Direct'
   dependsOn: [
     tableGR2UsersWithoutGroups

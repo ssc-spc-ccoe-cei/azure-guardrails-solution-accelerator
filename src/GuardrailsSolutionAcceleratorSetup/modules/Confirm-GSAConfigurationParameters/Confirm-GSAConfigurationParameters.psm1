@@ -1,3 +1,4 @@
+Import-Module "$PSScriptRoot/../Manage-GSATags/Manage-GSATags.psd1"
 Function Confirm-GSASubscriptionSelection {
     param (
         # config object
@@ -410,8 +411,11 @@ Function Confirm-GSAConfigurationParameters {
         $userId = (Get-AzAdUser -SignedIn).Id
     }
 
-    ## gets tags information from tags.json, including version and release date.
-    $tagsTable = get-content -path "$PSScriptRoot/../../../../setup/tags.json" | convertfrom-json -AsHashtable
+    # Load the local file as initial tag input, keeping client custom tags.
+    # Once the deployment source is resolved, Deploy-GuardrailsSolutionAccelerator
+    # replaces the three mandatory values with official GitHub values before writing
+    # resources or exporting configuration. Local release values are not authoritative.
+    $tagsTable = ConvertTo-GSATagTable -InputObject (Get-Content -LiteralPath "$PSScriptRoot/../../../../setup/tags.json" -Raw | ConvertFrom-Json -AsHashtable)
 
     ## unique resource name suffix, default to last segment of tenant ID
     If ([string]::IsNullOrEmpty($config.uniqueNameSuffix)) {

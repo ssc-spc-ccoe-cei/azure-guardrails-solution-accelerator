@@ -253,6 +253,12 @@ jobs:
               try {
                   $ErrorActionPreference = 'Stop'
                   ipmo ./src/GuardrailsSolutionAcceleratorSetup
+                  # Blob staging has no release ref, so installers with tag protection
+                  # need the checked-out commit. Check the imported command first:
+                  # older release installers do not accept this parameter.
+                  if ((Get-Command Deploy-GuardrailsSolutionAccelerator).Parameters.ContainsKey('gitHubSourceRef')) {
+                      $optionalParams['gitHubSourceRef'] = (git rev-parse HEAD).Trim()
+                  }
                   if ($TEST_UPGRADE_VAR -eq "true"){
                     Write-Output "Upgrade workflow flag is set to '$TEST_UPGRADE_VAR'"
                     Write-Output "Upgrading the CaC solution"

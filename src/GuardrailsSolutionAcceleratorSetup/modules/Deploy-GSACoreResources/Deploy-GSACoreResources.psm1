@@ -1,3 +1,5 @@
+Import-Module "$PSScriptRoot/../Manage-GSATags/Manage-GSATags.psd1"
+
 function Ensure-GSAStorageRoleAssignment {
     param (
         [Parameter(Mandatory = $true)]
@@ -44,7 +46,9 @@ Function Deploy-GSACoreResources {
     # create resource broup
     Write-Verbose "Creating resource group '$($config['runtime']['resourceGroup'])' in '$($config.region)' location."
     try {
-        New-AzResourceGroup -Name $config['runtime']['resourceGroup'] -Location $config.region -Tags $config['runtime']['tagstable'] -ErrorAction Stop -Force | Out-Null
+        Invoke-GSATagPolicyOperation {
+            New-AzResourceGroup -Name $config['runtime']['resourceGroup'] -Location $config.region -Tags $config['runtime']['tagstable'] -ErrorAction Stop -Force | Out-Null
+        }
     }
     catch { 
         throw "Error creating resource group. $_" 
@@ -56,8 +60,15 @@ Function Deploy-GSACoreResources {
     $mainBicepDeployment = $null
     for ($deploymentAttempt = 1; $deploymentAttempt -le ($deploymentRetryDelaysInSeconds.Count + 1); $deploymentAttempt++) {
         try {
-            $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
-                -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
+            $mainBicepDeployment = Invoke-GSATagPolicyOperation {
+                $result = New-AzResourceGroupDeployment -ResourceGroupName $config['runtime']['resourceGroup'] -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
+                    -TemplateParameterObject $paramObject -TemplateFile "$PSScriptRoot/../../../../setup/IaC/guardrails.bicep" -WarningAction SilentlyContinue -ErrorAction Stop
+                # Confirm Azure completed the deployment before reporting success.
+                # Otherwise the installer could finish the policy transition and
+                # reject the previous tags while core resources are still incomplete.
+                if ($result.ProvisioningState -ne 'Succeeded') { throw 'Core resource deployment did not succeed.' }
+                $result
+            }
             break
         }
         catch {
