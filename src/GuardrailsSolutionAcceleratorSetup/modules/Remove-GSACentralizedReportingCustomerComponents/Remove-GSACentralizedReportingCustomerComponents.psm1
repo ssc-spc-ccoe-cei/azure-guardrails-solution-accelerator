@@ -68,9 +68,9 @@ Function Remove-GSACentralizedReportingCustomerComponents {
     # get lighthouse definitions for the managing tenant
     Write-Verbose "Checking for lighthouse registration definitions for managing tenant '$lighthouseServiceProviderTenantID'..."
 
-    $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationdefinitions?api-version=2022-01-01-preview&$filter=managedByTenantId eq {1}' -f `
+    $definitionsUri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationdefinitions?api-version=2022-01-01-preview&$filter=managedByTenantId eq {1}' -f `
         $config.subscriptionId, "'$lighthouseServiceProviderTenantID'"
-    $response = Invoke-AzRestMethod -Method GET -Uri $uri
+    $response = Invoke-AzRestMethod -Method GET -Uri $definitionsUri
 
     If ($response.StatusCode -notin 200,404) {
         Write-Error "An error occurred while retrieving Lighthouse registration definitions. Error: $($response.Content)"
@@ -92,21 +92,21 @@ Function Remove-GSACentralizedReportingCustomerComponents {
         Write-Verbose "Found '$($guardrailReaderDefinitions.count)' Lighthouse registration definitions for the managing tenant ID '$lighthouseServiceProviderTenantID' with the description 'SSC CSPM - Read Guardrail Status'."
         #remove lighthouse assignments
         Write-Verbose "Checking for Lighthouse assignments for managing tenant '$lighthouseServiceProviderTenantID' and definition ID '$($guardrailReaderDefinitions.id)'..."
-        $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationAssignments?api-version=2022-01-01-preview&$filter=registrationDefinitionId eq {1}' -f `
+        $assignmentsUri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationAssignments?api-version=2022-01-01-preview&$filter=registrationDefinitionId eq {1}' -f `
             $config.subscriptionId, "'$($guardrailReaderDefinitions.id)'"
-        $response = Invoke-AzRestMethod -Method GET -Uri $uri -Verbose
+        $response = Invoke-AzRestMethod -Method GET -Uri $assignmentsUri -Verbose
 
         If ($response.StatusCode -notin 200,404) {
             Write-Error "An error occurred while retrieving Lighthouse assignments. Error: $($response.Content)"
             break
         }
 
-        $assignmentValue = $response.Content | ConvertFrom-Json
+        $assignmentValue = ($response.Content | ConvertFrom-Json).value
     
         ForEach ($assignment in $assignmentValue) {
-            If ($assignment.Value.name) {
-                Write-Verbose "Deleting lighthouse assignment '$($assignment.Value.id)'"
-                $uri = 'https://management.azure.com{0}?api-version=2022-01-01-preview' -f $assignment.value.id
+            If ($assignment.name) {
+                Write-Verbose "Deleting lighthouse assignment '$($assignment.id)'"
+                $uri = 'https://management.azure.com{0}?api-version=2022-01-01-preview' -f $assignment.id
     
                 $response = Invoke-AzRestMethod -Method DELETE -Uri $uri -Verbose
 
@@ -116,6 +116,26 @@ Function Remove-GSACentralizedReportingCustomerComponents {
                 }
             }
         }
+
+        $assignmentDeletionDeadline = (Get-Date).AddMinutes(5)
+        do {
+            $response = Invoke-AzRestMethod -Method GET -Uri $assignmentsUri -ErrorAction Stop
+            if ($response.StatusCode -notin 200,404) {
+                Write-Error "An error occurred while checking Lighthouse assignments. Error: $($response.Content)"
+                break
+            }
+
+            $remainingAssignments = ($response.Content | ConvertFrom-Json).value
+            if (!$remainingAssignments -or $remainingAssignments.Count -eq 0) {
+                break
+            }
+            if ((Get-Date) -ge $assignmentDeletionDeadline) {
+                Write-Error "Timed out waiting for Lighthouse assignments to finish deleting."
+                break
+            }
+
+            Start-Sleep -Seconds 5
+        } while ($true)
     
         ForEach ($definition in $guardrailReaderDefinitions) {
             if ($definition.name) {
@@ -136,6 +156,27 @@ Function Remove-GSACentralizedReportingCustomerComponents {
                 }
             }
         }
+
+        $definitionDeletionDeadline = (Get-Date).AddMinutes(5)
+        do {
+            $response = Invoke-AzRestMethod -Method GET -Uri $definitionsUri -ErrorAction Stop
+            if ($response.StatusCode -notin 200,404) {
+                Write-Error "An error occurred while checking Lighthouse registration definitions. Error: $($response.Content)"
+                break
+            }
+
+            $remainingDefinitions = ($response.Content | ConvertFrom-Json).value |
+                Where-Object { $_.Properties.registrationDefinitionName -eq 'SSC CSPM - Read Guardrail Status' }
+            if (!$remainingDefinitions -or $remainingDefinitions.Count -eq 0) {
+                break
+            }
+            if ((Get-Date) -ge $definitionDeletionDeadline) {
+                Write-Error "Timed out waiting for Lighthouse registration definitions to finish deleting."
+                break
+            }
+
+            Start-Sleep -Seconds 5
+        } while ($true)
     }
     
     Write-Host "Completed Removing Lighthouse definitions and assignments for the managing tenant ID '$lighthouseServiceProviderTenantID' in subscription '$($config.subscriptionId)'." -ForegroundColor Green
