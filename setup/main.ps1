@@ -2,7 +2,7 @@ param (
     [switch]$localExecution,
     [string]$keyVaultName
 )
-$VerbosePreference = "Continue"
+
 $diagnosticRunbookStart = Get-Date
 Write-Verbose ("Diagnostics: Runbook entry at {0}" -f $diagnosticRunbookStart)
 
