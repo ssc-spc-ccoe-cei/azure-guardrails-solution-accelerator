@@ -995,11 +995,14 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(mfaGracePeriod);
 let MfaGracePeriod = mfaGracePeriodDays * 1d;
-let locale = toscalar(
+// Main supplies the culture used by the current audit's localization catalogue.
+// Older callers can omit auditLocale and keep using the backend-recorded tenant locale.
+let tenantLocale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
     | take 1
 );
+let locale = iff(isnotempty(auditLocale), auditLocale, tenantLocale);
 let localizedMessages = case(
     locale == "fr-CA", dynamic({
         "allUsersHaveMFA": "Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.",
@@ -1151,9 +1154,11 @@ let summary = mfaAnalysis
                 strcat(tostring(NonCompliantUsers), " utilisateurs n'ont pas d'AMF appropriée configurée sur ", tostring(TotalUsers), " utilisateurs totaux"),
                 strcat(tostring(NonCompliantUsers), " users do not have proper MFA configured out of ", tostring(TotalUsers), " total users")
             ), 
-            " (", tostring(NonCompliantUsers), " non-compliant, ", tostring(CompliantUsers), " compliant)"
+            iff(locale == "fr-CA",
+                strcat(" (", tostring(NonCompliantUsers), " non conformes, ", tostring(CompliantUsers), " conformes)"),
+                strcat(" (", tostring(NonCompliantUsers), " non-compliant, ", tostring(CompliantUsers), " compliant)"))
         ),
-        "Unknown error"
+        iff(locale == "fr-CA", "Erreur inconnue", "Unknown error")
     );
 let excludedCount = toscalar(excludedUsers | summarize count());
 let excludedAgentUserCount = toscalar(excludedAgentUsers | summarize count());
@@ -1189,7 +1194,7 @@ finalSummary
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
-    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string, auditLocale:string = ""'
     version: 2
   }
 }
