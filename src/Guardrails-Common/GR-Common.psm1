@@ -4750,7 +4750,9 @@ function FetchAllUserRawData {
             BackoffMultiplier = 2
         }
     )
-    
+    ###
+    $currentTenantId = [string](Get-AzContext).Tenant.Id
+
     # Initialize error tracking and performance monitoring
     $ErrorList = [System.Collections.Generic.List[string]]::new()
     # The MFA control reads this state later in the same main runbook. Start with
@@ -5112,7 +5114,7 @@ function FetchAllUserRawData {
         # Write users with the same 64-bucket ID rule used for registrations. This
         # places matching records together without keeping either full list in memory.
         Write-Verbose "Step 2: Spooling enabled users into bounded partitions..."
-        $selectFields = 'displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes'
+        $selectFields = 'displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes,identities'
         $usersPath = "/users?`$select=$selectFields&`$filter=accountEnabled eq true"
         $userSpoolStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $userStore = & $newPartitionStore $partitionDirectory 'user' $partitionCount
@@ -5253,15 +5255,33 @@ function FetchAllUserRawData {
                         # redesign does not repeat the same external-domain lookup.
                         $homeTenantId = $null
                         $homeTenantResolved = $false
-                        if ($user.userType -eq 'Guest') {
-                            $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
+                        try {
+                            # Resolve the home tenant for external B2B users regardless of whether
+                            # Entra represents the account as Guest or Member.
+                            #Write-Verbose "Home tenant check: UPN='$($user.userPrincipalName)', UserType='$($user.userType)'"
+                            $domain = Get-ExternalUserHomeDomain -User $user
+                            #Write-Verbose "Home tenant domain: UPN='$($user.userPrincipalName)', Domain='$domain'"
+
                             if ($domain) {
-                                $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $domainTenantCache
-                                $homeTenantId = $resolutionResult.TenantId
-                                $homeTenantResolved = $resolutionResult.ResolutionSucceeded
+                                $resolutionResult = Get-TenantIdWithCache `
+                                    -Domain $domain `
+                                    -Cache $domainTenantCache
+                                #Write-Verbose "Home tenant resolution: UPN='$($user.userPrincipalName)', Domain='$domain', TenantId='$($resolutionResult.TenantId)', Success='$($resolutionResult.ResolutionSucceeded)'"
+                                if ($resolutionResult.ResolutionSucceeded) {
+                                    $resolvedTenantId = [string]$resolutionResult.TenantId
+                                    if ($resolvedTenantId -ne $currentTenantId) {
+                                        $homeTenantId = $resolvedTenantId
+                                        $homeTenantResolved = $true
+                                    }
+                                }
                             }
                         }
-
+                        catch {
+                                Write-Warning "Unable to resolve home tenant for '$($user.userPrincipalName)': $($_.Exception.Message)"
+                                 
+                                $homeTenantId = $null
+                                $homeTenantResolved = $false
+                        }
                         $uploadBatch.Add([PSCustomObject]@{
                             id = $user.id
                             userPrincipalName = $user.userPrincipalName
@@ -5589,30 +5609,61 @@ GuardrailsUserRaw_CL
 # Guest User Cross-Tenant MFA Trust Functions
 # ============================================================================
 
-# Function to extract domain from guest user UPN or email
-function Get-GuestUserHomeDomain {
+# Function to extract domain from a user identities, issuer domains, or external tenant resolution.
+
+function Get-ExternalUserHomeDomain {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
-        [string] $UserPrincipalName,
-        
-        [Parameter(Mandatory=$false)]
-        [string] $Mail
+        [psobject] $User
     )
-    
-    # Extract domain from UPN (format: user_domain.com#EXT#@hosttenant.com)
-    # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
-    if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
+
+    $upn = [string]$User.userPrincipalName
+
+    # 1. B2B accounts with #EXT# UPN.
+    # Example:
+    # test_gmail.com#EXT#@resourceTenant.onmicrosoft.com
+    # -> gmail.com
+    if ($upn -match '.*_([^_#]+)#EXT#') {
         return $Matches[1]
     }
-    # Or extract from mail
-    elseif ($Mail -and $Mail -match '@(.+)$') {
+
+    # 2. Check identity issuer.
+    #
+    # This is needed for external users that have been converted
+    # from Guest to Member and no longer have a #EXT# UPN.
+    if ($User.identities) {
+
+        foreach ($identity in @($User.identities)) {
+
+            $issuer = [string]$identity.issuer
+
+            if ([string]::IsNullOrWhiteSpace($issuer)) {
+                continue
+            }
+
+            if ($issuer -eq 'MicrosoftAccount' -or
+                $issuer -eq 'ExternalAzureAD') {
+                continue
+            }
+
+            return $issuer
+        }
+    }
+
+    # 3. Mail-domain fallback should only be used for Guest users.
+    #
+    # Do not use every Member's email domain because ordinary
+    # internal users are also Member users.
+    #if ($User.userType -eq 'Guest' -and
+    if ($User.mail -and
+        $User.mail -match '@(.+)$') {
+
         return $Matches[1]
     }
-    
+
     return $null
 }
-
 # Function to resolve tenant ID from domain (single domain)
 # Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
 # Includes retry logic for transient failures (DNS timeout, throttling, 5xx errors)
