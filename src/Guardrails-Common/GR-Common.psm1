@@ -171,6 +171,99 @@ function Get-GuardrailsAgentUserIds {
     }
 }
 
+function Get-GuardrailsBookingsMailboxAddresses {
+    <#
+    .SYNOPSIS
+        Returns the SMTP addresses of Microsoft Bookings scheduling mailboxes in the tenant.
+    .DESCRIPTION
+        When someone creates a Bookings page, Exchange Online provisions a scheduling mailbox and
+        Microsoft Substrate Management creates a matching user object for it. That user is enabled,
+        has a mail address, and can never register MFA because nothing signs in to it. Nothing on
+        the user object itself says it is a Bookings mailbox; Exchange knows it as
+        RecipientTypeDetails = SchedulingMailbox, which Graph does not expose on /users.
+
+        The Bookings API does expose it. Every bookingBusiness is keyed by the address of its
+        scheduling mailbox, so one tenant-wide list gives the full set of addresses to match
+        against user rows. This needs the Bookings.Read.All application permission. Without it,
+        or in a tenant where Bookings is turned off, the call fails and the caller evaluates
+        every account exactly as before.
+    #>
+    [CmdletBinding()]
+    [OutputType([psobject])]
+    param ()
+
+    $addresses = @{}
+
+    try {
+        $response = Invoke-GraphQueryEX -urlPath '/solutions/bookingBusinesses' -MaxRetries 2 -RetryDelaySeconds 2 -ErrorAction Stop
+    }
+    catch {
+        return [PSCustomObject]@{
+            Addresses    = $addresses
+            Count        = 0
+            Succeeded    = $false
+            ErrorMessage = $_.Exception.Message
+        }
+    }
+
+    if ($null -eq $response -or $null -eq $response.Content) {
+        $responseError = if ($response -and $response.Error) { [string]$response.Error } else { 'Microsoft Graph returned no content for the bookingBusinesses query.' }
+        return [PSCustomObject]@{
+            Addresses    = $addresses
+            Count        = 0
+            Succeeded    = $false
+            ErrorMessage = $responseError
+        }
+    }
+
+    foreach ($business in @($response.Content.value)) {
+        $address = [string]$business.id
+        if (-not [string]::IsNullOrWhiteSpace($address)) {
+            $addresses[$address.ToLowerInvariant()] = $true
+        }
+    }
+
+    return [PSCustomObject]@{
+        Addresses    = $addresses
+        Count        = $addresses.Count
+        Succeeded    = $true
+        ErrorMessage = $null
+    }
+}
+
+function Test-GuardrailsBookingsMailbox {
+    <#
+    .SYNOPSIS
+        Returns $true when the user's UPN or mail address belongs to a Bookings scheduling mailbox.
+    .DESCRIPTION
+        The scheduling mailbox address is normally both the UPN and the primary mail address of the
+        generated user. Checking both covers tenants where one has been changed after creation.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [AllowNull()]
+        $User,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $Addresses
+    )
+
+    if ($null -eq $User -or $Addresses.Count -eq 0) {
+        return $false
+    }
+
+    foreach ($candidate in @($User.userPrincipalName, $User.mail)) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$candidate) -and $Addresses.ContainsKey(([string]$candidate).ToLowerInvariant())) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function New-ConnectedStorageContext {
     [CmdletBinding()]
     param (
@@ -5028,6 +5121,17 @@ function FetchAllUserRawData {
         Add-FunctionError -Message "Failed to enumerate Agent ID user accounts; agent accounts will be evaluated as regular users" -Exception ([System.Exception]::new([string]$agentUserResult.ErrorMessage)) -Category "GraphAPI" -ErrorList $ErrorList
     }
 
+    # Bookings scheduling mailboxes are the same situation: Exchange creates the user object
+    # when someone makes a Bookings page, it is enabled, and it can never register MFA.
+    $bookingsResult = Get-GuardrailsBookingsMailboxAddresses
+    $bookingsAddressLookup = $bookingsResult.Addresses
+    if ($bookingsResult.Succeeded) {
+        Write-Verbose "Identified $($bookingsResult.Count) Microsoft Bookings scheduling mailbox(es) to exclude from MFA evaluation."
+    }
+    else {
+        Add-FunctionError -Message "Failed to enumerate Microsoft Bookings scheduling mailboxes; they will be evaluated as regular users. The automation account identity needs the Bookings.Read.All Graph application permission." -Exception ([System.Exception]::new([string]$bookingsResult.ErrorMessage)) -Category "GraphAPI" -ErrorList $ErrorList
+    }
+
     $registrationResult = $null
     $userSpoolResult = $null
     $pageNumber = 0
@@ -5248,6 +5352,7 @@ function FetchAllUserRawData {
                         $methods = if ($registration -and $registration.methodsRegistered) { @($registration.methodsRegistered) } else { @() }
                         $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
                         $isAgentUser = $agentUserIdLookup.ContainsKey([string]$user.id)
+                        $isBookingsMailbox = Test-GuardrailsBookingsMailbox -User $user -Addresses $bookingsAddressLookup
 
                         # Reuse guest-tenant results across all buckets so the memory
                         # redesign does not repeat the same external-domain lookup.
@@ -5276,6 +5381,7 @@ function FetchAllUserRawData {
                             customSecurityAttributes = $user.customSecurityAttributes
                             guardrailsExcludedMfa = $guardrailsExcluded
                             guardrailsExcludedAgentUser = $isAgentUser
+                            guardrailsExcludedBookingsMailbox = $isBookingsMailbox
                             isMfaRegistered = if ($registration) { $registration.isMfaRegistered } else { $null }
                             isMfaCapable = if ($registration) { $registration.isMfaCapable } else { $null }
                             isSsprEnabled = if ($registration) { $registration.isSsprEnabled } else { $null }
