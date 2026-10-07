@@ -1,3 +1,6 @@
+// Supply the accepted release tags when running this standalone alert template.
+param mandatoryTags object
+
 var location = 'Canada Central'
 var lawId='/subscriptions/6c64f9ed-88d2-4598-8de6-7a9527dc16ca/resourceGroups/Guardrails-6eb08c2c/providers/Microsoft.OperationalInsights/workspaces/guardrails-6eb08c2c'
 
@@ -40,6 +43,7 @@ module alertNewVersion 'modules/alert.bicep' = {
       featuresTable
     ]
     params: {
+      mandatoryTags: mandatoryTags
       alertRuleDescription: 'Alerts when a new version of the Guardrails Solution Accelerator is available'
       alertRuleName: 'GuardrailsNewVersion'
       alertRuleDisplayName: 'Guardrails New Version Available.'

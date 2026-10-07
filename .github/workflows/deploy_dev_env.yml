@@ -249,7 +249,8 @@ jobs:
             $alternatePSModulesURL = $modulesStagingURI
             Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
             
-            $optionalParams = @{}
+            # Use the checked-out commit for trusted tags; Blob staging has no release ref.
+            $optionalParams = @{ gitHubSourceRef = (git rev-parse HEAD).Trim() }
             if ($alternatePSModulesURL) {
                 $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
             }
