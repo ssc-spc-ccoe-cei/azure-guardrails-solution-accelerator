@@ -1,4 +1,4 @@
-// Use one trusted tag set for the workspace and workbook.
+// Use one trusted tag set for the workspace and both workbooks.
 param mandatoryTags object
 param subscriptionId string
 param rg string
@@ -12,12 +12,19 @@ param updateCoreResources bool = false
 param mfaGracePeriod string
 var wb = loadTextContent('gr.workbook')
 var wbWithMfaGrace = replace(wb, '__MFA_GRACE_PERIOD__', mfaGracePeriod)
+// The French workbook translates headings, labels, summaries and query-generated MFA messages.
+// Both workbooks keep recorded item names and compliance comments in the language selected
+// by GuardRailsLocale at audit time. The English workbook fixes query-generated MFA messages
+// to English even for French-locale tenants; the Automation language setting stays unchanged.
+var wbFr = loadTextContent('gr-fr.workbook')
+var wbFrWithMfaGrace = replace(wbFr, '__MFA_GRACE_PERIOD__', mfaGracePeriod)
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
 //'''
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
 //var wbConfig='${wb}${wbConfig2}'
 var wbConfig='${wbWithMfaGrace}${wbConfig2}'
+var wbConfigFr='${wbFrWithMfaGrace}${wbConfig2}'
 
 resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: logAnalyticsWorkspaceName
@@ -1197,12 +1204,15 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(mfaGracePeriod);
 let MfaGracePeriod = mfaGracePeriodDays * 1d;
-let locale = toscalar(
+// Workbooks select the language of these query-generated messages explicitly. Other
+// callers can omit workbookLocale to keep the existing tenant-locale behavior.
+let tenantLocale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s
     | project Locale_s
     | take 1
 );
+let locale = iff(isnotempty(workbookLocale), workbookLocale, tenantLocale);
 let localizedMessages = case(
     locale == "fr-CA", dynamic({
         "systemPreferred": "Authentification préférée du système : ",
@@ -1365,7 +1375,7 @@ union
 )
 '''
     functionAlias: 'gr_non_mfa_users'
-    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string, workbookLocale:string = ""'
     version: 2
   }
 }
@@ -1377,6 +1387,25 @@ resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((dep
   properties:{
     displayName: 'Guardrails'
     serializedData: wbConfig
+    version: mandatoryTags.ReleaseVersion
+    category: 'workbook'
+    sourceId: guardrailsLogAnalytics.id
+  }
+}
+
+// Keep the existing English workbook ID, including saved links and access assignments.
+// The additional French workbook is created or refreshed by the same install/update
+// switches and uses the same workspace and MFA grace-period setting as the English one.
+// Use the same mandatory tags and release version so the French resource also satisfies
+// the deployment's tag policy, which requires these tags on top-level resources.
+resource guardrailsWorkbookFr 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  location: location
+  tags: mandatoryTags
+  kind: 'shared'
+  name: guid('guardrails-fr')
+  properties: {
+    displayName: 'Mesures de protection'
+    serializedData: wbConfigFr
     version: mandatoryTags.ReleaseVersion
     category: 'workbook'
     sourceId: guardrailsLogAnalytics.id
