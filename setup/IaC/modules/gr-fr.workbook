@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Accélérateur de mesures de protection\n\nSélectionnez l'heure du rapport et choisissez si les articles recommandés sont affichés.\n\nLe rapport le plus récent est sélectionné par défaut.\n\n(M) = Obligatoire / (R) = Recommandé\n\nLes noms des articles et les commentaires conservent la langue des résultats enregistrés.",
+        "json": "## Accélérateur de mesures de protection\n\nSélectionnez l'heure du rapport (le plus récent par défaut). Choisissez si les articles recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé\n\nMESURE = Mesure de protection\n\nLes noms des articles et les commentaires conservent la langue des résultats enregistrés.",
         "style": "info"
       },
       "name": "Details Title"
@@ -211,7 +211,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "// Original query for table\n//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )\n// Translate headers only; recorded item names and audit comments stay unchanged.\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "// Original query for table\n//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )\n// Translate headers only; recorded item names and audit comments stay unchanged.\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 1",
         "timeContext": {
@@ -427,7 +427,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 2",
         "timeContext": {
@@ -604,7 +604,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR2ExternalUsers_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    Mail_s = column_ifexists(\"Mail_s\", \"\"),\n    Subscription_s = column_ifexists(\"Subscription_s\", \"\"),\n    Role_s = column_ifexists(\"Role_s\", \"\"),\n    PrivilegedRole_s = column_ifexists(\"PrivilegedRole_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")\n| project-rename ['Nom d’affichage'] = ['DisplayName_s'], ['Courriel'] = ['Mail_s'], ['Abonnement'] = ['Subscription_s'], ['Rôle'] = ['Role_s'], ['Rôle privilégié'] = ['PrivilegedRole_s'], ['Commentaires'] = ['Comments_s']",
+        "query": "GR2ExternalUsers_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    Mail_s = column_ifexists(\"Mail_s\", \"\"),\n    Subscription_s = column_ifexists(\"Subscription_s\", \"\"),\n    Role_s = column_ifexists(\"Role_s\", \"\"),\n    PrivilegedRole_s = column_ifexists(\"PrivilegedRole_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")\n// Translate saved role flags and placeholder values for display without changing the audit results.\n| extend DisplayName_s = iff(DisplayName_s == \"N/A\", \"S. O.\", DisplayName_s),\n         Mail_s = iff(Mail_s == \"N/A\", \"S. O.\", Mail_s),\n         Subscription_s = iff(Subscription_s == \"N/A\", \"S. O.\", Subscription_s),\n         Role_s = case(Role_s =~ \"True\", \"Oui\", Role_s =~ \"False\", \"Non\", Role_s == \"N/A\", \"S. O.\", Role_s),\n         PrivilegedRole_s = case(PrivilegedRole_s =~ \"True\", \"Oui\", PrivilegedRole_s =~ \"False\", \"Non\", PrivilegedRole_s == \"N/A\", \"S. O.\", PrivilegedRole_s)\n| project-rename ['Nom d’affichage'] = ['DisplayName_s'], ['Courriel'] = ['Mail_s'], ['Abonnement'] = ['Subscription_s'], ['Rôle'] = ['Role_s'], ['Rôle privilégié'] = ['PrivilegedRole_s'], ['Commentaires'] = ['Comments_s']",
         "size": 0,
         "timeContext": {
           "durationMs": 2592000000
@@ -702,7 +702,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data3(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data3(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 3",
         "timeContext": {
@@ -846,7 +846,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 4",
         "timeContext": {
@@ -990,7 +990,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data56(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data56(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 5",
         "timeContext": {
@@ -1133,7 +1133,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data56(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data56(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 6",
         "timeContext": {
@@ -1277,7 +1277,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data7(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data7(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 7",
         "timeContext": {
@@ -1420,7 +1420,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = strcat(iff(column_ifexists(\"Required_s\", \"\")==\"False\",\"(R) \", \"(M) \"), column_ifexists(\"ItemName_s\", \"\")),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Nom du sous-réseau'] = ['Subnet Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = strcat(iff(column_ifexists(\"Required_s\", \"\")==\"False\",\"(R) \", \"(M) \"), column_ifexists(\"ItemName_s\", \"\")),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Nom du sous-réseau'] = ['Subnet Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 8",
         "timeContext": {
@@ -1563,7 +1563,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data9(\"GUARDRAIL 9\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data9(\"GUARDRAIL 9\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 9",
         "timeContext": {
@@ -1714,7 +1714,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data3(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data3(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 10",
         "timeContext": {
@@ -1858,7 +1858,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 11",
         "timeContext": {
@@ -2009,7 +2009,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 12",
         "timeContext": {
@@ -2153,7 +2153,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data3(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data3(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
         "size": 0,
         "title": "MESURE 13",
         "timeContext": {
