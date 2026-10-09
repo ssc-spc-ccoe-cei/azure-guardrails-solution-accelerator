@@ -401,7 +401,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "gr_non_mfa_users('{RunTime}','__MFA_GRACE_PERIOD__','fr-CA')\n| extend UserType = case(UserType == \"Member\", \"Membre\", UserType == \"Guest\", \"Invité\", UserType == \"N/A\", \"S. O.\", UserType), CreatedTime = iff(CreatedTime == \"N/A\", \"S. O.\", CreatedTime), LastSignIn = iff(LastSignIn == \"N/A\", \"S. O.\", LastSignIn)\n| project-rename ['Nom d’affichage'] = ['DisplayName'], ['Nom d’utilisateur principal'] = ['UserPrincipalName'], ['Type d’utilisateur'] = ['UserType'], ['Date de création'] = ['CreatedTime'], ['Dernière connexion'] = ['LastSignIn'], ['Commentaires'] = ['Comments']",
+        "query": "gr_non_mfa_users('{RunTime}','__MFA_GRACE_PERIOD__','fr-CA')\n// Translate identity placeholders in the no-findings row without changing the MFA evaluation.\n| extend DisplayName = iff(DisplayName == \"N/A\", \"S. O.\", DisplayName),\n         UserPrincipalName = iff(UserPrincipalName == \"N/A\", \"S. O.\", UserPrincipalName),\n         UserType = case(UserType == \"Member\", \"Membre\", UserType == \"Guest\", \"Invité\", UserType == \"N/A\", \"S. O.\", UserType), CreatedTime = iff(CreatedTime == \"N/A\", \"S. O.\", CreatedTime), LastSignIn = iff(LastSignIn == \"N/A\", \"S. O.\", LastSignIn)\n| project-rename ['Nom d’affichage'] = ['DisplayName'], ['Nom d’utilisateur principal'] = ['UserPrincipalName'], ['Type d’utilisateur'] = ['UserType'], ['Date de création'] = ['CreatedTime'], ['Dernière connexion'] = ['LastSignIn'], ['Commentaires'] = ['Comments']",
         "size": 0,
         "timeContext": {
           "durationMs": 2592000000
@@ -676,7 +676,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "GR2UsersWithoutGroups_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    UserPrincipalName_s = column_ifexists(\"UserPrincipalName_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")\n| project-rename ['Nom d’affichage'] = ['DisplayName_s'], ['Nom d’utilisateur principal'] = ['UserPrincipalName_s'], ['Commentaires'] = ['Comments_s']",
+        "query": "GR2UsersWithoutGroups_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    UserPrincipalName_s = column_ifexists(\"UserPrincipalName_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")\n// Translate placeholder values in the users-without-groups table; keep saved audit text unchanged.\n| extend DisplayName_s = iff(DisplayName_s == \"N/A\", \"S. O.\", DisplayName_s),\n         UserPrincipalName_s = iff(UserPrincipalName_s == \"N/A\", \"S. O.\", UserPrincipalName_s)\n| project-rename ['Nom d’affichage'] = ['DisplayName_s'], ['Nom d’utilisateur principal'] = ['UserPrincipalName_s'], ['Commentaires'] = ['Comments_s']",
         "size": 0,
         "timeContext": {
           "durationMs": 2592000000
