@@ -17,7 +17,11 @@ function Check-AllUserMFARequired {
         [string] $mfaGracePeriod,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles # default to false
+        [switch] $EnableMultiCloudProfiles, # default to false
+        # Main passes the culture used to load msgTable so this KQL-based check
+        # records the same language as the other checks. Standalone callers may
+        # omit it to keep the saved query's existing tenant-locale behavior.
+        [string] $Locale = ''
     )
 
     [System.Collections.ArrayList]$ErrorList = New-Object System.Collections.ArrayList
@@ -64,6 +68,15 @@ function Check-AllUserMFARequired {
     $success = $false
     
     try {
+        # Use the current audit's culture instead of the locale last uploaded by
+        # backend. Normalize the culture name and encode it as a quoted KQL string.
+        # Keep the two-argument call when no locale is supplied for existing callers.
+        $mfaFunctionCall = "gr_mfa_evaluation('$ReportTime', '$mfaGracePeriod')"
+        if (-not [string]::IsNullOrWhiteSpace($Locale)) {
+            $localeLiteral = ConvertTo-Json -InputObject ([System.Globalization.CultureInfo]::GetCultureInfo($Locale).Name) -Compress
+            $mfaFunctionCall = "gr_mfa_evaluation('$ReportTime', '$mfaGracePeriod', $localeLiteral)"
+        }
+
         # Return the current raw-row count with the compliance result. The saved
         # function returns "No users found" as compliant, so zero rows must be
         # treated as missing input and retried instead of accepted as evidence.
@@ -73,7 +86,7 @@ let rawUserRecordCount = toscalar(
     | where ReportTime_s == '$ReportTime'
     | count
 );
-gr_mfa_evaluation('$ReportTime', '$mfaGracePeriod')
+$mfaFunctionCall
 | extend RawUserRecordCount = rawUserRecordCount
 "@
         
