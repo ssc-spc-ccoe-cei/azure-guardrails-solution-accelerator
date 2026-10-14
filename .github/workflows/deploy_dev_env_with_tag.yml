@@ -116,13 +116,14 @@ jobs:
           DEVSUBSCRIPTION_ID: ${{ secrets.DEV_AZURE_SUBSCRIPTION_ID }}
 
       - name: Pre-Clean Dev environment
-        if: ${{ vars.DEV_UPGRADE_VAR != 'true'}}
         uses: ./.workflow-tools/.github/actions/pre-clean-guardrails-ci
         with:
           subscription-id: ${{ vars.DEVSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX_DEV
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
+          update-deployment: ${{ vars.DEV_UPGRADE_VAR }}
           key-vault-name: kvcac
+          key-vault-run-prefix: t
           resource-group: guardrailscacdev
           storage-account-name: stcac
           log-analytics-workspace-name: logcac
@@ -188,7 +189,7 @@ jobs:
 
             $configContent = @"
             {  
-              "keyVaultName": "kvcac",
+              "keyVaultName": "$($env:GSA_CI_KEY_VAULT_BASE)",
               "resourcegroup": "guardrailscacdev",
               "region": "CanadaCentral",
               "storageaccountName": "stcac",
@@ -301,6 +302,6 @@ jobs:
       - name: Check AA Jobs Started
         uses: ./.workflow-tools/.github/actions/check-guardrails-aa-jobs
         with:
-          key-vault-prefix: kvcac
+          key-vault-prefix: ${{ env.GSA_CI_KEY_VAULT_BASE }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX_DEV
           subscription-id: ${{ vars.DEVSUBSCRIPTION_ID }}
