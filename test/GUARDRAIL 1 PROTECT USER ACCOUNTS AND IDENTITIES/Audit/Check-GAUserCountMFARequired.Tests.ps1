@@ -139,12 +139,14 @@ Describe 'Check-GAUserCountMFARequired' {
                         Content = [PSCustomObject]@{
                             value = @(
                                 [PSCustomObject]@{
+                                    '@odata.type'     = '#microsoft.graph.user'
                                     id                = 'u1'
                                     displayName       = 'BG1'
                                     mail              = 'bg1@tenant.onmicrosoft.com'
                                     userPrincipalName = 'bg1@tenant.onmicrosoft.com'
                                 },
                                 [PSCustomObject]@{
+                                    '@odata.type'     = '#microsoft.graph.user'
                                     id                = 'u2'
                                     displayName       = 'BG2'
                                     mail              = 'bg2@tenant.onmicrosoft.com'
@@ -183,10 +185,11 @@ Describe 'Check-GAUserCountMFARequired' {
                 } else {
                     # 6 non-BG GA users + 2 BG
                     $users = @()
-                    $users += [PSCustomObject]@{ id='bg-1'; displayName='BG1'; mail='bg1@tenant.onmicrosoft.com'; userPrincipalName='bg1@tenant.onmicrosoft.com' }
-                    $users += [PSCustomObject]@{ id='bg-2'; displayName='BG2'; mail='bg2@tenant.onmicrosoft.com'; userPrincipalName='bg2@tenant.onmicrosoft.com' }
+                    $users += [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='bg-1'; displayName='BG1'; mail='bg1@tenant.onmicrosoft.com'; userPrincipalName='bg1@tenant.onmicrosoft.com' }
+                    $users += [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='bg-2'; displayName='BG2'; mail='bg2@tenant.onmicrosoft.com'; userPrincipalName='bg2@tenant.onmicrosoft.com' }
                     for ($i = 1; $i -le 6; $i++) {
                         $users += [PSCustomObject]@{
+                            '@odata.type'     = '#microsoft.graph.user'
                             id                = "user-$i"
                             displayName       = "User$i"
                             mail              = "user$i@tenant.com"
@@ -229,10 +232,10 @@ Describe 'Check-GAUserCountMFARequired' {
                     [PSCustomObject]@{
                         Content = [PSCustomObject]@{
                             value = @(
-                                [PSCustomObject]@{ id='bg-1'; displayName='BG1'; mail='bg1@tenant.onmicrosoft.com'; userPrincipalName='bg1@tenant.onmicrosoft.com' },
-                                [PSCustomObject]@{ id='bg-2'; displayName='BG2'; mail='bg2@tenant.onmicrosoft.com'; userPrincipalName='bg2@tenant.onmicrosoft.com' },
-                                [PSCustomObject]@{ id='u1'; displayName='Admin1'; mail='admin1@tenant.com'; userPrincipalName='admin1@tenant.com' },
-                                [PSCustomObject]@{ id='u2'; displayName='Admin2'; mail='admin2@tenant.com'; userPrincipalName='admin2@tenant.com' }
+                                [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='bg-1'; displayName='BG1'; mail='bg1@tenant.onmicrosoft.com'; userPrincipalName='bg1@tenant.onmicrosoft.com' },
+                                [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='bg-2'; displayName='BG2'; mail='bg2@tenant.onmicrosoft.com'; userPrincipalName='bg2@tenant.onmicrosoft.com' },
+                                [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='u1'; displayName='Admin1'; mail='admin1@tenant.com'; userPrincipalName='admin1@tenant.com' },
+                                [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='u2'; displayName='Admin2'; mail='admin2@tenant.com'; userPrincipalName='admin2@tenant.com' }
                             )
                         }
                     }
@@ -275,9 +278,9 @@ Describe 'Check-GAUserCountMFARequired' {
                     [PSCustomObject]@{
                         Content = [PSCustomObject]@{
                             value = @(
-                                [PSCustomObject]@{ id='bg-1'; displayName='BG1'; mail='bg1@tenant.onmicrosoft.com'; userPrincipalName='bg1@tenant.onmicrosoft.com' },
-                                [PSCustomObject]@{ id='bg-2'; displayName='BG2'; mail='bg2@tenant.onmicrosoft.com'; userPrincipalName='bg2@tenant.onmicrosoft.com' },
-                                [PSCustomObject]@{ id='u1'; displayName='Admin1'; mail='admin1@tenant.com'; userPrincipalName='admin1@tenant.com' }
+                                [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='bg-1'; displayName='BG1'; mail='bg1@tenant.onmicrosoft.com'; userPrincipalName='bg1@tenant.onmicrosoft.com' },
+                                [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='bg-2'; displayName='BG2'; mail='bg2@tenant.onmicrosoft.com'; userPrincipalName='bg2@tenant.onmicrosoft.com' },
+                                [PSCustomObject]@{ '@odata.type'='#microsoft.graph.user'; id='u1'; displayName='Admin1'; mail='admin1@tenant.com'; userPrincipalName='admin1@tenant.com' }
                             )
                         }
                     }

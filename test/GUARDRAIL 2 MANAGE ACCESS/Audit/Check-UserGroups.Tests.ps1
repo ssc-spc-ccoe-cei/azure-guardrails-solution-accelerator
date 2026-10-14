@@ -39,6 +39,46 @@ Describe 'Check-UserGroups' {
             msgTable    = $script:msgTable
             ReportTime  = '2026-09-03'
         }
+        $script:user2Ungrouped = $false
+
+        Mock Invoke-RestMethod -ModuleName Check-UserGroups -ParameterFilter {
+            $Uri -eq 'https://graph.microsoft.com/v1.0/$batch'
+        } {
+            $requests = ($Body | ConvertFrom-Json).requests
+            [PSCustomObject]@{
+                responses = @($requests | ForEach-Object {
+                    $request = $_
+                    if ($request.url -match '^/users/([0-9a-f-]+)/memberOf/microsoft.graph.group\?') {
+                        $userId = $Matches[1]
+                        $groups = @()
+                        if ($userId -eq '00000000-0000-0000-0000-000000000001') {
+                            $groups = @([PSCustomObject]@{ id = '10000000-0000-0000-0000-000000000001' })
+                        } elseif ($userId -eq '00000000-0000-0000-0000-000000000002' -and -not $script:user2Ungrouped) {
+                            $groups = @([PSCustomObject]@{ id = '10000000-0000-0000-0000-000000000002' })
+                        } elseif ($userId -ne '00000000-0000-0000-0000-000000000002') {
+                            throw "Unexpected user ID: $userId"
+                        }
+                        [PSCustomObject]@{
+                            id = $request.id
+                            status = 200
+                            body = [PSCustomObject]@{ value = $groups }
+                        }
+                    } else {
+                        throw "Unexpected batch URL: $($request.url)"
+                    }
+                })
+            }
+        }
+        Mock Invoke-RestMethod -ModuleName Check-UserGroups -ParameterFilter {
+            $Uri -like 'https://graph.microsoft.com/v1.0/users/00000000-0000-0000-0000-000000000002?*'
+        } {
+            [PSCustomObject]@{
+                id = '00000000-0000-0000-0000-000000000002'
+                displayName = 'User Two'
+                givenName = 'User'
+                userPrincipalName = 'user2@tenant.onmicrosoft.com'
+            }
+        }
     }
 
     Context 'When the tenant has one or fewer users' {
@@ -55,7 +95,8 @@ Describe 'Check-UserGroups' {
                     return [PSCustomObject]@{
                         value = @(
                             [PSCustomObject]@{
-                                id                = 'user-1'
+                                id                = '00000000-0000-0000-0000-000000000001'
+                                userType          = 'Member'
                                 displayName       = 'User One'
                                 givenName         = 'User'
                                 userPrincipalName = 'user1@tenant.onmicrosoft.com'
@@ -102,13 +143,15 @@ Describe 'Check-UserGroups' {
                     return [PSCustomObject]@{
                         value = @(
                             [PSCustomObject]@{
-                                id                = 'user-1'
+                                id                = '00000000-0000-0000-0000-000000000001'
+                                userType          = 'Member'
                                 displayName       = 'User One'
                                 givenName         = 'User'
                                 userPrincipalName = 'user1@tenant.onmicrosoft.com'
                             },
                             [PSCustomObject]@{
-                                id                = 'user-2'
+                                id                = '00000000-0000-0000-0000-000000000002'
+                                userType          = 'Member'
                                 displayName       = 'User Two'
                                 givenName         = 'User'
                                 userPrincipalName = 'user2@tenant.onmicrosoft.com'
@@ -119,13 +162,13 @@ Describe 'Check-UserGroups' {
                 }
                 if ($Uri -like 'https://graph.microsoft.com/v1.0/groups`?*') {
                     return [PSCustomObject]@{
-                        value = @([PSCustomObject]@{ id = 'group-1' })
+                        value = @([PSCustomObject]@{ id = '10000000-0000-0000-0000-000000000001' })
                         '@odata.nextLink' = $null
                     }
                 }
-                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/group-1/members/microsoft.graph.user?*') {
+                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/10000000-0000-0000-0000-000000000001/members/microsoft.graph.user?*') {
                     return [PSCustomObject]@{
-                        value = @([PSCustomObject]@{ userPrincipalName = 'user1@tenant.onmicrosoft.com' })
+                        value = @([PSCustomObject]@{ id = '00000000-0000-0000-0000-000000000001'; userPrincipalName = 'user1@tenant.onmicrosoft.com' })
                         '@odata.nextLink' = $null
                     }
                 }
@@ -138,16 +181,13 @@ Describe 'Check-UserGroups' {
             }
         }
 
-        It 'Returns non-compliant and includes users without groups in AdditionalResults' {
+        It 'Returns non-compliant without checking conditional access policies' {
             $result = Check-UserGroups @commonParams
 
             $result.ComplianceResults.ComplianceStatus | Should -BeFalse
             $result.ComplianceResults.Comments | Should -BeLike '*At least two user groups are required.*'
-            $result.ComplianceResults.Comments | Should -BeLike '*Users:2 GroupUsers:1 Members:2 Guests:0*'
-            $result.AdditionalResults.logType | Should -Be 'GR2UsersWithoutGroups'
-            $result.AdditionalResults.records.Count | Should -Be 1
-            $result.AdditionalResults.records[0].UserPrincipalName | Should -Be 'user2@tenant.onmicrosoft.com'
-            $result.AdditionalResults.records[0].Comments | Should -Be $script:msgTable.userNotInGroup
+            $result.Errors.Count | Should -Be 0
+            Should -Invoke Invoke-GraphQueryEX -ModuleName Check-UserGroups -Times 0 -Exactly
         }
     }
 
@@ -165,13 +205,15 @@ Describe 'Check-UserGroups' {
                     return [PSCustomObject]@{
                         value = @(
                             [PSCustomObject]@{
-                                id                = 'user-1'
+                                id                = '00000000-0000-0000-0000-000000000001'
+                                userType          = 'Member'
                                 displayName       = 'User One'
                                 givenName         = 'User'
                                 userPrincipalName = 'user1@tenant.onmicrosoft.com'
                             },
                             [PSCustomObject]@{
-                                id                = 'user-2'
+                                id                = '00000000-0000-0000-0000-000000000002'
+                                userType          = 'Member'
                                 displayName       = 'User Two'
                                 givenName         = 'User'
                                 userPrincipalName = 'user2@tenant.onmicrosoft.com'
@@ -183,21 +225,21 @@ Describe 'Check-UserGroups' {
                 if ($Uri -like 'https://graph.microsoft.com/v1.0/groups`?*') {
                     return [PSCustomObject]@{
                         value = @(
-                            [PSCustomObject]@{ id = 'group-1' },
-                            [PSCustomObject]@{ id = 'group-2' }
+                            [PSCustomObject]@{ id = '10000000-0000-0000-0000-000000000001' },
+                            [PSCustomObject]@{ id = '10000000-0000-0000-0000-000000000002' }
                         )
                         '@odata.nextLink' = $null
                     }
                 }
-                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/group-1/members/microsoft.graph.user?*') {
+                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/10000000-0000-0000-0000-000000000001/members/microsoft.graph.user?*') {
                     return [PSCustomObject]@{
-                        value = @([PSCustomObject]@{ userPrincipalName = 'user1@tenant.onmicrosoft.com' })
+                        value = @([PSCustomObject]@{ id = '00000000-0000-0000-0000-000000000001'; userPrincipalName = 'user1@tenant.onmicrosoft.com' })
                         '@odata.nextLink' = $null
                     }
                 }
-                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/group-2/members/microsoft.graph.user?*') {
+                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/10000000-0000-0000-0000-000000000002/members/microsoft.graph.user?*') {
                     return [PSCustomObject]@{
-                        value = @([PSCustomObject]@{ userPrincipalName = 'user2@tenant.onmicrosoft.com' })
+                        value = @([PSCustomObject]@{ id = '00000000-0000-0000-0000-000000000002'; userPrincipalName = 'user2@tenant.onmicrosoft.com' })
                         '@odata.nextLink' = $null
                     }
                 }
@@ -213,7 +255,7 @@ Describe 'Check-UserGroups' {
                                 state = 'enabled'
                                 conditions = [PSCustomObject]@{
                                     users = [PSCustomObject]@{
-                                        includeGroups = @('group-1')
+                                        includeGroups = @('10000000-0000-0000-0000-000000000001')
                                         excludeGroups = @()
                                     }
                                 }
@@ -230,6 +272,35 @@ Describe 'Check-UserGroups' {
             $result.ComplianceResults.ComplianceStatus | Should -BeTrue
             $result.ComplianceResults.Comments | Should -BeLike '*A conditional access policy references user groups.*'
             $result.ComplianceResults.Comments | Should -BeLike '*Users:2 GroupUsers:2 Members:2 Guests:0*'
+            $result.Errors.Count | Should -Be 0
+        }
+
+        Context 'When one user is not grouped despite having two groups' {
+            BeforeAll {
+                $script:user2Ungrouped = $true
+                Mock Invoke-RestMethod -ModuleName Check-UserGroups -ParameterFilter {
+                    $Uri -like 'https://graph.microsoft.com/v1.0/groups/10000000-0000-0000-0000-000000000002/members/microsoft.graph.user?*'
+                } {
+                    [PSCustomObject]@{ value = @(); '@odata.nextLink' = $null }
+                }
+            }
+
+            AfterAll {
+                $script:user2Ungrouped = $false
+            }
+
+            It 'Returns non-compliant and includes the ungrouped user in AdditionalResults' {
+                $result = Check-UserGroups @commonParams
+
+                $result.ComplianceResults.ComplianceStatus | Should -BeFalse
+                $result.ComplianceResults.Comments | Should -BeLike '*Users:2 GroupUsers:1 Members:2 Guests:0*'
+                $result.AdditionalResults.logType | Should -Be 'GR2UsersWithoutGroups'
+                $result.AdditionalResults.records.Count | Should -Be 1
+                $result.AdditionalResults.records[0].UserPrincipalName | Should -Be 'user2@tenant.onmicrosoft.com'
+                $result.AdditionalResults.records[0].Comments | Should -Be $script:msgTable.userNotInGroup
+                $result.Errors.Count | Should -Be 0
+                Should -Invoke Invoke-GraphQueryEX -ModuleName Check-UserGroups -Times 0 -Exactly
+            }
         }
     }
 
@@ -247,13 +318,15 @@ Describe 'Check-UserGroups' {
                     return [PSCustomObject]@{
                         value = @(
                             [PSCustomObject]@{
-                                id                = 'user-1'
+                                id                = '00000000-0000-0000-0000-000000000001'
+                                userType          = 'Member'
                                 displayName       = 'User One'
                                 givenName         = 'User'
                                 userPrincipalName = 'user1@tenant.onmicrosoft.com'
                             },
                             [PSCustomObject]@{
-                                id                = 'user-2'
+                                id                = '00000000-0000-0000-0000-000000000002'
+                                userType          = 'Member'
                                 displayName       = 'User Two'
                                 givenName         = 'User'
                                 userPrincipalName = 'user2@tenant.onmicrosoft.com'
@@ -265,21 +338,21 @@ Describe 'Check-UserGroups' {
                 if ($Uri -like 'https://graph.microsoft.com/v1.0/groups`?*') {
                     return [PSCustomObject]@{
                         value = @(
-                            [PSCustomObject]@{ id = 'group-1' },
-                            [PSCustomObject]@{ id = 'group-2' }
+                            [PSCustomObject]@{ id = '10000000-0000-0000-0000-000000000001' },
+                            [PSCustomObject]@{ id = '10000000-0000-0000-0000-000000000002' }
                         )
                         '@odata.nextLink' = $null
                     }
                 }
-                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/group-1/members/microsoft.graph.user?*') {
+                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/10000000-0000-0000-0000-000000000001/members/microsoft.graph.user?*') {
                     return [PSCustomObject]@{
-                        value = @([PSCustomObject]@{ userPrincipalName = 'user1@tenant.onmicrosoft.com' })
+                        value = @([PSCustomObject]@{ id = '00000000-0000-0000-0000-000000000001'; userPrincipalName = 'user1@tenant.onmicrosoft.com' })
                         '@odata.nextLink' = $null
                     }
                 }
-                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/group-2/members/microsoft.graph.user?*') {
+                if ($Uri -like 'https://graph.microsoft.com/v1.0/groups/10000000-0000-0000-0000-000000000002/members/microsoft.graph.user?*') {
                     return [PSCustomObject]@{
-                        value = @([PSCustomObject]@{ userPrincipalName = 'user2@tenant.onmicrosoft.com' })
+                        value = @([PSCustomObject]@{ id = '00000000-0000-0000-0000-000000000002'; userPrincipalName = 'user2@tenant.onmicrosoft.com' })
                         '@odata.nextLink' = $null
                     }
                 }
