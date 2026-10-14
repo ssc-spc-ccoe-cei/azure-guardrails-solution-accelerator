@@ -1,0 +1,49 @@
+name: Guardrail Unit Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+      - unit-tests-guardrail-1-2
+    paths:
+      - 'src/GUARDRAIL */**'
+      - 'src/Guardrails-Common/**'
+      - 'src/GuardRails-Localization/**'
+      - 'test/**'
+      - '.github/workflows/test-guardrail-unit-tests.yml'
+
+jobs:
+  pester-tests:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4.3.1
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Install-Module -Name Pester -RequiredVersion 5.9.0 -Force -SkipPublisherCheck
+
+      - name: Run Guardrail Unit Tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Import-Module Pester -RequiredVersion 5.9.0 -Force
+          $config = New-PesterConfiguration
+          $config.Run.Path = "test"
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = "Detailed"
+          $config.TestResult.Enabled = $true
+          $config.TestResult.OutputFormat = "NUnitXml"
+          $config.TestResult.OutputPath = "test-results/guardrails.xml"
+          Invoke-Pester -Configuration $config
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: guardrail-test-results
+          path: test-results/guardrails.xml

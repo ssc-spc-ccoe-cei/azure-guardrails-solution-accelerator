@@ -63,6 +63,33 @@ When you submit a pull request, a CLA bot will automatically determine whether y
 
 This project has adopted the Microsoft Open-Source Code of Conduct. For more information, refer to the Code of Conduct Frequently Asked Questions (FAQs) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
+## Audit unit tests
+
+Guardrail 1 and 2 audit tests are in `test/GUARDRAIL 1 PROTECT USER ACCOUNTS AND IDENTITIES/Audit`
+and `test/GUARDRAIL 2 MANAGE ACCESS/Audit`, with one `<module>.Tests.ps1` per audit module.
+They follow the Pester 5 layout and module-scoped mocking conventions of
+[PR #1030](https://github.com/ssc-spc-ccoe-cei/azure-guardrails-solution-accelerator/pull/1030),
+branch `copilot/copilotcreate-unit-test-scripts-guardrail-3-4-5`,
+commit `13f2b8a132c661f2a99afade8653b46ff26cfda2`.
+The reference has no separate shared runner or fixture setup.
+
+Run from the repository root in PowerShell 7 with Pester 5.9.0 installed:
+
+```powershell
+Import-Module Pester -RequiredVersion 5.9.0 -Force
+$config = New-PesterConfiguration
+$config.Run.Path = './test'
+$config.Run.Exit = $true
+$config.Output.Verbosity = 'Detailed'
+Invoke-Pester -Configuration $config
+```
+
+The tests use local fixtures and module-scoped mocks for Azure, Graph, storage and
+ingestion dependencies; no tenant, credentials, deployment or live service is required.
+Setup and cleanup run inside Pester's runtime blocks, and module paths are resolved
+relative to each test file. The unit-test workflow runs the same Pester version and
+fails on test failures, independently of deployment workflows.
+
 ## Telemetry
 Telemetry is set to false by default. If you wish to send usage data to Microsoft, you can set the “customerUsageAttribution.enabled” setting to “true” in “setup/IaC/modules/telemetry.json”. 
 
