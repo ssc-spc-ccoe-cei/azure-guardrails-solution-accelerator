@@ -90,6 +90,40 @@ Setup and cleanup run inside Pester's runtime blocks, and module paths are resol
 relative to each test file. The unit-test workflow runs the same Pester version and
 fails on test failures, independently of deployment workflows.
 
+### Known behavior and coverage gaps
+
+Tests named as current-behavior characterizations deliberately expose existing
+audit defects. Explicitly skipped desired-behavior regressions are not passing
+coverage claims. No production modules were changed to make this suite pass.
+
+- Alert monitoring ignores required diagnostic failures and alert `Enabled`/`Scope`,
+  and dereferences a null ID when no action group has configured receivers.
+- Dedicated-admin evidence can pass even when a documented high-privilege account
+  has no privileged role. Sentinel table checks accept nonthrowing query error responses.
+- Global-admin collection failures can produce a compliant MFA result; cloud MFA
+  checks ignore excluded users and OR-control bypasses. Incomplete raw-user collection
+  returns before optional profile enrichment.
+- Several caught dependency failures emit `ArrayList.Add` indexes alongside their
+  result envelopes; global-admin MFA diagnostics can also be nested or omitted.
+- Online-attack checks accept missing/nonpositive lockout thresholds and duplicate
+  banned-password entries as an additional component. The password-change risk
+  policy path ignores sign-in-risk restrictions.
+- Group scanning can accept a missing baseline `value` as an empty tenant. The
+  shared location-policy helper can accept a narrow, disjoint CIDR block as protection
+  against all nontrusted locations.
+- Role-review date checks share a recurrence flag across reviews, making results
+  order-dependent. Privileged-external-account aggregation loses privilege flags,
+  identities and some metadata. Nonterminating directory errors can fail open, and
+  unsuccessful Graph response envelopes can lose diagnostics.
+
+Azure SDK/Graph service contracts and live-tenant behavior are intentionally not
+integration-tested. The location-policy tests exercise the real shared policy helper
+with mocked Graph/storage/file interactions; the unrelated subnet JSON assets in
+the Guardrail 1 audit directory are not used by these audit modules.
+Large-tenant reprobes above 1,000 users, timer-triggered token refresh/path switching,
+and diagnostic suppression budgets are not exhaustively covered. Local execution
+uses PowerShell on Linux; Windows execution is delegated to the unit-test CI job.
+
 ## Telemetry
 Telemetry is set to false by default. If you wish to send usage data to Microsoft, you can set the “customerUsageAttribution.enabled” setting to “true” in “setup/IaC/modules/telemetry.json”. 
 
