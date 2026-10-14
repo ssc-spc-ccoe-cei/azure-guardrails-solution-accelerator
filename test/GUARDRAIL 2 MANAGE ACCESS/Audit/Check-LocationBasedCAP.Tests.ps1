@@ -34,6 +34,14 @@ Describe 'Get-LocationBasedCAP' {
             msgTable    = $script:msgTable
             ReportTime  = (Get-Date -Format 'yyyy-MM-dd')
         }
+        # Storage-backed location evidence is required by the PR target module.
+        if ((Get-Command Get-LocationBasedCAP).Parameters.ContainsKey('StorageAccountName')) {
+            $script:commonParams.StorageAccountName = 'teststorage'
+            $script:commonParams.ContainerName = 'testcontainer'
+            $script:commonParams.ResourceGroupName = 'TestRG'
+            $script:commonParams.SubscriptionID = '00000000-0000-0000-0000-000000000000'
+            $script:commonParams.DocumentName = @('allowedLocations')
+        }
     }
 
     Context 'When allowed location CAP is compliant' {

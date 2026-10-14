@@ -7,6 +7,7 @@ BeforeAll {
     function global:Invoke-GraphQueryEX { param($urlPath) }
     function global:Add-ProfileInformation { param($Result, $CloudUsageProfiles, $ModuleProfiles, $SubscriptionId, $ErrorList) return $Result }
     function global:add-documentFileExtensions { param($DocumentName, $ItemName) }
+    function global:New-ConnectedStorageContext { param($storageaccountName) }
 
     # Override compiled Az cmdlets with function stubs (functions take precedence over cmdlets)
     # This prevents parameter type-validation errors when mocking strongly-typed parameters
@@ -23,6 +24,7 @@ AfterAll {
     Remove-Item Function:\Invoke-GraphQueryEX -ErrorAction SilentlyContinue
     Remove-Item Function:\Add-ProfileInformation -ErrorAction SilentlyContinue
     Remove-Item Function:\add-documentFileExtensions -ErrorAction SilentlyContinue
+    Remove-Item Function:\New-ConnectedStorageContext -ErrorAction SilentlyContinue
     Remove-Item Function:\Set-AzContext -ErrorAction SilentlyContinue
     Remove-Item Function:\Get-AzStorageAccount -ErrorAction SilentlyContinue
     Remove-Item Function:\Get-AzStorageBlob -ErrorAction SilentlyContinue
@@ -63,6 +65,7 @@ Describe 'Check-DedicatedAdminAccounts' {
             SecondBreakGlassUPN = 'bg2@tenant.onmicrosoft.com'
             DocumentName        = @('adminAccounts')
         }
+        Mock New-ConnectedStorageContext -ModuleName Check-DedicatedAdminAccounts { [PSCustomObject]@{} }
     }
 
     Context 'When blob is not found in storage' {

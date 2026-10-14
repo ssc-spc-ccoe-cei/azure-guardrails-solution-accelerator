@@ -4,6 +4,7 @@ BeforeAll {
     $global:ErrorActionPreference = 'Continue'
 
     # Define stubs for external functions
+    function global:Invoke-AzOperationalInsightsQuery { param($WorkspaceId, $Query) }
     function global:Add-ProfileInformation { param($Result, $CloudUsageProfiles, $ModuleProfiles, $SubscriptionId, $ErrorList) return $Result }
 
     # Import the module under test
@@ -12,6 +13,7 @@ BeforeAll {
 }
 
 AfterAll {
+    Remove-Item Function:\Invoke-AzOperationalInsightsQuery -ErrorAction SilentlyContinue
     Remove-Item Function:\Add-ProfileInformation -ErrorAction SilentlyContinue
     $global:ErrorActionPreference = $script:originalEAP
 }
@@ -31,6 +33,10 @@ Describe 'Check-AllUserMFARequired' {
             ReportTime   = (Get-Date -Format 'yyyy-MM-dd')
             WorkSpaceID  = '00000000-0000-0000-0000-000000000000'
         }
+        # The PR target accepts a grace period; the older source branch does not.
+        if ((Get-Command Check-AllUserMFARequired).Parameters.ContainsKey('mfaGracePeriod')) {
+            $script:commonParams.mfaGracePeriod = '14'
+        }
     }
 
     Context 'When KQL function returns compliance result on first attempt' {
@@ -41,6 +47,7 @@ Describe 'Check-AllUserMFARequired' {
                     Results = @(
                         [PSCustomObject]@{
                             ComplianceStatus = $true
+                            RawUserRecordCount = 1
                             ControlName      = 'GUARDRAIL 1'
                             Comments         = 'All users have MFA'
                             ItemName         = 'All User MFA'
@@ -103,6 +110,7 @@ Describe 'Check-AllUserMFARequired' {
                     Results = @(
                         [PSCustomObject]@{
                             ComplianceStatus = $true
+                            RawUserRecordCount = 1
                             ControlName      = 'GUARDRAIL 1'
                             Comments         = 'MFA OK'
                             ItemName         = 'All User MFA'
