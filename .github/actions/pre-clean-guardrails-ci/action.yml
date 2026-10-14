@@ -1,13 +1,15 @@
 name: Pre-clean Guardrails CI deployment
 description: |
   Removes the existing Guardrails deployment and writes a fresh config.json
-  with a new unique LAW name for the next deployment. Purges the matching
-  soft-deleted CI Key Vault and waits for Azure to release its name.
+  with new LAW and Key Vault names for the next deployment. Tries to purge
+  previous soft-deleted CI vaults without waiting to reuse their names.
 
-  KV, storage, AA, and RG names still use the same static uniqueNameSuffix.
+  Updates select the existing vault without removing resources.
+  Storage, AA, and RG names still use the same static uniqueNameSuffix.
 
-  Only logAnalyticsworkspaceName gets a run-specific prefix (r<GITHUB_RUN_NUMBER>)
-  so each deployment creates a fresh workspace with a unique name.
+  LAW uses a run-specific prefix (r<GITHUB_RUN_NUMBER>). Key Vault uses a
+  workflow marker, run number and attempt (for example, r85a2) so retries
+  also receive a new name. Tag workflows use t to distinguish their run counter.
 
   The previous LAW is discovered at runtime by listing workspaces in the
   existing resource group — no external state tracking is required.
@@ -26,12 +28,20 @@ inputs:
   unique-name-suffix:
     required: true
     description: |
-      Static suffix used for all resources except LAW (e.g. the value of
+      Static suffix appended to resource base names (e.g. the value of
       vars.UNIQUENAME_SUFFIX). Passed through to uniqueNameSuffix in config.json
       unchanged.
+  update-deployment:
+    required: false
+    default: 'false'
+    description: Select the existing Key Vault for an update and skip teardown.
   key-vault-name:
     required: true
     description: Base Key Vault name for config.json.
+  key-vault-run-prefix:
+    required: false
+    default: 'r'
+    description: 'Vault name marker: r for normal workflows, t for tag workflows.'
   resource-group:
     required: true
     description: Base resource group name for config.json.
@@ -115,7 +125,9 @@ runs:
         GSA_SUBSCRIPTION_ID:            ${{ inputs.subscription-id }}
         GSA_SUFFIX_ENV_NAME:            ${{ inputs.suffix-environment-variable-name }}
         GSA_STATIC_SUFFIX:              ${{ inputs.unique-name-suffix }}
+        GSA_UPDATE_DEPLOYMENT:          ${{ inputs.update-deployment }}
         GSA_KEY_VAULT_NAME:             ${{ inputs.key-vault-name }}
+        GSA_KEY_VAULT_RUN_PREFIX:       ${{ inputs.key-vault-run-prefix }}
         GSA_RESOURCE_GROUP:             ${{ inputs.resource-group }}
         GSA_STORAGE_ACCOUNT_NAME:       ${{ inputs.storage-account-name }}
         GSA_LAW_NAME:                   ${{ inputs.log-analytics-workspace-name }}
@@ -149,20 +161,58 @@ runs:
           $staticSuffix   = $env:GSA_STATIC_SUFFIX
           $lawBase        = $env:GSA_LAW_NAME
           $rgName         = "$($env:GSA_RESOURCE_GROUP)-$staticSuffix"
-          $keyVaultName   = "$($env:GSA_KEY_VAULT_NAME)-$staticSuffix"
+          $keyVaultBase   = $env:GSA_KEY_VAULT_NAME
+          # Recognize static, earlier random, and run/attempt vault names. Accept both
+          # workflow markers so normal and tag workflows can update or clean up the same
+          # CI environment. Resource IDs below also restrict purge to this CI group.
+          $keyVaultNamePattern = '^{0}(-([rt][0-9]+a[0-9]+|[a-f0-9]{{7}}))?-{1}$' -f [regex]::Escape($keyVaultBase), [regex]::Escape($staticSuffix)
+
+          Set-AzContext -SubscriptionId $subscriptionId
+
+          $existingResourceGroup = Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue
+          $existingKeyVaults = @()
+          if ($existingResourceGroup) {
+            $existingKeyVaults = @(Get-AzKeyVault -ResourceGroupName $rgName -SubscriptionId $subscriptionId -ErrorAction Stop |
+              Where-Object { $_.VaultName -match $keyVaultNamePattern })
+          }
+          $existingKeyVault = $existingKeyVaults | Select-Object -First 1
+          $existingKeyVaultBase = $keyVaultBase
+          if ($existingKeyVault) {
+            $existingKeyVaultBase = $existingKeyVault.VaultName -replace "-$([regex]::Escape($staticSuffix))$", ''
+          }
+
+          # Updates must keep the deployed vault. Discover its actual base name;
+          # the installer re-appends the static suffix. Exit before teardown or purge.
+          if ($env:GSA_UPDATE_DEPLOYMENT -eq 'true') {
+            if ($existingKeyVaults.Count -ne 1) {
+              throw "Expected one CI Key Vault in '$rgName' for the update; found $($existingKeyVaults.Count)."
+            }
+            "GSA_CI_KEY_VAULT_BASE=$existingKeyVaultBase" | Out-File -FilePath $env:GITHUB_ENV -Append
+            Write-Output "Reusing CI Key Vault '$($existingKeyVault.VaultName)' for the update."
+            exit
+          }
+
+          # Each workflow has its own run counter, so r/t separates normal and tag runs.
+          # A rerun keeps the run number; include its attempt to avoid a name reserved
+          # by the previous attempt. Check the installer and Azure limits before teardown.
+          if ($env:GSA_KEY_VAULT_RUN_PREFIX -notin @('r', 't')) {
+            throw "key-vault-run-prefix must be 'r' or 't'."
+          }
+          $newKeyVaultBase = "$keyVaultBase-$($env:GSA_KEY_VAULT_RUN_PREFIX)$($env:GITHUB_RUN_NUMBER)a$($env:GITHUB_RUN_ATTEMPT)"
+          if ($newKeyVaultBase.Length -gt 15 -or "$newKeyVaultBase-$staticSuffix".Length -gt 24) {
+            throw "Generated CI Key Vault name '$newKeyVaultBase-$staticSuffix' exceeds the installer or Azure name limit."
+          }
           # New unique LAW prefix for this run. 'r' prefix: Azure names must start with a letter.
           $newLawSuffix   = "r$env:GITHUB_RUN_NUMBER"
           $newLawBase     = "$lawBase-$newLawSuffix"
 
-          Set-AzContext -SubscriptionId $subscriptionId
-
           $actionRepoRoot = Resolve-Path $env:GSA_ACTION_REPO_ROOT | Select-Object -ExpandProperty Path
           Import-Module (Join-Path $actionRepoRoot 'src/GuardrailsSolutionAcceleratorSetup')
 
-          # ── Helper: build a config hashtable for a given LAW base name ───────────────
-          function New-Config([string]$lawNameForConfig) {
+          # Use the old resource names during teardown and the new names for deployment.
+          function New-Config([string]$lawNameForConfig, [string]$keyVaultNameForConfig) {
             return [ordered]@{
-              keyVaultName                       = $env:GSA_KEY_VAULT_NAME
+              keyVaultName                       = $keyVaultNameForConfig
               resourcegroup                      = $env:GSA_RESOURCE_GROUP
               region                             = 'CanadaCentral'
               storageaccountName                 = $env:GSA_STORAGE_ACCOUNT_NAME
@@ -198,7 +248,7 @@ runs:
           # The RG name is static ($rgBase-$staticSuffix) so we always know where to look.
           # We discover the current LAW by listing workspaces in the RG — no state
           # tracking needed.
-          if (Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue) {
+          if ($existingResourceGroup) {
             # Find the existing LAW whose name starts with the base name pattern.
             $existingLAW = Get-AzOperationalInsightsWorkspace -ResourceGroupName $rgName `
               -ErrorAction SilentlyContinue |
@@ -219,7 +269,7 @@ runs:
               Write-Output "No existing LAW matching '$lawBase-*' found in '$rgName'. Using bare base name for teardown."
             }
 
-            New-Config $existingLAWBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+            New-Config $existingLAWBase $existingKeyVaultBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
 
             Push-Location -Path (Join-Path $actionRepoRoot 'setup')
             try {
@@ -233,86 +283,50 @@ runs:
             Write-Output "RG '$rgName' not found — skipping teardown (first run or already clean)."
           }
 
-          # Key Vault soft-delete keeps the globally unique vault name reserved after the
-          # resource group is deleted. CI fresh installs deliberately replace this disposable
-          # environment while keeping its static names, so purge only this expected CI vault
-          # and wait for Azure to release the name before starting the next deployment.
-          $expectedKeyVaultResourceId = "/subscriptions/$subscriptionId/resourceGroups/$rgName/providers/Microsoft.KeyVault/vaults/$keyVaultName"
-          $keyVaultNameCheckUri = "https://management.azure.com/subscriptions/$subscriptionId/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview"
-          $keyVaultNameCheckPayload = @{
-            name = $keyVaultName
-            type = 'Microsoft.KeyVault/vaults'
-          } | ConvertTo-Json -Compress
-
-          function Test-KeyVaultNameAvailable {
-            $response = Invoke-AzRest -Method Post -Uri $keyVaultNameCheckUri -Payload $keyVaultNameCheckPayload -ErrorAction Stop
-            $result = $response.Content | ConvertFrom-Json
-            # API errors have no nameAvailable value. Fail now instead of treating them
-            # as a name collision and waiting for a vault that may not exist.
-            if ($null -eq $result.nameAvailable) {
-              throw "Key Vault name check failed (HTTP $($response.StatusCode)): $($response.Content)"
+          # Purge only deleted vaults whose original resource ID is in this CI group and
+          # whose name matches the CI naming pattern. Include leftovers from earlier
+          # attempts even when the group was already gone. Cleanup failures are visible
+          # but do not block a fresh name; the installer checks that new name separately.
+          $keyVaultResourceIdPrefix = "/subscriptions/$subscriptionId/resourceGroups/$rgName/providers/Microsoft.KeyVault/vaults/"
+          try {
+            $deletedKeyVaults = @(Get-AzKeyVault -InRemovedState -SubscriptionId $subscriptionId -ErrorAction Stop |
+              Where-Object {
+                $_.VaultName -match $keyVaultNamePattern -and
+                $_.ResourceId -ieq "$keyVaultResourceIdPrefix$($_.VaultName)"
+              })
+            if ($existingKeyVault -and $existingKeyVault.VaultName -notin $deletedKeyVaults.VaultName) {
+              Write-Warning "Previous CI Key Vault '$($existingKeyVault.VaultName)' is not yet visible as deleted. Continuing with a new vault name; later fresh runs will try cleanup again."
             }
-            return [bool]$result.nameAvailable
+            elseif ($deletedKeyVaults.Count -eq 0) {
+              Write-Output "No deleted CI Key Vaults to purge for '$rgName'. Continuing with a new vault name."
+            }
+            foreach ($deletedKeyVault in $deletedKeyVaults) {
+              try {
+                Write-Output "Purging soft-deleted CI Key Vault '$($deletedKeyVault.VaultName)' in '$($deletedKeyVault.Location)'."
+                Remove-AzKeyVault -VaultName $deletedKeyVault.VaultName -Location $deletedKeyVault.Location `
+                  -SubscriptionId $subscriptionId -InRemovedState -Force -ErrorAction Stop
+              }
+              catch {
+                Write-Warning "Could not purge CI Key Vault '$($deletedKeyVault.VaultName)'. Check purge permissions and purge protection. Continuing with a new vault name. $_"
+              }
+            }
           }
-
-          $deletedKeyVaultDeadline = (Get-Date).AddMinutes(10)
-          do {
-            $deletedKeyVault = Get-AzKeyVault -InRemovedState -ErrorAction Stop |
-              Where-Object { $_.VaultName -eq $keyVaultName } |
-              Select-Object -First 1
-
-            if ($deletedKeyVault) {
-              # A matching global name alone does not prove that this vault belonged to
-              # the disposable CI resource group. Never purge another deployment's vault.
-              if ($deletedKeyVault.ResourceId -ine $expectedKeyVaultResourceId) {
-                throw "Refusing to purge Key Vault '$keyVaultName': deleted resource ID '$($deletedKeyVault.ResourceId)' does not match expected CI resource ID '$expectedKeyVaultResourceId'."
-              }
-              Write-Output "Purging soft-deleted CI Key Vault '$keyVaultName' in '$($deletedKeyVault.Location)'."
-              Remove-AzKeyVault -VaultName $keyVaultName -Location $deletedKeyVault.Location `
-                -InRemovedState -Force -ErrorAction Stop
-              break
-            }
-
-            if (Test-KeyVaultNameAvailable) {
-              Write-Output "Key Vault name '$keyVaultName' is available."
-              break
-            }
-
-            if ((Get-Date) -ge $deletedKeyVaultDeadline) {
-              throw "Timed out waiting for Key Vault name '$keyVaultName' to become available. No deleted vault is visible in subscription '$subscriptionId'; an active vault elsewhere may be holding the name."
-            }
-
-            Write-Output "Waiting for deleted CI Key Vault '$keyVaultName' to become available for purge."
-            Start-Sleep -Seconds 10
-          } while ($true)
-
-          if ($deletedKeyVault) {
-            $keyVaultReleaseDeadline = (Get-Date).AddMinutes(10)
-            do {
-              if (Test-KeyVaultNameAvailable) {
-                Write-Output "Purged CI Key Vault name '$keyVaultName' is available for the fresh deployment."
-                break
-              }
-
-              if ((Get-Date) -ge $keyVaultReleaseDeadline) {
-                throw "Timed out waiting for Azure to release purged CI Key Vault name '$keyVaultName'."
-              }
-
-              Write-Output "Waiting for Azure to release purged CI Key Vault name '$keyVaultName'."
-              Start-Sleep -Seconds 10
-            } while ($true)
+          catch {
+            Write-Warning "Could not list deleted CI Key Vaults for cleanup. Continuing with a new vault name. $_"
           }
 
           # ── 2. Write config.json for the new deployment ──────────────────────────────
           # logAnalyticsworkspaceName = "$lawBase-r<run>" so Confirm-GSAConfigurationParameters
           # appends "-$staticSuffix" to produce a fully unique name each run
-          # (e.g. "logcac-r142-abc123"). All other resources use $staticSuffix unchanged.
-          New-Config $newLawBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
-          Write-Output "config.json written (new LAW base: '$newLawBase', static suffix: '$staticSuffix')."
+          # (e.g. "logcac-r142-abc123"). The generated vault base also keeps the static suffix.
+          New-Config $newLawBase $newKeyVaultBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+          Write-Output "config.json written (new LAW base: '$newLawBase', new Key Vault base: '$newKeyVaultBase', static suffix: '$staticSuffix')."
 
           # Expose to subsequent steps:
           #   CI_UNIQUENAME_SUFFIX — static suffix, unchanged; deploy step uses for uniqueNameSuffix
           #   GSA_LAW_RUN_SUFFIX   — run-specific LAW prefix; deploy step uses for logAnalyticsworkspaceName
+          #   GSA_CI_KEY_VAULT_BASE — selected vault base for deployment and job validation
           "$($env:GSA_SUFFIX_ENV_NAME)=$staticSuffix" | Out-File -FilePath $env:GITHUB_ENV -Append
           "GSA_LAW_RUN_SUFFIX=$newLawSuffix"          | Out-File -FilePath $env:GITHUB_ENV -Append
+          "GSA_CI_KEY_VAULT_BASE=$newKeyVaultBase"     | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Output "Deployment suffix: '$staticSuffix'  LAW run suffix: '$newLawSuffix'."
