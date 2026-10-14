@@ -397,15 +397,25 @@ function Get-ServiceHealthAlerts {
 
                 $alertEventTypeSelectionds = @(
                     foreach($alert in $filteredAlerts){
-                        $isAllEventTypesSelected = 
-                            if ($alert.ConditionAllOf.Count -gt 1) {
-                                $false
-                            } 
-                            else{
-                                $alert.ConditionAllOf -notmatch '\S' -or ($_.ConditionAllOf | ForEach-Object {
-                                    if ($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0) {$true} else {$false}
-                                }) -notcontains $false
-                            }
+                        $isAllEventTypesSelected =  $alert.ConditionAllOf.Count -gt 0 -and (
+                            ($alert.ConditionAllOf | ForEach-Object {
+                                $incidentTypeConditions = @($_.AnyOf | Where-Object {
+                                    $_.Field -eq "properties.incidentType"
+                                })
+                                if($incidentTypeConditions.Count -gt 0){
+                                    # If there are incident type conditions, check if all four distinct event types are selected
+                                    @($incidentTypeConditions | Where-Object {
+                                        $_.Equal -match '^(Security|Informational|ActionRequired|Incident)$'
+                                    } | Select-Object -ExpandProperty Equal | Sort-Object -Unique).Count -eq 4
+                                }
+                                elseif($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0 -or $incidentTypeConditions.Count -eq 0) {
+                                    $true
+                                }
+                                else{
+                                    $false
+                                }
+                            }) -notcontains $false
+                        )
                         
 
                         [PSCustomObject]@{
