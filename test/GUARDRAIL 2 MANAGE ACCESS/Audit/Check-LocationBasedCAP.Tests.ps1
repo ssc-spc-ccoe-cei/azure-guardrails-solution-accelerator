@@ -2,8 +2,8 @@ BeforeAll {
     $script:originalEAP = $global:ErrorActionPreference
     $global:ErrorActionPreference = 'Continue'
     $script:savedFunctions = @{}
-    foreach ($name in @('Select-AzSubscription', 'Get-AzContext', 'New-AzStorageContext', 'Get-AzStorageBlob', 'Get-AzStorageBlobContent')) {
-        $script:savedFunctions[$name] = (Get-Item "Function:global:$name" -ErrorAction SilentlyContinue).ScriptBlock
+    foreach ($name in @('Invoke-GraphQueryEX', 'Add-ProfileInformation', 'Select-AzSubscription', 'Get-AzContext', 'New-AzStorageContext', 'Get-AzStorageBlob', 'Get-AzStorageBlobContent')) {
+        $script:savedFunctions[$name] = (Get-Item "Function:\$name" -ErrorAction SilentlyContinue).ScriptBlock
         Set-Item "Function:global:$name" {
             [CmdletBinding()]
             param($Subscription, $StorageAccountName, [switch]$UseConnectedAccount, $Container, $Context, $Blob, [switch]$Force)
@@ -20,7 +20,7 @@ AfterAll {
         if ($null -ne $script:savedFunctions[$name]) {
             Set-Item "Function:global:$name" $script:savedFunctions[$name]
         } else {
-            Remove-Item "Function:global:$name" -ErrorAction SilentlyContinue
+            Remove-Item "Function:\$name" -ErrorAction SilentlyContinue
         }
     }
     $global:ErrorActionPreference = $script:originalEAP

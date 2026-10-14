@@ -3,7 +3,7 @@ BeforeAll {
     $global:ErrorActionPreference = 'Continue'
     $script:savedFunctions = @{}
     foreach ($name in @('Invoke-GraphQueryEX', 'Add-ProfileInformation')) {
-        $script:savedFunctions[$name] = (Get-Item "Function:global:$name" -ErrorAction SilentlyContinue).ScriptBlock
+        $script:savedFunctions[$name] = (Get-Item "Function:\$name" -ErrorAction SilentlyContinue).ScriptBlock
         Set-Item "Function:global:$name" {
             [CmdletBinding()]
             param($urlPath, $Result, $CloudUsageProfiles, $ModuleProfiles, $SubscriptionId, $ErrorList)
@@ -19,7 +19,7 @@ AfterAll {
         if ($null -ne $script:savedFunctions[$name]) {
             Set-Item "Function:global:$name" $script:savedFunctions[$name]
         } else {
-            Remove-Item "Function:global:$name" -ErrorAction SilentlyContinue
+            Remove-Item "Function:\$name" -ErrorAction SilentlyContinue
         }
     }
     $global:ErrorActionPreference = $script:originalEAP
