@@ -558,6 +558,10 @@ resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tab
           name: 'guardrailsExcludedAgentUser_b'
           type: 'boolean'
         }
+        {
+          name: 'guardrailsExcludedBookingsMailbox_b'
+          type: 'boolean'
+        }
         { 
           name: 'isMfaRegistered_b'
           type: 'boolean'
@@ -1058,20 +1062,24 @@ let rawUserData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          agentUserExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedAgentUser_b", bool(null)), false)),
+         bookingsMailboxExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedBookingsMailbox_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
+// Accounts Microsoft services create on demand. They cannot register MFA and cannot carry the exclusion attribute.
+| extend systemAccountExcluded = agentUserExcluded or bookingsMailboxExcluded
 // new logic for created Date
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
-// Agent ID user accounts cannot register MFA and cannot carry the exclusion attribute.
 let excludedAgentUsers = rawUserData
 | where guardrailsExcluded == false and agentUserExcluded == true;
+let excludedBookingsMailboxes = rawUserData
+| where guardrailsExcluded == false and bookingsMailboxExcluded == true;
 let guestUsers = rawUserData
-| where guardrailsExcluded == false and agentUserExcluded == false and userType == "Guest";
+| where guardrailsExcluded == false and systemAccountExcluded == false and userType == "Guest";
 let memberUsers = rawUserData
-| where guardrailsExcluded == false and agentUserExcluded == false and userType != "Guest";
+| where guardrailsExcluded == false and systemAccountExcluded == false and userType != "Guest";
 // Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
 let guestsWithTrustInfo = guestUsers
 | extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
@@ -1150,6 +1158,7 @@ let summary = mfaAnalysis
     );
 let excludedCount = toscalar(excludedUsers | summarize count());
 let excludedAgentUserCount = toscalar(excludedAgentUsers | summarize count());
+let excludedBookingsMailboxCount = toscalar(excludedBookingsMailboxes | summarize count());
 let finalSummary = summary
 | extend Comments = iff(coalesce(excludedCount, 0) > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
@@ -1160,6 +1169,11 @@ let finalSummary = summary
         strcat(Comments, "; ", iff(locale == "fr-CA",
             strcat("Exclusion de ", tostring(coalesce(excludedAgentUserCount, 0)), " comptes d'utilisateur Agent ID, qui ne peuvent pas enregistrer d'AMF"),
             strcat("Excluded ", tostring(coalesce(excludedAgentUserCount, 0)), " Agent ID user accounts, which cannot register MFA"))),
+        Comments)
+| extend Comments = iff(coalesce(excludedBookingsMailboxCount, 0) > 0,
+        strcat(Comments, "; ", iff(locale == "fr-CA",
+            strcat("Exclusion de ", tostring(coalesce(excludedBookingsMailboxCount, 0)), " boîtes aux lettres de planification Microsoft Bookings, qui ne peuvent pas enregistrer d'AMF"),
+            strcat("Excluded ", tostring(coalesce(excludedBookingsMailboxCount, 0)), " Microsoft Bookings scheduling mailboxes, which cannot register MFA"))),
         Comments)
 | extend Comments = iff(crossTenantFeatureEnabled and excludedGuestCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
@@ -1276,12 +1290,13 @@ let userData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          agentUserExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedAgentUser_b", bool(null)), false)),
+         bookingsMailboxExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedBookingsMailbox_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
 | where guardrailsExcluded == false
-// Agent ID user accounts cannot register MFA, so they are not remediable findings.
-| where agentUserExcluded == false
+// Agent ID users and Bookings scheduling mailboxes cannot register MFA, so they are not remediable findings.
+| where agentUserExcluded == false and bookingsMailboxExcluded == false
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
