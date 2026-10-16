@@ -43,6 +43,14 @@
     If omitted for a file-based new deployment, the downstream deploy command uses its own default component set.
 .PARAMETER componentsToUpdate
     Specific components to update. If omitted, the downstream deploy command updates its default set of components.
+.PARAMETER removeExistingDeployment
+    Fresh install only. Remove an existing Guardrails deployment (resource group, Lighthouse delegation, Defender for Cloud
+    role assignments, soft-deleted Key Vault) before deploying. Intended for CI/CD pipelines redeploying into a subscription
+    that already holds a manual installation. Permanently deletes the existing Log Analytics workspace data. Requires a
+    -source that supports this option.
+.PARAMETER existingResourceGroupName
+    With -removeExistingDeployment, the resource group of the existing deployment when it cannot be discovered from the
+    configured name or the Guardrails 'Solution' tag, or when more than one candidate exists.
 .PARAMETER timeoutSec
     Timeout in seconds for the bootstrap script's GitHub HTTP requests. If omitted, the default is 120 seconds.
 .PARAMETER yes
@@ -58,6 +66,9 @@
 .EXAMPLE
     # Supply custom tags from a client-specific file before a fresh install.
     ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -tagsFile ./tags.json
+.EXAMPLE
+    # Pipeline redeployment: remove a previous (for example manual) installation first, then install fresh without prompts.
+    ./Deploy-Bootstrap.ps1 -configFile ./config.json -source main -newComponents CoreComponents,CentralizedCustomerReportingSupport -removeExistingDeployment -yes
 .EXAMPLE
     # Update the full default update set: workbook content, Guardrails PowerShell modules,
     # Automation Account runbooks, and core template-driven resources.
@@ -132,6 +143,14 @@ param(
     )]
     [string[]]
     $componentsToUpdate,
+
+    [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFile')]
+    [switch]
+    $removeExistingDeployment,
+
+    [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFile')]
+    [string]
+    $existingResourceGroupName,
 
     [Parameter(Mandatory = $false)]
     [string]
@@ -304,6 +323,16 @@ try {
     }
     $source = $source.Trim()
 
+    if ($PSBoundParameters.ContainsKey('existingResourceGroupName')) {
+        if (-not $removeExistingDeployment.IsPresent) {
+            throw '-existingResourceGroupName can only be used together with -removeExistingDeployment.'
+        }
+        if ([string]::IsNullOrWhiteSpace($existingResourceGroupName)) {
+            throw "-existingResourceGroupName cannot be empty or whitespace."
+        }
+        $existingResourceGroupName = $existingResourceGroupName.Trim()
+    }
+
     # Check only the Azure commands that this bootstrap script calls directly.
     $requiredCommands = @('Get-AzContext')
     $bicepSummary = 'not detected (used only for Bicep-based deployment/update flows)'
@@ -404,6 +433,10 @@ try {
     else {
         Write-Host "  Tags file: Default setup/tags.json"
     }
+    if ($removeExistingDeployment.IsPresent) {
+        $existingTarget = if ($PSBoundParameters.ContainsKey('existingResourceGroupName')) { $existingResourceGroupName } else { 'discovered from config name or Guardrails Solution tag' }
+        Write-Host ("  Remove existing deployment first: Yes ({0}) - existing Log Analytics data will be permanently deleted" -f $existingTarget) -ForegroundColor Yellow
+    }
 
     # --- Confirmation: stop here unless the operator already chose -yes ---
 
@@ -478,6 +511,18 @@ try {
     }
     elseif ($PSBoundParameters.ContainsKey('newComponents')) {
         $deployParams.newComponents = $newComponents
+    }
+
+    # Only pass the teardown switches when requested so older installers, which lack
+    # these parameters, still accept the call for ordinary fresh installs.
+    if ($removeExistingDeployment.IsPresent) {
+        if (-not (Get-Command -Name Deploy-RefGuardrailsSolutionAccelerator).Parameters.ContainsKey('removeExistingDeployment')) {
+            throw "Source '$source' does not support -removeExistingDeployment. Use a newer source or remove the existing deployment with Remove-GSACoreResources first."
+        }
+        $deployParams.removeExistingDeployment = $true
+        if ($PSBoundParameters.ContainsKey('existingResourceGroupName')) {
+            $deployParams.existingResourceGroupName = $existingResourceGroupName
+        }
     }
 
     # --- Run the deployment code from the downloaded ref ---

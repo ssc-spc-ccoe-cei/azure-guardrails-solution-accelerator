@@ -27,6 +27,17 @@ Function Show-GSADeploymentSummary {
             $components = $deployParams.newComponents
 
             $messages = ""
+            If ($deployParams['removeExistingDeployment']) {
+                $existingTarget = If ($deployParams['existingResourceGroupName']) { "resource group '$($deployParams['existingResourceGroupName'])'" } Else { "the resource group named in the configuration file or tagged as a Guardrails deployment" }
+                $messages += @"
+-removeExistingDeployment was specified. Before deploying, the existing Guardrails deployment will be removed:
+    - Delete $existingTarget and every resource in it, including PERMANENT deletion of the Log Analytics workspace and its compliance history
+    - Remove the Lighthouse delegation 'SSC CSPM - Read Guardrail Status' for the managing tenant in this subscription
+    - Remove Guardrails Defender for Cloud role assignments and the custom role at the configured management group, if present
+    - Purge the soft-deleted Key Vault when the new deployment reuses its name
+    Use -update instead of -removeExistingDeployment to keep the existing installation and its data.`n
+"@
+            }
             If ($components -contains 'CoreComponents' -or [string]::IsNullOrEmpty($components)) {
                 $messages += @"
 Core components deployments will make the following changes to your environment:

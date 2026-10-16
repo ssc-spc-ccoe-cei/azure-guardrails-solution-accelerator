@@ -14,7 +14,7 @@
 RootModule = 'Deploy-GuardrailsSolutionAccelerator'
 
 # Version number of this module.
-ModuleVersion = '1.1.9'
+ModuleVersion = '1.1.10'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
