@@ -485,10 +485,11 @@ Function Clear-GSASoftDeletedKeyVault {
     $ErrorActionPreference = 'Stop'
 
     # The vault can take a short time to appear in the deleted view after the resource group is removed.
+    # Listing deleted vaults avoids Get-AzKeyVault's -Location requirement when querying one by name.
     $deletedVault = $null
     $deadline = (Get-Date).AddMinutes(5)
     do {
-        $deletedVault = Get-AzKeyVault -VaultName $vaultName -InRemovedState -ErrorAction SilentlyContinue
+        $deletedVault = @(Get-AzKeyVault -InRemovedState -ErrorAction SilentlyContinue | Where-Object { $_.VaultName -eq $vaultName }) | Select-Object -First 1
         If ($deletedVault) { break }
         If ((Get-Date) -ge $deadline) { break }
         Write-Verbose "Waiting for Key Vault '$vaultName' to appear in the soft-deleted state..."
@@ -500,7 +501,8 @@ Function Clear-GSASoftDeletedKeyVault {
         return
     }
 
-    If ($deletedVault.EnablePurgeProtection) {
+    # Deleted vaults report PurgeProtectionEnabled; live vaults use EnablePurgeProtection. Accept either.
+    If ($deletedVault.PurgeProtectionEnabled -or $deletedVault.EnablePurgeProtection) {
         throw "Key Vault '$vaultName' from the previous deployment is soft-deleted with purge protection enabled, so its name cannot be reused until the retention period ends. Choose a different keyVaultName or uniqueNameSuffix in config.json."
     }
 

@@ -262,7 +262,10 @@ runs:
           #
           # The config written here is the fallback description of the CI RG for when
           # its exported configuration cannot be read; each deployment's exported
-          # configuration (gsaConfigExportLatest) is preferred when available.
+          # configuration (gsaConfigExportLatest) is preferred when available. It
+          # carries the NEW vault base: Remove-GSAExistingDeployment purges a deleted
+          # vault only when the next deployment reuses its name, and CI vault names
+          # change every run. The CI-specific purge loop below handles old vaults.
           if ($existingResourceGroup) {
             # Find the existing LAW whose name starts with the base name pattern.
             $existingLAW = Get-AzOperationalInsightsWorkspace -ResourceGroupName $rgName `
@@ -289,7 +292,7 @@ runs:
             Write-Output "RG '$rgName' not found. Still checking the subscription for other Guardrails deployments (for example a manual installation)."
           }
 
-          New-Config $existingLAWBase $existingKeyVaultBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+          New-Config $existingLAWBase $newKeyVaultBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
 
           Push-Location -Path (Join-Path $actionRepoRoot 'setup')
           try {
