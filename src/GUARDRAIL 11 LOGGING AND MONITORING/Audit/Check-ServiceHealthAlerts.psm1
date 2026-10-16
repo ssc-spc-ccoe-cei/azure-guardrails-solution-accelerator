@@ -435,7 +435,7 @@ function Get-ServiceHealthAlerts {
                 # Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
                 $filteredAlertsConditions = $alertsWithoutAllEventTypesSelected  | Where-Object {
                     # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
-                    ($_.ConditionAllOf | Where-Object {
+                    ($_.Alert.ConditionAllOf | Where-Object {
 
                         $_.AnyOf | Where-Object { 
                             $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
