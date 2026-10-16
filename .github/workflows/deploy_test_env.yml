@@ -128,12 +128,12 @@ jobs:
           SUBSCRIPTIONID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Pre-Clean Test environment
-        if: ${{ vars.TEST_UPGRADE_VAR != 'true'}}
         uses: ./.github/actions/pre-clean-guardrails-ci
         with:
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX }}
+          update-deployment: ${{ vars.TEST_UPGRADE_VAR }}
           key-vault-name: gsapipe
           resource-group: guardrailscac_test
           storage-account-name: gsapipe
@@ -199,7 +199,7 @@ jobs:
               $TESTTENANT_ID = $env:TESTTENANT_ID
               $configContent = @"
               {
-                  "keyVaultName": "gsapipe",
+                  "keyVaultName": "$($env:GSA_CI_KEY_VAULT_BASE)",
                   "resourcegroup": "guardrailscac_test",
                   "region": "CanadaCentral",
                   "storageaccountName": "gsapipe",
@@ -306,6 +306,6 @@ jobs:
       - name: Check AA Jobs Started
         uses: ./.github/actions/check-guardrails-aa-jobs
         with:
-          key-vault-prefix: gsapipe
+          key-vault-prefix: ${{ env.GSA_CI_KEY_VAULT_BASE }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
