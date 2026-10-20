@@ -1,3 +1,5 @@
+// Use the official mandatory values so this resource satisfies tag enforcement.
+param mandatoryTags object
 param alertRuleName string
 param alertRuleDisplayName string
 param alertRuleDescription string
@@ -10,6 +12,7 @@ param autoMitigate bool = false
 param query string
 
 resource rule 'Microsoft.Insights/scheduledQueryRules@2022-08-01-preview' = {
+  tags: mandatoryTags
   location: location
   name: alertRuleName
   properties: {

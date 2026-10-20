@@ -75,13 +75,36 @@ Function Confirm-GSAPrerequisites {
             Write-Verbose "Storage account name '$($config['runtime']['storageAccountName'])' is available"
         }
 
-        ## keyvault
-        Write-Verbose "Verifying the Key Vault name '$($config['runtime']['keyVaultName'])' is available"
-        $kvContent = ((Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$($config['runtime']['subscriptionId'])/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
-                    -Method Post -Payload "{""name"": ""$config['runtime']['keyVaultName']"",""type"": ""Microsoft.KeyVault/vaults""}").Content | ConvertFrom-Json).NameAvailable
-        if (!($kvContent) -and $deployKV) {
-            write-output "Error: keyvault name '$($config['runtime']['keyVaultName'])' is not available. Specify another prefix in config.json or a different unique resource name suffix"
-            break
+        # A fresh core deployment must have a free vault name. Check it before creating
+        # any resources so a soft-deleted vault cannot leave a partial installation.
+        if ($config['runtime']['deployKV']) {
+            $keyVaultName = $config['runtime']['keyVaultName']
+            Write-Verbose "Verifying the Key Vault name '$keyVaultName' is available"
+            $keyVaultNameCheckPayload = @{ name = $keyVaultName; type = 'Microsoft.KeyVault/vaults' } | ConvertTo-Json -Compress
+            $keyVaultNameCheckResponse = Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$($config['runtime']['subscriptionId'])/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
+                -Method Post -Payload $keyVaultNameCheckPayload -ErrorAction Stop
+            $keyVaultNameAvailability = $keyVaultNameCheckResponse.Content | ConvertFrom-Json
+            # Include Azure's explanation when it supplies one, so naming and policy
+            # failures can be diagnosed without repeating the deployment.
+            $azureNameCheckMessage = $keyVaultNameAvailability.message
+            if (-not $azureNameCheckMessage) { $azureNameCheckMessage = $keyVaultNameAvailability.error.message }
+            if (-not $azureNameCheckMessage) { $azureNameCheckMessage = $keyVaultNameAvailability.reason }
+            $azureNameCheckDetail = if ($azureNameCheckMessage) { " Azure says: $azureNameCheckMessage" } else { '' }
+            if ($null -eq $keyVaultNameAvailability.nameAvailable) {
+                throw "Could not verify whether Key Vault name '$keyVaultName' is available.$azureNameCheckDetail"
+            }
+            if (-not $keyVaultNameAvailability.nameAvailable) {
+                # A retry may reuse the live vault already created in this resource group.
+                # A deleted vault, or one owned elsewhere, still blocks a fresh install.
+                $expectedKeyVaultId = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])/providers/Microsoft.KeyVault/vaults/$keyVaultName"
+                $existingKeyVault = Get-AzResource -ResourceId $expectedKeyVaultId -ErrorAction SilentlyContinue
+                if ($existingKeyVault) {
+                    Write-Warning "Key Vault '$keyVaultName' already exists in resource group '$($config['runtime']['resourceGroup'])'."
+                }
+                else {
+                    throw "Key Vault name '$keyVaultName' is unavailable. Choose a different keyVaultName or uniqueNameSuffix in config.json. If a soft-deleted vault holds this name, an authorized operator can review and purge it before retrying.$azureNameCheckDetail"
+                }
+            }
         }
     }
 

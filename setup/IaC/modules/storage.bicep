@@ -1,9 +1,12 @@
+// Use the official mandatory values so this resource satisfies tag enforcement.
+param mandatoryTags object
 param storageAccountName string
 param location string
 param containername string
  
 resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
   name: storageAccountName
+  tags: mandatoryTags
   location: location
   sku: {
     name: 'Standard_LRS'
