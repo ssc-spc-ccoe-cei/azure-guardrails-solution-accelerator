@@ -1079,10 +1079,12 @@ let excludedBookingsMailboxes = rawUserData
 let externalUsers = rawUserData
 | where guardrailsExcluded == false
 | where systemAccountExcluded == false
+| where systemAccountExcluded == false
 | where homeTenantResolved_b == true
 | where isnotempty(homeTenantId);
 let internalUsers = rawUserData
 | where guardrailsExcluded == false
+| where systemAccountExcluded == false
 | where systemAccountExcluded == false
 | where homeTenantResolved_b == false or isempty(homeTenantId);
 // Match each externally authenticated user to their home tenant's MFA trust setting (only if feature is enabled)
@@ -1094,7 +1096,7 @@ let externalUsersWithTrustInfo = externalUsers
 ) on $left.userHomeTenantId == $right.PartnerTenantId
 | extend 
     effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeExternalUser = iff(crossTenantFeatureEnabled, 
+    shouldExcludeExternalUser = iff(crossTenantFeatureEnabled,
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), 
         false);
 let externalUsersToExclude = externalUsersWithTrustInfo
