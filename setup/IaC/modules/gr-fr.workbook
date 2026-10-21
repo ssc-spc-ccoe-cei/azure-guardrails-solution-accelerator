@@ -1,0 +1,2707 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Accélérateur de mesures de protection\n\nSélectionnez l'heure du rapport (le plus récent par défaut). Choisissez si les articles recommandés sont affichés.\n\n(M) = Obligatoire / (R) = Recommandé\n\nMESURE = Mesure de protection\n\nLes noms des articles et les commentaires conservent la langue des résultats enregistrés.",
+        "style": "info"
+      },
+      "name": "Details Title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "c90ebce2-9568-40ee-82cd-a8fd774f2e6b",
+            "version": "KqlParameterItem/1.0",
+            "name": "RequiredYesNo",
+            "label": "Afficher les contrôles recommandés",
+            "type": 10,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[\n  {\n    \"value\": \"Other\",\n    \"label\": \"Oui\"\n  },\n  {\n    \"value\": \"False\",\n    \"label\": \"Non\",\n    \"selected\": true\n  }\n]",
+            "timeContext": {
+              "durationMs": 2592000000
+            },
+            "value": "False"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 19"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "618c9321-a3de-4287-b4cf-860a4adf42d4",
+            "version": "KqlParameterItem/1.0",
+            "name": "RunTime",
+            "label": "Heure du rapport (UTC)",
+            "type": 2,
+            "isRequired": true,
+            "query": "GuardrailsCompliance_CL\n| extend ReportTime = column_ifexists(\"ReportTime_s\", \"\"),\n         ControlName = column_ifexists(\"ControlName_s\", \"\")\n| where ReportTime != \"\"\n| summarize DistinctControls = dcount(ControlName) by ReportTime\n| project Value = ReportTime,\n         Label = iff(DistinctControls < 13, strcat(ReportTime, \" (partiel)\"), ReportTime)\n| sort by Value desc",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::1"
+              ],
+              "showDefault": false
+            },
+            "timeContext": {
+              "durationMs": 2592000000
+            },
+            "defaultValue": "value::1",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": "2023-01-16 19:55:14"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isNotEqualTo",
+        "value": "information"
+      },
+      "name": "parameters - 1"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "e01ddeb8-1ffd-4088-9cb3-f4f8b8fa9eec",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Sommaire",
+            "subTarget": "summary",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-7ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 1",
+            "subTarget": "gr1",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-7fd3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 2",
+            "subTarget": "gr2",
+            "style": "link"
+          },
+          {
+            "id": "6a683359-5ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 3",
+            "subTarget": "gr3",
+            "style": "link"
+          },
+          {
+            "id": "6a383959-1ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 4",
+            "subTarget": "gr4",
+            "style": "link"
+          },
+          {
+            "id": "6b683959-7ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 5",
+            "subTarget": "gr5",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-4fd3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 6",
+            "subTarget": "gr6",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-7ed3-42b1-a509-3cfcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 7",
+            "subTarget": "gr7",
+            "style": "link"
+          },
+          {
+            "id": "4b2de2e9-a9c7-486c-a524-7da0e8f44d26",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 8",
+            "subTarget": "gr8",
+            "style": "link"
+          },
+          {
+            "id": "40243b3d-3037-482b-959b-d95c1b4b2014",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 9",
+            "subTarget": "gr9",
+            "style": "link"
+          },
+          {
+            "id": "6bc4aa50-56c1-425b-9894-d6d7edb20e3a",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 10",
+            "subTarget": "gr10",
+            "style": "link"
+          },
+          {
+            "id": "cad591d5-9404-46e2-b56f-b32723b390de",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 11",
+            "subTarget": "gr11",
+            "style": "link"
+          },
+          {
+            "id": "144c0d71-a9de-4e02-95bf-0474d243ada6",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 12",
+            "subTarget": "gr12",
+            "style": "link"
+          },
+          {
+            "id": "6a683959-2ed3-42b1-a509-3cdcd18017cf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "MESURE 13",
+            "subTarget": "gr13",
+            "style": "link"
+          },
+          {
+            "id": "8c5914bd-a497-473f-b767-f646b642fe5e",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Informations",
+            "subTarget": "information",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "links - 1"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "// Original query for table\n//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\ngr_data(\"GUARDRAIL 1\",\"{RunTime}\", \"{RequiredYesNo}\" )\n// Translate headers only; recorded item names and audit comments stay unchanged.\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 1",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "Query - 1"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 1</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "Title - summary of Guardrail 1",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 1\",\"{RunTime}\",  \"True\" )\n// Translate chart labels after the shared function computes the compliance counts.\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 1 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "Gr1 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 1\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 1 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr1"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr1 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "⚠️ Seuls les 100 premiers utilisateurs sans AMF sont affichés ci-dessous.",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "users-mfa-info"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9gf3d484-e871-4df0-8cbe-8ae6550c5984",
+            "version": "KqlParameterItem/1.0",
+            "name": "showNonMfa",
+            "label": "Afficher les utilisateurs sans AMF",
+            "type": 10,
+            "isRequired": true,
+            "value": "no",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n  {\n    \"value\": \"yes\",\n    \"label\": \"Oui\"\n  },\n  {\n    \"value\": \"no\",\n    \"label\": \"Non\",\n    \"selected\": true\n  }\n]",
+            "timeContext": {
+              "durationMs": 2592000000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr1"
+      },
+      "name": "parameters - Non-MFA Users Toggle"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_non_mfa_users('{RunTime}','__MFA_GRACE_PERIOD__','fr-CA')\n// Translate identity placeholders in the no-findings row without changing the MFA evaluation.\n| extend DisplayName = iff(DisplayName == \"N/A\", \"S. O.\", DisplayName),\n         UserPrincipalName = iff(UserPrincipalName == \"N/A\", \"S. O.\", UserPrincipalName),\n         UserType = case(UserType == \"Member\", \"Membre\", UserType == \"Guest\", \"Invité\", UserType == \"N/A\", \"S. O.\", UserType), CreatedTime = iff(CreatedTime == \"N/A\", \"S. O.\", CreatedTime), LastSignIn = iff(LastSignIn == \"N/A\", \"S. O.\", LastSignIn)\n| project-rename ['Nom d’affichage'] = ['DisplayName'], ['Nom d’utilisateur principal'] = ['UserPrincipalName'], ['Type d’utilisateur'] = ['UserType'], ['Date de création'] = ['CreatedTime'], ['Dernière connexion'] = ['LastSignIn'], ['Commentaires'] = ['Comments']",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr1"
+        },
+        {
+          "parameterName": "showNonMfa",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - Non-MFA Users"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 2\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 2",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "Query - 2"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 2</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "Title - summary of Guardrail 2",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 2\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 2 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "Gr2 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 2\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 2 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr2 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9ff4b484-e871-4df0-8cbe-8ae6570c5984",
+            "version": "KqlParameterItem/1.0",
+            "name": "su",
+            "label": "Afficher les comptes invités",
+            "type": 10,
+            "isRequired": true,
+            "value": "yes",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n  {\n    \"value\": \"yes\",\n    \"label\": \"Oui\"\n  },\n  {\n    \"value\": \"no\",\n    \"label\": \"Non\",\n    \"selected\": true\n  }\n]",
+            "timeContext": {
+              "durationMs": 2592000000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "parameters - 18"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR2ExternalUsers_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    Mail_s = column_ifexists(\"Mail_s\", \"\"),\n    Subscription_s = column_ifexists(\"Subscription_s\", \"\"),\n    Role_s = column_ifexists(\"Role_s\", \"\"),\n    PrivilegedRole_s = column_ifexists(\"PrivilegedRole_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")\n// Translate saved role flags and placeholder values for display without changing the audit results.\n| extend DisplayName_s = iff(DisplayName_s == \"N/A\", \"S. O.\", DisplayName_s),\n         Mail_s = iff(Mail_s == \"N/A\", \"S. O.\", Mail_s),\n         Subscription_s = iff(Subscription_s == \"N/A\", \"S. O.\", Subscription_s),\n         Role_s = case(Role_s =~ \"True\", \"Oui\", Role_s =~ \"False\", \"Non\", Role_s == \"N/A\", \"S. O.\", Role_s),\n         PrivilegedRole_s = case(PrivilegedRole_s =~ \"True\", \"Oui\", PrivilegedRole_s =~ \"False\", \"Non\", PrivilegedRole_s == \"N/A\", \"S. O.\", PrivilegedRole_s)\n| project-rename ['Nom d’affichage'] = ['DisplayName_s'], ['Courriel'] = ['Mail_s'], ['Abonnement'] = ['Subscription_s'], ['Rôle'] = ['Role_s'], ['Rôle privilégié'] = ['PrivilegedRole_s'], ['Commentaires'] = ['Comments_s']",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "su",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - 17"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "9ff4b484-e871-4df0-8cbe-8ae6570c5985",
+            "version": "KqlParameterItem/1.0",
+            "name": "suwg",
+            "label": "Afficher les utilisateurs sans groupes",
+            "type": 10,
+            "isRequired": true,
+            "value": "yes",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\n  {\n    \"value\": \"yes\",\n    \"label\": \"Oui\"\n  },\n  {\n    \"value\": \"no\",\n    \"label\": \"Non\",\n    \"selected\": true\n  }\n]",
+            "timeContext": {
+              "durationMs": 2592000000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "parameters - 19"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "⚠️ Seuls les 20 premiers utilisateurs sans affectation à un groupe sont affichés ci-dessous.",
+        "style": "info"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr2"
+      },
+      "name": "users-cap-info"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GR2UsersWithoutGroups_CL \n| where column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\"\n| project \n    DisplayName_s = column_ifexists(\"DisplayName_s\", \"\"),\n    UserPrincipalName_s = column_ifexists(\"UserPrincipalName_s\", \"\"),\n    Comments_s = column_ifexists(\"Comments_s\", \"\")\n// Translate placeholder values in the users-without-groups table; keep saved audit text unchanged.\n| extend DisplayName_s = iff(DisplayName_s == \"N/A\", \"S. O.\", DisplayName_s),\n         UserPrincipalName_s = iff(UserPrincipalName_s == \"N/A\", \"S. O.\", UserPrincipalName_s)\n| project-rename ['Nom d’affichage'] = ['DisplayName_s'], ['Nom d’utilisateur principal'] = ['UserPrincipalName_s'], ['Commentaires'] = ['Comments_s']",
+        "size": 0,
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr2"
+        },
+        {
+          "parameterName": "suwg",
+          "comparison": "isEqualTo",
+          "value": "yes"
+        }
+      ],
+      "name": "query - 18"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data3(\"GUARDRAIL 3\",\"{RunTime}\",  \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 3",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      },
+      "name": "Query - 3"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 3</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      },
+      "name": "Title - summary of Guardrail 3",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 3\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 3 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr3"
+      },
+      "name": "Gr3 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 3\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 3 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr3"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr3 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 4\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 4",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      },
+      "name": "query - 4"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 4</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      },
+      "name": "Title - summary of Guardrail 4",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 4\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 4 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr4"
+      },
+      "name": "Gr4 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 4\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 4 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr4"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr4 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data56(\"GUARDRAIL 5\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 5",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "rowLimit": 1500,
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Statut"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      },
+      "name": "query - 5"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 5</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      },
+      "name": "Title - summary of Guardrail 5",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie56(\"GUARDRAIL 5\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 5 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr5"
+      },
+      "name": "Gr5 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie56(\"GUARDRAIL 5\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 5 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr5"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr5 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data56(\"GUARDRAIL 6\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 6",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "exportToExcelOptions": "all",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "rowLimit": 1500,
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Statut"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      },
+      "name": "query - 6"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 6</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      },
+      "name": "Title - summary of Guardrail 6",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie56(\"GUARDRAIL 6\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 6 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr6"
+      },
+      "name": "Gr6 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie56(\"GUARDRAIL 6\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 6 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr6"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr6 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data7(\"GUARDRAIL 7\",\"{RunTime}\",  \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 7",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "rowLimit": 1500,
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Statut"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      },
+      "name": "query - 7"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 7</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      },
+      "name": "Title - summary of Guardrail 7",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 7\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 7 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr7"
+      },
+      "name": "Gr7 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 7\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 7 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr7"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr7 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let itsgcodes=GRITSGControls_CL | where TimeGenerated == toscalar(GRITSGControls_CL | summarize by TimeGenerated | top 2 by TimeGenerated desc | top 1 by TimeGenerated asc | project TimeGenerated);\r\nlet ctrlprefix=\"GUARDRAIL 8\";\r\nGuardrailsCompliance_CL\r\n| where column_ifexists(\"ControlName_s\", \"\") has ctrlprefix  and column_ifexists(\"ReportTime_s\", \"\") == \"{RunTime}\" and column_ifexists(\"Required_s\", \"\") != tostring(\"{RequiredYesNo}\")\r\n|join kind=leftouter (itsgcodes) on itsgcode_s\r\n| project \r\n    ['Item Name'] = strcat(iff(column_ifexists(\"Required_s\", \"\")==\"False\",\"(R) \", \"(M) \"), column_ifexists(\"ItemName_s\", \"\")),\r\n    ['Subscription Name'] = column_ifexists(\"SubscriptionName_s\", \"\"),\r\n    ['Subnet Name'] = column_ifexists(\"SubnetName_s\", \"\"),\r\n    Status = case(column_ifexists(\"ComplianceStatus_b\", bool(null)) == true, \"✔️\", column_ifexists(\"ComplianceStatus_b\", bool(null)) == false, \"❌\", \"➖\"),\r\n    Comments = column_ifexists(\"Comments_s\", \"\"),\r\n    ['ITSG Control'] = column_ifexists(\"itsgcode_s\", \"\"),\r\n    Remediation = gr_geturl(replace_string(ctrlprefix,\" \",\"\"), column_ifexists(\"itsgcode_s\", \"\")),\r\n    Profile = iff(isnotempty(column_ifexists('Profile_d', '')), tostring(toint(column_ifexists('Profile_d', ''))), '')\r\n| sort by Status asc\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Nom du sous-réseau'] = ['Subnet Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 8",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "rowLimit": 1500,
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Statut"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      },
+      "name": "query - 8"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 8</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      },
+      "name": "Title - summary of Guardrail 8",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 8\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 8 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr8"
+      },
+      "name": "Gr8 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 8\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 8 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr8"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr8 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data9(\"GUARDRAIL 9\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 9",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "rowLimit": 1500,
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Statut"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      },
+      "name": "query - 9"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 9</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      },
+      "name": "Title - summary of Guardrail 9",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 9\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 9 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr9"
+      },
+      "name": "Gr9 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 9\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 9 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr9"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr9 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data3(\"GUARDRAIL 10\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 10",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      },
+      "name": "query - 10"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 10</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      },
+      "name": "Title - summary of Guardrail 10",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 10\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 10 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr10"
+      },
+      "name": "Gr10 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 10\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 10 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr10"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr10 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data11(\"GUARDRAIL 11\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Nom de l’abonnement'] = ['Subscription Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 11",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ],
+          "rowLimit": 1500,
+          "hierarchySettings": {
+            "treeType": 1,
+            "groupBy": [
+              "Statut"
+            ]
+          }
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      },
+      "name": "query - 11"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 11</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      },
+      "name": "Title - summary of Guardrail 11",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 11\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 11 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr11"
+      },
+      "name": "Gr11 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 11\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 11 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr11"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr11 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_data(\"GUARDRAIL 12\",\"{RunTime}\", \"{RequiredYesNo}\")\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 12",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      },
+      "name": "Query - 12"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 12</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      },
+      "name": "Title - summary of Guardrail 12",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 12\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 12 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr12"
+      },
+      "name": "Gr12 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie(\"GUARDRAIL 12\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 12 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr12"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr12 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//let lic = GRITSGControls_CL | summarize max(TimeGenerated);\r\ngr_data3(\"GUARDRAIL 13\",\"{RunTime}\", \"{RequiredYesNo}\" )\n| project-rename ['Nom de l’article'] = ['Item Name'], ['Commentaires'] = ['Comments'], ['Statut'] = ['Status'], ['Contrôle ITSG'] = ['ITSG Control'], ['Mesures correctives'] = ['Remediation'], ['Profil'] = ['Profile']\n// Use the French guide here; shared functions continue to serve the English workbook.\n| extend ['Mesures correctives'] = \"https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%2D%20Guide%20de%20rem%C3%A9diation%20des%20contr%C3%B4les%20de%20mesures%20de%20protection%20%2D%20Azure%20CaC%20%2D%20Guardrail%20Controls%20Remediation%20Guide&p=true&ga=1\"",
+        "size": 0,
+        "title": "MESURE 13",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Query - 13"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "<h3>Sommaire des contrôles pour la mesure de protection 13</h3>",
+        "size": 1
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Title - summary of Guardrail 13",
+      "styleSettings": {
+        "showBorder": false
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 13\",\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 13 — conformité des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "gr13"
+      },
+      "name": "Gr13 Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie3(\"GUARDRAIL 13\",\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 4,
+        "title": "Mesure 13 — conformité des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "chartSettings": {
+          "showLegend": true,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "gr13"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Gr13 Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie_all(\"{RunTime}\",  \"True\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 3,
+        "title": "Conformité globale des contrôles obligatoires",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Statut",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Total",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal",
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "showBorder": true
+        },
+        "chartSettings": {
+          "showLegend": true,
+          "createOtherGroup": null,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles conformes",
+              "color": "green"
+            },
+            {
+              "seriesName": "Articles non conformes",
+              "color": "redBright"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "summary"
+      },
+      "name": "Overall Mandatory Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_pie_all(\"{RunTime}\",  \"False\" )\n| extend Status = case(Status == \"Compliant Items\", \"Articles conformes\", Status == \"Non-compliant Items\", \"Articles non conformes\", Status == \"Not Applicable Items\", \"Articles sans objet\", Status), Title = \"Articles par état de conformité\"\n| project-rename ['Statut'] = ['Status'], ['Titre'] = ['Title']",
+        "size": 3,
+        "title": "Conformité globale des contrôles recommandés",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Statut",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Total",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal",
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "showBorder": true
+        },
+        "chartSettings": {
+          "showLegend": true,
+          "createOtherGroup": null,
+          "seriesLabelSettings": [
+            {
+              "seriesName": "Articles conformes",
+              "color": "blue"
+            },
+            {
+              "seriesName": "Articles non conformes",
+              "color": "orange"
+            },
+            {
+              "seriesName": "Articles sans objet",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "summary"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "name": "Overall Recommended Compliance Summary",
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "name": "Overall Compliance Status",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary(\"{RunTime}\")\n// Translate the summary display text without changing totals or compliance status.\n| extend Guardrail = case(Guardrail == \"All Guardrails\", \"Toutes les mesures de protection\", Guardrail == \"Mandatory Guardrails\", \"Mesures de protection obligatoires\", Guardrail == \"Recommended Guardrails\", \"Mesures de protection recommandées\", Guardrail)\n| project-rename ['Mesure de protection'] = ['Guardrail'], ['Nombre total d’articles'] = ['Total # Items'], ['Articles non conformes'] = ['NonCompliant Items'], ['Articles à l’état inconnu'] = ['Unknown Items'], ['Statut'] = ['Status']",
+        "size": 4,
+        "title": "État de conformité global",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "summary"
+        }
+      ],
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "name": "Overall Compliance Status by Guardrail (Mandatory + Recommended)",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary_by_prefix_alla(\"{RunTime}\", \"\")\n| extend Guardrail = replace_string(Guardrail, \"GUARDRAIL\", \"MESURE\")\n| project-rename ['Mesure de protection'] = ['Guardrail'], ['Nombre total d’articles'] = ['Total # Items'], ['Articles non conformes'] = ['NonCompliant Items'], ['Articles à l’état inconnu'] = ['Unknown Items'], ['Statut'] = ['Status']",
+        "size": 0,
+        "title": "État de conformité global par mesure de protection (obligatoire et recommandé)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "summary"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "name": "Compliance Status by Guardrail (Mandatory Controls)",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", true)\n| extend Guardrail = replace_string(Guardrail, \"GUARDRAIL\", \"MESURE\")\n| project-rename ['Mesure de protection'] = ['Guardrail'], ['Nombre total d’articles'] = ['Total # Items'], ['Articles non conformes'] = ['NonCompliant Items'], ['Articles à l’état inconnu'] = ['Unknown Items'], ['Statut'] = ['Status']",
+        "size": 0,
+        "title": "État de conformité par mesure de protection (contrôles obligatoires)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "summary"
+        }
+      ],
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "name": "Compliance Status by Guardrail (Recommended Controls)",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "gr_summary_by_prefix_all(\"{RunTime}\", false)\n| extend Guardrail = replace_string(Guardrail, \"GUARDRAIL\", \"MESURE\")\n| project-rename ['Mesure de protection'] = ['Guardrail'], ['Nombre total d’articles'] = ['Total # Items'], ['Articles non conformes'] = ['NonCompliant Items'], ['Articles à l’état inconnu'] = ['Unknown Items'], ['Statut'] = ['Status']",
+        "size": 0,
+        "title": "État de conformité par mesure de protection (contrôles recommandés)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Mesures correctives",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            },
+            {
+              "columnMatch": "Link",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "Url"
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibilities": [
+        {
+          "parameterName": "selectedTab",
+          "comparison": "isEqualTo",
+          "value": "summary"
+        },
+        {
+          "parameterName": "RequiredYesNo",
+          "comparison": "isEqualTo",
+          "value": "Other"
+        }
+      ],
+      "styleSettings": {
+        "showBorder": true
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "GuardrailsCompliance_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == '{RunTime}'\n| summarize by column_ifexists(\"ControlName_s\", \"\")\n| count \n| extend Title=\"Nombre total d’articles\"\n| project-rename ['Nombre'] = ['Count'], ['Titre'] = ['Title']",
+        "size": 4,
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Titre",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Nombre",
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal"
+              }
+            }
+          },
+          "showBorder": true,
+          "size": "auto"
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "summary"
+      },
+      "name": "Total of Guardrails"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let dt = GR_VersionInfo_CL | summarize max(column_ifexists(\"ReportTime_s\", \"\"));\nGR_VersionInfo_CL\n| where column_ifexists(\"ReportTime_s\", \"\") == toscalar (dt)\n| project [\"Deployed Version\"]= column_ifexists(\"DeployedVersion_s\", \"\"), [\"Version Available\"]=column_ifexists(\"AvailableVersion_s\", \"\"), [\"Update Required\"]=iff(column_ifexists(\"UpdateNeeded_b\", bool(false))==true,\"Oui\",\"Non\"),[\"Check date\"]=toscalar (dt)\n| project-rename ['Version déployée'] = ['Deployed Version'], ['Version disponible'] = ['Version Available'], ['Mise à jour requise'] = ['Update Required'], ['Date de vérification'] = ['Check date']",
+        "size": 4,
+        "title": "Informations sur la version des mesures de protection",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "information-version"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let dt = GR_TenantInfo_CL | summarize max(column_ifexists(\"ReportTime_s\", \"\"));\r\nGR_TenantInfo_CL\r\n| where column_ifexists(\"ReportTime_s\", \"\") == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(column_ifexists(\"cloudUsageProfiles_s\", \"\") == 'default',toscalar(\"Profil d’utilisation infonuagique non précisé ou valeur « default »\"),column_ifexists(\"cloudUsageProfiles_s\", \"\"))\n| project-rename ['Profils d’utilisation infonuagique'] = ['Cloud Usage Profiles']",
+        "size": 4,
+        "title": "Configuration des profils d’utilisation infonuagique",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "information-cloud-usage"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "***POLITIQUES ITSG-33***\r\n\r\nITSG-33 en français : https://www.cyber.gc.ca/sites/default/files/cyber/publications/itsg33-ann3a-fra.pdf\r\n\r\nITSG-33 en anglais : https://www.cyber.gc.ca/sites/default/files/cyber/publications/itsg33-ann3a-eng.pdf",
+        "style": "info",
+        "size": 4
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "information"
+      },
+      "name": "information-itsg33"
+    }
+  ],
+  "fallbackResourceIds": [
