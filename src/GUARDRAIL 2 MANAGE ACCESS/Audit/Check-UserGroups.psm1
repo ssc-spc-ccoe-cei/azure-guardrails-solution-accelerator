@@ -1533,16 +1533,16 @@ function Check-UserGroups {
                             continue
                         }
 
-                        # Estimate how much work this candidate could remove from the remaining exact scan.
-                        # Scan it only when the expected saving is at least twice its own page cost, which
-                        # avoids spending time on broad-looking groups that are unlikely to improve runtime.
+                        # Scan a promising group when its estimated saving covers its scan cost. This lets
+                        # us scan a broad group first instead of reading several overlapping groups.
+                        # Actual user IDs found during the scan still determine whether every user is covered.
                         $estimatedCoverage = [long][Math]::Ceiling($uncoveredUserIds.Count * ($remainingHits / [double]$remainingSampleIds.Count))
                         $estimatedCoverage = [Math]::Min($uncoveredUserIds.Count, [Math]::Min([long]$candidate.DirectUserCount, $estimatedCoverage))
                         $projectedUncovered = [Math]::Max(0, $uncoveredUserIds.Count - $estimatedCoverage)
                         $remainingCandidates = @($candidatePool | Where-Object { $_.GroupId -ne $candidate.GroupId })
                         $projectedPlan = Get-CompletionPlan -UncoveredCount $projectedUncovered -TotalGroupCount $groupCount -CompletedGroupIds $completedGroupIds -KnownCandidates $remainingCandidates
                         $expectedSavings = [Math]::Max(0, $currentPlan.CheapestRounds - $projectedPlan.CheapestRounds)
-                        $requiredSavings = 2 * [int]$candidate.EstimatedPages
+                        $requiredSavings = [int]$candidate.EstimatedPages
                         $qualifies = $expectedSavings -ge $requiredSavings
                         [void]$evaluatedCandidates.Add([PSCustomObject]@{
                             Candidate         = $candidate
