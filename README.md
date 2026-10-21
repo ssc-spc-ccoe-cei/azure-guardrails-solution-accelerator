@@ -1,5 +1,8 @@
 # Azure Compliance as Code Solution (Guardrails Solution Accelerator) for Canadian Public Sector
+## $${\color{Red} Warning \space : \space Beta \space Release \space 5.0.0 \space }$$
+The current release (v5.0.0beta) available is undergoing operations testing. It has passed some unit tests and ad hoc use case testing but still requires active review.
 
+As this is an beta release, please install with caution. You can still use version 4.0.0 in the interim. The beta tag will be removed once the final review is completed.
 
 ## Introduction
 
