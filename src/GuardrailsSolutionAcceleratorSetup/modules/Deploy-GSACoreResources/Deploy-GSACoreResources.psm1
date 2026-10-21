@@ -153,7 +153,8 @@ Function Deploy-GSACoreResources {
             "Directory.Read.All",
             "AuditLog.Read.All",
             "AccessReview.Read.All",
-            "CustomSecAttributeAssignment.Read.All"
+            "CustomSecAttributeAssignment.Read.All",
+            "Bookings.Read.All"
         )
 
         foreach ($approleidName in $appRoleIds) {
