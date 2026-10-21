@@ -12,6 +12,8 @@ Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Update-GSACoreResources\Up
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Update-GSAAutomationRunbooks\Update-GSAAutomationRunbooks.psd1")
 # The deployment flow uses this helper to validate the named PowerShell 7.6 environment before updates and runbook starts.
 Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Manage-GSAAutomationRuntime\Manage-GSAAutomationRuntime.psd1")
+# Used by -removeExistingDeployment to tear down a previous installation before a fresh deployment.
+Import-Module ((Split-Path $PSScriptRoot -Parent) + "\Remove-GSAExistingDeployment\Remove-GSAExistingDeployment.psd1")
 
 Function Invoke-GSARunbooks {
     param (
@@ -198,7 +200,11 @@ Function Deploy-GuardrailsSolutionAccelerator {
         If errors are encountered during deployment and a redeployment does not pass prerequisites due to existing resources, the following modules can perform cleanup tasks:
           - Remove-GSACentralizedDefenderCustomerComponents
           - Remove-GSACentralizedReportingCustomerComponents
-          - Remove-GSACoreResources'
+          - Remove-GSACoreResources
+
+        For unattended redeployments (for example a CI/CD pipeline deploying into a subscription that already holds a manual
+        installation), -removeExistingDeployment runs those cleanup steps automatically before the new deployment. This permanently
+        deletes the existing Log Analytics workspace data; use -update to keep an existing installation instead.
     .NOTES
         Information or caveats about the function e.g. 'This function is not supported in Linux'
     .LINK
@@ -209,6 +215,9 @@ Function Deploy-GuardrailsSolutionAccelerator {
     .EXAMPLE
         # Deploy new GSA instance, with core components and Defender for Cloud access delegated to a managing tenant:
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -newComponents CoreComponents,CentralizedCustomerDefenderForCloudSupport
+    .EXAMPLE
+        # Pipeline redeployment: remove a previous installation (including one installed manually) and deploy fresh without prompts:
+        Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -newComponents CoreComponents,CentralizedCustomerReportingSupport -removeExistingDeployment -yes
     .EXAMPLE
         # Validate the contents of a configuration file, but do not deploy anything:
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -validateConfigFile
@@ -315,6 +324,21 @@ Function Deploy-GuardrailsSolutionAccelerator {
         [string]
         $releaseVersion,
 
+        # remove an existing Guardrails deployment (resource group, Lighthouse delegation, Defender for Cloud role
+        # assignments, soft-deleted Key Vault) before a new deployment - intended for CI/CD pipelines redeploying into
+        # a subscription with a previous manual installation. Permanently deletes the Log Analytics workspace data.
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
+        [switch]
+        $removeExistingDeployment,
+
+        # when used with -removeExistingDeployment, names the resource group of the existing deployment instead of
+        # discovering it from the configured resource group name and the Guardrails 'Solution' tag
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
+        [string]
+        $existingResourceGroupName,
+
         # # if specified, deploy the lastest pre-release version. If used with -releaseVersion, the release version will take precedence
         # [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configFilePath')]
         # [Parameter(Mandatory = $false, ParameterSetName = 'newDeployment-configString')]
@@ -331,6 +355,10 @@ Function Deploy-GuardrailsSolutionAccelerator {
     )
 
     $ErrorActionPreference = 'Stop'
+
+    If ($existingResourceGroupName -and -not $removeExistingDeployment.IsPresent) {
+        throw '-existingResourceGroupName can only be used together with -removeExistingDeployment.'
+    }
 
     #ensures verbose preference is passed through to sub-modules
     If ($PSBoundParameters.ContainsKey('verbose')) {
@@ -469,6 +497,23 @@ Function Deploy-GuardrailsSolutionAccelerator {
         }
         
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config -RuntimeModules $runtimeModules @params -Verbose:$useVerbose
+
+        # Tear down a previous installation before anything is written. Its leftovers (resource group,
+        # Lighthouse delegation, management group role assignments, soft-deleted Key Vault, tag policy
+        # assignments on the old resource group) would otherwise fail the tag policy preparation or the
+        # prerequisite checks below.
+        If (!$update.IsPresent -and $removeExistingDeployment.IsPresent) {
+            Write-Host "Removing existing Guardrails Solution Accelerator deployment before the new deployment..." -ForegroundColor Green
+            $removeExistingParams = @{
+                config        = $config
+                newComponents = $newComponents
+                force         = $yes.IsPresent
+            }
+            If ($existingResourceGroupName) {
+                $removeExistingParams['existingResourceGroupName'] = $existingResourceGroupName
+            }
+            Remove-GSAExistingDeployment @removeExistingParams -Verbose:$useVerbose
+        }
 
         # Prepare policy permissions and accepted release values before any resource
         # writes. Failed deployments deliberately retain both sets so the saved

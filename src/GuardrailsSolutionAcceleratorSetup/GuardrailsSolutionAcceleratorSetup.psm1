@@ -3,6 +3,7 @@ Import-Module $PSScriptRoot\modules\Get-GSAExportedConfig\Get-GSAExportedConfig.
 Import-module $PSScriptRoot\modules\Remove-GSACentralizedDefenderCustomerComponents\Remove-GSACentralizedDefenderCustomerComponents.psd1
 Import-module $PSScriptRoot\modules\Remove-GSACentralizedReportingCustomerComponents\Remove-GSACentralizedReportingCustomerComponents.psd1
 Import-module $PSScriptRoot\modules\Remove-GSACoreResources\Remove-GSACoreResources.psd1
+Import-module $PSScriptRoot\modules\Remove-GSAExistingDeployment\Remove-GSAExistingDeployment.psd1
 
 # list functions to export from module for public consumption; also update in Deploy-GuardrailsSolutionAccelerator.psm1 when making changes
 $functionsToExport = @(
@@ -11,6 +12,7 @@ $functionsToExport = @(
     'Remove-GSACentralizedDefenderCustomerComponents'
     'Remove-GSACentralizedReportingCustomerComponents'
     'Remove-GSACoreResources'
+    'Remove-GSAExistingDeployment'
 )
 
 Export-ModuleMember -Function $functionsToExport

@@ -1,8 +1,15 @@
 name: Pre-clean Guardrails CI deployment
 description: |
-  Removes the existing Guardrails deployment and writes a fresh config.json
+  Removes existing Guardrails deployments and writes a fresh config.json
   with new LAW and Key Vault names for the next deployment. Tries to purge
   previous soft-deleted CI vaults without waiting to reuse their names.
+
+  Teardown uses Remove-GSAExistingDeployment -all, which removes the CI
+  resource group (static name) and any other Guardrails deployment in the
+  subscription found by its Solution tag, such as a manual installation,
+  together with their Lighthouse delegation and Defender for Cloud role
+  assignments. Without this, a manual installation's leftovers fail the
+  installer's prerequisite checks even when the CI resource group is gone.
 
   Updates select the existing vault without removing resources.
   Storage, AA, and RG names still use the same static uniqueNameSuffix.
@@ -244,10 +251,21 @@ runs:
 
           $configFilePath = Join-Path $env:GITHUB_WORKSPACE 'config.json'
 
-          # ── 1. Tear down the existing deployment ─────────────────────────────────────
-          # The RG name is static ($rgBase-$staticSuffix) so we always know where to look.
-          # We discover the current LAW by listing workspaces in the RG — no state
-          # tracking needed.
+          # ── 1. Tear down existing deployments ────────────────────────────────────────
+          # Remove-GSAExistingDeployment finds the CI RG by its static name
+          # ($rgBase-$staticSuffix) and any other Guardrails deployment in the
+          # subscription by its Solution tag (for example one installed manually with
+          # different names), then removes the Lighthouse delegation, Defender for Cloud
+          # role assignments and the resource group for each. Those leftovers otherwise
+          # fail the installer's prerequisite checks even when the CI RG itself is gone,
+          # so this runs on every fresh deployment rather than only when the CI RG exists.
+          #
+          # The config written here is the fallback description of the CI RG for when
+          # its exported configuration cannot be read; each deployment's exported
+          # configuration (gsaConfigExportLatest) is preferred when available. It
+          # carries the NEW vault base: Remove-GSAExistingDeployment purges a deleted
+          # vault only when the next deployment reuses its name, and CI vault names
+          # change every run. The CI-specific purge loop below handles old vaults.
           if ($existingResourceGroup) {
             # Find the existing LAW whose name starts with the base name pattern.
             $existingLAW = Get-AzOperationalInsightsWorkspace -ResourceGroupName $rgName `
@@ -268,20 +286,21 @@ runs:
               $existingLAWBase = $lawBase
               Write-Output "No existing LAW matching '$lawBase-*' found in '$rgName'. Using bare base name for teardown."
             }
-
-            New-Config $existingLAWBase $existingKeyVaultBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
-
-            Push-Location -Path (Join-Path $actionRepoRoot 'setup')
-            try {
-              Remove-GSACentralizedReportingCustomerComponents -Force -configFilePath $configFilePath
-              Remove-GSACentralizedDefenderCustomerComponents  -Force -configFilePath $configFilePath
-              Remove-GSACoreResources -Force -Wait              -configFilePath $configFilePath
-            }
-            finally { Pop-Location }
           }
           else {
-            Write-Output "RG '$rgName' not found — skipping teardown (first run or already clean)."
+            $existingLAWBase = $lawBase
+            Write-Output "RG '$rgName' not found. Still checking the subscription for other Guardrails deployments (for example a manual installation)."
           }
+
+          New-Config $existingLAWBase $newKeyVaultBase | ConvertTo-Json -Depth 5 | Set-Content -Path $configFilePath
+
+          Push-Location -Path (Join-Path $actionRepoRoot 'setup')
+          try {
+            # -all: remove every discovered deployment, not just one. The CI subscription may
+            # hold both the previous pipeline deployment and a manual installation.
+            Remove-GSAExistingDeployment -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerReportingSupport -all -Force
+          }
+          finally { Pop-Location }
 
           # Purge only deleted vaults whose original resource ID is in this CI group and
           # whose name matches the CI naming pattern. Include leftovers from earlier
