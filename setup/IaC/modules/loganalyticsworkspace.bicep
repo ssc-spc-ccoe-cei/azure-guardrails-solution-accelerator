@@ -1,4 +1,4 @@
-// Use one trusted tag set for the workspace and workbook.
+// Use one trusted tag set for the workspace and both workbooks.
 param mandatoryTags object
 param subscriptionId string
 param rg string
@@ -12,12 +12,19 @@ param updateCoreResources bool = false
 param mfaGracePeriod string
 var wb = loadTextContent('gr.workbook')
 var wbWithMfaGrace = replace(wb, '__MFA_GRACE_PERIOD__', mfaGracePeriod)
+// The French workbook translates headings, labels, summaries and query-generated MFA messages.
+// Both workbooks keep recorded item names and compliance comments in the language selected
+// by GuardRailsLocale at audit time. The English workbook fixes query-generated MFA messages
+// to English even for French-locale tenants; the Automation language setting stays unchanged.
+var wbFr = loadTextContent('gr-fr.workbook')
+var wbFrWithMfaGrace = replace(wbFr, '__MFA_GRACE_PERIOD__', mfaGracePeriod)
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
 //'''
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
 //var wbConfig='${wb}${wbConfig2}'
 var wbConfig='${wbWithMfaGrace}${wbConfig2}'
+var wbConfigFr='${wbFrWithMfaGrace}${wbConfig2}'
 
 resource guardrailsLogAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: logAnalyticsWorkspaceName
@@ -558,6 +565,10 @@ resource dcrTableGuardrailsUserRaw 'Microsoft.OperationalInsights/workspaces/tab
           name: 'guardrailsExcludedAgentUser_b'
           type: 'boolean'
         }
+        {
+          name: 'guardrailsExcludedBookingsMailbox_b'
+          type: 'boolean'
+        }
         { 
           name: 'isMfaRegistered_b'
           type: 'boolean'
@@ -988,11 +999,14 @@ resource f5 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(mfaGracePeriod);
 let MfaGracePeriod = mfaGracePeriodDays * 1d;
-let locale = toscalar(
+// Main supplies the culture used by the current audit's localization catalogue.
+// Older callers can omit auditLocale and keep using the backend-recorded tenant locale.
+let tenantLocale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s    | project Locale_s
     | take 1
 );
+let locale = iff(isnotempty(auditLocale), auditLocale, tenantLocale);
 let localizedMessages = case(
     locale == "fr-CA", dynamic({
         "allUsersHaveMFA": "Tous les comptes d'utilisateurs natifs ont 2+ méthodes d'authentification.",
@@ -1058,39 +1072,50 @@ let rawUserData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          agentUserExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedAgentUser_b", bool(null)), false)),
+         bookingsMailboxExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedBookingsMailbox_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
+// Accounts Microsoft services create on demand. They cannot register MFA and cannot carry the exclusion attribute.
+| extend systemAccountExcluded = agentUserExcluded or bookingsMailboxExcluded
 // new logic for created Date
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let excludedUsers = rawUserData
 | where guardrailsExcluded == true;
-// Agent ID user accounts cannot register MFA and cannot carry the exclusion attribute.
 let excludedAgentUsers = rawUserData
 | where guardrailsExcluded == false and agentUserExcluded == true;
-let guestUsers = rawUserData
-| where guardrailsExcluded == false and agentUserExcluded == false and userType == "Guest";
-let memberUsers = rawUserData
-| where guardrailsExcluded == false and agentUserExcluded == false and userType != "Guest";
-// Match each guest to their home tenant's MFA trust setting (only if feature is enabled)
-let guestsWithTrustInfo = guestUsers
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+let excludedBookingsMailboxes = rawUserData
+| where guardrailsExcluded == false and bookingsMailboxExcluded == true;
+let externalUsers = rawUserData
+| where guardrailsExcluded == false
+| where systemAccountExcluded == false
+| where systemAccountExcluded == false
+| where homeTenantResolved_b == true
+| where isnotempty(homeTenantId);
+let internalUsers = rawUserData
+| where guardrailsExcluded == false
+| where systemAccountExcluded == false
+| where systemAccountExcluded == false
+| where homeTenantResolved_b == false or isempty(homeTenantId);
+// Match each externally authenticated user to their home tenant's MFA trust setting (only if feature is enabled)
+let externalUsersWithTrustInfo = externalUsers
+| extend userHomeTenantId = tostring(homeTenantId)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
-) on $left.guestHomeTenantId == $right.PartnerTenantId
+) on $left.userHomeTenantId == $right.PartnerTenantId
 | extend 
     effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled, 
+    shouldExcludeExternalUser = iff(crossTenantFeatureEnabled,
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), 
         false);
-let guestsToExclude = guestsWithTrustInfo
-| where shouldExcludeGuest == true;
-let guestsToEvaluate = guestsWithTrustInfo
-| where shouldExcludeGuest == false
-| project-away PartnerTenantId, InboundMfaTrust, effectiveMfaTrust, shouldExcludeGuest, guestHomeTenantId;
-let excludedGuestCount = toscalar(guestsToExclude | summarize count());
-let userData = union memberUsers, guestsToEvaluate;
+let externalUsersToExclude = externalUsersWithTrustInfo
+| where shouldExcludeExternalUser == true;
+let externalUsersToEvaluate = externalUsersWithTrustInfo
+| where shouldExcludeExternalUser == false
+| project-away PartnerTenantId, InboundMfaTrust, effectiveMfaTrust, shouldExcludeExternalUser, userHomeTenantId;
+let excludedExternalUserCount = toscalar(externalUsersToExclude | summarize count());
+let userData = union internalUsers, externalUsersToEvaluate;
 // users within grace
 let usersWithinGrace = userData
 | extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
@@ -1144,12 +1169,15 @@ let summary = mfaAnalysis
                 strcat(tostring(NonCompliantUsers), " utilisateurs n'ont pas d'AMF appropriée configurée sur ", tostring(TotalUsers), " utilisateurs totaux"),
                 strcat(tostring(NonCompliantUsers), " users do not have proper MFA configured out of ", tostring(TotalUsers), " total users")
             ), 
-            " (", tostring(NonCompliantUsers), " non-compliant, ", tostring(CompliantUsers), " compliant)"
+            iff(locale == "fr-CA",
+                strcat(" (", tostring(NonCompliantUsers), " non conformes, ", tostring(CompliantUsers), " conformes)"),
+                strcat(" (", tostring(NonCompliantUsers), " non-compliant, ", tostring(CompliantUsers), " compliant)"))
         ),
-        "Unknown error"
+        iff(locale == "fr-CA", "Erreur inconnue", "Unknown error")
     );
 let excludedCount = toscalar(excludedUsers | summarize count());
 let excludedAgentUserCount = toscalar(excludedAgentUsers | summarize count());
+let excludedBookingsMailboxCount = toscalar(excludedBookingsMailboxes | summarize count());
 let finalSummary = summary
 | extend Comments = iff(coalesce(excludedCount, 0) > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
@@ -1161,10 +1189,15 @@ let finalSummary = summary
             strcat("Exclusion de ", tostring(coalesce(excludedAgentUserCount, 0)), " comptes d'utilisateur Agent ID, qui ne peuvent pas enregistrer d'AMF"),
             strcat("Excluded ", tostring(coalesce(excludedAgentUserCount, 0)), " Agent ID user accounts, which cannot register MFA"))),
         Comments)
+| extend Comments = iff(coalesce(excludedBookingsMailboxCount, 0) > 0,
+        strcat(Comments, "; ", iff(locale == "fr-CA",
+            strcat("Exclusion de ", tostring(coalesce(excludedBookingsMailboxCount, 0)), " boîtes aux lettres de planification Microsoft Bookings, qui ne peuvent pas enregistrer d'AMF"),
+            strcat("Excluded ", tostring(coalesce(excludedBookingsMailboxCount, 0)), " Microsoft Bookings scheduling mailboxes, which cannot register MFA"))),
+        Comments)
 | extend Comments = iff(crossTenantFeatureEnabled and excludedGuestCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
-            strcat("Exclusion de ", tostring(excludedGuestCount), " comptes invités avec confiance AMF inter-locataire et politique d'accès conditionnel"),
-            strcat("Excluded ", tostring(excludedGuestCount), " guest accounts with cross-tenant MFA trust and conditional access policy"))),
+            strcat("Exclusion de ", tostring(excludedExternalUserCount), " comptes externes avec confiance AMF inter-locataire et politique d'accès conditionnel"),
+            strcat("Excluded ", tostring(excludedExternalUserCount), " externally authenticated accounts with cross-tenant MFA trust and conditional access policy"))),
         Comments)
 | extend Comments = iff(gracePeriodCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
@@ -1182,7 +1215,7 @@ finalSummary
     TimeGenerated = now()
 '''
     functionAlias: 'gr_mfa_evaluation'
-    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string, auditLocale:string = ""'
     version: 2
   }
 }
@@ -1197,12 +1230,15 @@ resource f6 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' 
 let reportTime = ReportTime;
 let mfaGracePeriodDays = toint(mfaGracePeriod);
 let MfaGracePeriod = mfaGracePeriodDays * 1d;
-let locale = toscalar(
+// Workbooks select the language of these query-generated messages explicitly. Other
+// callers can omit workbookLocale to keep the existing tenant-locale behavior.
+let tenantLocale = toscalar(
     GR_TenantInfo_CL
     | summarize arg_max(ReportTime_s, *) by TenantDomain_s
     | project Locale_s
     | take 1
 );
+let locale = iff(isnotempty(workbookLocale), workbookLocale, tenantLocale);
 let localizedMessages = case(
     locale == "fr-CA", dynamic({
         "systemPreferred": "Authentification préférée du système : ",
@@ -1276,12 +1312,13 @@ let userData = GuardrailsUserRaw_CL
 | extend ReportTime = column_ifexists("ReportTime_s", ""),
          guardrailsExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedMfa_b", bool(null)), false)),
          agentUserExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedAgentUser_b", bool(null)), false)),
+         bookingsMailboxExcluded = tobool(coalesce(column_ifexists("guardrailsExcludedBookingsMailbox_b", bool(null)), false)),
          userType = column_ifexists("userType_s", ""),
          homeTenantId = column_ifexists("homeTenantId_g", "")
 | where ReportTime == reportTime
 | where guardrailsExcluded == false
-// Agent ID user accounts cannot register MFA, so they are not remediable findings.
-| where agentUserExcluded == false
+// Agent ID users and Bookings scheduling mailboxes cannot register MFA, so they are not remediable findings.
+| where agentUserExcluded == false and bookingsMailboxExcluded == false
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
@@ -1324,17 +1361,17 @@ let mfaAnalysis = userData
 let nonCompliantUsers = mfaAnalysis
 // | where isWithinGracePeriod == false
 | where isMfaCompliant == false
-| extend guestHomeTenantId = iff(isempty(homeTenantId) or isnull(homeTenantId), "default", homeTenantId)
+| extend userHomeTenantId = tostring(homeTenantId)
 | join kind=leftouter (
     crossTenantSettings
     | project PartnerTenantId, InboundMfaTrust
-) on $left.guestHomeTenantId == $right.PartnerTenantId
+) on $left.userHomeTenantId == $right.PartnerTenantId
 | extend 
     effectiveMfaTrust = iff(crossTenantFeatureEnabled, coalesce(InboundMfaTrust, defaultMfaTrustSetting, false), false),
-    shouldExcludeGuest = iff(crossTenantFeatureEnabled and userType == "Guest",
+    shouldExcludeExternalUser = iff(crossTenantFeatureEnabled and isnotempty(homeTenantId),
         hasGuestMfaPolicyConfigured and coalesce(InboundMfaTrust, defaultMfaTrustSetting, false),
         false)
-| where shouldExcludeGuest == false
+| where shouldExcludeExternalUser == false
 | sort by signInActivity_lastSignInDateTime_t
 | project 
     DisplayName = column_ifexists("displayName_s", ""), 
@@ -1365,7 +1402,7 @@ union
 )
 '''
     functionAlias: 'gr_non_mfa_users'
-    functionParameters: 'ReportTime:string, mfaGracePeriod:string'
+    functionParameters: 'ReportTime:string, mfaGracePeriod:string, workbookLocale:string = ""'
     version: 2
   }
 }
@@ -1377,6 +1414,25 @@ resource guarrailsWorkbooks 'Microsoft.Insights/workbooks@2021-08-01' = if ((dep
   properties:{
     displayName: 'Guardrails'
     serializedData: wbConfig
+    version: mandatoryTags.ReleaseVersion
+    category: 'workbook'
+    sourceId: guardrailsLogAnalytics.id
+  }
+}
+
+// Keep the existing English workbook ID, including saved links and access assignments.
+// The additional French workbook is created or refreshed by the same install/update
+// switches and uses the same workspace and MFA grace-period setting as the English one.
+// Use the same mandatory tags and release version so the French resource also satisfies
+// the deployment's tag policy, which requires these tags on top-level resources.
+resource guardrailsWorkbookFr 'Microsoft.Insights/workbooks@2021-08-01' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
+  location: location
+  tags: mandatoryTags
+  kind: 'shared'
+  name: guid('guardrails-fr')
+  properties: {
+    displayName: 'Mesures de protection'
+    serializedData: wbConfigFr
     version: mandatoryTags.ReleaseVersion
     category: 'workbook'
     sourceId: guardrailsLogAnalytics.id

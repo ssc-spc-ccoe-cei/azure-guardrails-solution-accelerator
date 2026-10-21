@@ -171,6 +171,99 @@ function Get-GuardrailsAgentUserIds {
     }
 }
 
+function Get-GuardrailsBookingsMailboxAddresses {
+    <#
+    .SYNOPSIS
+        Returns the SMTP addresses of Microsoft Bookings scheduling mailboxes in the tenant.
+    .DESCRIPTION
+        When someone creates a Bookings page, Exchange Online provisions a scheduling mailbox and
+        Microsoft Substrate Management creates a matching user object for it. That user is enabled,
+        has a mail address, and can never register MFA because nothing signs in to it. Nothing on
+        the user object itself says it is a Bookings mailbox; Exchange knows it as
+        RecipientTypeDetails = SchedulingMailbox, which Graph does not expose on /users.
+
+        The Bookings API does expose it. Every bookingBusiness is keyed by the address of its
+        scheduling mailbox, so one tenant-wide list gives the full set of addresses to match
+        against user rows. This needs the Bookings.Read.All application permission. Without it,
+        or in a tenant where Bookings is turned off, the call fails and the caller evaluates
+        every account exactly as before.
+    #>
+    [CmdletBinding()]
+    [OutputType([psobject])]
+    param ()
+
+    $addresses = @{}
+
+    try {
+        $response = Invoke-GraphQueryEX -urlPath '/solutions/bookingBusinesses' -MaxRetries 2 -RetryDelaySeconds 2 -ErrorAction Stop
+    }
+    catch {
+        return [PSCustomObject]@{
+            Addresses    = $addresses
+            Count        = 0
+            Succeeded    = $false
+            ErrorMessage = $_.Exception.Message
+        }
+    }
+
+    if ($null -eq $response -or $null -eq $response.Content) {
+        $responseError = if ($response -and $response.Error) { [string]$response.Error } else { 'Microsoft Graph returned no content for the bookingBusinesses query.' }
+        return [PSCustomObject]@{
+            Addresses    = $addresses
+            Count        = 0
+            Succeeded    = $false
+            ErrorMessage = $responseError
+        }
+    }
+
+    foreach ($business in @($response.Content.value)) {
+        $address = [string]$business.id
+        if (-not [string]::IsNullOrWhiteSpace($address)) {
+            $addresses[$address.ToLowerInvariant()] = $true
+        }
+    }
+
+    return [PSCustomObject]@{
+        Addresses    = $addresses
+        Count        = $addresses.Count
+        Succeeded    = $true
+        ErrorMessage = $null
+    }
+}
+
+function Test-GuardrailsBookingsMailbox {
+    <#
+    .SYNOPSIS
+        Returns $true when the user's UPN or mail address belongs to a Bookings scheduling mailbox.
+    .DESCRIPTION
+        The scheduling mailbox address is normally both the UPN and the primary mail address of the
+        generated user. Checking both covers tenants where one has been changed after creation.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [AllowNull()]
+        $User,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $Addresses
+    )
+
+    if ($null -eq $User -or $Addresses.Count -eq 0) {
+        return $false
+    }
+
+    foreach ($candidate in @($User.userPrincipalName, $User.mail)) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$candidate) -and $Addresses.ContainsKey(([string]$candidate).ToLowerInvariant())) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function New-ConnectedStorageContext {
     [CmdletBinding()]
     param (
@@ -4750,7 +4843,9 @@ function FetchAllUserRawData {
             BackoffMultiplier = 2
         }
     )
-    
+    ###
+    $currentTenantId = [string](Get-AzContext).Tenant.Id
+
     # Initialize error tracking and performance monitoring
     $ErrorList = [System.Collections.Generic.List[string]]::new()
     # The MFA control reads this state later in the same main runbook. Start with
@@ -5028,6 +5123,17 @@ function FetchAllUserRawData {
         Add-FunctionError -Message "Failed to enumerate Agent ID user accounts; agent accounts will be evaluated as regular users" -Exception ([System.Exception]::new([string]$agentUserResult.ErrorMessage)) -Category "GraphAPI" -ErrorList $ErrorList
     }
 
+    # Bookings scheduling mailboxes are the same situation: Exchange creates the user object
+    # when someone makes a Bookings page, it is enabled, and it can never register MFA.
+    $bookingsResult = Get-GuardrailsBookingsMailboxAddresses
+    $bookingsAddressLookup = $bookingsResult.Addresses
+    if ($bookingsResult.Succeeded) {
+        Write-Verbose "Identified $($bookingsResult.Count) Microsoft Bookings scheduling mailbox(es) to exclude from MFA evaluation."
+    }
+    else {
+        Add-FunctionError -Message "Failed to enumerate Microsoft Bookings scheduling mailboxes; they will be evaluated as regular users. The automation account identity needs the Bookings.Read.All Graph application permission." -Exception ([System.Exception]::new([string]$bookingsResult.ErrorMessage)) -Category "GraphAPI" -ErrorList $ErrorList
+    }
+
     $registrationResult = $null
     $userSpoolResult = $null
     $pageNumber = 0
@@ -5112,7 +5218,7 @@ function FetchAllUserRawData {
         # Write users with the same 64-bucket ID rule used for registrations. This
         # places matching records together without keeping either full list in memory.
         Write-Verbose "Step 2: Spooling enabled users into bounded partitions..."
-        $selectFields = 'displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes'
+        $selectFields = 'displayName,id,userPrincipalName,mail,createdDateTime,userType,accountEnabled,signInActivity,customSecurityAttributes,identities'
         $usersPath = "/users?`$select=$selectFields&`$filter=accountEnabled eq true"
         $userSpoolStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $userStore = & $newPartitionStore $partitionDirectory 'user' $partitionCount
@@ -5248,20 +5354,39 @@ function FetchAllUserRawData {
                         $methods = if ($registration -and $registration.methodsRegistered) { @($registration.methodsRegistered) } else { @() }
                         $guardrailsExcluded = Test-GuardrailsMfaExclusion -User $user
                         $isAgentUser = $agentUserIdLookup.ContainsKey([string]$user.id)
+                        $isBookingsMailbox = Test-GuardrailsBookingsMailbox -User $user -Addresses $bookingsAddressLookup
 
                         # Reuse guest-tenant results across all buckets so the memory
                         # redesign does not repeat the same external-domain lookup.
                         $homeTenantId = $null
                         $homeTenantResolved = $false
-                        if ($user.userType -eq 'Guest') {
-                            $domain = Get-GuestUserHomeDomain -UserPrincipalName $user.userPrincipalName -Mail $user.mail
+                        try {
+                            # Resolve the home tenant for external B2B users regardless of whether
+                            # Entra represents the account as Guest or Member.
+                            #Write-Verbose "Home tenant check: UPN='$($user.userPrincipalName)', UserType='$($user.userType)'"
+                            $domain = Get-ExternalUserHomeDomain -User $user
+                            #Write-Verbose "Home tenant domain: UPN='$($user.userPrincipalName)', Domain='$domain'"
+
                             if ($domain) {
-                                $resolutionResult = Get-TenantIdWithCache -Domain $domain -Cache $domainTenantCache
-                                $homeTenantId = $resolutionResult.TenantId
-                                $homeTenantResolved = $resolutionResult.ResolutionSucceeded
+                                $resolutionResult = Get-TenantIdWithCache `
+                                    -Domain $domain `
+                                    -Cache $domainTenantCache
+                                #Write-Verbose "Home tenant resolution: UPN='$($user.userPrincipalName)', Domain='$domain', TenantId='$($resolutionResult.TenantId)', Success='$($resolutionResult.ResolutionSucceeded)'"
+                                if ($resolutionResult.ResolutionSucceeded) {
+                                    $resolvedTenantId = [string]$resolutionResult.TenantId
+                                    if ($resolvedTenantId -ne $currentTenantId) {
+                                        $homeTenantId = $resolvedTenantId
+                                        $homeTenantResolved = $true
+                                    }
+                                }
                             }
                         }
-
+                        catch {
+                                Write-Warning "Unable to resolve home tenant for '$($user.userPrincipalName)': $($_.Exception.Message)"
+                                 
+                                $homeTenantId = $null
+                                $homeTenantResolved = $false
+                        }
                         $uploadBatch.Add([PSCustomObject]@{
                             id = $user.id
                             userPrincipalName = $user.userPrincipalName
@@ -5276,6 +5401,7 @@ function FetchAllUserRawData {
                             customSecurityAttributes = $user.customSecurityAttributes
                             guardrailsExcludedMfa = $guardrailsExcluded
                             guardrailsExcludedAgentUser = $isAgentUser
+                            guardrailsExcludedBookingsMailbox = $isBookingsMailbox
                             isMfaRegistered = if ($registration) { $registration.isMfaRegistered } else { $null }
                             isMfaCapable = if ($registration) { $registration.isMfaCapable } else { $null }
                             isSsprEnabled = if ($registration) { $registration.isSsprEnabled } else { $null }
@@ -5589,30 +5715,61 @@ GuardrailsUserRaw_CL
 # Guest User Cross-Tenant MFA Trust Functions
 # ============================================================================
 
-# Function to extract domain from guest user UPN or email
-function Get-GuestUserHomeDomain {
+# Function to extract domain from a user identities, issuer domains, or external tenant resolution.
+
+function Get-ExternalUserHomeDomain {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
-        [string] $UserPrincipalName,
-        
-        [Parameter(Mandatory=$false)]
-        [string] $Mail
+        [psobject] $User
     )
-    
-    # Extract domain from UPN (format: user_domain.com#EXT#@hosttenant.com)
-    # Use greedy match (.*_) to capture from the LAST underscore before #EXT#
-    if ($UserPrincipalName -match '.*_([^_#]+)#EXT#') {
+
+    $upn = [string]$User.userPrincipalName
+
+    # 1. B2B accounts with #EXT# UPN.
+    # Example:
+    # test_gmail.com#EXT#@resourceTenant.onmicrosoft.com
+    # -> gmail.com
+    if ($upn -match '.*_([^_#]+)#EXT#') {
         return $Matches[1]
     }
-    # Or extract from mail
-    elseif ($Mail -and $Mail -match '@(.+)$') {
+
+    # 2. Check identity issuer.
+    #
+    # This is needed for external users that have been converted
+    # from Guest to Member and no longer have a #EXT# UPN.
+    if ($User.identities) {
+
+        foreach ($identity in @($User.identities)) {
+
+            $issuer = [string]$identity.issuer
+
+            if ([string]::IsNullOrWhiteSpace($issuer)) {
+                continue
+            }
+
+            if ($issuer -eq 'MicrosoftAccount' -or
+                $issuer -eq 'ExternalAzureAD') {
+                continue
+            }
+
+            return $issuer
+        }
+    }
+
+    # 3. Mail-domain fallback should only be used for Guest users.
+    #
+    # Do not use every Member's email domain because ordinary
+    # internal users are also Member users.
+    #if ($User.userType -eq 'Guest' -and
+    if ($User.mail -and
+        $User.mail -match '@(.+)$') {
+
         return $Matches[1]
     }
-    
+
     return $null
 }
-
 # Function to resolve tenant ID from domain (single domain)
 # Returns a PSCustomObject with TenantId and ResolutionSucceeded properties
 # Includes retry logic for transient failures (DNS timeout, throttling, 5xx errors)
