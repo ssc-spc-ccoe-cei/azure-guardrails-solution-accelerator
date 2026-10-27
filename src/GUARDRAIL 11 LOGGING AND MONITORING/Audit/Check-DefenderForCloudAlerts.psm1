@@ -460,7 +460,7 @@ function Get-DefenderForCloudAlerts {
 
                 $subRegisteredOk = if($response.registrationState -eq "Registered"){ $true } else { $false }
                 if (-not $subRegisteredOk) {
-                    Write-Verbose "Subscription $subName ($subId) registrationState is '$($response.registrationState)', not 'Registered'"
+                    Write-Warning "Subscription $subName ($subId) registrationState is '$($response.registrationState)', not 'Registered'"
                     [void]$ErrorList.Add("Defender registration check: $subName ($subId) registrationState='$($response.registrationState)'")
                 }
                 if($subRegisteredOk){
@@ -471,14 +471,14 @@ function Get-DefenderForCloudAlerts {
                         $subRegisteredOk = $false
                         $planCount = if ($defenderPlans) { $defenderPlans.Count } else { 0 }
                         $planTiers = if ($defenderPlans) { ($defenderPlans | ForEach-Object { "$($_.Name):$($_.PricingTier)" }) -join ', ' } else { 'none' }
-                        Write-Verbose "Subscription $subName ($subId) has no Standard plans. Plans returned: $planCount [$planTiers]"
+                        Write-Warning "Subscription $subName ($subId) has no Standard plans. Plans returned: $planCount [$planTiers]"
                         [void]$ErrorList.Add("Defender registration check: $subName ($subId) has no Standard plans. Total plans: $planCount, Tiers: [$planTiers]")
                     }
                 }
             }
             catch {
                 $subRegisteredOk = $false
-                Write-Verbose "Failed to check Defender registration for subscription $subName ($subId): $_"
+                Write-Warning "Failed to check Defender registration for subscription $subName ($subId): $_"
                 [void]$ErrorList.Add("Defender registration check failed for $subName ($subId): $_")
             }
         }
