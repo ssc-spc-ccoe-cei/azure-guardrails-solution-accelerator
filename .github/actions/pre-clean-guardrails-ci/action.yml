@@ -164,6 +164,14 @@ runs:
         inlineScript: |
           $ErrorActionPreference = 'Stop'
 
+          # The action's latest Az bundle comes from the runner image and may contain an older Key Vault module.
+          # Install and select the supported version before discovery or cleanup uses its management API.
+          if (-not (Get-Module -Name Az.KeyVault -ListAvailable | Where-Object Version -eq ([version]'6.6.1'))) {
+            Write-Output 'Installing Az.KeyVault 6.6.1 for CI cleanup...'
+            Install-Module -Name Az.KeyVault -RequiredVersion 6.6.1 -Repository PSGallery -Scope CurrentUser -Force -ErrorAction Stop
+          }
+          Import-Module -Name Az.KeyVault -RequiredVersion 6.6.1 -ErrorAction Stop
+
           $subscriptionId = $env:GSA_SUBSCRIPTION_ID
           $staticSuffix   = $env:GSA_STATIC_SUFFIX
           $lawBase        = $env:GSA_LAW_NAME
