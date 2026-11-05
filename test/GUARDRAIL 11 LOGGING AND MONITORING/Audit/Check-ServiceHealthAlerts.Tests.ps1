@@ -30,7 +30,12 @@ Describe 'Get-ActionGroupContactTokens' {
 
 Describe 'Validate-ActionGroups' {
     It 'Counts owner targets using the effective owner count' {
-        Mock Get-SubscriptionOwnerCount -ModuleName Check-ServiceHealthAlerts { 2 }
+        Mock Get-AzRoleAssignment -ModuleName Check-ServiceHealthAlerts {
+            @(
+                [pscustomobject]@{ ObjectType = 'User' }
+                [pscustomobject]@{ ObjectType = 'User' }
+            )
+        }
         $msgTable = @{ noServiceHealthActionGroups = 'No action groups for {0}' }
         $alert = [pscustomobject]@{ ActionGroup = @([pscustomobject]@{ Id = '/ag/1' }) }
         $group = [pscustomobject]@{ Id = '/ag/1'; ArmRoleReceiver = @([pscustomobject]@{ RoleName = 'Owner'; Name = 'owner' }) }
@@ -63,12 +68,19 @@ Describe 'Get-ServiceHealthAlerts' {
     It 'Returns compliant when alerts and action groups meet requirements' {
         $alertCondition = @(
             [pscustomobject]@{ Field = 'category'; Equal = 'ServiceHealth'; AnyOf = @() },
-            [pscustomobject]@{ Field = 'incidentType'; Equal = $null; AnyOf = @([pscustomobject]@{ Field = 'properties.incidentType'; Equal = 'Security' }) }
+            [pscustomobject]@{
+                Field = 'incidentType'
+                Equal = $null
+                AnyOf = @(
+                    [pscustomobject]@{ Field = 'properties.incidentType'; Equal = 'Security' }
+                    [pscustomobject]@{ Field = 'properties.incidentType'; Equal = 'Informational' }
+                    [pscustomobject]@{ Field = 'properties.incidentType'; Equal = 'ActionRequired' }
+                    [pscustomobject]@{ Field = 'properties.incidentType'; Equal = 'Incident' }
+                )
+            }
         )
         $alerts = @(
-            [pscustomobject]@{ Enabled = $true; ActionGroup = @([pscustomobject]@{ Id = '/ag/1' }); ConditionAllOf = $alertCondition },
-            [pscustomobject]@{ Enabled = $true; ActionGroup = @([pscustomobject]@{ Id = '/ag/1' }); ConditionAllOf = @([pscustomobject]@{ Field = 'category'; Equal = 'ServiceHealth'; AnyOf = @() }, [pscustomobject]@{ Field = 'incidentType'; Equal = $null; AnyOf = @([pscustomobject]@{ Field = 'properties.incidentType'; Equal = 'Informational' }) }) },
-            [pscustomobject]@{ Enabled = $true; ActionGroup = @([pscustomobject]@{ Id = '/ag/1' }); ConditionAllOf = @([pscustomobject]@{ Field = 'category'; Equal = 'ServiceHealth'; AnyOf = @() }, [pscustomobject]@{ Field = 'incidentType'; Equal = $null; AnyOf = @([pscustomobject]@{ Field = 'properties.incidentType'; Equal = 'Incident' }) }) }
+            [pscustomobject]@{ Enabled = $true; ActionGroup = @([pscustomobject]@{ Id = '/ag/1' }); ConditionAllOf = $alertCondition }
         )
 
         Mock Get-AzSubscription -ModuleName Check-ServiceHealthAlerts { @([pscustomobject]@{ Id = 'sub-1'; Name = 'Subscription One'; State = 'Enabled' }) }
