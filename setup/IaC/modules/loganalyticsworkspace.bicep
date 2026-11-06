@@ -1194,7 +1194,7 @@ let finalSummary = summary
             strcat("Exclusion de ", tostring(coalesce(excludedBookingsMailboxCount, 0)), " boîtes aux lettres de planification Microsoft Bookings, qui ne peuvent pas enregistrer d'AMF"),
             strcat("Excluded ", tostring(coalesce(excludedBookingsMailboxCount, 0)), " Microsoft Bookings scheduling mailboxes, which cannot register MFA"))),
         Comments)
-| extend Comments = iff(crossTenantFeatureEnabled and excludedGuestCount > 0,
+| extend Comments = iff(crossTenantFeatureEnabled and excludedExternalUserCount > 0,
         strcat(Comments, "; ", iff(locale == "fr-CA",
             strcat("Exclusion de ", tostring(excludedExternalUserCount), " comptes externes avec confiance AMF inter-locataire et politique d'accès conditionnel"),
             strcat("Excluded ", tostring(excludedExternalUserCount), " externally authenticated accounts with cross-tenant MFA trust and conditional access policy"))),
