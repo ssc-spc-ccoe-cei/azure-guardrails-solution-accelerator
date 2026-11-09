@@ -202,8 +202,18 @@ runs:
             if ($existingKeyVaults.Count -ne 1) {
               throw "Expected one CI Key Vault in '$rgName' for the update; found $($existingKeyVaults.Count)."
             }
+            # Updates must also keep the deployed LAW. The deploy step rebuilds its name
+            # from GSA_LAW_RUN_SUFFIX, so recover the run suffix (e.g. 'r141') from it.
+            $lawNamePattern = '^{0}-(r[0-9]+)-{1}$' -f [regex]::Escape($lawBase), [regex]::Escape($staticSuffix)
+            $existingLAWs = @(Get-AzOperationalInsightsWorkspace -ResourceGroupName $rgName -ErrorAction Stop |
+              Where-Object { $_.Name -match $lawNamePattern })
+            if ($existingLAWs.Count -ne 1) {
+              throw "Expected one CI Log Analytics workspace in '$rgName' for the update; found $($existingLAWs.Count)."
+            }
+            $existingLawSuffix = [regex]::Match($existingLAWs[0].Name, $lawNamePattern).Groups[1].Value
             "GSA_CI_KEY_VAULT_BASE=$existingKeyVaultBase" | Out-File -FilePath $env:GITHUB_ENV -Append
-            Write-Output "Reusing CI Key Vault '$($existingKeyVault.VaultName)' for the update."
+            "GSA_LAW_RUN_SUFFIX=$existingLawSuffix"       | Out-File -FilePath $env:GITHUB_ENV -Append
+            Write-Output "Reusing CI Key Vault '$($existingKeyVault.VaultName)' and LAW '$($existingLAWs[0].Name)' for the update."
             exit
           }
 
