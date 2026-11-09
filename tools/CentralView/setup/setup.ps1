@@ -93,6 +93,14 @@ After installing, close and re-open this shell so PATH is refreshed.
         return
     }
 
+    # Check the Key Vault cmdlet this session will actually use, since a newer installed module may not be loaded.
+    # Older Az.KeyVault versions call management API versions that Microsoft retires on February 27, 2027.
+    $keyVaultCommand = Get-Command -Name Get-AzKeyVault -ErrorAction SilentlyContinue
+    if (-not $keyVaultCommand -or $keyVaultCommand.Module.Version -lt [version]'6.6.1') {
+        Write-Error "CentralView setup requires Az.KeyVault 6.6.1 or later. Run: Install-Module Az.KeyVault -MinimumVersion 6.6.1 -Scope CurrentUser -Force, then start a new PowerShell session."
+        return
+    }
+
     Write-Output "Reading config file '$configFilePath'."
     try {
         $config = Get-Content -Raw -Path $configFilePath | ConvertFrom-Json

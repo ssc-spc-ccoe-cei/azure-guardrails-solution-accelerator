@@ -7,6 +7,6 @@
     'Az.Accounts' = '5.5.3'
     'Az.ResourceGraph' = '1.2.1'
     'Az.OperationalInsights' = '3.3.0'
-    # Az.KeyVault 6.6.1 uses the supported 2026-02-01 management API and requires Az.Accounts 5.5.3 or later.
+    # Az.KeyVault 6.6.1 or later is needed for the supported Key Vault management API; it requires Az.Accounts 5.5.3 or later.
     'Az.KeyVault' = '6.6.1'
 }
