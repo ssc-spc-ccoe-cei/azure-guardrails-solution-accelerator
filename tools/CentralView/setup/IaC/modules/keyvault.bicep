@@ -9,7 +9,7 @@ param storageAccountName string
 // ApplicationId and SecurePassword are created/updated only in setup.ps1 so incremental redeploys of grfunc.bicep
 // never wipe customer-configured ingestion credentials (formerly empty-string ARM-managed secrets cleared them).
 
-resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = {
+resource guardrailsKV 'Microsoft.KeyVault/vaults@2026-05-15' = {
   name: kvName
   location: location
   tags: {
@@ -33,7 +33,7 @@ resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = {
     publicNetworkAccess: 'Enabled'
   }
 }
-resource kvsecret1 'Microsoft.KeyVault/vaults/secrets@2021-11-01-preview' = {
+resource kvsecret1 'Microsoft.KeyVault/vaults/secrets@2026-05-15' = {
   name: 'WorkspaceId'
   parent: guardrailsKV
   properties: {
@@ -44,7 +44,7 @@ resource kvsecret1 'Microsoft.KeyVault/vaults/secrets@2021-11-01-preview' = {
     value: customerId
   }
 }
-resource kvsecret2 'Microsoft.KeyVault/vaults/secrets@2021-11-01-preview' = {
+resource kvsecret2 'Microsoft.KeyVault/vaults/secrets@2026-05-15' = {
   name: 'StorageAccountName'
   parent: guardrailsKV
   properties: {

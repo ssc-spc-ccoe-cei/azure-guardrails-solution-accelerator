@@ -4,8 +4,9 @@
 @{
     # For latest supported version, go to 'https://www.powershellgallery.com/packages/Az'. 
     # To use the Az module in your function app, please uncomment the line below.
-    'Az.Accounts' = '5.4.0'
+    'Az.Accounts' = '5.5.3'
     'Az.ResourceGraph' = '1.2.1'
     'Az.OperationalInsights' = '3.3.0'
-    'Az.KeyVault' = '6.4.3'
+    # Az.KeyVault 6.6.1 uses the supported 2026-02-01 management API and requires Az.Accounts 5.5.3 or later.
+    'Az.KeyVault' = '6.6.1'
 }

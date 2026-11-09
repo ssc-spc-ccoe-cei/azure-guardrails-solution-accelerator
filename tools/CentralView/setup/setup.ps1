@@ -219,7 +219,7 @@ After installing, close and re-open this shell so PATH is refreshed.
         # Key Vault name availability (separate from RG ARM check).
         try {
             $kvAvailability = ((Invoke-AzRest -Method Post `
-                -Uri "https://management.azure.com/subscriptions/$((Get-AzContext).Subscription.Id)/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
+                -Uri "https://management.azure.com/subscriptions/$((Get-AzContext).Subscription.Id)/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2026-05-15" `
                 -Payload "{""name"":""$keyVaultName"",""type"":""Microsoft.KeyVault/vaults""}").Content | ConvertFrom-Json).NameAvailable
         }
         catch {
