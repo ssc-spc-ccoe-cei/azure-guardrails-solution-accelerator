@@ -40,6 +40,9 @@ Refer to gcxchange Azure Technical Presentation.
 The Azure Installation Playbook can be found on gcxchange. 
 [Playbook1 Azure Client Installation of the CaC Solution](https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CaC%20%2D%20Installation%20Playbook&p=true&ga=1)
 
+### Key Vault API update
+Key Vault management operations in deployment cleanup require **Az.KeyVault 6.6.1 or later** on the operator's host. Install it with `Install-Module -Name Az.KeyVault -MinimumVersion 6.6.1 -Scope CurrentUser -Force`, then start a new PowerShell session. This also installs its required Az.Accounts dependency. The templates and name checks use API `2026-05-15` to address [Microsoft's retirement of older management APIs](https://learn.microsoft.com/en-us/azure/key-vault/general/migrate-api-version). Existing vaults can be retained; this API update does not require a fresh installation.
+
 ## Release Notes
 
 Release Notes can be found on gcxchange. They will provide any breaking changes and deltas between the previous version and the latest available on GitHub.
@@ -121,6 +124,9 @@ Voir la présentation technique Azure sur gcéchange
 ## Configuration et Installation 
 Le Livre de jeu d’installation Azure se trouve sur gcéchange. 
 [Livre de jeu1 Azure Installation par le client de Solution Azure CC](https://gcxgce.sharepoint.com/teams/10001628/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2F10001628%2FShared%20Documents%2FGeneral%2FAzure%20CC%20%E2%80%93%20Livre%20de%20jeu%20d%E2%80%99installation%20%2D%20Azure%20CaC%20%2D%20Installation%20Playbook&p=true&ga=1)
+
+### Mise à jour de l’API Key Vault
+Les opérations de gestion Key Vault utilisées pour supprimer un déploiement nécessitent **Az.KeyVault 6.6.1 ou une version ultérieure** sur le poste de l’opérateur. Installez le module avec `Install-Module -Name Az.KeyVault -MinimumVersion 6.6.1 -Scope CurrentUser -Force`, puis ouvrez une nouvelle session PowerShell. La dépendance Az.Accounts requise est également installée. Les modèles et les vérifications de noms utilisent l’API `2026-05-15` en raison du [retrait des anciennes API de gestion par Microsoft](https://learn.microsoft.com/en-us/azure/key-vault/general/migrate-api-version). Les coffres existants peuvent être conservés; cette mise à jour d’API ne nécessite pas une nouvelle installation.
 
 ## Notes de relâche
 Les notes de relâches peuvent être trouvées sur gcéchange. Elles indiquent toutes les changements de ruptures et les différences entre la version précédente et la dernière version disponible sur GitHub. 

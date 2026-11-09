@@ -17,7 +17,7 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10
   name: logAnalyticsWorkspaceName
 }
 
-resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = if (deployKV) {
+resource guardrailsKV 'Microsoft.KeyVault/vaults@2026-05-15' = if (deployKV) {
   name: kvName
   location: location
   tags: mandatoryTags
@@ -60,7 +60,7 @@ resource automationAccountRoleAssignment 'Microsoft.Authorization/roleAssignment
   }
 }
 
-resource secretWorkspaceKey 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (logAnalyticsWorkspaceName != '') {
+resource secretWorkspaceKey 'Microsoft.KeyVault/vaults/secrets@2026-05-15' = if (logAnalyticsWorkspaceName != '') {
   name: 'WorkSpaceKey'
   parent: guardrailsKV
   dependsOn: [
@@ -71,7 +71,7 @@ resource secretWorkspaceKey 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if 
   }
 }
 
-resource secretBreakglassAccount1 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (breakglassAccount1 != '') {
+resource secretBreakglassAccount1 'Microsoft.KeyVault/vaults/secrets@2026-05-15' = if (breakglassAccount1 != '') {
   name: 'BGA1'
   parent: guardrailsKV
   dependsOn: [
@@ -82,7 +82,7 @@ resource secretBreakglassAccount1 'Microsoft.KeyVault/vaults/secrets@2023-02-01'
   }
 }
 
-resource secretBreakglassAccount2 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (breakglassAccount2 != '') {
+resource secretBreakglassAccount2 'Microsoft.KeyVault/vaults/secrets@2026-05-15' = if (breakglassAccount2 != '') {
   name: 'BGA2'
   parent: guardrailsKV
   dependsOn: [

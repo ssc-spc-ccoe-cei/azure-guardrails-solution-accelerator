@@ -44,9 +44,11 @@ CentralView is deployed in the **SSC service-provider tenant** (the same tenant 
 | Tool | Min version | Notes |
 |---|---|---|
 | PowerShell | **7.2+** | `pwsh` on Cloud Shell or local. Windows PowerShell 5.1 is not supported. |
-| Az PowerShell modules | `Az.Accounts ≥ 3.x`, `Az.KeyVault ≥ 5.x`, `Az.Resources ≥ 7.x`, `Az.Websites ≥ 3.x`, `Az.Monitor ≥ 5.x` | `Install-Module Az -Scope CurrentUser -Force` |
+| Az PowerShell modules | `Az.Accounts ≥ 5.5.3`, `Az.KeyVault ≥ 6.6.1`, `Az.Resources ≥ 7.x`, `Az.Websites ≥ 3.x`, `Az.Monitor ≥ 5.x` | `Install-Module Az -Scope CurrentUser -Force` |
 | Bicep CLI | `0.20+` | `winget install -e --id Microsoft.Bicep` (Windows) — Cloud Shell already has it. `setup.ps1` validates this before deploying. |
 | Git | any recent | Clone the accelerator repo. |
+
+Az.KeyVault 6.6.1 or later is required for the supported Key Vault management API. After updating the deployment host's modules, start a new PowerShell session.
 
 ### 1.2 Azure identity and roles
 

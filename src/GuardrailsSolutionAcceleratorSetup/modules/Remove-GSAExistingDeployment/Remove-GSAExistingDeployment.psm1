@@ -120,6 +120,13 @@ Function Remove-GSAExistingDeployment {
         throw "The configuration does not contain runtime values. Pass the output of Confirm-GSAConfigurationParameters or a config file path."
     }
 
+    # Check the cmdlet this session will use, since a newer installed module may not be loaded.
+    # Older management APIs can fail silently during discovery and leave cleanup incomplete.
+    $keyVaultCommand = Get-Command -Name Get-AzKeyVault -ErrorAction SilentlyContinue
+    If (-not $keyVaultCommand -or $keyVaultCommand.Module.Version -lt [version]'6.6.1') {
+        throw "Deployment cleanup requires Az.KeyVault 6.6.1 or later. Run: Install-Module Az.KeyVault -MinimumVersion 6.6.1 -Scope CurrentUser -Force, then start a new PowerShell session."
+    }
+
     $subscriptionId = $config['runtime']['subscriptionId']
     If (-not $subscriptionId) { $subscriptionId = $config.subscriptionId }
     If (-not $subscriptionId) { $subscriptionId = (Get-AzContext).Subscription.Id }
@@ -518,7 +525,7 @@ Function Clear-GSASoftDeletedKeyVault {
     $deadline = (Get-Date).AddMinutes(5)
     do {
         $payload = @{ name = $vaultName; type = 'Microsoft.KeyVault/vaults' } | ConvertTo-Json -Compress
-        $response = Invoke-AzRestMethod -Method POST -Path "/subscriptions/$subscriptionId/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" -Payload $payload -ErrorAction SilentlyContinue
+        $response = Invoke-AzRestMethod -Method POST -Path "/subscriptions/$subscriptionId/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2026-05-15" -Payload $payload -ErrorAction SilentlyContinue
         $availability = $null
         If ($response -and $response.Content) { $availability = ($response.Content | ConvertFrom-Json).nameAvailable }
         If ($availability -eq $true) {
