@@ -48,7 +48,7 @@ CentralView is deployed in the **SSC service-provider tenant** (the same tenant 
 | Bicep CLI | `0.20+` | `winget install -e --id Microsoft.Bicep` (Windows) — Cloud Shell already has it. `setup.ps1` validates this before deploying. |
 | Git | any recent | Clone the accelerator repo. |
 
-Az.KeyVault 6.6.1 or later is required for the supported Key Vault management API. After updating the deployment host's modules, start a new PowerShell session. Existing Function Apps must also receive the updated `requirements.psd1` through the Functions publishing workflow so managed dependencies can install the compatible Key Vault and Accounts modules.
+Az.KeyVault 6.6.1 or later is required for the supported Key Vault management API. After updating the deployment host's modules, start a new PowerShell session.
 
 ### 1.2 Azure identity and roles
 
