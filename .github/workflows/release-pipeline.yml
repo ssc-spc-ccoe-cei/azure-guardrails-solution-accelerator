@@ -43,7 +43,9 @@ jobs:
       - name: Sign pwsh scripts and modules
         shell: powershell
         run: |
-          $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop
+          # CentralView is SSC-internal tooling and is not part of the customer CaC release.
+          $scripts = Get-ChildItem -Path . -Include *.ps1,*.psm1,*.psd1 -Recurse -ErrorAction Stop |
+            Where-Object { $_.FullName -notmatch '[\\/]tools[\\/]CentralView([\\/]|$)' }
           $vaultName = $env:VAULTNAME
 
           foreach ($script in $scripts) {
@@ -61,7 +63,9 @@ jobs:
       - name: Validate Signature
         shell: powershell
         run: |
-          $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+          $signatureStatuses = Get-ChildItem -r -i *.ps* |
+            Where-Object { $_.FullName -notmatch '[\\/]tools[\\/]CentralView([\\/]|$)' } |
+            Get-AuthenticodeSignature
           Foreach ($signatureStatus in $signatureStatuses) {
             If ($signatureStatus.Status -eq 'HashMismatch') {
               throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
@@ -81,7 +85,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1
+          $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1 |
+            Where-Object { $_.FullName -notmatch '[\\/]tools[\\/]CentralView([\\/]|$)' }
           Write-Host "Count of module files: $($moduleFiles.count)"
           try {
             ForEach ($moduleFile in $moduleFiles) {
@@ -102,9 +107,37 @@ jobs:
         run: |
           $releaseName = $env:GITHUB_REF -replace 'refs/tags/', ''
           mkdir release_assets
-          tar -czvf release_assets/azure-cac-solution-$releaseName.tar.gz --exclude='release_assets' --exclude='.git' --exclude='.github' .
-          $excludedItems = @('release_assets', '.git', '.github')
-          Get-ChildItem -Path . -Exclude $excludedItems | Compress-Archive -DestinationPath release_assets/azure-cac-solution-$releaseName.zip
+
+          # CentralView is SSC-internal tooling and is not part of the customer CaC release.
+          tar -czvf release_assets/azure-cac-solution-$releaseName.tar.gz `
+            --exclude='release_assets' `
+            --exclude='.git' `
+            --exclude='.github' `
+            --exclude='tools/CentralView' `
+            .
+
+          $staging = Join-Path $env:RUNNER_TEMP 'cac-release-staging'
+          if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
+          New-Item -ItemType Directory -Path $staging | Out-Null
+
+          Get-ChildItem -Path . -Force |
+            Where-Object { $_.Name -notin @('release_assets', '.git', '.github') } |
+            ForEach-Object {
+              if ($_.Name -eq 'tools' -and $_.PSIsContainer) {
+                $toolsDest = Join-Path $staging 'tools'
+                New-Item -ItemType Directory -Path $toolsDest | Out-Null
+                Get-ChildItem -Path $_.FullName -Force |
+                  Where-Object { $_.Name -ne 'CentralView' } |
+                  Copy-Item -Destination $toolsDest -Recurse -Force
+              }
+              else {
+                Copy-Item -Path $_.FullName -Destination $staging -Recurse -Force
+              }
+            }
+
+          Compress-Archive -Path (Join-Path $staging '*') `
+            -DestinationPath release_assets/azure-cac-solution-$releaseName.zip
+
           echo "RELEASE_NAME=$releaseName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Determine previous release tag
