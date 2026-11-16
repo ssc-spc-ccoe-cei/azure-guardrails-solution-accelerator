@@ -359,6 +359,7 @@ function Get-ServiceHealthAlerts {
     
     # Evaluate service health alerts and their associated action groups
     foreach($subscription in $subs){
+
         # Initialize
         $isCompliant = $false
         $Comments = ""
@@ -393,8 +394,7 @@ function Get-ServiceHealthAlerts {
                 # Case: consider multiple alerts exists for the subscription;
                 # When all event types are selected from the conditions/properties.incidentType
 
-                # Create object with each alert and boolean indicating if all event types are selected
-
+                # Create object with each alert and boolean indicating if 'All'event types are selected
                 $alertEventTypeSelectionds = @(
                     foreach($alert in $filteredAlerts){
                         $isAllEventTypesSelected =  $alert.ConditionAllOf.Count -gt 0 -and (
@@ -405,8 +405,8 @@ function Get-ServiceHealthAlerts {
                                 if($incidentTypeConditions.Count -gt 0){
                                     # If there are incident type conditions, check if all four distinct event types are selected
                                     @($incidentTypeConditions | Where-Object {
-                                        $_.Equal -match '^(Security|Informational|ActionRequired|Incident)$'
-                                    } | Select-Object -ExpandProperty Equal | Sort-Object -Unique).Count -eq 4
+                                        $_.Equal -match '^(Security|Informational|ActionRequired|Incident|Retirement|Maintenance)$'
+                                    } | Select-Object -ExpandProperty Equal | Sort-Object -Unique).Count -eq 6
                                 }
                                 elseif($null -eq $_.AnyOf -or $_.AnyOf.Count -eq 0 -or $incidentTypeConditions.Count -eq 0) {
                                     $true
@@ -416,7 +416,6 @@ function Get-ServiceHealthAlerts {
                                 }
                             }) -notcontains $false
                         )
-                        
 
                         [PSCustomObject]@{
                             Alert                   = $alert
@@ -426,26 +425,32 @@ function Get-ServiceHealthAlerts {
                 )
 
                 # Filter alerts where all event types are selected
-                $alertsWithAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $true }
+                $alertsWithAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $true}
 
                 # Filter alerts without 'select all' for all event types
-                $alertsWithoutAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $false }
+                $alertsWithoutAllEventTypesSelected = $alertEventTypeSelectionds | Where-Object { $_.IsAllEventTypesSelected -eq $false}
 
                 # Filter alerts where 3 required event types are selected
                 # Filter again to make sure correct alert conditions are used; "Service Issue" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security"
                 $filteredAlertsConditions = $alertsWithoutAllEventTypesSelected  | Where-Object {
                     # Check if ConditionAllOf contains objects with AnyOf containing the required 3 conditions
                     ($_.Alert.ConditionAllOf | Where-Object {
-
-                        $_.AnyOf | Where-Object { 
-                            $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
-                        }
-                    }).Count -eq 0
+                        @($_.AnyOf | Where-Object {
+                                    $_.Field -eq "properties.incidentType"})| Where-Object { $_.Equal -match '^(Security|Informational|ActionRequired|Incident)$'
+                        }| Select-Object -ExpandProperty Equal | Sort-Object -Unique
+                        # $_.AnyOf | Where-Object { 
+                        #     $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
+                        # }
+                    }) # .Count -eq 0
                 }
                 $totalAlertsWithRequiredEventTypes = $alertsWithAllEventTypesSelected.Count + $filteredAlertsConditions.Count
-                Write-Verbose "Retrieved the filtered alerts with required event types for subscription '$($subscription.Name)': $($totalAlertsWithRequiredEventTypes.Count)"
+                Write-Verbose "Retrieved the filtered alerts with required event types for subscription '$($subscription.Name)': $($totalAlertsWithRequiredEventTypes)"
+
+                # required conditions
+                $requiredConditions = "Security", "Informational", "Incident"
+                
                 if($null -eq $alertsWithAllEventTypesSelected -and ($null -eq $filteredAlertsConditions)){
-                    # CASE:alert condition event types does not meet required condition
+                    # CASE: Alert condition event types does not meet required condition
                     # checkActionGroupNext remains false
                     $isCompliant = $false
                     $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
@@ -455,16 +460,16 @@ function Get-ServiceHealthAlerts {
                     Write-Verbose "Checking action group configuration next for subscription '$($subscription.Name)'..." 
                     # $checkActionGroupNext = $true
                     $eventTypeConditionPass = $true
-                      
+                    
                 }
                 elseif($null -eq $alertsWithAllEventTypesSelected  -and $filteredAlertsConditions.Count -gt 0){
+
                     # CASE: Alert condition event types are selected; evaluate for 3 required event types
                     Write-Verbose "Selected alert event types. Evaluating alert event types for the subscription '$($subscription.Name)'..." 
                     # event types selected; check of required condition
                     $requiredFilteredAlerts = $filteredAlertsConditions | Select-Object -ExpandProperty Alert |where-object {
                         (
                             $_.ConditionAllOf | Where-Object {
-                            # ($null -ne $_.AnyOf) -and 
                                 ($_.AnyOf.Count -gt 0) -and
                                     ($_.AnyOf | Where-Object { 
                                         $_.Field -eq "properties.incidentType"
@@ -480,8 +485,9 @@ function Get-ServiceHealthAlerts {
                             }
                         }
                     }
+                    $incidentTypeValues = @($incidentTypes | Select-Object -ExpandProperty Equal)
 
-                    # Evaluating alert event types
+                    # Evaluating alert event types ------------------
 
                     # Condition: non-compliant if alert conditions < 3
                     if ($incidentTypes.Count -lt 3) {
@@ -489,7 +495,7 @@ function Get-ServiceHealthAlerts {
                         $Comments = $msgTable.EventTypeMissingForAlert -f $subscription.Name
                     }
                     # Condition: Meets the 3 requires alert conditions ("Service Issues" -> Incident, "Health Advisories" -> Informational, "Security Advisory -> Security")
-                    elseif (($incidentTypes.Count -ge- 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
+                    elseif ($incidentTypeValues.Count -gt 0 -and @($requiredConditions | Where-Object { $_ -notin $incidentTypeValues }).Count -eq 0) {
                         Write-Verbose "Meets the 3 requires alert conditions for subscription '$($subscription.Name)'. Checking action group condition next"
                         # $checkActionGroupNext = $true
                         $eventTypeConditionPass = $true
@@ -502,7 +508,7 @@ function Get-ServiceHealthAlerts {
                     }
                 }
                 elseif($alertsWithAllEventTypesSelected.Count -gt 0  -and $filteredAlertsConditions.Count -gt 0){
-                    # multiple service alert exists for the same subscription with carious alert event type selection
+                    # multiple service alert exists for the same subscription with various alert event type selection
                     # Evaluate each filtered alert for compliance
 
                     # First, evaluate each filtered alert for the required 3 event types
@@ -530,7 +536,8 @@ function Get-ServiceHealthAlerts {
                                 }
                             }
                         }
-                        if (($incidentTypes.Count -ge 3) -and @("Security", "Informational", "Incident" | ForEach-Object { $_ -in $incidentTypes }) -notcontains "False") {
+                        $incidentTypeValues = @($incidentTypes | Select-Object -ExpandProperty Equal)
+                        if ($incidentTypeValues.Count -gt 0 -and@($requiredConditions | Where-Object { $_ -notin $incidentTypeValues }).Count -eq 0) {
                             Write-Verbose "Filtered alert '$($alert.Name)' meets the 3 required event types for subscription '$($subscription.Name)'."
                             $checkActionGroupNext = $true
                             $pass = $true
