@@ -438,10 +438,7 @@ function Get-ServiceHealthAlerts {
                         @($_.AnyOf | Where-Object {
                                     $_.Field -eq "properties.incidentType"})| Where-Object { $_.Equal -match '^(Security|Informational|ActionRequired|Incident)$'
                         }| Select-Object -ExpandProperty Equal | Sort-Object -Unique
-                        # $_.AnyOf | Where-Object { 
-                        #     $_.Field -eq "properties.incidentType" -and $_.Equal -match "Security|Informational|ActionRequired|Incident"
-                        # }
-                    }) # .Count -eq 0
+                    })
                 }
                 $totalAlertsWithRequiredEventTypes = $alertsWithAllEventTypesSelected.Count + $filteredAlertsConditions.Count
                 Write-Verbose "Retrieved the filtered alerts with required event types for subscription '$($subscription.Name)': $($totalAlertsWithRequiredEventTypes)"
