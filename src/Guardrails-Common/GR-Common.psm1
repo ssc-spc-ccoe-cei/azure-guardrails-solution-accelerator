@@ -5969,7 +5969,9 @@ function Get-CrossTenantAccessSettings {
         $defaultSettingsPath = "/policies/crossTenantAccessPolicy/default"
         try {
             $defaultResponse = Invoke-GraphQueryWithMetrics -UrlPath $defaultSettingsPath -Operation "Fetch Default Cross-Tenant Access Settings" -PerformanceMetrics $PerformanceMetrics
-            $defaultSettings = $defaultResponse.Content
+            # The Graph helper wraps single-object responses in Content.value.
+            # Unwrap the default policy before reading its inbound trust settings.
+            $defaultSettings = $defaultResponse.Content.value
             
             if ($defaultSettings) {
                 Write-Verbose "  Retrieved default cross-tenant access settings"
