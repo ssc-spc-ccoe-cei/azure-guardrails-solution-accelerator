@@ -455,22 +455,46 @@ function Get-DefenderForCloudAlerts {
             Write-Verbose "Checking Defender for Cloud registration for subscription: $subName ($subId)"
 
             $regUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security?api-version=2020-01-01"
-            try{
+            try {
                 $response = Invoke-RestMethod -Uri $regUri -Method Get -Authentication Bearer -Token $accessToken -ContentType 'application/json' -ErrorAction Stop
-                
+
                 $subRegisteredOk = if($response.registrationState -eq "Registered"){ $true } else { $false }
+                if (-not $subRegisteredOk) {
+                    $diagMsg = "Defender registration check: $subName ($subId) registrationState='$($response.registrationState)'"
+                    Write-Warning $diagMsg
+                    [void]$ErrorList.Add([PSCustomObject]@{
+                        message = $diagMsg
+                        moduleName = "Check-DefenderForCloudAlerts"
+                        severity = "Warning"
+                    })
+                }
                 if($subRegisteredOk){
                     # Further check if any Standard plan is enabled
-                    $defenderPlans = Get-AzSecurityPricing
+                    $defenderPlans = Get-AzSecurityPricing -ErrorAction Stop
                     $defenderPlansStandard = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'}
                     if ($defenderPlansStandard.Count -eq 0 -or $null -eq $defenderPlansStandard) {
                         $subRegisteredOk = $false
+                        $planCount = if ($defenderPlans) { $defenderPlans.Count } else { 0 }
+                        $planTiers = if ($defenderPlans) { ($defenderPlans | ForEach-Object { "$($_.Name):$($_.PricingTier)" }) -join ', ' } else { 'none' }
+                        $diagMsg = "Defender registration check: $subName ($subId) has no Standard plans. Total plans: $planCount, Tiers: [$planTiers]"
+                        Write-Warning $diagMsg
+                        [void]$ErrorList.Add([PSCustomObject]@{
+                            message = $diagMsg
+                            moduleName = "Check-DefenderForCloudAlerts"
+                            severity = "Warning"
+                        })
                     }
                 }
             }
-            catch{
+            catch {
                 $subRegisteredOk = $false
-                
+                $diagMsg = "Defender registration check failed for $subName ($subId): $_"
+                Write-Warning $diagMsg
+                [void]$ErrorList.Add([PSCustomObject]@{
+                    message = $diagMsg
+                    moduleName = "Check-DefenderForCloudAlerts"
+                    severity = "Error"
+                })
             }
         }
         
