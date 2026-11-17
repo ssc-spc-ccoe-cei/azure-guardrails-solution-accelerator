@@ -14,13 +14,13 @@ param deploymentTimestamp string
 param deployerLocalUsername string
 param deployerAzureId string
 
-resource keyVault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = {
+resource keyVault 'Microsoft.KeyVault/vaults@2026-05-15' existing = {
   name: keyVaultName
 }
 
 // Keep the same secret name, content type, and audit tags used by the old PowerShell export.
 // Only the route used to save the secret changes: ARM now performs the write for the installer.
-resource exportedConfig 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
+resource exportedConfig 'Microsoft.KeyVault/vaults/secrets@2026-05-15' = {
   parent: keyVault
   name: 'gsaConfigExportLatest'
   tags: {

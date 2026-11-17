@@ -81,7 +81,7 @@ Function Confirm-GSAPrerequisites {
             $keyVaultName = $config['runtime']['keyVaultName']
             Write-Verbose "Verifying the Key Vault name '$keyVaultName' is available"
             $keyVaultNameCheckPayload = @{ name = $keyVaultName; type = 'Microsoft.KeyVault/vaults' } | ConvertTo-Json -Compress
-            $keyVaultNameCheckResponse = Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$($config['runtime']['subscriptionId'])/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
+            $keyVaultNameCheckResponse = Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$($config['runtime']['subscriptionId'])/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2026-05-15" `
                 -Method Post -Payload $keyVaultNameCheckPayload -ErrorAction Stop
             $keyVaultNameAvailability = $keyVaultNameCheckResponse.Content | ConvertFrom-Json
             # Include Azure's explanation when it supplies one, so naming and policy
