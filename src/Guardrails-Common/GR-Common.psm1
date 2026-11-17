@@ -3720,30 +3720,11 @@ function Check-PBMMPolicies {
         [string] $ReportTime,
         [string] $CloudUsageProfiles = "3",  # Passed as a string
         [string] $ModuleProfiles,  # Passed as a string
-        [switch] $EnableMultiCloudProfiles,
-        [System.Object] $skippedObjList
-
+        [switch] $EnableMultiCloudProfiles # New feature flag, default to false    
     )   
     [System.Collections.ArrayList] $tempObjectList = New-Object System.Collections.ArrayList
     $policyAssignmentCache = @{}
     $policySetDefinitionCache = @{}
-
-    foreach ($skippedObj in $skippedObjList){
-        $notEvaluatedResult = [PSCustomObject]@{
-            Type                = [string]$objType
-            Id                  = [string]$skippedObj.Id
-            # Only populate SubscriptionName for subscription-scoped rows; other row types (tenant/resource) would be misleading.
-            SubscriptionName = $(if ($objType -eq "subscription") { [string]$skippedObj.Name } else { "" })
-            ComplianceStatus = [boolean]$false
-            Comments = ''
-            ItemName = [string]$ItemName
-            itsgcode = [string]$itsgcode
-            ControlName = [string]$ControlName
-            ReportTime = [string]$ReportTime
-        }
-        $notEvaluatedResult = Set-SubscriptionNotEvaluatedStatus -Result $notEvaluatedResult -SubscriptionName $skippedObj.Name -msgTable $msgTable
-        $tempObjectList.Add($notEvaluatedResult) | Out-Null
-    }
 
     foreach ($obj in $objList)
     {
@@ -3778,15 +3759,12 @@ function Check-PBMMPolicies {
             $AssignedPolicyList = $policyAssignmentCache[$assignmentCacheKey]
         }
         else {
-            # The PowerShell 7.6 runtime uses Az 15, where assignment fields are returned directly.
-            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter
+            $AssignedPolicyList = Get-AzPolicyAssignment -Scope $tempId -PolicyDefinitionId $policyDefinitionIdFilter | `
+                Select-Object -ExpandProperty properties
             $policyAssignmentCache[$assignmentCacheKey] = $AssignedPolicyList
         }
 
-        # Az 15 calls this list `NotScope` in its generated model. A missing list is null, which
-        # PowerShell would otherwise count as one item, so remove null values before counting.
-        $hasExcludedScopes = @($AssignedPolicyList.NotScope | Where-Object { $null -ne $_ }).Count -gt 0
-        If ($null -eq $AssignedPolicyList -or $hasExcludedScopes)
+        If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
         {
             # PBMM initiative not applied
             $ComplianceStatus=$false
@@ -3815,11 +3793,11 @@ function Check-PBMMPolicies {
                 catch {
                     Write-Verbose "Direct lookup for policy set '$policySetCacheKey' failed. Falling back to tenant scan. Error: $_"
                     $policySetDefinition = Get-AzPolicySetDefinition | `
-                        Where-Object { $_.Id -like "*$PolicyID*" }
+                        Where-Object { $_.PolicySetDefinitionId -like "*$PolicyID*" }
                 }
             }
 
-            $listPolicies = $policySetDefinition.PolicyDefinition
+            $listPolicies = $policySetDefinition.Properties.policyDefinitions
             # Check all 3 policies are applied for this scope
             $appliedPolicies = $listPolicies.policyDefinitionReferenceId | Where-Object { $requiredPolicyExemptionIds -contains $_ }
             if($appliedPolicies.Count -ne  $requiredPolicyExemptionIds.Count){
