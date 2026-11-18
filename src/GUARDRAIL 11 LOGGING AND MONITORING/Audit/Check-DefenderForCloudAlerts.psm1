@@ -439,20 +439,52 @@ function Get-DefenderForCloudAlerts {
             $regUri = "https://management.azure.com/subscriptions/$subId/providers/Microsoft.Security?api-version=2020-01-01"
             try{
                 $response = Invoke-RestMethod -Uri $regUri -Method Get -Headers $authHeader -ErrorAction Stop
-                
+
                 $subRegisteredOk = if($response.registrationState -eq "Registered"){ $true } else { $false }
+
+                # Log when registrationState is not "Registered"
+                if (-not $subRegisteredOk) {
+                    $actualState = if ($response.registrationState) { $response.registrationState } else { "null/empty" }
+                    $diagnosticMsg = "Defender registration check: $subName ($subId) registrationState='$actualState'"
+                    Write-Warning $diagnosticMsg
+                    [void]$ErrorList.Add($diagnosticMsg)
+                }
+
                 if($subRegisteredOk){
                     # Further check if any Standard plan is enabled
-                    $defenderPlans = Get-AzSecurityPricing
+                    $defenderPlans = Get-AzSecurityPricing -ErrorAction Stop
                     $defenderPlansStandard = $defenderPlans | Where-Object {$_.PricingTier -eq 'Standard'}
                     if ($defenderPlansStandard.Count -eq 0 -or $null -eq $defenderPlansStandard) {
                         $subRegisteredOk = $false
+
+                        # Log when no Standard plans are found
+                        $totalPlanCount = if ($defenderPlans) { $defenderPlans.Count } else { 0 }
+                        $planTiers = if ($defenderPlans) {
+                            ($defenderPlans | ForEach-Object { "$($_.Name):$($_.PricingTier)" }) -join ", "
+                        } else {
+                            "none"
+                        }
+                        $diagnosticMsg = "Defender registration check: $subName ($subId) has no Standard plans. Total plans: $totalPlanCount, Tiers: [$planTiers]"
+                        Write-Warning $diagnosticMsg
+                        [void]$ErrorList.Add($diagnosticMsg)
                     }
                 }
             }
             catch{
                 $subRegisteredOk = $false
-                
+
+                # Log API exceptions with full error details
+                $errorDetails = $_.Exception.Message
+                if ($_.Exception.Response) {
+                    try {
+                        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                        $reader.BaseStream.Position = 0
+                        $errorDetails += " | Response: " + $reader.ReadToEnd()
+                    } catch { }
+                }
+                $diagnosticMsg = "Defender registration check failed for $subName ($subId): $errorDetails"
+                Write-Warning $diagnosticMsg
+                [void]$ErrorList.Add($diagnosticMsg)
             }
         }
         
