@@ -110,52 +110,291 @@ jobs:
       - name: Determine previous release tag
         shell: powershell
         run: |
+          # Pick n-1 by release tag semver, not by previous release branch name.
+          # Branch-based logic always mapped release/5.0.0 -> v4.0.0, so beta2/GA on the
+          # same line never compared to the prior beta, and first betas could still get
+          # GitHub's default notes when histories diverged.
+          #
+          # Examples:
+          #   v5.0.0beta  -> v4.0.0
+          #   v5.0.0beta2 -> v5.0.0beta
+          #   v5.0.0      -> v5.0.0beta2 (or v5.0.0beta)
+          #   v5.0.1      -> v5.0.0
+          #   v6.0.0beta  -> latest prior GA/beta (e.g. v5.0.1 or v5.0.0)
           git fetch origin --prune --tags
 
-          $currentTag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          $tagPattern = '^v(\d+)\.(\d+)\.(\d+)((?:alpha|beta)\d*)?$'
 
-          $releaseBranches = git branch -r |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { $_ -match '^origin/release/\d+\.\d+\.\d+' }
+          function Get-ReleaseTagSortKey {
+            param([string] $Tag)
 
-          $currentReleaseBranch = git branch -r --contains $currentTag |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { $_ -match '^origin/release/\d+\.\d+\.\d+' } |
-            Select-Object -First 1
-
-          if (-not $currentReleaseBranch) {
-            throw "Could not find release branch containing tag '$currentTag'."
-          }
-
-          $currentVersion = [version]($currentReleaseBranch -replace '.*release/', '')
-          $previousReleaseBranch = $releaseBranches |
-            Where-Object { [version]($_ -replace '.*release/', '') -lt $currentVersion } |
-            Sort-Object { [version]($_ -replace '.*release/', '') } -Descending |
-            Select-Object -First 1
-
-          Write-Host "Current tag: $currentTag"
-          Write-Host "Current release branch: $currentReleaseBranch"
-
-          if (-not $previousReleaseBranch) {
-            Write-Host "No previous release branch found. Release notes will use GitHub default."
-          }
-          else {
-            $previousTag = "v$($previousReleaseBranch -replace '.*release/', '')"
-
-            if (-not (git tag --list $previousTag)) {
-              throw "Previous release tag '$previousTag' does not exist."
+            if ($Tag -notmatch $tagPattern) {
+              return $null
             }
 
-            Write-Host "Previous release branch: $previousReleaseBranch"
-            Write-Host "Previous release tag: $previousTag"
-            echo "PREVIOUS_RELEASE_TAG=$previousTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            # Capture outer groups before any nested -match overwrites $Matches.
+            $major = [int]$Matches[1]
+            $minor = [int]$Matches[2]
+            $patch = [int]$Matches[3]
+            $pre = $Matches[4]
+            $isGa = [string]::IsNullOrEmpty($pre)
+            $preKind = 0
+            $preNum = 0
+
+            if (-not $isGa) {
+              if ($pre -match '^(alpha|beta)(\d*)$') {
+                $preKind = if ($Matches[1] -eq 'alpha') { 1 } else { 2 }
+                $preNum = if ([string]::IsNullOrEmpty($Matches[2])) { 1 } else { [int]$Matches[2] }
+              }
+              else {
+                return $null
+              }
+            }
+
+            # GA sorts after any prerelease of the same major.minor.patch.
+            [PSCustomObject]@{
+              Tag     = $Tag
+              Major   = $major
+              Minor   = $minor
+              Patch   = $patch
+              IsGa    = [int]$isGa
+              PreKind = $preKind
+              PreNum  = $preNum
+            }
           }
+
+          function Compare-ReleaseTagSortKey {
+            param($Left, $Right)
+
+            foreach ($name in @('Major', 'Minor', 'Patch', 'IsGa', 'PreKind', 'PreNum')) {
+              if ($Left.$name -lt $Right.$name) { return -1 }
+              if ($Left.$name -gt $Right.$name) { return 1 }
+            }
+            return 0
+          }
+
+          $currentTag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          $currentKey = Get-ReleaseTagSortKey -Tag $currentTag
+          if (-not $currentKey) {
+            throw "Current tag '$currentTag' is not a supported release tag (expected vMAJOR.MINOR.PATCH with optional alpha/beta suffix)."
+          }
+
+          $previousTag = git tag --list 'v*' |
+            ForEach-Object { Get-ReleaseTagSortKey -Tag $_ } |
+            Where-Object { $_ -and (Compare-ReleaseTagSortKey -Left $_ -Right $currentKey) -lt 0 } |
+            Sort-Object Major, Minor, Patch, IsGa, PreKind, PreNum |
+            Select-Object -Last 1 |
+            Select-Object -ExpandProperty Tag
+
+          Write-Host "Current tag: $currentTag"
+
+          if (-not $previousTag) {
+            Write-Host "No previous release tag found. Release notes will use GitHub default."
+          }
+          else {
+            $previousKey = Get-ReleaseTagSortKey -Tag $previousTag
+            $previousBranchVersion = '{0}.{1}.{2}' -f $previousKey.Major, $previousKey.Minor, $previousKey.Patch
+            $previousReleaseBranch = "origin/release/$previousBranchVersion"
+
+            Write-Host "Previous release tag: $previousTag"
+            Write-Host "Previous release branch: $previousReleaseBranch"
+            echo "PREVIOUS_RELEASE_TAG=$previousTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            echo "PREVIOUS_RELEASE_BRANCH=$previousReleaseBranch" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
+      - name: Build release notes
+        shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Simple rule only:
+          # 1) Candidates = previous release branch .. current tag
+          # 2) Already-fixed bugs = linked issues from PRs listed in the previous
+          #    GitHub release changelog (not a full git scan of the previous branch)
+          # 3) Drop a candidate PR only if it links one of those same bugs/issues
+          # Do not follow reverse links from the issue page (comment mentions, etc.).
+          $currentTag = $env:RELEASE_NAME
+          $previousTag = $env:PREVIOUS_RELEASE_TAG
+          $previousReleaseBranch = $env:PREVIOUS_RELEASE_BRANCH
+          $notesPath = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          $repo = $env:GITHUB_REPOSITORY
+
+          git fetch origin --prune --tags
+          git fetch origin 'refs/heads/release/*:refs/remotes/origin/release/*'
+
+          function Get-IssueNumbersFromText([string] $Text) {
+            $ids = New-Object 'System.Collections.Generic.HashSet[int]'
+            if ([string]::IsNullOrWhiteSpace($Text)) { return $ids }
+            foreach ($match in [regex]::Matches($Text, '(?i)(?:fixes|closes|resolves)\s+#(\d+)')) {
+              [void]$ids.Add([int]$match.Groups[1].Value)
+            }
+            foreach ($match in [regex]::Matches($Text, '(?i)\bissues?\s+#(\d+)')) {
+              [void]$ids.Add([int]$match.Groups[1].Value)
+            }
+            foreach ($match in [regex]::Matches($Text, '(?i)https://github\.com/[^/\s]+/[^/\s]+/issues/(\d+)')) {
+              [void]$ids.Add([int]$match.Groups[1].Value)
+            }
+            return $ids
+          }
+
+          function Get-PrNumbersFromReleaseNotes([string] $Text) {
+            $ids = New-Object 'System.Collections.Generic.HashSet[int]'
+            if ([string]::IsNullOrWhiteSpace($Text)) { return $ids }
+            # GitHub --generate-notes style: .../pull/123
+            foreach ($match in [regex]::Matches($Text, '(?i)/pull/(\d+)')) {
+              [void]$ids.Add([int]$match.Groups[1].Value)
+            }
+            # Our filtered notes style: (#123)
+            foreach ($match in [regex]::Matches($Text, '\(#(\d+)\)')) {
+              [void]$ids.Add([int]$match.Groups[1].Value)
+            }
+            return $ids
+          }
+
+          function Get-LinkedIssueNumbers([int] $PrNumber) {
+            $ids = New-Object 'System.Collections.Generic.HashSet[int]'
+            try {
+              $pr = gh pr view $PrNumber --repo $repo --json title,body | ConvertFrom-Json
+              foreach ($id in (Get-IssueNumbersFromText ([string]$pr.title))) { [void]$ids.Add($id) }
+              foreach ($id in (Get-IssueNumbersFromText ([string]$pr.body))) { [void]$ids.Add($id) }
+            } catch {
+              Write-Warning "Could not read PR #$PrNumber body/title: $_"
+            }
+
+            # Sidebar-linked / closing issues (not always present in pr view JSON fields).
+            try {
+              $owner, $name = $repo.Split('/')
+              $query = 'query($owner:String!, $name:String!, $number:Int!) { repository(owner:$owner, name:$name) { pullRequest(number:$number) { closingIssuesReferences(first:20) { nodes { number } } } } }'
+              $closing = gh api graphql -f query="$query" -f owner=$owner -f name=$name -F number=$PrNumber --jq '.data.repository.pullRequest.closingIssuesReferences.nodes[].number' 2>$null
+              foreach ($id in @($closing)) {
+                if ($id) { [void]$ids.Add([int]$id) }
+              }
+            } catch {
+              Write-Warning "Could not read closingIssuesReferences for PR #${PrNumber}: $_"
+            }
+
+            [void]$ids.Remove($PrNumber)
+            return $ids
+          }
+
+          if (-not $previousTag -or -not $previousReleaseBranch) {
+            @(
+              '## What''s Changed'
+              ''
+              '_No previous release was found, so filtered notes could not be generated._'
+              ''
+            ) -join "`n" | Set-Content -Path $notesPath -Encoding utf8
+            echo "RELEASE_NOTES_PATH=$notesPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            return
+          }
+
+          if (-not (git rev-parse -q --verify $previousReleaseBranch)) {
+            throw "Previous release branch '$previousReleaseBranch' was not found."
+          }
+
+          Write-Host "Comparing $previousReleaseBranch..$currentTag"
+          Write-Host "Loading already-fixed bugs from GitHub release notes for $previousTag"
+
+          $fixedItemNumbers = New-Object 'System.Collections.Generic.HashSet[int]'
+          $previousPrNumbers = New-Object 'System.Collections.Generic.HashSet[int]'
+          $missingIssueLinksOnPrevious = New-Object System.Collections.Generic.List[int]
+
+          try {
+            $previousReleaseBody = gh release view $previousTag --repo $repo --json body --jq .body
+          } catch {
+            throw "Could not read GitHub release notes for '$previousTag': $_"
+          }
+
+          foreach ($prNum in @(Get-PrNumbersFromReleaseNotes ([string]$previousReleaseBody))) {
+            if (-not $previousPrNumbers.Add($prNum)) { continue }
+
+            $linked = @(Get-LinkedIssueNumbers $prNum)
+            if ($linked.Count -eq 0) {
+              $missingIssueLinksOnPrevious.Add($prNum)
+            }
+            foreach ($id in $linked) { [void]$fixedItemNumbers.Add($id) }
+          }
+
+          Write-Host "Previous release note PRs: $($previousPrNumbers.Count); linked issues from those PRs: $($fixedItemNumbers.Count)"
+          if ($missingIssueLinksOnPrevious.Count -gt 0) {
+            Write-Warning "Previous release note PRs with no linked issue: $($missingIssueLinksOnPrevious -join ', ')"
+          }
+
+          $kept = New-Object System.Collections.Generic.List[string]
+          $hiddenIssue = 0
+          $missingIssueLinksOnCandidates = New-Object System.Collections.Generic.List[string]
+
+          $candidateCommits = @(git rev-list --no-merges "$previousReleaseBranch..$currentTag")
+          foreach ($commit in $candidateCommits) {
+            $subject = (git log -1 --pretty=format:'%s' $commit)
+
+            if ($subject -notmatch '\(#(\d+)\)\s*$') {
+              # Non-PR commits (manual tags scripts, etc.) stay in the notes.
+              $kept.Add("* $subject")
+              continue
+            }
+
+            $prNumber = [int]$Matches[1]
+            $candidateItems = @(Get-LinkedIssueNumbers $prNumber)
+
+            if ($candidateItems.Count -eq 0) {
+              $missingIssueLinksOnCandidates.Add("#$prNumber $subject")
+              $kept.Add("* $subject")
+              continue
+            }
+
+            $alreadyFixed = $false
+            foreach ($id in $candidateItems) {
+              if ($fixedItemNumbers.Contains($id)) {
+                Write-Host "Hidden (issue/item #$id already in $previousTag release notes): $subject"
+                $hiddenIssue++
+                $alreadyFixed = $true
+                break
+              }
+            }
+
+            if (-not $alreadyFixed) {
+              $kept.Add("* $subject")
+            }
+          }
+
+          $kept.Reverse()
+
+          if ($missingIssueLinksOnCandidates.Count -gt 0) {
+            Write-Warning "Candidate PRs with no linked issue (left in notes): $($missingIssueLinksOnCandidates.Count)"
+            $missingIssueLinksOnCandidates | ForEach-Object { Write-Warning "  $_" }
+          }
+
+          $notes = New-Object System.Collections.Generic.List[string]
+          $notes.Add("## What's Changed")
+          $notes.Add('')
+          if ($kept.Count -eq 0) {
+            $notes.Add('_No net-new changes versus the previous release after removing issues already listed there._')
+          }
+          else {
+            $notes.AddRange($kept)
+          }
+          $notes.Add('')
+          $notes.Add("**Full Changelog**: https://github.com/$repo/compare/$previousTag...$currentTag")
+          $notes.Add('')
+          $notes.Add("<sub>Candidates from ``$previousReleaseBranch..$currentTag``. Removed PRs that link a GitHub issue already linked by a PR in the ``$previousTag`` release notes. Hidden by shared issue: $hiddenIssue.</sub>")
+
+          $notes -join "`n" | Set-Content -Path $notesPath -Encoding utf8
+          Write-Host "Kept $($kept.Count) item(s); hid $hiddenIssue by shared issue/item."
+          echo "RELEASE_NOTES_PATH=$notesPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ($env:PREVIOUS_RELEASE_TAG) {
+          if ($env:RELEASE_NOTES_PATH -and (Test-Path $env:RELEASE_NOTES_PATH)) {
+            gh release create $env:RELEASE_NAME `
+              --notes-file $env:RELEASE_NOTES_PATH `
+              --latest `
+              "./release_assets/azure-cac-solution-$env:RELEASE_NAME.tar.gz#Azure CAC Solution (tar.gz)" `
+              "./release_assets/azure-cac-solution-$env:RELEASE_NAME.zip#Azure CAC Solution (zip)"
+          }
+          elseif ($env:PREVIOUS_RELEASE_TAG) {
             gh release create $env:RELEASE_NAME `
               --generate-notes `
               --notes-start-tag $env:PREVIOUS_RELEASE_TAG `
