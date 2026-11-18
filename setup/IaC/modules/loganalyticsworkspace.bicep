@@ -1086,13 +1086,27 @@ let guestsToEvaluate = guestsWithTrustInfo
 | project-away PartnerTenantId, InboundMfaTrust, effectiveMfaTrust, shouldExcludeGuest, guestHomeTenantId;
 let excludedGuestCount = toscalar(guestsToExclude | summarize count());
 let userData = union memberUsers, guestsToEvaluate;
-// users within grace
-let usersWithinGrace = userData
-| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
+// Get the most recent "Enable account" event per user from AuditLogs table
+// This captures when a disabled user account was re-enabled (reactivated)
+let ReactivationEvents = AuditLogs
+| where OperationName == "Enable account"
+| where Result == "success"
+| extend UserId = tostring(TargetResources[0].id)
+| where isnotempty(UserId)
+| summarize LastReactivationDate = max(TimeGenerated) by UserId;
+// Join user data with reactivation events to calculate effective grace period start date
+let userDataWithReactivation = userData
+| extend UserId = tostring(id_g)
+| join kind=leftouter ReactivationEvents on UserId
+| extend effectiveStartDate = max_of(CreatedDateTime_t, coalesce(LastReactivationDate, CreatedDateTime_t))
+| project-away UserId, UserId1, LastReactivationDate;
+// users within grace - using effective start date (later of creation or reactivation)
+let usersWithinGrace = userDataWithReactivation
+| extend gracePeriodEnd = effectiveStartDate + MfaGracePeriod
 | where now() < gracePeriodEnd;
 let gracePeriodCount = toscalar(usersWithinGrace | summarize count());
-let userDataFiltered = userData
-| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
+let userDataFiltered = userDataWithReactivation
+| extend gracePeriodEnd = effectiveStartDate + MfaGracePeriod
 | extend isWithinGracePeriod = now() < gracePeriodEnd
 | where isWithinGracePeriod == false;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
@@ -1269,10 +1283,24 @@ let userData = GuardrailsUserRaw_CL
 | where ReportTime == reportTime
 | where guardrailsExcluded == false
 | extend CreatedDateTime_t = iff(isnull(createdDateTime_t), now(), todatetime(createdDateTime_t));
+// Get the most recent "Enable account" event per user from AuditLogs table
+// This captures when a disabled user account was re-enabled (reactivated)
+let ReactivationEvents = AuditLogs
+| where OperationName == "Enable account"
+| where Result == "success"
+| extend UserId = tostring(TargetResources[0].id)
+| where isnotempty(UserId)
+| summarize LastReactivationDate = max(TimeGenerated) by UserId;
+// Join user data with reactivation events to calculate effective grace period start date
+let userDataWithReactivation = userData
+| extend UserId = tostring(id_g)
+| join kind=leftouter ReactivationEvents on UserId
+| extend effectiveStartDate = max_of(CreatedDateTime_t, coalesce(LastReactivationDate, CreatedDateTime_t))
+| project-away UserId, UserId1, LastReactivationDate;
 let validSystemMethods = dynamic(["Fido2", "HardwareOTP"]);
 let validMfaMethods = dynamic(["microsoftAuthenticatorPush", "mobilePhone", "softwareOneTimePasscode", "hardwareOneTimePasscode", "passKeyDeviceBound", "windowsHelloForBusiness", "fido2SecurityKey", "passKeyDeviceBoundAuthenticator", "passKeyDeviceBoundWindowsHello", "temporaryAccessPass"]);
-let mfaAnalysis = userData
-| extend gracePeriodEnd = CreatedDateTime_t + MfaGracePeriod
+let mfaAnalysis = userDataWithReactivation
+| extend gracePeriodEnd = effectiveStartDate + MfaGracePeriod
 | extend isWithinGracePeriod = now() < gracePeriodEnd
 | extend 
     sysPreferredValue = column_ifexists("systemPreferredAuthenticationMethods_s", ""),
