@@ -7,6 +7,10 @@ on:
         description: 'Tag version to deploy (e.g., v2.3.1)'
         required: true
         type: string
+      upgrade:
+        description: 'Upgrade the existing deployment'
+        type: boolean
+        default: false
 
 env:
   ARTIFACT_NAME: PowerShell.Workflows.ScriptSigning
@@ -121,7 +125,7 @@ jobs:
           subscription-id: ${{ vars.DEVSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX_DEV
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-          update-deployment: ${{ vars.DEV_UPGRADE_VAR }}
+          update-deployment: ${{ inputs.upgrade }}
           key-vault-name: kvcac
           key-vault-run-prefix: t
           resource-group: guardrailscacdev
@@ -294,7 +298,7 @@ jobs:
           DEVTENANT_SPN_APPID: ${{ vars.DEVTENANT_SPN_APPID}}
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
-          DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
+          DEV_UPGRADE_VAR: ${{ inputs.upgrade }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
           DEV_CLOUDUSAGEPROFILES: ${{ vars.DEV_CLOUDUSAGEPROFILES}}
           DEVTENANT_ID: ${{ vars.DEVTENANT_ID }}

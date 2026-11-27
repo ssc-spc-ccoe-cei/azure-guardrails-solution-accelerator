@@ -6,6 +6,10 @@ on:
         description: 'Tag version to deploy (e.g., v2.3.1)'
         required: true
         type: string
+      upgrade:
+        description: 'Upgrade the existing deployment'
+        type: boolean
+        default: false
 
 concurrency:
   group: Deploy-Azure-CAC-Test
@@ -124,7 +128,7 @@ jobs:
           subscription-id: ${{ vars.TESTSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX }}
-          update-deployment: ${{ vars.TEST_UPGRADE_VAR }}
+          update-deployment: ${{ inputs.upgrade }}
           key-vault-name: gsapipe
           key-vault-run-prefix: t
           resource-group: guardrailscac_test
@@ -296,7 +300,7 @@ jobs:
           TESTTENANT_SPN_APPID: ${{ vars.TESTTENANT_SPN_APPID}}
           TESTSEC_RESRC_ID: ${{ vars.TESTSEC_RESRC_ID }}
           TESTHEALTHLAW_RESRC_ID: ${{ vars.TESTHEALTHLAW_RESRC_ID }}
-          TEST_UPGRADE_VAR: ${{ vars.TEST_UPGRADE_VAR}}
+          TEST_UPGRADE_VAR: ${{ inputs.upgrade }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.TEST_ENABLE_MULTICLOUD_PROFILE }}
           TEST_CLOUDUSAGEPROFILES: ${{ vars.TEST_CLOUDUSAGEPROFILES}}
           TESTTENANT_ID: ${{ vars.TESTTENANT_ID }}
