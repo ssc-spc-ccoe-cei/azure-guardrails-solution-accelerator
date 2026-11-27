@@ -2,6 +2,11 @@ name: Deploy to Dev environment upon Release
 
 on:
   workflow_dispatch:
+    inputs:
+      upgrade:
+        description: 'Upgrade the existing deployment'
+        type: boolean
+        default: false
   workflow_run:
     workflows: [Azure CAC Release]
     types: 
@@ -126,7 +131,7 @@ jobs:
           subscription-id: ${{ vars.DEVSUBSCRIPTION_ID }}
           suffix-environment-variable-name: CI_UNIQUENAME_SUFFIX_DEV
           unique-name-suffix: ${{ vars.UNIQUENAME_SUFFIX_DEV }}
-          update-deployment: ${{ vars.DEV_UPGRADE_VAR }}
+          update-deployment: ${{ case(github.event_name == 'workflow_dispatch', inputs.upgrade, vars.DEV_UPGRADE_VAR) }}
           key-vault-name: kvcac
           resource-group: guardrailscacdev
           storage-account-name: stcac
@@ -294,7 +299,7 @@ jobs:
           DEVTENANT_SPN_APPID: ${{ vars.DEVTENANT_SPN_APPID}}
           DEVLAW_SEC: ${{ vars.DEVLAW_SEC }}
           DEVLAW_HEALTH: ${{ vars.DEVLAW_HEALTH }}
-          DEV_UPGRADE_VAR: ${{ vars.DEV_UPGRADE_VAR}}
+          DEV_UPGRADE_VAR: ${{ case(github.event_name == 'workflow_dispatch', inputs.upgrade, vars.DEV_UPGRADE_VAR) }}
           ENABLE_MULTICLOUD_PROFILES: ${{ vars.DEV_ENABLE_MULTICLOUD_PROFILE }}
           DEV_CLOUDUSAGEPROFILES: ${{ vars.DEV_CLOUDUSAGEPROFILES}}
           DEVTENANT_ID: ${{ vars.DEVTENANT_ID }}
